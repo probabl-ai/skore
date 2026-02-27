@@ -336,11 +336,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def get_predictions(
         self,
         *,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: Literal["train", "test"],
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
-        X: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> list[ArrayLike] | list[list[ArrayLike]]:
         """Get predictions from the underlying reports.
@@ -350,20 +349,15 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
 
         response_method : {"predict", "predict_proba", "decision_function"}, \
                 default="predict"
             The response method to use to get the predictions.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            When `data_source` is "X_y", the input features on which to compute the
-            response method.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing predictions in
@@ -410,7 +404,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,
-                X=X,
                 pos_label=pos_label,
             )
             for report in self.reports_.values()

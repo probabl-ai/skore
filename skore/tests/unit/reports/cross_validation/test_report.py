@@ -123,7 +123,7 @@ def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
         assert estimator_report._cache == {}
 
 
-@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
+@pytest.mark.parametrize("data_source", ["train", "test"])
 @pytest.mark.parametrize(
     "response_method", ["predict", "predict_proba", "decision_function"]
 )
@@ -135,27 +135,18 @@ def test_get_predictions(
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
-    if data_source == "X_y":
-        predictions = report.get_predictions(
-            data_source=data_source,
-            response_method=response_method,
-            X=X,
-            pos_label=pos_label,
-        )
-    else:
-        predictions = report.get_predictions(
-            data_source=data_source,
-            response_method=response_method,
-            pos_label=pos_label,
-        )
+    predictions = report.get_predictions(
+        data_source=data_source,
+        response_method=response_method,
+        pos_label=pos_label,
+    )
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
             expected_shape = report.estimator_reports_[split_idx].y_train.shape
-        elif data_source == "test":
+        else:
+            assert data_source == "test"
             expected_shape = report.estimator_reports_[split_idx].y_test.shape
-        else:  # data_source == "X_y"
-            expected_shape = (X.shape[0],)
         assert split_predictions.shape == expected_shape
 
 
@@ -168,9 +159,6 @@ def test_get_predictions_error(
 
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid")
-
-    with pytest.raises(ValueError, match="The `X` parameter is required"):
-        report.get_predictions(data_source="X_y")
 
 
 def test_pickle(tmp_path, logistic_binary_classification_data):

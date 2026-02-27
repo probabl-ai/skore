@@ -1,7 +1,6 @@
 import inspect
 from collections.abc import Callable, Iterable
 from functools import partial
-from operator import attrgetter
 from typing import Any, Literal, cast
 
 import numpy as np
@@ -64,8 +63,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         metric: Metric | list[Metric] | dict[str, Metric] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
@@ -77,22 +74,13 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y", "both"}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
             - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         metric : str, callable, scorer, or list of such instances or dict of such \
             instances, default=None
@@ -220,17 +208,6 @@ class _MetricsAccessor(
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
-        if data_source == "X_y":
-            # optimization of the hash computation to avoid recomputing it
-            # FIXME: we are still recomputing the hash for all the metrics that we
-            # support in the report because we don't call `_compute_metric_scores`
-            # here. We should fix it.
-            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-                data_source=data_source, X=X, y=y
-            )
-        else:
-            data_source_hash = None
-
         # Handle dictionary metrics
         metric_names = None
         if isinstance(metric, dict):
@@ -244,16 +221,16 @@ class _MetricsAccessor(
         if metric is None:
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
-                metrics = ["_accuracy", "_precision", "_recall", "_roc_auc"]
+                metrics = ["accuracy", "precision", "recall", "roc_auc"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics.append("_brier_score")
+                    metrics.append("brier_score")
             elif self._parent._ml_task == "multiclass-classification":
-                metrics = ["_accuracy", "_precision", "_recall"]
+                metrics = ["accuracy", "precision", "recall"]
                 if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics += ["_roc_auc", "_log_loss"]
+                    metrics += ["roc_auc", "log_loss"]
             else:
-                metrics = ["_r2", "_rmse"]
-            metrics += ["_fit_time", "_predict_time"]
+                metrics = ["r2", "rmse"]
+            metrics += ["_fit_time", "predict_time"]
 
         if metric_names is None:
             metric_names = [None] * len(metrics)  # type: ignore
@@ -288,13 +265,12 @@ class _MetricsAccessor(
             if isinstance(metric_, _BaseScorer):
                 # scorers have the advantage to have scoped defined kwargs
                 metric_fn = partial(
-                    self._custom_metric,
+                    self.custom_metric,
                     metric_function=metric_._score_func,
                     response_method=metric_._response_method,
                 )
                 # forward the additional parameters specific to the scorer
                 metrics_kwargs = {**metric_._kwargs}
-                metrics_kwargs["data_source_hash"] = data_source_hash
                 metrics_params = inspect.signature(metric_._score_func).parameters
                 if "pos_label" in metrics_params:
                     if pos_label is not None and "pos_label" in metrics_kwargs:
@@ -318,8 +294,13 @@ class _MetricsAccessor(
                         metric_.startswith("_")
                         and metric_[1:] in self._score_or_loss_info
                     ):
-                        metric_fn = getattr(self, metric_)
-                        metrics_kwargs = {"data_source_hash": data_source_hash}
+                        metric_fn = getattr(
+                            self,
+                            metric_
+                            if metric_ in ["_fit_time", "_predict_time"]
+                            else metric_[1:],
+                        )
+                        metrics_kwargs = {}
                         if metric_name is None:
                             metric_name = (
                                 f"{self._score_or_loss_info[metric_[1:]]['name']}"
@@ -330,8 +311,13 @@ class _MetricsAccessor(
 
                     # Handle built-in metrics (without underscore prefix)
                     elif metric_ in self._score_or_loss_info:
-                        metric_fn = getattr(self, f"_{metric_}")
-                        metrics_kwargs = {"data_source_hash": data_source_hash}
+                        metric_fn = getattr(
+                            self,
+                            f"_{metric_}"
+                            if metric_ in ["fit_time", "predict_time"]
+                            else metric_,
+                        )
+                        metrics_kwargs = {}
                         if metric_name is None:
                             metric_name = f"{self._score_or_loss_info[metric_]['name']}"
                         metric_favorability = self._score_or_loss_info[metric_]["icon"]
@@ -350,7 +336,7 @@ class _MetricsAccessor(
                         response_method = metric_kwargs["response_method"]
 
                     metric_fn = partial(
-                        self._custom_metric,
+                        self.custom_metric,
                         metric_function=metric_,
                         response_method=response_method,
                     )
@@ -365,7 +351,6 @@ class _MetricsAccessor(
                             for param in metric_callable_params
                             if param in metric_kwargs
                         }
-                    metrics_kwargs["data_source_hash"] = data_source_hash
                     if metric_name is None:
                         metric_name = metric_.__name__
                     metric_favorability = ""
@@ -383,7 +368,7 @@ class _MetricsAccessor(
                     f"Invalid type of metric: {type(metric_)} for {metric_!r}"
                 )
 
-            score = metric_fn(data_source=data_source, X=X, y=y, **metrics_kwargs)
+            score = metric_fn(data_source=data_source, **metrics_kwargs)
 
             index: pd.Index | pd.MultiIndex | list[str] | None
             score_array: NDArray
@@ -485,19 +470,13 @@ class _MetricsAccessor(
     def _compute_metric_scores(
         self,
         metric_fn: Callable,
-        X: ArrayLike | None,
-        y_true: ArrayLike | None,
         *,
         response_method: str | list[str] | tuple[str, ...],
         data_source: DataSource = "test",
-        data_source_hash: int | None = None,
         pos_label: PositiveLabel | None = None,
         **metric_kwargs: Any,
     ) -> float | dict[PositiveLabel, float] | list:
-        if data_source_hash is None:
-            X, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
-                data_source=data_source, X=X, y=y_true
-            )
+        X, y_true = self._get_X_y_and_data_source_hash(data_source=data_source)
 
         metric_params = inspect.signature(metric_fn).parameters
 
@@ -506,7 +485,6 @@ class _MetricsAccessor(
                 self._parent._hash,
                 metric_fn.__name__,
                 data_source,
-                data_source_hash,
                 pos_label if "pos_label" in metric_params else None,
                 metric_kwargs,
             )
@@ -527,7 +505,6 @@ class _MetricsAccessor(
                 response_method=response_method,
                 pos_label=pos_label,
                 data_source=data_source,
-                data_source_hash=data_source_hash,
             )
             for key_tuple, value, is_cached in results:
                 if not is_cached:
@@ -579,9 +556,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         cast: bool = True,
     ) -> float | None:
         """Get prediction time if it has been already measured.
@@ -592,15 +566,11 @@ class _MetricsAccessor(
             Whether to cast the numbers to floats. If `False`, the return value
             is `None` when the predictions have never been computed.
         """
-        if data_source_hash is None:
-            X, _, data_source_hash = self._get_X_y_and_data_source_hash(
-                data_source=data_source, X=X, y=y
-            )
+        X, _ = self._get_X_y_and_data_source_hash(data_source=data_source)
 
         predict_time_cache_key = (
             self._parent._hash,
             data_source,
-            data_source_hash,
             "predict_time",
         )
 
@@ -622,9 +592,8 @@ class _MetricsAccessor(
             in the form of a `dict` with some or all of the following keys:
 
             - "fit_time", for the time to fit the estimator in the train set.
-            - "predict_time_{data_source}", where data_source is "train", "test" or
-              "X_y_{data_source_hash}", for the time to compute the predictions on the
-              given data source.
+            - "predict_time_{data_source}", where data_source is "train" or "test"
+              for the time to compute the predictions on the given data source.
 
         Examples
         --------
@@ -646,13 +615,10 @@ class _MetricsAccessor(
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
         # predict_time cache keys are of the form
-        # (self._parent._hash, data_source, data_source_hash, "predict_time")
+        # (self._parent._hash, data_source, "predict_time")
 
         def make_key(k: tuple) -> str:
-            data_source, data_source_hash = k[1], k[2]
-            if data_source == "X_y":
-                return f"predict_time_X_y_{data_source_hash}"
-            return f"predict_time_{data_source}"
+            return f"predict_time_{k[1]}"
 
         predict_times = {
             make_key(k): v
@@ -662,32 +628,25 @@ class _MetricsAccessor(
 
         return fit_time | predict_times
 
-    @available_if(attrgetter("_accuracy"))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def accuracy(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
     ) -> float:
         """Compute the accuracy score.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train",}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         Returns
         -------
@@ -707,44 +666,22 @@ class _MetricsAccessor(
         >>> report.metrics.accuracy()
         0.95...
         """
-        return self._accuracy(data_source=data_source, data_source_hash=None, X=X, y=y)
+        score = self._compute_metric_scores(
+            sklearn_metrics.accuracy_score,
+            data_source=data_source,
+            response_method="predict",
+        )
+        return cast(float, score)
 
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
         )
     )
-    def _accuracy(
-        self,
-        *,
-        data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-    ) -> float:
-        """Private interface of `accuracy` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
-        score = self._compute_metric_scores(
-            sklearn_metrics.accuracy_score,
-            X=X,
-            y_true=y,
-            data_source=data_source,
-            data_source_hash=data_source_hash,
-            response_method="predict",
-        )
-        return cast(float, score)
-
-    @available_if(attrgetter("_precision"))
     def precision(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         average: (
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
@@ -754,20 +691,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -818,38 +746,6 @@ class _MetricsAccessor(
         >>> report.metrics.precision(pos_label=1)
         0.98...
         """
-        return self._precision(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            average=average,
-            pos_label=pos_label,
-        )
-
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
-    def _precision(
-        self,
-        *,
-        data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-        average: (
-            Literal["binary", "macro", "micro", "weighted", "samples"] | None
-        ) = None,
-        pos_label: PositiveLabel | None = _DEFAULT,
-    ) -> float | dict[PositiveLabel, float]:
-        """Private interface of `precision` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
@@ -860,10 +756,7 @@ class _MetricsAccessor(
 
         result = self._compute_metric_scores(
             sklearn_metrics.precision_score,
-            X=X,
-            y_true=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
             average=average,
@@ -874,13 +767,15 @@ class _MetricsAccessor(
             return cast(float, result)
         return cast(dict[PositiveLabel, float], result)
 
-    @available_if(attrgetter("_recall"))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["binary-classification", "multiclass-classification"]
+        )
+    )
     def recall(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         average: (
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
@@ -890,20 +785,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -955,38 +841,6 @@ class _MetricsAccessor(
         >>> report.metrics.recall(pos_label=1)
         0.93...
         """
-        return self._recall(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            average=average,
-            pos_label=pos_label,
-        )
-
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["binary-classification", "multiclass-classification"]
-        )
-    )
-    def _recall(
-        self,
-        *,
-        data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-        average: (
-            Literal["binary", "macro", "micro", "weighted", "samples"] | None
-        ) = None,
-        pos_label: PositiveLabel | None = _DEFAULT,
-    ) -> float | dict[PositiveLabel, float]:
-        """Private interface of `recall` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
@@ -997,10 +851,7 @@ class _MetricsAccessor(
 
         result = self._compute_metric_scores(
             sklearn_metrics.recall_score,
-            X=X,
-            y_true=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method="predict",
             pos_label=pos_label,
             average=average,
@@ -1011,32 +862,28 @@ class _MetricsAccessor(
             return cast(float, result)
         return cast(dict[PositiveLabel, float], result)
 
-    @available_if(attrgetter("_brier_score"))
+    @available_if(
+        _check_all_checks(
+            checks=[
+                _check_supported_ml_task(supported_ml_tasks=["binary-classification"]),
+                _check_estimator_has_method(method_name="predict_proba"),
+            ]
+        )
+    )
     def brier_score(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
     ) -> float:
         """Compute the Brier score.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         Returns
         -------
@@ -1056,57 +903,30 @@ class _MetricsAccessor(
         >>> report.metrics.brier_score()
         0.03...
         """
-        return self._brier_score(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-        )
-
-    @available_if(
-        _check_all_checks(
-            checks=[
-                _check_supported_ml_task(supported_ml_tasks=["binary-classification"]),
-                _check_estimator_has_method(method_name="predict_proba"),
-            ]
-        )
-    )
-    def _brier_score(
-        self,
-        *,
-        data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-    ) -> float:
-        """Private interface of `brier_score` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
         result = self._compute_metric_scores(
             sklearn_metrics.brier_score_loss,
-            X=X,
-            y_true=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method="predict_proba",
             pos_label=self._parent._estimator.classes_[-1],
         )
         return cast(float, result)
 
-    @available_if(attrgetter("_roc_auc"))
+    @available_if(
+        _check_roc_auc(
+            ml_task_and_methods=[
+                ("binary-classification", ["predict_proba", "decision_function"]),
+                ("multiclass-classification", ["predict_proba"]),
+            ]
+        )
+    )
     def roc_auc(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         average: Literal["macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
     ) -> float | dict[PositiveLabel, float]:
@@ -1114,20 +934,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         average : {"macro", "micro", "weighted", "samples"}, default=None
             Average to compute the ROC AUC score in a multiclass setting. By default,
@@ -1180,45 +991,9 @@ class _MetricsAccessor(
         >>> report.metrics.roc_auc()
         0.99...
         """
-        return self._roc_auc(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            average=average,
-            multi_class=multi_class,
-        )
-
-    @available_if(
-        _check_roc_auc(
-            ml_task_and_methods=[
-                ("binary-classification", ["predict_proba", "decision_function"]),
-                ("multiclass-classification", ["predict_proba"]),
-            ]
-        )
-    )
-    def _roc_auc(
-        self,
-        *,
-        data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-        average: Literal["macro", "micro", "weighted", "samples"] | None = None,
-        multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-    ) -> float | dict[PositiveLabel, float]:
-        """Private interface of `roc_auc` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
         result = self._compute_metric_scores(
             sklearn_metrics.roc_auc_score,
-            X=X,
-            y_true=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method=["predict_proba", "decision_function"],
             average=average,
             multi_class=multi_class,
@@ -1227,25 +1002,33 @@ class _MetricsAccessor(
             return cast(dict[PositiveLabel, float], result)
         return cast(float, result)
 
-    @available_if(attrgetter("_log_loss"))
+    @available_if(
+        _check_all_checks(
+            checks=[
+                _check_supported_ml_task(
+                    supported_ml_tasks=[
+                        "binary-classification",
+                        "multiclass-classification",
+                    ]
+                ),
+                _check_estimator_has_method(method_name="predict_proba"),
+            ]
+        )
+    )
     def log_loss(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
     ) -> float:
         """Compute the log loss.
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
 
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
 
         Returns
         -------
@@ -1265,57 +1048,22 @@ class _MetricsAccessor(
         >>> report.metrics.log_loss()
         0.10...
         """
-        return self._log_loss(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-        )
-
-    @available_if(
-        _check_all_checks(
-            checks=[
-                _check_supported_ml_task(
-                    supported_ml_tasks=[
-                        "binary-classification",
-                        "multiclass-classification",
-                    ]
-                ),
-                _check_estimator_has_method(method_name="predict_proba"),
-            ]
-        )
-    )
-    def _log_loss(
-        self,
-        *,
-        data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-    ) -> float:
-        """Private interface of `log_loss` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
         result = self._compute_metric_scores(
             sklearn_metrics.log_loss,
-            X=X,
-            y_true=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method="predict_proba",
         )
         return cast(float, result)
 
-    @available_if(attrgetter("_r2"))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def r2(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         multioutput: (
             Literal["raw_values", "uniform_average"] | ArrayLike
         ) = "raw_values",
@@ -1324,20 +1072,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -1367,42 +1106,9 @@ class _MetricsAccessor(
         >>> report.metrics.r2()
         0.35...
         """
-        return self._r2(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            multioutput=multioutput,
-        )
-
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
-    def _r2(
-        self,
-        *,
-        data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-        multioutput: (
-            Literal["raw_values", "uniform_average"] | ArrayLike
-        ) = "raw_values",
-    ) -> float | list:
-        """Private interface of `r2` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
         result = self._compute_metric_scores(
             sklearn_metrics.r2_score,
-            X=X,
-            y_true=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method="predict",
             multioutput=multioutput,
         )
@@ -1413,13 +1119,15 @@ class _MetricsAccessor(
             return cast(list, result)
         return cast(float, result)
 
-    @available_if(attrgetter("_rmse"))
+    @available_if(
+        _check_supported_ml_task(
+            supported_ml_tasks=["regression", "multioutput-regression"]
+        )
+    )
     def rmse(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         multioutput: (
             Literal["raw_values", "uniform_average"] | ArrayLike
         ) = "raw_values",
@@ -1428,20 +1136,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -1471,42 +1170,9 @@ class _MetricsAccessor(
         >>> report.metrics.rmse()
         56.5...
         """
-        return self._rmse(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            multioutput=multioutput,
-        )
-
-    @available_if(
-        _check_supported_ml_task(
-            supported_ml_tasks=["regression", "multioutput-regression"]
-        )
-    )
-    def _rmse(
-        self,
-        *,
-        data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-        multioutput: (
-            Literal["raw_values", "uniform_average"] | ArrayLike
-        ) = "raw_values",
-    ) -> float | list:
-        """Private interface of `rmse` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
         result = self._compute_metric_scores(
             sklearn_metrics.root_mean_squared_error,
-            X=X,
-            y_true=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method="predict",
             multioutput=multioutput,
         )
@@ -1523,8 +1189,6 @@ class _MetricsAccessor(
         response_method: str | list[str],
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         **kwargs: Any,
     ) -> float | dict[PositiveLabel, float] | list:
         """Compute a custom metric.
@@ -1548,20 +1212,11 @@ class _MetricsAccessor(
             "decision_function"} or list of such str
             The estimator's method to be invoked to get the predictions.
 
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         **kwargs : dict
             Any additional keyword arguments to be passed to the metric function.
@@ -1595,33 +1250,6 @@ class _MetricsAccessor(
         ... )
         {'output': 44.9...}
         """
-        return self._custom_metric(
-            data_source=data_source,
-            data_source_hash=None,
-            X=X,
-            y=y,
-            metric_function=metric_function,
-            response_method=response_method,
-            **kwargs,
-        )
-
-    def _custom_metric(
-        self,
-        *,
-        metric_function: Callable,
-        response_method: str | list[str],
-        data_source: DataSource = "test",
-        data_source_hash: int | None = None,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
-        **kwargs: Any,
-    ) -> Any:
-        """Private interface of `custom_metric` to be able to pass `data_source_hash`.
-
-        `data_source_hash` is either an `int` when we already computed the hash
-        and are able to pass it around or `None` and thus trigger its computation
-        in the underlying process.
-        """
         pos_label = kwargs.pop("pos_label", self._parent.pos_label)
 
         if isinstance(metric_function, _BaseScorer):
@@ -1629,10 +1257,7 @@ class _MetricsAccessor(
 
         return self._compute_metric_scores(
             metric_function,
-            X=X,
-            y_true=y,
             data_source=data_source,
-            data_source_hash=data_source_hash,
             response_method=response_method,
             pos_label=pos_label,
             **kwargs,
@@ -1653,8 +1278,6 @@ class _MetricsAccessor(
     def _get_display(
         self,
         *,
-        X: ArrayLike | None,
-        y: ArrayLike | None,
         data_source: DataSource | Literal["both"],
         response_method: str | list[str] | tuple[str, ...],
         display_class: type[
@@ -1674,18 +1297,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
-            The data.
-
-        y : array-like of shape (n_samples,)
-            The target.
-
-        data_source : {"test", "train", "X_y", "both"}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
             - "both" : use both the train set and the test set to compute the metric.
 
         response_method : str, list of str or tuple of str
@@ -1706,8 +1322,7 @@ class _MetricsAccessor(
         data_sources = _expand_data_sources(data_source)
 
         # Compute cache key
-        # For "both", we use the string "both" in the cache key since data_source_hash
-        # is not applicable when combining multiple data sources
+        # For "both", we use the string "both" in the cache key
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
@@ -1728,9 +1343,7 @@ class _MetricsAccessor(
         y_pred: list[YPlotData] = []
 
         for ds in data_sources:
-            ds_X, ds_y, ds_hash = self._get_X_y_and_data_source_hash(
-                data_source=ds, X=X, y=y
-            )
+            ds_X, ds_y = self._get_X_y_and_data_source_hash(data_source=ds)
 
             y_true_data, y_pred_data = _get_ys_for_single_report(
                 cache=self._parent._cache,
@@ -1740,7 +1353,6 @@ class _MetricsAccessor(
                 X=ds_X,
                 y_true=ds_y,
                 data_source=ds,
-                data_source_hash=ds_hash,
                 response_method=response_method,
                 pos_label=pos_label,
                 split=None,
@@ -1774,30 +1386,19 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y", "both"}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
             - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
@@ -1831,8 +1432,6 @@ class _MetricsAccessor(
         display = cast(
             RocCurveDisplay,
             self._get_display(
-                X=X,
-                y=y,
                 data_source=data_source,
                 response_method=response_method,
                 display_class=RocCurveDisplay,
@@ -1850,28 +1449,17 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
@@ -1905,8 +1493,6 @@ class _MetricsAccessor(
         display = cast(
             PrecisionRecallCurveDisplay,
             self._get_display(
-                X=X,
-                y=y,
                 data_source=data_source,
                 response_method=response_method,
                 display_class=PrecisionRecallCurveDisplay,
@@ -1924,8 +1510,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         subsample: float | int | None = 1_000,
         seed: int | None = None,
     ) -> PredictionErrorDisplay:
@@ -1935,22 +1519,13 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y", "both"}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
             - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
@@ -1985,8 +1560,6 @@ class _MetricsAccessor(
         display = cast(
             PredictionErrorDisplay,
             self._get_display(
-                X=X,
-                y=y,
                 data_source=data_source,
                 response_method="predict",
                 display_class=PredictionErrorDisplay,
@@ -2004,8 +1577,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
@@ -2015,20 +1586,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when displaying the matrix. Use
@@ -2075,8 +1637,6 @@ class _MetricsAccessor(
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
-                X=X,
-                y=y,
                 data_source=data_source,
                 response_method=response_method,
                 display_class=ConfusionMatrixDisplay,

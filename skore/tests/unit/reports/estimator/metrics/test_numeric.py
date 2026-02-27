@@ -41,15 +41,6 @@ def test_summarize_binary_classification(
     assert report._cache != {}
     report.clear_cache()
 
-    # check that passing using data outside from the report works and that we they
-    # don't come from the cache
-    result_external_data = getattr(report.metrics, metric)(
-        data_source="X_y", X=X_test, y=y_test
-    )
-    assert isinstance(result_external_data, float)
-    assert result == pytest.approx(result_external_data)
-    assert report._cache != {}
-
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_summarize_binary_classification_pr(
@@ -71,15 +62,6 @@ def test_summarize_binary_classification_pr(
     assert report._cache != {}
     report.clear_cache()
 
-    # check that passing using data outside from the report works and that we they
-    # don't come from the cache
-    result_external_data = getattr(report.metrics, metric)(
-        data_source="X_y", X=X_test, y=y_test
-    )
-    assert isinstance(result_external_data, dict)
-    assert result == result_external_data
-    assert report._cache != {}
-
 
 @pytest.mark.parametrize("metric", ["r2", "rmse"])
 def test_summarize_regression(linear_regression_with_test, metric):
@@ -96,15 +78,6 @@ def test_summarize_regression(linear_regression_with_test, metric):
     # check that something was written to the cache
     assert report._cache != {}
     report.clear_cache()
-
-    # check that passing using data outside from the report works and that we they
-    # don't come from the cache
-    result_external_data = getattr(report.metrics, metric)(
-        data_source="X_y", X=X_test, y=y_test
-    )
-    assert isinstance(result_external_data, float)
-    assert result == pytest.approx(result_external_data)
-    assert report._cache != {}
 
 
 def test_summarize_data_source_both(forest_binary_classification_data):
@@ -362,7 +335,7 @@ def test_get_X_y_and_data_source_hash_error():
     report = EstimatorReport(estimator)
 
     err_msg = re.escape(
-        "Invalid data source: unknown. Possible values are: test, train, X_y."
+        "Invalid data source: unknown. Possible values are: test, train."
     )
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.log_loss(data_source="unknown")
@@ -371,8 +344,7 @@ def test_get_X_y_and_data_source_hash_error():
         err_msg = re.escape(
             f"No {data_source} data (i.e. X_{data_source} and y_{data_source}) were "
             f"provided when creating the report. Please provide the {data_source} "
-            "data either when creating the report or by setting data_source to "
-            "'X_y' and providing X and y."
+            "data when creating the report."
         )
         with pytest.raises(ValueError, match=err_msg):
             report.metrics.log_loss(data_source=data_source)
@@ -380,45 +352,6 @@ def test_get_X_y_and_data_source_hash_error():
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-
-    for data_source in ("train", "test"):
-        err_msg = f"X and y must be None when data_source is {data_source}."
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.log_loss(data_source=data_source, X=X_test, y=y_test)
-
-    err_msg = "X and y must be provided."
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.log_loss(data_source="X_y")
-
-
-@pytest.mark.parametrize("data_source", ("train", "test", "X_y"))
-def test_get_X_y_and_data_source_hash(data_source):
-    """Check the general behaviour of `get_X_y_and_use_cache`."""
-    X, y = make_classification(n_classes=2, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-    estimator = LogisticRegression()
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    X, y, data_source_hash = report.metrics._get_X_y_and_data_source_hash(
-        data_source=data_source, **kwargs
-    )
-
-    if data_source == "train":
-        assert X is X_train
-        assert y is y_train
-        assert data_source_hash is None
-    elif data_source == "test":
-        assert X is X_test
-        assert y is y_test
-        assert data_source_hash is None
-    elif data_source == "X_y":
-        assert X is X_test
-        assert y is y_test
-        assert data_source_hash == joblib.hash((X_test, y_test))
 
 
 @pytest.mark.parametrize("prefit_estimator", [True, False])

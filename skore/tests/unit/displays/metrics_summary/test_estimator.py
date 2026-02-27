@@ -49,7 +49,7 @@ def _check_results_summarize(result, expected_metrics, expected_nb_stats):
 
 
 @pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
+@pytest.mark.parametrize("data_source", ["test"])
 def test_binary_classification(
     forest_binary_classification_with_test,
     svc_binary_classification_with_test,
@@ -63,9 +63,9 @@ def test_binary_classification(
     """
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.summarize(
-        pos_label=pos_label, data_source=data_source, **kwargs
+        pos_label=pos_label,
+        data_source=data_source,
     ).frame()
     assert "Favorability" not in result.columns
     expected_metrics = (
@@ -89,9 +89,9 @@ def test_binary_classification(
     y_test = target_names[y_test]
     estimator = clone(estimator).fit(X_test, y_test)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.summarize(
-        pos_label=pos_label_name, data_source=data_source, **kwargs
+        pos_label=pos_label_name,
+        data_source=data_source,
     ).frame()
     expected_metrics = (
         "accuracy",
@@ -109,9 +109,9 @@ def test_binary_classification(
 
     estimator, X_test, y_test = svc_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     result = report.metrics.summarize(
-        pos_label=pos_label, data_source=data_source, **kwargs
+        pos_label=pos_label,
+        data_source=data_source,
     ).frame()
     expected_metrics = (
         "accuracy",
@@ -127,7 +127,7 @@ def test_binary_classification(
     _check_results_summarize(result, expected_metrics, expected_nb_stats)
 
 
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
+@pytest.mark.parametrize("data_source", ["test"])
 def test_multiclass_classification(
     forest_multiclass_classification_with_test,
     svc_multiclass_classification_with_test,
@@ -138,8 +138,7 @@ def test_multiclass_classification(
     """
     estimator, X_test, y_test = forest_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
+    result = report.metrics.summarize(data_source=data_source).frame()
     assert "Favorability" not in result.columns
     expected_metrics = (
         "accuracy",
@@ -157,8 +156,7 @@ def test_multiclass_classification(
 
     estimator, X_test, y_test = svc_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
+    result = report.metrics.summarize(data_source=data_source).frame()
     expected_metrics = ("accuracy", "precision", "recall", "fit_time", "predict_time")
     # since we are not averaging by default, we report 3 statistics for
     # precision and recall
@@ -166,13 +164,12 @@ def test_multiclass_classification(
     _check_results_summarize(result, expected_metrics, expected_nb_stats)
 
 
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
+@pytest.mark.parametrize("data_source", ["test"])
 def test_regression(linear_regression_with_test, data_source):
     """Check the behaviour of the `MetricsSummaryDisplay` method with regression."""
     estimator, X_test, y_test = linear_regression_with_test
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
+    result = report.metrics.summarize(data_source=data_source).frame()
     assert "Favorability" not in result.columns
     expected_metrics = ("r2", "rmse", "fit_time", "predict_time")
     _check_results_summarize(result, expected_metrics, len(expected_metrics))

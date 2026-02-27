@@ -6,46 +6,6 @@ from sklearn.metrics import accuracy_score, get_scorer
 from skore import ComparisonReport, MetricsSummaryDisplay
 
 
-def test_data_source_external(
-    binary_classification_data, estimator_reports_binary_classification
-):
-    """Check that `MetricsSummaryDisplay` works with an "X_y" data source."""
-    X, y = binary_classification_data
-
-    estimator_report_1, estimator_report_2 = estimator_reports_binary_classification
-    report = ComparisonReport([estimator_report_1, estimator_report_2])
-
-    result = report.metrics.summarize(data_source="X_y", X=X[:10], y=y[:10]).frame()
-    assert "Favorability" not in result.columns
-
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Accuracy", ""),
-            ("Precision", 0),
-            ("Precision", 1),
-            ("Recall", 0),
-            ("Recall", 1),
-            ("ROC AUC", ""),
-            ("Brier score", ""),
-            ("Fit time (s)", ""),
-            ("Predict time (s)", ""),
-        ],
-        names=["Metric", "Label / Average"],
-    )
-    expected_columns = pd.Index(
-        ["DummyClassifier_1", "DummyClassifier_2"],
-        name="Estimator",
-    )
-
-    pd.testing.assert_index_equal(result.index, expected_index)
-    pd.testing.assert_index_equal(result.columns, expected_columns)
-
-    assert len(report._cache) == 1
-    cached_result = next(iter(report._cache.values()))
-    pd.testing.assert_index_equal(cached_result.index, expected_index)
-    pd.testing.assert_index_equal(cached_result.columns, expected_columns)
-
-
 def test_data_source_both(
     binary_classification_data, estimator_reports_binary_classification
 ):
@@ -54,7 +14,7 @@ def test_data_source_both(
 
     estimator_report_1, estimator_report_2 = estimator_reports_binary_classification
     report = ComparisonReport([estimator_report_1, estimator_report_2])
-    result = report.metrics.summarize(data_source="both", X=X[:10], y=y[:10]).frame()
+    result = report.metrics.summarize(data_source="both").frame()
     assert "Favorability" not in result.columns
 
     expected_index = pd.MultiIndex.from_tuples(
