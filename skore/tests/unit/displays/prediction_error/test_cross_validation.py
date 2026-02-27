@@ -9,7 +9,7 @@ import pytest
 def test_legend(pyplot, task, legend_prefix, request):
     """Check the legend of the prediction error plot with cross-validation."""
     figure, _ = request.getfixturevalue(f"cross_validation_reports_{task}_figure_axes")
-    legend = figure.axes[len(figure.axes)//2].get_legend()
+    legend = figure.axes[len(figure.axes) // 2].get_legend()
     assert legend is not None
     legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == 3
@@ -27,7 +27,8 @@ def test_legend_actual_vs_predicted(pyplot, task, legend_prefix, request):
     report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
-    legend_texts = [t.get_text() for t in display.figure_.axes[len(display.figure_.axes)//2].get_legend().get_texts()]
+    legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+    legend_texts = [t.get_text() for t in legend.get_texts()]
 
     assert len(legend_texts) == 3
     assert legend_texts[0] == f"{legend_prefix} #0"
