@@ -181,7 +181,10 @@ class Project:
             elif isinstance(obj, Artifact):
                 _log_artifact(obj)
             elif isinstance(obj, Dataset):
-                mlflow.log_input(obj.dataset, context=obj.context)
+                with _filterwarnings(
+                    UserWarning, r".*schema contains integer column.*"
+                ):
+                    mlflow.log_input(obj.dataset, context=obj.context)
             elif isinstance(obj, tuple):
                 subrun_name, sub_iter = obj
                 with mlflow.start_run(
