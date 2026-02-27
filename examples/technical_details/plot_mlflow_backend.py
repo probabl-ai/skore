@@ -58,6 +58,13 @@ with TemporaryDirectory() as tmp_dir:
             mode="mlflow",
             tracking_uri=backend_store_uri,
         )
-        project.put("linreg-baseline", report)
-        summary = project.summarize()
-    summary
+    project.put("linreg-baseline", report)
+    summary = project.summarize()
+
+# %%
+# To see the normal DataFrame table instead of the widget (e.g. in scripts or
+# when you prefer the table), wrap the summary in :class:`pandas.DataFrame`:
+import pandas as pd
+
+pandas_summary = pd.DataFrame(summary)
+pandas_summary
