@@ -21,8 +21,11 @@ Basic usage:
     WORKSPACE=<workspace> PROJECT=<project> python plot_skore_hub_project.py
 """
 
-# %%
-# .. testsetup::
+# sphinx_gallery_start_ignore
+#
+# Configure the context variables and ensure that the example is run with sufficient
+# credentials. This is a useful consistency check for CI where you can't have
+# interactive login.
 import os
 
 if os.environ.get("SPHINX_BUILD"):
@@ -38,14 +41,16 @@ if os.environ.get("SPHINX_BUILD"):
 else:
     assert (WORKSPACE := os.environ.get("WORKSPACE")), "`WORKSPACE` must be defined."
     assert (PROJECT := os.environ.get("PROJECT")), "`PROJECT` must be defined."
+# sphinx_gallery_end_ignore
 
 # %%
 from skore import login
 
 login(mode="hub")
 
-# %%
-# .. testsetup::
+# sphinx_gallery_start_ignore
+#
+# Delete project before running the example.
 from httpx import HTTPStatusError, codes
 from skore import Project
 
@@ -54,6 +59,7 @@ try:
 except HTTPStatusError as e:
     if e.response.status_code != codes.NOT_FOUND:
         raise
+# sphinx_gallery_end_ignore
 
 # %%
 from sklearn.datasets import load_breast_cancer
