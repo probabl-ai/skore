@@ -37,6 +37,16 @@ def test_project_put_requires_supported_report_type() -> None:
         project.put("<key>", object())
 
 
+def test_project_put_raises_inside_active_run(reg_report) -> None:
+    project = Project("<project>")
+
+    with (
+        mlflow.start_run(experiment_id=project.experiment_id),
+        pytest.raises(RuntimeError, match=r"active run is already open"),
+    ):
+        project.put("<key>", reg_report)
+
+
 def test_run_to_metadata_unsupported_report_type_raises() -> None:
     run = SimpleNamespace(
         info=SimpleNamespace(run_id="id", run_name="name", start_time=0),
