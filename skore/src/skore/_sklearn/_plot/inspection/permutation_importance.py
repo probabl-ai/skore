@@ -17,7 +17,7 @@ from sklearn.utils.validation import _num_features
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import Aggregate, DataSource, ReportType
+from skore._sklearn.types import Aggregate, DataSource, Metric, ReportType
 from skore._utils._index import flatten_multi_index
 
 
@@ -38,7 +38,8 @@ class PermutationImportanceDisplay(DisplayMixin):
         - `repetition`
         - `value`
 
-    report_type : {"estimator", "cross-validation"}
+    report_type : {"estimator", "cross-validation", "comparison-estimator", \
+            "comparison-cross-validation"}
         Report type from which the display is created.
 
     Attributes
@@ -78,7 +79,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         Xs: Sequence[ArrayLike],
         ys: Sequence[ArrayLike],
         at_step: int | str,
-        metric: str | Callable | list[str] | tuple[str] | dict[str, Callable] | None,
+        metric: Metric | list[Metric] | dict[str, Metric] | None,
         n_repeats: int,
         max_samples: float,
         n_jobs: int | None,
@@ -207,18 +208,6 @@ class PermutationImportanceDisplay(DisplayMixin):
             report_type=report_type,
         )
 
-    @staticmethod
-    def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
-        """Get the available columns from which to group by."""
-        columns_to_groupby = list[str]()
-        if "label" in frame.columns and frame["label"].nunique() > 1:
-            columns_to_groupby.append("label")
-        if "output" in frame.columns and frame["output"].nunique() > 1:
-            columns_to_groupby.append("output")
-        if "split" in frame.columns and frame["split"].nunique() > 1:
-            columns_to_groupby.append("split")
-        return columns_to_groupby
-
     @DisplayMixin.style_plot
     def plot(
         self,
@@ -257,19 +246,96 @@ class PermutationImportanceDisplay(DisplayMixin):
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
 
+        frame = self.frame(metric=metric, aggregate=None)
+        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
+        has_same_features = (
+            self._has_same_features(frame=frame)
+            if "comparison" in self.report_type
+            else True
+        )
+
         if metric is None and self.importances["metric"].nunique() > 1:
             raise ValueError(
                 "Multiple metrics cannot be plotted at once. Please select a metric"
                 " to plot the associated importances using the `metric` parameter."
             )
 
-        self._plot_single_estimator(
-            subplot_by=subplot_by,
-            frame=self.frame(metric=metric, aggregate=None),
-            estimator_name=self.importances["estimator"].unique()[0],
+        if subplot_by not in ("auto", None) and subplot_by not in columns_to_groupby:
+            raise ValueError(
+                f"The column {subplot_by!r} is not available for subplotting. "
+                "You can use the following values to create subplots: "
+                f"{', '.join(columns_to_groupby + ['auto', 'None'])}"
+            )
+
+        if subplot_by == "auto":
+            subplot_by = (
+                "estimator"
+                if "comparison" in self.report_type
+                and (
+                    "label" in columns_to_groupby
+                    or "output" in columns_to_groupby
+                    or not has_same_features
+                )
+                else None
+            )
+
+        remaining = [col for col in columns_to_groupby if col != subplot_by]
+        if "split" in remaining:
+            frame = self._aggregate_over_split(frame=frame)
+            remaining.remove("split")
+            aggregate_info = "averaged over splits,"
+        else:
+            aggregate_info = ""
+        hue = remaining[0] if remaining else None
+        col = subplot_by
+
+        if not has_same_features and hue == "estimator":
+            raise ValueError(
+                "The estimators have different features and should be plotted on "
+                "different axis using `subplot_by='estimator'`."
+            )
+
+        if hue is None:
+            stripplot_kwargs.pop("palette", None)
+            # we don't need the palette and we are at risk of raising an error or
+            # deprecation warning if passing palette without a hue
+
+        self._categorical_plot(
+            frame=frame,
+            hue=hue,
+            col=col,
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
+            sharey=has_same_features,
         )
+
+        title = f"Permutation importance{aggregate_info}"
+        if subplot_by is not None:
+            title += f" by {subplot_by}"
+        data_source = frame["data_source"].unique()[0]
+        estimator_info = (
+            ""
+            if "comparison" in self.report_type
+            else f" of {self.importances['estimator'].unique()[0]}"
+        )
+        self.figure_.suptitle(
+            f"Permutation importance{estimator_info}\n"
+            f"{aggregate_info} on {data_source} set"
+        )
+
+    @staticmethod
+    def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
+        """Get the available columns from which to group by."""
+        columns_to_groupby = list[str]()
+        if "estimator" in frame.columns and frame["estimator"].nunique() > 1:
+            columns_to_groupby.append("estimator")
+        if "label" in frame.columns and frame["label"].nunique() > 1:
+            columns_to_groupby.append("label")
+        if "output" in frame.columns and frame["output"].nunique() > 1:
+            columns_to_groupby.append("output")
+        if "split" in frame.columns and frame["split"].nunique() > 1:
+            columns_to_groupby.append("split")
+        return columns_to_groupby
 
     @staticmethod
     def _aggregate_over_split(*, frame: pd.DataFrame) -> pd.DataFrame:
@@ -282,55 +348,53 @@ class PermutationImportanceDisplay(DisplayMixin):
             .reset_index()
         )
 
-    def _plot_single_estimator(
+    @staticmethod
+    def _has_same_features(*, frame: pd.DataFrame) -> bool:
+        """Check if the features are the same across all estimators."""
+        grouped = {
+            name: group["feature"].sort_values().tolist()
+            for name, group in frame.groupby("estimator", sort=False)
+        }
+        _, reference_features = grouped.popitem()
+        for group_features in grouped.values():
+            if group_features != reference_features:
+                return False
+        return True
+
+    def _categorical_plot(
         self,
         *,
-        subplot_by: str | None,
         frame: pd.DataFrame,
-        estimator_name: str,
+        hue: str | None,
+        col: str | None,
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
+        sharey: bool,
     ) -> None:
-        """Plot the permutation importance for an `EstimatorReport`."""
-        aggregate_title = ""
-        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-        if subplot_by == "auto" or subplot_by is None:
-            if "split" in columns_to_groupby:
-                frame = self._aggregate_over_split(frame=frame)
-                columns_to_groupby.remove("split")
-                aggregate_title = " averaged over splits"
+        """Plot importances with strip + box overlays.
 
-            if subplot_by == "auto":
-                col = columns_to_groupby[0] if columns_to_groupby else None
-                hue = None
-            else:  # subplot_by is None
-                col = None
-                hue = columns_to_groupby[0] if columns_to_groupby else None
+        Parameters
+        ----------
+        frame : pd.DataFrame
+            Dataframe containing permutation importances to display.
 
-        else:
-            if subplot_by not in columns_to_groupby:
-                raise ValueError(
-                    f"The column {subplot_by!r} is not available for subplotting. "
-                    "You can use the following values to create subplots: "
-                    f"{', '.join(columns_to_groupby + ['auto', 'None'])}"
-                )
+        hue : str or None
+            Column used to group values with colors.
 
-            remaining = set(columns_to_groupby) - {subplot_by}
-            if "split" in remaining:
-                frame = self._aggregate_over_split(frame=frame)
-                remaining.remove("split")
-                aggregate_title = " averaged over splits"
+        col : str or None
+            Column used to create subplot columns.
 
-            col = subplot_by
-            hue = next(iter(remaining), None)
+        boxplot_kwargs : dict
+            Keyword arguments forwarded to :func:`seaborn.boxplot`.
 
-        if hue is None:
-            # we don't need the palette and we are at risk of raising an error or
-            # deprecation warning if passing palette without a hue
-            stripplot_kwargs.pop("palette", None)
-        else:
-            boxplot_kwargs.setdefault("palette", "tab10")
+        stripplot_kwargs : dict
+            Keyword arguments forwarded to :func:`seaborn.stripplot`.
 
+        sharey : bool
+            Whether feature axes are shared across subplot columns.
+        """
+        # Ensure seaborn receives a clean, unique index when concatenating groups.
+        frame = frame.reset_index(drop=True)
         self.facet_ = sns.catplot(
             data=frame,
             x="value",
@@ -340,6 +404,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             kind="strip",
             dodge=True,
             sharex=False,
+            sharey=sharey,
             **stripplot_kwargs,
         ).map_dataframe(
             sns.boxplot,
@@ -350,25 +415,26 @@ class PermutationImportanceDisplay(DisplayMixin):
             **boxplot_kwargs,
         )
         add_background_features = hue is not None
-
         metric_name = frame["metric"].unique()[0]
         self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
-        for row_axes in self.facet_.axes:
-            for ax in row_axes:
-                _decorate_matplotlib_axis(
-                    ax=ax,
-                    add_background_features=add_background_features,
-                    n_features=frame["feature"].nunique(),
-                    xlabel=f"Decrease in {metric_name}",
-                    ylabel="",
-                )
+        n_features = (
+            [frame["feature"].nunique()]
+            if col is None
+            else [
+                frame[frame[col] == col_value]["feature"].nunique()
+                for col_value in frame[col].unique()
+            ]
+        )
+        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
+            _decorate_matplotlib_axis(
+                ax=ax,
+                add_background_features=add_background_features,
+                n_features=n_feature,
+                xlabel=f"Decrease in {metric_name}",
+                ylabel="",
+            )
         if len(self.ax_.flatten()) == 1:
             self.ax_ = self.ax_.flatten()[0]
-        data_source = frame["data_source"].unique()[0]
-        self.figure_.suptitle(
-            f"Permutation importance{aggregate_title}\n"
-            f"of {estimator_name} on {data_source} set"
-        )
 
     def frame(
         self,
@@ -398,13 +464,28 @@ class PermutationImportanceDisplay(DisplayMixin):
         elif self.report_type == "cross-validation":
             columns_to_drop = ["estimator"]
             group_by = ["data_source", "metric", "split", "feature"]
-        else:
-            raise TypeError(f"Unexpected report type: {self.report_type!r}")
+        elif self.report_type == "comparison-estimator":
+            columns_to_drop = ["split"]
+            group_by = ["estimator", "data_source", "metric", "feature"]
+        else:  # comparison-cross-validation
+            columns_to_drop = []
+            group_by = ["estimator", "data_source", "metric", "split", "feature"]
 
         frame = self.importances.copy()
         if metric is not None:
+            if isinstance(metric, str):
+                metric = [metric]
+            available_metrics = self.importances["metric"].unique()
+            for m in metric:
+                if m not in available_metrics:
+                    raise ValueError(
+                        f"The metric {m!r} is not available. Please select metrics "
+                        f"from the following list: {', '.join(available_metrics)}. "
+                        "Otherwise, use the `metric` parameter of the "
+                        "`.permutation_importance()` method to specify the metrics to "
+                        "use for computing the importances."
+                    )
             frame = frame.query("metric in @metric")
-
         if frame["label"].isna().all():
             # regression problem or averaged classification metric
             columns_to_drop.append("label")

@@ -1,30 +1,6 @@
-import numpy as np
-import pandas as pd
 import pytest
 
 from skore import PermutationImportanceDisplay
-
-
-@pytest.mark.parametrize("method", ["frame", "plot"])
-def test_invalid_report_type(pyplot, method):
-    importances = pd.DataFrame(
-        {
-            "estimator": ["estimator"],
-            "data_source": ["test"],
-            "metric": ["r2"],
-            "split": [np.nan],
-            "feature": ["feature1"],
-            "label": [np.nan],
-            "output": [np.nan],
-            "repetition": [0],
-            "value": [1.0],
-        }
-    )
-    display = PermutationImportanceDisplay(
-        importances=importances, report_type="invalid-type"
-    )
-    with pytest.raises(TypeError, match="Unexpected report type: 'invalid-type'"):
-        getattr(display, method)()
 
 
 @pytest.mark.parametrize(
@@ -32,6 +8,8 @@ def test_invalid_report_type(pyplot, method):
     [
         "estimator_reports",
         "cross_validation_reports",
+        "comparison_estimator_reports",
+        "comparison_cross_validation_reports",
     ],
 )
 @pytest.mark.parametrize(
@@ -86,6 +64,8 @@ class TestPermutationImportanceDisplay:
         expected = {"data_source", "metric", "feature", "value_mean", "value_std"}
         if "cross_validation" in fixture_prefix:
             expected.add("split")
+        if "comparison" in fixture_prefix:
+            expected.add("estimator")
         assert set(frame.columns) == expected
 
     def test_plot_structure(self, pyplot, fixture_prefix, task, request):
@@ -103,8 +83,9 @@ class TestPermutationImportanceDisplay:
         figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         title = figure.get_suptitle()
         assert "Permutation importance" in title
-        estimator_name = display.importances["estimator"].iloc[0]
-        assert estimator_name in title
+        if "comparison" not in fixture_prefix:
+            estimator_name = display.importances["estimator"].iloc[0]
+            assert estimator_name in title
         if "cross_validation" in fixture_prefix:
             assert "averaged over splits" in title
         else:
@@ -139,3 +120,13 @@ class TestPermutationImportanceDisplay:
         frame = display.frame(aggregate=aggregate)
         for col in expected_value_columns:
             assert col in frame.columns
+
+    def test_unavailable_metric(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+
+        err_msg = "The metric 'invalid-metric' is not available."
+        with pytest.raises(ValueError, match=err_msg):
+            display.frame(metric="invalid-metric")
