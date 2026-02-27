@@ -25,14 +25,14 @@ def test_report_type_invalid_report() -> None:
         report_type(object())
 
 
-def test_project_put_requires_string_key(tmp_path, regression) -> None:
-    project = Project("<project>", tracking_uri=f"sqlite:///{tmp_path}/mlflow.db")
+def test_project_put_requires_string_key(reg_report) -> None:
+    project = Project("<project>")
     with pytest.raises(TypeError, match="Key must be a string"):
-        project.put(1, regression)
+        project.put(1, reg_report)
 
 
-def test_project_put_requires_supported_report_type(tmp_path) -> None:
-    project = Project("<project>", tracking_uri=f"sqlite:///{tmp_path}/mlflow.db")
+def test_project_put_requires_supported_report_type() -> None:
+    project = Project("<project>")
     with pytest.raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
         project.put("<key>", object())
 
@@ -107,13 +107,17 @@ def test_switch_mpl_backend_falls_back_when_restore_fails(monkeypatch) -> None:
 
 class TestProject:
     CACHE_SENTINEL = ("__cache_sentinel__",)
+    CLF_ARTIFACTS = [
+        "confusion_matrix.png",
+        "metrics_details/confusion_matrix.csv",
+        "metrics_details/precision_recall.csv",
+        "metrics_details/roc.csv",
+        "precision_recall.png",
+        "roc.png",
+    ]
 
-    @staticmethod
-    def tracking_uri(tmp_path):
-        return f"sqlite:///{tmp_path}/mlflow.db"
-
-    def test_init(self, tmp_path):
-        tracking_uri = self.tracking_uri(tmp_path)
+    def test_init_with_explicit_tracking_uri(self, tmp_path):
+        tracking_uri = f"sqlite:///{tmp_path}/custom-mlflow.db"
 
         project = Project("<project>", tracking_uri=tracking_uri)
 
@@ -123,113 +127,129 @@ class TestProject:
             f"Project(mode='mlflow', name='<project>', tracking_uri='{tracking_uri}')"
         )
 
-    def test_put(self, tmp_path, regression):
-        mlflow.set_tracking_uri(self.tracking_uri(tmp_path))
+    @pytest.mark.parametrize(
+        ("report_fixture", "expected_ml_task", "expected_metric", "expected_artifacts"),
+        [
+            (
+                "reg_report",
+                "regression",
+                "rmse",
+                ["metrics_details/prediction_error.csv", "prediction_error.png"],
+            ),
+            (
+                "mreg_report",
+                "multioutput-regression",
+                "rmse",
+                ["r2.json", "rmse.json"],
+            ),
+            ("clf_report", "binary-classification", "roc_auc", CLF_ARTIFACTS),
+            ("mclf_report", "multiclass-classification", "roc_auc", CLF_ARTIFACTS),
+        ],
+    )
+    def test_put(
+        self,
+        request,
+        report_fixture,
+        expected_ml_task,
+        expected_metric,
+        expected_artifacts,
+    ):
+        report = request.getfixturevalue(report_fixture)
         project = Project("<project>")
-        project.put("<key>", regression)
+        project.put("<key>", report)
 
-        summary = project.summarize()
-        assert len(summary) == 1
-        assert summary[0]["id"]
-        assert summary[0]["key"] == "<key>"
-        assert summary[0]["learner"] == "Ridge"
-        assert summary[0]["ml_task"] == "regression"
-        assert summary[0]["report_type"] == "estimator"
-        assert summary[0]["dataset"] is not None
-        assert summary[0]["rmse"] is not None
-        assert summary[0]["fit_time"] is not None
+        (metadata,) = project.summarize()
+        assert metadata["report_type"] == "estimator"
+        assert metadata["ml_task"] == expected_ml_task
+        assert metadata["learner"] == report.estimator_name_
+        assert metadata["dataset"]
+        assert metadata[expected_metric] is not None
+        assert metadata["fit_time"] is not None
 
-        run = mlflow.get_run(summary[0]["id"])
-        assert "random_state" in run.data.params
-        assert run.data.params["random_state"] == "42"
-        assert run.data.metrics["rmse"] == pytest.approx(summary[0]["rmse"])
-        assert "fit_time" in run.data.metrics
+        run = mlflow.get_run(metadata["id"])
+        assert run.info.run_name == "<key>"
 
         report_dir = Path(
             mlflow.artifacts.download_artifacts(
-                run_id=summary[0]["id"],
+                run_id=run.info.run_id,
                 tracking_uri=project.tracking_uri,
             )
         )
         assert (report_dir / "report.pkl").exists()
         assert (report_dir / "all_metrics.csv").exists()
-        assert (report_dir / "metrics_details" / "prediction_error.csv").exists()
-        assert (report_dir / "prediction_error.png").exists()
         assert (report_dir / "data.analyze.html").exists()
+        for artifact in expected_artifacts:
+            assert (report_dir / artifact).exists()
 
-    def test_get(self, tmp_path, regression):
-        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
-        project.put("<key>", regression)
+    def test_get(self, reg_report):
+        project = Project("<project>")
+        project.put("<key>", reg_report)
 
         summary = project.summarize()
         report = project.get(summary[0]["id"])
-        predictions = report.estimator_.predict(regression.X_test)
-        expected_predictions = regression.estimator_.predict(regression.X_test)
+        predictions = report.estimator_.predict(reg_report.X_test)
+        expected_predictions = reg_report.estimator_.predict(reg_report.X_test)
 
-        assert len(predictions) == len(regression.X_test)
+        assert len(predictions) == len(reg_report.X_test)
         assert predictions == pytest.approx(expected_predictions)
 
-    def test_put_cross_validation(self, tmp_path, regression_cv):
-        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
-        project.put("<key>", regression_cv)
+    def test_put_cross_validation(self, cv_mclf_report):
+        project = Project("<project>")
+        project.put("<key>", cv_mclf_report)
 
-        summary = project.summarize()
-        assert len(summary) == 1
-        assert summary[0]["report_type"] == "cross-validation"
-        assert summary[0]["ml_task"] == "multiclass-classification"
-        assert summary[0]["roc_auc_mean"] is not None
-        assert summary[0]["fit_time_mean"] is not None
+        (metadata,) = project.summarize()
+        assert metadata["report_type"] == "cross-validation"
+        assert metadata["ml_task"] == "multiclass-classification"
+        assert metadata["dataset"]
+        assert metadata["roc_auc_mean"] is not None
+        assert metadata["fit_time_mean"] is not None
 
-        run = mlflow.get_run(summary[0]["id"])
-        assert run.data.metrics["roc_auc"] == pytest.approx(summary[0]["roc_auc_mean"])
+        run = mlflow.get_run(metadata["id"])
+        assert run.data.metrics["roc_auc"] == pytest.approx(metadata["roc_auc_mean"])
         assert "random_state" in run.data.params
         assert run.data.params["random_state"] == "42"
 
         report_dir = Path(
             mlflow.artifacts.download_artifacts(
-                run_id=summary[0]["id"],
+                run_id=metadata["id"],
                 tracking_uri=project.tracking_uri,
             )
         )
         assert (report_dir / "report.pkl").exists()
         assert (report_dir / "all_metrics.csv").exists()
-        assert (report_dir / "metrics_details" / "confusion_matrix.csv").exists()
-        assert (report_dir / "confusion_matrix.png").exists()
-        assert (report_dir / "metrics_details" / "roc.csv").exists()
-        assert (report_dir / "roc.png").exists()
-        assert (report_dir / "metrics_details" / "precision_recall.csv").exists()
-        assert (report_dir / "precision_recall.png").exists()
-        assert (report_dir / "timings.csv").exists()
+        assert (report_dir / "data.analyze.html").exists()
+        for artifact in self.CLF_ARTIFACTS:
+            assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
 
-    def test_put_pickles_estimator_without_cache(self, tmp_path, regression):
-        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
-        original_cache = regression._cache
-        regression._cache[self.CACHE_SENTINEL] = "present"
+    def test_put_pickles_estimator_without_cache(self, reg_report):
+        project = Project("<project>")
+        original_cache = reg_report._cache
+        reg_report._cache[self.CACHE_SENTINEL] = "present"
 
-        project.put("<key>", regression)
+        project.put("<key>", reg_report)
 
-        assert regression._cache is original_cache
-        assert regression._cache[self.CACHE_SENTINEL] == "present"
+        assert reg_report._cache is original_cache
+        assert reg_report._cache[self.CACHE_SENTINEL] == "present"
 
         summary = project.summarize()
         restored = project.get(summary[0]["id"])
         assert self.CACHE_SENTINEL not in restored._cache
 
-    def test_put_pickles_cv_without_cache(self, tmp_path, regression_cv):
-        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
-        root_cache = regression_cv._cache
-        split_cache = regression_cv.estimator_reports_[0]._cache
-        regression_cv._cache[self.CACHE_SENTINEL] = "root"
-        regression_cv.estimator_reports_[0]._cache[self.CACHE_SENTINEL] = "split"
+    def test_put_pickles_cv_without_cache(self, cv_reg_report):
+        project = Project("<project>")
+        root_cache = cv_reg_report._cache
+        split_cache = cv_reg_report.estimator_reports_[0]._cache
+        cv_reg_report._cache[self.CACHE_SENTINEL] = "root"
+        cv_reg_report.estimator_reports_[0]._cache[self.CACHE_SENTINEL] = "split"
 
-        project.put("<key>", regression_cv)
+        project.put("<key>", cv_reg_report)
 
-        assert regression_cv._cache is root_cache
-        assert regression_cv.estimator_reports_[0]._cache is split_cache
-        assert regression_cv._cache[self.CACHE_SENTINEL] == "root"
+        assert cv_reg_report._cache is root_cache
+        assert cv_reg_report.estimator_reports_[0]._cache is split_cache
+        assert cv_reg_report._cache[self.CACHE_SENTINEL] == "root"
         assert (
-            regression_cv.estimator_reports_[0]._cache[self.CACHE_SENTINEL] == "split"
+            cv_reg_report.estimator_reports_[0]._cache[self.CACHE_SENTINEL] == "split"
         )
 
         summary = project.summarize()
@@ -237,14 +257,14 @@ class TestProject:
         assert self.CACHE_SENTINEL not in restored._cache
         assert self.CACHE_SENTINEL not in restored.estimator_reports_[0]._cache
 
-    def test_get_unknown_id(self, tmp_path):
-        project = Project("<project>", tracking_uri=self.tracking_uri(tmp_path))
+    def test_get_unknown_id_with_explicit_tracking_uri(self, tmp_path):
+        tracking_uri = f"sqlite:///{tmp_path}/missing-id.db"
+        project = Project("<project>", tracking_uri=tracking_uri)
 
         with pytest.raises(KeyError):
             project.get("missing-run-id")
 
-    def test_delete(self, tmp_path):
-        tracking_uri = self.tracking_uri(tmp_path)
-        project = Project("project", tracking_uri=tracking_uri)
+    def test_delete(self):
+        project = Project("project")
         with pytest.raises(NotImplementedError):
             Project.delete(name=project.name)

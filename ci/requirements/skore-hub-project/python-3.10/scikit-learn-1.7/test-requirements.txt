@@ -2,8 +2,6 @@ annotated-types==0.7.0
     # via pydantic
 anyio==4.12.1
     # via httpx
-anywidget==0.9.21
-    # via skore
 asttokens==3.0.1
     # via stack-data
 blake3==1.0.8
@@ -62,18 +60,15 @@ idna==3.11
 iniconfig==2.3.0
     # via pytest
 ipython==8.38.0
-    # via
-    #   ipywidgets
-    #   skore
+    # via ipywidgets
 ipywidgets==8.1.8
-    # via
-    #   anywidget
-    #   rich
-    #   skore
+    # via rich
 jedi==0.19.2
     # via ipython
 jinja2==3.1.6
-    # via skrub
+    # via
+    #   skore
+    #   skrub
 joblib==1.5.3
     # via
     #   skore-hub-project (skore-hub-project/pyproject.toml)
@@ -148,8 +143,6 @@ pre-commit==4.5.1
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 prompt-toolkit==3.0.52
     # via ipython
-psygnal==0.15.1
-    # via anywidget
 ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.3
@@ -216,7 +209,7 @@ seaborn==0.13.2
     # via skore
 six==1.17.0
     # via python-dateutil
-skore==0.12.0
+skore==0.13.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 skore-local-project==0.0.5
     # via skore
@@ -240,7 +233,6 @@ types-pytz==2025.2.0.20251108
 typing-extensions==4.15.0
     # via
     #   anyio
-    #   anywidget
     #   blake3
     #   exceptiongroup
     #   ipython

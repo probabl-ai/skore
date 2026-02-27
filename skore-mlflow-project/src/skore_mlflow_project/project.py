@@ -147,23 +147,49 @@ class Project:
 
         with (
             disable_discrete_autologging(["sklearn"]),
-            mlflow.start_run(run_name=key),
+            mlflow.start_run(run_name=key, experiment_id=self.experiment_id),
         ):
             mlflow.set_tags(
                 {
+                    "skore_status": "started",
                     "skore_version": version("skore"),
                     "report_type": report_type(report),
                     "ml_task": report.ml_task,
                     "learner": report.estimator_name_,
                 }
             )
-            _log_iter(iterator)
+            self._log_iter(iterator)
 
             with TemporaryDirectory() as tmp_dir:
                 pickle_path = Path(tmp_dir) / "report.pkl"
                 with _cache_cleared_for_pickle(report):
                     joblib.dump(report, pickle_path)
                 mlflow.log_artifact(local_path=str(pickle_path))
+
+            mlflow.set_tag("skore_status", "completed")
+
+    def _log_iter(self, iterator: Iterable[NestedLogItem]) -> None:
+        for obj in iterator:
+            if isinstance(obj, Tag):
+                mlflow.set_tag(obj.key, obj.value)
+            elif isinstance(obj, Params):
+                mlflow.log_params(obj.params)
+            elif isinstance(obj, Metric):
+                mlflow.log_metric(obj.name.replace(".", "_"), obj.value)
+            elif isinstance(obj, Model):
+                _log_model(obj.model, input_example=obj.input_example)
+            elif isinstance(obj, Artifact):
+                _log_artifact(obj)
+            elif isinstance(obj, Dataset):
+                mlflow.log_input(obj.dataset, context=obj.context)
+            elif isinstance(obj, tuple):
+                subrun_name, sub_iter = obj
+                with mlflow.start_run(
+                    nested=True, run_name=subrun_name, experiment_id=self.experiment_id
+                ):
+                    self._log_iter(sub_iter)
+            else:
+                raise TypeError(type(obj))
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its MLflow run id."""
@@ -186,17 +212,46 @@ class Project:
                 experiment_ids=[self.experiment_id],
                 output_format="list",
                 order_by=["attributes.start_time ASC"],
-                filter_string='tags.skore_version != ""',
+                filter_string='tags.skore_status = "completed"',
             ),
         )
 
-        return [self._run_to_metadata(run) for run in runs]
+        metadatas = []
+        for run in runs:
+            try:
+                metadatas.append(self._run_to_metadata(run))
+            except KeyError:
+                continue
+
+        return metadatas
 
     @staticmethod
     def _run_to_metadata(run: MLFlowRun) -> Metadata:
         tags = run.data.tags
         metrics = run.data.metrics
         report_type = tags["report_type"]
+
+        if report_type == "estimator":
+            inputs = sorted(run.inputs.dataset_inputs, key=_dataset_context_tag)
+            digests = [inp.dataset.digest for inp in inputs]
+            metrics = {
+                "rmse": run.data.metrics.get("rmse"),
+                "log_loss": run.data.metrics.get("log_loss"),
+                "roc_auc": run.data.metrics.get("roc_auc"),
+                "fit_time": metrics["fit_time"],
+                "predict_time": metrics["predict_time"],
+            }
+        elif report_type == "cross-validation":
+            digests = [run.inputs.dataset_inputs[0].dataset.digest]
+            metrics = {
+                "rmse_mean": run.data.metrics.get("rmse"),
+                "log_loss_mean": run.data.metrics.get("log_loss"),
+                "roc_auc_mean": run.data.metrics.get("roc_auc"),
+                "fit_time_mean": metrics["fit_time"],
+                "predict_time_mean": metrics["predict_time"],
+            }
+        else:
+            raise ValueError(f"Unsupported report type: {report_type}")
 
         metadata = {
             "id": run.info.run_id,
@@ -205,7 +260,7 @@ class Project:
             "report_type": report_type,
             "learner": tags["learner"],
             "ml_task": tags["ml_task"],
-            "dataset": "",  # TODO
+            "dataset": "-".join(digests),
             "rmse": None,
             "log_loss": None,
             "roc_auc": None,
@@ -217,25 +272,6 @@ class Project:
             "fit_time_mean": None,
             "predict_time_mean": None,
         }
-
-        if report_type == "estimator":
-            metrics = {
-                "rmse": run.data.metrics.get("rmse"),
-                "log_loss": run.data.metrics.get("log_loss"),
-                "roc_auc": run.data.metrics.get("roc_auc"),
-                "fit_time": metrics["fit_time"],
-                "predict_time": metrics["predict_time"],
-            }
-        elif report_type == "cross-validation":
-            metrics = {
-                "rmse_mean": run.data.metrics.get("rmse"),
-                "log_loss_mean": run.data.metrics.get("log_loss"),
-                "roc_auc_mean": run.data.metrics.get("roc_auc"),
-                "fit_time_mean": metrics["fit_time"],
-                "predict_time_mean": metrics["predict_time"],
-            }
-        else:
-            raise ValueError(f"Unsupported report type: {report_type}")
         return cast(Metadata, {**metadata, **metrics})
 
     @staticmethod
@@ -251,30 +287,6 @@ class Project:
 
 
 ## Helpers for logging in MLFlow:
-
-
-def _log_iter(iterator: Iterable[NestedLogItem]) -> None:
-    for obj in iterator:
-        if obj is None:
-            continue
-        elif isinstance(obj, tuple):
-            subrun_name, sub_iter = obj
-            with mlflow.start_run(nested=True, run_name=subrun_name):
-                _log_iter(sub_iter)
-        elif isinstance(obj, Tag):
-            mlflow.set_tag(obj.key, obj.value)
-        elif isinstance(obj, Params):
-            mlflow.log_params(obj.params)
-        elif isinstance(obj, Metric):
-            mlflow.log_metric(obj.name.replace(".", "_"), obj.value)
-        elif isinstance(obj, Model):
-            _log_model(obj.model, input_example=obj.input_example)
-        elif isinstance(obj, Artifact):
-            _log_artifact(obj)
-        elif isinstance(obj, Dataset):
-            mlflow.log_input(obj.dataset, context=obj.context)
-        else:
-            raise TypeError(type(obj))
 
 
 def _log_model(model: BaseEstimator, *, input_example: Any) -> None:
@@ -390,3 +402,8 @@ HTML_UTF8_TEMPLATE = """
 
 def _wrap_html(html: str) -> str:
     return HTML_UTF8_TEMPLATE.format(html=html)
+
+
+def _dataset_context_tag(dataset: Any) -> str:
+    (tag,) = [tag for tag in dataset.tags if tag.key == "mlflow.data.context"]
+    return cast(str, tag.value)

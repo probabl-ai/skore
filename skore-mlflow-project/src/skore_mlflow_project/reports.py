@@ -5,6 +5,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
+from numbers import Number
 from typing import Any, TypeAlias
 
 import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ from numpy.typing import NDArray
 from sklearn.base import BaseEstimator
 
 from ._matplotlib import switch_mpl_backend
-from .protocol import CrossValidationReport, DatasetLike, EstimatorReport
+from .protocol import CrossValidationReport, EstimatorReport
 
 ArrayLike: TypeAlias = pd.DataFrame | NDArray[np.generic]
 
@@ -99,7 +100,7 @@ PLOTS = {
 }
 
 
-LogItem: TypeAlias = Params | Tag | Model | Artifact | Metric | Dataset | None
+LogItem: TypeAlias = Params | Tag | Model | Artifact | Metric | Dataset
 NestedLogItem: TypeAlias = LogItem | tuple[str, Iterable[LogItem]]
 
 
@@ -159,9 +160,10 @@ def iter_estimator_metrics(
     for name, kwargs in METRICS[ml_task].items():
         method = getattr(report_any.metrics, name)
         yield Metric(name, method(**kwargs))
-        if not kwargs or ml_task == "regression":
+        artifact_payload = method()
+        if isinstance(artifact_payload, Number):
             continue
-        yield Artifact(name, method())
+        yield Artifact(name, artifact_payload)
 
     for name in PLOTS[ml_task]:
         method = getattr(report_any.metrics, name)
@@ -192,8 +194,7 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
 
     yield Artifact("data.analyze", _data_analyze_html(report))
 
-    yield _dataset_from_any("X", report.X)
-    yield _dataset_from_any("y", report.y)
+    yield _dataset_from_any(report.X, report.y)
 
     for split_id, estimator_report in enumerate(report.estimator_reports_):
         yield (
@@ -203,13 +204,14 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
             ),
         )
 
-    yield Params(
-        {
-            "cv_splitter.class": report.splitter.__class__.__name__,
-            # FIXME? try/except here:
-            "cv_splitter.n_splits": report.splitter.get_n_splits(),
-        }
-    )
+    yield Params({"cv_splitter.class": report.splitter.__class__.__name__})
+
+    try:
+        n_splits = report.splitter.get_n_splits()
+    except AttributeError:
+        pass
+    else:
+        yield Params({"cv_splitter.n_splits": n_splits})
 
 
 def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
@@ -222,10 +224,8 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
 
     yield Artifact("data.analyze", _data_analyze_html(report))
 
-    yield _dataset_from_any("X_train", report.X_train, context="training")
-    yield _dataset_from_any("y_train", report.y_train, context="training")
-    yield _dataset_from_any("X_test", report.X_test, context="evaluation")
-    yield _dataset_from_any("y_test", report.y_test, context="evaluation")
+    yield _dataset_from_any(report.X_train, report.y_train, context="training")
+    yield _dataset_from_any(report.X_test, report.y_test, context="evaluation")
 
 
 def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
@@ -244,17 +244,31 @@ def _sample_input_example(X: ArrayLike, *, max_samples: int = 5) -> ArrayLike:
 
 
 def _dataset_from_any(
-    name: str, data: DatasetLike, *, context: str | None = None
-) -> Dataset | None:
-    if data is None:
-        return None
-    if isinstance(data, pd.DataFrame):
-        mlflow_dataset = mlflow.data.from_pandas(data, name=name)  # type: ignore[attr-defined]
-    elif isinstance(data, pd.Series):
-        series_name = data.name if data.name is not None else "Target"
-        mlflow_dataset = mlflow.data.from_pandas(  # type: ignore[attr-defined]
-            data.to_frame(name=series_name), name=name
+    X: pd.DataFrame | NDArray[np.generic],
+    y: pd.DataFrame | pd.Series | NDArray[np.generic] | dict[str, NDArray[np.generic]],
+    context: str | None = None,
+) -> Dataset:
+    if isinstance(X, np.ndarray):
+        return Dataset(
+            dataset=mlflow.data.from_numpy(X, targets=y),  # type: ignore[attr-defined]
+            context=context,
         )
+
+    assert isinstance(y, (pd.DataFrame, pd.Series))
+
+    if isinstance(y, pd.Series):
+        name = str(y.name) if y.name is not None else "target"
+        targets = name
+        y = pd.DataFrame({name: y})
+    elif len(y.columns) == 1:
+        (targets,) = y.columns
     else:
-        mlflow_dataset = mlflow.data.from_numpy(np.asarray(data), name=name)  # type: ignore[attr-defined]
+        # mlflow.data.from_pandas doesn't support multiple targets
+        # use mlflow.data.from_numpy instead
+        return _dataset_from_any(
+            X.to_numpy(), {c: y[c].to_numpy() for c in y.columns}, context=context
+        )
+
+    Xy = pd.concat([X, y], axis=1)
+    mlflow_dataset = mlflow.data.from_pandas(Xy, targets=targets)  # type: ignore[attr-defined]
     return Dataset(dataset=mlflow_dataset, context=context)
