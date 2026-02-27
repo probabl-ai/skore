@@ -11,8 +11,9 @@ def test_legend(pyplot, task, legend_prefix, request):
     figure, _ = request.getfixturevalue(
         f"comparison_cross_validation_reports_{task}_figure_axes"
     )
-    assert len(figure.legends) == 1
-    legend_texts = [t.get_text() for t in figure.legends[0].get_texts()]
+    legend = figure.axes[len(figure.axes) // 2].get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == 3
     assert legend_texts[0] == f"{legend_prefix} #0"
     assert legend_texts[1] == f"{legend_prefix} #1"
@@ -28,7 +29,8 @@ def test_legend_actual_vs_predicted(pyplot, task, legend_prefix, request):
     report = request.getfixturevalue(f"comparison_cross_validation_reports_{task}")
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+    legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == 3
     assert legend_texts[0] == f"{legend_prefix} #0"
     assert legend_texts[1] == f"{legend_prefix} #1"

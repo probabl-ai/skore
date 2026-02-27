@@ -10,8 +10,9 @@ def test_legend(pyplot, task, n_legend_entries, request):
     figure, _ = request.getfixturevalue(
         f"comparison_estimator_reports_{task}_figure_axes"
     )
-    assert len(figure.legends) == 1
-    legend_texts = [t.get_text() for t in figure.legends[0].get_texts()]
+    legend = figure.axes[len(figure.axes) // 2].get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == n_legend_entries
     if task == "multioutput_regression":
         assert legend_texts[0] == "Output #0"
@@ -28,7 +29,8 @@ def test_legend_actual_vs_predicted(pyplot, task, n_legend_entries, request):
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.metrics.prediction_error()
     display.plot(kind="actual_vs_predicted")
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+    legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == n_legend_entries
     if task == "multioutput_regression":
         assert legend_texts[0] == "Output #0"
@@ -93,7 +95,8 @@ def test_subplot_by_data_source(pyplot, task, request):
     else:
         display.plot(subplot_by="data_source")
         assert len(display.ax_) == 2
-        legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+        legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+        legend_texts = [t.get_text() for t in legend.get_texts()]
         assert len(legend_texts) == 3
         assert legend_texts[0] == "DummyRegressor_1"
         assert legend_texts[1] == "DummyRegressor_2"
@@ -106,8 +109,9 @@ def test_source_both(pyplot, task, request):
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.metrics.prediction_error(data_source="both")
     display.plot()
-    assert len(display.figure_.legends) == 1
-    legend_texts = [t.get_text() for t in display.figure_.legends[0].get_texts()]
+    legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+    assert legend is not None
+    legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == 3 if task == "regression" else 7
     assert legend_texts[-1] == "Perfect predictions"
     assert "train" in legend_texts
