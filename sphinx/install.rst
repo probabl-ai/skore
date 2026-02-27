@@ -25,6 +25,12 @@ Install
 
             pip install -U skore[hub]
 
+        *Alternatively*, if you wish to persist projects in MLflow, run:
+
+        .. code-block:: bash
+
+            pip install -U skore[mlflow]
+
         You can check Skore Lib's latest version on `PyPI <https://pypi.org/project/skore/>`_.
 
     .. tab-item:: Using conda
