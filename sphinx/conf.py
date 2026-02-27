@@ -96,21 +96,17 @@ html_js_files = [
     "js/gtm.js",
 ]
 
-# list of examples in explicit order
-subsections_order = [
-    "../examples/getting_started",
-    "../examples/use_cases",
-    "../examples/model_evaluation",
-    "../examples/technical_details",
-]
-
 # sphinx_gallery options
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "filename_pattern": "plot_",  # pattern to select examples; change this to only build some of the examples
-    "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections
-    # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
+    "filename_pattern": "plot_",
+    "subsection_order": [
+        "../examples/getting_started",
+        "../examples/use_cases",
+        "../examples/model_evaluation",
+        "../examples/technical_details",
+    ],
     "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
@@ -123,6 +119,18 @@ sphinx_gallery_conf = {
     # "reset_modules": (reset_mpl, "seaborn"),
     "abort_on_example_error": True,
 }
+
+# Build the HUB example conditionally, only when credentials are available:
+# - after each __commit__ on the `main` branch,
+# - after each __release__ (tag `skore/X.Y.Z`).
+if not (
+    os.environ.get("GITHUB_ACTIONS")
+    and os.environ.get("SPHINX_EXAMPLE_API_KEY")
+    and os.environ.get("SPHINX_EXAMPLE_WORKSPACE")
+    and os.environ.get("SPHINX_EXAMPLE_PROJECT")
+):
+    sphinx_gallery_conf["ignore_pattern"] = r"plot_skore_hub_project\.py"
+
 
 # intersphinx configuration
 intersphinx_mapping = {
