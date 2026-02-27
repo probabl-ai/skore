@@ -310,7 +310,7 @@ class PredictionErrorDisplay(DisplayMixin):
         w, h = self.figure_.get_size_inches()
         self.figure_.set_size_inches(w, h + 0.25 * len(labels))
         self.figure_.tight_layout()
-        
+
     def _get_plot_columns(
         self,
         subplot_by: Literal["auto", "estimator", "data_source", "split", "output"]
