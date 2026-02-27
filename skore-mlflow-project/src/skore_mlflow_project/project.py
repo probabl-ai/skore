@@ -151,6 +151,7 @@ class Project:
         ):
             mlflow.set_tags(
                 {
+                    "skore_status": "started",
                     "skore_version": version("skore"),
                     "report_type": report_type(report),
                     "ml_task": report.ml_task,
@@ -164,6 +165,8 @@ class Project:
                 with _cache_cleared_for_pickle(report):
                     joblib.dump(report, pickle_path)
                 mlflow.log_artifact(local_path=str(pickle_path))
+
+            mlflow.set_tag("skore_status", "completed")
 
     def _log_iter(self, iterator: Iterable[NestedLogItem]) -> None:
         for obj in iterator:
@@ -209,7 +212,7 @@ class Project:
                 experiment_ids=[self.experiment_id],
                 output_format="list",
                 order_by=["attributes.start_time ASC"],
-                filter_string='tags.skore_version != ""',
+                filter_string='tags.skore_status = "completed"',
             ),
         )
 
