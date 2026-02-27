@@ -13,13 +13,12 @@ extensions, themes, and gallery settings.
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import sys
 import os
-from sphinx_gallery.sorting import ExplicitOrder
-from pathlib import Path
+import pathlib
+import sys
 
 # Make it possible to load custom extensions from sphinxext directory
-sys.path.append(str(Path("sphinxext").resolve()))
+sys.path.append(str(pathlib.Path("sphinxext").resolve()))
 
 project = "skore"
 copyright = "2026, Probabl"
@@ -27,6 +26,11 @@ author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
 domain = os.environ["SPHINX_DOMAIN"]
+
+# Expose URLs to RST
+rst_epilog = f"""
+.. _example: {os.environ.get("SPHINX_EXAMPLE_PROJECT_URL", "https://example.com/missing")}
+"""
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -38,17 +42,16 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
+    "sphinx_autosummary_accessors",
+    "sphinx_copybutton",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
-    "sphinx_copybutton",
     "sphinx_tabs.tabs",
-    "sphinx_autosummary_accessors",
     # Custom extensions
     "generate_accessor_tables",
     "github_link",
     "matplotlib_skore_scraper",
     "report_help",
-    "environ",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 

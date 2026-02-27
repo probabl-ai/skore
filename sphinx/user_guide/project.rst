@@ -10,7 +10,7 @@ Storing data science artifacts
 is either local or remote, based on the value passed to the parameter `mode` at
 initialization. When `mode` is set to `hub`, the project is configured to communicate
 with `skore hub`. Refer to the documentation of :class:`Project` for the detailed API
-and take a look on the `example <.. environ:: SPHINX_EXAMPLE_PROJECT_URL>`_.
+and take a look on the `example <example_>`_.
 
 Once a project is created, store :class:`EstimatorReport` via the method
 :meth:`Project.put`.
