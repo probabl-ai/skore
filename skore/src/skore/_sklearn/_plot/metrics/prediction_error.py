@@ -301,16 +301,16 @@ class PredictionErrorDisplay(DisplayMixin):
             handles,
             labels,
             loc="upper center",
-            bbox_to_anchor=(0.5, -0.2),
+            bbox_to_anchor=(0.5, -0.3),
             ncol=1,
             frameon=True,
         )
         if len(self.ax_) == 1:
             self.ax_ = self.ax_[0]
         w, h = self.figure_.get_size_inches()
-        self.figure_.set_size_inches(w, h + 1.2)
+        self.figure_.set_size_inches(w, h + 0.25 * len(labels))
         self.figure_.tight_layout()
-
+        
     def _get_plot_columns(
         self,
         subplot_by: Literal["auto", "estimator", "data_source", "split", "output"]
