@@ -134,7 +134,6 @@ if not (
 ):
     sphinx_gallery_conf["ignore_pattern"] = r"plot_skore_hub_project\.py"
 
-
 # intersphinx configuration
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
