@@ -43,6 +43,7 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_tabs.tabs",
     "sphinx_autosummary_accessors",
+    "sphinx_issues",
     # Custom extensions
     "generate_accessor_tables",
     "github_link",
@@ -202,20 +203,18 @@ html_theme_options = {
 # template names.
 html_additional_pages = {"index": "index.html"}
 
-# Sphinx remove the sidebar from some pages
+# Remove the sidebar from some pages
 html_sidebars = {
     "index": [],
     "install": [],
     "contributing": [],
+    "changelog": [],
+    "release_process": [],
 }
 
 # Sphinx-Copybutton configuration
 copybutton_prompt_text = r">>> |\.\.\. |\$ "
 copybutton_prompt_is_regexp = True
 
-# -- Options for github link for what's new -----------------------------------
-
-# Config for sphinx_issues
-issues_uri = "https://github.com/probabl-ai/skore/issues/{issue}"
+# sphinx-issues config
 issues_github_path = "probabl-ai/skore"
-issues_user_uri = "https://github.com/{user}"
