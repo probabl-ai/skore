@@ -60,6 +60,8 @@ Then, you can install skore by using `pip`:
 pip install -U skore
 # If you wish to interact with Skore Hub as well
 pip install -U skore[hub]
+# If you wish to log projects to MLflow
+pip install -U skore[mlflow]
 ```
 
 #### With conda
