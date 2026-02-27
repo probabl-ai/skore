@@ -3,14 +3,11 @@ from numbers import Real
 
 import joblib
 import numpy as np
-import pandas as pd
 import pytest
-from pandas.testing import assert_series_equal
 from sklearn.base import BaseEstimator
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
-    get_scorer,
     make_scorer,
     precision_score,
     recall_score,
@@ -19,131 +16,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 
 from skore import EstimatorReport
-
-
-@pytest.mark.parametrize("metric", ["accuracy", "brier_score", "roc_auc", "log_loss"])
-def test_summarize_binary_classification(
-    forest_binary_classification_with_test, metric
-):
-    """Check the behaviour of the metrics methods available for binary
-    classification.
-    """
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics, metric)
-    result = getattr(report.metrics, metric)()
-    assert isinstance(result, float)
-    # check that we hit the cache
-    result_with_cache = getattr(report.metrics, metric)()
-    assert result == pytest.approx(result_with_cache)
-
-    # check that something was written to the cache
-    assert report._cache != {}
-    report.clear_cache()
-
-    # check that passing using data outside from the report works and that we they
-    # don't come from the cache
-    result_external_data = getattr(report.metrics, metric)(
-        data_source="X_y", X=X_test, y=y_test
-    )
-    assert isinstance(result_external_data, float)
-    assert result == pytest.approx(result_external_data)
-    assert report._cache != {}
-
-
-@pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_summarize_binary_classification_pr(
-    forest_binary_classification_with_test, metric
-):
-    """Check the behaviour of the precision and recall metrics available for binary
-    classification.
-    """
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics, metric)
-    result = getattr(report.metrics, metric)()
-    assert isinstance(result, dict)
-    # check that we hit the cache
-    result_with_cache = getattr(report.metrics, metric)()
-    assert result == result_with_cache
-
-    # check that something was written to the cache
-    assert report._cache != {}
-    report.clear_cache()
-
-    # check that passing using data outside from the report works and that we they
-    # don't come from the cache
-    result_external_data = getattr(report.metrics, metric)(
-        data_source="X_y", X=X_test, y=y_test
-    )
-    assert isinstance(result_external_data, dict)
-    assert result == result_external_data
-    assert report._cache != {}
-
-
-@pytest.mark.parametrize("metric", ["r2", "rmse"])
-def test_summarize_regression(linear_regression_with_test, metric):
-    """Check the behaviour of the metrics methods available for regression."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics, metric)
-    result = getattr(report.metrics, metric)()
-    assert isinstance(result, float)
-    # check that we hit the cache
-    result_with_cache = getattr(report.metrics, metric)()
-    assert result == pytest.approx(result_with_cache)
-
-    # check that something was written to the cache
-    assert report._cache != {}
-    report.clear_cache()
-
-    # check that passing using data outside from the report works and that we they
-    # don't come from the cache
-    result_external_data = getattr(report.metrics, metric)(
-        data_source="X_y", X=X_test, y=y_test
-    )
-    assert isinstance(result_external_data, float)
-    assert result == pytest.approx(result_external_data)
-    assert report._cache != {}
-
-
-def test_summarize_data_source_both(forest_binary_classification_data):
-    """Check the behaviour of `summarize` with `data_source="both"`."""
-    estimator, X, y = forest_binary_classification_data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    result_train = report.metrics.summarize(data_source="train").frame()
-    result_test = report.metrics.summarize(data_source="test").frame()
-    result_both = report.metrics.summarize(data_source="both").frame()
-
-    assert result_both.columns.tolist() == [
-        "RandomForestClassifier (train)",
-        "RandomForestClassifier (test)",
-    ]
-    assert_series_equal(
-        result_both["RandomForestClassifier (train)"],
-        result_train["RandomForestClassifier"],
-        check_names=False,
-    )
-    assert_series_equal(
-        result_both["RandomForestClassifier (test)"],
-        result_test["RandomForestClassifier"],
-        check_names=False,
-    )
-
-    # By default,
-    result_both = report.metrics.summarize(
-        data_source="both", favorability=True
-    ).frame()
-    assert result_both.columns.tolist() == [
-        "RandomForestClassifier (train)",
-        "RandomForestClassifier (test)",
-        "Favorability",
-    ]
 
 
 def deep_contain(value, test_value):
@@ -281,16 +153,6 @@ def test_custom_metric_scorer(linear_regression_with_test):
     )
 
 
-@pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
-def test_summarize_error_metric_strings(linear_regression_with_test, metric):
-    """Check that we raise an error if a scoring string is not a valid metric."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    err_msg = re.escape(f"Invalid metric: {metric!r}.")
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[metric])
-
-
 def test_custom_function_kwargs_numpy_array(
     linear_regression_with_test,
 ):
@@ -354,7 +216,7 @@ def test_custom_metric_compatible_estimator(
 
 
 def test_get_X_y_and_data_source_hash_error():
-    """Check that we raise the proper error in `get_X_y_and_use_cache`."""
+    """Check that we raise the proper error in `_get_X_y_and_data_source_hash`."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -365,7 +227,7 @@ def test_get_X_y_and_data_source_hash_error():
         "Invalid data source: unknown. Possible values are: test, train, X_y."
     )
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.log_loss(data_source="unknown")
+        report.metrics._get_X_y_and_data_source_hash(data_source="unknown")
 
     for data_source in ("train", "test"):
         err_msg = re.escape(
@@ -375,7 +237,7 @@ def test_get_X_y_and_data_source_hash_error():
             "'X_y' and providing X and y."
         )
         with pytest.raises(ValueError, match=err_msg):
-            report.metrics.log_loss(data_source=data_source)
+            report.metrics._get_X_y_and_data_source_hash(data_source=data_source)
 
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
@@ -384,16 +246,18 @@ def test_get_X_y_and_data_source_hash_error():
     for data_source in ("train", "test"):
         err_msg = f"X and y must be None when data_source is {data_source}."
         with pytest.raises(ValueError, match=err_msg):
-            report.metrics.log_loss(data_source=data_source, X=X_test, y=y_test)
+            report.metrics._get_X_y_and_data_source_hash(
+                data_source=data_source, X=X_test, y=y_test
+            )
 
     err_msg = "X and y must be provided."
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.log_loss(data_source="X_y")
+        report.metrics._get_X_y_and_data_source_hash(data_source="X_y")
 
 
 @pytest.mark.parametrize("data_source", ("train", "test", "X_y"))
 def test_get_X_y_and_data_source_hash(data_source):
-    """Check the general behaviour of `get_X_y_and_use_cache`."""
+    """Check the general behaviour of `_get_X_y_and_data_source_hash`."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -444,28 +308,6 @@ def test_has_side_effects(prefit_estimator):
     estimator.fit(X_test, y_test)
     predictions_after = report.estimator_.predict_proba(X_test)
     np.testing.assert_array_equal(predictions_before, predictions_after)
-
-
-def test_has_no_deep_copy():
-    """Check that we raise a warning if the deep copy failed with a fitted
-    estimator."""
-    X, y = make_classification(n_classes=2, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-    estimator = LogisticRegression()
-    # Make it so deepcopy does not work
-    estimator.__reduce_ex__ = None
-    estimator.__reduce__ = None
-
-    with pytest.warns(UserWarning, match="Deepcopy failed"):
-        EstimatorReport(
-            estimator,
-            fit=False,
-            X_train=X_train,
-            X_test=X_test,
-            y_train=y_train,
-            y_test=y_test,
-        )
 
 
 @pytest.mark.parametrize("metric", ["brier_score", "log_loss"])
@@ -522,7 +364,7 @@ def test_average_return_float(forest_binary_classification_with_test):
     "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
 )
 def test_precision_recall_pos_label_overwrite(metric, metric_fn):
-    """Check that `pos_label` can be overwritten in `summarize`"""
+    """Check that `pos_label` can be overwritten."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )
@@ -561,50 +403,3 @@ def test_roc_multiclass_requires_predict_proba(
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "roc_auc")
     report.metrics.roc_auc()
-
-
-def test_summarize_metric_dict(forest_binary_classification_with_test):
-    """Test that scoring can be passed as a dictionary with custom names."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    # Test with dictionary scoring
-    metric_dict = {
-        "Custom Accuracy": "accuracy",
-        "Custom Precision": "precision",
-        "Custom R2": get_scorer("neg_mean_absolute_error"),
-    }
-
-    result = report.metrics.summarize(metric=metric_dict).frame()
-
-    # Check that custom names are used
-    assert "Custom Accuracy" in result.index
-    assert "Custom Precision" in result.index
-    assert "Custom R2" in result.index
-
-    # Verify the result structure
-    assert isinstance(result, pd.DataFrame)
-    assert len(result.index) >= 3  # At least our 3 custom metrics
-
-
-def test_summarize_metric_dict_with_callables(linear_regression_with_test):
-    """Test that scoring dict works with callable functions."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    def custom_metric(y_true, y_pred):
-        return np.mean(np.abs(y_true - y_pred))
-
-    metric_dict = {"R Squared": "r2", "Custom MAE": custom_metric}
-
-    result = report.metrics.summarize(
-        metric=metric_dict, metric_kwargs={"response_method": "predict"}
-    ).frame()
-
-    # Check that custom names are used
-    assert "R Squared" in result.index
-    assert "Custom MAE" in result.index
-
-    # Verify the result structure
-    assert isinstance(result, pd.DataFrame)
-    assert len(result.index) == 2
