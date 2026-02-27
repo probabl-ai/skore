@@ -104,7 +104,8 @@ class TestRocCurveDisplay:
             else {"color": "red"}
         )
 
-        display.set_style(relplot_kwargs=relplot_kwargs).plot()
+        display.set_style(relplot_kwargs=relplot_kwargs)
+        display.plot()
         ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
         assert ax.get_lines()[0].get_color() == "red"
 

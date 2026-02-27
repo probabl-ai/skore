@@ -1821,7 +1821,8 @@ class _MetricsAccessor(
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.roc()
-        >>> display.set_style(relplot_kwargs={"color": "tab:red"}).plot()
+        >>> display.set_style(relplot_kwargs={"color": "tab:red"})
+        >>> display.plot()
         """
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
@@ -1895,7 +1896,8 @@ class _MetricsAccessor(
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.precision_recall()
-        >>> display.set_style(relplot_kwargs={"color": "tab:red"}).plot()
+        >>> display.set_style(relplot_kwargs={"color": "tab:red"})
+        >>> display.plot()
         """
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
@@ -1979,7 +1981,8 @@ class _MetricsAccessor(
         >>> regressor = Ridge()
         >>> report = EstimatorReport(regressor, **split_data)
         >>> display = report.metrics.prediction_error()
-        >>> display.set_style(perfect_model_kwargs={"color": "tab:red"}).plot()
+        >>> display.set_style(perfect_model_kwargs={"color": "tab:red"})
+        >>> display.plot()
         """
         display_kwargs = {"subsample": subsample, "seed": seed}
         display = cast(

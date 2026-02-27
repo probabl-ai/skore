@@ -615,15 +615,14 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         Returns
         -------
-        self : object
-            The instance with a modified style.
+        None
 
         Raises
         ------
         ValueError
             If a style parameter is unknown.
         """
-        return super().set_style(
+        super().set_style(
             policy=policy,
             heatmap_kwargs=heatmap_kwargs or {},
             facet_grid_kwargs=facet_grid_kwargs or {},
