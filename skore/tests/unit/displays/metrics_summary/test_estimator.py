@@ -1,574 +1,321 @@
-import re
+"""Tests for MetricsSummaryDisplay.frame() method with bare DataFrames.
 
-import numpy as np
+These tests focus on testing the display/formatting logic of MetricsSummaryDisplay
+without depending on EstimatorReport or summarize().
+"""
+
 import pandas as pd
-import pytest
-from sklearn.base import clone
-from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import (
-    accuracy_score,
-    f1_score,
-    get_scorer,
-    make_scorer,
-    median_absolute_error,
-    precision_score,
-    r2_score,
-    recall_score,
-)
 
-from skore import EstimatorReport
+from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryDisplay
 
 
-def _normalize_metric_name(column):
-    """Helper to normalize the metric name present in a pandas index that could be
-    a multi-index or single-index."""
-    # if we have a multi-index, then the metric name is on level 0
-    s = column[0] if isinstance(column, tuple) else column
-    # Remove spaces and underscores and (s) suffix
-    s = s.lower().replace(" (s)", "")
-    return re.sub(r"[^a-zA-Z]", "", s)
-
-
-def _check_results_summarize(result, expected_metrics, expected_nb_stats):
-    assert isinstance(result, pd.DataFrame)
-    assert len(result.index) == expected_nb_stats
-
-    normalized_expected = {
-        _normalize_metric_name(metric) for metric in expected_metrics
-    }
-    for column in result.index:
-        normalized_column = _normalize_metric_name(column)
-        matches = [
-            metric for metric in normalized_expected if metric == normalized_column
-        ]
-        assert len(matches) == 1, (
-            f"No match found for column '{column}' in expected metrics: "
-            f" {expected_metrics}"
-        )
-
-
-@pytest.mark.parametrize("pos_label, nb_stats", [(None, 2), (1, 1)])
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
-def test_binary_classification(
-    forest_binary_classification_with_test,
-    svc_binary_classification_with_test,
-    pos_label,
-    nb_stats,
-    data_source,
-):
-    """Check the behaviour of the `MetricsSummaryDisplay` method with binary
-    classification. We test both with an SVC that does not support `predict_proba` and a
-    RandomForestClassifier that does.
+def test_frame_favorability_binary_classification():
     """
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(
-        pos_label=pos_label, data_source=data_source, **kwargs
-    ).frame()
-    assert "Favorability" not in result.columns
-    expected_metrics = (
-        "accuracy",
-        "precision",
-        "recall",
-        "roc_auc",
-        "brier_score",
-        "fit_time",
-        "predict_time",
-    )
-    # depending on `pos_label`, we report a stats for each class or not for
-    # precision and recall
-    expected_nb_stats = 2 * nb_stats + 5
-    _check_results_summarize(result, expected_metrics, expected_nb_stats)
-
-    # Repeat the same experiment where we the target labels are not [0, 1] but
-    # ["neg", "pos"]. We check that we don't get any error.
-    target_names = np.array(["neg", "pos"], dtype=object)
-    pos_label_name = target_names[pos_label] if pos_label is not None else pos_label
-    y_test = target_names[y_test]
-    estimator = clone(estimator).fit(X_test, y_test)
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(
-        pos_label=pos_label_name, data_source=data_source, **kwargs
-    ).frame()
-    expected_metrics = (
-        "accuracy",
-        "precision",
-        "recall",
-        "roc_auc",
-        "brier_score",
-        "fit_time",
-        "predict_time",
-    )
-    # depending on `pos_label`, we report a stats for each class or not for
-    # precision and recall
-    expected_nb_stats = 2 * nb_stats + 5
-    _check_results_summarize(result, expected_metrics, expected_nb_stats)
-
-    estimator, X_test, y_test = svc_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(
-        pos_label=pos_label, data_source=data_source, **kwargs
-    ).frame()
-    expected_metrics = (
-        "accuracy",
-        "precision",
-        "recall",
-        "roc_auc",
-        "fit_time",
-        "predict_time",
-    )
-    # depending on `pos_label`, we report a stats for each class or not for
-    # precision and recall
-    expected_nb_stats = 2 * nb_stats + 4
-    _check_results_summarize(result, expected_metrics, expected_nb_stats)
-
-
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
-def test_multiclass_classification(
-    forest_multiclass_classification_with_test,
-    svc_multiclass_classification_with_test,
-    data_source,
-):
-    """Check the behaviour of the `MetricsSummaryDisplay` method with multiclass
-    classification.
+    Test that favorability column is correctly displayed for binary classification.
     """
-    estimator, X_test, y_test = forest_multiclass_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
-    assert "Favorability" not in result.columns
-    expected_metrics = (
-        "accuracy",
-        "precision",
-        "recall",
-        "roc_auc",
-        "log_loss",
-        "fit_time",
-        "predict_time",
-    )
-    # since we are not averaging by default, we report 3 statistics for
-    # precision, recall and roc_auc
-    expected_nb_stats = 3 * 3 + 4
-    _check_results_summarize(result, expected_metrics, expected_nb_stats)
-
-    estimator, X_test, y_test = svc_multiclass_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
-    expected_metrics = ("accuracy", "precision", "recall", "fit_time", "predict_time")
-    # since we are not averaging by default, we report 3 statistics for
-    # precision and recall
-    expected_nb_stats = 3 * 2 + 3
-    _check_results_summarize(result, expected_metrics, expected_nb_stats)
-
-
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
-def test_regression(linear_regression_with_test, data_source):
-    """Check the behaviour of the `MetricsSummaryDisplay` method with regression."""
-    estimator, X_test, y_test = linear_regression_with_test
-    kwargs = {"X": X_test, "y": y_test} if data_source == "X_y" else {}
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(data_source=data_source, **kwargs).frame()
-    assert "Favorability" not in result.columns
-    expected_metrics = ("r2", "rmse", "fit_time", "predict_time")
-    _check_results_summarize(result, expected_metrics, len(expected_metrics))
-
-
-def test_metric_kwargs(
-    linear_regression_multioutput_with_test, forest_multiclass_classification_with_test
-):
-    """Check the behaviour of the `MetricsSummaryDisplay` method with metric kwargs."""
-    estimator, X_test, y_test = linear_regression_multioutput_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics, "summarize")
-    result = report.metrics.summarize(
-        metric_kwargs={"multioutput": "raw_values"}
-    ).frame()
-    assert result.shape == (6, 1)
-    assert isinstance(result.index, pd.MultiIndex)
-    assert result.index.names == ["Metric", "Output"]
-
-    estimator, X_test, y_test = forest_multiclass_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    assert hasattr(report.metrics, "summarize")
-    result = report.metrics.summarize(metric_kwargs={"average": None}).frame()
-    assert result.shape == (13, 1)
-    assert isinstance(result.index, pd.MultiIndex)
-    assert result.index.names == ["Metric", "Label / Average"]
-
-
-@pytest.mark.parametrize(
-    "fixture_name, metric_dict, expected_columns",
-    [
-        (
-            "linear_regression_with_test",
-            {
-                "R2": "r2",
-                "RMSE": "rmse",
-                "FIT_TIME": "_fit_time",
-                "PREDICT_TIME": "_predict_time",
-            },
-            ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
-        ),
-        (
-            "forest_multiclass_classification_with_test",
-            {
-                "Accuracy": "_accuracy",
-                "Precision": "_precision",
-                "Recall": "_recall",
-                "ROC AUC": "_roc_auc",
-                "Log Loss": "_log_loss",
-                "Fit Time": "_fit_time",
-                "Predict Time": "_predict_time",
-            },
-            [
+    data = pd.DataFrame(
+        {
+            "metric": [
+                "accuracy",
+                "precision",
+                "precision",
+                "recall",
+                "recall",
+                "roc_auc",
+                "brier_score",
+            ],
+            "verbose_name": [
                 "Accuracy",
                 "Precision",
                 "Precision",
-                "Precision",
-                "Recall",
                 "Recall",
                 "Recall",
                 "ROC AUC",
-                "ROC AUC",
-                "ROC AUC",
-                "Log Loss",
-                "Fit Time",
-                "Predict Time",
+                "Brier score",
             ],
-        ),
-    ],
-)
-def test_overwrite_metric_names_with_dict(
-    request, fixture_name, metric_dict, expected_columns
-):
-    """Test that we can overwrite the metric names using dict metric."""
-    estimator, X_test, y_test = request.getfixturevalue(fixture_name)
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(metric=metric_dict).frame()
-    assert result.shape == (len(expected_columns), 1)
-
-    # Get level 0 names if MultiIndex, otherwise get column names
-    result_index = (
-        result.index.get_level_values(0).tolist()
-        if isinstance(result.index, pd.MultiIndex)
-        else result.index.tolist()
-    )
-    assert result_index == expected_columns
-
-
-def test_favorability(
-    forest_binary_classification_with_test,
-):
-    """Check that the behaviour of `favorability` is correct."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize().frame(favorability=True)
-    assert "Favorability" in result.columns
-    favorability = result["Favorability"]
-    assert favorability["Accuracy"].tolist() == ["(↗︎)"]
-    assert favorability["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert favorability["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert favorability["ROC AUC"].tolist() == ["(↗︎)"]
-    assert favorability["Brier score"].tolist() == ["(↘︎)"]
-
-
-@pytest.mark.parametrize(
-    "metric, metric_kwargs",
-    [
-        ("accuracy", None),
-        ("neg_log_loss", None),
-        (accuracy_score, {"response_method": "predict"}),
-        (get_scorer("accuracy"), None),
-    ],
-)
-def test_metric_single_list_equivalence(
-    forest_binary_classification_with_test, metric, metric_kwargs
-):
-    """Check that passing a single string, callable, scorer is equivalent to passing a
-    list with a single element."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result_single = report.metrics.summarize(
-        metric=metric, metric_kwargs=metric_kwargs
-    ).frame()
-    result_list = report.metrics.summarize(
-        metric=[metric], metric_kwargs=metric_kwargs
-    ).frame()
-    assert result_single.equals(result_list)
-
-
-def test_metric_custom_metric(linear_regression_with_test):
-    """Check that we can pass a custom metric with specific kwargs into
-    `MetricsSummaryDisplay`."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    weights = np.ones_like(y_test) * 2
-
-    def custom_metric(y_true, y_pred, some_weights):
-        return np.mean((y_true - y_pred) * some_weights)
-
-    result = report.metrics.summarize(
-        metric=["r2", custom_metric],
-        metric_kwargs={"some_weights": weights, "response_method": "predict"},
-    ).frame()
-    assert result.shape == (2, 1)
-    np.testing.assert_allclose(
-        result.to_numpy(),
-        [
-            [r2_score(y_test, estimator.predict(X_test))],
-            [custom_metric(y_test, estimator.predict(X_test), weights)],
-        ],
+            "label": ["", "0", "1", "0", "1", "", ""],
+            "estimator_name": ["RandomForestClassifier"] * 7,
+            "score": [0.95, 0.92, 0.97, 0.89, 0.98, 0.96, 0.08],
+            "favorability": ["(↗︎)", "(↗︎)", "(↗︎)", "(↗︎)", "(↗︎)", "(↗︎)", "(↘︎)"],
+            "data_source": ["test"] * 7,
+            "average": [None] * 7,
+            "output": [None] * 7,
+        }
     )
 
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
 
-def test_scorer(linear_regression_with_test):
-    """Check that we can pass scikit-learn scorer with different parameters to
-    the `MetricsSummaryDisplay` method."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    weights = np.ones_like(y_test) * 2
+    result_no_fav = display.frame(favorability=False)
+    assert result_no_fav.columns.to_list() == ["RandomForestClassifier"]
 
-    def custom_metric(y_true, y_pred, some_weights):
-        return np.mean((y_true - y_pred) * some_weights)
+    result_with_fav = display.frame(favorability=True)
+    assert result_with_fav.columns.to_list() == [
+        "RandomForestClassifier",
+        "Favorability",
+    ]
+    assert set(result_with_fav["Favorability"]) == {"(↗︎)", "(↘︎)"}
 
-    median_absolute_error_scorer = make_scorer(
-        median_absolute_error, response_method="predict"
-    )
-    custom_metric_scorer = make_scorer(
-        custom_metric, response_method="predict", some_weights=weights
-    )
-    result = report.metrics.summarize(
-        metric=[r2_score, median_absolute_error_scorer, custom_metric_scorer],
-        metric_kwargs={"response_method": "predict"},  # only dispatched to r2_score
-    ).frame()
-    assert result.shape == (3, 1)
-    np.testing.assert_allclose(
-        result.to_numpy(),
-        [
-            [r2_score(y_test, estimator.predict(X_test))],
-            [median_absolute_error(y_test, estimator.predict(X_test))],
-            [custom_metric(y_test, estimator.predict(X_test), weights)],
-        ],
+
+def test_frame_favorability_regression():
+    """Test that favorability column is correctly displayed for regression metrics."""
+    data = pd.DataFrame(
+        {
+            "metric": ["r2", "rmse"],
+            "verbose_name": ["R²", "RMSE"],
+            "estimator_name": ["LinearRegression", "LinearRegression"],
+            "score": [0.85, 0.15],
+            "favorability": ["(↗︎)", "(↘︎)"],
+            "data_source": ["test", "test"],
+            "average": [None] * 2,
+            "output": [None] * 2,
+        }
     )
 
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
 
-@pytest.mark.parametrize(
-    "scorer, pos_label",
-    [
-        (
-            make_scorer(
-                f1_score, response_method="predict", average="macro", pos_label=1
-            ),
-            1,
-        ),
-        (
-            make_scorer(
-                f1_score, response_method="predict", average="macro", pos_label=1
-            ),
-            None,
-        ),
-        (make_scorer(f1_score, response_method="predict", average="macro"), 1),
-    ],
-)
-def test_scorer_binary_classification(
-    forest_binary_classification_with_test, scorer, pos_label
-):
-    """Check that we can pass scikit-learn scorer with different parameters to
-    the `MetricsSummaryDisplay` method.
+    result_no_fav = display.frame(favorability=False)
+    assert result_no_fav.columns.to_list() == ["LinearRegression"]
 
-    We also check that we can pass `pos_label` whether to the scorer or to the
-    `MetricsSummaryDisplay` method or consistently to both.
-    """
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result_with_fav = display.frame(favorability=True)
+    assert result_with_fav.columns.to_list() == ["LinearRegression", "Favorability"]
+    assert set(result_with_fav["Favorability"]) == {"(↗︎)", "(↘︎)"}
 
-    result = report.metrics.summarize(
-        metric=["accuracy", accuracy_score, scorer],
-        metric_kwargs={"response_method": "predict"},
-    ).frame()
-    assert result.shape == (3, 1)
-    np.testing.assert_allclose(
-        result.to_numpy(),
-        [
-            [accuracy_score(y_test, estimator.predict(X_test))],
-            [accuracy_score(y_test, estimator.predict(X_test))],
-            [
-                f1_score(
-                    y_test,
-                    estimator.predict(X_test),
-                    average="macro",
-                    pos_label=pos_label,
-                )
-            ],
-        ],
+
+def test_frame_flat_index_multiclass():
+    """Test flat_index parameter with multiclass classification data."""
+    data = pd.DataFrame(
+        {
+            "metric": ["precision"] * 3 + ["recall"] * 3,
+            "verbose_name": ["Precision"] * 3 + ["Recall"] * 3,
+            "label": ["0", "1", "2"] * 2,
+            "estimator_name": ["RandomForestClassifier"] * 6,
+            "score": [0.92, 0.87, 0.91, 0.88, 0.85, 0.90],
+            "favorability": ["(↗︎)"] * 6,
+            "data_source": ["test"] * 6,
+            "average": [None] * 6,
+            "output": [None] * 6,
+        }
     )
 
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
 
-def test_scorer_pos_label_error(
-    forest_binary_classification_with_test,
-):
-    """Check that we raise an error when pos_label is passed both in the scorer and
-    globally conducting to a mismatch."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result_multi = display.frame(favorability=False, flat_index=False)
+    assert isinstance(result_multi.index, pd.MultiIndex)
+    assert result_multi.index.names == ["Metric", "Label / Average"]
 
-    f1_scorer = make_scorer(
-        f1_score, response_method="predict", average="macro", pos_label=1
-    )
-    err_msg = re.escape(
-        "`pos_label` is passed both in the scorer and to the `summarize` method."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[f1_scorer], pos_label=0).frame()
-
-
-def test_invalid_metric_type(linear_regression_with_test):
-    """Check that we raise the expected error message if an invalid metric is passed."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[1]).frame()
+    result_flat = display.frame(favorability=False, flat_index=True)
+    assert isinstance(result_flat.index, pd.Index)
+    assert result_flat.index.to_list() == [
+        "precision_0",
+        "precision_1",
+        "precision_2",
+        "recall_0",
+        "recall_1",
+        "recall_2",
+    ]
 
 
-def test_neg_metric_strings(forest_binary_classification_with_test):
-    """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
-    classifier, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
-
-    result = report.metrics.summarize(metric=["neg_log_loss"]).frame()
-    assert "Log Loss" in result.index
-    assert result.loc["Log Loss", "RandomForestClassifier"] == pytest.approx(
-        report.metrics.log_loss()
+def test_frame_flat_index_with_favorability():
+    """Test that flat_index and favorability work together."""
+    data = pd.DataFrame(
+        {
+            "metric": ["precision", "precision", "recall", "recall"],
+            "verbose_name": ["Precision", "Precision", "Recall", "Recall"],
+            "label": ["0", "1", "0", "1"],
+            "estimator_name": ["LogisticRegression"] * 4,
+            "score": [0.85, 0.90, 0.88, 0.92],
+            "favorability": ["(↗︎)"] * 4,
+            "data_source": ["test"] * 4,
+            "average": [None] * 4,
+            "output": [None] * 4,
+        }
     )
 
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
 
-def test_sklearn_metric_strings(forest_binary_classification_with_test):
-    """Check that scikit-learn metric strings can be passed to summarize."""
-    classifier, X_test, y_test = forest_binary_classification_with_test
-    class_report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+    result = display.frame(favorability=True, flat_index=True)
+    assert result.columns.to_list() == ["LogisticRegression", "Favorability"]
 
-    result = class_report.metrics.summarize(metric=["neg_log_loss"]).frame()
-    assert "Log Loss" in result.index.get_level_values(0)
-
-    result_multi = class_report.metrics.summarize(
-        metric=["accuracy", "neg_log_loss", "roc_auc"]
-    ).frame(favorability=True)
-    assert "Accuracy" in result_multi.index.get_level_values(0)
-    assert "Log Loss" in result_multi.index.get_level_values(0)
-    assert "ROC AUC" in result_multi.index.get_level_values(0)
-
-    favorability = result_multi.loc["Accuracy"]["Favorability"]
-    assert favorability == "(↗︎)"
-    favorability = result_multi.loc["Log Loss"]["Favorability"]
-    assert favorability == "(↘︎)"
+    assert isinstance(result.index, pd.Index)
+    assert result.index.to_list() == [
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+    ]
 
 
-def test_sklearn_metric_strings_regression(
-    linear_regression_with_test,
-):
-    """Test scikit-learn regression metric strings in `MetricsSummaryDisplay`."""
-    regressor, X_test, y_test = linear_regression_with_test
-    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
-
-    reg_result = reg_report.metrics.summarize(
-        metric=["neg_mean_squared_error", "neg_mean_absolute_error", "r2"],
-    ).frame(favorability=True)
-
-    assert "Mean Squared Error" in reg_result.index.get_level_values(0)
-    assert "Mean Absolute Error" in reg_result.index.get_level_values(0)
-    assert "R²" in reg_result.index.get_level_values(0)
-
-    assert reg_result.loc["Mean Squared Error"]["Favorability"] == "(↘︎)"
-    assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
-
-
-def test_metric_strings_regression(linear_regression_with_test):
-    """Test skore regression metric strings in `MetricsSummaryDisplay`."""
-    regressor, X_test, y_test = linear_regression_with_test
-    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
-
-    reg_result = reg_report.metrics.summarize(
-        metric=["rmse", "r2"],
-    ).frame(favorability=True)
-
-    assert "RMSE" in reg_result.index.get_level_values(0)
-    assert "R²" in reg_result.index.get_level_values(0)
-
-    assert reg_result.loc["RMSE"]["Favorability"] == "(↘︎)"
-    assert reg_result.loc["R²"]["Favorability"] == "(↗︎)"
-
-
-def test_scorer_names_pos_label(
-    forest_binary_classification_with_test,
-):
-    """Check that `pos_label` is dispatched with scikit-learn scorer names."""
-    classifier, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
-
-    result = report.metrics.summarize(metric=["f1"], pos_label=0).frame()
-    assert result.index[0] == ("F1 Score", 0)
-
-    f1_scorer = make_scorer(
-        f1_score, response_method="predict", average="binary", pos_label=0
-    )
-    assert result.loc[("F1 Score", 0), "RandomForestClassifier"] == pytest.approx(
-        f1_scorer(classifier, X_test, y_test)
+def test_frame_data_source_both_with_favorability():
+    """Test favorability with data_source='both' (train and test)."""
+    data = pd.DataFrame(
+        {
+            "metric": ["accuracy", "accuracy", "roc_auc", "roc_auc"],
+            "verbose_name": ["Accuracy", "Accuracy", "ROC AUC", "ROC AUC"],
+            "label": [None] * 4,
+            "estimator_name": ["RandomForestClassifier"] * 4,
+            "score": [0.98, 0.95, 0.99, 0.96],
+            "favorability": ["(↗︎)", "(↗︎)", "(↗︎)", "(↗︎)"],
+            "data_source": ["train", "test", "train", "test"],
+            "average": [None] * 4,
+            "output": [None] * 4,
+        }
     )
 
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
 
-def test_sklearn_scorer_names_metric_kwargs(
-    forest_binary_classification_with_test,
-):
-    """Check that `metric_kwargs` is not supported when `metric` is a scikit-learn
-    scorer name.
-    """
-    classifier, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+    result_no_fav = display.frame(favorability=False)
+    assert result_no_fav.columns.to_list() == [
+        "RandomForestClassifier (train)",
+        "RandomForestClassifier (test)",
+    ]
 
-    err_msg = (
-        "The `metric_kwargs` parameter is not supported when `metric` is a "
-        "scikit-learn scorer name."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(
-            metric=["f1"], metric_kwargs={"average": "macro"}
-        ).frame()
+    result_with_fav = display.frame(favorability=True)
+    assert result_with_fav.columns.to_list() == [
+        "RandomForestClassifier (train)",
+        "RandomForestClassifier (test)",
+        "Favorability",
+    ]
 
 
-@pytest.mark.parametrize(
-    "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
-)
-def test_pos_label_overwrite(metric, metric_fn):
-    """Check that `pos_label` can be overwritten in `summarize`"""
-    X, y = make_classification(
-        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
-    )
-    labels = np.array(["A", "B"], dtype=object)
-    y = labels[y]
-    classifier = LogisticRegression().fit(X, y)
-
-    report = EstimatorReport(classifier, X_test=X, y_test=y)
-    result = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert result["Label / Average"].to_list() == ["A", "B"]
-
-    report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
-    result = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert "Label / Average" not in result.columns
-    assert result[report.estimator_name_].item() == pytest.approx(
-        metric_fn(y, classifier.predict(X), pos_label="B")
+def test_frame_multioutput_with_flat_index():
+    """Test flat_index with multioutput regression data."""
+    data = pd.DataFrame(
+        {
+            "metric": ["r2", "r2", "r2", "rmse", "rmse", "rmse"],
+            "verbose_name": ["R²", "R²", "R²", "RMSE", "RMSE", "RMSE"],
+            "output": ["0", "1", "2", "0", "1", "2"],
+            "estimator_name": ["LinearRegression"] * 6,
+            "score": [0.85, 0.78, 0.92, 0.12, 0.18, 0.09],
+            "favorability": ["(↗︎)", "(↗︎)", "(↗︎)", "(↘︎)", "(↘︎)", "(↘︎)"],
+            "data_source": ["test"] * 6,
+        }
     )
 
-    result = (
-        report.metrics.summarize(metric=metric, pos_label="A").frame().reset_index()
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
+
+    result_multi = display.frame(favorability=False, flat_index=False)
+    assert isinstance(result_multi.index, pd.MultiIndex)
+    assert result_multi.index.names == ["Metric", "Output"]
+
+    result_flat = display.frame(favorability=False, flat_index=True)
+    assert isinstance(result_flat.index, pd.Index)
+    # Note: "R²" is lowercased
+    assert result_flat.index.to_list() == [
+        "r²_0",
+        "r²_1",
+        "r²_2",
+        "rmse_0",
+        "rmse_1",
+        "rmse_2",
+    ]
+
+
+def test_frame_multioutput_multiindex():
+    """Test that multioutput data creates proper MultiIndex."""
+    data = pd.DataFrame(
+        {
+            "metric": ["r2", "r2", "rmse", "rmse"],
+            "verbose_name": ["R²", "R²", "RMSE", "RMSE"],
+            "output": ["0", "1", "0", "1"],
+            "estimator_name": ["LinearRegression"] * 4,
+            "score": [0.85, 0.78, 0.12, 0.18],
+            "favorability": ["(↗︎)", "(↗︎)", "(↘︎)", "(↘︎)"],
+            "data_source": ["test"] * 4,
+        }
     )
-    assert "Label / Average" not in result.columns
-    assert result[report.estimator_name_].item() == pytest.approx(
-        metric_fn(y, classifier.predict(X), pos_label="A")
+
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
+    result = display.frame(favorability=False)
+
+    assert isinstance(result.index, pd.MultiIndex)
+    assert result.index.names == ["Metric", "Output"]
+    assert result.shape == (4, 1)
+    assert result.loc[("R²", "0"), "LinearRegression"] == 0.85
+    assert result.loc[("R²", "1"), "LinearRegression"] == 0.78
+
+
+def test_frame_single_data_source_dropped():
+    """Test that data_source column is dropped when there's only one source."""
+    data = pd.DataFrame(
+        {
+            "metric": ["accuracy", "precision"],
+            "verbose_name": ["Accuracy", "Precision"],
+            "estimator_name": ["LogisticRegression"] * 2,
+            "score": [0.95, 0.92],
+            "favorability": ["(↗︎)", "(↗︎)"],
+            "data_source": ["test", "test"],
+        }
     )
+
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
+    result = display.frame(favorability=False)
+
+    assert "data_source" not in result.columns
+
+
+def test_frame_multiple_data_sources_pivoted():
+    """Test that multiple data sources create separate columns."""
+    data = pd.DataFrame(
+        {
+            "metric": ["accuracy", "accuracy"],
+            "verbose_name": ["Accuracy", "Accuracy"],
+            "estimator_name": ["LogisticRegression"] * 2,
+            "score": [0.98, 0.95],
+            "favorability": ["(↗︎)", "(↗︎)"],
+            "data_source": ["train", "test"],
+        }
+    )
+
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
+    result = display.frame(favorability=False)
+
+    assert result.columns.to_list() == [
+        "LogisticRegression (train)",
+        "LogisticRegression (test)",
+    ]
+    assert result.loc["Accuracy", "LogisticRegression (train)"] == 0.98
+    assert result.loc["Accuracy", "LogisticRegression (test)"] == 0.95
+
+
+def test_frame_empty_label_values():
+    """Test that empty label values are handled correctly."""
+    data = pd.DataFrame(
+        {
+            "metric": ["accuracy", "precision", "precision"],
+            "verbose_name": ["Accuracy", "Precision", "Precision"],
+            "label": ["", "0", "1"],
+            "estimator_name": ["RandomForestClassifier"] * 3,
+            "score": [0.95, 0.92, 0.97],
+            "favorability": ["(↗︎)", "(↗︎)", "(↗︎)"],
+            "data_source": ["test"] * 3,
+        }
+    )
+
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
+    result = display.frame(favorability=False)
+
+    # Empty string labels should be preserved in the MultiIndex
+    assert isinstance(result.index, pd.MultiIndex)
+    assert ("Accuracy", "") in result.index
+    assert ("Precision", "0") in result.index
+    assert ("Precision", "1") in result.index
+
+
+def test_frame_preserves_score_values():
+    """Test that score values are preserved correctly in the output."""
+    expected_scores = [0.95, 0.92, 0.87, 0.91]
+    data = pd.DataFrame(
+        {
+            "metric": ["accuracy", "precision", "recall", "f1"],
+            "verbose_name": ["Accuracy", "Precision", "Recall", "F1"],
+            "estimator_name": ["SVC"] * 4,
+            "score": expected_scores,
+            "favorability": ["(↗︎)"] * 4,
+            "data_source": ["test"] * 4,
+        }
+    )
+
+    display = MetricsSummaryDisplay(data=data, report_type="estimator")
+    result = display.frame(favorability=False)
+
+    assert result["SVC"].tolist() == expected_scores
