@@ -447,15 +447,14 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
         Returns
         -------
-        self : object
-            The instance with a modified style.
+        None
 
         Raises
         ------
         ValueError
             If a style parameter is unknown.
         """
-        return super().set_style(
+        super().set_style(
             policy=policy,
             barplot_kwargs=barplot_kwargs or {},
             stripplot_kwargs=stripplot_kwargs or {},
