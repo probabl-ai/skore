@@ -450,6 +450,38 @@ def test_custom_metric(linear_regression_with_test):
     )
 
 
+def test_custom_metric_average_none(forest_binary_classification_with_test):
+    """
+    Test binary classification with custom metric returning single value and
+    average is None.
+    """
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def custom_f1(y_true, y_pred, average=None):
+        return f1_score(y_true, y_pred, average="binary")
+
+    display = report.metrics.summarize(
+        metric=custom_f1, response_method="predict", metric_kwargs={"average": None}
+    )
+
+    assert len(display.data) == 1
+    assert display.data["average"].isna().all()
+    assert display.data["label"].isna().all()
+
+
+def test_custom_metric_no_response_method(forest_binary_classification_with_test):
+    """Test that ValueError is raised when callable metric lacks response_method."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def custom_metric(y_true, y_pred):
+        return 0.5
+
+    with pytest.raises(ValueError, match="response_method is required"):
+        report.metrics.summarize(metric=custom_metric)
+
+
 def test_scorer(linear_regression_with_test):
     """
     Check that we can pass scikit-learn scorer with different parameters to summarize().
@@ -528,6 +560,21 @@ def test_scorer_binary_classification(
     np.testing.assert_allclose(display.data["score"].values, expected_scores)
 
 
+def test_scorer_with_average(
+    forest_multiclass_classification_with_test,
+):
+    """Test multiclass classification with average parameter."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    scorer = make_scorer(f1_score, average="macro")
+    display = report.metrics.summarize(metric=[scorer])
+
+    assert len(display.data) == 1
+    assert display.data["average"].values[0] == "macro"
+    assert display.data["label"].isna().all()
+
+
 def test_neg_metric_strings(forest_binary_classification_with_test):
     """Check that scikit-learn metrics with 'neg_' prefix are handled correctly."""
     classifier, X_test, y_test = forest_binary_classification_with_test
@@ -554,9 +601,7 @@ def test_sklearn_metric_strings(forest_binary_classification_with_test):
     assert set(display.data["verbose_name"]) == {"Accuracy", "Log loss", "ROC AUC"}
 
 
-def test_sklearn_metric_strings_regression(
-    linear_regression_with_test,
-):
+def test_sklearn_metric_strings_regression(linear_regression_with_test):
     """Test scikit-learn regression metric strings in summarize()."""
     regressor, X_test, y_test = linear_regression_with_test
     reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
@@ -571,6 +616,29 @@ def test_sklearn_metric_strings_regression(
         "Mean Absolute Error",
         "R²",
     }
+
+
+def test_unknown_ml_task(forest_binary_classification_with_test):
+    """Test summarize with unknown ML task."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    report._ml_task = "unknown-task"
+
+    # If ML task is not recognized then none of the default metrics will
+    # work
+    def custom_metric(y_true, y_pred):
+        return 0.8
+
+    display = report.metrics.summarize(
+        metric=[custom_metric], response_method="predict"
+    )
+
+    assert len(display.data) == 1
+    assert display.data["score"].values[0] == 0.8
+    assert display.data["label"].isna().all()
+    assert display.data["average"].isna().all()
+    assert display.data["output"].isna().all()
 
 
 # Tests about passing `metric_kwargs`
@@ -597,6 +665,23 @@ def test_metric_kwargs_multioutput(linear_regression_multioutput_with_test):
     assert isinstance(display.data, pd.DataFrame)
     assert "output" in display.data.columns
     assert len(display.data[display.data["metric"] == "r2"]) >= 2
+
+
+def test_metric_kwargs_none(
+    forest_binary_classification_with_test,
+):
+    """Test callable metric when metric_kwargs is None."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def custom_metric(y_true, y_pred):
+        return 0.75
+
+    display = report.metrics.summarize(metric=custom_metric, response_method="predict")
+
+    assert isinstance(display.data, pd.DataFrame)
+    assert len(display.data) == 1
+    assert display.data["score"].values[0] == 0.75
 
 
 def test_sklearn_scorer_names_metric_kwargs(forest_binary_classification_with_test):
