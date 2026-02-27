@@ -18,7 +18,7 @@ def login(*, mode: ProjectMode = "hub", **kwargs):
 
     It must be called at the top of your script.
 
-    Three storage backends are available and their credentials can be configured
+    Several storage backends are available and their credentials can be configured
     using the ``mode`` parameter. Please note that both can be configured in the
     same script without side-effect.
 
