@@ -13,15 +13,13 @@ from skore_hub_project.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
 )
+from sklearn.datasets import make_regression
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
 
 
 @fixture(scope="module")
 def regression():
-    from sklearn.datasets import make_regression
-    from sklearn.linear_model import LinearRegression
-    from sklearn.model_selection import train_test_split
-    from skore import EstimatorReport
-
     X, y = make_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -200,9 +198,6 @@ class TestProject:
 
     @mark.respx()
     def test_put_estimator_report_without_test_data_when_unfitted(self, respx_mock):
-        from sklearn.datasets import make_regression
-        from sklearn.linear_model import LinearRegression
-
         mocks = [
             ("get", "/projects/myworkspace", Response(200)),
             (
@@ -236,8 +231,6 @@ class TestProject:
 
     @mark.respx()
     def test_put_estimator_report_without_test_data_when_fitted(self, respx_mock):
-        from sklearn.datasets import make_regression
-        from sklearn.linear_model import LinearRegression
 
         mocks = [
             ("get", "/projects/myworkspace", Response(200)),
@@ -262,10 +255,8 @@ class TestProject:
             "or by setting data_source to 'X_y' and providing X and y."
         )
 
-        with raises(ValueError) as exc_info:
+        with raises(ValueError, match=expected_error):
             Project(workspace="myworkspace", name="myname").put("<key>", report)
-
-        assert str(exc_info.value) == expected_error
 
     @mark.respx()
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
