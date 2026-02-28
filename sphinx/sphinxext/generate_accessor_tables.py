@@ -116,6 +116,51 @@ def get_accessor_data(cls: type) -> dict[str, Any]:
     }
 
 
+def _write_accessor_method_stub(
+    output_dir: Path,
+    class_name: str,
+    accessor_name: str,
+    method_name: str,
+) -> None:
+    """Write an autosummary stub file for an accessor method.
+
+    The stub mirrors what ``sphinx.ext.autosummary`` would produce from the
+    ``autosummary/accessor_method.rst`` template.  We generate it ourselves
+    because the ``.. autosummary::`` directives live inside ``.inc`` files
+    that are pulled in via ``.. include::``, and the autosummary stub
+    generator does not follow ``.. include::`` directives.
+
+    Parameters
+    ----------
+    output_dir : Path
+        Directory where stub files are written (``reference/api/``).
+    class_name : str
+        The report class name, e.g. ``"EstimatorReport"``.
+    accessor_name : str
+        The accessor name, e.g. ``"metrics"``.
+    method_name : str
+        The method name, e.g. ``"accuracy"``.
+    """
+    stub_name = f"skore.{class_name}.{accessor_name}.{method_name}.rst"
+    stub_path = output_dir / stub_name
+
+    title = method_name
+    underline = "=" * len(title)
+    accessor_path = f"{class_name}.{accessor_name}.{method_name}"
+
+    content = (
+        f"{title}\n"
+        f"{underline}\n"
+        f"\n"
+        f".. currentmodule:: skore\n"
+        f"\n"
+        f".. autoaccessormethod:: {accessor_path}\n"
+    )
+
+    if not stub_path.exists() or stub_path.read_text() != content:
+        stub_path.write_text(content)
+
+
 def generate_accessor_tables(app: Sphinx, config: Any) -> None:
     """Generate accessor table RST and individual accessor .inc files.
 
@@ -190,6 +235,18 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
                 logger.info(f"Updated {filename}")
             else:
                 logger.debug(f"No changes for {filename}")
+
+            # Generate autosummary stub files for each method.
+            # This is necessary because ``.. include::`` prevents the
+            # autosummary extension from discovering our ``.. autosummary::``
+            # directives during its scanning phase, so it never generates
+            # stubs for the methods listed in .inc files. By writing them
+            # ourselves, autosummary finds them at render time and no
+            # warnings are produced.
+            for method_name, _ in ordered:
+                _write_accessor_method_stub(
+                    output_dir, class_name, accessor_name, method_name
+                )
 
 
 def setup(app: Sphinx) -> dict[str, Any]:
