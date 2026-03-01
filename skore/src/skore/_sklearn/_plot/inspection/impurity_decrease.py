@@ -11,7 +11,8 @@ from sklearn.pipeline import Pipeline
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import ReportType
+from skore._sklearn.types import Aggregate, ReportType
+from skore._utils._index import flatten_multi_index
 
 
 class ImpurityDecreaseDisplay(DisplayMixin):
@@ -142,38 +143,25 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
         return cls(importances=importances, report_type=report_type)
 
-    def frame(self) -> pd.DataFrame:
+    def frame(self, *, aggregate: Aggregate | None = ("mean", "std")) -> pd.DataFrame:
         """Get the mean decrease in impurity in a dataframe format.
 
-        The returned dataframe is not going to contain constant columns or columns
-        containing only NaN values.
+        Parameters
+        ----------
+        aggregate : {"mean", "std"}, ("mean", "std") or None, default=("mean", "std")
+            Aggregate the importances over splits. Only relevant when
+            ``report_type`` is ``"cross-validation"`` or
+            ``"comparison-cross-validation"``. If ``None``, the raw per-split
+            values are returned.
 
         Returns
         -------
         DataFrame
-            Dataframe containing the mean decrease in impurity of the tree-based model.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_iris
-        >>> from sklearn.ensemble import RandomForestClassifier
-        >>> from skore import EstimatorReport, train_test_split
-        >>> iris = load_iris(as_frame=True)
-        >>> X, y = iris.data, iris.target
-        >>> y = iris.target_names[y]
-        >>> split_data = train_test_split(
-        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
-        ... )
-        >>> report = EstimatorReport(
-        ...     RandomForestClassifier(random_state=0), **split_data
-        ... )
-        >>> display = report.inspection.impurity_decrease()
-        >>> display.frame()
-                     feature  importance
-        0  sepal length (cm)     0.1...
-        1   sepal width (cm)     0.0...
-        2  petal length (cm)     0.4...
-        3   petal width (cm)     0.3...
+            Dataframe containing the mean decrease in impurity. When
+            ``aggregate`` is not ``None`` and the report type involves
+            cross-validation splits, the ``split`` column is removed and
+            ``importance`` is replaced by aggregated columns (e.g.
+            ``importance_mean``, ``importance_std``).
         """
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
@@ -184,7 +172,19 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         else:  # comparison-cross-validation
             columns_to_drop = []
 
-        return self.importances.drop(columns=columns_to_drop)
+        frame = self.importances.drop(columns=columns_to_drop)
+
+        if aggregate is not None and "split" in frame.columns:
+            group_by = [c for c in ["estimator", "feature"] if c in frame.columns]
+            frame = (
+                frame.groupby(group_by, sort=False, dropna=False).aggregate(
+                    {"importance": aggregate}
+                )
+            ).reset_index()
+            if isinstance(frame.columns, pd.MultiIndex):
+                frame.columns = flatten_multi_index(frame.columns)
+
+        return frame
 
     @DisplayMixin.style_plot
     def plot(self) -> None:
@@ -221,7 +221,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
 
         if "comparison" in self.report_type:
             return self._plot_comparison(
-                frame=self.frame(),
+                frame=self.frame(aggregate=None),
                 report_type=self.report_type,
                 barplot_kwargs=barplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
@@ -229,7 +229,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             )
         # EstimatorReport or CrossValidationReport
         return self._plot_single_estimator(
-            frame=self.frame(),
+            frame=self.frame(aggregate=None),
             estimator_name=self.importances["estimator"][0],
             report_type=self.report_type,
             barplot_kwargs=barplot_kwargs,

@@ -35,12 +35,28 @@ class TestImpurityDecreaseDisplay:
             report = report[0]
         display = report.inspection.impurity_decrease()
         frame = display.frame()
-        expected = {"feature", "importance"}
+
+        expected = {"feature"}
         if "cross_validation" in fixture_prefix:
-            expected.add("split")
+            expected |= {"importance_mean", "importance_std"}
+        else:
+            expected.add("importance")
         if "comparison" in fixture_prefix:
             expected.add("estimator")
         assert set(frame.columns) == expected
+
+    def test_frame_aggregate_none(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.impurity_decrease()
+        frame = display.frame(aggregate=None)
+
+        if "cross_validation" in fixture_prefix:
+            assert "split" in frame.columns
+        assert "importance" in frame.columns
+        assert "importance_mean" not in frame.columns
+        assert "importance_std" not in frame.columns
 
     def test_internal_data_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -111,9 +127,10 @@ def test_multiclass_and_multioutput(pyplot, fixture_prefix, task, request):
         "importance",
     }
     frame = display.frame()
-    assert set(frame.columns) >= {"feature", "importance"}
-    if fixture_prefix == "cross_validation_reports":
-        assert "split" in frame.columns
+    if "cross_validation" in fixture_prefix:
+        assert set(frame.columns) >= {"feature", "importance_mean", "importance_std"}
+    else:
+        assert set(frame.columns) >= {"feature", "importance"}
 
     _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
     assert isinstance(ax, mpl.axes.Axes)
