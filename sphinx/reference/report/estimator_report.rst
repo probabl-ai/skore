@@ -42,12 +42,7 @@ Data
 The `data` accessor helps you to get insights about the dataset used to train and test
 your estimator.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: autosummary/accessor_method.rst
-
-    EstimatorReport.data.help
-    EstimatorReport.data.analyze
+.. include:: ../api/EstimatorReport.data.inc
 
 .. _estimator_metrics:
 
@@ -57,27 +52,7 @@ Metrics
 The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: autosummary/accessor_method.rst
-
-    EstimatorReport.metrics.help
-    EstimatorReport.metrics.summarize
-
-    EstimatorReport.metrics.accuracy
-    EstimatorReport.metrics.brier_score
-    EstimatorReport.metrics.confusion_matrix
-    EstimatorReport.metrics.custom_metric
-    EstimatorReport.metrics.log_loss
-    EstimatorReport.metrics.precision
-    EstimatorReport.metrics.precision_recall
-    EstimatorReport.metrics.prediction_error
-    EstimatorReport.metrics.r2
-    EstimatorReport.metrics.recall
-    EstimatorReport.metrics.rmse
-    EstimatorReport.metrics.roc
-    EstimatorReport.metrics.roc_auc
-    EstimatorReport.metrics.timings
+.. include:: ../api/EstimatorReport.metrics.inc
 
 Inspection
 ----------
@@ -85,11 +60,4 @@ Inspection
 The `inspection` accessor helps you inspect your model by e.g. evaluating the importance
 of the features in your model.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: autosummary/accessor_method.rst
-
-    EstimatorReport.inspection.help
-    EstimatorReport.inspection.coefficients
-    EstimatorReport.inspection.impurity_decrease
-    EstimatorReport.inspection.permutation_importance
+.. include:: ../api/EstimatorReport.inspection.inc
