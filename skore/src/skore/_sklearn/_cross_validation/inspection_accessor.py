@@ -63,15 +63,16 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         7       1  Feature #2       17.1...
         >>> display.plot() # shows plot
         """
-        frames = []
-        for split_idx, report in enumerate(self._parent.estimator_reports_):
-            display = report.inspection.coefficients()
-            df = display.coefficients.copy()
-            df["split"] = split_idx
-            frames.append(df)
-        coefficients = pd.concat(frames, ignore_index=True)
         return CoefficientsDisplay(
-            coefficients=coefficients,
+            coefficients=pd.concat(
+                [
+                    report.inspection.coefficients()
+                    .coefficients.copy()
+                    .assign(split=split_idx)
+                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                ],
+                ignore_index=True,
+            ),
             report_type=self._parent._report_type,
         )
 
@@ -301,25 +302,28 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         # earlier.
         display = None if seed is None else self._parent._cache.get(cache_key)
         if display is None:
-            frames = []
-            for split_idx, report in enumerate(self._parent.estimator_reports_):
-                report_display = report.inspection.permutation_importance(
-                    data_source=data_source,
-                    X=X,
-                    y=y,
-                    at_step=at_step,
-                    metric=metric,
-                    n_repeats=n_repeats,
-                    max_samples=max_samples,
-                    n_jobs=n_jobs,
-                    seed=seed,
-                )
-                df = report_display.importances.copy()
-                df["split"] = split_idx
-                frames.append(df)
-            importances = pd.concat(frames, ignore_index=True)
             display = PermutationImportanceDisplay(
-                importances=importances,
+                importances=pd.concat(
+                    [
+                        report.inspection.permutation_importance(
+                            data_source=data_source,
+                            X=X,
+                            y=y,
+                            at_step=at_step,
+                            metric=metric,
+                            n_repeats=n_repeats,
+                            max_samples=max_samples,
+                            n_jobs=n_jobs,
+                            seed=seed,
+                        )
+                        .importances.copy()
+                        .assign(split=split_idx)
+                        for split_idx, report in enumerate(
+                            self._parent.estimator_reports_
+                        )
+                    ],
+                    ignore_index=True,
+                ),
                 report_type=self._parent._report_type,
             )
 
@@ -367,15 +371,16 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         ...
         >>> display.plot() # shows plot
         """
-        frames = []
-        for split_idx, report in enumerate(self._parent.estimator_reports_):
-            display = report.inspection.impurity_decrease()
-            df = display.importances.copy()
-            df["split"] = split_idx
-            frames.append(df)
-        importances = pd.concat(frames, ignore_index=True)
         return ImpurityDecreaseDisplay(
-            importances=importances,
+            importances=pd.concat(
+                [
+                    report.inspection.impurity_decrease()
+                    .importances.copy()
+                    .assign(split=split_idx)
+                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                ],
+                ignore_index=True,
+            ),
             report_type=self._parent._report_type,
         )
 

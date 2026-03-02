@@ -82,15 +82,16 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         21    report big alpha  Feature #9        0.4...
         >>> display.plot() # shows plot
         """
-        frames = []
-        for name, report in self._parent.reports_.items():
-            display = report.inspection.coefficients()
-            df = display.coefficients.copy()
-            df["estimator"] = name
-            frames.append(df)
-        coefficients = pd.concat(frames, ignore_index=True)
         return CoefficientsDisplay(
-            coefficients=coefficients,
+            coefficients=pd.concat(
+                [
+                    report.inspection.coefficients()
+                    .coefficients.copy()
+                    .assign(estimator=name)
+                    for name, report in self._parent.reports_.items()
+                ],
+                ignore_index=True,
+            ),
             report_type=self._parent._report_type,
         )
 
@@ -145,15 +146,16 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         7    big trees   petal width (cm)       0.4...
         >>> display.plot() # shows plot
         """
-        frames = []
-        for name, report in self._parent.reports_.items():
-            display = report.inspection.impurity_decrease()
-            df = display.importances.copy()
-            df["estimator"] = name
-            frames.append(df)
-        importances = pd.concat(frames, ignore_index=True)
         return ImpurityDecreaseDisplay(
-            importances=importances,
+            importances=pd.concat(
+                [
+                    report.inspection.impurity_decrease()
+                    .importances.copy()
+                    .assign(estimator=name)
+                    for name, report in self._parent.reports_.items()
+                ],
+                ignore_index=True,
+            ),
             report_type=self._parent._report_type,
         )
 
