@@ -4,23 +4,31 @@
 ======================
 Skore: getting started
 ======================
-"""
 
-# %%
-# This guide illustrates how to use skore through a complete
-# machine learning workflow for binary classification:
-#
-# #. Set up a proper experiment with training and test data
-# #. Develop and evaluate multiple models using cross-validation
-# #. Compare models to select the best one
-# #. Validate the final model on held-out data
-# #. Track and organize your machine learning results
-#
-# Throughout this guide, we will see how skore helps you:
-#
-# * Avoid common pitfalls with smart diagnostics
-# * Quickly get rich insights into model performance
-# * Organize and track your experiments
+This guide illustrates how to use skore through a complete
+machine learning workflow for binary classification:
+
+#. Set up a proper experiment with training and test data
+#. Develop and evaluate multiple models using cross-validation
+#. Compare models to select the best one
+#. Validate the final model on held-out data
+#. Track and organize your machine learning results
+
+Throughout this guide, we will see how skore helps you:
+
+* Avoid common pitfalls with smart diagnostics
+* Quickly get rich insights into model performance
+* Organize and track your experiments
+
+Examples
+--------
+
+Basic usage:
+
+.. code-block:: bash
+
+    WORKSPACE=<workspace> PROJECT=<project> python plot_getting_started.py
+"""
 
 # %%
 # Setting up our binary classification problem
@@ -335,20 +343,51 @@ cv_coefficients.plot(select_k=15, sorting_order="descending")
 # Usually this would be done as you go along the model development, but
 # in the interest of simplicity we kept this until the end.
 
-# %%
-# We load or create a local project:
-
-# %%
-
 # sphinx_gallery_start_ignore
+#
+# Configure the context variables and ensure that the example is run with sufficient
+# credentials. This is a useful consistency check for CI where you can't have
+# interactive login.
 import os
-import tempfile
 
-temp_dir = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
-os.environ["SKORE_WORKSPACE"] = temp_dir.name
+if os.environ.get("SPHINX_BUILD"):
+    GITHUB = os.environ.get("GITHUB_ACTIONS")
+    API_KEY = os.environ.get("SPHINX_EXAMPLE_API_KEY")
+    WORKSPACE = os.environ.get("SPHINX_EXAMPLE_WORKSPACE")
+    VERSION = os.environ.get("SPHINX_VERSION")
+
+    if not (GITHUB and API_KEY and WORKSPACE and VERSION):
+        raise RuntimeError("Required os.environment variables not set.")
+
+    PROJECT = f"example-getting-started-{VERSION}"
+    os.environ["SKORE_HUB_API_KEY"] = API_KEY
+else:
+    assert (WORKSPACE := os.environ.get("WORKSPACE")), "`WORKSPACE` must be defined."
+    assert (PROJECT := os.environ.get("PROJECT")), "`PROJECT` must be defined."
 # sphinx_gallery_end_ignore
 
-project = skore.Project("german_credit_classification")
+# %%
+from skore import login
+
+login(mode="hub")
+
+# sphinx_gallery_start_ignore
+#
+# Delete project before running the example.
+from httpx import HTTPStatusError, codes
+from skore import Project
+
+try:
+    Project.delete(f"{WORKSPACE}/{PROJECT}", mode="hub")
+except HTTPStatusError as e:
+    if e.response.status_code != codes.NOT_FOUND:
+        raise
+# sphinx_gallery_end_ignore
+
+# %%
+# We load or create a hub project:
+
+project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
 
 # %%
 # We store our reports with descriptive keys:
@@ -395,10 +434,6 @@ summary = summary.query('report_type == "cross-validation"')
 
 new_report = summary.reports(return_as="comparison")
 new_report.help()
-
-# sphinx_gallery_start_ignore
-temp_dir.cleanup()
-# sphinx_gallery_end_ignore
 
 # %%
 # .. admonition:: Stay tuned!

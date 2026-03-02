@@ -27,11 +27,6 @@ version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
 domain = os.environ["SPHINX_DOMAIN"]
 
-# Expose URLs to RST
-rst_epilog = f"""
-.. _example: {os.environ.get("SPHINX_EXAMPLE_PROJECT_URL", "https://example.com/missing")}
-"""
-
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -123,16 +118,23 @@ sphinx_gallery_conf = {
     "abort_on_example_error": True,
 }
 
-# Build the HUB example conditionally, only when credentials are available:
+# Build the HUB examples conditionally, only when credentials are available:
 # - after each __commit__ on the `main` branch,
 # - after each __release__ (tag `skore/X.Y.Z`).
 if not (
     os.environ.get("GITHUB_ACTIONS")
     and os.environ.get("SPHINX_EXAMPLE_API_KEY")
     and os.environ.get("SPHINX_EXAMPLE_WORKSPACE")
-    and os.environ.get("SPHINX_EXAMPLE_PROJECT")
 ):
+    sphinx_gallery_conf["ignore_pattern"] = r"plot_getting_started\.py"
     sphinx_gallery_conf["ignore_pattern"] = r"plot_skore_hub_project\.py"
+
+# Expose HUB URLs to RST
+example_base_url = os.environ.get("SPHINX_EXAMPLE_BASE_URL", "https://example.com")
+rst_epilog = f"""
+.. _example-getting-started: f"{example_base_url}/example-getting-started-{version}"
+.. _example-skore-hub-project: f"{example_base_url}/example-skore-hub-project-{version}"
+"""
 
 # intersphinx configuration
 intersphinx_mapping = {

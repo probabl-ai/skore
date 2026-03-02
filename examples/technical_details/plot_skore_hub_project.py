@@ -32,11 +32,12 @@ if os.environ.get("SPHINX_BUILD"):
     GITHUB = os.environ.get("GITHUB_ACTIONS")
     API_KEY = os.environ.get("SPHINX_EXAMPLE_API_KEY")
     WORKSPACE = os.environ.get("SPHINX_EXAMPLE_WORKSPACE")
-    PROJECT = os.environ.get("SPHINX_EXAMPLE_PROJECT")
+    VERSION = os.environ.get("SPHINX_VERSION")
 
-    if not (GITHUB and API_KEY and WORKSPACE and PROJECT):
+    if not (GITHUB and API_KEY and WORKSPACE and VERSION):
         raise RuntimeError("Required os.environment variables not set.")
 
+    PROJECT = f"example-skore-hub-project-{VERSION}"
     os.environ["SKORE_HUB_API_KEY"] = API_KEY
 else:
     assert (WORKSPACE := os.environ.get("WORKSPACE")), "`WORKSPACE` must be defined."
