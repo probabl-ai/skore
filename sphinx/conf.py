@@ -132,8 +132,8 @@ if not (
 # Expose HUB URLs to RST
 example_base_url = os.environ.get("SPHINX_EXAMPLE_BASE_URL", "https://example.com")
 rst_epilog = f"""
-.. _example-getting-started: f"{example_base_url}/example-getting-started-{version}"
-.. _example-skore-hub-project: f"{example_base_url}/example-skore-hub-project-{version}"
+.. _example-getting-started: {example_base_url}/example-getting-started-{version}
+.. _example-skore-hub-project: {example_base_url}/example-skore-hub-project-{version}
 """
 
 # intersphinx configuration
