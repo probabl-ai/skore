@@ -38,8 +38,7 @@ def test_cache_key_with_string_aggregate_is_not_split(
 
     report.metrics.summarize().frame(aggregate="mean")
 
-    summarize_cache_keys = [key for key in report._cache if key[1] == "summarize"]
-    assert summarize_cache_keys, "Summarize results should be cached"
+    assert isinstance(next(iter(report._cache.values())), MetricsSummaryDisplay)
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])

@@ -131,28 +131,14 @@ class _MetricsAccessor(
         if pos_label == _DEFAULT:
             pos_label = self._parent.pos_label
 
-        return self._compute_metric_scores(
-            report_metric_name="summarize",
-            data_source=data_source,
-            metric=metric,
-            pos_label=pos_label,
-            metric_kwargs=metric_kwargs,
-            response_method=response_method,
-        )
-
-    def _compute_metric_scores(
-        self,
-        report_metric_name: str,
-        *,
-        data_source: DataSource = "test",
-        **metric_kwargs: Any,
-    ) -> MetricsSummaryDisplay:
         cache_key = deep_key_sanitize(
             (
                 self._parent._hash,
-                report_metric_name,
                 data_source,
+                metric,
                 metric_kwargs,
+                response_method,
+                pos_label,
             )
         )
 
@@ -165,11 +151,15 @@ class _MetricsAccessor(
             )
 
             results = [
-                result.data if report_metric_name == "summarize" else result
+                result.data
                 for result in track(
                     parallel(
-                        delayed(getattr(report.metrics, report_metric_name))(
-                            data_source=data_source, **metric_kwargs
+                        delayed(report.metrics.summarize)(
+                            data_source=data_source,
+                            metric=metric,
+                            metric_kwargs=metric_kwargs,
+                            response_method=response_method,
+                            pos_label=pos_label,
                         )
                         for report in self._parent.estimator_reports_
                     ),
@@ -178,16 +168,15 @@ class _MetricsAccessor(
                 )
             ]
 
-            results = (
-                pd.concat(
-                    results, axis="index", keys=range(len(results)), names=["split"]
-                )
-                .reset_index()
-                .drop(columns="level_1")
-            )
-
             results = MetricsSummaryDisplay(
-                data=results, report_type="cross-validation"
+                data=(
+                    pd.concat(
+                        results, axis="index", keys=range(len(results)), names=["split"]
+                    )
+                    .reset_index()
+                    .drop(columns="level_1")
+                ),
+                report_type="cross-validation",
             )
 
             self._parent._cache[cache_key] = results
