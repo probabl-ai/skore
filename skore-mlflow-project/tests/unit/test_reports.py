@@ -1,8 +1,10 @@
+import pandas as pd
 import pytest
 
 from skore_mlflow_project.reports import (
     Artifact,
     Metric,
+    _sample_input_example,
     iter_cv,
     iter_cv_metrics,
     iter_estimator,
@@ -43,3 +45,18 @@ def test_iter_estimator_smoke(report):
 @pytest.mark.parametrize("report", CV_REPORT_FIXTURES, indirect=True)
 def test_iter_cv_smoke(report):
     assert len({type(obj) for obj in iter_cv(report)}) >= 5
+
+
+def test_sample_input_example_casts_category_to_object() -> None:
+    X = pd.DataFrame(
+        {
+            "cat": pd.Series(["a", "b", "c"], dtype="category"),
+            "num": [1, 2, 3],
+        }
+    )
+
+    sample = _sample_input_example(X, max_samples=2)
+
+    assert sample.shape == (2, 2)
+    assert not isinstance(sample["cat"].dtype, pd.CategoricalDtype)
+    assert sample["cat"].tolist() == ["a", "b"]

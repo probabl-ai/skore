@@ -144,6 +144,11 @@ class Project:
             if isinstance(report, EstimatorReport)
             else iter_cv(report)
         )
+        if mlflow.active_run() is not None:
+            raise RuntimeError(
+                "Project.put() starts and manages its own MLflow run; an active run "
+                "is already open. Call mlflow.end_run() before calling Project.put()."
+            )
 
         with (
             disable_discrete_autologging(["sklearn"]),
@@ -181,7 +186,10 @@ class Project:
             elif isinstance(obj, Artifact):
                 _log_artifact(obj)
             elif isinstance(obj, Dataset):
-                mlflow.log_input(obj.dataset, context=obj.context)
+                with _filterwarnings(
+                    UserWarning, r".*schema contains integer column.*"
+                ):
+                    mlflow.log_input(obj.dataset, context=obj.context)
             elif isinstance(obj, tuple):
                 subrun_name, sub_iter = obj
                 with mlflow.start_run(

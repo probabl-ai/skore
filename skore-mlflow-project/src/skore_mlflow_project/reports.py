@@ -5,7 +5,6 @@ from __future__ import annotations
 import itertools
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
-from numbers import Number
 from typing import Any, TypeAlias
 
 import matplotlib.pyplot as plt
@@ -110,13 +109,6 @@ def iter_cv_metrics(
     """Yield metrics/artifacts for a cross-validation report."""
     ml_task = report.ml_task
     report_any = report
-    # NOTE: we could use flat_index=True in summarize, but we have to flatten
-    # other frames anyway, so we don't do it here.
-    yield Artifact(
-        "metrics_details/per_split",
-        report_any.metrics.summarize(aggregate=None).frame(),
-    )
-    yield Artifact("all_metrics", report_any.metrics.summarize().frame())
 
     for name, kwargs in METRICS[ml_task].items():
         method = getattr(report_any.metrics, name)
@@ -124,7 +116,6 @@ def iter_cv_metrics(
         yield Metric(f"{name}_std", method(**kwargs, aggregate="std").iloc[0, 0])
         if not kwargs or ml_task == "regression":
             continue
-        yield Artifact(name, method())
 
     for name in PLOTS[ml_task]:
         method = getattr(report_any.metrics, name)
@@ -134,7 +125,7 @@ def iter_cv_metrics(
             display.plot()
             figure = display.figure_
             try:
-                yield Artifact(name, figure)
+                yield Artifact(f"metrics.{name}", figure)
             finally:
                 plt.close(figure)
         continue
@@ -144,7 +135,13 @@ def iter_cv_metrics(
     predict_time = timings.loc["Predict time test (s)"].loc["mean"]
     yield Metric("fit_time", fit_time)
     yield Metric("predict_time", predict_time)
-    yield Artifact("timings", report_any.metrics.timings())
+    # NOTE: we could use flat_index=True in summarize, but we have to flatten
+    # other frames anyway, so we don't do it here.
+    yield Artifact(
+        "metrics_details/per_split",
+        report_any.metrics.summarize(aggregate=None).frame(),
+    )
+    yield Artifact("metrics", report_any.metrics.summarize().frame())
 
 
 def iter_estimator_metrics(
@@ -155,15 +152,9 @@ def iter_estimator_metrics(
     report_any = report
     # NOTE: we could do the same things with data_source="train"
 
-    yield Artifact("all_metrics", report_any.metrics.summarize(flat_index=True).frame())
-
     for name, kwargs in METRICS[ml_task].items():
         method = getattr(report_any.metrics, name)
         yield Metric(name, method(**kwargs))
-        artifact_payload = method()
-        if isinstance(artifact_payload, Number):
-            continue
-        yield Artifact(name, artifact_payload)
 
     for name in PLOTS[ml_task]:
         method = getattr(report_any.metrics, name)
@@ -173,7 +164,7 @@ def iter_estimator_metrics(
             display.plot()
             figure = display.figure_
             try:
-                yield Artifact(name, figure)
+                yield Artifact(f"metrics.{name}", figure)
             finally:
                 plt.close(figure)
         continue
@@ -181,6 +172,7 @@ def iter_estimator_metrics(
     timings = report_any.metrics.timings()
     yield Metric("fit_time", timings["fit_time"])
     yield Metric("predict_time", timings["predict_time_test"])
+    yield Artifact("metrics", report_any.metrics.summarize().frame())
 
 
 def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, None]:
@@ -194,7 +186,7 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
 
     yield Artifact("data.analyze", _data_analyze_html(report))
 
-    yield _dataset_from_any(report.X, report.y)
+    yield _dataset_from_Xy(report.X, report.y)
 
     for split_id, estimator_report in enumerate(report.estimator_reports_):
         yield (
@@ -224,8 +216,8 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
 
     yield Artifact("data.analyze", _data_analyze_html(report))
 
-    yield _dataset_from_any(report.X_train, report.y_train, context="training")
-    yield _dataset_from_any(report.X_test, report.y_test, context="evaluation")
+    yield _dataset_from_Xy(report.X_train, report.y_train, context="training")
+    yield _dataset_from_Xy(report.X_test, report.y_test, context="evaluation")
 
 
 def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
@@ -238,12 +230,20 @@ def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
 
 def _sample_input_example(X: ArrayLike, *, max_samples: int = 5) -> ArrayLike:
     if isinstance(X, pd.DataFrame):
-        return X.head(max_samples)
+        sample = X.head(max_samples)
+        category_columns = sample.select_dtypes(include="category").columns
+        if len(category_columns) == 0:
+            return sample
+        # MLflow signature inference cannot always handle pandas categorical
+        # dtypes. Cast to object to keep values while avoiding category dtype.
+        sample = sample.copy()
+        sample[category_columns] = sample[category_columns].astype(object)
+        return sample
     else:
         return X[:max_samples]
 
 
-def _dataset_from_any(
+def _dataset_from_Xy(
     X: pd.DataFrame | NDArray[np.generic],
     y: pd.DataFrame | pd.Series | NDArray[np.generic] | dict[str, NDArray[np.generic]],
     context: str | None = None,
@@ -265,7 +265,7 @@ def _dataset_from_any(
     else:
         # mlflow.data.from_pandas doesn't support multiple targets
         # use mlflow.data.from_numpy instead
-        return _dataset_from_any(
+        return _dataset_from_Xy(
             X.to_numpy(), {c: y[c].to_numpy() for c in y.columns}, context=context
         )
 
