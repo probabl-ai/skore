@@ -151,8 +151,8 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         aggregate : {"mean", "std"}, ("mean", "std") or None, default=("mean", "std")
             Aggregate the importances over splits. Only relevant when
             ``report_type`` is ``"cross-validation"`` or
-            ``"comparison-cross-validation"``. If ``None``, the raw per-split
-            values are returned.
+            ``"comparison-cross-validation"``; ignored otherwise. If ``None``,
+            the raw per-split values are returned.
 
         Returns
         -------
