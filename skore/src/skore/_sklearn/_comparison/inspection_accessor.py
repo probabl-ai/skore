@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from sklearn.utils.metaestimators import available_if
@@ -16,7 +16,6 @@ from skore._utils._accessor import (
 
 if TYPE_CHECKING:
     from skore import ComparisonReport
-    from skore._sklearn._cross_validation.report import CrossValidationReport
 
 
 class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
@@ -84,23 +83,11 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         >>> display.plot() # shows plot
         """
         frames = []
-        if self._parent._report_type == "comparison-estimator":
-            for name, report in self._parent.reports_.items():
-                display = report.inspection.coefficients()
-                df = display.coefficients.copy()
-                df["estimator"] = name
-                frames.append(df)
-        else:  # self._parent._report_type == "comparison-cross-validation"
-            for name, report in self._parent.reports_.items():
-                cross_validation_report = cast("CrossValidationReport", report)
-                for split_idx, estimator_report in enumerate(
-                    cross_validation_report.estimator_reports_
-                ):
-                    display = estimator_report.inspection.coefficients()
-                    df = display.coefficients.copy()
-                    df["estimator"] = name
-                    df["split"] = split_idx
-                    frames.append(df)
+        for name, report in self._parent.reports_.items():
+            display = report.inspection.coefficients()
+            df = display.coefficients.copy()
+            df["estimator"] = name
+            frames.append(df)
         coefficients = pd.concat(frames, ignore_index=True)
         return CoefficientsDisplay(
             coefficients=coefficients,
@@ -149,7 +136,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         >>> display.frame()
              estimator            feature   importance
         0  small trees  sepal length (cm)       0.1...
-        1  small trees   sepal width (cm)      0.0...
+        1  small trees   sepal width (cm)       0.0...
         2  small trees  petal length (cm)       0.4...
         3  small trees   petal width (cm)       0.4...
         4    big trees  sepal length (cm)       0.0...
@@ -159,21 +146,11 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         >>> display.plot() # shows plot
         """
         frames = []
-        if self._parent._report_type == "comparison-estimator":
-            for name, report in self._parent.reports_.items():
-                display = report.inspection.impurity_decrease()
-                df = display.importances.copy()
-                df["estimator"] = name
-                frames.append(df)
-        else:  # self._parent._report_type == "comparison-cross-validation"
-            for name, report in self._parent.reports_.items():
-                report = cast("CrossValidationReport", report)
-                for split_idx, estimator_report in enumerate(report.estimator_reports_):
-                    display = estimator_report.inspection.impurity_decrease()
-                    df = display.importances.copy()
-                    df["estimator"] = name
-                    df["split"] = split_idx
-                    frames.append(df)
+        for name, report in self._parent.reports_.items():
+            display = report.inspection.impurity_decrease()
+            df = display.importances.copy()
+            df["estimator"] = name
+            frames.append(df)
         importances = pd.concat(frames, ignore_index=True)
         return ImpurityDecreaseDisplay(
             importances=importances,

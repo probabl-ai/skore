@@ -264,7 +264,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Even if pipeline components output sparse arrays, these will be made dense.
         """  # noqa: E501
         if data_source == "X_y":
-            X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
+            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
                 data_source=data_source, X=X, y=y
             )
         else:
@@ -303,30 +303,17 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         if display is None:
             frames = []
             for split_idx, report in enumerate(self._parent.estimator_reports_):
-                if data_source == "X_y":
-                    report_display = report.inspection.permutation_importance(
-                        data_source=data_source,
-                        X=X_,
-                        y=y_true,
-                        at_step=at_step,
-                        metric=metric,
-                        n_repeats=n_repeats,
-                        max_samples=max_samples,
-                        n_jobs=n_jobs,
-                        seed=seed,
-                    )
-                else:
-                    report_display = report.inspection.permutation_importance(
-                        data_source=data_source,
-                        X=X,
-                        y=y,
-                        at_step=at_step,
-                        metric=metric,
-                        n_repeats=n_repeats,
-                        max_samples=max_samples,
-                        n_jobs=n_jobs,
-                        seed=seed,
-                    )
+                report_display = report.inspection.permutation_importance(
+                    data_source=data_source,
+                    X=X,
+                    y=y,
+                    at_step=at_step,
+                    metric=metric,
+                    n_repeats=n_repeats,
+                    max_samples=max_samples,
+                    n_jobs=n_jobs,
+                    seed=seed,
+                )
                 df = report_display.importances.copy()
                 df["split"] = split_idx
                 frames.append(df)
