@@ -395,7 +395,6 @@ project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
 # %%
 project.put("simple_linear_model_cv", simple_cv_report)
 project.put("advanced_pipeline_cv", advanced_cv_report)
-project.put("final_model", final_report)
 
 # %%
 # Now we can retrieve a summary of our stored reports:
