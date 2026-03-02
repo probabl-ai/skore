@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
@@ -72,7 +71,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         return CoefficientsDisplay._compute_data_for_display(
             estimator=self._parent.estimator_,
             name=self._parent.estimator_name_,
-            split=np.nan,
             report_type=self._parent._report_type,
         )
 
@@ -114,7 +112,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         return ImpurityDecreaseDisplay._compute_data_for_display(
             estimator=self._parent.estimator_,
             name=self._parent.estimator_name_,
-            split=np.nan,
             report_type=self._parent._report_type,
         )
 
@@ -340,7 +337,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 data_source=data_source,
                 estimator=self._parent.estimator_,
                 name=self._parent.estimator_name_,
-                split=np.nan,
                 X=X_,
                 y=y_true,
                 at_step=at_step,

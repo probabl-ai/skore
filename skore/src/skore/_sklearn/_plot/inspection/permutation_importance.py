@@ -74,7 +74,6 @@ class PermutationImportanceDisplay(DisplayMixin):
         data_source: DataSource,
         estimator: BaseEstimator,
         name: str,
-        split: int | float,
         X: ArrayLike,
         y: ArrayLike,
         at_step: int | str,
@@ -180,7 +179,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         df_importances = pd.concat(df_importances, axis="index")
         df_importances["data_source"] = data_source
         df_importances["estimator"] = name
-        df_importances["split"] = split
+        df_importances["split"] = np.nan
 
         ordered_columns = [
             "estimator",

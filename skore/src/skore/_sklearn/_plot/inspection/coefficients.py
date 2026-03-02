@@ -689,7 +689,6 @@ class CoefficientsDisplay(DisplayMixin):
         *,
         estimator: BaseEstimator,
         name: str,
-        split: int | float,
         report_type: ReportType,
     ) -> CoefficientsDisplay:
         """Compute the data for the display from a single estimator.
@@ -701,9 +700,6 @@ class CoefficientsDisplay(DisplayMixin):
 
         name : str
             The name of the estimator.
-
-        split : int or float
-            The split index (use np.nan for single-estimator reports).
 
         report_type : {"estimator", "cross-validation", "comparison-estimator", \
                 "comparison-cross-validation"}
@@ -740,7 +736,7 @@ class CoefficientsDisplay(DisplayMixin):
         index = pd.DataFrame(
             {
                 "estimator": [name] * n_features,
-                "split": [split] * n_features,
+                "split": [np.nan] * n_features,
                 "feature": feature_names,
             }
         )
