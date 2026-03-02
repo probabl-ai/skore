@@ -208,8 +208,8 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         splits = []
 
         for train_indices, test_indices in self.report.split_indices:
-            train_y = self.report.y.loc[train_indices, :]
-            test_y = self.report.y.loc[test_indices, :]
+            train_y = self.report.y[train_indices]
+            test_y = self.report.y[test_indices]
             train_target_distribution: list[float] = []
             test_target_distribution: list[float] = []
 
