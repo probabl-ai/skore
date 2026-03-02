@@ -144,6 +144,11 @@ class Project:
             if isinstance(report, EstimatorReport)
             else iter_cv(report)
         )
+        if mlflow.active_run() is not None:
+            raise RuntimeError(
+                "Project.put() starts and manages its own MLflow run; an active run "
+                "is already open. Call mlflow.end_run() before calling Project.put()."
+            )
 
         with (
             disable_discrete_autologging(["sklearn"]),
