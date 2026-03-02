@@ -10,11 +10,22 @@ from sklearn.model_selection import KFold, RepeatedKFold
 from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.artifact.media import (
+    ConfusionMatrixDataFrameTest,
+    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixSVGTest,
+    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
-    PrecisionRecallTest,
-    PrecisionRecallTrain,
-    RocTest,
-    RocTrain,
+    ImpurityDecrease,
+    PermutationImportanceTest,
+    PermutationImportanceTrain,
+    PrecisionRecallDataFrameTest,
+    PrecisionRecallDataFrameTrain,
+    PrecisionRecallSVGTest,
+    PrecisionRecallSVGTrain,
+    RocDataFrameTest,
+    RocDataFrameTrain,
+    RocSVGTest,
+    RocSVGTrain,
 )
 from skore_hub_project.artifact.media.data import TableReport
 from skore_hub_project.artifact.serializer import Serializer
@@ -78,6 +89,14 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
 
 @fixture
 def payload(project, small_cv_binary_classification):
+    # Force the compute of the permutations
+    small_cv_binary_classification.inspection.permutation_importance(
+        data_source="train", seed=42
+    )
+    small_cv_binary_classification.inspection.permutation_importance(
+        data_source="test", seed=42
+    )
+
     return CrossValidationReportPayload(
         project=project,
         report=small_cv_binary_classification,
@@ -366,11 +385,22 @@ class TestCrossValidationReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
+            ConfusionMatrixDataFrameTest,
+            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixSVGTest,
+            ConfusionMatrixSVGTrain,
             EstimatorHtmlRepr,
-            PrecisionRecallTest,
-            PrecisionRecallTrain,
-            RocTest,
-            RocTrain,
+            ImpurityDecrease,
+            PermutationImportanceTest,
+            PermutationImportanceTrain,
+            PrecisionRecallDataFrameTest,
+            PrecisionRecallDataFrameTrain,
+            PrecisionRecallSVGTest,
+            PrecisionRecallSVGTrain,
+            RocDataFrameTest,
+            RocDataFrameTrain,
+            RocSVGTest,
+            RocSVGTrain,
             TableReport,
         ]
 
