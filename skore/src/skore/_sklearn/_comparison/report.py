@@ -259,7 +259,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
-        self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
+        self._ml_task = next(iter(self.reports_.values()))._ml_task
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -406,7 +406,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(25,), (25,)]
         """
-        return [  # type: ignore
+        return [
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,

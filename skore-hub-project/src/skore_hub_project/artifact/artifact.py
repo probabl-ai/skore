@@ -55,7 +55,7 @@ class Artifact(BaseModel, ABC):
                 yield "<str>"
         """
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @cached_property
     def checksum(self) -> str | None:
         """Checksum used to identify the content of the artifact."""

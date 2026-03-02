@@ -61,13 +61,13 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
     report: Report = Field(repr=False, exclude=True)
     key: str
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def estimator_class_name(self) -> str:
         """The name of the report's estimator."""
         return self.report.estimator_name_
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @cached_property
     def dataset_fingerprint(self) -> str:
         """The hash of the targets in the test-set."""
@@ -82,13 +82,13 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
             ),
         )
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def ml_task(self) -> str:
         """The type of ML task covered by the report."""
         return self.report.ml_task
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @cached_property
     def metrics(self) -> list[Metric[Report]]:
         """
@@ -129,7 +129,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
         return [metric for metric in metrics if metric.value is not None]
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @cached_property
     def medias(self) -> list[Media[Report]]:
         """
@@ -161,7 +161,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
         return payloads
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @cached_property
     def pickle(self) -> Pickle:
         """

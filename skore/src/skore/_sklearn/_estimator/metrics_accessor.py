@@ -256,7 +256,7 @@ class _MetricsAccessor(
             metrics += ["_fit_time", "_predict_time"]
 
         if metric_names is None:
-            metric_names = [None] * len(metrics)  # type: ignore
+            metric_names = [None] * len(metrics)
 
         scores = []
         favorability_indicator = []
