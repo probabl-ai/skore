@@ -269,6 +269,17 @@ def test_invalid_metric_type(linear_regression_with_test):
         report.metrics.summarize(metric=[1])
 
 
+def test_empty_metric_list_uses_defaults(linear_regression_with_test):
+    """Check that empty metric list falls back to default metrics."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    assert_frame_equal(
+        report.metrics.summarize(metric=[]).data,
+        report.metrics.summarize(metric=None).data,
+    )
+
+
 @pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
 def test_error_metric_strings(linear_regression_with_test, metric):
     """Check that we raise an error if a metric string is not a valid metric."""

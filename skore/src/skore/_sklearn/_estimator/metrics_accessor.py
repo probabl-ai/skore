@@ -198,7 +198,8 @@ class _MetricsAccessor(
         elif isinstance(metric, list):
             metrics = metric
 
-        if metric is None:
+        # Treat empty list same as None - use defaults
+        if metric is None or (isinstance(metric, list) and len(metric) == 0):
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
                 metrics = ["accuracy", "precision", "recall", "roc_auc"]
