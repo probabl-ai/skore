@@ -79,7 +79,7 @@ from skore import EstimatorReport, Project
 
 project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
 
-for regularization in logspace(-7, 7, 31):
+for regularization in logspace(-3, 3, 5):
     project.put(
         f"lr-regularization-{regularization:.1e}",
         EstimatorReport(
