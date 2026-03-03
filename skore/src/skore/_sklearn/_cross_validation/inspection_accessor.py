@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from numpy.typing import ArrayLike
+import pandas as pd
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -62,14 +62,16 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         7       1  Feature #2       17.1...
         >>> display.plot() # shows plot
         """
-        return CoefficientsDisplay._compute_data_for_display(
-            estimators=[
-                report.estimator_ for report in self._parent.estimator_reports_
-            ],
-            names=[
-                report.estimator_name_ for report in self._parent.estimator_reports_
-            ],
-            splits=list(range(len(self._parent.estimator_reports_))),
+        return CoefficientsDisplay(
+            coefficients=pd.concat(
+                [
+                    report.inspection.coefficients()
+                    .coefficients.copy()
+                    .assign(split=split_idx)
+                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                ],
+                ignore_index=True,
+            ),
             report_type=self._parent._report_type,
         )
 
@@ -77,8 +79,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         at_step: int | str = 0,
         metric: Metric = None,
         n_repeats: int = 5,
@@ -282,33 +282,27 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         # earlier.
         display = None if seed is None else self._parent._cache.get(cache_key)
         if display is None:
-            Xs: list[ArrayLike] = []
-            ys: list[ArrayLike] = []
-            for report in self._parent.estimator_reports_:
-                report_X, report_y = report.inspection._get_X_y_and_data_source_hash(
-                    data_source=data_source
-                )
-                Xs.append(report_X)
-                ys.append(report_y)
-
-            display = PermutationImportanceDisplay._compute_data_for_display(
-                data_source=data_source,
-                estimators=[
-                    report.estimator_ for report in self._parent.estimator_reports_
-                ],
-                names=[
-                    report.estimator_name_ for report in self._parent.estimator_reports_
-                ],
-                splits=list(range(len(self._parent.estimator_reports_))),
-                Xs=Xs,
-                ys=ys,
-                at_step=at_step,
-                metric=metric,
-                n_repeats=n_repeats,
-                max_samples=max_samples,
-                n_jobs=n_jobs,
-                seed=seed,
-                report_type="cross-validation",
+            display = PermutationImportanceDisplay(
+                importances=pd.concat(
+                    [
+                        report.inspection.permutation_importance(
+                            data_source=data_source,
+                            at_step=at_step,
+                            metric=metric,
+                            n_repeats=n_repeats,
+                            max_samples=max_samples,
+                            n_jobs=n_jobs,
+                            seed=seed,
+                        )
+                        .importances.copy()
+                        .assign(split=split_idx)
+                        for split_idx, report in enumerate(
+                            self._parent.estimator_reports_
+                        )
+                    ],
+                    ignore_index=True,
+                ),
+                report_type=self._parent._report_type,
             )
 
             if cache_key is not None:
@@ -346,23 +340,24 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         ... )
         >>> display = report.inspection.impurity_decrease()
         >>> display.frame()
-            split            feature  importance
-        0       0  sepal length (cm)       0.0...
-        1       0   sepal width (cm)       0.0...
-        2       0  petal length (cm)       0.4...
-        3       0   petal width (cm)       0.4...
-        4       1  sepal length (cm)       0.0...
+                     feature  importance_mean  importance_std
+        0  sepal length (cm)            0.0...           0.0...
+        1   sepal width (cm)            0.0...           0.0...
+        2  petal length (cm)            0.4...           0.0...
+        3   petal width (cm)            0.4...           0.0...
         ...
         >>> display.plot() # shows plot
         """
-        return ImpurityDecreaseDisplay._compute_data_for_display(
-            estimators=[
-                report.estimator_ for report in self._parent.estimator_reports_
-            ],
-            names=[
-                report.estimator_name_ for report in self._parent.estimator_reports_
-            ],
-            splits=list(range(len(self._parent.estimator_reports_))),
+        return ImpurityDecreaseDisplay(
+            importances=pd.concat(
+                [
+                    report.inspection.impurity_decrease()
+                    .importances.copy()
+                    .assign(split=split_idx)
+                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                ],
+                ignore_index=True,
+            ),
             report_type=self._parent._report_type,
         )
 

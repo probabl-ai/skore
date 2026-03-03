@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-import numpy as np
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -69,9 +68,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot() # shows plot
         """
         return CoefficientsDisplay._compute_data_for_display(
-            estimators=[self._parent.estimator_],
-            names=[self._parent.estimator_name_],
-            splits=[np.nan],
+            estimator=self._parent.estimator_,
+            name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
         )
 
@@ -111,9 +109,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         4  Feature #4     0.02...
         """
         return ImpurityDecreaseDisplay._compute_data_for_display(
-            estimators=[self._parent.estimator_],
-            names=[self._parent.estimator_name_],
-            splits=[np.nan],
+            estimator=self._parent.estimator_,
+            name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
         )
 
@@ -323,11 +320,10 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if display is None:
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,
-                estimators=[self._parent.estimator_],
-                names=[self._parent.estimator_name_],
-                splits=[np.nan],
-                Xs=[X_],
-                ys=[y_true],
+                estimator=self._parent.estimator_,
+                name=self._parent.estimator_name_,
+                X=X_,
+                y=y_true,
                 at_step=at_step,
                 metric=metric,
                 n_repeats=n_repeats,
