@@ -1069,9 +1069,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 total=len(self._parent.reports_),
             ):
                 for ds in data_sources:
-                    report_X, report_y = report.metrics._get_X_y_and_data_source_hash(
-                        data_source=ds
-                    )
+                    report_X, report_y = report.metrics._get_X_y(data_source=ds)
 
                     y_true_data, y_pred_data = _get_ys_for_single_report(
                         cache=report._cache,
@@ -1108,10 +1106,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             ):
                 for split, estimator_report in enumerate(report.estimator_reports_):
                     for ds in data_sources:
-                        report_X, report_y = (
-                            estimator_report.metrics._get_X_y_and_data_source_hash(
-                                data_source=ds
-                            )
+                        report_X, report_y = estimator_report.metrics._get_X_y(
+                            data_source=ds
                         )
 
                         y_true_data, y_pred_data = _get_ys_for_single_report(

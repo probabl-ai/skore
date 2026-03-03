@@ -476,7 +476,7 @@ class _MetricsAccessor(
         pos_label: PositiveLabel | None = None,
         **metric_kwargs: Any,
     ) -> float | dict[PositiveLabel, float] | list:
-        X, y_true = self._get_X_y_and_data_source_hash(data_source=data_source)
+        X, y_true = self._get_X_y(data_source=data_source)
 
         metric_params = inspect.signature(metric_fn).parameters
 
@@ -566,7 +566,7 @@ class _MetricsAccessor(
             Whether to cast the numbers to floats. If `False`, the return value
             is `None` when the predictions have never been computed.
         """
-        X, _ = self._get_X_y_and_data_source_hash(data_source=data_source)
+        X, _ = self._get_X_y(data_source=data_source)
 
         predict_time_cache_key = (
             self._parent._hash,
@@ -1343,7 +1343,7 @@ class _MetricsAccessor(
         y_pred: list[YPlotData] = []
 
         for ds in data_sources:
-            ds_X, ds_y = self._get_X_y_and_data_source_hash(data_source=ds)
+            ds_X, ds_y = self._get_X_y(data_source=ds)
 
             y_true_data, y_pred_data = _get_ys_for_single_report(
                 cache=self._parent._cache,

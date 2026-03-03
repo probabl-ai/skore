@@ -991,9 +991,7 @@ class _MetricsAccessor(
             total=len(self._parent.estimator_reports_),
         ):
             # Retrieve data stored in the individual reports
-            report_X, report_y = report.metrics._get_X_y_and_data_source_hash(
-                data_source=data_source
-            )
+            report_X, report_y = report.metrics._get_X_y(data_source=data_source)
 
             y_true_data, y_pred_data = _get_ys_for_single_report(
                 cache=report._cache,

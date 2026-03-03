@@ -57,7 +57,7 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
         )
         return string_buffer.getvalue()
 
-    def _get_X_y_and_data_source_hash(
+    def _get_X_y(
         self,
         *,
         data_source: Literal["test", "train"],
