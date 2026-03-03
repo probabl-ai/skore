@@ -130,28 +130,14 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Precision                    0.96...               0.96...
         Recall                       0.97...               0.97...
         """
-        return self._compute_metric_scores(
-            report_metric_name="summarize",
-            data_source=data_source,
-            metric=metric,
-            pos_label=pos_label,
-            metric_kwargs=metric_kwargs,
-            response_method=response_method,
-        )
-
-    def _compute_metric_scores(
-        self,
-        report_metric_name: str,
-        *,
-        data_source: DataSource = "test",
-        **metric_kwargs: Any,
-    ):
         cache_key = deep_key_sanitize(
             (
                 self._parent._hash,
-                report_metric_name,
                 data_source,
+                metric,
                 metric_kwargs,
+                response_method,
+                pos_label,
             )
         )
 
@@ -163,14 +149,16 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 )
             )
 
-            kwargs = dict(data_source=data_source, **metric_kwargs)
-
             results = [
-                result.data if report_metric_name == "summarize" else result
+                result.data
                 for result in track(
                     parallel(
-                        joblib.delayed(getattr(report.metrics, report_metric_name))(
-                            **kwargs
+                        joblib.delayed(report.metrics.summarize)(
+                            data_source=data_source,
+                            metric=metric,
+                            metric_kwargs=metric_kwargs,
+                            response_method=response_method,
+                            pos_label=pos_label,
                         )
                         for report in self._parent.reports_.values()
                     ),
