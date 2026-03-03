@@ -177,7 +177,7 @@ def test_timings_flat_index(
     report.get_predictions(data_source="test")
 
     # Get metrics with flat_index=True
-    results = report.metrics.summarize(flat_index=True).frame()
+    results = report.metrics.summarize().frame(flat_index=True)
 
     # Check that expected time measurements are in index with _s suffix
     assert "fit_time_s" in results.index

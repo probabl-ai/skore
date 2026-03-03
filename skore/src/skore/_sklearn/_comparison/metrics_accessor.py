@@ -34,12 +34,9 @@ from skore._utils._accessor import (
 )
 from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
-from skore._utils._index import flatten_multi_index
 from skore._utils._progress_bar import track
 
-from .utils import _combine_cross_validation_results, _combine_estimator_results
-
-DataSource = Literal["test", "train"]
+DataSource = Literal["test", "train", "both"]
 
 
 class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
@@ -59,9 +56,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-        favorability: bool = False,
-        flat_index: bool = False,
-        aggregate: Aggregate | None = ("mean", "std"),
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for the estimators.
 
@@ -107,19 +101,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             class is set to the one provided when creating the report. If `None`,
             the metric is computed considering each class as a positive class.
 
-        favorability : bool, default=False
-            Whether or not to add an indicator of the favorability of the metric as
-            an extra column in the returned DataFrame.
-
-        flat_index : bool, default=False
-            Whether to flatten the `MultiIndex` columns. Flat index will always be lower
-            case, do not include spaces and remove the hash symbol to ease indexing.
-
-        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
-            Function to aggregate the scores across the cross-validation splits.
-            None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
-
         Returns
         -------
         :class:`MetricsSummaryDisplay`
@@ -149,28 +130,13 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Precision                    0.96...               0.96...
         Recall                       0.97...               0.97...
         """
-        results = self._compute_metric_scores(
+        return self._compute_metric_scores(
             report_metric_name="summarize",
             data_source=data_source,
             metric=metric,
             pos_label=pos_label,
             metric_kwargs=metric_kwargs,
-            favorability=favorability,
-            aggregate=aggregate,
             response_method=response_method,
-        )
-        if flat_index:
-            results = results.copy()
-            if isinstance(results.columns, pd.MultiIndex):
-                results.columns = flatten_multi_index(results.columns)
-            if isinstance(results.index, pd.MultiIndex):
-                results.index = flatten_multi_index(results.index)
-            if isinstance(results.index, pd.Index):
-                results.index = results.index.str.replace(
-                    r"\((.*)\)$", r"\1", regex=True
-                )
-        return MetricsSummaryDisplay(
-            data=results, report_type=self._parent._report_type
         )
 
     def _compute_metric_scores(
@@ -178,17 +144,13 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         report_metric_name: str,
         *,
         data_source: DataSource = "test",
-        aggregate: Aggregate | None = ("mean", "std"),
         **metric_kwargs: Any,
     ):
-        is_cv_report = self._parent._report_type == "comparison-cross-validation"
-
         cache_key = deep_key_sanitize(
             (
                 self._parent._hash,
                 report_metric_name,
                 data_source,
-                aggregate if is_cv_report else None,
                 metric_kwargs,
             )
         )
@@ -202,18 +164,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             )
 
             kwargs = dict(data_source=data_source, **metric_kwargs)
-            if is_cv_report:
-                kwargs["aggregate"] = None
 
-            frame_kwargs = {}
-            for key in ("aggregate", "favorability", "flat_index"):
-                if key in kwargs:
-                    frame_kwargs[key] = kwargs.pop(key)
-
-            individual_results = [
-                result.frame(**frame_kwargs)
-                if report_metric_name == "summarize"
-                else result
+            results = [
+                result.data if report_metric_name == "summarize" else result
                 for result in track(
                     parallel(
                         joblib.delayed(getattr(report.metrics, report_metric_name))(
@@ -226,20 +179,19 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 )
             ]
 
-            if self._parent._report_type == "comparison-estimator":
-                results = _combine_estimator_results(
-                    individual_results,
-                    estimator_names=self._parent.reports_.keys(),
-                    favorability=frame_kwargs.get("favorability", False),
-                    data_source=data_source,
-                )
-            else:  # "CrossValidationReport"
-                results = _combine_cross_validation_results(
-                    individual_results,
-                    estimator_names=self._parent.reports_.keys(),
-                    favorability=frame_kwargs.get("favorability", False),
-                    aggregate=aggregate,
-                )
+            data = pd.concat(
+                [
+                    df.assign(estimator_name=estimator_name)
+                    for df, estimator_name in zip(
+                        results, self._parent.reports_.keys(), strict=True
+                    )
+                ],
+                axis="index",
+            )
+
+            results = MetricsSummaryDisplay(
+                data=data, report_type=self._parent._report_type
+            )
 
             self._parent._cache[cache_key] = results
         return results
@@ -292,7 +244,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Predict time train (s)     ...       ...
         """
         if self._parent._report_type == "comparison-estimator":
-            timings: pd.DataFrame = pd.concat(
+            timings = pd.concat(
                 [
                     pd.Series(report.metrics.timings())
                     for report in self._parent.reports_.values()
@@ -301,33 +253,27 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 keys=self._parent.reports_.keys(),
             )
             timings.index = timings.index.str.replace("_", " ").str.capitalize()
-
-            # Add (s) to time measurements
-            new_index = [f"{idx} (s)" for idx in timings.index]
-
-            timings.index = pd.Index(new_index)
+            timings.index = pd.Index([f"{idx} (s)" for idx in timings.index])
 
             return timings
-
-        else:  # "CrossValidationReport"
-            results = [
-                report.metrics.timings(aggregate=None)
-                for report in self._parent.reports_.values()
-            ]
-
-            # Put dataframes in the right shape
-            for i, result in enumerate(results):
-                result.index.name = "Metric"
-                result.columns = pd.MultiIndex.from_product(
-                    [[list(self._parent.reports_.keys())[i]], result.columns]
-                )
-
-            timings = _combine_cross_validation_results(
-                results,
-                self._parent.reports_.keys(),
-                favorability=False,
-                aggregate=aggregate,
+        else:  # "comparison-cross-validation"
+            timings = pd.concat(
+                [
+                    report.metrics.timings(aggregate=aggregate)
+                    for report in self._parent.reports_.values()
+                ],
+                axis=1,
+                keys=self._parent.reports_.keys(),
             )
+
+            timings.index.name = "Metric"
+            if aggregate is None:
+                timings.columns.names = ["Estimator", "Split"]
+            else:
+                timings.columns = timings.columns.swaplevel(0, 1)
+                timings = timings.sort_index(axis=1)
+                timings.columns.names = [None, "Estimator"]
+
             return timings
 
     @available_if(_check_any_sub_report_has_metric("accuracy"))
@@ -377,11 +323,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Metric
         Accuracy                    0.96...               0.96...
         """
-        return self.summarize(
-            metric=["accuracy"],
-            data_source=data_source,
+        return self.summarize(metric=["accuracy"], data_source=data_source).frame(
             aggregate=aggregate,
-        ).frame()
+        )
 
     @available_if(_check_any_sub_report_has_metric("precision"))
     def precision(
@@ -471,8 +415,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             data_source=data_source,
             pos_label=pos_label,
             metric_kwargs={"average": average},
+        ).frame(
             aggregate=aggregate,
-        ).frame()
+        )
 
     @available_if(_check_any_sub_report_has_metric("recall"))
     def recall(
@@ -563,8 +508,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             data_source=data_source,
             pos_label=pos_label,
             metric_kwargs={"average": average},
+        ).frame(
             aggregate=aggregate,
-        ).frame()
+        )
 
     @available_if(_check_any_sub_report_has_metric("brier_score"))
     def brier_score(
@@ -616,8 +562,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         return self.summarize(
             metric=["brier_score"],
             data_source=data_source,
+        ).frame(
             aggregate=aggregate,
-        ).frame()
+        )
 
     @available_if(_check_any_sub_report_has_metric("roc_auc"))
     def roc_auc(
@@ -706,8 +653,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             metric=["roc_auc"],
             data_source=data_source,
             metric_kwargs={"average": average, "multi_class": multi_class},
+        ).frame(
             aggregate=aggregate,
-        ).frame()
+        )
 
     @available_if(_check_any_sub_report_has_metric("log_loss"))
     def log_loss(
@@ -759,8 +707,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         return self.summarize(
             metric=["log_loss"],
             data_source=data_source,
+        ).frame(
             aggregate=aggregate,
-        ).frame()
+        )
 
     @available_if(_check_any_sub_report_has_metric("r2"))
     def r2(
@@ -824,8 +773,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             metric=["r2"],
             data_source=data_source,
             metric_kwargs={"multioutput": multioutput},
+        ).frame(
             aggregate=aggregate,
-        ).frame()
+        )
 
     @available_if(_check_any_sub_report_has_metric("rmse"))
     def rmse(
@@ -889,8 +839,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             metric=["rmse"],
             data_source=data_source,
             metric_kwargs={"multioutput": multioutput},
+        ).frame(
             aggregate=aggregate,
-        ).frame()
+        )
 
     def custom_metric(
         self,
@@ -983,8 +934,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         return self.summarize(
             metric=scoring,
             data_source=data_source,
+        ).frame(
             aggregate=aggregate,
-        ).frame()
+        )
 
     ####################################################################################
     # Methods related to the help tree

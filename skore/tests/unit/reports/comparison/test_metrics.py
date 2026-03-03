@@ -35,9 +35,9 @@ def test_favorability_undefined_metrics(report):
         }
 
     comparison_report = ComparisonReport(reports)
-    metrics = comparison_report.metrics.summarize(pos_label=1, favorability=True)
+    metrics = comparison_report.metrics.summarize(pos_label=1)
     assert isinstance(metrics, MetricsSummaryDisplay)
-    metrics_df = metrics.frame()
+    metrics_df = metrics.frame(favorability=True)
 
     assert "Brier score" in metrics_df.index
     assert "Favorability" in metrics_df.columns
