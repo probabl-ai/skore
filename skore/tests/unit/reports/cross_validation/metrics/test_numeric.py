@@ -260,3 +260,17 @@ def test_invalid_X_y_call_still_raises_after_cache_write(
 
     with pytest.raises(ValueError, match=error_msg):
         report.metrics.accuracy(X=X, y=y)
+
+
+def test_data_source_both(logistic_binary_classification_data):
+    """
+    data_source="both" is not yet supported for CrossValidationReport.
+
+    Non regression test for https://github.com/probabl-ai/skore/issues/2546
+    """
+    classifier, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(classifier, X, y)
+
+    error_msg = 'data_source="both" is not yet supported for CrossValidationReport'
+    with pytest.raises(NotImplementedError, match=error_msg):
+        report.metrics.summarize(data_source="both")
