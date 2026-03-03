@@ -342,6 +342,8 @@ cv_coefficients.plot(select_k=15, sorting_order="descending")
 #
 # Usually this would be done as you go along the model development, but
 # in the interest of simplicity we kept this until the end.
+#
+# We are using Skore Hub (https://skore.probabl.ai/) to store and review our reports.
 
 # sphinx_gallery_start_ignore
 #
@@ -369,7 +371,7 @@ else:
 # %%
 from skore import login
 
-login(mode="hub")
+login()
 
 # sphinx_gallery_start_ignore
 #
@@ -390,11 +392,21 @@ except HTTPStatusError as e:
 project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
 
 # %%
+# .. note::
+#    Here, we are using Skore Hub to store and analyze the reports that we computed.
+#    Note that you can store reports as well locally using `mode="local"` when creating
+#    or loading projects.
+
+# %%
 # We store our reports with descriptive keys:
 
 # %%
 project.put("simple_linear_model_cv", simple_cv_report)
 project.put("advanced_pipeline_cv", advanced_cv_report)
+
+# %%
+# In this example, we created a read-only Skore Hub project that you can visit by
+# clicking on the link above and explore the reports.
 
 # %%
 # Now we can retrieve a summary of our stored reports:

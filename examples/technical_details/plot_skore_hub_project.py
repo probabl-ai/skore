@@ -47,7 +47,7 @@ else:
 # %%
 from skore import login
 
-login(mode="hub")
+login()
 
 # sphinx_gallery_start_ignore
 #
