@@ -368,7 +368,6 @@ else:
     assert (PROJECT := os.environ.get("PROJECT")), "`PROJECT` must be defined."
 # sphinx_gallery_end_ignore
 
-# %%
 from skore import login
 
 login()
