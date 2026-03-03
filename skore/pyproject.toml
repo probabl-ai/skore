@@ -82,7 +82,7 @@ dev = [
   "ipykernel",
 ]
 local = ["skore-local-project>=0.0.4"]
-hub = ["skore-hub-project>=0.0.16"]
+hub = ["skore-hub-project>=0.0.17"]
 
 [project.urls]
 Homepage = "https://probabl.ai"

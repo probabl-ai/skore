@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
-import numpy as np
+import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
@@ -22,7 +22,6 @@ from skore._utils._cache_key import deep_key_sanitize
 
 if TYPE_CHECKING:
     from skore import ComparisonReport
-    from skore._sklearn._cross_validation.report import CrossValidationReport
 
 
 class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
@@ -89,32 +88,18 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         21    report big alpha  Feature #9        0.4...
         >>> display.plot() # shows plot
         """
-        if self._parent._report_type == "comparison-estimator":
-            return CoefficientsDisplay._compute_data_for_display(
-                estimators=[
-                    report.estimator_ for report in self._parent.reports_.values()
+        return CoefficientsDisplay(
+            coefficients=pd.concat(
+                [
+                    report.inspection.coefficients()
+                    .coefficients.copy()
+                    .assign(estimator=name)
+                    for name, report in self._parent.reports_.items()
                 ],
-                names=list(self._parent.reports_.keys()),
-                splits=[np.nan] * len(self._parent.reports_),
-                report_type=self._parent._report_type,
-            )
-        else:  # self._parent._report_type == "comparison-cross-validation"
-            estimators, names = [], []
-            splits: list[int | float] = []
-            for name, report in self._parent.reports_.items():
-                cross_validation_report = cast("CrossValidationReport", report)
-                for split_idx, estimator_report in enumerate(
-                    cross_validation_report.estimator_reports_
-                ):
-                    estimators.append(estimator_report.estimator_)
-                    names.append(name)
-                    splits.append(split_idx)
-            return CoefficientsDisplay._compute_data_for_display(
-                estimators=estimators,
-                names=names,
-                splits=splits,
-                report_type=self._parent._report_type,
-            )
+                ignore_index=True,
+            ),
+            report_type=self._parent._report_type,
+        )
 
     @available_if(_check_comparison_report_sub_estimators_have_feature_importances())
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
@@ -158,7 +143,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         >>> display.frame()
              estimator            feature   importance
         0  small trees  sepal length (cm)       0.1...
-        1  small trees   sepal width (cm)      0.0...
+        1  small trees   sepal width (cm)       0.0...
         2  small trees  petal length (cm)       0.4...
         3  small trees   petal width (cm)       0.4...
         4    big trees  sepal length (cm)       0.0...
@@ -167,30 +152,18 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         7    big trees   petal width (cm)       0.4...
         >>> display.plot() # shows plot
         """
-        if self._parent._report_type == "comparison-estimator":
-            return ImpurityDecreaseDisplay._compute_data_for_display(
-                estimators=[
-                    report.estimator_ for report in self._parent.reports_.values()
+        return ImpurityDecreaseDisplay(
+            importances=pd.concat(
+                [
+                    report.inspection.impurity_decrease()
+                    .importances.copy()
+                    .assign(estimator=name)
+                    for name, report in self._parent.reports_.items()
                 ],
-                names=list(self._parent.reports_.keys()),
-                splits=[np.nan] * len(self._parent.reports_),
-                report_type=self._parent._report_type,
-            )
-        else:  # self._parent._report_type == "comparison-cross-validation":
-            estimators, names = [], []
-            splits: list[int | float] = []
-            for name, report in self._parent.reports_.items():
-                report = cast("CrossValidationReport", report)
-                for split_idx, estimator_report in enumerate(report.estimator_reports_):
-                    estimators.append(estimator_report.estimator_)
-                    names.append(name)
-                    splits.append(split_idx)
-            return ImpurityDecreaseDisplay._compute_data_for_display(
-                estimators=estimators,
-                names=names,
-                splits=splits,
-                report_type=self._parent._report_type,
-            )
+                ignore_index=True,
+            ),
+            report_type=self._parent._report_type,
+        )
 
     def permutation_importance(
         self,
@@ -398,54 +371,26 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         # earlier.
         display = None if seed is None else self._parent._cache.get(cache_key)
         if display is None:
-            estimators, names = [], []
-            splits: list[int | float] = []
-            Xs: list[ArrayLike] = []
-            ys: list[ArrayLike] = []
-
-            if self._parent._report_type == "comparison-estimator":
-                for name, report in self._parent.reports_.items():
-                    report_X, report_y, _ = (
-                        report.inspection._get_X_y_and_data_source_hash(
-                            data_source=data_source, X=X, y=y
+            display = PermutationImportanceDisplay(
+                importances=pd.concat(
+                    [
+                        report.inspection.permutation_importance(
+                            data_source=data_source,
+                            X=X,
+                            y=y,
+                            at_step=at_step,
+                            metric=metric,
+                            n_repeats=n_repeats,
+                            max_samples=max_samples,
+                            n_jobs=n_jobs,
+                            seed=seed,
                         )
-                    )
-                    estimators.append(report.estimator_)
-                    names.append(name)
-                    splits.append(np.nan)
-                    Xs.append(report_X)
-                    ys.append(report_y)
-
-            else:  # self._parent._report_type == "comparison-cross-validation"
-                for name, report in self._parent.reports_.items():
-                    cross_validation_report = cast("CrossValidationReport", report)
-                    for split_idx, estimator_report in enumerate(
-                        cross_validation_report.estimator_reports_
-                    ):
-                        report_X, report_y, _ = (
-                            estimator_report.inspection._get_X_y_and_data_source_hash(
-                                data_source=data_source, X=X, y=y
-                            )
-                        )
-                        estimators.append(estimator_report.estimator_)
-                        names.append(name)
-                        splits.append(split_idx)
-                        Xs.append(report_X)
-                        ys.append(report_y)
-
-            display = PermutationImportanceDisplay._compute_data_for_display(
-                data_source=data_source,
-                estimators=estimators,
-                names=names,
-                splits=splits,
-                Xs=Xs,
-                ys=ys,
-                at_step=at_step,
-                metric=metric,
-                n_repeats=n_repeats,
-                max_samples=max_samples,
-                n_jobs=n_jobs,
-                seed=seed,
+                        .importances.copy()
+                        .assign(estimator=name)
+                        for name, report in self._parent.reports_.items()
+                    ],
+                    ignore_index=True,
+                ),
                 report_type=self._parent._report_type,
             )
 
