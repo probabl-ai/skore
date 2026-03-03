@@ -205,7 +205,9 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         of 200 buckets, and averaging the number of samples belonging to the test-set in
         each of these buckets. @TODO: find a better representation of the distribution.
         """
-        from skore._externals._sklearn_compat import _safe_indexing
+        from skore._externals._sklearn_compat import (  # type: ignore[attr-defined]
+            _safe_indexing,
+        )
 
         splits = []
 
