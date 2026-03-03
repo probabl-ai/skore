@@ -230,7 +230,7 @@ class _MetricsAccessor(
                     metrics += ["roc_auc", "log_loss"]
             else:
                 metrics = ["r2", "rmse"]
-            metrics += ["_fit_time", "predict_time"]
+            metrics += ["fit_time", "predict_time"]
 
         if metric_names is None:
             metric_names = [None] * len(metrics)  # type: ignore
@@ -238,10 +238,7 @@ class _MetricsAccessor(
         scores = []
         favorability_indicator = []
         for metric_name, metric_ in zip(metric_names, metrics, strict=False):
-            if isinstance(metric_, str) and not (
-                (metric_.startswith("_") and metric_[1:] in self._score_or_loss_info)
-                or metric_ in self._score_or_loss_info
-            ):
+            if isinstance(metric_, str) and metric_ not in self._score_or_loss_info:
                 try:
                     metric_ = sklearn_metrics.get_scorer(metric_)
                 except ValueError as err:
@@ -289,38 +286,16 @@ class _MetricsAccessor(
                 favorability_indicator.append(metric_favorability)
             elif isinstance(metric_, str) or callable(metric_):
                 if isinstance(metric_, str):
-                    # Handle built-in metrics (with underscore prefix)
-                    if (
-                        metric_.startswith("_")
-                        and metric_[1:] in self._score_or_loss_info
-                    ):
-                        metric_fn = getattr(
-                            self,
-                            metric_
-                            if metric_ in ["_fit_time", "_predict_time"]
-                            else metric_[1:],
-                        )
-                        metrics_kwargs = {}
-                        if metric_name is None:
-                            metric_name = (
-                                f"{self._score_or_loss_info[metric_[1:]]['name']}"
-                            )
-                        metric_favorability = self._score_or_loss_info[metric_[1:]][
-                            "icon"
-                        ]
-
-                    # Handle built-in metrics (without underscore prefix)
-                    elif metric_ in self._score_or_loss_info:
-                        metric_fn = getattr(
-                            self,
-                            f"_{metric_}"
-                            if metric_ in ["fit_time", "predict_time"]
-                            else metric_,
-                        )
-                        metrics_kwargs = {}
-                        if metric_name is None:
-                            metric_name = f"{self._score_or_loss_info[metric_]['name']}"
-                        metric_favorability = self._score_or_loss_info[metric_]["icon"]
+                    metric_fn = getattr(
+                        self,
+                        f"_{metric_}"
+                        if metric_ in ["fit_time", "predict_time"]
+                        else metric_,
+                    )
+                    metrics_kwargs = {}
+                    if metric_name is None:
+                        metric_name = f"{self._score_or_loss_info[metric_]['name']}"
+                    metric_favorability = self._score_or_loss_info[metric_]["icon"]
                 else:
                     # Handle callable metrics
                     if response_method is None:
