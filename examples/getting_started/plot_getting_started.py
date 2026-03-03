@@ -399,8 +399,9 @@ project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
 # %%
 # We store our reports with descriptive keys:
 
-# %%
 project.put("simple_linear_model_cv", simple_cv_report)
+
+# %%
 project.put("advanced_pipeline_cv", advanced_cv_report)
 
 # %%
