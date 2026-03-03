@@ -14,9 +14,9 @@ from skore._utils._testing import check_cache_changed, check_cache_unchanged
 def test_aggregate_none(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with `aggregate=None`."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(aggregate=None)
+    result = report.metrics.summarize()
     assert isinstance(result, MetricsSummaryDisplay)
-    result_df = result.frame()
+    result_df = result.frame(aggregate=None)
 
     assert_index_equal(result_df.columns, pd.Index(["Value"]))
     assert result_df.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
@@ -30,7 +30,7 @@ def test_aggregate_none_flat_index(
     `flat_index=True`.
     """
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(aggregate=None, flat_index=True).frame()
+    result = report.metrics.summarize().frame(aggregate=None, flat_index=True)
 
     assert_index_equal(result.columns, pd.Index(["Value"]))
     assert len(result) == 36
@@ -102,15 +102,15 @@ def test_aggregate_is_used_in_cache(
     `aggregate`, you should get a different result.
     """
     report = comparison_cross_validation_reports_binary_classification
-    call1 = report.metrics.summarize(aggregate="mean").frame()
-    call2 = report.metrics.summarize(aggregate=("mean", "std")).frame()
+    call1 = report.metrics.summarize().frame(aggregate="mean")
+    call2 = report.metrics.summarize().frame(aggregate=("mean", "std"))
     assert list(call1.columns) != list(call2.columns)
 
 
 def test_metric(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with the `metric` parameter."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(metric=["accuracy"], aggregate=None).frame()
+    result = report.metrics.summarize(metric=["accuracy"]).frame(aggregate=None)
 
     assert_index_equal(result.columns, pd.Index(["Value"]))
     assert_index_equal(
@@ -130,7 +130,7 @@ def test_metric(comparison_cross_validation_reports_binary_classification):
 def test_favorability(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with `favorability=True`."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(favorability=True).frame()
+    result = report.metrics.summarize().frame(favorability=True)
 
     assert_index_equal(
         result.columns,
@@ -175,8 +175,8 @@ def test_init_with_report_names(forest_binary_classification_data):
 
     assert_index_equal(
         (
-            comp.metrics.summarize(aggregate=None)
-            .frame()
+            comp.metrics.summarize()
+            .frame(aggregate=None)
             .index.get_level_values("Estimator")
             .unique()
         ),
@@ -185,7 +185,8 @@ def test_init_with_report_names(forest_binary_classification_data):
 
 
 def test_cache_poisoning(binary_classification_data):
-    """Computing metrics for a ComparisonReport should not influence the
+    """
+    Computing metrics for a ComparisonReport should not influence the
     metrics computation for the internal CVReports.
 
     Non-regression test for https://github.com/probabl-ai/skore/issues/1706
@@ -199,10 +200,21 @@ def test_cache_poisoning(binary_classification_data):
         DummyClassifier(strategy="uniform", random_state=2), X=X, y=y
     )
     report = ComparisonReport({"model_1": report_1, "model_2": report_2})
-    report.metrics.summarize(favorability=True)
+    report.metrics.summarize().frame(favorability=True)
     result = report_1.metrics.summarize().frame(aggregate=None, favorability=True)
 
     assert "Favorability" in result.columns
+
+
+def test_aggregate_sequence_of_one_element(
+    comparison_cross_validation_reports_binary_classification,
+):
+    """Passing a list of one string is the same as passing the string itself."""
+    report = comparison_cross_validation_reports_binary_classification
+    assert_frame_equal(
+        report.metrics.summarize().frame(aggregate="mean"),
+        report.metrics.summarize().frame(aggregate=["mean"]),
+    )
 
 
 @pytest.mark.parametrize(

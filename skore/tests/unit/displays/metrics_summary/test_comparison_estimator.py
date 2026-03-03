@@ -45,7 +45,7 @@ def test_data_source_both(
     pd.testing.assert_index_equal(result.columns, expected_columns)
 
     assert len(report._cache) == 1
-    cached_result = next(iter(report._cache.values()))
+    cached_result = next(iter(report._cache.values())).frame()
     pd.testing.assert_index_equal(cached_result.index, expected_index)
     pd.testing.assert_index_equal(cached_result.columns, expected_columns)
 
@@ -58,9 +58,9 @@ def test_flat_index(estimator_reports_binary_classification):
     """
     report_1, report_2 = estimator_reports_binary_classification
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result = report.metrics.summarize(flat_index=True)
+    result = report.metrics.summarize()
     assert isinstance(result, MetricsSummaryDisplay)
-    result_df = result.frame()
+    result_df = result.frame(flat_index=True)
     assert result_df.shape == (9, 2)
     assert isinstance(result_df.index, pd.Index)
     assert result_df.index.tolist() == [
@@ -78,13 +78,13 @@ def test_flat_index(estimator_reports_binary_classification):
 
 
 def test_favorability(
-    comparison_cross_validation_reports_binary_classification,
+    comparison_estimator_reports_binary_classification,
 ):
     """Check that the behaviour of `favorability` is correct."""
-    report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(favorability=True)
+    report = comparison_estimator_reports_binary_classification
+    result = report.metrics.summarize()
     assert isinstance(result, MetricsSummaryDisplay)
-    result_df = result.frame()
+    result_df = result.frame(favorability=True)
     assert "Favorability" in result_df.columns
     indicator = result_df["Favorability"]
     assert indicator["Accuracy"].tolist() == ["(↗︎)"]
@@ -101,7 +101,7 @@ def test_aggregate(
     when comparing `CrossValidationReport`s."""
     report = comparison_estimator_reports_binary_classification
     np.testing.assert_allclose(
-        report.metrics.summarize(aggregate="mean").frame(),
+        report.metrics.summarize().frame(aggregate="mean"),
         report.metrics.summarize().frame(),
     )
 

@@ -58,7 +58,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         for col in df.columns.intersection(["label", "output", "average"]):
             df[col] = df[col].astype("str").replace("<NA>", "").fillna("")
 
-        estimator_name = df.pop("estimator_name")[0]
+        estimator_name = df.pop("estimator_name").iloc[0]
         index = df.columns.intersection(
             ["metric", "verbose_name", "label", "output", "average"]
         ).to_list()
@@ -113,6 +113,52 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         return df
 
+    @staticmethod
+    def _frame_cross_validation(
+        data: pd.DataFrame,
+        *,
+        aggregate: Aggregate | None = ("mean", "std"),
+        favorability: bool = False,
+        flat_index: bool = False,
+    ) -> pd.DataFrame:
+        """Process cross-validation report data into a formatted dataframe."""
+        df = data.copy()
+        estimator_name = df["estimator_name"].iloc[0]
+
+        df = MetricsSummaryDisplay._frame_estimator(
+            df, favorability=True, flat_index=False
+        )
+        favorability_col = df.pop("Favorability")
+
+        if isinstance(aggregate, (list, tuple)):
+            aggregate = list(aggregate)
+        elif aggregate is not None:
+            aggregate = cast(Literal["mean", "std"], aggregate)
+            aggregate = [aggregate]
+
+        df = df.reset_index().pivot_table(
+            index=df.index.names,
+            columns="split" if aggregate is None else None,
+            values=estimator_name,
+            aggfunc="first" if aggregate is None else aggregate,
+            sort=False,
+        )
+
+        if aggregate is None:
+            df.columns = pd.MultiIndex.from_product(
+                [[estimator_name], [f"Split #{i}" for i in df.columns]]
+            )
+        else:
+            df.columns = df.columns.swaplevel(0, 1)
+
+        if favorability:
+            df["Favorability"] = favorability_col[~favorability_col.index.duplicated()]
+
+        if flat_index:
+            df = MetricsSummaryDisplay._flatten_index(df)
+
+        return df
+
     def frame(
         self,
         *,
@@ -142,53 +188,78 @@ class MetricsSummaryDisplay(DisplayMixin):
             The report metrics as a dataframe.
         """
         if self.report_type == "estimator":
-            return self._frame_estimator(
+            df = self._frame_estimator(
                 self.data,
                 favorability=favorability,
                 flat_index=flat_index,
             )
         elif self.report_type == "cross-validation":
-            df = self.data.copy()
-
-            estimator_name = df["estimator_name"][0]
-
-            df = self._frame_estimator(df, favorability=True, flat_index=False)
-
-            favorability_col = df.pop("Favorability")
-
-            if isinstance(aggregate, (list, tuple)):
-                aggregate = list(aggregate)
-            elif aggregate is not None:
-                aggregate = cast(Literal["mean", "std"], aggregate)
-                aggregate = [aggregate]
-
-            df = df.reset_index().pivot_table(
-                index=df.index.names,
-                columns="split" if aggregate is None else None,
-                values=estimator_name,
-                aggfunc="first" if aggregate is None else aggregate,
-                sort=False,
+            df = MetricsSummaryDisplay._frame_cross_validation(
+                self.data,
+                aggregate=aggregate,
+                favorability=favorability,
+                flat_index=flat_index,
             )
 
-            if aggregate is None:
-                df.columns = pd.MultiIndex.from_product(
-                    [[estimator_name], [f"Split #{i}" for i in df.columns]]
-                )
-            else:
-                df.columns = df.columns.swaplevel(0, 1)
+        elif self.report_type == "comparison-estimator":
+            df = self.data.copy()
+
+            df = pd.concat(
+                [
+                    MetricsSummaryDisplay._frame_estimator(
+                        est, favorability=True, flat_index=False
+                    )
+                    for _, est in df.groupby("estimator_name", sort=False)
+                ],
+                axis="columns",
+            )
+
+            # Extract favorability columns and use first non-NaN value for each row
+            favorability_col = df.pop("Favorability").bfill(axis=1).iloc[:, 0]
+
+            df.columns.name = "Estimator"
 
             if favorability:
-                df["Favorability"] = favorability_col[
-                    ~favorability_col.index.duplicated()
-                ]
+                df["Favorability"] = favorability_col
 
             if flat_index:
                 df = MetricsSummaryDisplay._flatten_index(df)
 
-            return df
-        else:
+        else:  # self.report_type == "comparison-cross-validation"
             df = self.data.copy()
-            return df
+
+            df = pd.concat(
+                [
+                    MetricsSummaryDisplay._frame_cross_validation(
+                        est, aggregate=aggregate, favorability=True, flat_index=False
+                    )
+                    for _, est in df.groupby("estimator_name", sort=False)
+                ],
+                axis="columns",
+            )
+
+            # Sort columns to avoid lexsort warning when accessing specific columns
+            df = df.sort_index(axis=1)
+            favorability_col = df.pop(("Favorability", "")).bfill(axis=1).iloc[:, 0]
+
+            if aggregate is None:
+                original_index_names = list(df.index.names)
+                df = df.stack([0, 1])
+                df.index.names = original_index_names + ["Estimator", "Split"]
+                df = df.to_frame("Value")
+                df.columns.name = None
+            else:
+                df.columns = df.columns.swaplevel(0, 1)
+                df = df.sort_index(axis=1, level=[0, 1])
+                df.columns.names = [None, "Estimator"]
+
+            if favorability:
+                df[("Favorability", "")] = favorability_col
+
+            if flat_index:
+                df = MetricsSummaryDisplay._flatten_index(df)
+
+        return df
 
     @DisplayMixin.style_plot
     def plot(self):
