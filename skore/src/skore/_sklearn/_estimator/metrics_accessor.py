@@ -470,6 +470,7 @@ class _MetricsAccessor(
             scores["label"] = pd.Series(scores["label"], dtype=pd.BooleanDtype())
         elif any(isinstance(label, int) for label in scores["label"]):
             scores["label"] = pd.Series(scores["label"], dtype=pd.Int64Dtype())
+
         if any(isinstance(output, int) for output in scores["output"]):
             scores["output"] = pd.Series(scores["output"], dtype=pd.Int64Dtype())
 

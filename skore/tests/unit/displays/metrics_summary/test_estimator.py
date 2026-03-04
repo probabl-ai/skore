@@ -138,3 +138,30 @@ def test_data_source_both_favorability(forest_binary_classification_data):
         "RandomForestClassifier (test)",
         "Favorability",
     ]
+
+
+def test_data_source_both_flat_index(forest_binary_classification_data):
+    """Test flat_index with data_source='both' (train and test)."""
+    estimator, X, y = forest_binary_classification_data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.summarize(data_source="both")
+
+    result = display.frame(flat_index=True)
+    assert result.columns.to_list() == [
+        "RandomForestClassifier (train)",
+        "RandomForestClassifier (test)",
+    ]
+    assert result.index.to_list() == [
+        "accuracy",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "brier_score",
+        "fit_time_s",
+        "predict_time_s",
+    ]

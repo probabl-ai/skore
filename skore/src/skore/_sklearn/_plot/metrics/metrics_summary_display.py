@@ -78,14 +78,6 @@ class MetricsSummaryDisplay(DisplayMixin):
             if not favorability:
                 df = df.drop(columns="favorability")
 
-            if flat_index:
-                if isinstance(df.columns, pd.MultiIndex):
-                    df.columns = flatten_multi_index(df.columns)
-                if isinstance(df.index, pd.MultiIndex):
-                    df.index = flatten_multi_index(df.index)
-                if isinstance(df.index, pd.Index):
-                    df.index = df.index.str.replace(r"\((.*)\)$", r"\1", regex=True)
-
             df = rename_columns_and_index(
                 df,
                 {
@@ -119,6 +111,15 @@ class MetricsSummaryDisplay(DisplayMixin):
                     ]
 
                 df = df_pivoted.copy()
+
+            # Apply flat_index transformation after pivot (if needed)
+            if flat_index:
+                if isinstance(df.columns, pd.MultiIndex):
+                    df.columns = flatten_multi_index(df.columns)
+                if isinstance(df.index, pd.MultiIndex):
+                    df.index = flatten_multi_index(df.index)
+                if isinstance(df.index, pd.Index):
+                    df.index = df.index.str.replace(r"\((.*)\)$", r"\1", regex=True)
 
         return df
 
