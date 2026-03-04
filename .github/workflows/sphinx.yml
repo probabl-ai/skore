@@ -150,6 +150,12 @@ jobs:
         run: |
           set -u
 
+          if [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+              echo "SPHINX_VERSION=pull-${GITHUB_EVENT_NUMBER}" >> "${GITHUB_OUTPUT}"
+              echo "SPHINX_RELEASE=0.0.0+pull-${GITHUB_EVENT_NUMBER}" >> "${GITHUB_OUTPUT}"
+              exit 0
+          fi
+
           if [[ "${GITHUB_EVENT_NAME}" != "push"  ]] || [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
               echo "SPHINX_VERSION=dev" >> "${GITHUB_OUTPUT}"
               echo "SPHINX_RELEASE=0.0.0+dev" >> "${GITHUB_OUTPUT}"
@@ -162,6 +168,8 @@ jobs:
               echo "SPHINX_VERSION=${BASH_REMATCH[2]}.${BASH_REMATCH[3]}" >> "${GITHUB_OUTPUT}"
               echo "SPHINX_RELEASE=${BASH_REMATCH[1]}" >> "${GITHUB_OUTPUT}"
           fi
+        env:
+          GITHUB_EVENT_NUMBER: ${{ github.event.pull_request.number }}
 
   sphinx-build:
     runs-on: ubuntu-latest
