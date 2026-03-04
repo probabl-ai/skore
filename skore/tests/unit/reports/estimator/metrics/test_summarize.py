@@ -684,21 +684,19 @@ def test_pos_label_scorer_error(forest_binary_classification_with_test):
         report.metrics.summarize(metric=[f1_scorer], pos_label=0)
 
 
-@pytest.mark.parametrize("pos_label", [None, 1])
-def test_pos_label_strings(forest_binary_classification_with_test, pos_label):
+def test_pos_label_strings(forest_binary_classification_with_test):
     """
     Check the behaviour of summarize() with binary classification using string labels.
     """
     estimator, X_test, y_test = forest_binary_classification_with_test
 
     target_names = np.array(["neg", "pos"], dtype=object)
-    pos_label_string = target_names[pos_label] if pos_label is not None else pos_label
     y_test = target_names[y_test]
 
     estimator = clone(estimator).fit(X_test, y_test)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    display = report.metrics.summarize(pos_label=pos_label_string)
+    display = report.metrics.summarize()
     assert isinstance(display.data, pd.DataFrame)
     assert set(display.data["metric"]) == {
         "Accuracy",
@@ -709,6 +707,39 @@ def test_pos_label_strings(forest_binary_classification_with_test, pos_label):
         "Fit time (s)",
         "Predict time (s)",
     }
+
+    labels = display.data.set_index("metric").loc["Precision", "label"]
+    assert set(labels) == {"neg", "pos"}
+
+
+def test_pos_label_bool(forest_binary_classification_with_test):
+    """
+    Check the behaviour of summarize() with binary classification using boolean labels.
+    """
+    estimator, X_test, y_test = forest_binary_classification_with_test
+
+    target_names = np.array([False, True], dtype=bool)
+    y_test = target_names[y_test]
+
+    estimator = clone(estimator).fit(X_test, y_test)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    display = report.metrics.summarize()
+    assert isinstance(display.data, pd.DataFrame)
+    assert set(display.data["metric"]) == {
+        "Accuracy",
+        "Precision",
+        "Recall",
+        "ROC AUC",
+        "Brier score",
+        "Fit time (s)",
+        "Predict time (s)",
+    }
+
+    labels = display.data.set_index("metric").loc["Precision", "label"]
+    # Use `is` to avoid casting
+    assert any(label is np.False_ for label in labels)
+    assert any(label is np.True_ for label in labels)
 
 
 def test_pos_label_scorer_names(
