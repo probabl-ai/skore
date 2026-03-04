@@ -32,7 +32,7 @@ from skore import ComparisonReport, EstimatorReport
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
-                    [("Precision", 0), ("Precision", 1)],
+                    [("Precision", "0"), ("Precision", "1")],
                     names=["Metric", "Label / Average"],
                 ),
             ),
@@ -49,7 +49,7 @@ from skore import ComparisonReport, EstimatorReport
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
-                    [("Recall", 0), ("Recall", 1)],
+                    [("Recall", "0"), ("Recall", "1")],
                     names=["Metric", "Label / Average"],
                 ),
             ),

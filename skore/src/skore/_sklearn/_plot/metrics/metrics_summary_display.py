@@ -69,7 +69,7 @@ class MetricsSummaryDisplay(DisplayMixin):
 
             for col in ("label", "output", "average"):
                 if col in df:
-                    df[col] = df[col].fillna("")
+                    df[col] = df[col].astype("str").fillna("")
 
             estimator_name = df.pop("estimator_name")[0]
             index = df.columns.intersection(self._possible_index_columns).tolist()

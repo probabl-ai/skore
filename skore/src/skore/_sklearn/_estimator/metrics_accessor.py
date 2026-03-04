@@ -464,10 +464,15 @@ class _MetricsAccessor(
                 scores["score"].append(score)
                 scores["favorability"].append(metric_favorability)
 
-        if any(isinstance(label, int) for label in scores["label"]):
-            scores["label"] = pd.Series(scores["label"], dtype=pd.Int64Dtype()).astype(
-                "object"
-            )
+        # Prevent ints from being converted to float (which is pandas' default behaviour
+        # when there are `None` in the columns)
+        if any(isinstance(label, bool) for label in scores["label"]):
+            scores["label"] = pd.Series(scores["label"], dtype=pd.BooleanDtype())
+        elif any(isinstance(label, int) for label in scores["label"]):
+            scores["label"] = pd.Series(scores["label"], dtype=pd.Int64Dtype())
+        if any(isinstance(output, int) for output in scores["output"]):
+            scores["output"] = pd.Series(scores["output"], dtype=pd.Int64Dtype())
+
         return MetricsSummaryDisplay(data=pd.DataFrame(scores), report_type="estimator")
 
     def _compute_metric_scores(
