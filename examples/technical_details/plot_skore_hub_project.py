@@ -39,7 +39,7 @@ if os.environ.get("SPHINX_BUILD"):
     VERSION = os.environ.get("SPHINX_VERSION")
 
     if not (GITHUB and API_KEY and WORKSPACE and VERSION):
-        raise RuntimeError("Required os.environment variables not set.")
+        raise RuntimeError("Required environment variables not set.")
 
     PROJECT = f"example-skore-hub-project-{VERSION}"
     os.environ["SKORE_HUB_API_KEY"] = API_KEY

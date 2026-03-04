@@ -127,11 +127,12 @@ if not (
     and os.environ.get("SPHINX_EXAMPLE_API_KEY")
     and os.environ.get("SPHINX_EXAMPLE_WORKSPACE")
 ):
-    sphinx_gallery_conf["ignore_pattern"] = r"plot_getting_started\.py"
-    sphinx_gallery_conf["ignore_pattern"] = r"plot_skore_hub_project\.py"
+    sphinx_gallery_conf["ignore_pattern"] = (
+        r"plot_getting_started\.py|plot_skore_hub_project\.py"
+    )
 
 # Expose HUB URLs to RST
-example_base_url = os.environ.get("SPHINX_EXAMPLE_BASE_URL", "https://example.com")
+example_base_url = (os.environ.get("SPHINX_EXAMPLE_BASE_URL") or "https://example.com")
 rst_epilog = f"""
 .. _example-getting-started: {example_base_url}/example-getting-started-{version}/cross-validations
 .. _example-skore-hub-project: {example_base_url}/example-skore-hub-project-{version}
