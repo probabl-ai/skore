@@ -52,7 +52,8 @@ from skrub import TableReport
 
 german_credit = fetch_openml(data_id=31, as_frame=True, parser="pandas")
 X, y = german_credit.data, german_credit.target
-TableReport(german_credit.frame)
+report = TableReport(german_credit.frame)
+report
 
 # %%
 # Creating our experiment and held-out sets
