@@ -102,9 +102,8 @@ class MetricsSummaryDisplay(DisplayMixin):
         if self.report_type == "estimator":
             df = df.dropna(axis="columns", how="all")
 
-            for col in ("label", "output", "average"):
-                if col in df:
-                    df[col] = df[col].astype("str").fillna("")
+            for col in df.columns.intersection(["label", "output", "average"]):
+                df[col] = df[col].astype(str).replace("<NA>", "").fillna("")
 
             estimator_name = df.pop("estimator_name")[0]
             index = df.columns.intersection(self._possible_index_columns).tolist()
