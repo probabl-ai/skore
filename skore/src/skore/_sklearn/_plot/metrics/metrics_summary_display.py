@@ -2,7 +2,7 @@ import pandas as pd
 
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn.types import ReportType
-from skore._utils._index import flatten_multi_index, rename_columns_and_index
+from skore._utils._index import flatten_multi_index
 
 
 class MetricsSummaryDisplay(DisplayMixin):
@@ -36,6 +36,44 @@ class MetricsSummaryDisplay(DisplayMixin):
     ):
         self.data = data
         self.report_type = report_type
+
+    @staticmethod
+    def _rename_columns_and_index(
+        df: pd.DataFrame, mapping: dict[str, str]
+    ) -> pd.DataFrame:
+        """Rename names of columns and index names.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> frame = pd.DataFrame(
+                [1, 2, 3],
+                index=pd.MultiIndex.from_tuples(
+                    [(0, ''), (1, ''), (2, '')],
+                    names=['a', 'b'],
+                ),
+                columns=["c"],
+            )
+        >>> frame
+             c
+        a b
+        0    1
+        1    2
+        2    3
+        >>> MetricsSummaryDisplay._rename_columns_and_index(
+        ...     frame, {"a": "d", "b": "e", "c": "f"}
+        ... )
+             f
+        d e
+        0    1
+        1    2
+        2    3
+        """
+        df_ = df.rename(columns=mapping)
+        df_.index = df_.index.set_names(
+            [mapping.get(name, name) for name in df_.index.names]
+        )
+        return df_
 
     def frame(
         self,
@@ -78,7 +116,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             if not favorability:
                 df = df.drop(columns="favorability")
 
-            df = rename_columns_and_index(
+            df = MetricsSummaryDisplay._rename_columns_and_index(
                 df,
                 {
                     "metric": "Metric",

@@ -51,37 +51,3 @@ def flatten_multi_index(
             for values in index
         ]
     )
-
-
-def rename_columns_and_index(df: pd.DataFrame, mapping: dict[str, str]) -> pd.DataFrame:
-    """Rename names of columns and index names.
-
-    Examples
-    --------
-    >>> import pandas as pd
-    >>> frame = pd.DataFrame(
-            [1, 2, 3],
-            index=pd.MultiIndex.from_tuples(
-                [(0, ''), (1, ''), (2, '')],
-                names=['a', 'b'],
-            ),
-            columns=["c"],
-        )
-    >>> frame
-         c
-    a b
-    0    1
-    1    2
-    2    3
-    >>> rename_columns_and_index(frame, {"a": "d", "b": "e", "c": "f"})
-         f
-    d e
-    0    1
-    1    2
-    2    3
-    """
-    df_ = df.rename(columns=mapping)
-    df_.index = df_.index.set_names(
-        [mapping.get(name, name) for name in df_.index.names]
-    )
-    return df_
