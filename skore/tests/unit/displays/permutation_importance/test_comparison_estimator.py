@@ -13,9 +13,9 @@ from sklearn.metrics import make_scorer, precision_score, r2_score
     ],
 )
 def test_invalid_subplot_by(pyplot, task, request):
-    report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
+    report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
+    display = report.inspection.permutation_importance(seed=0, n_repeats=2)
     err_msg = "The column 'invalid' is not available for subplotting."
-    display = report.inspection.permutation_importance(n_repeats=2, seed=0)
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
 
@@ -32,19 +32,44 @@ def test_invalid_subplot_by(pyplot, task, request):
 @pytest.mark.parametrize(
     "subplot_by, expected_len",
     [
-        ("split", 2),
-        (None, 1),
+        ("estimator", 2),
         ("auto", 1),
+        (None, 1),
     ],
 )
 def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
-    report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
-    display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+    report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
+    display = report.inspection.permutation_importance(seed=0, n_repeats=2)
     display.plot(subplot_by=subplot_by)
     if expected_len == 1:
         assert isinstance(display.ax_, mpl.axes.Axes)
     else:
         assert len(display.ax_.flatten()) == expected_len
+
+
+@pytest.mark.parametrize(
+    "task",
+    [
+        "binary_classification",
+        "multiclass_classification",
+        "regression",
+        "multioutput_regression",
+    ],
+)
+def test_different_features(pyplot, task, request):
+    report = request.getfixturevalue(
+        f"comparison_estimator_reports_{task}_different_features"
+    )
+    display = report.inspection.permutation_importance(seed=0, n_repeats=2)
+    err_msg = (
+        "The estimators have different features and should be plotted on different "
+        "axis using `subplot_by='estimator'`."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by=None)
+
+    display.plot(subplot_by="estimator")
+    assert len(display.ax_) == 2
 
 
 @pytest.mark.parametrize(
@@ -69,45 +94,17 @@ def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
 def test_subplot_by_non_averaged_metrics(
     pyplot, task, metric, metric_name, subplot_by, expected_len, request
 ):
-    report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
+    report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metric
     )
     display.plot(metric=metric_name, subplot_by=subplot_by)
     assert len(display.ax_) == expected_len
 
-    valid_values = [subplot_by, "split", "auto", "None"]
+    valid_values = ["estimator", subplot_by, "auto", "None"]
     err_msg = (
         f"The column 'invalid' is not available for subplotting. You can use the "
         f"following values to create subplots: {', '.join(valid_values)}"
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
-
-
-def test_frame_has_split_column(cross_validation_reports_binary_classification):
-    report = cross_validation_reports_binary_classification[0]
-    display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    frame = display.frame()
-    assert "split" in frame.columns
-    assert frame["split"].nunique() == len(report.estimator_reports_)
-
-
-def test_frame_metric_filter(cross_validation_reports_regression):
-    report = cross_validation_reports_regression[0]
-    display = report.inspection.permutation_importance(
-        n_repeats=2,
-        seed=0,
-        metric=["r2", "neg_mean_squared_error"],
-    )
-    assert set(display.frame()["metric"]) == {"r2", "neg_mean_squared_error"}
-    assert set(display.frame(metric="r2")["metric"]) == {"r2"}
-
-
-@pytest.mark.parametrize("data_source", ["train", "test"])
-def test_data_source(cross_validation_reports_binary_classification, data_source):
-    report = cross_validation_reports_binary_classification[0]
-    display = report.inspection.permutation_importance(
-        n_repeats=2, seed=0, data_source=data_source
-    )
-    assert set(display.importances["data_source"]) == {data_source}
