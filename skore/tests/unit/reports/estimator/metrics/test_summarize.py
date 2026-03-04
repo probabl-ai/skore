@@ -108,36 +108,6 @@ def test_binary_classification_forest(forest_binary_classification_with_test):
     assert display.data["output"].isna().all()
 
 
-def test_binary_classification_forest_pos_label(forest_binary_classification_with_test):
-    """
-    Check the behaviour of summarize() with binary classification using
-    RandomForestClassifier with pos_label specified.
-    """
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    display = report.metrics.summarize(pos_label=1)
-
-    check_display_structure(
-        display,
-        expected_metrics={
-            "accuracy",
-            "precision",
-            "recall",
-            "roc_auc",
-            "brier_score",
-            "fit_time",
-            "predict_time",
-        },
-        expected_estimator_name="RandomForestClassifier",
-    )
-
-    assert len(display.data[display.data["metric"] == "precision"]) == 1
-    assert len(display.data[display.data["metric"] == "recall"]) == 1
-    # Label is None for precision/recall when pos_label is specified
-    assert display.data["label"].isna().all()
-    assert display.data["output"].isna().all()
-
-
 def test_binary_classification_svc(svc_binary_classification_with_test):
     """
     Check the behaviour of summarize() with binary classification using SVC
@@ -376,7 +346,7 @@ def test_metric_dict_overwrite_metric_names(forest_multiclass_classification_wit
     estimator, X_test, y_test = forest_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    metric_dict = {"ROC AUC": "_roc_auc", "Fit Time": "_fit_time"}
+    metric_dict = {"ROC AUC": "roc_auc", "Fit Time": "fit_time"}
 
     display = report.metrics.summarize(metric=metric_dict)
     assert isinstance(display.data, pd.DataFrame)
@@ -681,6 +651,33 @@ def test_sklearn_scorer_names_metric_kwargs(forest_binary_classification_with_te
 
 
 # Tests about passing `pos_label`
+
+
+def test_pos_label(forest_binary_classification_with_test):
+    """Check that `pos_label` can be passed."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize(pos_label=1)
+
+    check_display_structure(
+        display,
+        expected_metrics={
+            "accuracy",
+            "precision",
+            "recall",
+            "roc_auc",
+            "brier_score",
+            "fit_time",
+            "predict_time",
+        },
+        expected_estimator_name="RandomForestClassifier",
+    )
+
+    assert len(display.data[display.data["metric"] == "precision"]) == 1
+    assert len(display.data[display.data["metric"] == "recall"]) == 1
+    # Label is None for precision/recall when pos_label is specified
+    assert display.data["label"].isna().all()
+    assert display.data["output"].isna().all()
 
 
 def test_pos_label_scorer_error(forest_binary_classification_with_test):

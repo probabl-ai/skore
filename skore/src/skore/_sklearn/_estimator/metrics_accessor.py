@@ -280,6 +280,7 @@ class _MetricsAccessor(
                         else metric_,
                     )
                     metrics_kwargs = {}
+                    metric_name = metric_
                     if metric_verbose_name is None:
                         metric_verbose_name = (
                             f"{self._score_or_loss_info[metric_]['name']}"
