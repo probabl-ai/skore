@@ -190,7 +190,7 @@ class _MetricsAccessor(
             pos_label = self._parent.pos_label
 
         # Handle dictionary metrics
-        metric_verbose_names = None
+        metric_verbose_names: list[str | None] | None = None
         if isinstance(metric, dict):
             metric_verbose_names = list(metric.keys())
             metrics = list(metric.values())
@@ -214,7 +214,7 @@ class _MetricsAccessor(
             metrics += ["fit_time", "predict_time"]
 
         if metric_verbose_names is None:
-            metric_verbose_names = [None] * len(metrics)  # type: ignore
+            metric_verbose_names = [None] * len(metrics)
 
         scores = defaultdict(list)
         for metric_verbose_name, metric_ in zip(
