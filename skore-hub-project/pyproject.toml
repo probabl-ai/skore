@@ -19,13 +19,14 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+  "pandas",
   "pandas-stubs",
   "pre-commit",
+  "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "pytest",
   "respx",
   "skore",
   "xdoctest",
