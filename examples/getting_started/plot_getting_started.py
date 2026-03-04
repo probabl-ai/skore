@@ -23,11 +23,15 @@ Throughout this guide, we will see how skore helps you:
 Examples
 --------
 
-Basic usage:
+To run this example and push in your own Skore Hub workspace and project, you can run
+this example with the following command:
 
 .. code-block:: bash
 
     WORKSPACE=<workspace> PROJECT=<project> python plot_getting_started.py
+
+In this gallery, we are going to push the different reports into a public
+workspace.
 """
 
 # %%

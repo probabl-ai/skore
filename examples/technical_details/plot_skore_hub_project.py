@@ -14,11 +14,15 @@ you can always inspect and filter the summary as a DataFrame if you prefer.
 Examples
 --------
 
-Basic usage:
+To run this example and push in your own Skore Hub workspace and project, you can run
+this example with the following command:
 
 .. code-block:: bash
 
     WORKSPACE=<workspace> PROJECT=<project> python plot_skore_hub_project.py
+
+In this gallery, we are going to push the different reports into a public
+workspace.
 """
 
 # sphinx_gallery_start_ignore
