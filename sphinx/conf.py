@@ -133,7 +133,7 @@ if not (
 # Expose HUB URLs to RST
 example_base_url = os.environ.get("SPHINX_EXAMPLE_BASE_URL", "https://example.com")
 rst_epilog = f"""
-.. _example-getting-started: {example_base_url}/example-getting-started-{version}
+.. _example-getting-started: {example_base_url}/example-getting-started-{version}/cross-validations
 .. _example-skore-hub-project: {example_base_url}/example-skore-hub-project-{version}
 """
 
