@@ -115,6 +115,12 @@ class MetricsSummaryDisplay(DisplayMixin):
 
             if not favorability:
                 df = df.drop(columns="favorability")
+            else:
+                # Put favorability at the end
+                df = df[
+                    [col for col in df.columns if col != "favorability"]
+                    + ["favorability"]
+                ]
 
             df = MetricsSummaryDisplay._rename_columns_and_index(
                 df,

@@ -1,5 +1,4 @@
 import inspect
-from collections import defaultdict
 from collections.abc import Callable
 from functools import partial
 from typing import Any, Literal, cast
@@ -216,7 +215,7 @@ class _MetricsAccessor(
         if metric_verbose_names is None:
             metric_verbose_names = [None] * len(metrics)
 
-        scores = defaultdict(list)
+        rows = []
         for metric_verbose_name, metric_ in zip(
             metric_verbose_names, metrics, strict=True
         ):
@@ -335,146 +334,56 @@ class _MetricsAccessor(
 
             score = metric_fn(data_source=data_source, **metrics_kwargs)
 
-            if self._parent._ml_task == "binary-classification":
+            row = {
+                "metric": metric_name,
+                "verbose_name": metric_verbose_name,
+                "estimator_name": self._parent.estimator_name_,
+                "data_source": data_source,
+                "favorability": metric_favorability,
+                "label": None,
+                "average": None,
+                "output": None,
+                "score": score,
+            }
+
+            if (
+                self._parent._ml_task == "binary-classification"
+                and metrics_kwargs.get("average") == "binary"
+            ):
+                rows.append({**row, "label": pos_label})
+            elif self._parent._ml_task in (
+                "binary-classification",
+                "multiclass-classification",
+            ):
                 if isinstance(score, dict):
-                    classes = list(score.keys())
-                    for label in classes:
-                        scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(metric_verbose_name)
-                        scores["estimator_name"].append(self._parent.estimator_name_)
-                        scores["data_source"].append(data_source)
-                        scores["label"].append(label)
-                        scores["average"].append(None)
-                        scores["output"].append(None)
-                        scores["score"].append(score[label])
-                        scores["favorability"].append(metric_favorability)
-                elif "average" in metrics_kwargs:
-                    if metrics_kwargs["average"] == "binary":
-                        scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(metric_verbose_name)
-                        scores["estimator_name"].append(self._parent.estimator_name_)
-                        scores["data_source"].append(data_source)
-                        scores["average"].append(None)
-                        scores["label"].append(pos_label)
-                        scores["output"].append(None)
-                    elif metrics_kwargs["average"] is not None:
-                        scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(metric_verbose_name)
-                        scores["estimator_name"].append(self._parent.estimator_name_)
-                        scores["data_source"].append(data_source)
-                        scores["label"].append(None)
-                        scores["average"].append(metrics_kwargs["average"])
-                        scores["output"].append(None)
-                    else:
-                        scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(metric_verbose_name)
-                        scores["estimator_name"].append(self._parent.estimator_name_)
-                        scores["data_source"].append(data_source)
-                        scores["label"].append(None)
-                        scores["average"].append(None)
-                        scores["output"].append(None)
-                    scores["score"].append(score)
-                    scores["favorability"].append(metric_favorability)
+                    for label in score:
+                        rows.append({**row, "label": label, "score": score[label]})  # noqa: PERF401
                 else:
-                    scores["metric"].append(metric_name)
-                    scores["verbose_name"].append(metric_verbose_name)
-                    scores["estimator_name"].append(self._parent.estimator_name_)
-                    scores["data_source"].append(data_source)
-                    scores["label"].append(None)
-                    scores["average"].append(None)
-                    scores["output"].append(None)
-                    scores["score"].append(score)
-                    scores["favorability"].append(metric_favorability)
-            elif self._parent._ml_task == "multiclass-classification":
-                if isinstance(score, dict):
-                    classes = list(score.keys())
-                    for label in classes:
-                        scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(metric_verbose_name)
-                        scores["estimator_name"].append(self._parent.estimator_name_)
-                        scores["data_source"].append(data_source)
-                        scores["label"].append(label)
-                        scores["average"].append(None)
-                        scores["output"].append(None)
-                        scores["score"].append(score[label])
-                        scores["favorability"].append(metric_favorability)
-                elif (
-                    "average" in metrics_kwargs
-                    and metrics_kwargs["average"] is not None
-                ):
-                    scores["metric"].append(metric_name)
-                    scores["verbose_name"].append(metric_verbose_name)
-                    scores["estimator_name"].append(self._parent.estimator_name_)
-                    scores["data_source"].append(data_source)
-                    scores["label"].append(None)
-                    scores["average"].append(metrics_kwargs["average"])
-                    scores["output"].append(None)
-                    scores["score"].append(score)
-                    scores["favorability"].append(metric_favorability)
-                else:
-                    scores["metric"].append(metric_name)
-                    scores["verbose_name"].append(metric_verbose_name)
-                    scores["estimator_name"].append(self._parent.estimator_name_)
-                    scores["data_source"].append(data_source)
-                    scores["label"].append(None)
-                    scores["average"].append(None)
-                    scores["output"].append(None)
-                    scores["score"].append(score)
-                    scores["favorability"].append(metric_favorability)
-            elif self._parent._ml_task == "regression":
-                scores["metric"].append(metric_name)
-                scores["verbose_name"].append(metric_verbose_name)
-                scores["estimator_name"].append(self._parent.estimator_name_)
-                scores["data_source"].append(data_source)
-                scores["label"].append(None)
-                scores["average"].append(None)
-                scores["output"].append(None)
-                scores["score"].append(score)
-                scores["favorability"].append(metric_favorability)
+                    rows.append({**row, "average": metrics_kwargs.get("average")})
             elif self._parent._ml_task == "multioutput-regression":
                 if isinstance(score, list):
                     for output_idx, output_score in enumerate(score):
-                        scores["metric"].append(metric_name)
-                        scores["verbose_name"].append(metric_verbose_name)
-                        scores["estimator_name"].append(self._parent.estimator_name_)
-                        scores["data_source"].append(data_source)
-                        scores["label"].append(None)
-                        scores["average"].append(None)
-                        scores["output"].append(output_idx)
-                        scores["score"].append(output_score)
-                        scores["favorability"].append(metric_favorability)
+                        rows.append(
+                            {**row, "output": output_idx, "score": output_score}
+                        )
                 else:
-                    scores["metric"].append(metric_name)
-                    scores["verbose_name"].append(metric_verbose_name)
-                    scores["estimator_name"].append(self._parent.estimator_name_)
-                    scores["data_source"].append(data_source)
-                    scores["label"].append(None)
-                    scores["average"].append(metrics_kwargs.get("multioutput"))
-                    scores["output"].append(None)
-                    scores["score"].append(score)
-                    scores["favorability"].append(metric_favorability)
-            else:  # unknown task - try our best
-                scores["metric"].append(metric_name)
-                scores["verbose_name"].append(metric_verbose_name)
-                scores["estimator_name"].append(self._parent.estimator_name_)
-                scores["data_source"].append(data_source)
-                scores["label"].append(None)
-                scores["average"].append(None)
-                scores["output"].append(None)
-                scores["score"].append(score)
-                scores["favorability"].append(metric_favorability)
+                    rows.append({**row, "average": metrics_kwargs.get("multioutput")})
+            else:
+                rows.append(row)
 
-        # Prevent ints from being converted to float (which is pandas' default behaviour
-        # when there are `None` in the columns)
-        if any(isinstance(label, bool) for label in scores["label"]):
-            scores["label"] = pd.Series(scores["label"], dtype=pd.BooleanDtype())
-        elif any(isinstance(label, int) for label in scores["label"]):
-            scores["label"] = pd.Series(scores["label"], dtype=pd.Int64Dtype())
+        data = pd.DataFrame(rows)
 
-        if any(isinstance(output, int) for output in scores["output"]):
-            scores["output"] = pd.Series(scores["output"], dtype=pd.Int64Dtype())
+        # Preserve original types from being converted to float
+        # (which is pandas' default behaviour when there are `None` in the columns)
+        if any(isinstance(row["label"], bool) for row in rows):
+            data["label"] = data["label"].astype(pd.BooleanDtype())
+        elif any(isinstance(row["label"], int) for row in rows):
+            data["label"] = data["label"].astype(pd.Int64Dtype())
 
-        return MetricsSummaryDisplay(data=pd.DataFrame(scores), report_type="estimator")
+        if any(isinstance(row["output"], int) for row in rows):
+            data["output"] = data["output"].astype(pd.Int64Dtype())
+
+        return MetricsSummaryDisplay(data=data, report_type="estimator")
 
     def _compute_metric_scores(
         self,
