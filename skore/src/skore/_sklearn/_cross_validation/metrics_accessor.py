@@ -316,14 +316,6 @@ class _MetricsAccessor(
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
-
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
@@ -373,14 +365,6 @@ class _MetricsAccessor(
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None

@@ -398,10 +398,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
-
         average : {"binary", "macro", "micro", "weighted", "samples"} or None, \
                 default=None
             Used with multiclass problems.

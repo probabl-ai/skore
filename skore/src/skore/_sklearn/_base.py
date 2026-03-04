@@ -62,7 +62,7 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
         *,
         data_source: Literal["test", "train"],
     ) -> tuple[ArrayLike, ArrayLike]:
-        """Get the requested dataset and mention if we should hash before caching.
+        """Get the requested dataset.
 
         Parameters
         ----------

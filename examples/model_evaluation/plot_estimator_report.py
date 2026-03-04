@@ -182,11 +182,6 @@ report.metrics.log_loss(data_source="train")
 
 # %%
 #
-# .. note::
-#     In this last example, we rely on computing the hash of the input data. Therefore,
-#     there is a trade-off: the computation of the hash is not free and it might be
-#     faster to compute the predictions instead.
-#
 # Be aware that we can also benefit from the caching mechanism with our own custom
 # metrics. Skore only expects that we define our own metric function to take `y_true`
 # and `y_pred` as the first two positional arguments. It can take any other arguments.
