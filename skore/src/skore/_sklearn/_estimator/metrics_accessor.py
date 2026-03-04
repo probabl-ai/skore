@@ -189,9 +189,9 @@ class _MetricsAccessor(
             pos_label = self._parent.pos_label
 
         # Handle dictionary metrics
-        metric_verbose_names: list[str | None] | None = None
+        metric_names: list[str | None] | None = None
         if isinstance(metric, dict):
-            metric_verbose_names = list(metric.keys())
+            metric_names = list(metric.keys())
             metrics = list(metric.values())
         elif metric is not None and not isinstance(metric, list):
             metrics = [metric]
@@ -212,13 +212,11 @@ class _MetricsAccessor(
                 metrics = ["r2", "rmse"]
             metrics += ["fit_time", "predict_time"]
 
-        if metric_verbose_names is None:
-            metric_verbose_names = [None] * len(metrics)
+        if metric_names is None:
+            metric_names = [None] * len(metrics)
 
         rows = []
-        for metric_verbose_name, metric_ in zip(
-            metric_verbose_names, metrics, strict=True
-        ):
+        for metric_name, metric_ in zip(metric_names, metrics, strict=True):
             if isinstance(metric_, str) and metric_ not in self._score_or_loss_info:
                 try:
                     metric_ = sklearn.metrics.get_scorer(metric_)
@@ -262,13 +260,9 @@ class _MetricsAccessor(
                     elif pos_label is not None:
                         metrics_kwargs["pos_label"] = pos_label
 
-                metric_name = metric_._score_func.__name__
                 metric_favorability = "(↗︎)" if metric_._sign == 1 else "(↘︎)"
-
-                if metric_verbose_name is None:
-                    metric_verbose_name = metric_._score_func.__name__.replace(
-                        "_", " "
-                    ).title()
+                if metric_name is None:
+                    metric_name = metric_._score_func.__name__.replace("_", " ").title()
 
             elif isinstance(metric_, str) or callable(metric_):
                 if isinstance(metric_, str):
@@ -279,11 +273,8 @@ class _MetricsAccessor(
                         else metric_,
                     )
                     metrics_kwargs = {}
-                    metric_name = metric_
-                    if metric_verbose_name is None:
-                        metric_verbose_name = (
-                            f"{self._score_or_loss_info[metric_]['name']}"
-                        )
+                    if metric_name is None:
+                        metric_name = self._score_or_loss_info[metric_]["name"]
                     metric_favorability = self._score_or_loss_info[metric_]["icon"]
                 else:
                     # Handle callable metrics
@@ -315,9 +306,8 @@ class _MetricsAccessor(
                             for param in metric_callable_params
                             if param in metric_kwargs
                         }
-                    metric_name = metric_.__name__
-                    if metric_verbose_name is None:
-                        metric_verbose_name = metric_.__name__.replace("_", " ").title()
+                    if metric_name is None:
+                        metric_name = metric_.__name__.replace("_", " ").title()
                     metric_favorability = ""
 
                 metrics_params = inspect.signature(metric_fn).parameters
@@ -336,7 +326,6 @@ class _MetricsAccessor(
 
             row = {
                 "metric": metric_name,
-                "verbose_name": metric_verbose_name,
                 "estimator_name": self._parent.estimator_name_,
                 "data_source": data_source,
                 "favorability": metric_favorability,

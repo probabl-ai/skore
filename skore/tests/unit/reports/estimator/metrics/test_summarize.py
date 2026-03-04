@@ -27,7 +27,6 @@ def check_display_structure(
     display,
     *,
     expected_metrics,
-    expected_verbose_names=None,
     expected_estimator_name=None,
     expected_data_source="test",
 ):
@@ -40,8 +39,6 @@ def check_display_structure(
         The display object to check.
     expected_metrics : set, optional
         Expected set of metric names.
-    expected_verbose_names : set, optional
-        Expected set of verbose names.
     expected_estimator_name : str, optional
         Expected estimator name.
     expected_data_source : str, default="test"
@@ -52,7 +49,6 @@ def check_display_structure(
 
     assert set(data.columns) == {
         "metric",
-        "verbose_name",
         "estimator_name",
         "data_source",
         "label",
@@ -62,8 +58,6 @@ def check_display_structure(
         "favorability",
     }
     assert set(data["metric"]) == expected_metrics
-    if expected_verbose_names is not None:
-        assert set(data["verbose_name"]) == expected_verbose_names
     assert set(data["estimator_name"]) == {expected_estimator_name}
     assert set(data["data_source"]) == {expected_data_source}
     assert data["average"].isna().all()
@@ -86,22 +80,22 @@ def test_binary_classification_forest(forest_binary_classification_with_test):
     check_display_structure(
         display,
         expected_metrics={
-            "accuracy",
-            "precision",
-            "recall",
-            "roc_auc",
-            "brier_score",
-            "fit_time",
-            "predict_time",
+            "Accuracy",
+            "Precision",
+            "Recall",
+            "ROC AUC",
+            "Brier score",
+            "Fit time (s)",
+            "Predict time (s)",
         },
         expected_estimator_name="RandomForestClassifier",
     )
 
     # Precision and recall should have 2 rows (one per class in binary classification)
-    assert len(display.data[display.data["metric"] == "precision"]) == 2
-    assert len(display.data[display.data["metric"] == "recall"]) == 2
+    assert len(display.data[display.data["metric"] == "Precision"]) == 2
+    assert len(display.data[display.data["metric"] == "Recall"]) == 2
     # Labels should be 0 and 1 for precision
-    precision_labels = set(display.data[display.data["metric"] == "precision"]["label"])
+    precision_labels = set(display.data[display.data["metric"] == "Precision"]["label"])
     assert precision_labels == {0, 1}
 
     # Output column should be all NaN for non-multioutput
@@ -122,12 +116,12 @@ def test_binary_classification_svc(svc_binary_classification_with_test):
     check_display_structure(
         display,
         expected_metrics={
-            "accuracy",
-            "precision",
-            "recall",
-            "roc_auc",
-            "fit_time",
-            "predict_time",
+            "Accuracy",
+            "Precision",
+            "Recall",
+            "ROC AUC",
+            "Fit time (s)",
+            "Predict time (s)",
         },
         expected_estimator_name="SVC",
     )
@@ -145,22 +139,22 @@ def test_multiclass_classification_forest(forest_multiclass_classification_with_
     check_display_structure(
         display,
         expected_metrics={
-            "accuracy",
-            "log_loss",
-            "precision",
-            "recall",
-            "roc_auc",
-            "predict_time",
-            "fit_time",
+            "Accuracy",
+            "Log loss",
+            "Precision",
+            "Recall",
+            "ROC AUC",
+            "Predict time (s)",
+            "Fit time (s)",
         },
         expected_estimator_name="RandomForestClassifier",
     )
 
     assert display.data["output"].isna().all()
     data = display.data.set_index("metric")
-    assert len(data.loc["precision"]) == 3
-    assert len(data.loc["recall"]) == 3
-    assert set(data.loc["precision", "label"]) == {0, 1, 2}
+    assert len(data.loc["Precision"]) == 3
+    assert len(data.loc["Recall"]) == 3
+    assert set(data.loc["Precision", "label"]) == {0, 1, 2}
 
 
 def test_multiclass_classification_svc(svc_multiclass_classification_with_test):
@@ -172,20 +166,20 @@ def test_multiclass_classification_svc(svc_multiclass_classification_with_test):
     check_display_structure(
         display,
         expected_metrics={
-            "accuracy",
-            "precision",
-            "recall",
-            "fit_time",
-            "predict_time",
+            "Accuracy",
+            "Precision",
+            "Recall",
+            "Fit time (s)",
+            "Predict time (s)",
         },
         expected_estimator_name="SVC",
     )
 
     assert display.data["output"].isna().all()
     data = display.data.set_index("metric")
-    assert len(data.loc["precision"]) == 3
-    assert len(data.loc["recall"]) == 3
-    assert set(data.loc["precision", "label"]) == {0, 1, 2}
+    assert len(data.loc["Precision"]) == 3
+    assert len(data.loc["Recall"]) == 3
+    assert set(data.loc["Precision", "label"]) == {0, 1, 2}
 
 
 def test_regression(linear_regression_with_test):
@@ -196,8 +190,7 @@ def test_regression(linear_regression_with_test):
 
     check_display_structure(
         display,
-        expected_metrics={"r2", "rmse", "fit_time", "predict_time"},
-        expected_verbose_names={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
         expected_estimator_name="LinearRegression",
     )
 
@@ -213,16 +206,15 @@ def test_multioutput_regression(linear_regression_multioutput_with_test):
 
     check_display_structure(
         display,
-        expected_metrics={"r2", "rmse", "fit_time", "predict_time"},
-        expected_verbose_names={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
         expected_estimator_name="LinearRegression",
     )
 
     assert display.data["label"].isna().all()
     data = display.data.set_index("metric")
-    assert len(data.loc["r2", "output"]) == 2
-    assert len(data.loc["rmse", "output"]) == 2
-    assert set(data.loc["r2", "output"]) == {0, 1}
+    assert len(data.loc["R²", "output"]) == 2
+    assert len(data.loc["RMSE", "output"]) == 2
+    assert set(data.loc["R²", "output"]) == {0, 1}
 
 
 def test_cache(forest_binary_classification_with_test):
@@ -239,8 +231,6 @@ def test_cache(forest_binary_classification_with_test):
     with check_cache_unchanged(report._cache):
         result_from_cache = report.metrics.summarize()
     assert_frame_equal(result.data, result_from_cache.data)
-
-    report.clear_cache()
 
 
 def test_data_source_both(forest_binary_classification_data):
@@ -301,7 +291,7 @@ def test_metric_strings_regression(linear_regression_with_test):
     display = reg_report.metrics.summarize(metric=["rmse", "r2"])
 
     assert isinstance(display.data, pd.DataFrame)
-    assert set(display.data["verbose_name"]) == {"RMSE", "R²"}
+    assert set(display.data["metric"]) == {"RMSE", "R²"}
 
 
 def test_metric_dict(forest_binary_classification_with_test):
@@ -320,7 +310,7 @@ def test_metric_dict(forest_binary_classification_with_test):
 
     # Precision will have 2 rows (one per class)
     assert len(display.data) == 4
-    assert set(display.data["verbose_name"]) == set(metric_dict)
+    assert set(display.data["metric"]) == set(metric_dict)
 
 
 def test_metric_dict_with_callables(linear_regression_with_test):
@@ -338,7 +328,7 @@ def test_metric_dict_with_callables(linear_regression_with_test):
     )
     assert isinstance(display.data, pd.DataFrame)
     assert len(display.data) == 2
-    assert set(display.data["verbose_name"]) == set(metric_dict)
+    assert set(display.data["metric"]) == set(metric_dict)
 
 
 def test_metric_dict_overwrite_metric_names(forest_multiclass_classification_with_test):
@@ -350,7 +340,7 @@ def test_metric_dict_overwrite_metric_names(forest_multiclass_classification_wit
 
     display = report.metrics.summarize(metric=metric_dict)
     assert isinstance(display.data, pd.DataFrame)
-    assert set(display.data["verbose_name"]) == set(metric_dict)
+    assert set(display.data["metric"]) == set(metric_dict)
 
 
 @pytest.mark.parametrize(
@@ -392,11 +382,11 @@ def test_custom_metric(linear_regression_with_test):
         metric_kwargs={"some_weights": weights, "response_method": "predict"},
     )
     assert isinstance(display.data, pd.DataFrame)
-    assert set(display.data["metric"]) == {"r2", "custom_metric"}
+    assert set(display.data["metric"]) == {"R²", "Custom Metric"}
 
     scores = display.data.set_index("metric")["score"]
-    assert scores["r2"] == pytest.approx(r2_score(y_test, estimator.predict(X_test)))
-    assert scores["custom_metric"] == pytest.approx(
+    assert scores["R²"] == pytest.approx(r2_score(y_test, estimator.predict(X_test)))
+    assert scores["Custom Metric"] == pytest.approx(
         custom_metric(y_test, estimator.predict(X_test), weights)
     )
 
@@ -535,10 +525,9 @@ def test_neg_metric_strings(forest_binary_classification_with_test):
     assert isinstance(display.data, pd.DataFrame)
 
     # Note: neg_log_loss was converted to log_loss
-    assert "log_loss" in set(display.data["metric"])
-    assert "Log Loss" in set(display.data["verbose_name"])
+    assert "Log Loss" in set(display.data["metric"])
 
-    score = display.data.set_index("metric").loc["log_loss", "score"]
+    score = display.data.set_index("metric").loc["Log Loss", "score"]
     assert score == pytest.approx(report.metrics.log_loss())
 
 
@@ -548,8 +537,7 @@ def test_sklearn_metric_strings(forest_binary_classification_with_test):
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
     display = report.metrics.summarize(metric=["accuracy", "log_loss", "roc_auc"])
-    assert set(display.data["metric"]) == {"accuracy", "log_loss", "roc_auc"}
-    assert set(display.data["verbose_name"]) == {"Accuracy", "Log loss", "ROC AUC"}
+    assert set(display.data["metric"]) == {"Accuracy", "Log loss", "ROC AUC"}
 
 
 def test_sklearn_metric_strings_regression(linear_regression_with_test):
@@ -562,7 +550,7 @@ def test_sklearn_metric_strings_regression(linear_regression_with_test):
     )
 
     assert isinstance(display.data, pd.DataFrame)
-    assert set(display.data["verbose_name"]) == {
+    assert set(display.data["metric"]) == {
         "Mean Squared Error",
         "Mean Absolute Error",
         "R²",
@@ -615,7 +603,7 @@ def test_metric_kwargs_multioutput(linear_regression_multioutput_with_test):
 
     assert isinstance(display.data, pd.DataFrame)
     assert "output" in display.data.columns
-    assert len(display.data[display.data["metric"] == "r2"]) >= 2
+    assert len(display.data[display.data["metric"] == "R²"]) >= 2
 
 
 def test_metric_kwargs_none(
@@ -662,19 +650,19 @@ def test_pos_label(forest_binary_classification_with_test):
     check_display_structure(
         display,
         expected_metrics={
-            "accuracy",
-            "precision",
-            "recall",
-            "roc_auc",
-            "brier_score",
-            "fit_time",
-            "predict_time",
+            "Accuracy",
+            "Precision",
+            "Recall",
+            "ROC AUC",
+            "Brier score",
+            "Fit time (s)",
+            "Predict time (s)",
         },
         expected_estimator_name="RandomForestClassifier",
     )
 
-    assert len(display.data[display.data["metric"] == "precision"]) == 1
-    assert len(display.data[display.data["metric"] == "recall"]) == 1
+    assert len(display.data[display.data["metric"] == "Precision"]) == 1
+    assert len(display.data[display.data["metric"] == "Recall"]) == 1
     # Label is None for precision/recall when pos_label is specified
     assert display.data["label"].isna().all()
     assert display.data["output"].isna().all()
@@ -713,13 +701,13 @@ def test_pos_label_strings(forest_binary_classification_with_test, pos_label):
     display = report.metrics.summarize(pos_label=pos_label_string)
     assert isinstance(display.data, pd.DataFrame)
     assert set(display.data["metric"]) == {
-        "accuracy",
-        "precision",
-        "recall",
-        "roc_auc",
-        "brier_score",
-        "fit_time",
-        "predict_time",
+        "Accuracy",
+        "Precision",
+        "Recall",
+        "ROC AUC",
+        "Brier score",
+        "Fit time (s)",
+        "Predict time (s)",
     }
 
 

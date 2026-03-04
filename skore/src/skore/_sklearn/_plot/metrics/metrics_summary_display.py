@@ -102,9 +102,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         if self.report_type == "estimator":
             df = df.dropna(axis="columns", how="all")
 
-            # TODO: Is "metric" ever needed?
-            df = df.drop(columns="metric")
-
             for col in ("label", "output", "average"):
                 if col in df:
                     df[col] = df[col].astype("str").fillna("")
