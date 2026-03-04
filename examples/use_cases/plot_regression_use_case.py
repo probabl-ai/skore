@@ -18,7 +18,6 @@ inspect prediction errors, and compare multiple regression models.
 from sklearn.datasets import make_regression
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.linear_model import Ridge
-
 from skore import ComparisonReport, CrossValidationReport
 
 X, y = make_regression(
