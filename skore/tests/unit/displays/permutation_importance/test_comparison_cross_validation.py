@@ -110,3 +110,21 @@ def test_subplot_by_non_averaged_metrics(
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
+
+
+def test_frame_level_splits_no_split_column(
+    comparison_cross_validation_reports_regression,
+):
+    report = comparison_cross_validation_reports_regression
+    display = report.inspection.permutation_importance(seed=0, n_repeats=2)
+    frame = display.frame()
+    assert "split" not in frame.columns
+
+
+def test_frame_level_repetitions_has_split_column(
+    comparison_cross_validation_reports_regression,
+):
+    report = comparison_cross_validation_reports_regression
+    display = report.inspection.permutation_importance(seed=0, n_repeats=2)
+    frame = display.frame(level="repetitions")
+    assert "split" in frame.columns

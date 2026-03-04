@@ -62,8 +62,6 @@ class TestPermutationImportanceDisplay:
         frame = display.frame()
 
         expected = {"data_source", "metric", "feature", "value_mean", "value_std"}
-        if "cross_validation" in fixture_prefix:
-            expected.add("split")
         if "comparison" in fixture_prefix:
             expected.add("estimator")
         assert set(frame.columns) == expected
@@ -120,6 +118,18 @@ class TestPermutationImportanceDisplay:
         frame = display.frame(aggregate=aggregate)
         for col in expected_value_columns:
             assert col in frame.columns
+
+    def test_frame_aggregate_none_ignores_level(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+        for level in ["splits", "repetitions"]:
+            frame = display.frame(aggregate=None, level=level)
+            assert "repetition" in frame.columns
+            assert "value" in frame.columns
+            if "cross_validation" in fixture_prefix:
+                assert "split" in frame.columns
 
     def test_unavailable_metric(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")

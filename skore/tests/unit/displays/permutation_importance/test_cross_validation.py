@@ -85,10 +85,23 @@ def test_subplot_by_non_averaged_metrics(
         display.plot(subplot_by="invalid")
 
 
-def test_frame_has_split_column(cross_validation_reports_binary_classification):
+def test_frame_level_splits_no_split_column(
+    cross_validation_reports_binary_classification,
+):
     report = cross_validation_reports_binary_classification[0]
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
     frame = display.frame()
+    assert "split" not in frame.columns
+    assert "value_mean" in frame.columns
+    assert "value_std" in frame.columns
+
+
+def test_frame_level_repetitions_has_split_column(
+    cross_validation_reports_binary_classification,
+):
+    report = cross_validation_reports_binary_classification[0]
+    display = report.inspection.permutation_importance(n_repeats=2, seed=0)
+    frame = display.frame(level="repetitions")
     assert "split" in frame.columns
     assert frame["split"].nunique() == len(report.estimator_reports_)
 

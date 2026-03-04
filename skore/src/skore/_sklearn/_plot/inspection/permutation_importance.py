@@ -432,6 +432,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         *,
         metric: str | list[str] | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
+        level: Literal["splits", "repetitions"] = "splits",
     ) -> pd.DataFrame:
         """Get the feature importance in a dataframe format.
 
@@ -442,7 +443,14 @@ class PermutationImportanceDisplay(DisplayMixin):
             each metric are returned.
 
         aggregate : {"mean", "std"}, ("mean", std) or None, default=("mean", "std")
-            Aggregate the importances by the given metric.
+            How to aggregate the importances. Applied on repetitions or on repetitions
+            then splits, depending on the value of `level`.
+
+        level : {"splits", "repetitions"}, default="splits"
+            Over which dimensions to aggregate when `aggregate` is not `None`.
+            `"repetitions"` aggregates only over repetitions (keeps `split` for
+            cross-validation). `"splits"` aggregates over repetitions then over
+            splits.
 
         Returns
         -------
@@ -493,14 +501,19 @@ class PermutationImportanceDisplay(DisplayMixin):
         if aggregate is not None:
             frame = (
                 frame.drop(columns=["repetition"])
-                # avoid sorting the features by name and do not drop NA from
-                # output or labels in case of mixed metrics (i.e. averaged vs.
-                # non-averaged)
                 .groupby(group_by, sort=False, dropna=False)
                 .aggregate(aggregate)
             ).reset_index()
             if isinstance(frame.columns, pd.MultiIndex):
                 frame.columns = flatten_multi_index(frame.columns)
+            if level == "splits" and "split" in frame.columns:
+                group_by_2 = [c for c in group_by if c != "split"]
+                value_cols = [c for c in frame.columns if c not in group_by]
+                frame = (
+                    frame.drop(columns=["split"])
+                    .groupby(group_by_2, sort=False, dropna=False)
+                    .agg(dict.fromkeys(value_cols, "mean"))
+                ).reset_index()
         return frame
 
     # ignore the type signature because we override kwargs by specifying the name of
