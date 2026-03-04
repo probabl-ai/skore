@@ -44,9 +44,10 @@ class TestCoefficientsDisplay:
         display = report.inspection.coefficients()
         frame = display.frame()
 
-        expected = {"feature", "coefficient"}
         if "cross_validation" in fixture_prefix:
-            expected.add("split")
+            expected = {"feature", "coefficient_mean", "coefficient_std"}
+        else:
+            expected = {"feature", "coefficient"}
         if "comparison" in fixture_prefix:
             expected.add("estimator")
         if task == "multiclass_classification":
@@ -136,7 +137,16 @@ class TestCoefficientsDisplay:
         display = report.inspection.coefficients()
         frame = display.frame(sorting_order=sorting_order)
         group_cols = [
-            c for c in frame.columns if c not in ("feature", "coefficient", "split")
+            c
+            for c in frame.columns
+            if c
+            not in (
+                "feature",
+                "coefficient",
+                "coefficient_mean",
+                "coefficient_std",
+                "split",
+            )
         ]
         if group_cols:
             groups = frame.groupby(group_cols, sort=False, observed=True)
@@ -145,10 +155,10 @@ class TestCoefficientsDisplay:
         for _, group in groups:
             if "cross_validation" in fixture_prefix:
                 feature_order = group["feature"].unique()
-                mean_abs = group.groupby("feature", sort=False)["coefficient"].apply(
-                    lambda x: x.abs().mean()
-                )
-                coefs = [mean_abs.loc[f] for f in feature_order]
+                coefs = [
+                    group.loc[group["feature"] == f, "coefficient_mean"].iloc[0]
+                    for f in feature_order
+                ]
             else:
                 coefs = group["coefficient"].tolist()
             expected = sorted(coefs, key=abs, reverse=(sorting_order == "descending"))
