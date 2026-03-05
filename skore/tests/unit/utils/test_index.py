@@ -57,14 +57,7 @@ def test_flatten_multi_index(input_tuples, names, expected_values):
     pd.testing.assert_index_equal(result, expected)
 
 
-def test_flatten_multi_index_non_multi_index_input():
-    """Test that non-MultiIndex input is returned as-is."""
-    simple_index = pd.Index(["a", "b"])
-    result = flatten_multi_index(simple_index)
-    pd.testing.assert_index_equal(result, simple_index)
-
-
-def test_flatten_multi_index_non_multi_index_with_join_str():
+def test_flatten_multi_index_non_multi_index():
     """Test that non-MultiIndex input is returned as-is regardless of join_str."""
     simple_index = pd.Index(["a", "b"])
     result = flatten_multi_index(simple_index, join_str="-")
