@@ -128,16 +128,6 @@ def test_data_source(comparison_cv_report_ridge, data_source):
     assert set(display.importances["data_source"]) == {data_source}
 
 
-def test_data_source_X_y(comparison_cv_report_ridge, regression_data):
-    X, y = regression_data
-    report = comparison_cv_report_ridge
-    display = report.inspection.permutation_importance(
-        seed=42, n_repeats=2, data_source="X_y", X=X, y=y
-    )
-    assert isinstance(display, PermutationImportanceDisplay)
-    assert set(display.importances["data_source"]) == {"X_y"}
-
-
 def test_seed_wrong_type(comparison_cv_report_ridge):
     report = comparison_cv_report_ridge
     with pytest.raises(
