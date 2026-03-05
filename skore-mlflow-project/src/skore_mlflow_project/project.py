@@ -372,7 +372,7 @@ def _log_artifact(artifact: Artifact) -> None:
         csv_text = _flatten_df_index(payload).to_csv(index=False)
         mlflow.log_text(csv_text, filename("csv"))
     elif callable(getattr(payload, "savefig", None)):
-        mlflow.log_figure(payload, filename("png"))
+        _log_figure(payload, filename("png"))
     elif isinstance(payload, list):
         mlflow.log_dict({"values": payload}, filename("json"))
     elif isinstance(payload, dict):
@@ -382,6 +382,31 @@ def _log_artifact(artifact: Artifact) -> None:
         mlflow.log_text(html_text, filename("html"))
     else:
         raise TypeError(f"Unexpected artifact payload type: {type(payload)}")
+
+
+def _log_figure(figure: Any, artifact_file: str) -> None:
+    """Log a matplotlib figure while keeping full titles and legends visible."""
+    try:
+        mlflow.log_figure(
+            figure,
+            artifact_file,
+            save_kwargs={"bbox_inches": "tight"},
+        )
+    except TypeError as exc:
+        # MLflow < 3.2 does not support the `save_kwargs` parameter.
+        if "unexpected keyword argument 'save_kwargs'" not in str(exc):
+            raise
+        with TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir, artifact_file)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            figure.savefig(path, bbox_inches="tight")
+
+            artifact_path = path.relative_to(tmp_dir).parent
+            path_str = None if artifact_path == Path(".") else str(artifact_path)
+            mlflow.log_artifact(
+                local_path=str(path),
+                artifact_path=path_str,
+            )
 
 
 def _flatten_df_index(df: pd.DataFrame) -> pd.DataFrame:
