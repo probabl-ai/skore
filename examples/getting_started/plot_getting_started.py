@@ -270,7 +270,7 @@ comparison.metrics.precision_recall().plot()
 # %%
 
 final_report = comparison.create_estimator_report(
-    key="Simple Linear Model", X_test=X_holdout, y_test=y_holdout
+    report_key="Simple Linear Model", X_test=X_holdout, y_test=y_holdout
 )
 
 # %%

@@ -104,7 +104,7 @@ def test_create_estimator_report_from_estimator_reports(
         }
     )
 
-    est_report = comparison_report.create_estimator_report(key="estimator_1")
+    est_report = comparison_report.create_estimator_report(report_key="estimator_1")
 
     assert isinstance(est_report, EstimatorReport)
     assert est_report._parent_hash == comparison_report._hash
@@ -112,7 +112,7 @@ def test_create_estimator_report_from_estimator_reports(
     assert joblib.hash(est_report.y_train) == joblib.hash(y_experiment)
 
     est_report_w_test = comparison_report.create_estimator_report(
-        key="estimator_2", X_test=X_heldout, y_test=y_heldout
+        report_key="estimator_2", X_test=X_heldout, y_test=y_heldout
     )
 
     assert isinstance(est_report_w_test, EstimatorReport)
@@ -150,7 +150,7 @@ def test_create_estimator_report_from_cross_validation_reports(
 
     comparison_report = ComparisonReport(reports)
 
-    est_report = comparison_report.create_estimator_report(key="estimator_1")
+    est_report = comparison_report.create_estimator_report(report_key="estimator_1")
 
     assert isinstance(est_report, EstimatorReport)
     cv_report = comparison_report.reports_["estimator_1"]
@@ -161,7 +161,7 @@ def test_create_estimator_report_from_cross_validation_reports(
     assert est_report.y_test is None
 
     est_report_w_test = comparison_report.create_estimator_report(
-        key="estimator_2", X_test=X_heldout, y_test=y_heldout
+        report_key="estimator_2", X_test=X_heldout, y_test=y_heldout
     )
     cv_report = comparison_report.reports_["estimator_2"]
 
@@ -181,4 +181,4 @@ def test_create_estimator_report_invalid_name(
 
     err_msg = "Estimator with key InvalidEstimator not found in the comparison report."
     with pytest.raises(ValueError, match=err_msg):
-        comparison_report.create_estimator_report(key="InvalidEstimator")
+        comparison_report.create_estimator_report(report_key="InvalidEstimator")

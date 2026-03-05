@@ -419,7 +419,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def create_estimator_report(
         self,
         *,
-        key: str,
+        report_key: str,
         X_test: ArrayLike | None = None,
         y_test: ArrayLike | None = None,
     ) -> EstimatorReport:
@@ -432,9 +432,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        key : str
+        report_key : str
             The key associated with the estimator to create a report for, as stored in
-            the :attribute:`reports_` attribute of the :class:`~skore.ComparisonReport`.
+            the :attr:`reports_` attribute of the :class:`~skore.ComparisonReport`.
+            List the available keys with `reports_.keys()`.
 
         X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
             Testing data. It should have the same structure as the training data.
@@ -462,7 +463,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         >>> # Notice that e.g. the RandomForestClassifier performs best
         >>> final_report = comparison_report.create_estimator_report(
-        ...     key="RandomForestClassifier", X_test=X_test, y_test=y_test
+        ...     report_key="RandomForestClassifier", X_test=X_test, y_test=y_test
         ... )
         >>> final_report.metrics.summarize().frame()
 
@@ -471,18 +472,18 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         report : :class:`~skore.EstimatorReport`
             The estimator report.
         """
-        if key not in self.reports_:
+        if report_key not in self.reports_:
             raise ValueError(
-                f"Estimator with key {key} not found in the comparison report. "
+                f"Estimator with key {report_key} not found in the comparison report. "
                 f"Available keys are: {list(self.reports_.keys())}."
             )
 
-        if isinstance(self.reports_[key], CrossValidationReport):
+        if isinstance(self.reports_[report_key], CrossValidationReport):
             return cast(
-                CrossValidationReport, self.reports_[key]
+                CrossValidationReport, self.reports_[report_key]
             ).create_estimator_report(X_test=X_test, y_test=y_test)
 
-        estimator_report = cast(EstimatorReport, self.reports_[key])
+        estimator_report = cast(EstimatorReport, self.reports_[report_key])
         X_concat = (
             pd.concat([estimator_report._X_train, estimator_report._X_test])
             if isinstance(estimator_report._X_train, pd.DataFrame)
