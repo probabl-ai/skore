@@ -88,8 +88,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     >>> classifier = LogisticRegression(max_iter=10_000)
     >>> report = EstimatorReport(classifier, **split_data)
     >>> display = report.metrics.precision_recall()
-    >>> display.set_style(relplot_kwargs={"palette": "Set2"})
-    >>> display.plot()
+    >>> display.set_style(relplot_kwargs={"palette": "Set2"}).plot()
     """
 
     _default_relplot_kwargs: dict[str, Any] = {
@@ -167,8 +166,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.precision_recall()
-        >>> display.set_style(relplot_kwargs={"palette": "Set2", "alpha": 0.8})
-        >>> display.plot()
+        >>> display.set_style(relplot_kwargs={"palette": "Set2", "alpha": 0.8}).plot()
         """
         return self._plot(subplot_by=subplot_by, despine=despine)
 
@@ -536,14 +534,15 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         Returns
         -------
-        None
+        self : object
+            The instance with a modified style.
 
         Raises
         ------
         ValueError
             If a style parameter is unknown.
         """
-        super().set_style(
+        return super().set_style(
             policy=policy,
             relplot_kwargs=relplot_kwargs or {},
         )

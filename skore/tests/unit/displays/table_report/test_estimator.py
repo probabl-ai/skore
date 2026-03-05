@@ -134,8 +134,7 @@ def test_categorical_plots_1d(pyplot, display):
         0.75,
     )
 
-    display.set_style(histplot_kwargs={"color": "blue"})
-    display.plot(y="gender")
+    display.set_style(histplot_kwargs={"color": "blue"}).plot(y="gender")
     assert display.ax_.get_xlabel() == "Count"
     assert display.ax_.get_ylabel() == "gender"
     # blue
@@ -146,8 +145,7 @@ def test_numeric_plots_1d(pyplot, estimator_report):
     """Check the plot output with numeric data in 1-d."""
     display = estimator_report.data.analyze(data_source="train")
     ## for integers numeric values
-    display.set_style(histplot_kwargs={"color": "red"})
-    display.plot(x="year_first_hired")
+    display.set_style(histplot_kwargs={"color": "red"}).plot(x="year_first_hired")
     assert display.ax_.get_xlabel() == "year_first_hired"
     labels = display.ax_.get_xticklabels()
     assert labels[0].get_text() == "1970"
@@ -159,8 +157,7 @@ def test_numeric_plots_1d(pyplot, estimator_report):
     # red
     assert display.ax_.containers[0].patches[0].get_facecolor() == (1.0, 0.0, 0.0, 0.75)
 
-    display.set_style()
-    display.plot(y="year_first_hired")
+    display.set_style().plot(y="year_first_hired")
     assert display.ax_.get_xlabel() == "Count"
     assert display.ax_.get_ylabel() == "year_first_hired"
 
