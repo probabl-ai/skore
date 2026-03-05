@@ -95,7 +95,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             df = df.dropna(axis="columns", how="all")
 
             for col in df.columns.intersection(["label", "output", "average"]):
-                df[col] = df[col].astype(str).replace("<NA>", "").fillna("")
+                df[col] = df[col].astype("str").replace("<NA>", "").fillna("")
 
             estimator_name = df.pop("estimator_name")[0]
             index = df.columns.intersection(
