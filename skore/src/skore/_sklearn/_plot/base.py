@@ -153,7 +153,8 @@ class StyleDisplayMixin:
 
         Returns
         -------
-        None
+        self : object
+            The instance with a modified style.
 
         Raises
         ------
@@ -180,6 +181,7 @@ class StyleDisplayMixin:
                     f"Invalid policy: {policy}. "
                     f"Valid policies are 'override' and 'update'."
                 )
+        return self
 
     @staticmethod
     def style_plot(plot_func: Callable) -> Callable:

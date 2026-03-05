@@ -547,14 +547,15 @@ class PermutationImportanceDisplay(DisplayMixin):
 
         Returns
         -------
-        None
+        self : object
+            Returns the instance itself.
 
         Raises
         ------
         ValueError
             If a style parameter is unknown.
         """
-        super().set_style(
+        return super().set_style(
             policy=policy,
             boxplot_kwargs=boxplot_kwargs or {},
             stripplot_kwargs=stripplot_kwargs or {},

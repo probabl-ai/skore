@@ -109,10 +109,9 @@ class TestImpurityDecreaseDisplay:
         figure, _ = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         assert figure.get_figheight() == 6
         if "estimator" in fixture_prefix:
-            display.set_style(barplot_kwargs={"height": 8})
+            display.set_style(barplot_kwargs={"height": 8}).plot()
         else:  # "cross_validation"
-            display.set_style(stripplot_kwargs={"height": 8})
-        display.plot()
+            display.set_style(stripplot_kwargs={"height": 8}).plot()
         assert display.figure_.get_figheight() == 8
 
 
