@@ -20,8 +20,12 @@ Throughout this guide, we will see how skore helps you:
 * Quickly get rich insights into model performance
 * Organize and track your experiments
 
-Examples
---------
+Storing reports in Skore Hub
+----------------------------
+
+At the end of this example, we send the reports in Skore Hub
+(https://skore.probabl.ai/) that is a platform for storing, sharing and exploring
+your machine learning reports.
 
 To run this example and push in your own Skore Hub workspace and project, you can run
 this example with the following command:
@@ -348,6 +352,11 @@ cv_coefficients.plot(select_k=15, sorting_order="descending")
 # in the interest of simplicity we kept this until the end.
 #
 # We are using Skore Hub (https://skore.probabl.ai/) to store and review our reports.
+#
+# .. note::
+#    Here, we are using Skore Hub to store and analyze the reports that we computed.
+#    Note that you can store reports as well locally using `mode="local"` when creating
+#    or loading projects via `skore.Project`.
 
 # sphinx_gallery_start_ignore
 #
@@ -393,12 +402,6 @@ except HTTPStatusError as e:
 # We load or create a hub project:
 
 project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
-
-# %%
-# .. note::
-#    Here, we are using Skore Hub to store and analyze the reports that we computed.
-#    Note that you can store reports as well locally using `mode="local"` when creating
-#    or loading projects.
 
 # %%
 # We store our reports with descriptive keys:
