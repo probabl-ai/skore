@@ -1,5 +1,5 @@
 """
-.. _example_skore_project:
+.. _example_skore_local_project:
 
 ===================
 Local skore Project

@@ -182,7 +182,7 @@ class Project:
             elif isinstance(obj, Metric):
                 mlflow.log_metric(obj.name.replace(".", "_"), obj.value)
             elif isinstance(obj, Model):
-                _log_model(obj.model, input_example=obj.input_example)
+                _log_model(obj.model, obj.input_example, name="model")
             elif isinstance(obj, Artifact):
                 _log_artifact(obj)
             elif isinstance(obj, Dataset):
@@ -297,7 +297,8 @@ class Project:
 ## Helpers for logging in MLFlow:
 
 
-def _log_model(model: BaseEstimator, *, input_example: Any) -> None:
+def _log_model(model: BaseEstimator, input_example: Any, **kwargs: Any) -> None:
+    """Log a model using skops first, then cloudpickle as fallback."""
     try:
         with (
             _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"),
@@ -309,29 +310,22 @@ def _log_model(model: BaseEstimator, *, input_example: Any) -> None:
             _filterwarnings(Warning, r".*Query.get\(\) method is considered legacy.*"),
             # MLflow <= 3.2 emits this warning internally.
             _filterwarnings(DeprecationWarning, r".*utcnow\(\) is deprecated.*"),
-            # MLflow 3.0 can trigger this from pydantic internals.
-            _filterwarnings(Warning, ".*@model_validator.*deprecated.*"),
-        ):
-            mlflow.sklearn.log_model(model, name="model", input_example=input_example)
-    except TypeError as exc:
-        # MLflow < 3 does not support the `name` parameter.
-        if "unexpected keyword argument 'name'" not in str(exc):
-            raise
-        with (
-            _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"),
-            _filterwarnings(DeprecationWarning, r".*utcnow\(\) is deprecated.*"),
-            # MLflow 2.20 can trigger warnings from pydantic on pydantic >= 2.12.
+            # MLflow 2.20->3.0 can trigger those from pydantic internals.
             _filterwarnings(Warning, ".*@model_validator.*deprecated.*"),
             _filterwarnings(Warning, r".*`min_items` is deprecated.*"),
         ):
             mlflow.sklearn.log_model(
                 model,
-                artifact_path="model",
-                # Avoid importing MLflow's pyfunc flavor path on MLflow 2, which emits
-                # deprecation warnings with modern pydantic versions:
-                pyfunc_predict_fn="__skore_disabled_pyfunc__",
                 input_example=input_example,
+                **kwargs,
             )
+        return
+    except TypeError as exc:
+        if "unexpected keyword argument 'name'" not in str(exc):
+            raise
+        kwargs["artifact_path"] = kwargs.pop("name")
+        kwargs["pyfunc_predict_fn"] = "__skore_disabled_pyfunc__"
+        return _log_model(model, input_example, **kwargs)
 
 
 @contextmanager
@@ -372,7 +366,7 @@ def _log_artifact(artifact: Artifact) -> None:
         csv_text = _flatten_df_index(payload).to_csv(index=False)
         mlflow.log_text(csv_text, filename("csv"))
     elif callable(getattr(payload, "savefig", None)):
-        mlflow.log_figure(payload, filename("png"))
+        _log_figure(payload, filename("png"))
     elif isinstance(payload, list):
         mlflow.log_dict({"values": payload}, filename("json"))
     elif isinstance(payload, dict):
@@ -382,6 +376,31 @@ def _log_artifact(artifact: Artifact) -> None:
         mlflow.log_text(html_text, filename("html"))
     else:
         raise TypeError(f"Unexpected artifact payload type: {type(payload)}")
+
+
+def _log_figure(figure: Any, artifact_file: str) -> None:
+    """Log a matplotlib figure while keeping full titles and legends visible."""
+    try:
+        mlflow.log_figure(
+            figure,
+            artifact_file,
+            save_kwargs={"bbox_inches": "tight"},
+        )
+    except TypeError as exc:
+        # MLflow < 3.2 does not support the `save_kwargs` parameter.
+        if "unexpected keyword argument 'save_kwargs'" not in str(exc):
+            raise
+        with TemporaryDirectory() as tmp_dir:
+            path = Path(tmp_dir, artifact_file)
+            path.parent.mkdir(parents=True, exist_ok=True)
+            figure.savefig(path, bbox_inches="tight")
+
+            artifact_path = path.relative_to(tmp_dir).parent
+            path_str = None if artifact_path == Path(".") else str(artifact_path)
+            mlflow.log_artifact(
+                local_path=str(path),
+                artifact_path=path_str,
+            )
 
 
 def _flatten_df_index(df: pd.DataFrame) -> pd.DataFrame:
