@@ -74,7 +74,7 @@ def test_log_model_falls_back_for_mlflow_2(monkeypatch) -> None:
 
     monkeypatch.setattr(mlflow.sklearn, "log_model", _log_model)
 
-    project_module._log_model(LinearRegression(), input_example=None)
+    project_module._log_model(LinearRegression(), input_example=None, name="test")
 
     assert len(calls) == 2
 
