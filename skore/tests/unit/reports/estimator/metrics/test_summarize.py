@@ -3,7 +3,8 @@ import re
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal, assert_series_equal
+from numpy.testing import assert_array_equal
+from pandas.testing import assert_frame_equal
 from sklearn.base import clone
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
@@ -249,14 +250,10 @@ def test_data_source_both(forest_binary_classification_data):
     assert set(display_both.data["data_source"]) == {"train", "test"}
 
     train_data = display_both.data[display_both.data["data_source"] == "train"]
-    assert_series_equal(
-        train_data["score"], display_train.data["score"], check_index=False
-    )
+    assert_array_equal(train_data["score"], display_train.data["score"])
 
     test_data = display_both.data[display_both.data["data_source"] == "test"]
-    assert_series_equal(
-        test_data["score"], display_test.data["score"], check_index=False
-    )
+    assert_array_equal(test_data["score"], display_test.data["score"])
 
 
 # Tests about passing `metric`

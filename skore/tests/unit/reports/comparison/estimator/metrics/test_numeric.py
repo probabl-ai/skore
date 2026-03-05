@@ -97,11 +97,11 @@ def test_binary_classification(
 
     # ensure metric is valid
     result = getattr(report.metrics, metric_name)()
-    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
+    pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
     result = getattr(report.metrics, metric_name)()
-    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
+    pd.testing.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
