@@ -56,6 +56,32 @@ class TestCoefficientsDisplay:
             expected.add("output")
         assert set(frame.columns) == expected
 
+    def test_frame_aggregate(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.coefficients()
+
+        if "cross_validation" not in fixture_prefix:
+            # situation 1: aggregate is ignored for non-CV report types
+            assert set(display.frame().columns) == set(
+                display.frame(aggregate=None).columns
+            )
+        else:
+            # situation 2: aggregate=None does not aggregate
+            frame_none = display.frame(aggregate=None)
+            assert "split" in frame_none.columns
+            assert "coefficient" in frame_none.columns
+            assert "coefficient_mean" not in frame_none.columns
+            assert "coefficient_std" not in frame_none.columns
+
+            # situation 3: default aggregate aggregates properly
+            frame_agg = display.frame()
+            assert "split" not in frame_agg.columns
+            assert "coefficient_mean" in frame_agg.columns
+            assert "coefficient_std" in frame_agg.columns
+            assert "coefficient" not in frame_agg.columns
+
     def test_internal_data_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
