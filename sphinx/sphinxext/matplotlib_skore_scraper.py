@@ -24,3 +24,8 @@ def setup(app):
         app.config["sphinx_gallery_conf"]["image_scrapers"] = []
 
     app.config["sphinx_gallery_conf"]["image_scrapers"].append(matplotlib_skore_scraper())
+
+    return {
+        'parallel_read_safe': True,
+        'parallel_write_safe': True,
+    }
