@@ -2,12 +2,11 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.base import clone
-from sklearn.metrics import accuracy_score
 
 from skore import ComparisonReport, EstimatorReport
 
 
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
+@pytest.mark.parametrize("data_source", ["test"])
 @pytest.mark.parametrize(
     "metric_name, expected",
     [
@@ -99,29 +98,17 @@ def test_binary_classification(
 ):
     """Check the metrics work."""
     report = comparison_estimator_reports_binary_classification
-    sub_report = next(iter(report.reports_.values()))
-    X_test, y_test = sub_report.X_test, sub_report.y_test
 
     # ensure metric is valid
-    if data_source == "X_y":
-        result = getattr(report.metrics, metric_name)(
-            data_source=data_source, X=X_test, y=y_test
-        )
-    else:
-        result = getattr(report.metrics, metric_name)(data_source=data_source)
+    result = getattr(report.metrics, metric_name)(data_source=data_source)
     pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
-    if data_source == "X_y":
-        result = getattr(report.metrics, metric_name)(
-            data_source=data_source, X=X_test, y=y_test
-        )
-    else:
-        result = getattr(report.metrics, metric_name)(data_source=data_source)
+    result = getattr(report.metrics, metric_name)(data_source=data_source)
     pd.testing.assert_frame_equal(result, expected)
 
 
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
+@pytest.mark.parametrize("data_source", ["test"])
 @pytest.mark.parametrize(
     "metric_name, expected",
     [
@@ -154,61 +141,12 @@ def test_regression(
 ):
     """Check the metrics work."""
     comp = comparison_estimator_reports_regression
-    sub_report = next(iter(comp.reports_.values()))
-    X_test, y_test = sub_report.X_test, sub_report.y_test
-
     # ensure metric is valid
-    if data_source == "X_y":
-        result = getattr(comp.metrics, metric_name)(
-            data_source=data_source, X=X_test, y=y_test
-        )
-    else:
-        result = getattr(comp.metrics, metric_name)()
+    result = getattr(comp.metrics, metric_name)()
     pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
-    if data_source == "X_y":
-        result = getattr(comp.metrics, metric_name)(
-            data_source=data_source, X=X_test, y=y_test
-        )
-    else:
-        result = getattr(comp.metrics, metric_name)()
-    pd.testing.assert_frame_equal(result, expected)
-
-
-def test_custom_metric_data_source_external(
-    binary_classification_data, comparison_estimator_reports_binary_classification
-):
-    """Check that `custom_metric` works with an "X_y" data source."""
-    X_test, y_test = binary_classification_data
-    report = comparison_estimator_reports_binary_classification
-
-    expected = pd.DataFrame(
-        [[0.48, 0.41]],
-        columns=pd.Index(["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"),
-        index=pd.Index(["Acc"], name="Metric"),
-    )
-
-    # ensure metric is valid
-    result = report.metrics.custom_metric(
-        metric_function=accuracy_score,
-        response_method="predict",
-        metric_name="Acc",
-        data_source="X_y",
-        X=X_test,
-        y=y_test,
-    )
-    pd.testing.assert_frame_equal(result, expected)
-
-    # ensure metric is valid even from the cache
-    result = report.metrics.custom_metric(
-        metric_function=accuracy_score,
-        response_method="predict",
-        metric_name="Acc",
-        data_source="X_y",
-        X=X_test,
-        y=y_test,
-    )
+    result = getattr(comp.metrics, metric_name)()
     pd.testing.assert_frame_equal(result, expected)
 
 
