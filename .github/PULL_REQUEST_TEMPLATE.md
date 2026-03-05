@@ -2,7 +2,7 @@
 🙌 Thanks for contributing a pull request!
 
 If this is your first contribution, take a look at our contribution guidelines:
-https://docs.skore.probabl.ai/dev/contributing.html
+https://docs.skore.probabl.ai/stable/contributing.html
 -->
 #### Change description
 <!--
@@ -36,12 +36,12 @@ requires updating tests)
 - [ ] All the commits in the PR are signed (more information
 [here](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits))
 - [ ] The pull request title respects the Conventional Commits convention (more information
-[here](https://docs.skore.probabl.ai/dev/contributing.html#pull-requests))
+[here](https://docs.skore.probabl.ai/stable/contributing.html#pull-requests))
 
 #### AI usage disclosure
 <!--
 If AI tools were involved in creating this PR, please check all boxes that apply
-below and make sure you understand our [automated contributions policy](https://docs.skore.probabl.ai/dev/contributing.html#automated-contributions-policy)
+below and make sure you understand our [automated contributions policy](https://docs.skore.probabl.ai/stable/contributing.html#automated-contributions-policy)
 -->
 AI tools were involved for:
 - [ ] Code generation (e.g., when writing an implementation or fixing a bug)
