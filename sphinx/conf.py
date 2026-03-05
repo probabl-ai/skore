@@ -139,9 +139,8 @@ rst_epilog = f"""
 """
 
 # Skore Hub base URL for landing page link (versioned example on Hub)
-skore_hub_base_url = "https://skore.probabl.ai"
 html_context = {
-    "skore_hub_example_url": f"{skore_hub_base_url}/skore/example-getting-started-{version}/cross-validations/",
+    "skore_hub_example_url": f"{example_base_url}/example-getting-started-{version}/cross-validations/",
 }
 # intersphinx configuration
 intersphinx_mapping = {
