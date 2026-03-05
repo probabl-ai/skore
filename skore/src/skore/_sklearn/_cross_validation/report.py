@@ -374,6 +374,30 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
             Testing target.
 
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split
+        >>> from skore import ComparisonReport, CrossValidationReport
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> linear_report = CrossValidationReport(
+        ...     LogisticRegression(random_state=42), X_train, y_train
+        ... )
+        >>> forest_report = CrossValidationReport(
+        ...     RandomForestClassifier(random_state=42), X_train, y_train
+        ... )
+        >>> comparison_report = ComparisonReport([linear_report, forest_report])
+        >>> summary = comparison_report.metrics.summarize().frame()
+
+        # Notice that e.g. the RandomForestClassifier performs best
+        >>> final_report = forest_report.create_estimator_report(
+        ...     X_test=X_test, y_test=y_test
+        ... )
+        >>> final_report.metrics.summarize().frame()
+
         Returns
         -------
         report : :class:`~skore.EstimatorReport`
