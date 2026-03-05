@@ -392,7 +392,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> comparison_report = ComparisonReport([linear_report, forest_report])
         >>> summary = comparison_report.metrics.summarize().frame()
 
-        # Notice that e.g. the RandomForestClassifier performs best
+        >>> # Notice that e.g. the RandomForestClassifier performs best
         >>> final_report = forest_report.create_estimator_report(
         ...     X_test=X_test, y_test=y_test
         ... )

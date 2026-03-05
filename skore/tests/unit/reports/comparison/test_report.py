@@ -179,6 +179,6 @@ def test_create_estimator_report_invalid_name(
     """Test that an error is raised when an invalid estimator name is provided."""
     comparison_report = comparison_estimator_reports_binary_classification
 
-    err_msg = "Estimator name InvalidEstimator not found in the comparison report."
+    err_msg = "Estimator with key InvalidEstimator not found in the comparison report."
     with pytest.raises(ValueError, match=err_msg):
         comparison_report.create_estimator_report(key="InvalidEstimator")

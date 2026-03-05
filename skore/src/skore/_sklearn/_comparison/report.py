@@ -434,7 +434,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ----------
         key : str
             The key associated with the estimator to create a report for, as stored in
-            the `reports_` attribute of the `~skore.ComparisonReport`.
+            the :attribute:`reports_` attribute of the :class:`~skore.ComparisonReport`.
 
         X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
             Testing data. It should have the same structure as the training data.
@@ -460,7 +460,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> comparison_report = ComparisonReport([linear_report, forest_report])
         >>> summary = comparison_report.metrics.summarize().frame()
 
-        # Notice that e.g. the RandomForestClassifier performs best
+        >>> # Notice that e.g. the RandomForestClassifier performs best
         >>> final_report = comparison_report.create_estimator_report(
         ...     key="RandomForestClassifier", X_test=X_test, y_test=y_test
         ... )
