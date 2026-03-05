@@ -124,7 +124,7 @@ class TestPredictionErrorDisplay:
             assert estimator_name in title
         else:
             assert "for" not in title
-        if display.data_source in ("train", "test", "X_y"):
+        if display.data_source in ("train", "test"):
             assert "Data source" in title
         else:
             assert "Data source" not in title
