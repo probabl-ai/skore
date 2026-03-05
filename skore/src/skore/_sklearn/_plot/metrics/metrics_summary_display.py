@@ -29,44 +29,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         self.data = data
         self.report_type = report_type
 
-    @staticmethod
-    def _rename_columns_and_index(
-        df: pd.DataFrame, mapping: dict[str, str]
-    ) -> pd.DataFrame:
-        """Rename names of columns and index names.
-
-        Examples
-        --------
-        >>> import pandas as pd
-        >>> frame = pd.DataFrame(
-                [1, 2, 3],
-                index=pd.MultiIndex.from_tuples(
-                    [(0, ''), (1, ''), (2, '')],
-                    names=['a', 'b'],
-                ),
-                columns=["c"],
-            )
-        >>> frame
-             c
-        a b
-        0    1
-        1    2
-        2    3
-        >>> MetricsSummaryDisplay._rename_columns_and_index(
-        ...     frame, {"a": "d", "b": "e", "c": "f"}
-        ... )
-             f
-        d e
-        0    1
-        1    2
-        2    3
-        """
-        df_ = df.rename(columns=mapping)
-        df_.index = df_.index.set_names(
-            [mapping.get(name, name) for name in df_.index.names]
-        )
-        return df_
-
     def frame(
         self,
         *,
@@ -112,17 +74,19 @@ class MetricsSummaryDisplay(DisplayMixin):
                     + ["favorability"]
                 ]
 
-            df = MetricsSummaryDisplay._rename_columns_and_index(
-                df,
-                {
-                    "metric": "Metric",
-                    "verbose_name": "Metric",
-                    "label": "Label / Average",
-                    "output": "Output",
-                    "average": "Average",
-                    "favorability": "Favorability",
-                    "score": estimator_name,
-                },
+            # Rename columns as well as index names
+            new_columns = {
+                "metric": "Metric",
+                "verbose_name": "Metric",
+                "label": "Label / Average",
+                "output": "Output",
+                "average": "Average",
+                "favorability": "Favorability",
+                "score": estimator_name,
+            }
+            df = df.rename(columns=new_columns)
+            df.index = df.index.set_names(
+                [new_columns.get(name, name) for name in df.index.names]
             )
 
             if df["data_source"].nunique() == 1:
