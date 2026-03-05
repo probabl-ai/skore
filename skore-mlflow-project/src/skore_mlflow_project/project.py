@@ -299,7 +299,6 @@ class Project:
 
 def _log_model(model: BaseEstimator, input_example: Any, **kwargs: Any) -> None:
     """Log a model using skops first, then cloudpickle as fallback."""
-    kwargs.setdefault("serialization_format", "skops")
     try:
         with (
             _filterwarnings(UserWarning, ".*Any type hint is inferred as AnyType.*"),
@@ -326,11 +325,6 @@ def _log_model(model: BaseEstimator, input_example: Any, **kwargs: Any) -> None:
             raise
         kwargs["artifact_path"] = kwargs.pop("name")
         kwargs["pyfunc_predict_fn"] = "__skore_disabled_pyfunc__"
-        return _log_model(model, input_example, **kwargs)
-    except MlflowException:
-        if kwargs["serialization_format"] != "skops":
-            raise
-        kwargs["serialization_format"] = "cloudpickle"
         return _log_model(model, input_example, **kwargs)
 
 
