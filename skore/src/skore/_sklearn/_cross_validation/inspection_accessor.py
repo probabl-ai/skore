@@ -270,6 +270,12 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 "permutation_importance",
                 data_source,
                 at_step,
+                #
+                # skore-hub-project expects an item for data_source_hash (but
+                # ignores its value). Until skore-hub-project is updated we
+                # insert None as a placeholder.
+                None,
+                #
                 metric,
                 kwargs,
             )

@@ -541,8 +541,6 @@ class _MetricsAccessor(
             Whether to cast the numbers to floats. If `False`, the return value
             is `None` when the predictions have never been computed.
         """
-        X, _ = self._get_X_y(data_source=data_source)
-
         predict_time_cache_key = (
             self._parent._hash,
             data_source,
