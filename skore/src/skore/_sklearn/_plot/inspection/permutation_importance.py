@@ -499,8 +499,16 @@ class PermutationImportanceDisplay(DisplayMixin):
         frame = frame.drop(columns=columns_to_drop)
 
         if aggregate is not None:
+            # if level not in ("splits", "repetitions"):
+            #     raise ValueError(
+            #         f"Invalid value for `level`: {level!r}. Valid values are "
+            #         "`'splits'` and `'repetitions'`."
+            #     )
             frame = (
                 frame.drop(columns=["repetition"])
+                # avoid sorting the features by name and do not drop NA from
+                # output or labels in case of mixed metrics (i.e. averaged vs.
+                # non-averaged)
                 .groupby(group_by, sort=False, dropna=False)
                 .aggregate(aggregate)
             ).reset_index()
