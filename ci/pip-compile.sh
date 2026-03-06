@@ -46,10 +46,8 @@ case $1 in
         esac
 
         for PACKAGE in "${PACKAGES[@]}"; do
-            matrix="${CWD}/../${PACKAGE}/matrix.json"
-
             mapfile -t combinations < <(
-                jq --compact-output 'unique_by([.python, .dependencies]) | .[]' "${matrix}"
+                jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../${PACKAGE}/matrix.json" -c
             )
 
             for combination in "${combinations[@]}"; do
