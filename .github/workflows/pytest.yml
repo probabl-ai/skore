@@ -127,10 +127,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-    strategy:
-      fail-fast: false
-      matrix:
-        package: ${{ fromJSON(needs.pytest-changes.outputs.modified-packages) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -139,8 +135,11 @@ jobs:
         id: set-matrix
         run: |
           set -eu
-          MATRIX=$(cat ${{ matrix.package }}/matrix.json | jq '.[] |= {"package":"${{ matrix.package }}"} + .' --compact-output)
-          echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
+          for package in ${PACKAGES}; do
+              echo "matrix=$(cat ${package}/matrix.json | jq ".[] |= {\"package\":\"${package}\"} + ." --compact-output)" >> $GITHUB_OUTPUT
+          done
+        env:
+          PACKAGES: ${{ fromJSON(needs.pytest-changes.outputs.modified-packages) }}
 
   pytest-test:
     needs: [pytest-changes, pytest-matrix]
