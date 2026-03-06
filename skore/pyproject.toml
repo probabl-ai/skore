@@ -75,7 +75,7 @@ sphinx-base = [
   "sphinx_autosummary_accessors",
   "xgboost-cpu",
 ]
-sphinx = ["skore[sphinx-base, hub]", "polars"]
+sphinx = ["skore[sphinx-base, hub, mlflow]", "polars"]
 sphinx-lts-cpu = ["skore[sphinx-base, hub]", "polars-lts-cpu"]
 dev = [
   "nbformat",
