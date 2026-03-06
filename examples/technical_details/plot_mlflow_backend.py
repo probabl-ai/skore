@@ -22,6 +22,7 @@ this example with the following command:
     TRACKING_URI=<tracking_uri> PROJECT=<project> python plot_skore_hub_project.py
 
 """
+# sphinx_gallery_thumbnail_path = '../../_static/images/screenshot_mlflow_backend.png'
 
 # %%
 # Build one report to persist
@@ -77,6 +78,7 @@ try:
         # This creates an MLFlow experiment with name `PROJECT`
 
     project.put("hgb-baseline", report)
+
 # sphinx_gallery_start_ignore
 finally:
     if tmp_dir is not None:
@@ -84,16 +86,19 @@ finally:
 
 # sphinx_gallery_end_ignore
 
-# You get some warnings about seriali
 
 # %%
+
+# You get warnings about serialization, future versions of `skore[mlflow]` might remove
+# those warnings by using `skops.io` for models serialization.
+#
 # .. note::
 #    MLflow UI preview for this example:
 #
 #    .. raw:: html
 #
-#       <video controls preload="metadata" width="100%" poster="/_static/images/screenshot_mlflow_backend.png">
-#         <source src="/_static/videos/mlflow_backend_demo.webm" type="video/webm">
+#       <video controls preload="metadata" width="100%" poster="../../_static/images/screenshot_mlflow_backend.png">
+#         <source src="../../_static/videos/mlflow_backend_demo.webm" type="video/webm">
 #         Your browser does not support the video tag.
 #       </video>
 #
@@ -117,6 +122,6 @@ mlflow_run = mlflow.get_run(run_id)
 mlflow_run.data.metrics
 
 # %%
-# But most importantly, you can load back a project:
+# But most importantly, you can load back a project using this id:
 loaded_report = project.get(run_id)
-loaded_report.metrics.summarize()
+loaded_report.metrics.summarize().frame()
