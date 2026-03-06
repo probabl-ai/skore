@@ -169,7 +169,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return MetricsSummaryDisplay(results)
+        return MetricsSummaryDisplay(
+            data=results, report_type=self._parent._report_type
+        )
 
     def _compute_metric_scores(
         self,
@@ -199,15 +201,32 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 )
             )
 
-            kwargs = dict(
-                data_source=data_source,
-                **metric_kwargs,
-            )
+            kwargs = dict(data_source=data_source, **metric_kwargs)
             if is_cv_report:
                 kwargs["aggregate"] = None
 
+            # FIXME(#1837)
+            # "favorability" and "flat_index" are passed to `.frame()` for
+            # EstimatorReports while they are passed to `.summarize()` for
+            # CrossValidationReports
+            frame_kwargs = {}
+            if not is_cv_report:
+                for key in ("favorability", "flat_index"):
+                    if key in kwargs:
+                        frame_kwargs[key] = kwargs.pop(key)
+
+            if "favorability" in kwargs:
+                favorability = kwargs["favorability"]
+            elif "favorability" in frame_kwargs:
+                favorability = frame_kwargs["favorability"]
+            else:
+                favorability = False
+            favorability = cast(bool, favorability)
+
             individual_results = [
-                result.frame() if report_metric_name == "summarize" else result
+                result.frame(**frame_kwargs)
+                if report_metric_name == "summarize"
+                else result
                 for result in track(
                     parallel(
                         joblib.delayed(getattr(report.metrics, report_metric_name))(
@@ -224,14 +243,14 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 results = _combine_estimator_results(
                     individual_results,
                     estimator_names=self._parent.reports_.keys(),
-                    favorability=metric_kwargs.get("favorability", False),
+                    favorability=favorability,
                     data_source=data_source,
                 )
             else:  # "CrossValidationReport"
                 results = _combine_cross_validation_results(
                     individual_results,
                     estimator_names=self._parent.reports_.keys(),
-                    favorability=metric_kwargs.get("favorability", False),
+                    favorability=favorability,
                     aggregate=aggregate,
                 )
 

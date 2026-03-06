@@ -20,10 +20,10 @@ def test_data_source_both(
     expected_index = pd.MultiIndex.from_tuples(
         [
             ("Accuracy", ""),
-            ("Precision", 0),
-            ("Precision", 1),
-            ("Recall", 0),
-            ("Recall", 1),
+            ("Precision", "0"),
+            ("Precision", "1"),
+            ("Recall", "0"),
+            ("Recall", "1"),
             ("ROC AUC", ""),
             ("Brier score", ""),
             ("Fit time (s)", ""),
