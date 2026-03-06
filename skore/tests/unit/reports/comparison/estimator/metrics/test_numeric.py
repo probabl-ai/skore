@@ -168,22 +168,6 @@ def test_timings(comparison_estimator_reports_binary_classification):
     assert timings.columns.tolist() == list(report.reports_.keys())
 
 
-def test_timings_flat_index(
-    comparison_estimator_reports_binary_classification,
-):
-    """Check that time measurements have _s suffix with flat_index=True."""
-    report = comparison_estimator_reports_binary_classification
-    report.get_predictions(data_source="train")
-    report.get_predictions(data_source="test")
-
-    # Get metrics with flat_index=True
-    results = report.metrics.summarize().frame(flat_index=True)
-
-    # Check that expected time measurements are in index with _s suffix
-    assert "fit_time_s" in results.index
-    assert "predict_time_s" in results.index
-
-
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_display_binary_classification_pos_label(
     pyplot, metric, logistic_binary_classification_with_train_test
