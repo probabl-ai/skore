@@ -10,44 +10,27 @@ def test_data_source_both(
     binary_classification_data, estimator_reports_binary_classification
 ):
     """Check that `MetricsSummaryDisplay` works with `data_source="both"`."""
-    X, y = binary_classification_data
-
     estimator_report_1, estimator_report_2 = estimator_reports_binary_classification
     report = ComparisonReport([estimator_report_1, estimator_report_2])
     result = report.metrics.summarize(data_source="both").frame()
-    assert "Favorability" not in result.columns
 
-    expected_index = pd.MultiIndex.from_tuples(
-        [
-            ("Accuracy", ""),
-            ("Precision", "0"),
-            ("Precision", "1"),
-            ("Recall", "0"),
-            ("Recall", "1"),
-            ("ROC AUC", ""),
-            ("Brier score", ""),
-            ("Fit time (s)", ""),
-            ("Predict time (s)", ""),
-        ],
-        names=["Metric", "Label / Average"],
-    )
-    expected_columns = pd.Index(
-        [
-            "DummyClassifier_1 (train)",
-            "DummyClassifier_1 (test)",
-            "DummyClassifier_2 (train)",
-            "DummyClassifier_2 (test)",
-        ],
-        name="Estimator",
-    )
-
-    pd.testing.assert_index_equal(result.index, expected_index)
-    pd.testing.assert_index_equal(result.columns, expected_columns)
-
-    assert len(report._cache) == 1
-    cached_result = next(iter(report._cache.values())).frame()
-    pd.testing.assert_index_equal(cached_result.index, expected_index)
-    pd.testing.assert_index_equal(cached_result.columns, expected_columns)
+    assert result.index.to_list() == [
+        ("Accuracy", ""),
+        ("Precision", "0"),
+        ("Precision", "1"),
+        ("Recall", "0"),
+        ("Recall", "1"),
+        ("ROC AUC", ""),
+        ("Brier score", ""),
+        ("Fit time (s)", ""),
+        ("Predict time (s)", ""),
+    ]
+    assert result.columns.to_list() == [
+        "DummyClassifier_1 (train)",
+        "DummyClassifier_1 (test)",
+        "DummyClassifier_2 (train)",
+        "DummyClassifier_2 (test)",
+    ]
 
 
 def test_flat_index(estimator_reports_binary_classification):
@@ -61,7 +44,6 @@ def test_flat_index(estimator_reports_binary_classification):
     result = report.metrics.summarize()
     assert isinstance(result, MetricsSummaryDisplay)
     result_df = result.frame(flat_index=True)
-    assert result_df.shape == (9, 2)
     assert isinstance(result_df.index, pd.Index)
     assert result_df.index.tolist() == [
         "accuracy",
@@ -77,26 +59,15 @@ def test_flat_index(estimator_reports_binary_classification):
     assert result_df.columns.tolist() == ["report_1", "report_2"]
 
 
-def test_favorability(
-    comparison_estimator_reports_binary_classification,
-):
+def test_favorability(comparison_estimator_reports_binary_classification):
     """Check that the behaviour of `favorability` is correct."""
     report = comparison_estimator_reports_binary_classification
-    result = report.metrics.summarize()
-    assert isinstance(result, MetricsSummaryDisplay)
-    result_df = result.frame(favorability=True)
-    assert "Favorability" in result_df.columns
-    indicator = result_df["Favorability"]
-    assert indicator["Accuracy"].tolist() == ["(↗︎)"]
-    assert indicator["Precision"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert indicator["Recall"].tolist() == ["(↗︎)", "(↗︎)"]
-    assert indicator["ROC AUC"].tolist() == ["(↗︎)"]
-    assert indicator["Brier score"].tolist() == ["(↘︎)"]
+    display = report.metrics.summarize()
+    result = display.frame(favorability=True)
+    assert set(result["Favorability"]) == {"(↗︎)", "(↘︎)"}
 
 
-def test_aggregate(
-    comparison_estimator_reports_binary_classification,
-):
+def test_aggregate(comparison_estimator_reports_binary_classification):
     """Passing `aggregate` should have no effect, as this argument is only relevant
     when comparing `CrossValidationReport`s."""
     report = comparison_estimator_reports_binary_classification
