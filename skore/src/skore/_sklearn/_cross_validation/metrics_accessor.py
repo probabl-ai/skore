@@ -148,6 +148,11 @@ class _MetricsAccessor(
         if pos_label == _DEFAULT:
             pos_label = self._parent.pos_label
 
+        if data_source == "both":
+            raise NotImplementedError(
+                'data_source="both" is not yet supported for CrossValidationReport'
+            )
+
         results = self._compute_metric_scores(
             report_metric_name="summarize",
             data_source=data_source,
