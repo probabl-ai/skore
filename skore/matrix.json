@@ -22,5 +22,5 @@
     {"os": "windows-latest", "python": "3.13", "dependencies": "scikit-learn==1.5.*", "coverage": false},
     {"os": "windows-latest", "python": "3.13", "dependencies": "scikit-learn==1.6.*", "coverage": false},
     {"os": "windows-latest", "python": "3.13", "dependencies": "scikit-learn==1.7.*", "coverage": false},
-    {"os": "windows-latest", "python": "3.13", "dependencies": "scikit-learn==1.8.*", "coverage": false},
+    {"os": "windows-latest", "python": "3.13", "dependencies": "scikit-learn==1.8.*", "coverage": false}
 ]

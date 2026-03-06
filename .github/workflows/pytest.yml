@@ -135,13 +135,10 @@ jobs:
         id: set-matrix
         run: |
           # Read the matrix from the JSON file
-          MATRIX=$(jq -c '{include: .}' .github/matrix.json)
-          # Escape newlines and quotes for GITHUB_OUTPUT
-          MATRIX="${MATRIX//'%'/'%25'}"
-          MATRIX="${MATRIX//$'\n'/'%0A'}"
-          MATRIX="${MATRIX//$'\r'/'%0D'}"
+          MATRIX=$(jq -c '{include: .}' skore/matrix.json)
+
           # Set the output
-          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+          echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
 
   pytest-test:
     needs: [pytest-changes, pytest-matrix]
@@ -149,9 +146,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.pytest-matrix.outputs.matrix) }}
-      # matrix:
-      #   package: ["skore"]
-      #   include: ${{ fromJSON(file('skore/matrix.json')) }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
