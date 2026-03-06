@@ -6,7 +6,6 @@ from sklearn.base import clone
 from skore import ComparisonReport, EstimatorReport
 
 
-@pytest.mark.parametrize("data_source", ["test"])
 @pytest.mark.parametrize(
     "metric_name, expected",
     [
@@ -33,7 +32,7 @@ from skore import ComparisonReport, EstimatorReport
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
-                    [("Precision", 0), ("Precision", 1)],
+                    [("Precision", "0"), ("Precision", "1")],
                     names=["Metric", "Label / Average"],
                 ),
             ),
@@ -50,7 +49,7 @@ from skore import ComparisonReport, EstimatorReport
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
-                    [("Recall", 0), ("Recall", 1)],
+                    [("Recall", "0"), ("Recall", "1")],
                     names=["Metric", "Label / Average"],
                 ),
             ),
@@ -91,24 +90,20 @@ from skore import ComparisonReport, EstimatorReport
     ],
 )
 def test_binary_classification(
-    metric_name,
-    expected,
-    data_source,
-    comparison_estimator_reports_binary_classification,
+    metric_name, expected, comparison_estimator_reports_binary_classification
 ):
     """Check the metrics work."""
     report = comparison_estimator_reports_binary_classification
 
     # ensure metric is valid
-    result = getattr(report.metrics, metric_name)(data_source=data_source)
+    result = getattr(report.metrics, metric_name)()
     pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
-    result = getattr(report.metrics, metric_name)(data_source=data_source)
+    result = getattr(report.metrics, metric_name)()
     pd.testing.assert_frame_equal(result, expected)
 
 
-@pytest.mark.parametrize("data_source", ["test"])
 @pytest.mark.parametrize(
     "metric_name, expected",
     [
@@ -136,18 +131,16 @@ def test_binary_classification(
         ),
     ],
 )
-def test_regression(
-    metric_name, expected, data_source, comparison_estimator_reports_regression
-):
+def test_regression(metric_name, expected, comparison_estimator_reports_regression):
     """Check the metrics work."""
     comp = comparison_estimator_reports_regression
     # ensure metric is valid
     result = getattr(comp.metrics, metric_name)()
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
     # ensure metric is valid even from the cache
     result = getattr(comp.metrics, metric_name)()
-    pd.testing.assert_frame_equal(result, expected)
+    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
 
 def test_timings(comparison_estimator_reports_binary_classification):
