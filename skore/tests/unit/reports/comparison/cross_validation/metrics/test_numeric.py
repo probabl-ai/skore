@@ -67,7 +67,7 @@ def case_accuracy(comparison_cross_validation_reports_binary_classification):
 @pytest.fixture
 def case_precision(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.MultiIndex.from_tuples(
-        [("Precision", 0), ("Precision", 1)], names=["Metric", "Label / Average"]
+        [("Precision", "0"), ("Precision", "1")], names=["Metric", "Label / Average"]
     )
     return (
         comparison_cross_validation_reports_binary_classification,
@@ -80,7 +80,7 @@ def case_precision(comparison_cross_validation_reports_binary_classification):
 @pytest.fixture
 def case_recall(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.MultiIndex.from_tuples(
-        [("Recall", 0), ("Recall", 1)], names=["Metric", "Label / Average"]
+        [("Recall", "0"), ("Recall", "1")], names=["Metric", "Label / Average"]
     )
     return (
         comparison_cross_validation_reports_binary_classification,
