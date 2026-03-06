@@ -20,7 +20,7 @@ MLTask = Literal[
     "unknown",
 ]
 
-DataSource = Literal["test", "train", "X_y"]
+DataSource = Literal["test", "train"]
 
 
 class _DefaultType:

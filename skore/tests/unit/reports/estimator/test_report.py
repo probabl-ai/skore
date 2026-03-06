@@ -113,17 +113,6 @@ def test_from_fitted_pipeline(
     assert report.y_test is y
 
 
-def test_invalidate_cache_data(forest_binary_classification_with_test):
-    """Check that we invalidate the cache when the data is changed."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    for attribute in ("X_test", "y_test"):
-        report._cache["mocking"] = "mocking"  # mock writing to cache
-        setattr(report, attribute, None)
-        assert report._cache == {}
-
-
 @pytest.mark.parametrize(
     "Estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods",
     [
@@ -219,7 +208,7 @@ def test_flat_index(forest_binary_classification_with_test):
     """
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(flat_index=True).frame()
+    result = report.metrics.summarize().frame(flat_index=True)
     assert result.shape == (9, 1)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
@@ -255,8 +244,6 @@ def test_get_predictions():
     np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
     predictions = report.get_predictions(data_source="train")
     np.testing.assert_allclose(predictions, report.estimator_.predict(X_train))
-    predictions = report.get_predictions(data_source="X_y", X=X_test)
-    np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
 
     # check the validity of the `predict_proba` method
     predictions = report.get_predictions(
@@ -271,12 +258,6 @@ def test_get_predictions():
     np.testing.assert_allclose(
         predictions, report.estimator_.predict_proba(X_train)[:, 0]
     )
-    predictions = report.get_predictions(
-        data_source="X_y", response_method="predict_proba", X=X_test
-    )
-    np.testing.assert_allclose(
-        predictions, report.estimator_.predict_proba(X_test)[:, 1]
-    )
 
     # check the validity of the `decision_function` method
     predictions = report.get_predictions(
@@ -289,10 +270,6 @@ def test_get_predictions():
     np.testing.assert_allclose(
         predictions, -report.estimator_.decision_function(X_train)
     )
-    predictions = report.get_predictions(
-        data_source="X_y", response_method="decision_function", X=X_test
-    )
-    np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
 
     # check the behaviour in conjunction of a report `pos_label`
     report = EstimatorReport(
@@ -332,3 +309,25 @@ def test_clustering():
         "classification or regression model instead.",
     ):
         EstimatorReport(KMeans())
+
+
+def test_has_no_deep_copy():
+    """Check that we raise a warning if the deep copy failed with a fitted
+    estimator."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression()
+    # Make it so deepcopy does not work
+    estimator.__reduce_ex__ = None
+    estimator.__reduce__ = None
+
+    with pytest.warns(UserWarning, match="Deepcopy failed"):
+        EstimatorReport(
+            estimator,
+            fit=False,
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+        )

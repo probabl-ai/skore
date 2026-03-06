@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import numpy as np
@@ -13,7 +12,8 @@ from sklearn.pipeline import Pipeline
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import ReportType
+from skore._sklearn.types import Aggregate, ReportType
+from skore._utils._index import flatten_multi_index
 
 
 class CoefficientsDisplay(DisplayMixin):
@@ -172,6 +172,7 @@ class CoefficientsDisplay(DisplayMixin):
     def frame(
         self,
         *,
+        aggregate: Aggregate | None = ("mean", "std"),
         include_intercept: bool = True,
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
@@ -278,6 +279,20 @@ class CoefficientsDisplay(DisplayMixin):
         if select_k is not None:
             coefficients = self._select_k_features(coefficients, select_k)
 
+        if aggregate is not None and "split" in coefficients.columns:
+            group_by = [
+                c
+                for c in ["estimator", "feature", "label", "output"]
+                if c in coefficients.columns
+            ]
+            coefficients = (
+                coefficients.drop(columns=["split"])
+                .groupby(group_by, sort=False, dropna=False)
+                .aggregate(aggregate)
+            ).reset_index()
+            if isinstance(coefficients.columns, pd.MultiIndex):
+                coefficients.columns = flatten_multi_index(coefficients.columns)
+
         return coefficients
 
     @DisplayMixin.style_plot
@@ -357,6 +372,7 @@ class CoefficientsDisplay(DisplayMixin):
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
         frame = self.frame(
+            aggregate=None,
             include_intercept=include_intercept,
             select_k=select_k,
             sorting_order=sorting_order,
@@ -688,23 +704,19 @@ class CoefficientsDisplay(DisplayMixin):
     def _compute_data_for_display(
         cls,
         *,
-        estimators: Sequence[BaseEstimator],
-        names: list[str],
-        splits: list[int | float],
+        estimator: BaseEstimator,
+        name: str,
         report_type: ReportType,
     ) -> CoefficientsDisplay:
-        """Compute the data for the display.
+        """Compute the data for the display from a single estimator.
 
         Parameters
         ----------
-        estimators : list of estimator
-            The estimators to compute the data for.
+        estimator : estimator
+            The estimator to compute the data for.
 
-        names : list of str
-            The names of the estimators.
-
-        splits : list of int or np.nan
-            The splits to compute the data for.
+        name : str
+            The name of the estimator.
 
         report_type : {"estimator", "cross-validation", "comparison-estimator", \
                 "comparison-cross-validation"}
@@ -715,37 +727,33 @@ class CoefficientsDisplay(DisplayMixin):
         CoefficientsDisplay
             The data for the display.
         """
-        feature_names, est_names, coefficients, split_indices = [], [], [], []
-        for estimator, name, split in zip(estimators, names, splits, strict=True):
-            if isinstance(estimator, Pipeline):
-                preprocessor, predictor = estimator[:-1], estimator[-1]
-            else:
-                preprocessor, predictor = None, estimator
+        if isinstance(estimator, Pipeline):
+            preprocessor, predictor = estimator[:-1], estimator[-1]
+        else:
+            preprocessor, predictor = None, estimator
 
-            if isinstance(predictor, TransformedTargetRegressor):
-                predictor = predictor.regressor_
+        if isinstance(predictor, TransformedTargetRegressor):
+            predictor = predictor.regressor_
 
-            coef = np.atleast_2d(predictor.coef_).T
-            intercept = np.atleast_2d(predictor.intercept_)
-            if coef.shape[1] != intercept.shape[1]:
-                # it happens that with `fit_intercept=False` and a multi-output
-                # regression problem, intercept is a single float. Thus, we need to
-                # repeat it for each output
-                intercept = np.repeat(intercept, coef.shape[1], axis=1)
+        coef = np.atleast_2d(predictor.coef_).T
+        intercept = np.atleast_2d(predictor.intercept_)
+        if coef.shape[1] != intercept.shape[1]:
+            # it happens that with `fit_intercept=False` and a multi-output
+            # regression problem, intercept is a single float. Thus, we need to
+            # repeat it for each output
+            intercept = np.repeat(intercept, coef.shape[1], axis=1)
 
-            coefficients.append(np.concatenate([intercept, coef]))
+        coef_data = np.concatenate([intercept, coef])
 
-            feat_names = ["Intercept"] + _get_feature_names(
-                predictor, transformer=preprocessor, n_features=coef.shape[0]
-            )
-            feature_names.extend(feat_names)
-            est_names.extend([name] * len(feat_names))
-            split_indices.extend([split] * len(feat_names))
+        feature_names = ["Intercept"] + _get_feature_names(
+            predictor, transformer=preprocessor, n_features=coef.shape[0]
+        )
+        n_features = len(feature_names)
 
         index = pd.DataFrame(
             {
-                "estimator": est_names,
-                "split": split_indices,
+                "estimator": [name] * n_features,
+                "split": [np.nan] * n_features,
                 "feature": feature_names,
             }
         )
@@ -766,13 +774,10 @@ class CoefficientsDisplay(DisplayMixin):
                 index["label"] = np.nan
             id_vars, value_name = index.columns.tolist(), "coefficient"
 
-        coefficients = pd.DataFrame(
-            np.concatenate(coefficients, axis=0), columns=columns
+        coefficients = pd.concat(
+            [index, pd.DataFrame(coef_data, columns=columns)], axis=1
         )
-        coefficients = pd.concat([index, coefficients], axis=1)
         if require_melting:
-            # melt the coefficients and ensure alignment with the label/output, split
-            # feature names, and estimator names
             coefficients = coefficients.melt(
                 id_vars=id_vars,
                 value_vars=columns,
