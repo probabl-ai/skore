@@ -13,13 +13,12 @@ extensions, themes, and gallery settings.
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import sys
 import os
-from sphinx_gallery.sorting import ExplicitOrder
-from pathlib import Path
+import pathlib
+import sys
 
 # Make it possible to load custom extensions from sphinxext directory
-sys.path.append(str(Path("sphinxext").resolve()))
+sys.path.append(str(pathlib.Path("sphinxext").resolve()))
 
 project = "skore"
 copyright = "2026, Probabl"
@@ -38,11 +37,11 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
+    "sphinx_autosummary_accessors",
+    "sphinx_copybutton",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
-    "sphinx_copybutton",
     "sphinx_tabs.tabs",
-    "sphinx_autosummary_accessors",
     # Custom extensions
     "generate_accessor_tables",
     "github_link",
@@ -95,21 +94,17 @@ html_js_files = [
     "js/gtm.js",
 ]
 
-# list of examples in explicit order
-subsections_order = [
-    "../examples/getting_started",
-    "../examples/use_cases",
-    "../examples/model_evaluation",
-    "../examples/technical_details",
-]
-
 # sphinx_gallery options
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "filename_pattern": "plot_",  # pattern to select examples; change this to only build some of the examples
-    "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections
-    # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
+    "filename_pattern": "plot_",
+    "subsection_order": [
+        "../examples/getting_started",
+        "../examples/use_cases",
+        "../examples/model_evaluation",
+        "../examples/technical_details",
+    ],
     "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
@@ -121,8 +116,32 @@ sphinx_gallery_conf = {
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
     "abort_on_example_error": True,
+    "parallel": True,
 }
 
+# Build the HUB examples conditionally, only when credentials are available:
+# - after each __commit__ on the `main` branch,
+# - after each __release__ (tag `skore/X.Y.Z`).
+if not (
+    os.environ.get("GITHUB_ACTIONS")
+    and os.environ.get("SPHINX_EXAMPLE_API_KEY")
+    and os.environ.get("SPHINX_EXAMPLE_WORKSPACE")
+):
+    sphinx_gallery_conf["ignore_pattern"] = (
+        r"plot_getting_started\.py|plot_skore_hub_project\.py"
+    )
+
+# Expose HUB URLs to RST
+example_base_url = (os.environ.get("SPHINX_EXAMPLE_BASE_URL") or "https://example.com")
+rst_epilog = f"""
+.. _example-getting-started: {example_base_url}/example-getting-started-{version}/cross-validations
+.. _example-skore-hub-project: {example_base_url}/example-skore-hub-project-{version}
+"""
+
+# Skore Hub base URL for landing page link (versioned example on Hub)
+html_context = {
+    "skore_hub_example_url": f"{example_base_url}/example-getting-started-{version}/cross-validations/",
+}
 # intersphinx configuration
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
