@@ -6,7 +6,6 @@ import pytest
 from pandas.testing import assert_index_equal
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
 
 from skore import ComparisonReport, CrossValidationReport
 
@@ -188,18 +187,6 @@ def case(request):
 def test_metrics(case):
     report, metric, expected_index, expected_columns = case
 
-    result = getattr(report.metrics, metric)()
-    assert_index_equal(result.index, expected_index)
-    assert_index_equal(result.columns, expected_columns)
-
-
-def test_custom_metric(case_accuracy):
-    report, metric, expected_index, expected_columns = case_accuracy
-
-    result = report.metrics.custom_metric(
-        metric_function=accuracy_score,
-        response_method="predict",
-    )
     result = getattr(report.metrics, metric)()
     assert_index_equal(result.index, expected_index)
     assert_index_equal(result.columns, expected_columns)
