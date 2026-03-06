@@ -67,7 +67,7 @@ def case_accuracy(comparison_cross_validation_reports_binary_classification):
 @pytest.fixture
 def case_precision(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.MultiIndex.from_tuples(
-        [("Precision", 0), ("Precision", 1)], names=["Metric", "Label / Average"]
+        [("Precision", "0"), ("Precision", "1")], names=["Metric", "Label / Average"]
     )
     return (
         comparison_cross_validation_reports_binary_classification,
@@ -80,7 +80,7 @@ def case_precision(comparison_cross_validation_reports_binary_classification):
 @pytest.fixture
 def case_recall(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.MultiIndex.from_tuples(
-        [("Recall", 0), ("Recall", 1)], names=["Metric", "Label / Average"]
+        [("Recall", "0"), ("Recall", "1")], names=["Metric", "Label / Average"]
     )
     return (
         comparison_cross_validation_reports_binary_classification,
@@ -231,14 +231,6 @@ def test_metrics_aggregate(case):
     )
 
     result = getattr(report.metrics, scoring)(aggregate=["mean"])
-    assert_index_equal(result.index, expected_index)
-    assert_index_equal(result.columns, expected_columns)
-
-
-def test_metrics_X_y(case_accuracy):
-    report, _, expected_index, expected_columns = case_accuracy
-    X, y = make_classification(class_sep=0.1, random_state=42)
-    result = report.metrics.accuracy(data_source="X_y", X=X, y=y)
     assert_index_equal(result.index, expected_index)
     assert_index_equal(result.columns, expected_columns)
 

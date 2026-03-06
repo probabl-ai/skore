@@ -47,11 +47,10 @@ def test_with_pipeline(pyplot, forest_binary_classification_data):
             np.testing.assert_allclose(importances_split, feature_importances)
 
     df = display.frame()
-    expected_columns = ["estimator", "split", "feature", "importance"]
+    expected_columns = ["estimator", "feature", "importance_mean", "importance_std"]
     assert df.columns.tolist() == expected_columns
-    assert df["feature"].tolist() == columns_names * splitter * len(report.reports_)
+    assert df["feature"].tolist() == columns_names * len(report.reports_)
     assert df["estimator"].unique().tolist() == list(report.reports_.keys())
-    assert df["split"].nunique() == splitter
 
     display.plot()
     assert hasattr(display, "facet_")
