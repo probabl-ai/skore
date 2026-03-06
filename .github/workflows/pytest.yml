@@ -122,34 +122,39 @@ jobs:
              fi
           fi
 
-  pytest-test:
+  pytest-matrix:
     needs: [pytest-changes]
+    if: ${{ (github.event_name == 'push') || (needs.pytest-changes.outputs.modified-packages != '[]') }}
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set matrix for pytest-test
+        id: set-matrix
+        run: |
+          set -eu
+
+          matrix='[]'
+
+          while read package; do
+              package_matrix=$(cat ${package}/matrix.json | jq ".[] |= {\"package\":\"${package}\"} + ." --compact-output)
+              matrix=$(echo "${matrix}${package_matrix}" | jq -s 'add' --compact-output)
+          done < <(echo "${PACKAGES}" | jq -r '.[]')
+
+          echo "matrix=${matrix}" >> $GITHUB_OUTPUT
+        env:
+          PACKAGES: ${{ (github.event_name == 'push') && needs.pytest-changes.outputs.packages || needs.pytest-changes.outputs.modified-packages }}
+
+  pytest-test:
+    needs: [pytest-changes, pytest-matrix]
     if: ${{ (github.event_name == 'push') || (needs.pytest-changes.outputs.modified-packages != '[]') }}
     strategy:
       fail-fast: false
       matrix:
-        package: ${{ (github.event_name == 'push') && fromJSON(needs.pytest-changes.outputs.packages) || fromJSON(needs.pytest-changes.outputs.modified-packages) }}
-        os: ["ubuntu-latest", "windows-latest"]
-        python: ["3.10", "3.11", "3.12", "3.13"]
-        scikit-learn: ["1.5", "1.6", "1.7", "1.8"]
-        exclude:
-          - python: "3.10"
-            scikit-learn: "1.6"
-          - python: "3.10"
-            scikit-learn: "1.8"
-          - python: "3.11"
-            scikit-learn: "1.6"
-          - python: "3.11"
-            scikit-learn: "1.7"
-          - python: "3.12"
-            scikit-learn: "1.6"
-          - python: "3.12"
-            scikit-learn: "1.7"
-        include:
-          - os: "ubuntu-latest"
-            python: "3.13"
-            scikit-learn: "1.8"
-            coverage: true
+        include: ${{ fromJSON(needs.pytest-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
@@ -174,7 +179,7 @@ jobs:
             python-venv
             -${{ matrix.os }}
             -${{ steps.setup-python.outputs.python-version }}
-            -${{ hashFiles(format('ci/requirements/{0}/python-{1}/scikit-learn-{2}/test-requirements.txt', matrix.package, matrix.python, matrix.scikit-learn)) }}
+            -${{ hashFiles(format('ci/requirements/{0}/python-{1}/{2}/test-requirements.txt', matrix.package, matrix.python, matrix.dependencies)) }}
 
       - name: Setup python-venv
         working-directory: ${{ matrix.package }}/
@@ -194,7 +199,7 @@ jobs:
           fi
 
       - name: Install dependencies in python-venv
-        working-directory: ${{ format('ci/requirements/{0}/python-{1}/scikit-learn-{2}', matrix.package, matrix.python, matrix.scikit-learn) }}
+        working-directory: ${{ format('ci/requirements/{0}/python-{1}/{2}', matrix.package, matrix.python, matrix.dependencies) }}
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         run: |
           python -m pip install --upgrade pip build
@@ -243,6 +248,7 @@ jobs:
     needs:
       - pytest-changes
       - pytest-lockfiles
+      - pytest-matrix
       - pytest-test
     if: ${{ always() }}
     runs-on: ubuntu-latest

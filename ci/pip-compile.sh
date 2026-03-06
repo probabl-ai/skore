@@ -45,26 +45,30 @@ case $1 in
                 ;;
         esac
 
-        for PACKAGE in "${PACKAGES[@]}"
-        do
-            COMBINATIONS+=("${PACKAGE};test;3.10;1.5")
-            COMBINATIONS+=("${PACKAGE};test;3.10;1.7")
-            COMBINATIONS+=("${PACKAGE};test;3.11;1.5")
-            COMBINATIONS+=("${PACKAGE};test;3.11;1.8")
-            COMBINATIONS+=("${PACKAGE};test;3.12;1.5")
-            COMBINATIONS+=("${PACKAGE};test;3.12;1.8")
-            COMBINATIONS+=("${PACKAGE};test;3.13;1.5")
-            COMBINATIONS+=("${PACKAGE};test;3.13;1.6")
-            COMBINATIONS+=("${PACKAGE};test;3.13;1.7")
-            COMBINATIONS+=("${PACKAGE};test;3.13;1.8")
+        for PACKAGE in "${PACKAGES[@]}"; do
+            mapfile -t combinations < <(
+                jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../${PACKAGE}/matrix.json" -c
+            )
+
+            for combination in "${combinations[@]}"; do
+                python=$(jq -r '.python' <<< "${combination}")
+                dependencies=$(jq -r '.dependencies' <<< "${combination}")
+
+                COMBINATIONS+=("${PACKAGE}|test|${python}|${dependencies}")
+            done
         done
 
+        unset matrix
+        unset combinations
+        unset combination
+        unset python
+        unset dependencies
         unset PACKAGES
         unset PACKAGE
         shift 2
         ;;
     "--sphinx-requirements")
-        COMBINATIONS+=("skore;sphinx;3.13;1.8")
+        COMBINATIONS+=('skore|sphinx|3.13|scikit-learn==1.8.*')
         shift
         ;;
     *)
@@ -84,21 +88,21 @@ set -eu
 
     for combination in "${COMBINATIONS[@]}"
     do
-        IFS=";" read -r -a combination <<< "${combination}"
+        IFS="|" read -r -a combination <<< "${combination}"
 
         PACKAGE="${combination[0]}"
         EXTRA="${combination[1]}"
         PYTHON="${combination[2]}"
-        SCIKIT_LEARN="${combination[3]}"
-        FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/scikit-learn-${SCIKIT_LEARN}/${EXTRA}-requirements.txt"
+        DEPENDENCIES="${combination[3]}"
+        FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/${DEPENDENCIES}/${EXTRA}-requirements.txt"
 
-        echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | scikit-learn==${SCIKIT_LEARN} (${counter}/${#COMBINATIONS[@]})"
+        echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | ${DEPENDENCIES} (${counter}/${#COMBINATIONS[@]})"
 
         # Copy everything necessary to compile requirements in `TMPDIR`
         mkdir -p "${TMPDIR}/${PACKAGE}"; cp "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
 
-        # Force the `scikit-learn` version by creating file overriding requirements
-        echo "scikit-learn==${SCIKIT_LEARN}.*" > "${PACKAGE}/overrides.txt"
+        # Force the dependencies by creating file overriding requirements
+        echo "${DEPENDENCIES}" > "${PACKAGE}/overrides.txt"
 
         # Create the requirements file tree
         mkdir -p $(dirname "${FILEPATH}")
