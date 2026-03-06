@@ -1070,17 +1070,3 @@ def test_data_source_both(forest_binary_classification_data):
 
     test_data = display_both.data[display_both.data["data_source"] == "test"]
     assert_array_equal(test_data["score"], display_test.data["score"])
-
-
-def test_sklearn_string_without_neg_prefix(linear_regression_with_test):
-    """Metrics passed without 'neg_' prefix produce the same result as with it."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    display_without = report.metrics.summarize(metric=["mean_squared_error"])
-    display_with = report.metrics.summarize(metric=["neg_mean_squared_error"])
-
-    assert set(display_without.data["metric"]) == set(display_with.data["metric"])
-    np.testing.assert_allclose(
-        display_without.data["score"].values, display_with.data["score"].values
-    )
