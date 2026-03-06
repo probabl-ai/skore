@@ -124,6 +124,7 @@ jobs:
 
   pytest-matrix:
     needs: [pytest-changes]
+    if: ${{ (github.event_name == 'push') || (needs.pytest-changes.outputs.modified-packages != '[]') }}
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -131,21 +132,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set matrix
+      - name: Set matrix for pytest-test
         id: set-matrix
         run: |
           set -eu
 
           matrix='[]'
 
-          echo "${PACKAGES}" | jq -r '.[]' | while read package; do
+          while read package; do
               package_matrix=$(cat ${package}/matrix.json | jq ".[] |= {\"package\":\"${package}\"} + ." --compact-output)
               matrix=$(echo "${matrix}${package_matrix}" | jq -s 'add' --compact-output)
-          done
+          done < <(echo "${PACKAGES}" | jq -r '.[]')
 
           echo "matrix=${matrix}" >> $GITHUB_OUTPUT
         env:
-          PACKAGES: ${{ needs.pytest-changes.outputs.modified-packages }}
+          PACKAGES: ${{ (github.event_name == 'push') && needs.pytest-changes.outputs.packages || needs.pytest-changes.outputs.modified-packages }}
 
   pytest-test:
     needs: [pytest-changes, pytest-matrix]
