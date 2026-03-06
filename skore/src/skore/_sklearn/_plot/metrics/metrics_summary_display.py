@@ -1,7 +1,9 @@
+from typing import Literal, cast
+
 import pandas as pd
 
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn.types import ReportType
+from skore._sklearn.types import Aggregate, ReportType
 from skore._utils._index import flatten_multi_index
 
 
@@ -29,9 +31,92 @@ class MetricsSummaryDisplay(DisplayMixin):
         self.data = data
         self.report_type = report_type
 
+    @staticmethod
+    def _flatten_index(df: pd.DataFrame) -> pd.DataFrame:
+        df = df.copy()
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = flatten_multi_index(df.columns)
+        if isinstance(df.index, pd.MultiIndex):
+            df.index = flatten_multi_index(df.index)
+        if isinstance(df.index, pd.Index):
+            df.index = df.index.str.replace(r"\((.*)\)$", r"\1", regex=True)
+
+        return df
+
+    @staticmethod
+    def _frame_estimator(
+        data: pd.DataFrame,
+        *,
+        favorability: bool = False,
+        flat_index: bool = False,
+    ) -> pd.DataFrame:
+        """Process estimator report data into a formatted dataframe."""
+        df = data.copy()
+        df = df.dropna(axis="columns", how="all")
+
+        for col in df.columns.intersection(["label", "output", "average"]):
+            df[col] = df[col].astype("str").replace("<NA>", "").fillna("")
+
+        estimator_name = df.pop("estimator_name")[0]
+        index = df.columns.intersection(
+            ["metric", "verbose_name", "label", "output", "average"]
+        ).to_list()
+        df = df.set_index(index)
+
+        if not favorability:
+            df = df.drop(columns="favorability")
+        else:
+            # Put favorability at the end
+            df = df[
+                [col for col in df.columns if col != "favorability"] + ["favorability"]
+            ]
+
+        # Rename columns as well as index names
+        new_columns = {
+            "metric": "Metric",
+            "verbose_name": "Metric",
+            "label": "Label / Average",
+            "output": "Output",
+            "average": "Average",
+            "favorability": "Favorability",
+            "score": estimator_name,
+        }
+        df = df.rename(columns=new_columns)
+        df.index = df.index.set_names(
+            [new_columns.get(name, name) for name in df.index.names]
+        )
+
+        if df["data_source"].nunique() == 1:
+            df = df.drop(columns="data_source")
+        else:
+            # Show metrics one column per data source
+            df_pivoted = df.reset_index().pivot_table(
+                index=df.index.names,
+                columns="data_source",
+                values=estimator_name,
+                sort=False,
+            )
+            df_pivoted.columns = [
+                f"{estimator_name} ({col})" for col in df_pivoted.columns
+            ]
+
+            if favorability:
+                df_pivoted["Favorability"] = df[df["data_source"] == "test"][
+                    "Favorability"
+                ]
+
+            df = df_pivoted.copy()
+
+        if flat_index:
+            df = MetricsSummaryDisplay._flatten_index(df)
+
+        return df
+
     def frame(
         self,
         *,
+        aggregate: Aggregate | None = ("mean", "std"),
         favorability: bool = False,
         flat_index: bool = False,
     ):
@@ -39,6 +124,11 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         Parameters
         ----------
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Only used when `report_type` includes `"cross-validation"`.
+            Functions to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
         favorability : bool, default=False
             Whether or not to add an indicator of the favorability of the metric as
             an extra column in the returned DataFrame.
@@ -51,75 +141,54 @@ class MetricsSummaryDisplay(DisplayMixin):
         frame : pandas.DataFrame
             The report metrics as a dataframe.
         """
-        df = self.data.copy()
-
         if self.report_type == "estimator":
-            df = df.dropna(axis="columns", how="all")
+            return self._frame_estimator(
+                self.data,
+                favorability=favorability,
+                flat_index=flat_index,
+            )
+        elif self.report_type == "cross-validation":
+            df = self.data.copy()
 
-            for col in df.columns.intersection(["label", "output", "average"]):
-                df[col] = df[col].astype("str").replace("<NA>", "").fillna("")
+            estimator_name = df["estimator_name"][0]
 
-            estimator_name = df.pop("estimator_name")[0]
-            index = df.columns.intersection(
-                ["metric", "verbose_name", "label", "output", "average"]
-            ).to_list()
-            df = df.set_index(index)
+            df = self._frame_estimator(df, favorability=True, flat_index=False)
 
-            if not favorability:
-                df = df.drop(columns="favorability")
-            else:
-                # Put favorability at the end
-                df = df[
-                    [col for col in df.columns if col != "favorability"]
-                    + ["favorability"]
-                ]
+            favorability_col = df.pop("Favorability")
 
-            # Rename columns as well as index names
-            new_columns = {
-                "metric": "Metric",
-                "verbose_name": "Metric",
-                "label": "Label / Average",
-                "output": "Output",
-                "average": "Average",
-                "favorability": "Favorability",
-                "score": estimator_name,
-            }
-            df = df.rename(columns=new_columns)
-            df.index = df.index.set_names(
-                [new_columns.get(name, name) for name in df.index.names]
+            if isinstance(aggregate, (list, tuple)):
+                aggregate = list(aggregate)
+            elif aggregate is not None:
+                aggregate = cast(Literal["mean", "std"], aggregate)
+                aggregate = [aggregate]
+
+            df = df.reset_index().pivot_table(
+                index=df.index.names,
+                columns="split" if aggregate is None else None,
+                values=estimator_name,
+                aggfunc="first" if aggregate is None else aggregate,
+                sort=False,
             )
 
-            if df["data_source"].nunique() == 1:
-                df = df.drop(columns="data_source")
-            else:
-                # Show metrics one column per data source
-                df_pivoted = df.reset_index().pivot_table(
-                    index=df.index.names,
-                    columns="data_source",
-                    values=estimator_name,
-                    sort=False,
+            if aggregate is None:
+                df.columns = pd.MultiIndex.from_product(
+                    [[estimator_name], [f"Split #{i}" for i in df.columns]]
                 )
-                df_pivoted.columns = [
-                    f"{estimator_name} ({col})" for col in df_pivoted.columns
+            else:
+                df.columns = df.columns.swaplevel(0, 1)
+
+            if favorability:
+                df["Favorability"] = favorability_col[
+                    ~favorability_col.index.duplicated()
                 ]
 
-                if favorability:
-                    df_pivoted["Favorability"] = df[df["data_source"] == "test"][
-                        "Favorability"
-                    ]
-
-                df = df_pivoted.copy()
-
-            # Apply flat_index transformation after pivot (if needed)
             if flat_index:
-                if isinstance(df.columns, pd.MultiIndex):
-                    df.columns = flatten_multi_index(df.columns)
-                if isinstance(df.index, pd.MultiIndex):
-                    df.index = flatten_multi_index(df.index)
-                if isinstance(df.index, pd.Index):
-                    df.index = df.index.str.replace(r"\((.*)\)$", r"\1", regex=True)
+                df = MetricsSummaryDisplay._flatten_index(df)
 
-        return df
+            return df
+        else:
+            df = self.data.copy()
+            return df
 
     @DisplayMixin.style_plot
     def plot(self):
