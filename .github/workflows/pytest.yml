@@ -135,11 +135,17 @@ jobs:
         id: set-matrix
         run: |
           set -eu
-          for package in ${PACKAGES}; do
-              echo "matrix=$(cat ${package}/matrix.json | jq ".[] |= {\"package\":\"${package}\"} + ." --compact-output)" >> $GITHUB_OUTPUT
+
+          matrix='[]'
+
+          echo "${PACKAGES}" | jq -r '.[]' | while read package; do
+              package_matrix=$(cat ${package}/matrix.json | jq ".[] |= {\"package\":\"${package}\"} + ." --compact-output)
+              matrix=$(echo "${matrix}${package_matrix}" | jq -s 'add' --compact-output)
           done
+
+          echo "matrix=${matrix}" >> $GITHUB_OUTPUT
         env:
-          PACKAGES: ${{ fromJSON(needs.pytest-changes.outputs.modified-packages) }}
+          PACKAGES: ${{ needs.pytest-changes.outputs.modified-packages }}
 
   pytest-test:
     needs: [pytest-changes, pytest-matrix]
