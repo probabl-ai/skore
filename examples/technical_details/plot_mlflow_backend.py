@@ -7,12 +7,12 @@ MLflow backend with skore.Project
 
 This example shows how to persist reports in MLflow using
 :class:`~skore.Project` in ``mode="mlflow"``: log reports
-as MLFlow runs and inspect them.
+as MLflow runs and inspect them.
 
 Examples
 --------
 
-To run this example and push in your own MLFlow tracking server, you can run
+To run this example and push in your own MLflow tracking server, you can run
 this example with the following command:
 
 .. code-block:: bash
@@ -20,7 +20,6 @@ this example with the following command:
     TRACKING_URI=<tracking_uri> PROJECT=<project> python plot_skore_hub_project.py
 
 """
-# sphinx_gallery_thumbnail_path = '../../_static/images/screenshot_mlflow_backend.png'
 
 # %%
 # Build one report to persist
@@ -40,6 +39,7 @@ report = CrossValidationReport(estimator, X, y)
 # =====================================
 
 # sphinx_gallery_start_ignore
+# sphinx_gallery_thumbnail_path = '_static/images/screenshot_mlflow_backend.png'
 #
 # Configure the context variables and tmp dir:
 import os
@@ -73,7 +73,7 @@ try:
             mode="mlflow",
             tracking_uri=TRACKING_URI,
         )
-        # This creates an MLFlow experiment with name `PROJECT`
+        # This creates an MLflow experiment with name `PROJECT`
 
     project.put("hgb-baseline", report)
 
@@ -86,10 +86,10 @@ finally:
 
 
 # %%
-
 # You get warnings about serialization, future versions of `skore[mlflow]` might remove
 # those warnings by using `skops.io` for models serialization.
-#
+
+# %%
 # .. note::
 #    MLflow UI preview for this example:
 #
@@ -99,11 +99,10 @@ finally:
 #         <source src="../../_static/videos/mlflow_backend_demo.webm" type="video/webm">
 #         Your browser does not support the video tag.
 #       </video>
-#
 
 # %%
 # Like for other types of projects (local, hub), you can access the summary
-# and it's DataFrame's version:
+# and its DataFrame version:
 import pandas as pd
 
 summary = project.summarize()
@@ -111,7 +110,7 @@ pandas_summary = pd.DataFrame(summary)
 pandas_summary[["key", "report_type", "learner", "ml_task", "dataset"]]
 
 # %%
-# The "id" is the MLFlow run ID, you can access the MLFlow run this way if you want:
+# The "id" is the MLflow run ID, you can access the MLflow run this way if you want:
 import mlflow
 
 _, run_id = pandas_summary.index[0]
