@@ -8,63 +8,96 @@ MLflow backend with skore.Project
 This example shows how to persist reports in MLflow using
 :class:`~skore.Project` in ``mode="mlflow"``.
 
-To keep the example self-contained, we use a temporary SQLite backend store,
-push one report, and inspect it through :meth:`~skore.Project.summarize`.
+This example shows how to use :class:`~skore.Project` in **mlflow** mode: log
+reports as MLFlow runs and inspect them.
+
+Examples
+--------
+
+To run this example and push in your own MLFlow tracking server, you can run
+this example with the following command:
+
+.. code-block:: bash
+
+    TRACKING_URI=<tracking_uri> PROJECT=<project> python plot_skore_hub_project.py
+
+In this gallery, we are going to push the different reports into a public
+workspace.
 """
 
-from __future__ import annotations
-
-import io
-from contextlib import redirect_stderr, redirect_stdout
+# sphinx_gallery_start_ignore
+#
+# Configure the context variables:
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from sklearn.datasets import fetch_california_housing
-from sklearn.tree import DecisionTreeRegressor
-from skore import EstimatorReport, Project, train_test_split
-from skrub import tabular_pipeline
+tmp_dir = None
+
+if os.environ.get("SPHINX_BUILD"):
+    tmp_dir = TemporaryDirectory()
+    tmp_path = Path(tmp_dir.name)
+    TRACKING_URI = f"sqlite:///{tmp_path / 'mlflow.db'}"
+    PROJECT = "example-skore-mlflow-project"
+else:
+    assert (TRACKING_URI := os.environ.get("TRACKING_URI")), (
+        "`TRACKING_URI` must be defined."
+    )
+    assert (PROJECT := os.environ.get("PROJECT")), "`PROJECT` must be defined."
+# sphinx_gallery_end_ignore
 
 # %%
 # Build one report to persist
 # ===========================
-X, y = fetch_california_housing(return_X_y=True, as_frame=True)
-split_data = train_test_split(
-    X=X,
-    y=y,
-    random_state=42,
-    shuffle=False,
-    as_dict=True,
-)
 
-estimator = tabular_pipeline(DecisionTreeRegressor(max_depth=5))
-report = EstimatorReport(estimator, **split_data)
+from sklearn.datasets import load_iris
+from sklearn.ensemble import HistGradientBoostingClassifier
+from skore import CrossValidationReport, Project
 
+X, y = load_iris(return_X_y=True, as_frame=True)
+
+estimator = HistGradientBoostingClassifier()
+report = CrossValidationReport(estimator, X, y)
 
 # %%
 # Push the report to the MLflow backend
 # =====================================
-#
-# We use a temporary SQLite backend store so the example is fully self-contained.
-# The same code also works with a running MLflow server URI
-# (e.g. ``tracking_uri="http://127.0.0.1:5000"``).
-with TemporaryDirectory() as tmp_dir:
-    tmp_path = Path(tmp_dir)
-    backend_store_uri = f"sqlite:///{tmp_path / 'mlflow.db'}"
-    # MLflow/Alembic emits verbose DB initialization logs; silence them so the
-    # example page focuses on skore usage rather than backend startup details.
-    with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-        project = Project(
-            "technical-details-mlflow",
-            mode="mlflow",
-            tracking_uri=backend_store_uri,
-        )
-    project.put("linreg-baseline", report)
-    summary = project.summarize()
+import io
+from contextlib import redirect_stderr, redirect_stdout
+
+# MLflow/Alembic emits verbose DB initialization logs; silence them so the
+# example page focuses on skore usage rather than backend startup details.
+with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+    project = Project(
+        PROJECT,
+        mode="mlflow",
+        tracking_uri=TRACKING_URI,
+    )
+    # This creates an MLFlow experiment with name `PROJECT`
+
+project.put("hgb-baseline", report)
 
 # %%
-# To see the normal DataFrame table instead of the widget (e.g. in scripts or
-# when you prefer the table), wrap the summary in :class:`pandas.DataFrame`:
+# .. note::
+#    MLflow UI preview for this example:
+#
+#    .. raw:: html
+#
+#       <video controls preload="metadata" width="100%" poster="/_static/images/screenshot_mlflow_backend.png">
+#         <source src="/_static/videos/mlflow_backend_demo.webm" type="video/webm">
+#         Your browser does not support the video tag.
+#       </video>
+#
+
+# %%
+# To see from your notebook the projects you've logged in MLFlow:
 import pandas as pd
 
-pandas_summary = pd.DataFrame(summary)
+pandas_summary = pd.DataFrame(project.summarize())
 pandas_summary
+
+# sphinx_gallery_start_ignore
+if tmp_dir is not None:
+    tmp_dir.cleanup()
+
+# sphinx_gallery_end_ignore
