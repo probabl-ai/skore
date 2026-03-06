@@ -83,6 +83,7 @@ dev = [
 ]
 local = ["skore-local-project>=0.0.4"]
 hub = ["skore-hub-project>=0.0.17"]
+mlflow = ["skore-mlflow-project>=0.0.0"]
 
 [project.urls]
 Homepage = "https://probabl.ai"
