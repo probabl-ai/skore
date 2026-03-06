@@ -127,6 +127,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.pytest-changes.outputs.modified-packages) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -134,10 +138,8 @@ jobs:
       - name: Set matrix
         id: set-matrix
         run: |
-          # Read the matrix from the JSON file
-          MATRIX=$(jq -c '{include: .}' skore/matrix.json)
-
-          # Set the output
+          set -eu
+          MATRIX=$(cat ${{ matrix.package }}/matrix.json | jq '.[] |= {"package":"${{ matrix.package }}"} + .' --compact-output)
           echo "matrix=${MATRIX}" >> $GITHUB_OUTPUT
 
   pytest-test:
@@ -145,18 +147,23 @@ jobs:
     if: ${{ (github.event_name == 'push') || (needs.pytest-changes.outputs.modified-packages != '[]') }}
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.pytest-matrix.outputs.matrix) }}
+      matrix:
+        include: ${{ fromJSON(needs.pytest-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     steps:
       - run: |
-          echo ${{ matrix }}
+          echo "${{ matrix.package }}"
+          echo "${{ matrix.os }}"
+          echo "${{ matrix.dependencies }}"
+          echo "${{ matrix.coverage }}"
 
   pytest:
     needs:
       - pytest-changes
       - pytest-lockfiles
+      - pytest-matrix
       - pytest-test
     if: ${{ always() }}
     runs-on: ubuntu-latest
