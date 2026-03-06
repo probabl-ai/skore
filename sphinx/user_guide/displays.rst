@@ -26,8 +26,8 @@ interacting with a reporter. Let's provide an example:
         random_state=42,
     )
     report = CrossValidationReport(LogisticRegression(), X, y)
-    disp = report.metrics.roc()
-    disp.plot()
+    display = report.metrics.roc()
+    display.plot()
 
 The :meth:`EstimatorReport.metrics.roc` creates a :class:`RocCurveDisplay` object. The
 first available method with the `skore` display is a `plot` method. It shows graphically
@@ -38,7 +38,7 @@ not modify the display object nor require heavy computation.
     :context: close-figs
     :align: center
 
-    disp.plot()
+    display.plot()
 
 The `plot` method can be preceded by the `set_style` method which accepts parameters to
 tweak the rendering of the display. For instance, customize the appearance of the chance level:
@@ -47,10 +47,10 @@ tweak the rendering of the display. For instance, customize the appearance of th
     :context: close-figs
     :align: center
 
-    disp.set_style(
+    display.set_style(
         chance_level_kwargs=dict(linestyle="-", linewidth=5, color="tab:purple")
     )
-    disp.plot()
+    display.plot()
 
 Any subsequent call to `plot` uses the style settings set by `set_style`.
 
@@ -59,5 +59,5 @@ The ``frame`` method retrieves the underlying data used to generate the plot as 
 
 .. code-block:: python
 
-    df = disp.frame()
+    df = display.frame()
     df.head()
