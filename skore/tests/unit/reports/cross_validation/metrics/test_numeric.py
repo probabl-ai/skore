@@ -242,21 +242,15 @@ def test_precision_recall_pos_label_overwrite(
     )
 
 
-def test_invalid_X_y_call_still_raises_after_cache_write(
-    logistic_binary_classification_data,
-):
+def test_data_source_both(logistic_binary_classification_data):
     """
-    Non regression for https://github.com/probabl-ai/skore/issues/2491:
-    Invalid `X`/`y` args should not be masked by a cache hit.
+    data_source="both" is not yet supported for CrossValidationReport.
+
+    Non regression test for https://github.com/probabl-ai/skore/issues/2546
     """
     classifier, X, y = logistic_binary_classification_data
     report = CrossValidationReport(classifier, X, y)
 
-    error_msg = "X and y must be None when data_source is test"
-    with pytest.raises(ValueError, match=error_msg):
-        report.metrics.accuracy(X=X, y=y)
-
-    report.metrics.accuracy()
-
-    with pytest.raises(ValueError, match=error_msg):
-        report.metrics.accuracy(X=X, y=y)
+    error_msg = 'data_source="both" is not yet supported for CrossValidationReport'
+    with pytest.raises(NotImplementedError, match=error_msg):
+        report.metrics.summarize(data_source="both")

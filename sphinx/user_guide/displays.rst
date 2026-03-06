@@ -61,7 +61,7 @@ The ``frame`` method retrieves the underlying data used to generate the plot as 
 
     df = display.frame()
     df.head()
-
+    
 Finally, the ``help`` method displays the available attributes and methods of the
 display object interactively:
 

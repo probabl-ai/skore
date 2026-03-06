@@ -40,7 +40,7 @@ def test_with_pipeline(pyplot, forest_binary_classification_data):
         )
         np.testing.assert_allclose(imp, fitted.feature_importances_)
     frame = display.frame()
-    assert list(frame.columns) == ["split", "feature", "importance"]
+    assert list(frame.columns) == ["feature", "importance_mean", "importance_std"]
     display.plot()
     assert hasattr(display, "facet_")
     assert hasattr(display, "figure_")

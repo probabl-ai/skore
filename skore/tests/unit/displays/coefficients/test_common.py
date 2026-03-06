@@ -44,9 +44,10 @@ class TestCoefficientsDisplay:
         display = report.inspection.coefficients()
         frame = display.frame()
 
-        expected = {"feature", "coefficient"}
         if "cross_validation" in fixture_prefix:
-            expected.add("split")
+            expected = {"feature", "coefficient_mean", "coefficient_std"}
+        else:
+            expected = {"feature", "coefficient"}
         if "comparison" in fixture_prefix:
             expected.add("estimator")
         if task == "multiclass_classification":
@@ -54,6 +55,32 @@ class TestCoefficientsDisplay:
         if task == "multioutput_regression":
             expected.add("output")
         assert set(frame.columns) == expected
+
+    def test_frame_aggregate(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.coefficients()
+
+        if "cross_validation" not in fixture_prefix:
+            # situation 1: aggregate is ignored for non-CV report types
+            assert set(display.frame().columns) == set(
+                display.frame(aggregate=None).columns
+            )
+        else:
+            # situation 2: aggregate=None does not aggregate
+            frame_none = display.frame(aggregate=None)
+            assert "split" in frame_none.columns
+            assert "coefficient" in frame_none.columns
+            assert "coefficient_mean" not in frame_none.columns
+            assert "coefficient_std" not in frame_none.columns
+
+            # situation 3: default aggregate aggregates properly
+            frame_agg = display.frame()
+            assert "split" not in frame_agg.columns
+            assert "coefficient_mean" in frame_agg.columns
+            assert "coefficient_std" in frame_agg.columns
+            assert "coefficient" not in frame_agg.columns
 
     def test_internal_data_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -136,7 +163,16 @@ class TestCoefficientsDisplay:
         display = report.inspection.coefficients()
         frame = display.frame(sorting_order=sorting_order)
         group_cols = [
-            c for c in frame.columns if c not in ("feature", "coefficient", "split")
+            c
+            for c in frame.columns
+            if c
+            not in (
+                "feature",
+                "coefficient",
+                "coefficient_mean",
+                "coefficient_std",
+                "split",
+            )
         ]
         if group_cols:
             groups = frame.groupby(group_cols, sort=False, observed=True)
@@ -145,10 +181,10 @@ class TestCoefficientsDisplay:
         for _, group in groups:
             if "cross_validation" in fixture_prefix:
                 feature_order = group["feature"].unique()
-                mean_abs = group.groupby("feature", sort=False)["coefficient"].apply(
-                    lambda x: x.abs().mean()
-                )
-                coefs = [mean_abs.loc[f] for f in feature_order]
+                coefs = [
+                    group.loc[group["feature"] == f, "coefficient_mean"].iloc[0]
+                    for f in feature_order
+                ]
             else:
                 coefs = group["coefficient"].tolist()
             expected = sorted(coefs, key=abs, reverse=(sorting_order == "descending"))
