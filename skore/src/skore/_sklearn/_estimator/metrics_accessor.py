@@ -1,12 +1,12 @@
 import inspect
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from functools import partial
 from typing import Any, Literal, cast
 
 import numpy as np
 import pandas as pd
-from numpy.typing import ArrayLike, NDArray
-from sklearn import metrics as sklearn_metrics
+import sklearn
+from numpy.typing import ArrayLike
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
@@ -40,7 +40,6 @@ from skore._utils._accessor import (
     _get_ys_for_single_report,
 )
 from skore._utils._cache_key import deep_key_sanitize
-from skore._utils._index import flatten_multi_index
 
 
 class _MetricsAccessor(
@@ -67,8 +66,6 @@ class _MetricsAccessor(
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
-        favorability: bool = False,
-        flat_index: bool = False,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -118,14 +115,6 @@ class _MetricsAccessor(
             class is set to the one provided when creating the report. If `None`,
             the metric is computed considering each class as a positive class.
 
-        favorability : bool, default=False
-            Whether or not to add an indicator of the favorability of the metric as
-            an extra column in the returned DataFrame.
-
-        flat_index : bool, default=False
-            Whether to flatten the multi-index columns. Flat index will always be lower
-            case, do not include spaces and remove the hash symbol to ease indexing.
-
         Returns
         -------
         :class:`MetricsSummaryDisplay`
@@ -142,7 +131,7 @@ class _MetricsAccessor(
         ...
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
-        >>> report.metrics.summarize(favorability=True).frame()
+        >>> report.metrics.summarize().frame(favorability=True)
                     LogisticRegression Favorability
         Metric
         Accuracy               0.95...         (↗︎)
@@ -153,15 +142,13 @@ class _MetricsAccessor(
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
         ...     metric=["f1"],
-        ...     favorability=True,
-        ... ).frame()
+        ... ).frame(favorability=True)
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
         >>> report.metrics.summarize(
-        ...    favorability=True,
         ...    data_source="both"
-        ... ).frame().drop(["Fit time (s)", "Predict time (s)"])
+        ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
         Metric
         Accuracy                        0.96...                     0.95...          (↗︎)
@@ -172,8 +159,7 @@ class _MetricsAccessor(
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
         ...     metric=["f1"],
-        ...     favorability=True,
-        ... ).frame()
+        ... ).frame(favorability=True)
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.96...          (↗︎)
@@ -184,8 +170,6 @@ class _MetricsAccessor(
                 metric=metric,
                 metric_kwargs=metric_kwargs,
                 pos_label=pos_label,
-                favorability=False,
-                flat_index=flat_index,
                 response_method=response_method,
             )
             test_summary = self.summarize(
@@ -193,23 +177,19 @@ class _MetricsAccessor(
                 metric=metric,
                 metric_kwargs=metric_kwargs,
                 pos_label=pos_label,
-                favorability=favorability,
-                flat_index=flat_index,
                 response_method=response_method,
             )
-            # Add suffix to the dataframes to distinguish train and test.
-            train_df = train_summary.frame().add_suffix(" (train)")
-            test_df = test_summary.frame().add_suffix(" (test)")
-            combined = pd.concat([train_df, test_df], axis=1).rename(
-                columns={"Favorability (test)": "Favorability"}
+
+            combined = pd.concat(
+                [train_summary.data, test_summary.data], ignore_index=True
             )
-            return MetricsSummaryDisplay(summarize_data=combined)
+            return MetricsSummaryDisplay(data=combined, report_type="estimator")
 
         if pos_label is _DEFAULT:
             pos_label = self._parent.pos_label
 
         # Handle dictionary metrics
-        metric_names = None
+        metric_names: list[str | None] | None = None
         if isinstance(metric, dict):
             metric_names = list(metric.keys())
             metrics = list(metric.values())
@@ -218,7 +198,8 @@ class _MetricsAccessor(
         elif isinstance(metric, list):
             metrics = metric
 
-        if metric is None:
+        # Treat empty list same as None - use defaults
+        if metric is None or (isinstance(metric, list) and len(metric) == 0):
             # Equivalent to _get_scorers_to_add
             if self._parent._ml_task == "binary-classification":
                 metrics = ["accuracy", "precision", "recall", "roc_auc"]
@@ -233,21 +214,20 @@ class _MetricsAccessor(
             metrics += ["fit_time", "predict_time"]
 
         if metric_names is None:
-            metric_names = [None] * len(metrics)  # type: ignore
+            metric_names = [None] * len(metrics)
 
-        scores = []
-        favorability_indicator = []
-        for metric_name, metric_ in zip(metric_names, metrics, strict=False):
+        rows = []
+        for metric_name, metric_ in zip(metric_names, metrics, strict=True):
             if isinstance(metric_, str) and metric_ not in self._score_or_loss_info:
                 try:
-                    metric_ = sklearn_metrics.get_scorer(metric_)
+                    metric_ = sklearn.metrics.get_scorer(metric_)
                 except ValueError as err:
                     raise ValueError(
                         f"Invalid metric: {metric_!r}. "
                         f"Please use a valid metric from the "
                         f"list of supported metrics: "
                         f"{list(self._score_or_loss_info.keys())} "
-                        "or a valid scikit-learn scoring string."
+                        "or a valid scikit-learn metric string."
                     ) from err
                 if metric_kwargs is not None:
                     raise ValueError(
@@ -280,10 +260,11 @@ class _MetricsAccessor(
                             )
                     elif pos_label is not None:
                         metrics_kwargs["pos_label"] = pos_label
+
+                metric_favorability = "(↗︎)" if metric_._sign == 1 else "(↘︎)"
                 if metric_name is None:
                     metric_name = metric_._score_func.__name__.replace("_", " ").title()
-                metric_favorability = "(↗︎)" if metric_._sign == 1 else "(↘︎)"
-                favorability_indicator.append(metric_favorability)
+
             elif isinstance(metric_, str) or callable(metric_):
                 if isinstance(metric_, str):
                     metric_fn = getattr(
@@ -294,7 +275,7 @@ class _MetricsAccessor(
                     )
                     metrics_kwargs = {}
                     if metric_name is None:
-                        metric_name = f"{self._score_or_loss_info[metric_]['name']}"
+                        metric_name = self._score_or_loss_info[metric_]["name"]
                     metric_favorability = self._score_or_loss_info[metric_]["icon"]
                 else:
                     # Handle callable metrics
@@ -327,9 +308,8 @@ class _MetricsAccessor(
                             if param in metric_kwargs
                         }
                     if metric_name is None:
-                        metric_name = metric_.__name__
+                        metric_name = metric_.__name__.replace("_", " ").title()
                     metric_favorability = ""
-                    favorability_indicator.append(metric_favorability)
 
                 metrics_params = inspect.signature(metric_fn).parameters
                 if metric_kwargs is not None:
@@ -345,102 +325,55 @@ class _MetricsAccessor(
 
             score = metric_fn(data_source=data_source, **metrics_kwargs)
 
-            index: pd.Index | pd.MultiIndex | list[str] | None
-            score_array: NDArray
-            if self._parent._ml_task == "binary-classification":
+            row = {
+                "metric": metric_name,
+                "estimator_name": self._parent.estimator_name_,
+                "data_source": data_source,
+                "favorability": metric_favorability,
+                "label": None,
+                "average": None,
+                "output": None,
+                "score": score,
+            }
+
+            if (
+                self._parent._ml_task == "binary-classification"
+                and metrics_kwargs.get("average") == "binary"
+            ):
+                rows.append({**row, "label": pos_label})
+            elif self._parent._ml_task in (
+                "binary-classification",
+                "multiclass-classification",
+            ):
                 if isinstance(score, dict):
-                    classes = list(score.keys())
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name] * len(classes), classes],
-                        names=["Metric", "Label / Average"],
-                    )
-                    score_array = np.hstack([score[c] for c in classes]).reshape(-1, 1)
-                elif "average" in metrics_kwargs:
-                    if metrics_kwargs["average"] == "binary":
-                        index = pd.MultiIndex.from_arrays(
-                            [[metric_name], [pos_label]],
-                            names=["Metric", "Label / Average"],
-                        )
-                    elif metrics_kwargs["average"] is not None:
-                        index = pd.MultiIndex.from_arrays(
-                            [[metric_name], [metrics_kwargs["average"]]],
-                            names=["Metric", "Label / Average"],
-                        )
-                    else:
-                        index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
+                    for label in score:
+                        rows.append({**row, "label": label, "score": score[label]})  # noqa: PERF401
                 else:
-                    index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
-            elif self._parent._ml_task == "multiclass-classification":
-                if isinstance(score, dict):
-                    classes = list(score.keys())
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name] * len(classes), classes],
-                        names=["Metric", "Label / Average"],
-                    )
-                    score_array = np.hstack([score[c] for c in classes]).reshape(-1, 1)
-                elif (
-                    "average" in metrics_kwargs
-                    and metrics_kwargs["average"] is not None
-                ):
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name], [metrics_kwargs["average"]]],
-                        names=["Metric", "Label / Average"],
-                    )
-                    score_array = np.array(score).reshape(-1, 1)
-                else:
-                    index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
-            elif self._parent._ml_task in ("regression", "multioutput-regression"):
+                    rows.append({**row, "average": metrics_kwargs.get("average")})
+            elif self._parent._ml_task == "multioutput-regression":
                 if isinstance(score, list):
-                    index = pd.MultiIndex.from_arrays(
-                        [[metric_name] * len(score), list(range(len(score)))],
-                        names=["Metric", "Output"],
-                    )
-                    score_array = np.array(score).reshape(-1, 1)
+                    for output_idx, output_score in enumerate(score):
+                        rows.append(
+                            {**row, "output": output_idx, "score": output_score}
+                        )
                 else:
-                    index = pd.Index([metric_name], name="Metric")
-                    score_array = np.array(score).reshape(-1, 1)
-            else:  # unknown task - try our best
-                index = None if isinstance(score, Iterable) else [metric_name]
+                    rows.append({**row, "average": metrics_kwargs.get("multioutput")})
+            else:
+                rows.append(row)
 
-            score_df = pd.DataFrame(
-                score_array, index=index, columns=[self._parent.estimator_name_]
-            )
-            if favorability:
-                score_df["Favorability"] = metric_favorability
+        data = pd.DataFrame(rows)
 
-            scores.append(score_df)
+        # Preserve original types from being converted to float
+        # (which is pandas' default behaviour when there are `None` in the columns)
+        if any(isinstance(row["label"], bool) for row in rows):
+            data["label"] = data["label"].astype(pd.BooleanDtype())
+        elif any(isinstance(row["label"], int) for row in rows):
+            data["label"] = data["label"].astype(pd.Int64Dtype())
 
-        if any(
-            isinstance(df, pd.DataFrame) and isinstance(df.index, pd.MultiIndex)
-            for df in scores
-        ):
-            # Convert single-level dataframes to multi-level
-            for i, df in enumerate(scores):
-                if not isinstance(df.index, pd.MultiIndex):
-                    if "regression" in self._parent._ml_task:
-                        name_index = ["Metric", "Output"]
-                    else:
-                        name_index = ["Metric", "Label / Average"]
+        if any(isinstance(row["output"], int) for row in rows):
+            data["output"] = data["output"].astype(pd.Int64Dtype())
 
-                    scores[i].index = pd.MultiIndex.from_tuples(
-                        [(idx, "") for idx in df.index],
-                        names=name_index,
-                    )
-
-        results = pd.concat(scores, axis=0)
-        if flat_index:
-            if isinstance(results.columns, pd.MultiIndex):
-                results.columns = flatten_multi_index(results.columns)
-            if isinstance(results.index, pd.MultiIndex):
-                results.index = flatten_multi_index(results.index)
-            if isinstance(results.index, pd.Index):
-                results.index = results.index.str.replace(
-                    r"\((.*)\)$", r"\1", regex=True
-                )
-        return MetricsSummaryDisplay(summarize_data=results)
+        return MetricsSummaryDisplay(data=data, report_type="estimator")
 
     def _compute_metric_scores(
         self,
@@ -640,7 +573,7 @@ class _MetricsAccessor(
         0.95...
         """
         score = self._compute_metric_scores(
-            sklearn_metrics.accuracy_score,
+            sklearn.metrics.accuracy_score,
             data_source=data_source,
             response_method="predict",
         )
@@ -728,7 +661,7 @@ class _MetricsAccessor(
             average = "binary"
 
         result = self._compute_metric_scores(
-            sklearn_metrics.precision_score,
+            sklearn.metrics.precision_score,
             data_source=data_source,
             response_method="predict",
             pos_label=pos_label,
@@ -823,7 +756,7 @@ class _MetricsAccessor(
             average = "binary"
 
         result = self._compute_metric_scores(
-            sklearn_metrics.recall_score,
+            sklearn.metrics.recall_score,
             data_source=data_source,
             response_method="predict",
             pos_label=pos_label,
@@ -881,7 +814,7 @@ class _MetricsAccessor(
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
         result = self._compute_metric_scores(
-            sklearn_metrics.brier_score_loss,
+            sklearn.metrics.brier_score_loss,
             data_source=data_source,
             response_method="predict_proba",
             pos_label=self._parent._estimator.classes_[-1],
@@ -965,7 +898,7 @@ class _MetricsAccessor(
         0.99...
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.roc_auc_score,
+            sklearn.metrics.roc_auc_score,
             data_source=data_source,
             response_method=["predict_proba", "decision_function"],
             average=average,
@@ -1022,7 +955,7 @@ class _MetricsAccessor(
         0.10...
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.log_loss,
+            sklearn.metrics.log_loss,
             data_source=data_source,
             response_method="predict_proba",
         )
@@ -1080,7 +1013,7 @@ class _MetricsAccessor(
         0.35...
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.r2_score,
+            sklearn.metrics.r2_score,
             data_source=data_source,
             response_method="predict",
             multioutput=multioutput,
@@ -1144,7 +1077,7 @@ class _MetricsAccessor(
         56.5...
         """
         result = self._compute_metric_scores(
-            sklearn_metrics.root_mean_squared_error,
+            sklearn.metrics.root_mean_squared_error,
             data_source=data_source,
             response_method="predict",
             multioutput=multioutput,
