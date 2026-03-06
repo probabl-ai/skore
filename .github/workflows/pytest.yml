@@ -122,14 +122,36 @@ jobs:
              fi
           fi
 
-  pytest-test:
+  pytest-matrix:
     needs: [pytest-changes]
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set matrix
+        id: set-matrix
+        run: |
+          # Read the matrix from the JSON file
+          MATRIX=$(jq -c '{include: .}' .github/matrix.json)
+          # Escape newlines and quotes for GITHUB_OUTPUT
+          MATRIX="${MATRIX//'%'/'%25'}"
+          MATRIX="${MATRIX//$'\n'/'%0A'}"
+          MATRIX="${MATRIX//$'\r'/'%0D'}"
+          # Set the output
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
+  pytest-test:
+    needs: [pytest-changes, pytest-matrix]
     if: ${{ (github.event_name == 'push') || (needs.pytest-changes.outputs.modified-packages != '[]') }}
     strategy:
       fail-fast: false
-      matrix:
-        package: ["skore"]
-        include: ${{ fromJSON(file('skore/matrix.json')) }}
+      matrix: ${{ fromJSON(needs.pytest-matrix.outputs.matrix) }}
+      # matrix:
+      #   package: ["skore"]
+      #   include: ${{ fromJSON(file('skore/matrix.json')) }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
