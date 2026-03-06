@@ -444,13 +444,15 @@ class PermutationImportanceDisplay(DisplayMixin):
 
         aggregate : {"mean", "std"}, ("mean", std) or None, default=("mean", "std")
             How to aggregate the importances. Applied on repetitions or on repetitions
-            then splits, depending on the value of `level`.
+            then splits, for (comparisons of) cross validation reports and depending
+            on the value of `level`.
 
         level : {"splits", "repetitions"}, default="splits"
             Over which dimensions to aggregate when `aggregate` is not `None`.
             `"repetitions"` aggregates only over repetitions (keeps `split` for
             cross-validation). `"splits"` aggregates over repetitions then over
-            splits.
+            splits. Only relevant when `aggregate` is not `None` and the report type
+            is "cross-validation" or "comparison-cross-validation".
 
         Returns
         -------
@@ -499,11 +501,11 @@ class PermutationImportanceDisplay(DisplayMixin):
         frame = frame.drop(columns=columns_to_drop)
 
         if aggregate is not None:
-            # if level not in ("splits", "repetitions"):
-            #     raise ValueError(
-            #         f"Invalid value for `level`: {level!r}. Valid values are "
-            #         "`'splits'` and `'repetitions'`."
-            #     )
+            if level not in ("splits", "repetitions"):
+                raise ValueError(
+                    f"Invalid value for `level`: {level!r}. Valid values are "
+                    "`'splits'` and `'repetitions'`."
+                )
             frame = (
                 frame.drop(columns=["repetition"])
                 # avoid sorting the features by name and do not drop NA from
@@ -514,14 +516,34 @@ class PermutationImportanceDisplay(DisplayMixin):
             ).reset_index()
             if isinstance(frame.columns, pd.MultiIndex):
                 frame.columns = flatten_multi_index(frame.columns)
+
             if level == "splits" and "split" in frame.columns:
-                group_by_2 = [c for c in group_by if c != "split"]
+                split_group_by = [c for c in group_by if c != "split"]
                 value_cols = [c for c in frame.columns if c not in group_by]
+                n_repeats = self.importances["repetition"].nunique()
+
+                def combine_splits(splits_block: pd.DataFrame) -> pd.Series:
+                    n_splits = len(splits_block)
+                    result = {}
+                    for c in value_cols:
+                        if c == "value_std" and "value_mean" in value_cols:
+                            # SE of mean: sqrt(σ²_between/K + σ²_within/(K*R))
+                            sigma2_within = (splits_block["value_std"] ** 2).mean()
+                            sigma2_between = splits_block["value_mean"].var(ddof=0)
+                            result[c] = np.sqrt(
+                                sigma2_between / n_splits
+                                + sigma2_within / (n_splits * n_repeats)
+                            )
+                        else:
+                            result[c] = splits_block[c].mean()
+                    return pd.Series(result)
+
                 frame = (
                     frame.drop(columns=["split"])
-                    .groupby(group_by_2, sort=False, dropna=False)
-                    .agg(dict.fromkeys(value_cols, "mean"))
+                    .groupby(split_group_by, sort=False, dropna=False)
+                    .apply(combine_splits)
                 ).reset_index()
+
         return frame
 
     # ignore the type signature because we override kwargs by specifying the name of
