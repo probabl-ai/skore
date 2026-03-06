@@ -37,6 +37,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         The ROC curve data to display. The columns are
 
         - `estimator`
+        - `data_source`
         - `split` (may be null)
         - `label`
         - `threshold`
@@ -461,6 +462,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
             - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
+            - `data_source`: Data source used (only when ``data_source="both"``)
             - `label`: Class label (for multiclass-classification)
             - `threshold`: Decision threshold
             - `fpr`: False Positive Rate
