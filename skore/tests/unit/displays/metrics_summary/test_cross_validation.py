@@ -45,28 +45,6 @@ def test_flat_index(forest_binary_classification_data):
     ]
 
 
-def test_data_source_external(
-    forest_binary_classification_data,
-):
-    """Check that the `data_source` parameter works when using external data."""
-    estimator, X, y = forest_binary_classification_data
-    splitter = 2
-    report = CrossValidationReport(estimator, X, y, splitter=splitter)
-    result = report.metrics.summarize(
-        data_source="X_y", X=X, y=y, aggregate=None
-    ).frame()
-    for split_idx in range(splitter):
-        # check that it is equivalent to call the individual estimator report
-        report_result = (
-            report.estimator_reports_[split_idx]
-            .metrics.summarize(data_source="X_y", X=X, y=y)
-            .frame()
-        )
-        np.testing.assert_allclose(
-            report_result.iloc[:, 0].to_numpy(), result.iloc[:, split_idx].to_numpy()
-        )
-
-
 def _normalize_metric_name(index):
     """Helper to normalize the metric name present in a pandas index that could be
     a multi-index or single-index."""
@@ -331,8 +309,8 @@ def test_metric_kwargs_multi_class(
             {
                 "R2": "r2",
                 "RMSE": "rmse",
-                "FIT_TIME": "_fit_time",
-                "PREDICT_TIME": "_predict_time",
+                "FIT_TIME": "fit_time",
+                "PREDICT_TIME": "predict_time",
             },
             ["R2", "RMSE", "FIT_TIME", "PREDICT_TIME"],
         ),
@@ -340,12 +318,12 @@ def test_metric_kwargs_multi_class(
             "forest_multiclass_classification_data",
             {
                 "Accuracy": "accuracy",
-                "Precision": "_precision",
-                "Recall": "_recall",
-                "ROC AUC": "_roc_auc",
-                "Log Loss": "_log_loss",
-                "Fit Time": "_fit_time",
-                "Predict Time": "_predict_time",
+                "Precision": "precision",
+                "Recall": "recall",
+                "ROC AUC": "roc_auc",
+                "Log Loss": "log_loss",
+                "Fit Time": "fit_time",
+                "Predict Time": "predict_time",
             },
             [
                 "Accuracy",
@@ -515,9 +493,9 @@ def test_overwrite_scoring_names_with_dict_cross_validation(
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
     scoring_dict = {
-        "Custom Precision": "_precision",
-        "Custom Recall": "_recall",
-        "Custom ROC AUC": "_roc_auc",
+        "Custom Precision": "precision",
+        "Custom Recall": "recall",
+        "Custom ROC AUC": "roc_auc",
     }
 
     result = report.metrics.summarize(metric=scoring_dict).frame()

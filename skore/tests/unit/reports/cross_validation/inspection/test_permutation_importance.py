@@ -114,16 +114,6 @@ def test_data_source(regression_data, data_source):
     assert set(display.importances["data_source"]) == {data_source}
 
 
-def test_data_source_X_y(regression_data):
-    X, y = regression_data
-    report = CrossValidationReport(Ridge(), X, y, splitter=2)
-    display = report.inspection.permutation_importance(
-        seed=42, n_repeats=2, data_source="X_y", X=X, y=y
-    )
-    assert isinstance(display, PermutationImportanceDisplay)
-    assert set(display.importances["data_source"]) == {"X_y"}
-
-
 def test_seed_wrong_type(regression_data):
     X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)

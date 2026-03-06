@@ -54,7 +54,7 @@ class PredictionErrorDisplay(DisplayMixin):
     range_residuals : RangeData
         Global range of the residuals.
 
-    data_source : {"train", "test", "X_y", "both"}
+    data_source : {"train", "test", "both"}
         The data source used to display the prediction error.
 
     ml_task : {"regression", "multioutput-regression"}
@@ -245,13 +245,15 @@ class PredictionErrorDisplay(DisplayMixin):
         title = "Prediction Error"
         if "comparison" not in self.report_type:
             title += f" for {self._prediction_error['estimator'].cat.categories.item()}"
-        title += (
-            f"\nData source: {self.data_source.capitalize()} set"
+        info_data_source = (
+            f"Data source: {self.data_source.capitalize()} set"
             if self.data_source in ("train", "test")
-            else "\nData source: external set"
-            if self.data_source == "X_y"
-            else "\nData source: Train and Test"
+            else "Data source: Train and Test"
+            if self.data_source == "both"
+            else None
         )
+        if info_data_source is not None:
+            title += f"\n{info_data_source}"
         self.figure_.suptitle(title)
 
         for ax in self.ax_:
@@ -402,7 +404,7 @@ class PredictionErrorDisplay(DisplayMixin):
         ml_task : {"regression", "multioutput-regression"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y", "both"}
+        data_source : {"train", "test", "both"}
             The data source used to compute the prediction error curve.
 
         subsample : float, int or None, default=1_000

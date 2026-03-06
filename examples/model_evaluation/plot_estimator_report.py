@@ -182,44 +182,6 @@ report.metrics.log_loss(data_source="train")
 
 # %%
 #
-# In the case where we are interested in computing the metrics on a completely new set
-# of data, we can use the `data_source="X_y"` parameter. In addition, we need to provide
-# a `X` and `y` parameters.
-
-start = time.time()
-metric_report = report.metrics.summarize(
-    data_source="X_y", X=split_data["X_test"], y=split_data["y_test"]
-).frame()
-end = time.time()
-metric_report
-
-# %%
-print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
-
-# %%
-#
-# As in the other case, we rely on the cache to avoid recomputing the predictions.
-# Internally, we compute a hash of the input data to be sure that we can hit the cache
-# in a consistent way.
-
-# %%
-start = time.time()
-metric_report = report.metrics.summarize(
-    data_source="X_y", X=split_data["X_test"], y=split_data["y_test"]
-).frame()
-end = time.time()
-metric_report
-
-# %%
-print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
-
-# %%
-#
-# .. note::
-#     In this last example, we rely on computing the hash of the input data. Therefore,
-#     there is a trade-off: the computation of the hash is not free and it might be
-#     faster to compute the predictions instead.
-#
 # Be aware that we can also benefit from the caching mechanism with our own custom
 # metrics. Skore only expects that we define our own metric function to take `y_true`
 # and `y_pred` as the first two positional arguments. It can take any other arguments.
