@@ -412,7 +412,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def create_estimator_report(
         self,
         *,
-        name: str,
+        report_key: str,
         X_test: ArrayLike | None = None,
         y_test: ArrayLike | None = None,
     ) -> EstimatorReport:
@@ -425,8 +425,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        name : str
-            The name of the estimator to create a report for.
+        report_key : str
+            The key associated with the estimator to create a report for, as stored in
+            the :attr:`reports_` attribute of the :class:`~skore.ComparisonReport`.
+            List the available keys with `reports_.keys()`.
 
         X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
             Testing data. It should have the same structure as the training data.
@@ -434,23 +436,47 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
             Testing target.
 
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split
+        >>> from skore import ComparisonReport, CrossValidationReport
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> linear_report = CrossValidationReport(
+        ...     LogisticRegression(random_state=42), X_train, y_train
+        ... )
+        >>> forest_report = CrossValidationReport(
+        ...     RandomForestClassifier(random_state=42), X_train, y_train
+        ... )
+        >>> comparison_report = ComparisonReport([linear_report, forest_report])
+        >>> summary = comparison_report.metrics.summarize().frame()
+
+        >>> # Notice that e.g. the RandomForestClassifier performs best
+        >>> final_report = comparison_report.create_estimator_report(
+        ...     report_key="RandomForestClassifier", X_test=X_test, y_test=y_test
+        ... )
+        >>> final_report.metrics.summarize().frame()
+
         Returns
         -------
         report : :class:`~skore.EstimatorReport`
             The estimator report.
         """
-        if name not in self.reports_:
+        if report_key not in self.reports_:
             raise ValueError(
-                f"Estimator name {name} not found in the comparison report. "
-                f"Available names are: {list(self.reports_.keys())}."
+                f"Estimator with key {report_key} not found in the comparison report. "
+                f"Available keys are: {list(self.reports_.keys())}."
             )
 
-        if isinstance(self.reports_[name], CrossValidationReport):
+        if isinstance(self.reports_[report_key], CrossValidationReport):
             return cast(
-                CrossValidationReport, self.reports_[name]
+                CrossValidationReport, self.reports_[report_key]
             ).create_estimator_report(X_test=X_test, y_test=y_test)
 
-        estimator_report = cast(EstimatorReport, self.reports_[name])
+        estimator_report = cast(EstimatorReport, self.reports_[report_key])
         X_concat = (
             pd.concat([estimator_report._X_train, estimator_report._X_test])
             if isinstance(estimator_report._X_train, pd.DataFrame)
