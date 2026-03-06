@@ -47,7 +47,7 @@ def test_timings_flat_index(forest_binary_classification_data):
     report.get_predictions(data_source="train")
     report.get_predictions(data_source="test")
 
-    results = report.metrics.summarize(flat_index=True).frame()
+    results = report.metrics.summarize().frame(flat_index=True)
     assert results.index.tolist() == [
         "accuracy",
         "precision_0",
