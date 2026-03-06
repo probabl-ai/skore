@@ -159,11 +159,90 @@ jobs:
     permissions:
       contents: read
     steps:
-      - run: |
-          echo "${{ matrix.package }}"
-          echo "${{ matrix.os }}"
-          echo "${{ matrix.dependencies }}"
-          echo "${{ matrix.coverage }}"
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        id: setup-python
+        with:
+          python-version: ${{ matrix.python }}
+          check-latest: True
+          cache: pip
+
+      - name: Restore python-venv
+        uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        id: cache-python-venv
+        with:
+          path: ${{ matrix.package }}/venv
+          key: >-
+            python-venv
+            -${{ matrix.os }}
+            -${{ steps.setup-python.outputs.python-version }}
+            -${{ hashFiles(format('ci/requirements/{0}/python-{1}/{2}/test-requirements.txt', matrix.package, matrix.python, matrix.dependencies)) }}
+
+      - name: Setup python-venv
+        working-directory: ${{ matrix.package }}/
+        run: |
+          set -eu
+
+          # Ensure venv is created
+          python -m venv venv
+
+          # Activate venv for each step depending on the OS
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+              echo "${GITHUB_WORKSPACE}/${{ matrix.package }}/venv/bin" >> ${GITHUB_PATH}
+              echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}/${{ matrix.package }}/venv" >> ${GITHUB_ENV}
+          else
+              echo "${GITHUB_WORKSPACE}\\${{ matrix.package }}\\venv\\Scripts" >> ${GITHUB_PATH}
+              echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}\\${{ matrix.package }}\\venv" >> ${GITHUB_ENV}
+          fi
+
+      - name: Install dependencies in python-venv
+        working-directory: ${{ format('ci/requirements/{0}/python-{1}/{2}', matrix.package, matrix.python, matrix.dependencies) }}
+        if: steps.cache-python-venv.outputs.cache-hit != 'true'
+        run: |
+          python -m pip install --upgrade pip build
+          python -m pip install --requirement test-requirements.txt
+
+      - name: Save python-venv
+        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        if: steps.cache-python-venv.outputs.cache-hit != 'true'
+        with:
+          path: ${{ matrix.package }}/venv
+          key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
+
+      - name: Build
+        working-directory: ${{ matrix.package }}/
+        run: python -m build
+
+      - name: Install
+        working-directory: ${{ matrix.package }}/dist/
+        run: wheel=(*.whl); python -m pip install --force-reinstall --no-deps "${wheel}"
+
+      - name: Test without coverage
+        if: ${{ ! matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: ${{ matrix.package }}/
+        run: python -m pytest src/ tests/ --no-cov
+
+      - name: Test with coverage
+        if: ${{ matrix.coverage }}
+        timeout-minutes: 10
+        working-directory: ${{ matrix.package }}/
+        run: |
+          mkdir coverage
+          python -m pytest src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
+          sed -i -E "s/filename=\"venv\/lib\/python[^/]*\/site-packages\/${PACKAGE//-/_}/filename=\"${PACKAGE}\/src\/${PACKAGE//-/_}/g" coverage/pytest-coverage.xml
+        env:
+          PACKAGE: ${{ matrix.package }}
+
+      - name: Upload coverage reports
+        if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.package }}-coverage
+          path: ${{ matrix.package }}/coverage/
 
   pytest:
     needs:
