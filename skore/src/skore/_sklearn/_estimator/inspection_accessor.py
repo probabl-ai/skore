@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-
-from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -13,14 +10,12 @@ from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDi
 from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
-from skore._sklearn.types import DataSource
+from skore._sklearn.types import DataSource, Metric
 from skore._utils._accessor import (
     _check_estimator_has_coef,
     _check_estimator_has_feature_importances,
 )
 from skore._utils._cache_key import deep_key_sanitize
-
-Metric = str | Callable | list[str] | tuple[str] | dict[str, Callable] | None
 
 
 class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -119,10 +114,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         at_step: int | str = 0,
-        metric: Metric = None,
+        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
         n_jobs: int | None = None,
@@ -143,20 +136,11 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the test
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the test
-            target provided when creating the report.
 
         at_step : int or str, default=0
             If the estimator is a :class:`~sklearn.pipeline.Pipeline`, at which step of
@@ -174,21 +158,24 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
 
-        metric : str, callable, list, tuple, or dict, default=None
+        metric : str, callable, scorer, or list of such instances or dict of such \
+            instances, default=None
             The metric to pass to :func:`~sklearn.inspection.permutation_importance`.
+            The possible values (whether or not in a list) are:
 
-            If `metric` represents a single metric, one can use:
-
-            - a single string, which must be one of the supported metrics;
-            - a callable that returns a single value.
-
-            If `metric` represents multiple metrics, one can use:
-
-            - a list or tuple of unique strings, which must be one of the supported
-              metrics;
-            - a callable returning a dictionary where the keys are the metric names
-              and the values are the metric scores;
-            - a dictionary with metric names as keys and callables a values.
+            - if a string, either one of the built-in metrics or a scikit-learn scorer
+              name. You can get the possible list of string using
+              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
+              the built-in metrics or the scikit-learn scorers, respectively.
+            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
+              first arguments. Additional arguments can be passed as keyword arguments
+              and will be forwarded with `metric_kwargs`. No favorability indicator can
+              be displayed in this case.
+            - if the callable API is too restrictive (e.g. need to pass
+              same parameter name with different values), you can use scikit-learn
+              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
+              the metric favorability will only be displayed if it is given explicitly
+              via `make_scorer`'s `greater_is_better` parameter.
 
         n_repeats : int, default=5
             Number of times to permute a feature.
@@ -298,9 +285,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
-        X_, y_true, data_source_hash = self._get_X_y_and_data_source_hash(
-            data_source=data_source, X=X, y=y
-        )
+        X_, y_true = self._get_X_y(data_source=data_source)
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
         # permutation importance into the cache dictionary even when seed is None.
@@ -321,7 +306,12 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 "permutation_importance",
                 data_source,
                 at_step,
-                data_source_hash,
+                #
+                # skore-hub-project expects an item for data_source_hash (but
+                # ignores its value). Until skore-hub-project is updated we
+                # insert None as a placeholder.
+                None,
+                #
                 metric,
                 kwargs,
             )

@@ -44,7 +44,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     ml_task : {"binary-classification", "multiclass-classification"}
         The machine learning task.
 
-    data_source : {"test", "train", "X_y"}
+    data_source : {"test", "train"}
         The data source to use.
 
     pos_label : int, float, bool, str or None
@@ -232,8 +232,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         info_data_source = (
             f"Data source: {self.data_source.capitalize()} set"
             if self.data_source in ("train", "test")
-            else "Data source: external set"
-            if self.data_source == "X_y"
             else None
         )
 
@@ -365,7 +363,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"test", "train", "X_y"}
+        data_source : {"test", "train"}
             The data source to use.
 
         display_labels : list of str

@@ -37,7 +37,7 @@ from skore._utils._index import flatten_multi_index
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
-DataSource = Literal["test", "train", "X_y"]
+DataSource = Literal["test", "train"]
 
 
 class _MetricsAccessor(
@@ -55,8 +55,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         metric: Metric | list[Metric] | dict[str, Metric] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
@@ -69,21 +67,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the train set provided when creating the report and the target
-              variable.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         metric : str, callable, scorer, or list of such instances or dict of such \
             instances, default=None
@@ -168,8 +156,6 @@ class _MetricsAccessor(
         results = self._compute_metric_scores(
             report_metric_name="summarize",
             data_source=data_source,
-            X=X,
-            y=y,
             aggregate=aggregate,
             metric=metric,
             pos_label=pos_label,
@@ -187,34 +173,21 @@ class _MetricsAccessor(
                 results.index = results.index.str.replace(
                     r"\((.*)\)$", r"\1", regex=True
                 )
-        return MetricsSummaryDisplay(summarize_data=results)
+        return MetricsSummaryDisplay(data=results, report_type="cross-validation")
 
     def _compute_metric_scores(
         self,
         report_metric_name: str,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         aggregate: Aggregate | None = None,
         **metric_kwargs: Any,
     ) -> pd.DataFrame:
-        if data_source == "X_y":
-            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-                data_source=data_source, X=X, y=y
-            )
-        elif X is None and y is None:
-            data_source_hash = None
-        else:
-            err_msg = f"X and y must be None when data_source is {data_source}."
-            raise ValueError(err_msg)
-
         cache_key = deep_key_sanitize(
             (
                 self._parent._hash,
                 report_metric_name,
                 data_source,
-                data_source_hash,
                 aggregate,
                 metric_kwargs,
             )
@@ -228,12 +201,19 @@ class _MetricsAccessor(
                 )
             )
 
+            frame_kwargs = {}
+            for key in ("favorability", "flat_index"):
+                if key in metric_kwargs:
+                    frame_kwargs[key] = metric_kwargs.pop(key)
+
             results = [
-                result.frame() if report_metric_name == "summarize" else result
+                result.frame(**frame_kwargs)
+                if report_metric_name == "summarize"
+                else result
                 for result in track(
                     parallel(
                         delayed(getattr(report.metrics, report_metric_name))(
-                            data_source=data_source, X=X, y=y, **metric_kwargs
+                            data_source=data_source, **metric_kwargs
                         )
                         for report in self._parent.estimator_reports_
                     ),
@@ -252,7 +232,7 @@ class _MetricsAccessor(
             # Pop the favorability column if it exists, to:
             # - not use it in the aggregate operation
             # - later to only report a single column and not by split columns
-            if metric_kwargs.get("favorability", False):
+            if frame_kwargs.get("favorability", False):
                 favorability = results.pop("Favorability").iloc[:, 0]
             else:
                 favorability = None
@@ -336,28 +316,17 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -386,8 +355,6 @@ class _MetricsAccessor(
             metric=["accuracy"],
             data_source=data_source,
             aggregate=aggregate,
-            X=X,
-            y=y,
         ).frame()
 
     @available_if(_check_estimator_report_has_method("metrics", "precision"))
@@ -395,8 +362,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         average: (
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
@@ -407,20 +372,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -481,8 +437,6 @@ class _MetricsAccessor(
             metric=["precision"],
             data_source=data_source,
             aggregate=aggregate,
-            X=X,
-            y=y,
             pos_label=pos_label,
             metric_kwargs={"average": average},
         ).frame()
@@ -492,8 +446,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         average: (
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
@@ -504,20 +456,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -578,8 +521,6 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["recall"],
             data_source=data_source,
-            X=X,
-            y=y,
             aggregate=aggregate,
             pos_label=pos_label,
             metric_kwargs={"average": average},
@@ -590,28 +531,17 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -639,8 +569,6 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["brier_score"],
             data_source=data_source,
-            X=X,
-            y=y,
             aggregate=aggregate,
         ).frame()
 
@@ -649,8 +577,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         average: Literal["macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
         aggregate: Aggregate | None = ("mean", "std"),
@@ -659,20 +585,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         average : {"macro", "micro", "weighted", "samples"}, default=None
             Average to compute the ROC AUC score in a multiclass setting. By default,
@@ -733,8 +650,6 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["roc_auc"],
             data_source=data_source,
-            X=X,
-            y=y,
             aggregate=aggregate,
             metric_kwargs={"average": average, "multi_class": multi_class},
         ).frame()
@@ -744,28 +659,17 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the log loss.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -793,8 +697,6 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["log_loss"],
             data_source=data_source,
-            X=X,
-            y=y,
             aggregate=aggregate,
         ).frame()
 
@@ -803,8 +705,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
@@ -812,20 +712,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -863,8 +754,6 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["r2"],
             data_source=data_source,
-            X=X,
-            y=y,
             aggregate=aggregate,
             metric_kwargs={"multioutput": multioutput},
         ).frame()
@@ -874,8 +763,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
@@ -883,20 +770,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -934,8 +812,6 @@ class _MetricsAccessor(
         return self.summarize(
             metric=["rmse"],
             data_source=data_source,
-            X=X,
-            y=y,
             aggregate=aggregate,
             metric_kwargs={"multioutput": multioutput},
         ).frame()
@@ -947,8 +823,6 @@ class _MetricsAccessor(
         *,
         metric_name: str | None = None,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
         **kwargs,
     ) -> pd.DataFrame:
@@ -977,20 +851,11 @@ class _MetricsAccessor(
             The name of the metric. If not provided, it will be inferred from the
             metric function.
 
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -1036,8 +901,6 @@ class _MetricsAccessor(
         return self.summarize(
             metric=scoring,
             data_source=data_source,
-            X=X,
-            y=y,
             aggregate=aggregate,
             pos_label=pos_label,
         ).frame()
@@ -1057,8 +920,6 @@ class _MetricsAccessor(
     def _get_display(
         self,
         *,
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         data_source: DataSource,
         response_method: str | list[str] | tuple[str, ...],
         display_class: type[
@@ -1078,18 +939,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
-            The data.
-
-        y : array-like of shape (n_samples,)
-            The target.
-
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
 
         response_method : str, list of str, or tuple of str
             The response method.
@@ -1106,14 +960,6 @@ class _MetricsAccessor(
             The display.
         """
         pos_label = display_kwargs.get("pos_label")
-
-        # For "X_y" data source, retrieve X and y once to use across all splits
-        if data_source == "X_y":
-            X, y, data_source_hash = self._get_X_y_and_data_source_hash(
-                data_source=data_source, X=X, y=y
-            )
-        else:
-            data_source_hash = None
 
         # Compute cache key
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
@@ -1140,15 +986,8 @@ class _MetricsAccessor(
             description="Computing predictions for display",
             total=len(self._parent.estimator_reports_),
         ):
-            if data_source == "X_y":
-                # Use the externally provided X and y for all splits
-                report_X = X
-                report_y = y
-            else:
-                # Retrieve data stored in the individual reports
-                report_X, report_y, _ = report.metrics._get_X_y_and_data_source_hash(
-                    data_source=data_source
-                )
+            # Retrieve data stored in the individual reports
+            report_X, report_y = report.metrics._get_X_y(data_source=data_source)
 
             y_true_data, y_pred_data = _get_ys_for_single_report(
                 cache=report._cache,
@@ -1158,7 +997,6 @@ class _MetricsAccessor(
                 X=report_X,
                 y_true=cast(ArrayLike, report_y),
                 data_source=data_source,
-                data_source_hash=data_source_hash,
                 response_method=response_method,
                 pos_label=pos_label,
                 split=report_idx,
@@ -1190,8 +1028,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
@@ -1203,15 +1039,6 @@ class _MetricsAccessor(
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         pos_label : int, float, bool, str or None default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
@@ -1244,8 +1071,6 @@ class _MetricsAccessor(
             RocCurveDisplay,
             self._get_display(
                 data_source=data_source,
-                X=X,
-                y=y,
                 response_method=response_method,
                 display_class=RocCurveDisplay,
                 display_kwargs=display_kwargs,
@@ -1258,28 +1083,17 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         pos_label : int, float, bool, str or None default=_DEFAULT
             The label to consider as the positive class when computing the metric. Use
@@ -1312,8 +1126,6 @@ class _MetricsAccessor(
             PrecisionRecallCurveDisplay,
             self._get_display(
                 data_source=data_source,
-                X=X,
-                y=y,
                 response_method=response_method,
                 display_class=PrecisionRecallCurveDisplay,
                 display_kwargs=display_kwargs,
@@ -1326,8 +1138,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         subsample: float | int | None = 1_000,
         seed: int | None = None,
     ) -> PredictionErrorDisplay:
@@ -1337,20 +1147,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
@@ -1387,8 +1188,6 @@ class _MetricsAccessor(
             PredictionErrorDisplay,
             self._get_display(
                 data_source=data_source,
-                X=X,
-                y=y,
                 response_method="predict",
                 display_class=PredictionErrorDisplay,
                 display_kwargs=display_kwargs,
@@ -1401,8 +1200,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        X: ArrayLike | None = None,
-        y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = _DEFAULT,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
@@ -1412,20 +1209,11 @@ class _MetricsAccessor(
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            New data on which to compute the metric. By default, we use the validation
-            set provided when creating the report.
-
-        y : array-like of shape (n_samples,), default=None
-            New target on which to compute the metric. By default, we use the target
-            provided when creating the report.
 
         pos_label : int, float, bool, str or None, default=_DEFAULT
             The label to consider as the positive class when displaying the matrix. Use
@@ -1471,8 +1259,6 @@ class _MetricsAccessor(
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
-                X=X,
-                y=y,
                 data_source=data_source,
                 response_method=response_method,
                 display_class=ConfusionMatrixDisplay,
