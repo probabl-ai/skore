@@ -6,10 +6,8 @@ MLflow backend with skore.Project
 ==================================
 
 This example shows how to persist reports in MLflow using
-:class:`~skore.Project` in ``mode="mlflow"``.
-
-This example shows how to use :class:`~skore.Project` in **mlflow** mode: log
-reports as MLFlow runs and inspect them.
+:class:`~skore.Project` in ``mode="mlflow"``: log reports
+as MLFlow runs and inspect them.
 
 Examples
 --------
