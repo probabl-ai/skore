@@ -1,6 +1,5 @@
 import math
 
-import joblib
 import pandas as pd
 import pytest
 from sklearn.ensemble import RandomForestClassifier
@@ -40,28 +39,20 @@ def test_only_fit_unfitted(estimator_data):
     assert result == {}
 
 
-@pytest.mark.parametrize("data_source", ["test", "train", "X_y"])
+@pytest.mark.parametrize("data_source", ["test", "train"])
 def test_predict_prefitted(data_source, estimator_data):
     """If the wrapped estimator is prefitted, and some predictions are computed,
     then `timings` has one key per prediction data source."""
     estimator, data = estimator_data
     report = EstimatorReport(estimator.fit(data["X_train"], data["y_train"]), **data)
 
-    if data_source == "X_y":
-        X_, y_ = (data["X_test"], data["y_test"])
-        data_source_hash = joblib.hash((X_, y_))
-        data_source_check = f"X_y_{data_source_hash}"
-    else:
-        X_, y_ = (None, None)
-        data_source_check = data_source
-
     # Compute predictions on data source
-    report.metrics.accuracy(data_source=data_source, X=X_, y=y_)
+    report.metrics.accuracy(data_source=data_source)
 
     result = report.metrics.timings()
     assert isinstance(result, dict)
     assert len(result) == 1
-    assert isinstance(result.get(f"predict_time_{data_source_check}"), float)
+    assert isinstance(result.get(f"predict_time_{data_source}"), float)
 
 
 def test_everything(estimator_data):
@@ -69,19 +60,15 @@ def test_everything(estimator_data):
     report = EstimatorReport(estimator, **data)
 
     # Compute predictions on each data source
-    report.metrics.accuracy(data_source="train", X=None, y=None)
-    report.metrics.accuracy(data_source="test", X=None, y=None)
-    report.metrics.accuracy(data_source="X_y", X=data["X_test"], y=data["y_test"])
-    data_source_hash = joblib.hash((data["X_test"], data["y_test"]))
-    data_source_check = f"predict_time_X_y_{data_source_hash}"
+    report.metrics.accuracy(data_source="train")
+    report.metrics.accuracy(data_source="test")
 
     result = report.metrics.timings()
     assert isinstance(result, dict)
-    assert len(result) == 4
+    assert len(result) == 3
     assert isinstance(result.get("fit_time"), float)
     assert isinstance(result.get("predict_time_train"), float)
     assert isinstance(result.get("predict_time_test"), float)
-    assert isinstance(result.get(data_source_check), float)
 
 
 def test_fit_time(estimator_data):
@@ -113,19 +100,15 @@ def test_fit_time_estimator_unfitted(estimator_data):
     assert math.isnan(report.metrics._fit_time(cast=True))
 
 
-@pytest.mark.parametrize("data_source", ["test", "train", "X_y"])
+@pytest.mark.parametrize("data_source", ["test", "train"])
 def test_predict_time(data_source, estimator_data):
     estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
-    X_, y_ = (data["X_test"], data["y_test"]) if data_source == "X_y" else (None, None)
-
     # Compute predictions
-    report.metrics.accuracy(data_source=data_source, X=X_, y=y_)
+    report.metrics.accuracy(data_source=data_source)
 
-    assert isinstance(
-        report.metrics._predict_time(data_source=data_source, X=X_, y=y_), float
-    )
+    assert isinstance(report.metrics._predict_time(data_source=data_source), float)
 
 
 def test_summarize_fit_time(estimator_data):
@@ -137,16 +120,14 @@ def test_summarize_fit_time(estimator_data):
     )
 
 
-@pytest.mark.parametrize("data_source", ["test", "train", "X_y"])
+@pytest.mark.parametrize("data_source", ["test", "train"])
 def test_summarize_predict_time(data_source, estimator_data):
     estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
-    X_, y_ = (data["X_test"], data["y_test"]) if data_source == "X_y" else (None, None)
-
     assert isinstance(
         report.metrics.summarize(
-            metric=["predict_time"], data_source=data_source, X=X_, y=y_
+            metric=["predict_time"], data_source=data_source
         ).frame(),
         pd.DataFrame,
     )

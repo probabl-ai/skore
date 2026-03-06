@@ -105,7 +105,6 @@ def _get_ys_for_single_report(
     X: ArrayLike | None,
     y_true: ArrayLike,
     data_source: DataSource,
-    data_source_hash: int | None,
     response_method: str | list[str] | tuple[str, ...],
     pos_label: PositiveLabel | None,
     split: int | None = None,
@@ -119,7 +118,6 @@ def _get_ys_for_single_report(
         response_method=response_method,
         pos_label=pos_label,
         data_source=data_source,
-        data_source_hash=data_source_hash,
     )
 
     for key, value, is_cached in results:
