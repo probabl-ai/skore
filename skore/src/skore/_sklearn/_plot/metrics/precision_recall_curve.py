@@ -42,7 +42,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `label`
         - `threshold`
         - `precision`
-        - `recall`.
+        - `recall`
+        - `data_source`.
 
     average_precision : DataFrame
         The average precision data to display. The columns are
@@ -459,6 +460,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - `threshold`: Decision threshold
             - `precision`: Precision score at threshold
             - `recall`: Recall score at threshold
+            - `data_source`: Data source used (when `data_source="both"`)
             - `average_precision`: average precision
               (when `with_average_precision=True`)
 
