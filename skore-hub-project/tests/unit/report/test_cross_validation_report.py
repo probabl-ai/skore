@@ -1,20 +1,32 @@
 from io import BytesIO
 
 from joblib import dump, hash
+from pandas import Series
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold, RepeatedKFold
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport, train_test_split
 
 from skore_hub_project.artifact.media import (
+    ConfusionMatrixDataFrameTest,
+    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixSVGTest,
+    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
-    PrecisionRecallTest,
-    PrecisionRecallTrain,
-    RocTest,
-    RocTrain,
+    ImpurityDecrease,
+    PermutationImportanceTest,
+    PermutationImportanceTrain,
+    PrecisionRecallDataFrameTest,
+    PrecisionRecallDataFrameTrain,
+    PrecisionRecallSVGTest,
+    PrecisionRecallSVGTrain,
+    RocDataFrameTest,
+    RocDataFrameTrain,
+    RocSVGTest,
+    RocSVGTrain,
 )
 from skore_hub_project.artifact.media.data import TableReport
 from skore_hub_project.artifact.serializer import Serializer
@@ -78,6 +90,14 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
 
 @fixture
 def payload(project, small_cv_binary_classification):
+    # Force the compute of the permutations
+    small_cv_binary_classification.inspection.permutation_importance(
+        data_source="train", seed=42
+    )
+    small_cv_binary_classification.inspection.permutation_importance(
+        data_source="test", seed=42
+    )
+
     return CrossValidationReportPayload(
         project=project,
         report=small_cv_binary_classification,
@@ -91,7 +111,7 @@ class TestCrossValidationReportPayload:
         assert payload.dataset_size == 10
 
     @mark.respx(assert_all_called=False)
-    def test_splits(self, payload):
+    def test_splitting_strategy(self, payload):
         assert payload.splitting_strategy == {
             "repeat_count": 1,
             "seed": "None",
@@ -127,7 +147,7 @@ class TestCrossValidationReportPayload:
         }
 
     @mark.respx(assert_all_called=False)
-    def test_splits_with_repetitions(self, project):
+    def test_splitting_strategy_with_repetitions(self, project):
         X, y = make_classification(random_state=42, n_samples=10)
         payload = CrossValidationReportPayload(
             project=project,
@@ -200,7 +220,7 @@ class TestCrossValidationReportPayload:
         }
 
     @mark.respx(assert_all_called=False)
-    def test_splits_for_regression(self, project):
+    def test_splitting_strategy_for_regression(self, project):
         X, y = make_regression(random_state=42, n_samples=10)
         payload = CrossValidationReportPayload(
             project=project,
@@ -224,6 +244,60 @@ class TestCrossValidationReportPayload:
             assert len(test_target_distribution) == 100
             assert all(isinstance(value, float) for value in train_target_distribution)
             assert all(isinstance(value, float) for value in test_target_distribution)
+
+    @mark.respx(assert_all_called=False)
+    def test_splitting_strategy_with_y_series_and_index(self, project):
+        X, y = make_classification(random_state=42, n_samples=10)
+        X_experiment, _, y_experiment, _ = train_test_split(
+            X, Series(y), random_state=42
+        )
+
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=CrossValidationReport(
+                RandomForestClassifier(random_state=42),
+                X_experiment,
+                y_experiment,
+                splitter=2,
+            ),
+            key="<key>",
+        )
+
+        assert 5 not in y_experiment.index
+        assert 5 in payload.report.split_indices[0][0]
+        assert payload.splitting_strategy == {
+            "repeat_count": 1,
+            "seed": "None",
+            "splits": [
+                {
+                    "test": {
+                        "target_distribution": [1, 3],
+                        "groups": None,
+                        "sample_count": 4,
+                    },
+                    "train": {
+                        "target_distribution": [1, 2],
+                        "groups": None,
+                        "sample_count": 3,
+                    },
+                    "train_test_distribution": [1, 1, 1, 1, 0, 0, 0],
+                },
+                {
+                    "test": {
+                        "target_distribution": [1, 2],
+                        "groups": None,
+                        "sample_count": 3,
+                    },
+                    "train": {
+                        "target_distribution": [1, 3],
+                        "groups": None,
+                        "sample_count": 4,
+                    },
+                    "train_test_distribution": [0, 0, 0, 0, 1, 1, 1],
+                },
+            ],
+            "strategy_name": "StratifiedKFold",
+        }
 
     @mark.respx(assert_all_called=False)
     def test_class_names(self, payload):
@@ -366,11 +440,22 @@ class TestCrossValidationReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
+            ConfusionMatrixDataFrameTest,
+            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixSVGTest,
+            ConfusionMatrixSVGTrain,
             EstimatorHtmlRepr,
-            PrecisionRecallTest,
-            PrecisionRecallTrain,
-            RocTest,
-            RocTrain,
+            ImpurityDecrease,
+            PermutationImportanceTest,
+            PermutationImportanceTrain,
+            PrecisionRecallDataFrameTest,
+            PrecisionRecallDataFrameTrain,
+            PrecisionRecallSVGTest,
+            PrecisionRecallSVGTrain,
+            RocDataFrameTest,
+            RocDataFrameTrain,
+            RocSVGTest,
+            RocSVGTrain,
             TableReport,
         ]
 

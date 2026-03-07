@@ -13,7 +13,7 @@ export SPHINX_DOMAIN
 
 # You can set these variables from the command line, and also
 # from the environment for the first two.
-SPHINXOPTS  ?= --fail-on-warning
+SPHINXOPTS  ?= --fail-on-warning --jobs auto --verbose
 SPHINXBUILD ?= sphinx-build
 SOURCEDIR   = .
 BUILDDIR    = build

@@ -12,22 +12,23 @@ dependencies = [
   "numpy",
   "orjson",
   "pydantic",
-  "rich>=14.2.0",
+  "rich[jupyter]>=14.2",
   "scikit-learn",
   "scipy",
 ]
 
 [project.optional-dependencies]
 test = [
+  "pandas",
   "pandas-stubs",
   "pre-commit",
+  "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "pytest",
   "respx",
-  "skore>=0.12",
+  "skore",
   "xdoctest",
 ]
 
