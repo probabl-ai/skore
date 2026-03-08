@@ -36,7 +36,7 @@ jobs:
           message: |
             > [!CAUTION]
             > Some commits in the pull request are not signed, or GitHub is not able to verify the signature.
-            > Please sign all your commits; you can find more information [here](https://docs.skore.probabl.ai/dev/contributing.html#signing-commits).
+            > Please sign all your commits; you can find more information [here](https://docs.skore.probabl.ai/stable/contributing.html#signing-commits).
             > Please note that when you activate commit signing, you'll need to retroactively sign your previous commits.
 
       - name: Delete previous comment on success
