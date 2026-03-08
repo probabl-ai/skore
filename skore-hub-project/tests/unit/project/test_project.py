@@ -13,15 +13,13 @@ from skore_hub_project.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
 )
+from sklearn.datasets import make_regression
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
 
 
 @fixture(scope="module")
 def regression():
-    from sklearn.datasets import make_regression
-    from sklearn.linear_model import LinearRegression
-    from sklearn.model_selection import train_test_split
-    from skore import EstimatorReport
-
     X, y = make_regression()
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -197,6 +195,68 @@ class TestProject:
             Project(workspace="workspace", name="name").put(
                 "<key>", cv_binary_classification_string_labels
             )
+
+    @mark.respx()
+    def test_put_estimator_report_without_test_data_when_unfitted(self, respx_mock):
+        mocks = [
+            ("get", "/projects/myworkspace", Response(200)),
+            (
+                "post",
+                "/projects/myworkspace/myname",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+        ]
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        X_train, y_train = make_regression(random_state=42)
+        report = EstimatorReport(
+            LinearRegression(),
+            X_train=X_train,
+            y_train=y_train,
+        )
+        expected_error = (
+            "No test data (i.e. X_test and y_test) were provided when creating the "
+            "report. Please provide the test data either when creating the report "
+            "or by setting data_source to 'X_y' and providing X and y."
+        )
+
+        with raises(ValueError) as exc_info:
+            Project(workspace="myworkspace", name="myname").put("<key>", report)
+
+        assert str(exc_info.value) == expected_error
+
+    @mark.respx()
+    def test_put_estimator_report_without_test_data_when_fitted(self, respx_mock):
+
+        mocks = [
+            ("get", "/projects/myworkspace", Response(200)),
+            (
+                "post",
+                "/projects/myworkspace/myname",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+        ]
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        X_train, y_train = make_regression(random_state=42)
+        estimator = LinearRegression().fit(X_train, y_train)
+        report = EstimatorReport(estimator)
+        expected_error = (
+            "No test data (i.e. X_test and y_test) were provided when creating the "
+            "report. Please provide the test data either when creating the report "
+            "or by setting data_source to 'X_y' and providing X and y."
+        )
+
+        with raises(ValueError, match=expected_error):
+            Project(workspace="myworkspace", name="myname").put("<key>", report)
 
     @mark.respx()
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):

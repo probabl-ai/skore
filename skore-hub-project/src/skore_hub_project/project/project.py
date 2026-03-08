@@ -225,6 +225,22 @@ class Project:
         """The name of the project."""
         return self.__name
 
+    @staticmethod
+    def __validate_estimator_report_test_data(report: EstimatorReport) -> None:
+        """Validate that the estimator report contains test data."""
+        is_clustering = report.ml_task == "clustering"
+        missing_test_data = report.X_test is None or (
+            not is_clustering and report.y_test is None
+        )
+
+        if missing_test_data:
+            missing_data = "X_test" if is_clustering else "X_test and y_test"
+            raise ValueError(
+                f"No test data (i.e. {missing_data}) were provided when creating the "
+                "report. Please provide the test data either when creating the report "
+                "or by setting data_source to 'X_y' and providing X and y."
+            )
+
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
         Put a key-report pair to the hub project.
@@ -278,6 +294,7 @@ class Project:
         payload: EstimatorReportPayload | CrossValidationReportPayload
 
         if isinstance(report, EstimatorReport):
+            Project.__validate_estimator_report_test_data(report)
             payload = EstimatorReportPayload(project=self, key=key, report=report)
             endpoint = "estimator-reports"
             frontend_slug = "estimators"
