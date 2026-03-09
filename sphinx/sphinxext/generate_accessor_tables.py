@@ -160,7 +160,7 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
     """
     classes_to_process = config.accessor_summary_classes
     if not classes_to_process:
-        return
+        raise ValueError("accessor_summary_classes not found")
 
     logger.info("Generating accessor summary tables...")
     classes_data = []
