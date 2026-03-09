@@ -11,7 +11,7 @@ from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDi
 from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
-from skore._sklearn.types import DataSource, Metric
+from skore._sklearn.types import DataSource, MetricLike
 from skore._utils._accessor import (
     _check_cross_validation_sub_estimator_has_coef,
     _check_cross_validation_sub_estimator_has_feature_importances,
@@ -71,7 +71,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         at_step: int | str = 0,
-        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
         n_jobs: int | None = None,
