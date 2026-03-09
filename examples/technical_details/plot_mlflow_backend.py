@@ -9,9 +9,6 @@ This example shows how to persist reports in MLflow using
 :class:`~skore.Project` in ``mode="mlflow"``: log reports
 as MLflow runs and inspect them.
 
-Examples
---------
-
 To run this example and push in your own MLflow tracking server, you can run
 this example with the following command:
 
@@ -58,28 +55,27 @@ else:
     )
     assert (PROJECT := os.environ.get("PROJECT")), "`PROJECT` must be defined."
 
-try:
-    # sphinx_gallery_end_ignore
 
-    import io
-    from contextlib import redirect_stderr, redirect_stdout
+# sphinx_gallery_end_ignore
 
-    # MLflow/Alembic emits verbose DB initialization logs; silence them so the
-    # example page focuses on skore usage rather than backend startup details.
-    with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-        project = Project(
-            PROJECT,
-            mode="mlflow",
-            tracking_uri=TRACKING_URI,
-        )
-        # This creates an MLflow experiment with name `PROJECT`
+import io
+from contextlib import redirect_stderr, redirect_stdout
 
-    project.put("hgb-baseline", report)
+# MLflow/Alembic emits verbose DB initialization logs; silence them so the
+# example page focuses on skore usage rather than backend startup details.
+with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+    # This creates an MLflow experiment with name `PROJECT`:
+    project = Project(
+        PROJECT,
+        mode="mlflow",
+        tracking_uri=TRACKING_URI,
+    )
+
+project.put("hgb-baseline", report)
 
 # sphinx_gallery_start_ignore
-finally:
-    if tmp_dir is not None:
-        tmp_dir.cleanup()
+if tmp_dir is not None:
+    tmp_dir.cleanup()
 
 # sphinx_gallery_end_ignore
 
