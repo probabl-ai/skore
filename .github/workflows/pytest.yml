@@ -138,7 +138,7 @@ jobs:
           set -eu
 
           matrix='[]'
-          mapfile -t packages < <(echo "${PACKAGES}" | jq -r '.[]')
+          mapfile -t packages < <(jq -rc '.[]' <<< "${PACKAGES}")
 
           for package in "${packages[@]}"; do
               package_matrix=$(\
@@ -152,11 +152,10 @@ jobs:
                   jq ".[] |= {\"package\":\"${package}\"} + ."
               )
 
-              matrix=$(jq -s 'add' <<< "${matrix}" <<< "${package_matrix}" -c)
+              matrix=$(jq -cn --argjson a "${matrix}" --argjson b "${package_matrix}" '$a + $b')
           done
 
           echo "matrix=${matrix}" >> $GITHUB_OUTPUT
-          echo "::debug::Matrix: ${matrix}"
         env:
           PACKAGES: ${{ (github.event_name == 'push') && needs.pytest-changes.outputs.packages || needs.pytest-changes.outputs.modified-packages }}
 
