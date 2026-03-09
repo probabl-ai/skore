@@ -14,7 +14,7 @@ this example with the following command:
 
 .. code-block:: bash
 
-    TRACKING_URI=<tracking_uri> PROJECT=<project> python plot_mlflow_backend.py
+    TRACKING_URI=<tracking_uri> PROJECT=<project> python plot_skore_mlflow_project.py
 
 """
 
