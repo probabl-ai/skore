@@ -17,7 +17,7 @@ this example with the following command:
 
 .. code-block:: bash
 
-    TRACKING_URI=<tracking_uri> PROJECT=<project> python plot_skore_hub_project.py
+    TRACKING_URI=<tracking_uri> PROJECT=<project> python plot_mlflow_backend.py
 
 """
 
@@ -85,8 +85,8 @@ finally:
 
 
 # %%
-# You get warnings about serialization, future versions of `skore[mlflow]` might remove
-# those warnings by using `skops.io` for models serialization.
+# Note that mlflow warns us about saving models with `pickle`. Future versions of skore might rely on
+# `skops <https://skops.readthedocs.io>`__ for model serialization, which will make these warnings disappear.
 
 # %%
 # Like for other types of projects (local, hub), you can access the summary
@@ -98,7 +98,7 @@ pandas_summary = pd.DataFrame(summary)
 pandas_summary[["key", "report_type", "learner", "ml_task", "dataset"]]
 
 # %%
-# The "id" is the MLflow run ID, you can access the MLflow run this way if you want:
+# The "id" column corresponds to the MLflow run ID, so you can access the MLflow run this way:
 import mlflow
 
 _, run_id = pandas_summary.index[0]
@@ -107,6 +107,6 @@ mlflow_run = mlflow.get_run(run_id)
 mlflow_run.data.metrics
 
 # %%
-# But most importantly, you can load back a project using this id:
+# But most importantly, this ID lets you load saved reports:
 loaded_report = project.get(run_id)
 loaded_report.metrics.summarize().frame()
