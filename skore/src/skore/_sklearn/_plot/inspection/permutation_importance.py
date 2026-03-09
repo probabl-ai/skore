@@ -447,7 +447,22 @@ class PermutationImportanceDisplay(DisplayMixin):
         Returns
         -------
         pd.DataFrame
-            Dataframe containing the importances.
+            Dataframe containing the importances. The columns depend on the
+            report type and parameters, but always include:
+
+            - `data_source`: Data source used to compute the importances
+              (``"train"`` or ``"test"``).
+            - `metric`: Metric used to compute the importances.
+            - `feature`: Feature name.
+            - `value_mean` and `value_std`: Aggregated importance values
+              (only when ``aggregate`` is not ``None``).
+            - `value`: Raw importance value per repetition
+              (only when ``aggregate`` is ``None``).
+            - `estimator`: Name of the estimator (for comparison reports).
+            - `split`: Cross-validation split index (for cross-validation
+              reports, only when ``aggregate`` is ``None``).
+            - `label`: Class label (for multiclass classification).
+            - `output`: Output index (for multi-output regression).
         """
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
