@@ -132,6 +132,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+
       - name: Set matrix for pytest-test
         id: set-matrix
         run: |
@@ -141,7 +142,17 @@ jobs:
           mapfile -t packages < <(echo "${PACKAGES}" | jq -r '.[]')
 
           for package in "${packages[@]}"; do
-              package_matrix=$(jq ".[] |= {\"package\":\"${package}\"} + ." "${package}/matrix.json" -c)
+              package_matrix=$(\
+                  # Escape dependencies to be used in filename, both in Linux and Windows
+                  # - make a str based on the JSON array
+                  # - replace `==` by `-`
+                  # - remove all `.*`
+                  jq '.[].dependencies |= (join("_and_") | gsub("=="; "-") | gsub("\\.\\*"; ""))' "${package}/matrix.json" -rc |\
+
+                  # Add package name
+                  jq ".[] |= {\"package\":\"${package}\"} + ."
+              )
+
               matrix=$(jq -s 'add' <<< "${matrix}" <<< "${package_matrix}" -c)
           done
 

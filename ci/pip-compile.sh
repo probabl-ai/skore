@@ -90,13 +90,11 @@ set -eu
     do
         IFS="|" read -r PACKAGE EXTRA PYTHON DEPENDENCIES <<< "${combination}"
 
-        # Escape dependencies:
+        # Escape dependencies to be used in filename, both in Linux and Windows:
         # - make a str based on the JSON array
         # - replace `==` by `-`
         # - remove all `.*`
-        ESCAPED=$(jq 'join("_and_")' -rc <<< "${DEPENDENCIES}")
-        ESCAPED="${ESCAPED//==/-}"
-        ESCAPED="${ESCAPED//.\*}"
+        ESCAPED=$(jq 'join("_and_") | gsub("=="; "-") | gsub("\\.\\*"; "")' -rc <<< "${DEPENDENCIES}")
 
         echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | ${DEPENDENCIES} (${counter}/${#COMBINATIONS[@]})"
 
