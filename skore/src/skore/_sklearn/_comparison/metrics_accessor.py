@@ -205,23 +205,10 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             if is_cv_report:
                 kwargs["aggregate"] = None
 
-            # FIXME(#1837)
-            # "favorability" and "flat_index" are passed to `.frame()` for
-            # EstimatorReports while they are passed to `.summarize()` for
-            # CrossValidationReports
             frame_kwargs = {}
-            if not is_cv_report:
-                for key in ("favorability", "flat_index"):
-                    if key in kwargs:
-                        frame_kwargs[key] = kwargs.pop(key)
-
-            if "favorability" in kwargs:
-                favorability = kwargs["favorability"]
-            elif "favorability" in frame_kwargs:
-                favorability = frame_kwargs["favorability"]
-            else:
-                favorability = False
-            favorability = cast(bool, favorability)
+            for key in ("aggregate", "favorability", "flat_index"):
+                if key in kwargs:
+                    frame_kwargs[key] = kwargs.pop(key)
 
             individual_results = [
                 result.frame(**frame_kwargs)
@@ -243,14 +230,14 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
                 results = _combine_estimator_results(
                     individual_results,
                     estimator_names=self._parent.reports_.keys(),
-                    favorability=favorability,
+                    favorability=frame_kwargs.get("favorability", False),
                     data_source=data_source,
                 )
             else:  # "CrossValidationReport"
                 results = _combine_cross_validation_results(
                     individual_results,
                     estimator_names=self._parent.reports_.keys(),
-                    favorability=favorability,
+                    favorability=frame_kwargs.get("favorability", False),
                     aggregate=aggregate,
                 )
 
