@@ -85,12 +85,22 @@ def test_subplot_by_non_averaged_metrics(
         display.plot(subplot_by="invalid")
 
 
-def test_frame_has_split_column(cross_validation_reports_binary_classification):
+@pytest.mark.parametrize(
+    "level, expected_columns",
+    [
+        ("splits", ["value_mean", "value_std"]),
+        ("repetitions", ["split", "value_mean", "value_std"]),
+    ],
+)
+def test_frame_aggregation_level(
+    cross_validation_reports_binary_classification,
+    level,
+    expected_columns,
+):
     report = cross_validation_reports_binary_classification[0]
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    frame = display.frame()
-    assert "split" in frame.columns
-    assert frame["split"].nunique() == len(report.estimator_reports_)
+    frame = display.frame(level=level)
+    assert set(frame.columns) >= set(expected_columns)
 
 
 def test_frame_metric_filter(cross_validation_reports_regression):
