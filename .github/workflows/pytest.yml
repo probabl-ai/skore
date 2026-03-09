@@ -156,6 +156,7 @@ jobs:
           done
 
           echo "matrix=${matrix}" >> $GITHUB_OUTPUT
+          echo "::debug::Matrix: ${matrix}"
         env:
           PACKAGES: ${{ (github.event_name == 'push') && needs.pytest-changes.outputs.packages || needs.pytest-changes.outputs.modified-packages }}
 
