@@ -138,11 +138,12 @@ jobs:
           set -eu
 
           matrix='[]'
+          mapfile -t packages < <(echo "${PACKAGES}" | jq -r '.[]')
 
-          while read package; do
-              package_matrix=$(cat ${package}/matrix.json | jq ".[] |= {\"package\":\"${package}\"} + ." --compact-output)
-              matrix=$(echo "${matrix}${package_matrix}" | jq -s 'add' --compact-output)
-          done < <(echo "${PACKAGES}" | jq -r '.[]')
+          for package in "${packages[@]}"; do
+              package_matrix=$(jq ".[] |= {\"package\":\"${package}\"} + ." "${package}/matrix.json" -c)
+              matrix=$(jq -s 'add' <<< "${matrix}" <<< "${package_matrix}" -c)
+          done
 
           echo "matrix=${matrix}" >> $GITHUB_OUTPUT
         env:
