@@ -22,7 +22,7 @@ from skore._sklearn._plot import (
 )
 from skore._sklearn.types import (
     DataSource,
-    Metric,
+    MetricLike,
     PositiveLabel,
 )
 from skore._utils._accessor import (
@@ -61,7 +61,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
