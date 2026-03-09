@@ -451,8 +451,9 @@ class PermutationImportanceDisplay(DisplayMixin):
             Over which dimensions to aggregate when `aggregate` is not `None`.
             `"repetitions"` aggregates only over repetitions (keeps `split` for
             cross-validation). `"splits"` aggregates over repetitions then over
-            splits. Only relevant when `aggregate` is not `None` and the report type
-            is "cross-validation" or "comparison-cross-validation".
+            splits. Only relevant when `aggregate` is not `None` and the report is
+            a :class:`~skore.CrossValidationReport` or a
+            :class:`~skore.ComparisonReport` containing such type of report.
 
         Returns
         -------
