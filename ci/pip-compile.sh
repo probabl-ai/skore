@@ -89,8 +89,14 @@ set -eu
     for combination in "${COMBINATIONS[@]}"
     do
         IFS="|" read -r PACKAGE EXTRA PYTHON DEPENDENCIES <<< "${combination}"
-        ESCAPED=$(printf '%q' $(jq 'join("_and_")' -rc <<< "${DEPENDENCIES}"))
-        FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/${ESCAPED}/${EXTRA}-requirements.txt"
+
+        # Escape dependencies:
+        # - make a str based on the JSON array
+        # - replace `==` by `-`
+        # - remove all `.*`
+        ESCAPED=$(jq 'join("_and_")' -rc <<< "${DEPENDENCIES}")
+        ESCAPED="${ESCAPED//==/-}"
+        ESCAPED="${ESCAPED//.\*}"
 
         echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | ${DEPENDENCIES} (${counter}/${#COMBINATIONS[@]})"
 
@@ -103,6 +109,8 @@ set -eu
         for dependency in $(jq '.[]' -rc <<< "${DEPENDENCIES}"); do
             echo "${dependency}" >> "${PACKAGE}/overrides.txt"
         done
+
+        FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/${ESCAPED}/${EXTRA}-requirements.txt"
 
         # Create the requirements file tree
         mkdir -p $(dirname "${FILEPATH}")
