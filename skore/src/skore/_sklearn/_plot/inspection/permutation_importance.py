@@ -518,31 +518,21 @@ class PermutationImportanceDisplay(DisplayMixin):
                 frame.columns = flatten_multi_index(frame.columns)
 
             if level == "splits" and "split" in frame.columns:
-                split_group_by = [c for c in group_by if c != "split"]
-                value_cols = [c for c in frame.columns if c not in group_by]
-                n_repeats = self.importances["repetition"].nunique()
-
-                def combine_splits(splits_block: pd.DataFrame) -> pd.Series:
-                    n_splits = len(splits_block)
-                    result = {}
-                    for c in value_cols:
-                        if c == "value_std" and "value_mean" in value_cols:
-                            # SE of mean: sqrt(σ²_between/K + σ²_within/(K*R))
-                            sigma2_within = (splits_block["value_std"] ** 2).mean()
-                            sigma2_between = splits_block["value_mean"].var(ddof=0)
-                            result[c] = np.sqrt(
-                                sigma2_between / n_splits
-                                + sigma2_within / (n_splits * n_repeats)
-                            )
-                        else:
-                            result[c] = splits_block[c].mean()
-                    return pd.Series(result)
-
+                columns_to_drop = ["split"]
+                if "value_std" in frame.columns:
+                    columns_to_drop.append("value_std")
                 frame = (
-                    frame.drop(columns=["split"])
-                    .groupby(split_group_by, sort=False, dropna=False)
-                    .apply(combine_splits)
+                    frame.drop(columns=columns_to_drop)
+                    .rename(columns={"value_mean": "value"})
+                    .groupby(
+                        [c for c in group_by if c not in columns_to_drop],
+                        sort=False,
+                        dropna=False,
+                    )
+                    .aggregate(aggregate)
                 ).reset_index()
+                if isinstance(frame.columns, pd.MultiIndex):
+                    frame.columns = flatten_multi_index(frame.columns)
 
         return frame
 
