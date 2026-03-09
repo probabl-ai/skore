@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from functools import cached_property
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
@@ -199,3 +200,34 @@ def _get_cached_response_values(
         (cache_key, predictions, False),
         (predict_time_cache_key, predict_time(), False),
     ]
+
+
+@dataclass
+class Metric:
+    """Metadata for a metric in the registry.
+
+    Parameters
+    ----------
+    name : str
+        Technical name used for lookup (e.g. ``"accuracy"``).
+
+    verbose_name : str
+        Display name shown in reports (e.g. ``"Accuracy"``).
+
+    greater_is_better : bool or None
+        Whether a higher value is better (``True``), lower is better
+        (``False``), or there is no preference (``None``).
+    """
+
+    name: str
+    verbose_name: str
+    greater_is_better: bool | None
+
+    @property
+    def icon(self) -> str:
+        """Favorability icon derived from ``greater_is_better``."""
+        if self.greater_is_better is True:
+            return "(↗︎)"
+        elif self.greater_is_better is False:
+            return "(↘︎)"
+        return ""
