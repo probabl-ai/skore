@@ -447,8 +447,8 @@ class PermutationImportanceDisplay(DisplayMixin):
         Returns
         -------
         pd.DataFrame
-            Dataframe containing the importances. The columns depend on the
-            report type and parameters, but always include:
+            The feature importances. The columns depend on the
+            report type and parameters, and include:
 
             - `data_source`: Data source used to compute the importances
               (``"train"`` or ``"test"``).
