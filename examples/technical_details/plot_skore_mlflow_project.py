@@ -1,9 +1,9 @@
 """
 .. _example_skore_mlflow_project:
 
-==================================
-MLflow backend with skore.Project
-==================================
+====================
+MLflow skore Project
+====================
 
 This example shows how to persist reports in MLflow using
 :class:`~skore.Project` in ``mode="mlflow"``: log reports
@@ -70,7 +70,6 @@ with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
         mode="mlflow",
         tracking_uri=TRACKING_URI,
     )
-
 project.put("hgb-baseline", report)
 
 # sphinx_gallery_start_ignore
