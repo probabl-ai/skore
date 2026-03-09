@@ -51,8 +51,8 @@ case $1 in
             )
 
             for combination in "${combinations[@]}"; do
-                python=$(jq -r '.python' <<< "${combination}")
-                dependencies=$(jq -r '.dependencies' <<< "${combination}")
+                python=$(jq -rc '.python' <<< "${combination}")
+                dependencies=$(jq -rc '.dependencies' <<< "${combination}")
 
                 COMBINATIONS+=("${PACKAGE}|test|${python}|${dependencies}")
             done
@@ -68,7 +68,7 @@ case $1 in
         shift 2
         ;;
     "--sphinx-requirements")
-        COMBINATIONS+=('skore|sphinx|3.13|scikit-learn==1.8.*')
+        COMBINATIONS+=('skore|sphinx|3.13|["scikit-learn==1.8.*"]')
         shift
         ;;
     *)
@@ -88,13 +88,9 @@ set -eu
 
     for combination in "${COMBINATIONS[@]}"
     do
-        IFS="|" read -r -a combination <<< "${combination}"
-
-        PACKAGE="${combination[0]}"
-        EXTRA="${combination[1]}"
-        PYTHON="${combination[2]}"
-        DEPENDENCIES="${combination[3]}"
-        FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/${DEPENDENCIES}/${EXTRA}-requirements.txt"
+        IFS="|" read -r PACKAGE EXTRA PYTHON DEPENDENCIES <<< "${combination}"
+        ESCAPED=$(printf '%q' $(jq 'join("_and_")' -rc <<< "${DEPENDENCIES}"))
+        FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/${ESCAPED}/${EXTRA}-requirements.txt"
 
         echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | ${DEPENDENCIES} (${counter}/${#COMBINATIONS[@]})"
 
@@ -102,7 +98,11 @@ set -eu
         mkdir -p "${TMPDIR}/${PACKAGE}"; cp "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
 
         # Force the dependencies by creating file overriding requirements
-        echo "${DEPENDENCIES}" > "${PACKAGE}/overrides.txt"
+        > "${PACKAGE}/overrides.txt"
+
+        for dependency in $(jq '.[]' -rc <<< "${DEPENDENCIES}"); do
+            echo "${dependency}" >> "${PACKAGE}/overrides.txt"
+        done
 
         # Create the requirements file tree
         mkdir -p $(dirname "${FILEPATH}")
