@@ -39,7 +39,6 @@ report = CrossValidationReport(estimator, X, y)
 # =====================================
 
 # sphinx_gallery_start_ignore
-# sphinx_gallery_thumbnail_path = '_static/images/screenshot_mlflow_backend.png'
 #
 # Configure the context variables and tmp dir:
 import os
@@ -88,17 +87,6 @@ finally:
 # %%
 # You get warnings about serialization, future versions of `skore[mlflow]` might remove
 # those warnings by using `skops.io` for models serialization.
-
-# %%
-# .. note::
-#    MLflow UI preview for this example:
-#
-#    .. raw:: html
-#
-#       <video controls preload="metadata" width="100%" poster="../../_static/images/screenshot_mlflow_backend.png">
-#         <source src="../../_static/videos/mlflow_backend_demo.webm" type="video/webm">
-#         Your browser does not support the video tag.
-#       </video>
 
 # %%
 # Like for other types of projects (local, hub), you can access the summary
