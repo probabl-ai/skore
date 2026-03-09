@@ -2,21 +2,11 @@
 Sphinx extension to automatically generate accessor method tables using Jinja templates,
 and to generate autosummary .inc files for accessor methods in report classes.
 
-This extension adds two config values:
-
-- ``accessor_summary_classes``: list of class paths to generate accessor summary
-  dropdowns and individual accessor .inc files for, e.g.::
-
-      accessor_summary_classes = [
-          "skore.EstimatorReport",
-          "skore.CrossValidationReport",
-          "skore.ComparisonReport",
-      ]
-
-For each accessor in each report class, a file is generated at
-``reference/api/<ClassName>.<accessor_name>.inc`` containing the autosummary
-directive with fully-qualified paths. The report RST files should include
-these with ``.. include::``.
+This extension adds a config value ``accessor_summary_classes`` which should be a
+list of class paths to generate accessor summaries for. For each accessor in each
+report class, a file is generated at ``reference/api/<ClassName>.<accessor_name>.inc``
+containing the autosummary directive. The report RST files should include these
+with ``.. include::``.
 """
 
 import inspect
@@ -124,11 +114,8 @@ def _write_accessor_method_stub(
 ) -> None:
     """Write an autosummary stub file for an accessor method.
 
-    The stub mirrors what ``sphinx.ext.autosummary`` would produce from the
-    ``autosummary/accessor_method.rst`` template.  We generate it ourselves
-    because the ``.. autosummary::`` directives live inside ``.inc`` files
-    that are pulled in via ``.. include::``, and the autosummary stub
-    generator does not follow ``.. include::`` directives.
+    We generate stubs ourselves because ``.. include::`` prevents the
+    autosummary extension from discovering directives in .inc files.
 
     Parameters
     ----------
@@ -197,8 +184,9 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
     output_path.write_text(rst_content)
     logger.info(f"Wrote accessor tables to {output_path}")
 
-    # Generate individual .inc files for each accessor
-    logger.info("Generating individual accessor .inc files...")
+    # Generate .inc files and collect toctree data for each accessor
+    accessor_toctrees: dict[str, list[str]] = {}
+
     for class_path, class_data in classes_data:
         class_name = class_data["name"]
 
@@ -209,16 +197,16 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
             ):
                 continue
 
-            # Put help and summarize first (navigation methods), then rest alphabetically
+            # help/summarize first, then the rest alphabetically
             priority = [m for m in methods if m[0] in ("help", "summarize")]
             rest = [m for m in methods if m[0] not in ("help", "summarize")]
             ordered = priority + rest
 
+            # .inc file (no :toctree: — methods are nested under accessor pages)
             lines = [
                 ".. currentmodule:: skore",
                 "",
                 ".. autosummary::",
-                "    :toctree: ../api/",
                 "    :template: autosummary/accessor_method.rst",
                 "",
             ]
@@ -236,17 +224,20 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
             else:
                 logger.debug(f"No changes for {filename}")
 
-            # Generate autosummary stub files for each method.
-            # This is necessary because ``.. include::`` prevents the
-            # autosummary extension from discovering our ``.. autosummary::``
-            # directives during its scanning phase, so it never generates
-            # stubs for the methods listed in .inc files. By writing them
-            # ourselves, autosummary finds them at render time and no
-            # warnings are produced.
+            accessor_path = f"{class_name}.{accessor_name}"
+            accessor_toctrees[accessor_path] = [
+                f"skore.{class_name}.{accessor_name}.{method_name}"
+                for method_name, _ in ordered
+            ]
+
             for method_name, _ in ordered:
                 _write_accessor_method_stub(
                     output_dir, class_name, accessor_name, method_name
                 )
+
+    ctx = dict(config.autosummary_context or {})
+    ctx["accessor_toctrees"] = accessor_toctrees
+    config.autosummary_context = ctx
 
 
 def setup(app: Sphinx) -> dict[str, Any]:
