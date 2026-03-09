@@ -58,7 +58,6 @@ case $1 in
             done
         done
 
-        unset matrix
         unset combinations
         unset combination
         unset python
