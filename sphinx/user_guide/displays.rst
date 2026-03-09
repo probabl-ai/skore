@@ -29,8 +29,16 @@ interacting with a reporter. Let's provide an example:
     display = report.metrics.roc()
     display.plot()
 
-The :meth:`EstimatorReport.metrics.roc` creates a :class:`RocCurveDisplay` object. The
-first available method with the `skore` display is a `plot` method. It shows graphically
+The :meth:`EstimatorReport.metrics.roc` creates a :class:`RocCurveDisplay` object.
+
+The ``help`` method displays the available attributes and methods of the
+display object interactively:
+
+.. code-block:: python
+
+    display.help()
+
+Another available method is ``plot``. It shows graphically
 the information contained in the display. Call it as many times as you want - it does
 not modify the display object nor require heavy computation.
 
@@ -40,7 +48,7 @@ not modify the display object nor require heavy computation.
 
     display.plot()
 
-The `plot` method can be preceded by the `set_style` method which accepts parameters to
+The ``plot`` method can be preceded by the ``set_style`` method which accepts parameters to
 tweak the rendering of the display. For instance, customize the appearance of the chance level:
 
 .. plot::
@@ -52,7 +60,7 @@ tweak the rendering of the display. For instance, customize the appearance of th
     )
     display.plot()
 
-Any subsequent call to `plot` uses the style settings set by `set_style`.
+Any subsequent call to ``plot`` uses the style settings set by ``set_style``.
 
 The ``frame`` method retrieves the underlying data used to generate the plot as a
 :class:`pandas.DataFrame`:
