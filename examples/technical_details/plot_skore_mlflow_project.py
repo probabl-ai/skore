@@ -32,9 +32,9 @@ estimator = HistGradientBoostingClassifier()
 report = CrossValidationReport(estimator, X, y)
 
 # %%
-# Push the report to the MLflow backend
-# =====================================
+# Then, we can push the report to the MLflow backend:
 
+# %%
 # sphinx_gallery_start_ignore
 #
 # Configure the context variables and tmp dir:
