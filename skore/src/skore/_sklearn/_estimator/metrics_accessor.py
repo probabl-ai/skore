@@ -11,7 +11,11 @@ from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore._sklearn._base import (
+    BUILTIN_METRICS,
+    _BaseAccessor,
+    _get_cached_response_values,
+)
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -41,17 +45,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     """
 
     _score_or_loss_info: dict[str, dict[str, str]] = {
-        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
-        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
+        metric.name: {"name": metric.verbose_name, "icon": metric.icon}
+        for metric in BUILTIN_METRICS
     }
 
     def __init__(self, parent: EstimatorReport) -> None:
