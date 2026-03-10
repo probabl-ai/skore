@@ -200,7 +200,7 @@ def test_cache_poisoning(binary_classification_data):
     )
     report = ComparisonReport({"model_1": report_1, "model_2": report_2})
     report.metrics.summarize(favorability=True)
-    result = report_1.metrics.summarize(aggregate=None, favorability=True).frame()
+    result = report_1.metrics.summarize().frame(aggregate=None, favorability=True)
 
     assert "Favorability" in result.columns
 

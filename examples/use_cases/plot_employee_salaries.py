@@ -273,7 +273,7 @@ with warnings.catch_warnings():
 # We can now have a look at the performance of the model with some standard metrics.
 
 # %%
-linear_model_report.metrics.summarize(favorability=True).frame()
+linear_model_report.metrics.summarize().frame(favorability=True)
 
 # %%
 # Comparing the models
