@@ -113,7 +113,8 @@ class TestConfusionMatrixDisplay:
         )
         assert figure.get_figheight() == 6
 
-        display.set_style(facet_grid_kwargs={"height": 8}).plot()
+        display.set_style(facet_grid_kwargs={"height": 8})
+        display.plot()
         assert display.figure_.get_figheight() == 8
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
@@ -129,7 +130,8 @@ class TestConfusionMatrixDisplay:
         ax = ax[0] if isinstance(ax, np.ndarray) else ax
 
         assert ax.collections[0].get_cmap().name == "Blues"
-        display.set_style(heatmap_kwargs={"cmap": "Reds"}).plot()
+        display.set_style(heatmap_kwargs={"cmap": "Reds"})
+        display.plot()
         ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
         assert ax.collections[0].get_cmap().name == "Reds"
 
