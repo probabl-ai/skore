@@ -152,3 +152,21 @@ class TestRocCurveDisplay:
             assert "Positive label" in title
         else:
             assert "Positive label" not in title
+
+    @pytest.mark.parametrize("task", ["binary", "multiclass"])
+    def test_frame_data_source_both(self, fixture_prefix, task, request):
+        """Check that the frame contains a data_source column when both."""
+        if "cross_validation" in fixture_prefix:
+            pytest.skip(
+                "data_source='both' is only valid for estimator and comparison reports"
+            )
+
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
+        if isinstance(report, tuple):
+            report = report[0]
+
+        display = report.metrics.roc(data_source="both")
+        frame = display.frame()
+
+        assert "data_source" in frame.columns
+        assert set(frame["data_source"].unique()).issubset({"train", "test"})
