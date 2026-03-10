@@ -15,6 +15,7 @@ from skore._sklearn._base import (
     BUILTIN_METRICS,
     _BaseAccessor,
     _get_cached_response_values,
+    _get_default_metrics,
 )
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
@@ -181,20 +182,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         elif isinstance(metric, list):
             metrics = metric
 
-        # Treat empty list same as None - use defaults
         if metric is None or (isinstance(metric, list) and len(metric) == 0):
-            # Equivalent to _get_scorers_to_add
-            if self._parent._ml_task == "binary-classification":
-                metrics = ["accuracy", "precision", "recall", "roc_auc"]
-                if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics.append("brier_score")
-            elif self._parent._ml_task == "multiclass-classification":
-                metrics = ["accuracy", "precision", "recall"]
-                if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics += ["roc_auc", "log_loss"]
-            else:
-                metrics = ["r2", "rmse"]
-            metrics += ["fit_time", "predict_time"]
+            metrics = _get_default_metrics(
+                self._parent._ml_task, self._parent._estimator
+            )
 
         if metric_names is None:
             metric_names = [None] * len(metrics)
