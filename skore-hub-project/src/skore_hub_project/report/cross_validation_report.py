@@ -10,13 +10,27 @@ from scipy.stats import gaussian_kde
 from sklearn.model_selection._split import _CVIterableWrapper
 
 from skore_hub_project.artifact.media import (
+    Coefficients,
+    ConfusionMatrixDataFrameTest,
+    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixSVGTest,
+    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
-    PrecisionRecallTest,
-    PrecisionRecallTrain,
-    PredictionErrorTest,
-    PredictionErrorTrain,
-    RocTest,
-    RocTrain,
+    ImpurityDecrease,
+    PermutationImportanceTest,
+    PermutationImportanceTrain,
+    PrecisionRecallDataFrameTest,
+    PrecisionRecallDataFrameTrain,
+    PrecisionRecallSVGTest,
+    PrecisionRecallSVGTrain,
+    PredictionErrorDataFrameTest,
+    PredictionErrorDataFrameTrain,
+    PredictionErrorSVGTest,
+    PredictionErrorSVGTrain,
+    RocDataFrameTest,
+    RocDataFrameTrain,
+    RocSVGTest,
+    RocSVGTrain,
 )
 from skore_hub_project.artifact.media.data import TableReport
 from skore_hub_project.artifact.media.media import Media
@@ -126,13 +140,27 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         PredictTimeTrainStd,
     )
     MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
+        Coefficients,
+        ConfusionMatrixDataFrameTest,
+        ConfusionMatrixDataFrameTrain,
+        ConfusionMatrixSVGTest,
+        ConfusionMatrixSVGTrain,
         EstimatorHtmlRepr,
-        PrecisionRecallTest,
-        PrecisionRecallTrain,
-        PredictionErrorTest,
-        PredictionErrorTrain,
-        RocTest,
-        RocTrain,
+        ImpurityDecrease,
+        PermutationImportanceTest,
+        PermutationImportanceTrain,
+        PrecisionRecallDataFrameTest,
+        PrecisionRecallDataFrameTrain,
+        PrecisionRecallSVGTest,
+        PrecisionRecallSVGTrain,
+        PredictionErrorDataFrameTest,
+        PredictionErrorDataFrameTrain,
+        PredictionErrorSVGTest,
+        PredictionErrorSVGTrain,
+        RocDataFrameTest,
+        RocDataFrameTrain,
+        RocSVGTest,
+        RocSVGTrain,
         TableReport,
     )
 
@@ -177,11 +205,15 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         of 200 buckets, and averaging the number of samples belonging to the test-set in
         each of these buckets. @TODO: find a better representation of the distribution.
         """
+        from skore._externals._sklearn_compat import (  # type: ignore[attr-defined]
+            _safe_indexing,
+        )
+
         splits = []
 
         for train_indices, test_indices in self.report.split_indices:
-            train_y = self.report.y[train_indices]
-            test_y = self.report.y[test_indices]
+            train_y = _safe_indexing(self.report.y, train_indices)
+            test_y = _safe_indexing(self.report.y, test_indices)
             train_target_distribution: list[float] = []
             test_target_distribution: list[float] = []
 

@@ -48,19 +48,14 @@ def test_non_string_report_names(cross_validation_reports_binary_classification)
         ComparisonReport({0: cv_report_1, "1": cv_report_2})
 
 
-@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
+@pytest.mark.parametrize("data_source", ["train", "test"])
 def test_get_predictions(
     comparison_cross_validation_reports_binary_classification,
     binary_classification_data,
     data_source,
 ):
     report = comparison_cross_validation_reports_binary_classification
-    if data_source == "X_y":
-        X, _ = binary_classification_data
-        predictions = report.get_predictions(X=X, data_source=data_source)
-
-    else:
-        predictions = report.get_predictions(data_source=data_source)
+    predictions = report.get_predictions(data_source=data_source)
 
     assert len(predictions) == len(report.reports_)
     for i, cv_report in enumerate(report.reports_.values()):

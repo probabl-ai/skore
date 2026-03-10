@@ -1,12 +1,14 @@
 import numpy as np
 import pandas as pd
 import pytest
+import scipy.sparse as sp
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import EstimatorReport
+from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
 
 
 @pytest.mark.parametrize(
@@ -171,3 +173,17 @@ def test_analyze_subsampling(
         assert display.summary["dataframe"].index.to_list() == list(range(10))
     else:
         assert display.summary["dataframe"].index.to_list() != list(range(10))
+
+
+def test_normalize_X_as_dataframe_sparse():
+    """Check that _normalize_X_as_dataframe rejects sparse matrices."""
+    X_sparse = sp.csr_matrix(np.random.rand(10, 2))
+    with pytest.raises(NotImplementedError, match="not supported for sparse matrices"):
+        _normalize_X_as_dataframe(X_sparse)
+
+
+def test_normalize_y_as_dataframe_sparse():
+    """Check that _normalize_y_as_dataframe rejects sparse matrices."""
+    y_sparse = sp.csr_matrix(np.random.rand(10, 1))
+    with pytest.raises(NotImplementedError, match="not supported for sparse matrices"):
+        _normalize_y_as_dataframe(y_sparse)

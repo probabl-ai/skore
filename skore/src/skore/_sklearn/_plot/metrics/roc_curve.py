@@ -37,6 +37,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         The ROC curve data to display. The columns are
 
         - `estimator`
+        - `data_source`
         - `split` (may be null)
         - `label`
         - `threshold`
@@ -54,7 +55,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     pos_label : int, float, bool, str or None
         The class considered as positive. Only meaningful for binary classification.
 
-    data_source : {"train", "test", "X_y", "both"}
+    data_source : {"train", "test", "both"}
         The data source used to compute the ROC curve.
 
     ml_task : {"binary-classification", "multiclass-classification"}
@@ -269,8 +270,6 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         info_data_source = (
             f"Data source: {self.data_source.capitalize()} set"
             if self.data_source in ("train", "test")
-            else "Data source: external set"
-            if self.data_source == "X_y"
             else None
         )
 
@@ -328,7 +327,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y", "both"}
+        data_source : {"train", "test", "both"}
             The data source used to compute the ROC curve.
 
         pos_label : int, float, bool or str, default=None
@@ -461,6 +460,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
             - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
+            - `data_source`: Data source used (when `data_source="both"`)
             - `label`: Class label (for multiclass-classification)
             - `threshold`: Decision threshold
             - `fpr`: False Positive Rate

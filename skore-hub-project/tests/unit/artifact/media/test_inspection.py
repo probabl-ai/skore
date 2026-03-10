@@ -11,11 +11,10 @@ from skore_hub_project.artifact.media import (
     PermutationImportanceTrain,
 )
 from skore_hub_project.artifact.serializer import Serializer
+from skore_hub_project.json import dumps
 
 
 def serialize(result) -> bytes:
-    import orjson
-
     if hasattr(result, "frame"):
         # FIXME: in the future, all inspection methods should have an aggregate
         # parameter and we should be sending unaggregated data to the hub.
@@ -24,9 +23,8 @@ def serialize(result) -> bytes:
         else:
             result = result.frame()
 
-    return orjson.dumps(
-        result.infer_objects().fillna("NaN").to_dict(orient="tight"),
-        option=(orjson.OPT_NON_STR_KEYS | orjson.OPT_SERIALIZE_NUMPY),
+    return dumps(
+        result.astype(object).where(result.notna(), "NaN").to_dict(orient="tight")
     )
 
 
@@ -59,42 +57,63 @@ def monkeypatch_permutation_importance(monkeypatch):
             "binary_classification",
             "permutation_importance",
             "test",
-            id="PermutationImportanceTest",
+            id="PermutationImportanceTest[estimator]",
+        ),
+        param(
+            PermutationImportanceTest,
+            "cv_binary_classification",
+            "permutation_importance",
+            "test",
+            id="PermutationImportanceTest[cross-validation]",
         ),
         param(
             PermutationImportanceTrain,
             "binary_classification",
             "permutation_importance",
             "train",
-            id="PermutationImportanceTrain",
+            id="PermutationImportanceTrain[estimator]",
+        ),
+        param(
+            PermutationImportanceTrain,
+            "cv_binary_classification",
+            "permutation_importance",
+            "train",
+            id="PermutationImportanceTrain[cross-validation]",
         ),
         param(
             ImpurityDecrease,
             "binary_classification",
             "impurity_decrease",
             None,
-            id="ImpurityDecrease",
+            id="ImpurityDecrease[estimator]",
+        ),
+        param(
+            ImpurityDecrease,
+            "cv_binary_classification",
+            "impurity_decrease",
+            None,
+            id="ImpurityDecrease[cross-validation]",
         ),
         param(
             Coefficients,
             "multiclass_classification",
             "coefficients",
             None,
-            id="Coefficients",
+            id="Coefficients[estimator] - multiclass",
         ),
         param(
             Coefficients,
             "regression",
             "coefficients",
             None,
-            id="Coefficients",
+            id="Coefficients[estimator] - regression",
         ),
         param(
             Coefficients,
             "cv_regression",
             "coefficients",
             None,
-            id="Coefficients",
+            id="Coefficients[cross-validation] - regression",
         ),
     ),
 )

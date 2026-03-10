@@ -15,19 +15,18 @@ from unicodedata import normalize
 
 from httpx import HTTPStatusError, codes
 from joblib import load as joblib_load
+from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from sklearn.utils.validation import _check_pos_label_consistency
 
-from skore_hub_project import console
+from skore_hub_project import console, switch_plt_backend
 from skore_hub_project.client.client import Client, HUBClient
 from skore_hub_project.exception import ForbiddenException, NotFoundException
 from skore_hub_project.json import dumps
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
 
-P = ParamSpec("P")
-R = TypeVar("R")
-
-
 if TYPE_CHECKING:
+    P = ParamSpec("P")
+    R = TypeVar("R")
 
     class Metadata(TypedDict):  # noqa: D101
         id: str
@@ -245,7 +244,12 @@ class Project:
         TypeError
             If the combination of parameters are not valid.
         """
-        from ..report import CrossValidationReportPayload, EstimatorReportPayload
+        import skore
+
+        from skore_hub_project.report import (
+            CrossValidationReportPayload,
+            EstimatorReportPayload,
+        )
 
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}').")
@@ -282,25 +286,39 @@ class Project:
             endpoint = "cross-validation-reports"
             frontend_slug = "cross-validations"
 
-        payload_dict = payload.model_dump()
-        payload_json_bytes = dumps(payload_dict)
-
-        with HUBClient() as hub_client:
-            response = hub_client.post(
-                url=f"projects/{self.workspace}/{self.name}/{endpoint}",
-                content=payload_json_bytes,
-                headers={
-                    "Content-Length": str(len(payload_json_bytes)),
-                    "Content-Type": "application/json",
-                },
+        with (
+            skore.configuration(show_progress=False),
+            switch_plt_backend(),
+            Progress(
+                SpinnerColumn(),
+                TextColumn("{task.description}"),
+                TimeElapsedColumn(),
+                console=console,
+            ) as progress,
+        ):
+            task = progress.add_task(
+                description=f"[cyan]Putting [bold bright_white on cyan]{key}",
+                total=1,
             )
 
-            response_json = response.json()
-            report_url = f"{self.__frontend_url}/{frontend_slug}/{response_json['id']}"
+            payload_dict = payload.model_dump()
+            payload_json_bytes = dumps(payload_dict)
 
-            console.print(
-                f"Consult your report at [link={report_url}]{report_url}[/link]"
-            )
+            with HUBClient() as hub_client:
+                response = hub_client.post(
+                    url=f"projects/{self.workspace}/{self.name}/{endpoint}",
+                    content=payload_json_bytes,
+                    headers={
+                        "Content-Length": str(len(payload_json_bytes)),
+                        "Content-Type": "application/json",
+                    },
+                )
+
+            progress.advance(task)
+            progress.refresh()
+
+        report_url = f"{self.__frontend_url}/{frontend_slug}/{response.json()['id']}"
+        console.print(f"Consult your report at [link={report_url}]{report_url}[/link]")
 
     def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its URN."""

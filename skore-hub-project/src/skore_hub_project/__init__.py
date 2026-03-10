@@ -5,6 +5,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from logging import basicConfig, getLogger
 
+from matplotlib import pyplot as plt
 from rich.console import Console
 from rich.theme import Theme
 
@@ -13,7 +14,7 @@ __all__ = [
     "b64_str_to_bytes",
     "bytes_to_b64_str",
     "console",
-    "switch_mpl_backend",
+    "switch_plt_backend",
 ]
 
 
@@ -43,9 +44,9 @@ def bytes_to_b64_str(literal: bytes) -> str:
 
 
 @contextmanager
-def switch_mpl_backend(backend: str = "agg") -> Iterator[None]:
+def switch_plt_backend(backend: str = "agg") -> Iterator[None]:
     """
-    Context-manager for switching ``matplotlib.backend``.
+    Context-manager for switching ``matplotlib.pyplot.backend``.
 
     Notes
     -----
@@ -55,20 +56,11 @@ def switch_mpl_backend(backend: str = "agg") -> Iterator[None]:
 
     https://matplotlib.org/stable/users/explain/figure/backends.html#selecting-a-backend
     """
-    import importlib
-    import sys
-
-    import matplotlib
-    import matplotlib.pyplot
-
-    original_backend = matplotlib.get_backend()
-    original_pyplot_module = sys.modules.pop("matplotlib.pyplot")
+    original = plt.get_backend()
 
     try:
-        matplotlib.use(backend)
-        importlib.import_module("matplotlib.pyplot")
+        plt.switch_backend(backend)
         yield
     finally:
-        sys.modules.pop("matplotlib.pyplot")
-        matplotlib.use(original_backend)
-        sys.modules["matplotlib.pyplot"] = original_pyplot_module
+        plt.close("all")
+        plt.switch_backend(original)

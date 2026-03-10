@@ -4,14 +4,22 @@ from pytest import fixture, mark, raises
 from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.artifact.media import (
+    ConfusionMatrixDataFrameTest,
+    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixSVGTest,
+    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
     PermutationImportanceTrain,
-    PrecisionRecallTest,
-    PrecisionRecallTrain,
-    RocTest,
-    RocTrain,
+    PrecisionRecallDataFrameTest,
+    PrecisionRecallDataFrameTrain,
+    PrecisionRecallSVGTest,
+    PrecisionRecallSVGTrain,
+    RocDataFrameTest,
+    RocDataFrameTrain,
+    RocSVGTest,
+    RocSVGTrain,
     TableReportTest,
     TableReportTrain,
 )
@@ -141,14 +149,22 @@ class TestEstimatorReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
+            ConfusionMatrixDataFrameTest,
+            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixSVGTest,
+            ConfusionMatrixSVGTrain,
             EstimatorHtmlRepr,
             ImpurityDecrease,
             PermutationImportanceTest,
             PermutationImportanceTrain,
-            PrecisionRecallTest,
-            PrecisionRecallTrain,
-            RocTest,
-            RocTrain,
+            PrecisionRecallDataFrameTest,
+            PrecisionRecallDataFrameTrain,
+            PrecisionRecallSVGTest,
+            PrecisionRecallSVGTrain,
+            RocDataFrameTest,
+            RocDataFrameTrain,
+            RocSVGTest,
+            RocSVGTrain,
             TableReportTest,
             TableReportTrain,
         ]

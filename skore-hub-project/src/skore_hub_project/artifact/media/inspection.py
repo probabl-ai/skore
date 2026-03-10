@@ -10,7 +10,7 @@ from typing import ClassVar, Literal, cast
 
 from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.json import dumps
-from skore_hub_project.protocol import Display, EstimatorReport
+from skore_hub_project.protocol import Display
 
 
 class Inspection(Media[Report], ABC):  # noqa: D101
@@ -34,10 +34,12 @@ class Inspection(Media[Report], ABC):  # noqa: D101
         else:
             frame = display.frame()
 
-        return dumps(frame.infer_objects().fillna("NaN").to_dict(orient="tight"))
+        return dumps(
+            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+        )
 
 
-class PermutationImportance(Inspection[EstimatorReport], ABC):  # noqa: D101
+class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "inspection.permutation_importance"
     name: Literal["permutation_importance"] = "permutation_importance"
 
@@ -58,21 +60,23 @@ class PermutationImportance(Inspection[EstimatorReport], ABC):  # noqa: D101
                 frame = display.frame(aggregate=None)
 
                 return dumps(
-                    frame.infer_objects().fillna("NaN").to_dict(orient="tight")
+                    frame.astype(object)
+                    .where(frame.notna(), "NaN")
+                    .to_dict(orient="tight")
                 )
 
         return None
 
 
-class PermutationImportanceTrain(PermutationImportance):  # noqa: D101
+class PermutationImportanceTrain(PermutationImportance[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PermutationImportanceTest(PermutationImportance):  # noqa: D101
+class PermutationImportanceTest(PermutationImportance[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
 
 
-class ImpurityDecrease(Inspection[EstimatorReport]):  # noqa: D101
+class ImpurityDecrease(Inspection[Report]):  # noqa: D101
     accessor: ClassVar[str] = "inspection.impurity_decrease"
     name: Literal["impurity_decrease"] = "impurity_decrease"
     data_source: None = None
