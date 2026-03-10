@@ -5,17 +5,19 @@
 MLflow skore Project
 ====================
 
-This example shows how to persist reports in MLflow using
-:class:`~skore.Project` in ``mode="mlflow"``: log reports
-as MLflow runs and inspect them.
+This example shows how to persist reports in MLflow using :class:`~skore.Project`
+in ``mode="mlflow"``: log reports as MLflow runs and inspect them. It uses a
+:class:`~skore.CrossValidationReport`, but the same approach applies to
+:class:`~skore.EstimatorReport`.
 
-To run this example and push in your own MLflow tracking server, you can run
-this example with the following command:
+To run this example against your own MLflow tracking server, use:
 
 .. code-block:: bash
 
     TRACKING_URI=<tracking_uri> PROJECT=<project> python plot_skore_mlflow_project.py
 
+To try it locally, start an MLflow server with ``uvx mlflow server`` and set
+``TRACKING_URI=http://127.0.0.1:5000``.
 """
 
 # %%
