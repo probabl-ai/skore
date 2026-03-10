@@ -103,6 +103,8 @@ LogItem: TypeAlias = Params | Tag | Model | Artifact | Metric | Dataset
 NestedLogItem: TypeAlias = LogItem | tuple[str, Iterable[LogItem]]
 
 
+# FIXME: remove this helper in favor of always calling `.frame(aggregate=aggregate)`
+# after next release of skore (current is 0.13)
 def _summarize_metrics_frame(metrics: Any, *, aggregate: str | None = "mean") -> Any:
     """Return a metrics summary frame across skore summarize API variants."""
     summary = metrics.summarize()
