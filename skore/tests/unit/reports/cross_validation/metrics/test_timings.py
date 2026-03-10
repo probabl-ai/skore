@@ -55,8 +55,8 @@ def test_timings_flat_index(forest_binary_classification_data):
         "recall_0",
         "recall_1",
         "roc_auc",
-        "log_loss",
         "brier_score",
+        "log_loss",
         "fit_time_s",
         "predict_time_s",
     ]

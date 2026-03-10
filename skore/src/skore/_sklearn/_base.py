@@ -10,7 +10,7 @@ from rich.panel import Panel
 from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
-from skore._sklearn.types import PositiveLabel
+from skore._sklearn.types import MLTask, PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._cache_key import make_cache_key
 from skore._utils._measure_time import MeasureTime
@@ -262,3 +262,18 @@ BUILTIN_METRICS = [
     Rmse,
     CustomMetric,
 ]
+
+
+def _get_default_metrics(ml_task: MLTask, estimator: BaseEstimator) -> list[str]:
+    if ml_task == "binary-classification":
+        metrics = ["accuracy", "precision", "recall", "roc_auc"]
+        if hasattr(estimator, "predict_proba"):
+            metrics += ["brier_score", "log_loss"]
+    elif ml_task == "multiclass-classification":
+        metrics = ["accuracy", "precision", "recall"]
+        if hasattr(estimator, "predict_proba"):
+            metrics += ["roc_auc", "log_loss"]
+    else:
+        metrics = ["r2", "rmse"]
+    metrics += ["fit_time", "predict_time"]
+    return metrics
