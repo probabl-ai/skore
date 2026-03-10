@@ -19,9 +19,9 @@ this example with the following command:
 """
 
 # %%
-# Build one report to persist
-# ===========================
+# First, let us build one report to persist:
 
+# %%
 from sklearn.datasets import load_iris
 from sklearn.ensemble import HistGradientBoostingClassifier
 from skore import CrossValidationReport, Project
@@ -32,9 +32,9 @@ estimator = HistGradientBoostingClassifier()
 report = CrossValidationReport(estimator, X, y)
 
 # %%
-# Push the report to the MLflow backend
-# =====================================
+# Then, we can push the report to the MLflow backend:
 
+# %%
 # sphinx_gallery_start_ignore
 #
 # Configure the context variables and tmp dir:
