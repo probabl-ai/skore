@@ -103,6 +103,18 @@ LogItem: TypeAlias = Params | Tag | Model | Artifact | Metric | Dataset
 NestedLogItem: TypeAlias = LogItem | tuple[str, Iterable[LogItem]]
 
 
+def _summarize_metrics_frame(metrics: Any, *, aggregate: str | None = "mean") -> Any:
+    """Return a metrics summary frame across skore summarize API variants."""
+    summary = metrics.summarize()
+    if aggregate == "mean":
+        return summary.frame()
+
+    try:
+        return summary.frame(aggregate=aggregate)
+    except TypeError:
+        return metrics.summarize(aggregate=aggregate).frame()
+
+
 def iter_cv_metrics(
     report: CrossValidationReport,
 ) -> Generator[Artifact | Metric, Any, None]:
@@ -139,7 +151,7 @@ def iter_cv_metrics(
     # other frames anyway, so we don't do it here.
     yield Artifact(
         "metrics_details/per_split",
-        report_any.metrics.summarize(aggregate=None).frame(),
+        _summarize_metrics_frame(report_any.metrics, aggregate=None),
     )
     yield Artifact("metrics", report_any.metrics.summarize().frame())
 
