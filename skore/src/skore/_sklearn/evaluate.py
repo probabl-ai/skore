@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from sklearn.base import BaseEstimator
@@ -156,7 +156,16 @@ def evaluate(
                 )
                 for est in estimator
             ]
-        return ComparisonReport(reports, n_jobs=n_jobs)
+        return ComparisonReport(
+            cast(
+                list[EstimatorReport] | list[CrossValidationReport],
+                reports,
+            ),
+            n_jobs=n_jobs,
+        )
+
+    if isinstance(X, list):
+        raise TypeError("X must be a single array-like when estimator is not a list.")
 
     if isinstance(splitter, str):
         if splitter != "prefit":
