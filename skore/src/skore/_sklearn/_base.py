@@ -267,14 +267,14 @@ BUILTIN_METRICS = [
 
 def _get_default_metrics(ml_task: MLTask, estimator: BaseEstimator) -> list[str]:
     if ml_task == "binary-classification":
-        metrics = ["accuracy", "precision", "recall", "roc_auc"]
+        metrics = [Accuracy, Precision, Recall, RocAuc]
         if hasattr(estimator, "predict_proba"):
-            metrics.append("brier_score")
+            metrics.append(Brier)
     elif ml_task == "multiclass-classification":
-        metrics = ["accuracy", "precision", "recall"]
+        metrics = [Accuracy, Precision, Recall]
         if hasattr(estimator, "predict_proba"):
-            metrics += ["roc_auc", "log_loss"]
+            metrics += [RocAuc, LogLoss]
     else:
-        metrics = ["r2", "rmse"]
-    metrics += ["fit_time", "predict_time"]
-    return metrics
+        metrics = [R2, Rmse]
+    metrics += [FitTime, PredictTime]
+    return [m.name for m in metrics]
