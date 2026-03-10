@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from functools import cached_property
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
@@ -217,11 +218,17 @@ class Metric:
     greater_is_better : bool or None
         Whether a higher value is better (``True``), lower is better
         (``False``), or there is no preference (``None``).
+
+    score_func : callable or None, default=None
+        The scoring function. ``None`` for built-in metrics that are dispatched
+        by name; a :class:`sklearn.metrics._scorer._BaseScorer` or plain callable
+        for custom metrics.
     """
 
     name: str
     verbose_name: str
     greater_is_better: bool | None
+    score_func: Callable | None = field(default=None, repr=False)
 
     @property
     def icon(self) -> str:
