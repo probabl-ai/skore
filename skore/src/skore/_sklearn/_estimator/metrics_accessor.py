@@ -314,12 +314,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             elif metric_obj.score_func is None:
                 # Built-in metric: dispatch via the accessor method by name
-                metric_fn = getattr(
-                    self,
-                    f"_{metric_obj.name}"
-                    if metric_obj.name in ("fit_time", "predict_time")
-                    else metric_obj.name,
-                )
+                metric_fn = getattr(self, metric_obj.name)
                 metrics_kwargs = {}
                 metrics_params = inspect.signature(metric_fn).parameters
                 if metric_kwargs is not None:
@@ -472,7 +467,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         return score
 
-    def _fit_time(self, cast: bool = True, **kwargs) -> float | None:
+    def fit_time(self, cast: bool = True, **kwargs) -> float | None:
         """Get time to fit the estimator.
 
         Parameters
@@ -489,7 +484,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             return float("nan")
         return self._parent.fit_time_
 
-    def _predict_time(
+    def predict_time(
         self,
         *,
         data_source: DataSource = "test",
@@ -540,7 +535,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.timings()
         {'fit_time': ..., 'predict_time_test': ...}
         """
-        fit_time_ = self._fit_time(cast=False)
+        fit_time_ = self.fit_time(cast=False)
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
         # predict_time cache keys are of the form
