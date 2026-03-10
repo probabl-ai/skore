@@ -80,8 +80,9 @@ if tmp_dir is not None:
 
 
 # %%
-# Note that mlflow warns us about saving models with `pickle`. Future versions of skore might rely on
-# `skops <https://skops.readthedocs.io>`__ for model serialization, which will make these warnings disappear.
+# Note that mlflow warns us about saving models with `pickle`. Future versions of skore
+# might rely on `skops <https://skops.readthedocs.io>`__ for model serialization,
+# which will make these warnings disappear.
 
 # %%
 # Like for other types of projects (local, hub), you can access the summary
@@ -89,14 +90,15 @@ if tmp_dir is not None:
 import pandas as pd
 
 summary = project.summarize()
-pandas_summary = pd.DataFrame(summary)
-pandas_summary[["key", "report_type", "learner", "ml_task", "dataset"]]
+pandas_summary = pd.DataFrame(summary).reset_index()
+pandas_summary[["id", "key", "report_type", "learner", "ml_task", "dataset"]]
 
 # %%
-# The "id" column corresponds to the MLflow run ID, so you can access the MLflow run this way:
+# The "id" column corresponds to the MLflow run ID, so you can access the MLflow
+# run this way:
 import mlflow
 
-_, run_id = pandas_summary.index[0]
+(run_id,) = pandas_summary["id"]
 
 mlflow_run = mlflow.get_run(run_id)
 mlflow_run.data.metrics
