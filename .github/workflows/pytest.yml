@@ -134,28 +134,31 @@ jobs:
 
       - name: Set matrix for pytest-test
         id: set-matrix
+        shell: python
         run: |
-          set -eu
+          import os
+          import json
 
-          matrix='[]'
-          mapfile -t packages < <(jq -rc '.[]' <<< "${PACKAGES}")
+          packages = json.loads(os.environ["PACKAGES"])
+          matrix = []
 
-          for package in "${packages[@]}"; do
-              package_matrix=$(\
-                  # Escape dependencies to be used in filename, both in Linux and Windows
-                  # - make a str based on the JSON array
-                  # - replace `==` by `-`
-                  # - remove all `.*`
-                  jq '.[].dependencies |= (join("_and_") | gsub("=="; "-") | gsub("\\.\\*"; ""))' "${package}/matrix.json" -rc |\
+          for package in packages:
+              with open(f"{package}/matrix.json") as file:
+                  for combination in json.load(file):
+                      # Escape dependencies to be used in filename, both in Linux and Windows
+                      # - make a str based on the JSON array
+                      # - replace `==` by `-`
+                      # - remove all `.*`
+                      escaped = "_and_".join(combination["dependencies"])
+                      escaped = escaped.replace("==", "-")
+                      escaped = escaped.replace(".*", "")
 
-                  # Add package name
-                  jq ".[] |= {\"package\":\"${package}\"} + ."
-              )
+                      combination["dependencies"] = escaped
 
-              matrix=$(jq -cn --argjson a "${matrix}" --argjson b "${package_matrix}" '$a + $b')
-          done
+                      matrix.append({"package": package} | combination)
 
-          echo "matrix=${matrix}" >> $GITHUB_OUTPUT
+          with open(os.environ["GITHUB_OUTPUT"], "a") as file:
+              file.write(f"matrix={json.dumps(matrix)}\n")
         env:
           PACKAGES: ${{ (github.event_name == 'push') && needs.pytest-changes.outputs.packages || needs.pytest-changes.outputs.modified-packages }}
 
