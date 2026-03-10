@@ -231,3 +231,34 @@ class Metric:
         elif self.greater_is_better is False:
             return "(↘︎)"
         return ""
+
+
+FitTime = Metric(name="fit_time", verbose_name="Fit time (s)", greater_is_better=False)
+PredictTime = Metric(
+    name="predict_time", verbose_name="Predict time (s)", greater_is_better=False
+)
+Accuracy = Metric(name="accuracy", verbose_name="Accuracy", greater_is_better=True)
+Precision = Metric(name="precision", verbose_name="Precision", greater_is_better=True)
+Recall = Metric(name="recall", verbose_name="Recall", greater_is_better=True)
+Brier = Metric(name="brier_score", verbose_name="Brier score", greater_is_better=False)
+RocAuc = Metric(name="roc_auc", verbose_name="ROC AUC", greater_is_better=True)
+LogLoss = Metric(name="log_loss", verbose_name="Log loss", greater_is_better=False)
+R2 = Metric(name="r2", verbose_name="R²", greater_is_better=True)
+Rmse = Metric(name="rmse", verbose_name="RMSE", greater_is_better=False)
+CustomMetric = Metric(
+    name="custom_metric", verbose_name="Custom metric", greater_is_better=None
+)
+
+BUILTIN_METRICS = [
+    FitTime,
+    PredictTime,
+    Accuracy,
+    Precision,
+    Recall,
+    Brier,
+    RocAuc,
+    LogLoss,
+    R2,
+    Rmse,
+    CustomMetric,
+]
