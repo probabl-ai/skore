@@ -48,14 +48,13 @@ class _TrainTestSplit:
 
     def split(self, X: Any, y: Any = None, groups: Any = None):
         """Generate a single train-test split of indices."""
-        n_samples = X.shape[0] if hasattr(X, "shape") else len(X)
-        indices = np.arange(n_samples)
         train_idx, test_idx = sklearn_train_test_split(
-            indices,
+            np.arange(X.shape[0] if hasattr(X, "shape") else len(X)),
             test_size=self.test_size,
             train_size=self.train_size,
             random_state=self.random_state,
             shuffle=self.shuffle,
+            stratify=self.stratify,
         )
         yield (train_idx, test_idx)
 
@@ -63,7 +62,7 @@ class _TrainTestSplit:
 def evaluate(
     estimator: BaseEstimator | list[BaseEstimator],
     X: ArrayLike | list[ArrayLike],
-    y: ArrayLike | None = None,
+    y: ArrayLike,
     *,
     splitter: float | int | str | SKLearnCrossValidator | Generator = 0.2,
     pos_label: int | float | bool | str | None = None,
@@ -83,11 +82,11 @@ def evaluate(
 
     X : array-like of shape (n_samples, n_features) or list of array-like
         Feature matrix. When ``estimator`` is a list, ``X`` can also be a
-        list of feature matrices (one per estimator) to assess the impact
-        of different feature engineering pipelines.
+        list of feature matrices (one per estimator) to e.g. compare models with
+        different preprocessing pipelines.
 
-    y : array-like of shape (n_samples,) or None, default=None
-        Target vector. Can be ``None`` for unsupervised tasks.
+    y : array-like of shape (n_samples,)
+        Target vector.
 
     splitter : float, int, str, or cross-validation object, default=0.2
         Determines how the data is split:
@@ -114,7 +113,8 @@ def evaluate(
 
     Returns
     -------
-    report : EstimatorReport, CrossValidationReport, or ComparisonReport
+    report : :class:`~skore.EstimatorReport`, :class:`~skore.CrossValidationReport` \
+        or :class:`~skore.ComparisonReport`
         The report corresponding to the evaluation strategy.
 
     Raises
@@ -128,6 +128,9 @@ def evaluate(
     >>> from sklearn.linear_model import LogisticRegression
     >>> from skore import evaluate
     >>> X, y = make_classification(random_state=42)
+
+    Default 80/20 train-test split:
+
     >>> report = evaluate(LogisticRegression(), X, y)
 
     Cross-validation with 5 folds:
