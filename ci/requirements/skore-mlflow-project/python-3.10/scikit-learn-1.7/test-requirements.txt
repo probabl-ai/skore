@@ -135,7 +135,7 @@ matplotlib==3.10.8
     #   skrub
 mdurl==0.1.2
     # via markdown-it-py
-mlflow==3.10.0
+mlflow==3.10.1
     # via skore-mlflow-project (skore-mlflow-project/pyproject.toml)
 mlflow-skinny==3.10.0
     # via mlflow

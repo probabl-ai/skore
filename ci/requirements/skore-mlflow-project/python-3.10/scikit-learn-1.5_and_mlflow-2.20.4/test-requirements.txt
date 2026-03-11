@@ -113,7 +113,7 @@ matplotlib==3.10.8
     #   skrub
 mdurl==0.1.2
     # via markdown-it-py
-mlflow==2.20.4
+mlflow==3.5.0
     # via
     #   --override skore-mlflow-project/overrides.txt
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
