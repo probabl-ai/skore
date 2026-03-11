@@ -106,6 +106,8 @@ def test_source_both(pyplot, fixture_name, request):
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
     plot_data = display.frame(with_average_precision=True)
+    assert plot_data.columns == "data_source"
+    assert set(plot_data["data_source"]) == {"train", "test"}
     labels = (
         display.precision_recall["label"].cat.categories
         if display.ml_task == "multiclass-classification"

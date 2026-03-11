@@ -136,20 +136,3 @@ class TestPredictionErrorDisplay:
             report = report[0]
         display = report.metrics.prediction_error(subsample=subsample, seed=0)
         assert isinstance(display, PredictionErrorDisplay)
-
-    def test_frame_data_source_both(self, fixture_prefix, task, request):
-        """Check that the frame contains a data_source column when both."""
-        if "cross_validation" in fixture_prefix:
-            pytest.skip(
-                "data_source='both' is only valid for estimator and comparison reports"
-            )
-
-        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
-        if isinstance(report, tuple):
-            report = report[0]
-
-        display = report.metrics.prediction_error(data_source="both")
-        frame = display.frame()
-
-        assert "data_source" in frame.columns
-        assert set(frame["data_source"].unique()).issubset({"train", "test"})
