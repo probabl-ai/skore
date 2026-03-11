@@ -86,7 +86,7 @@ jobs:
       - name: Clean documentation examples
         run: |
           set -u
-          curl -X DELETE "${API}/${WORKSPACE}/${PROJECT}-${GITHUB_EVENT_NUMBER}" -H "X-API-Key: ${API_KEY}"
+          curl -X DELETE "${API}/projects/${WORKSPACE}/${PROJECT}-pull-${GITHUB_EVENT_NUMBER}" -H "X-API-Key: ${API_KEY}"
         env:
           GITHUB_EVENT_NUMBER: ${{ github.event.number }}
           API: https://api.skore.probabl.ai
