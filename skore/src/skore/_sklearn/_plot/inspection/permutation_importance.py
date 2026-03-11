@@ -432,6 +432,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         *,
         metric: str | list[str] | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
+        level: Literal["splits", "repetitions"] = "splits",
     ) -> pd.DataFrame:
         """Get the feature importance in a dataframe format.
 
@@ -442,12 +443,37 @@ class PermutationImportanceDisplay(DisplayMixin):
             each metric are returned.
 
         aggregate : {"mean", "std"}, ("mean", std) or None, default=("mean", "std")
-            Aggregate the importances by the given metric.
+            How to aggregate the importances. Applied on repetitions or on repetitions
+            then splits, for (comparisons of) cross validation reports and depending
+            on the value of `level`.
+
+        level : {"splits", "repetitions"}, default="splits"
+            Over which dimensions to aggregate when `aggregate` is not `None`.
+            `"repetitions"` aggregates only over repetitions (keeps `split` for
+            cross-validation). `"splits"` aggregates over repetitions then over
+            splits. Only relevant when `aggregate` is not `None` and the report is
+            a :class:`~skore.CrossValidationReport` or a
+            :class:`~skore.ComparisonReport` containing such type of report.
 
         Returns
         -------
         pd.DataFrame
-            Dataframe containing the importances.
+            The feature importances. The columns depend on the
+            report type and parameters, and include:
+
+            - `data_source`: Data source used to compute the importances
+              (``"train"`` or ``"test"``).
+            - `metric`: Metric used to compute the importances.
+            - `feature`: Feature name.
+            - `value_mean` and `value_std`: Aggregated importance values
+              (only when ``aggregate`` is not ``None``).
+            - `value`: Raw importance value per repetition
+              (only when ``aggregate`` is ``None``).
+            - `estimator`: Name of the estimator (for comparison reports).
+            - `split`: Cross-validation split index (for cross-validation
+              reports, only when ``aggregate`` is ``None``).
+            - `label`: Class label (for multiclass classification).
+            - `output`: Output index (for multi-output regression).
         """
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
@@ -491,6 +517,11 @@ class PermutationImportanceDisplay(DisplayMixin):
         frame = frame.drop(columns=columns_to_drop)
 
         if aggregate is not None:
+            if level not in ("splits", "repetitions"):
+                raise ValueError(
+                    f"Invalid value for `level`: {level!r}. Valid values are "
+                    "`'splits'` and `'repetitions'`."
+                )
             frame = (
                 frame.drop(columns=["repetition"])
                 # avoid sorting the features by name and do not drop NA from
@@ -501,6 +532,24 @@ class PermutationImportanceDisplay(DisplayMixin):
             ).reset_index()
             if isinstance(frame.columns, pd.MultiIndex):
                 frame.columns = flatten_multi_index(frame.columns)
+
+            if level == "splits" and "split" in frame.columns:
+                columns_to_drop = ["split"]
+                if "value_std" in frame.columns:
+                    columns_to_drop.append("value_std")
+                frame = (
+                    frame.drop(columns=columns_to_drop)
+                    .rename(columns={"value_mean": "value"})
+                    .groupby(
+                        [c for c in group_by if c not in columns_to_drop],
+                        sort=False,
+                        dropna=False,
+                    )
+                    .aggregate(aggregate)
+                ).reset_index()
+                if isinstance(frame.columns, pd.MultiIndex):
+                    frame.columns = flatten_multi_index(frame.columns)
+
         return frame
 
     # ignore the type signature because we override kwargs by specifying the name of

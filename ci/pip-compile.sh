@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # This script compiles all the `test-requirements.txt` files, based on combinations of
-# `python`, `scikit-learn` and, for MLflow compatibility testing, `mlflow` versions.
-# These combinations mirror those defined in the GitHub workflows.
+# `python` and `scikit-learn` versions. These combinations mirror those defined in the
+# GitHub workflows.
 #
 # You can pass any `uv pip compile` parameter:
 #
@@ -45,44 +45,29 @@ case $1 in
                 ;;
         esac
 
-        for PACKAGE in "${PACKAGES[@]}"
-        do
-            COMBINATIONS+=("${PACKAGE};test;3.10;1.5")
-            COMBINATIONS+=("${PACKAGE};test;3.10;1.7")
-            COMBINATIONS+=("${PACKAGE};test;3.11;1.5")
-            COMBINATIONS+=("${PACKAGE};test;3.11;1.8")
-            COMBINATIONS+=("${PACKAGE};test;3.12;1.5")
-            COMBINATIONS+=("${PACKAGE};test;3.12;1.8")
-            COMBINATIONS+=("${PACKAGE};test;3.13;1.5")
-            COMBINATIONS+=("${PACKAGE};test;3.13;1.6")
-            COMBINATIONS+=("${PACKAGE};test;3.13;1.7")
-            COMBINATIONS+=("${PACKAGE};test;3.13;1.8")
+        for PACKAGE in "${PACKAGES[@]}"; do
+            mapfile -t combinations < <(
+                jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../${PACKAGE}/supported-versions.json" -c
+            )
 
-            # Create additional lockfiles for the dedicated MLflow compatibility job.
-            if [[ "${PACKAGE}" == "skore-mlflow-project" ]]; then
-                COMBINATIONS+=("${PACKAGE};test;3.10;1.5;2.20.4")
-                COMBINATIONS+=("${PACKAGE};test;3.11;1.5;2.21.3")
-                COMBINATIONS+=("${PACKAGE};test;3.12;1.5;2.22.4")
-                COMBINATIONS+=("${PACKAGE};test;3.10;1.7;3.0.1")
-                COMBINATIONS+=("${PACKAGE};test;3.11;1.8;3.1.4")
-                COMBINATIONS+=("${PACKAGE};test;3.12;1.8;3.2.0")
-                COMBINATIONS+=("${PACKAGE};test;3.10;1.5;3.3.2")
-                COMBINATIONS+=("${PACKAGE};test;3.11;1.5;3.4.0")
-                COMBINATIONS+=("${PACKAGE};test;3.12;1.5;3.5.1")
-                COMBINATIONS+=("${PACKAGE};test;3.13;1.5;3.6.0")
-                COMBINATIONS+=("${PACKAGE};test;3.13;1.6;3.7.0")
-                COMBINATIONS+=("${PACKAGE};test;3.13;1.7;3.8.1")
-                COMBINATIONS+=("${PACKAGE};test;3.13;1.8;3.9.0")
-                COMBINATIONS+=("${PACKAGE};test;3.13;1.8;3.10.0")
-            fi
+            for combination in "${combinations[@]}"; do
+                python=$(jq -rc '.python' <<< "${combination}")
+                dependencies=$(jq -rc '.dependencies' <<< "${combination}")
+
+                COMBINATIONS+=("${PACKAGE}|test|${python}|${dependencies}")
+            done
         done
 
+        unset combinations
+        unset combination
+        unset python
+        unset dependencies
         unset PACKAGES
         unset PACKAGE
         shift 2
         ;;
     "--sphinx-requirements")
-        COMBINATIONS+=("skore;sphinx;3.13;1.8")
+        COMBINATIONS+=('skore|sphinx|3.13|["scikit-learn==1.8.*"]')
         shift
         ;;
     *)
@@ -102,24 +87,27 @@ set -eu
 
     for combination in "${COMBINATIONS[@]}"
     do
-        IFS=";" read -r PACKAGE EXTRA PYTHON SCIKIT_LEARN MLFLOW <<< "${combination}"
+        IFS="|" read -r PACKAGE EXTRA PYTHON DEPENDENCIES <<< "${combination}"
 
-        if [[ -n "${MLFLOW:-}" ]]; then
-            FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/scikit-learn-${SCIKIT_LEARN}/mlflow-${MLFLOW}/${EXTRA}-requirements.txt"
-            echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | scikit-learn==${SCIKIT_LEARN} | mlflow==${MLFLOW} (${counter}/${#COMBINATIONS[@]})"
-        else
-            FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/scikit-learn-${SCIKIT_LEARN}/${EXTRA}-requirements.txt"
-            echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | scikit-learn==${SCIKIT_LEARN} (${counter}/${#COMBINATIONS[@]})"
-        fi
+        # Escape dependencies to be used in filename, both in Linux and Windows:
+        # - make a str based on the JSON array
+        # - replace `==` by `-`
+        # - remove all `.*`
+        ESCAPED=$(jq 'join("_and_") | gsub("=="; "-") | gsub("\\.\\*"; "")' -rc <<< "${DEPENDENCIES}")
+
+        echo "Generating ${PACKAGE} ${EXTRA}-requirements: python==${PYTHON} | ${DEPENDENCIES} (${counter}/${#COMBINATIONS[@]})"
 
         # Copy everything necessary to compile requirements in `TMPDIR`
         mkdir -p "${TMPDIR}/${PACKAGE}"; cp "${CWD}/../${PACKAGE}/pyproject.toml" "${TMPDIR}/${PACKAGE}"
 
-        # Force the `scikit-learn` version by creating file overriding requirements
-        echo "scikit-learn==${SCIKIT_LEARN}.*" > "${PACKAGE}/overrides.txt"
-        if [[ -n "${MLFLOW:-}" ]]; then
-            echo "mlflow==${MLFLOW}" >> "${PACKAGE}/overrides.txt"
-        fi
+        # Force the dependencies by creating file overriding requirements
+        > "${PACKAGE}/overrides.txt"
+
+        for dependency in $(jq '.[]' -rc <<< "${DEPENDENCIES}"); do
+            echo "${dependency}" >> "${PACKAGE}/overrides.txt"
+        done
+
+        FILEPATH="${CWD}/requirements/${PACKAGE}/python-${PYTHON}/${ESCAPED}/${EXTRA}-requirements.txt"
 
         # Create the requirements file tree
         mkdir -p $(dirname "${FILEPATH}")
