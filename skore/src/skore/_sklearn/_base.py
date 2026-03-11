@@ -228,7 +228,7 @@ class Metric:
     name: str
     verbose_name: str
     greater_is_better: bool | None
-    score_func: Callable | None = field(default=None, repr=False)
+    score_func: Callable | None = field(default=None)
 
     @property
     def icon(self) -> str:
