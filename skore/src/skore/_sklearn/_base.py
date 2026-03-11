@@ -228,6 +228,10 @@ class Metric:
     name: str
     verbose_name: str
     greater_is_better: bool | None
+    response_method: Literal["predict", "predict_proba", "decision_function"] | None = (
+        "predict"
+    )
+    kwargs: dict[str, Any] = field(default_factory=dict)
     score_func: Callable | None = field(default=None)
 
     @property
@@ -240,9 +244,17 @@ class Metric:
         return ""
 
 
-FitTime = Metric(name="fit_time", verbose_name="Fit time (s)", greater_is_better=False)
+FitTime = Metric(
+    name="fit_time",
+    verbose_name="Fit time (s)",
+    greater_is_better=False,
+    response_method=None,
+)
 PredictTime = Metric(
-    name="predict_time", verbose_name="Predict time (s)", greater_is_better=False
+    name="predict_time",
+    verbose_name="Predict time (s)",
+    greater_is_better=False,
+    response_method=None,
 )
 Accuracy = Metric(name="accuracy", verbose_name="Accuracy", greater_is_better=True)
 Precision = Metric(name="precision", verbose_name="Precision", greater_is_better=True)
