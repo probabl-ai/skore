@@ -50,6 +50,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         metric.name: {"name": metric.verbose_name, "icon": metric.icon}
         for metric in BUILTIN_METRICS
     }
+    _builtin_by_name: dict[str, Metric] = {m.name: m for m in BUILTIN_METRICS}
 
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
@@ -73,8 +74,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         dict[str, Metric]
         """
-        builtin_by_name: dict[str, Metric] = {m.name: m for m in BUILTIN_METRICS}
-
         if metric is None or (isinstance(metric, list) and len(metric) == 0):
             metric = _get_default_metrics(
                 self._parent._ml_task, self._parent._estimator
@@ -90,8 +89,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         result: dict[str, Metric] = {}
         for display_name, m in items:
             if isinstance(m, str):
-                if m in builtin_by_name:
-                    metric_obj = builtin_by_name[m]
+                if m in self._builtin_by_name:
+                    metric_obj = self._builtin_by_name[m]
                     key = (
                         display_name
                         if display_name is not None
@@ -105,7 +104,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                         raise ValueError(
                             f"Invalid metric: {m!r}. "
                             "Please use a valid metric from the list of supported "
-                            f"metrics: {list(builtin_by_name.keys())} "
+                            f"metrics: {list(self._builtin_by_name.keys())} "
                             "or a valid scikit-learn metric string."
                         ) from err
                     if metric_kwargs is not None:
