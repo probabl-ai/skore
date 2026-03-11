@@ -55,7 +55,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    def _parse_metric(self, m: MetricLike, metric_kwargs: dict[str, Any] | None):
+    def _parse_metric(
+        self, m: MetricLike, metric_kwargs: dict[str, Any] | None
+    ) -> Metric:
         if m in self._builtin_by_name:
             return self._builtin_by_name[m]
         elif isinstance(m, str):
