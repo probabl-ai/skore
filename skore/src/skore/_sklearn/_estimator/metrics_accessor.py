@@ -55,6 +55,79 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
+    def _parse_metric(
+        self, m: MetricLike, metric_kwargs: dict[str, Any] | None, display_name: str
+    ):
+        if isinstance(m, str):
+            if m in self._builtin_by_name:
+                metric_obj = self._builtin_by_name[m]
+                key = (
+                    display_name
+                    if display_name is not None
+                    else metric_obj.verbose_name
+                )
+                return key, metric_obj
+            else:
+                try:
+                    scorer = sklearn.metrics.get_scorer(m)
+                except ValueError as err:
+                    raise ValueError(
+                        f"Invalid metric: {m!r}. "
+                        "Please use a valid metric from the list of supported "
+                        f"metrics: {list(self._builtin_by_name.keys())} "
+                        "or a valid scikit-learn metric string."
+                    ) from err
+                if metric_kwargs is not None:
+                    raise ValueError(
+                        "The `metric_kwargs` parameter is not supported when "
+                        "`metric` is a scikit-learn scorer name. Use the function "
+                        "`sklearn.metrics.make_scorer` to create a scorer with "
+                        "additional parameters."
+                    )
+                func_name = scorer._score_func.__name__
+                if func_name.startswith("neg_"):
+                    func_name = func_name[4:]
+                key = (
+                    display_name
+                    if display_name is not None
+                    else func_name.replace("_", " ").title()
+                )
+                return key, Metric(
+                    name=func_name,
+                    verbose_name=key,
+                    greater_is_better=scorer._sign == 1,
+                    score_func=scorer,
+                )
+        elif isinstance(m, _BaseScorer):
+            func_name = m._score_func.__name__
+            if func_name.startswith("neg_"):
+                func_name = func_name[4:]
+            key = (
+                display_name
+                if display_name is not None
+                else func_name.replace("_", " ").title()
+            )
+            return key, Metric(
+                name=func_name,
+                verbose_name=key,
+                greater_is_better=m._sign == 1,
+                score_func=m,
+            )
+        elif callable(m):
+            key = (
+                display_name
+                if display_name is not None
+                else m.__name__.replace("_", " ").title()
+            )
+            return key, Metric(
+                name=m.__name__,
+                verbose_name=key,
+                greater_is_better=None,
+                score_func=m,
+            )
+        else:
+            raise ValueError(f"Invalid type of metric: {type(m)} for {m!r}")
+
     def _parse_metrics(
         self,
         metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None,
@@ -88,75 +161,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         result: dict[str, Metric] = {}
         for display_name, m in items:
-            if isinstance(m, str):
-                if m in self._builtin_by_name:
-                    metric_obj = self._builtin_by_name[m]
-                    key = (
-                        display_name
-                        if display_name is not None
-                        else metric_obj.verbose_name
-                    )
-                    result[key] = metric_obj
-                else:
-                    try:
-                        scorer = sklearn.metrics.get_scorer(m)
-                    except ValueError as err:
-                        raise ValueError(
-                            f"Invalid metric: {m!r}. "
-                            "Please use a valid metric from the list of supported "
-                            f"metrics: {list(self._builtin_by_name.keys())} "
-                            "or a valid scikit-learn metric string."
-                        ) from err
-                    if metric_kwargs is not None:
-                        raise ValueError(
-                            "The `metric_kwargs` parameter is not supported when "
-                            "`metric` is a scikit-learn scorer name. Use the function "
-                            "`sklearn.metrics.make_scorer` to create a scorer with "
-                            "additional parameters."
-                        )
-                    func_name = scorer._score_func.__name__
-                    if func_name.startswith("neg_"):
-                        func_name = func_name[4:]
-                    key = (
-                        display_name
-                        if display_name is not None
-                        else func_name.replace("_", " ").title()
-                    )
-                    result[key] = Metric(
-                        name=func_name,
-                        verbose_name=key,
-                        greater_is_better=scorer._sign == 1,
-                        score_func=scorer,
-                    )
-            elif isinstance(m, _BaseScorer):
-                func_name = m._score_func.__name__
-                if func_name.startswith("neg_"):
-                    func_name = func_name[4:]
-                key = (
-                    display_name
-                    if display_name is not None
-                    else func_name.replace("_", " ").title()
-                )
-                result[key] = Metric(
-                    name=func_name,
-                    verbose_name=key,
-                    greater_is_better=m._sign == 1,
-                    score_func=m,
-                )
-            elif callable(m):
-                key = (
-                    display_name
-                    if display_name is not None
-                    else m.__name__.replace("_", " ").title()
-                )
-                result[key] = Metric(
-                    name=m.__name__,
-                    verbose_name=key,
-                    greater_is_better=None,
-                    score_func=m,
-                )
-            else:
-                raise ValueError(f"Invalid type of metric: {type(m)} for {m!r}")
+            key, metric_obj = self._parse_metric(m, metric_kwargs, display_name)
+            result[key] = metric_obj
 
         return result
 
