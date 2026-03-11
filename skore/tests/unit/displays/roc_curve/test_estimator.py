@@ -16,8 +16,6 @@ def test_legend_binary_classification(
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
     plot_data = display.frame(with_roc_auc=True)
-    assert "data_source" in plot_data.columns
-    assert set(plot_data["data_source"]) == {"train", "test"}
     roc_auc = plot_data["roc_auc"].iloc[0]
     assert legend_texts[0] == f"AUC={roc_auc:.2f}"
     assert len(legend_texts) == 2

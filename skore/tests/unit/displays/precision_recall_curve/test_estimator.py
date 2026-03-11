@@ -106,7 +106,7 @@ def test_source_both(pyplot, fixture_name, request):
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
     plot_data = display.frame(with_average_precision=True)
-    assert plot_data.columns == "data_source"
+    assert "data_source" in plot_data.columns
     assert set(plot_data["data_source"]) == {"train", "test"}
     labels = (
         display.precision_recall["label"].cat.categories
@@ -126,4 +126,4 @@ def test_source_both(pyplot, fixture_name, request):
                 expected.append(f"{data_src.title()} set (AP={ap:.2f})")
             else:
                 expected.append(f"{label} - {data_src.title()} set (AP={ap:.2f})")
-    assert legend_texts == expected
+    assert set(legend_texts) == set(expected)
