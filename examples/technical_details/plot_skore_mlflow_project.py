@@ -36,11 +36,13 @@ report = CrossValidationReport(estimator, X, y)
 # %%
 # Then, we can push the report to the MLflow backend:
 
-# %%
+import io
+
 # sphinx_gallery_start_ignore
 #
 # Configure the context variables and tmp dir:
 import os
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -56,12 +58,7 @@ else:
         "`TRACKING_URI` must be defined."
     )
     assert (PROJECT := os.environ.get("PROJECT")), "`PROJECT` must be defined."
-
-
 # sphinx_gallery_end_ignore
-
-import io
-from contextlib import redirect_stderr, redirect_stdout
 
 # MLflow/Alembic emits verbose DB initialization logs; silence them so the
 # example page focuses on skore usage rather than backend startup details.
