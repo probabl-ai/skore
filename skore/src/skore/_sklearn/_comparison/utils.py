@@ -26,7 +26,7 @@ def _combine_estimator_results(
     favorability : bool
         Whether to keep the Favorability column.
 
-    data_source : {"test", "train", "X_y", "both"}
+    data_source : {"test", "train", "both"}
         The data source.
 
     Examples

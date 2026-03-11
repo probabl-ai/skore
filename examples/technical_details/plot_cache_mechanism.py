@@ -162,51 +162,6 @@ result
 print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
-# Caching external data
-# ^^^^^^^^^^^^^^^^^^^^^
-#
-# The report can also work with external data. We use `data_source="X_y"` to indicate
-# that we want to pass those external data.
-start = time.time()
-result = report.metrics.log_loss(data_source="X_y", X=X_external, y=y_external)
-end = time.time()
-result
-
-# %%
-print(f"Time taken: {end - start:.2f} seconds")
-
-# %%
-#
-# The first calculation of the above cell is slower than when using the internal train
-# or test sets because it needs to compute a hash of the new data for later retrieval.
-# Let's calculate it again:
-start = time.time()
-result = report.metrics.log_loss(data_source="X_y", X=X_external, y=y_external)
-end = time.time()
-result
-
-# %%
-print(f"Time taken: {end - start:.2f} seconds")
-
-# %%
-#
-# It is much faster for the second time as the predictions are cached!
-# The remaining time corresponds to the hash computation.
-# Let's compute the ROC AUC on the same data:
-start = time.time()
-result = report.metrics.roc_auc(data_source="X_y", X=X_external, y=y_external)
-end = time.time()
-result
-
-# %%
-print(f"Time taken: {end - start:.2f} seconds")
-
-# %%
-# We observe that the computation is already efficient because it boils down to two
-# computations: the hash of the data and the ROC-AUC metric.
-# We save a lot of time because we don't need to re-compute the predictions.
-
-# %%
 # Caching for plotting
 # ^^^^^^^^^^^^^^^^^^^^
 #

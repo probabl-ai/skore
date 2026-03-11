@@ -1,8 +1,8 @@
-certifi==2026.1.4
+certifi==2026.2.25
     # via requests
 cfgv==3.5.0
     # via pre-commit
-charset-normalizer==3.4.4
+charset-normalizer==3.4.5
     # via requests
 contourpy==1.3.2
     # via matplotlib
@@ -20,11 +20,13 @@ exceptiongroup==1.3.1
     # via pytest
 execnet==2.1.2
     # via pytest-xdist
-filelock==3.20.3
-    # via virtualenv
-fonttools==4.61.1
+filelock==3.25.1
+    # via
+    #   python-discovery
+    #   virtualenv
+fonttools==4.62.0
     # via matplotlib
-identify==2.6.16
+identify==2.6.17
     # via pre-commit
 idna==3.11
     # via requests
@@ -40,7 +42,7 @@ joblib==1.5.3
     #   scikit-learn
     #   skore
     #   skore-local-project
-kiwisolver==1.4.9
+kiwisolver==1.5.0
     # via matplotlib
 markdown-it-py==4.0.0
     # via rich
@@ -53,7 +55,7 @@ matplotlib==3.10.8
     #   skrub
 mdurl==0.1.2
     # via markdown-it-py
-narwhals==2.16.0
+narwhals==2.18.0
     # via plotly
 nodeenv==1.10.0
     # via pre-commit
@@ -80,12 +82,13 @@ pandas==2.3.3
     #   skrub
 pillow==12.1.1
     # via matplotlib
-platformdirs==4.5.1
+platformdirs==4.9.4
     # via
     #   skore-local-project (skore-local-project/pyproject.toml)
+    #   python-discovery
     #   skore-local-project
     #   virtualenv
-plotly==6.5.2
+plotly==6.6.0
     # via skore
 pluggy==1.6.0
     # via
@@ -122,13 +125,15 @@ python-dateutil==2.9.0.post0
     # via
     #   matplotlib
     #   pandas
-pytz==2025.2
+python-discovery==1.1.3
+    # via virtualenv
+pytz==2026.1.post1
     # via pandas
 pyyaml==6.0.3
     # via pre-commit
 requests==2.32.5
     # via skrub
-rich==14.3.2
+rich==14.3.3
     # via
     #   skore-local-project (skore-local-project/pyproject.toml)
     #   skore
@@ -146,11 +151,11 @@ seaborn==0.13.2
     # via skore
 six==1.17.0
     # via python-dateutil
-skore==0.13.0
+skore==0.13.1
     # via skore-local-project (skore-local-project/pyproject.toml)
 skore-local-project==0.0.5
     # via skore
-skrub==0.7.1
+skrub==0.7.2
     # via skore
 threadpoolctl==3.6.0
     # via scikit-learn
@@ -166,7 +171,7 @@ tzdata==2025.3
     # via pandas
 urllib3==2.6.3
     # via requests
-virtualenv==20.36.1
+virtualenv==21.2.0
     # via pre-commit
 xdoctest==1.3.0
     # via skore-local-project (skore-local-project/pyproject.toml)

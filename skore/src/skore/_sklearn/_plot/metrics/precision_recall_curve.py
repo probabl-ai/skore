@@ -42,7 +42,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `label`
         - `threshold`
         - `precision`
-        - `recall`.
+        - `recall`
+        - `data_source`.
 
     average_precision : DataFrame
         The average precision data to display. The columns are
@@ -56,7 +57,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         The class considered as the positive class. If None, the class will not
         be shown in the legend.
 
-    data_source : {"train", "test", "X_y", "both"}
+    data_source : {"train", "test", "both"}
         The data source used to compute the precision recall curve.
 
     ml_task : {"binary-classification", "multiclass-classification"}
@@ -261,8 +262,6 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         info_data_source = (
             f"Data source: {self.data_source.capitalize()} set"
             if self.data_source in ("train", "test")
-            else "Data source: external set"
-            if self.data_source == "X_y"
             else None
         )
 
@@ -315,7 +314,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "X_y", "both"}
+        data_source : {"train", "test", "both"}
             The data source used to compute the precision recall curve.
 
         pos_label : int, float, bool, str or none
@@ -461,6 +460,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - `threshold`: Decision threshold
             - `precision`: Precision score at threshold
             - `recall`: Recall score at threshold
+            - `data_source`: Data source used (when `data_source="both"`)
             - `average_precision`: average precision
               (when `with_average_precision=True`)
 
