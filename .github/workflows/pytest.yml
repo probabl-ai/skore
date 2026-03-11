@@ -160,7 +160,7 @@ jobs:
           matrix = []
 
           for package in packages:
-              with open(f"{package}/matrix.json") as file:
+              with open(f"{package}/supported-versions.json") as file:
                   combinations = json.load(file)
                   jsonschema.validate(instance=combinations, schema=schema)
 

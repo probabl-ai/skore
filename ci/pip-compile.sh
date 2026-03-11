@@ -47,7 +47,7 @@ case $1 in
 
         for PACKAGE in "${PACKAGES[@]}"; do
             mapfile -t combinations < <(
-                jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../${PACKAGE}/matrix.json" -c
+                jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../${PACKAGE}/supported-versions.json" -c
             )
 
             for combination in "${combinations[@]}"; do
