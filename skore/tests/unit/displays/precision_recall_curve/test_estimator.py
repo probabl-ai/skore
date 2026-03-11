@@ -126,4 +126,4 @@ def test_source_both(pyplot, fixture_name, request):
                 expected.append(f"{data_src.title()} set (AP={ap:.2f})")
             else:
                 expected.append(f"{label} - {data_src.title()} set (AP={ap:.2f})")
-    assert set(legend_texts) == set(expected)
+    assert legend_texts == expected
