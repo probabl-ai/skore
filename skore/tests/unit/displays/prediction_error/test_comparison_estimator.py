@@ -116,6 +116,9 @@ def test_source_both(pyplot, task, request):
     assert legend_texts[-1] == "Perfect predictions"
     assert "train" in legend_texts
     assert "test" in legend_texts
+    plot_data = display.frame()
+    assert "data_source" in plot_data.columns
+    assert set(plot_data["data_source"]) == {"train", "test"}
     if task == "multioutput_regression":
         assert "0" in legend_texts
         assert "1" in legend_texts
