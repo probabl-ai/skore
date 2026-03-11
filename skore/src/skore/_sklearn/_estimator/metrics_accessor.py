@@ -55,17 +55,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    def _parse_metric(
-        self, m: MetricLike, metric_kwargs: dict[str, Any] | None, display_name: str
-    ):
+    def _parse_metric(self, m: MetricLike, metric_kwargs: dict[str, Any] | None):
         if m in self._builtin_by_name:
-            metric_obj = self._builtin_by_name[m]
-            key = (
-                display_name
-                if display_name is not None
-                else metric_obj.verbose_name
-            )
-            return key, metric_obj
+            return self._builtin_by_name[m]
         elif isinstance(m, str):
             try:
                 scorer = sklearn.metrics.get_scorer(m)
@@ -86,14 +78,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             func_name = scorer._score_func.__name__
             if func_name.startswith("neg_"):
                 func_name = func_name[4:]
-            key = (
-                display_name
-                if display_name is not None
-                else func_name.replace("_", " ").title()
-            )
-            return key, Metric(
+            return Metric(
                 name=func_name,
-                verbose_name=key,
+                verbose_name=func_name.replace("_", " ").title(),
                 greater_is_better=scorer._sign == 1,
                 score_func=scorer,
             )
@@ -101,26 +88,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             func_name = m._score_func.__name__
             if func_name.startswith("neg_"):
                 func_name = func_name[4:]
-            key = (
-                display_name
-                if display_name is not None
-                else func_name.replace("_", " ").title()
-            )
-            return key, Metric(
+            return Metric(
                 name=func_name,
-                verbose_name=key,
+                verbose_name=func_name.replace("_", " ").title(),
                 greater_is_better=m._sign == 1,
                 score_func=m,
             )
         elif callable(m):
-            key = (
-                display_name
-                if display_name is not None
-                else m.__name__.replace("_", " ").title()
-            )
-            return key, Metric(
+            return Metric(
                 name=m.__name__,
-                verbose_name=key,
+                verbose_name=m.__name__.replace("_", " ").title(),
                 greater_is_better=None,
                 score_func=m,
             )
@@ -160,7 +137,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         result: dict[str, Metric] = {}
         for display_name, m in items:
-            key, metric_obj = self._parse_metric(m, metric_kwargs, display_name)
+            metric_obj = self._parse_metric(m, metric_kwargs)
+            key = display_name if display_name else metric_obj.verbose_name
             result[key] = metric_obj
 
         return result
