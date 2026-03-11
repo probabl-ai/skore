@@ -392,7 +392,7 @@ skore-hub-project==0.0.18
     # via skore (skore/pyproject.toml)
 skore-local-project==0.0.5
     # via skore (skore/pyproject.toml)
-skore-mlflow-project==0.0.1
+skore-mlflow-project==0.0.2
     # via skore (skore/pyproject.toml)
 skrub==0.7.1
     # via skore (skore/pyproject.toml)
