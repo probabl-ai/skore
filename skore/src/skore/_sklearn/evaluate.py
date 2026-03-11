@@ -26,14 +26,21 @@ class _TrainTestSplit:
     This private splitter wraps ``sklearn.model_selection.train_test_split`` and
     exposes ``split`` / ``get_n_splits`` so that it can be passed to
     :class:`~skore.CrossValidationReport`.
-
-    The split result is cached so that the same indices are reused when
-    comparing multiple estimators.
     """
 
-    def __init__(self, test_size: float = 0.2) -> None:
+    def __init__(
+        self,
+        test_size: float | int | None = 0.2,
+        train_size: float | int | None = None,
+        random_state: int | np.random.RandomState | None = 0,
+        shuffle: bool = True,
+        stratify: ArrayLike | None = None,
+    ) -> None:
         self.test_size = test_size
-        self._cached_split: tuple[np.ndarray, np.ndarray] | None = None
+        self.train_size = train_size
+        self.random_state = random_state
+        self.shuffle = shuffle
+        self.stratify = stratify
 
     def get_n_splits(self, X: Any = None, y: Any = None, groups: Any = None) -> int:
         """Return the number of splits (always 1)."""
@@ -41,14 +48,16 @@ class _TrainTestSplit:
 
     def split(self, X: Any, y: Any = None, groups: Any = None):
         """Generate a single train-test split of indices."""
-        if self._cached_split is None:
-            n_samples = X.shape[0] if hasattr(X, "shape") else len(X)
-            indices = np.arange(n_samples)
-            train_idx, test_idx = sklearn_train_test_split(
-                indices, test_size=self.test_size
-            )
-            self._cached_split = (train_idx, test_idx)
-        yield self._cached_split
+        n_samples = X.shape[0] if hasattr(X, "shape") else len(X)
+        indices = np.arange(n_samples)
+        train_idx, test_idx = sklearn_train_test_split(
+            indices,
+            test_size=self.test_size,
+            train_size=self.train_size,
+            random_state=self.random_state,
+            shuffle=self.shuffle,
+        )
+        yield (train_idx, test_idx)
 
 
 def evaluate(
@@ -84,7 +93,9 @@ def evaluate(
         Determines how the data is split:
 
         - ``float``: fraction used as ``test_size`` in a single train-test
-          split (e.g. ``0.2`` means 80% train / 20% test).
+          split (e.g. ``0.2`` means 80% train / 20% test).  The data is
+          shuffled before splitting with a fixed seed
+          (``random_state=0``) for reproducibility.
         - ``"prefit"``: the estimator is assumed to be already fitted; ``X``
           and ``y`` are used as the test set.
         - ``int``: number of folds for cross-validation (passed to
@@ -125,37 +136,28 @@ def evaluate(
 
     Evaluate a pre-fitted estimator:
 
-    >>> fitted_model = LogisticRegression().fit(X, y)
-    >>> report = evaluate(fitted_model, X, y, splitter="prefit")
+    >>> from sklearn.model_selection import train_test_split
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    >>> fitted_model = LogisticRegression().fit(X_train, y_train)
+    >>> report = evaluate(fitted_model, X_test, y_test, splitter="prefit")
     """
     if isinstance(estimator, list):
         if isinstance(splitter, float):
             splitter = _TrainTestSplit(test_size=splitter)
 
-        if isinstance(X, list):
-            reports = [
-                evaluate(
-                    est,
-                    x,
-                    y,
-                    splitter=splitter,
-                    pos_label=pos_label,
-                    n_jobs=n_jobs,
-                )
-                for est, x in zip(estimator, X, strict=True)
-            ]
-        else:
-            reports = [
-                evaluate(
-                    est,
-                    X,
-                    y,
-                    splitter=splitter,
-                    pos_label=pos_label,
-                    n_jobs=n_jobs,
-                )
-                for est in estimator
-            ]
+        if not isinstance(X, list):
+            X = [X] * len(estimator)
+        reports = [
+            evaluate(
+                est,
+                x,
+                y,
+                splitter=splitter,
+                pos_label=pos_label,
+                n_jobs=n_jobs,
+            )
+            for est, x in zip(estimator, X, strict=True)
+        ]
         return ComparisonReport(
             cast(
                 list[EstimatorReport] | list[CrossValidationReport],
