@@ -255,24 +255,12 @@ def test_get_predictions():
     np.testing.assert_allclose(
         predictions, report.estimator_.predict_proba(X_test)[:, 1]
     )
-    predictions = report.get_predictions(
-        data_source="train", response_method="predict_proba", pos_label=0
-    )
-    np.testing.assert_allclose(
-        predictions, report.estimator_.predict_proba(X_train)[:, 0]
-    )
 
     # check the validity of the `decision_function` method
     predictions = report.get_predictions(
         data_source="test", response_method="decision_function"
     )
     np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
-    predictions = report.get_predictions(
-        data_source="train", response_method="decision_function", pos_label=0
-    )
-    np.testing.assert_allclose(
-        predictions, -report.estimator_.decision_function(X_train)
-    )
 
     # check the behaviour in conjunction of a report `pos_label`
     report = EstimatorReport(

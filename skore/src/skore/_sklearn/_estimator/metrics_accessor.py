@@ -245,10 +245,11 @@ class _MetricsAccessor(
                         and pos_label != metrics_kwargs["pos_label"]
                     ):
                         raise ValueError(
-                            "`pos_label` is passed both in the scorer and to the "
-                            "`summarize` method. Please provide a consistent "
+                            "`pos_label` is passed both in the scorer: "
+                            f"{metrics_kwargs['pos_label']!r} and when creating "
+                            f"the report: {pos_label!r}. Please provide a consistent "
                             "`pos_label` or only pass it whether in the scorer or "
-                            "to the `summarize` method."
+                            "when creating the report."
                         )
                     metrics_kwargs["pos_label"] = pos_label
 
@@ -406,7 +407,11 @@ class _MetricsAccessor(
                 if key_tuple[-1] != "predict_time":
                     y_pred = value
 
-            score = metric_fn(y_true, y_pred, **metric_kwargs)
+            metric_params = inspect.signature(metric_fn).parameters
+            kwargs = {**metric_kwargs}
+            if "pos_label" in metric_params:
+                kwargs.update(pos_label=pos_label)
+            score = metric_fn(y_true, y_pred, **kwargs)
 
             if isinstance(score, np.ndarray):
                 score = score.tolist()
@@ -1121,8 +1126,6 @@ class _MetricsAccessor(
         ... )
         {'output': 44.9...}
         """
-        pos_label = kwargs.pop("pos_label", self._parent.pos_label)
-
         if isinstance(metric_function, _BaseScorer):
             metric_function = metric_function._score_func
 
@@ -1130,7 +1133,6 @@ class _MetricsAccessor(
             metric_function,
             data_source=data_source,
             response_method=response_method,
-            pos_label=pos_label,
             **kwargs,
         )
 

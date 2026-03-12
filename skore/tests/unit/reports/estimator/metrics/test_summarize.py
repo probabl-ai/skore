@@ -475,12 +475,6 @@ def test_scorer(linear_regression_with_test):
             ),
             1,
         ),
-        (
-            make_scorer(
-                f1_score, response_method="predict", average="macro", pos_label=1
-            ),
-            None,
-        ),
         (make_scorer(f1_score, response_method="predict", average="macro"), 1),
     ],
 )
@@ -490,7 +484,9 @@ def test_scorer_binary_classification(
     """Check that we can pass scikit-learn scorer with different parameters to
     summarize()."""
     estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report = EstimatorReport(
+        estimator, X_test=X_test, y_test=y_test, pos_label=pos_label
+    )
 
     display = report.metrics.summarize(
         metric=["accuracy", accuracy_score, scorer],
@@ -503,7 +499,9 @@ def test_scorer_binary_classification(
         accuracy_score(y_test, estimator.predict(X_test)),
         accuracy_score(y_test, estimator.predict(X_test)),
         f1_score(
-            y_test, estimator.predict(X_test), average="macro", pos_label=pos_label
+            y_test,
+            estimator.predict(X_test),
+            average="macro",
         ),
     ]
     np.testing.assert_allclose(display.data["score"].values, expected_scores)
@@ -652,8 +650,8 @@ def test_sklearn_scorer_names_metric_kwargs(forest_binary_classification_with_te
 def test_pos_label(forest_binary_classification_with_test):
     """Check that `pos_label` can be passed."""
     estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    display = report.metrics.summarize(pos_label=1)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
+    display = report.metrics.summarize()
 
     check_display_structure(
         display,
@@ -680,16 +678,16 @@ def test_pos_label_scorer_error(forest_binary_classification_with_test):
     """Check that we raise an error when pos_label is passed both in the scorer and
     in summarize()."""
     estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=0)
 
     f1_scorer = make_scorer(
         f1_score, response_method="predict", average="macro", pos_label=1
     )
     err_msg = re.escape(
-        "`pos_label` is passed both in the scorer and to the `summarize` method."
+        "`pos_label` is passed both in the scorer: 1 and when creating the report: 0"
     )
     with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[f1_scorer], pos_label=0)
+        report.metrics.summarize(metric=[f1_scorer])
 
 
 def test_pos_label_strings(forest_binary_classification_with_test):
@@ -755,9 +753,9 @@ def test_pos_label_scorer_names(
 ):
     """Check that `pos_label` is dispatched with scikit-learn scorer names."""
     classifier, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test, pos_label=0)
 
-    display = report.metrics.summarize(metric=["f1"], pos_label=0)
+    display = report.metrics.summarize(metric=["f1"])
     assert isinstance(display.data, pd.DataFrame)
     assert set(display.data["label"]) == {0}
 
@@ -772,7 +770,7 @@ def test_pos_label_scorer_names(
     "metric, metric_fn", [("precision", precision_score), ("recall", recall_score)]
 )
 def test_pos_label_overwrite(metric, metric_fn):
-    """Check that `pos_label` can be overwritten in `summarize`"""
+    """Check that `pos_label` can be set when creating the report."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )
@@ -794,8 +792,9 @@ def test_pos_label_overwrite(metric, metric_fn):
     score_B = display.data["score"].values[0]
     assert score_B == pytest.approx(metric_fn(y, classifier.predict(X), pos_label="B"))
 
-    # Test with pos_label="A" override - should have single row
-    display = report.metrics.summarize(metric=metric, pos_label="A")
+    # Test with pos_label="A" - should have single row
+    report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")
+    display = report.metrics.summarize(metric=metric)
     assert len(display.data) == 1
     score_A = display.data["score"].values[0]
     assert score_A == pytest.approx(metric_fn(y, classifier.predict(X), pos_label="A"))
