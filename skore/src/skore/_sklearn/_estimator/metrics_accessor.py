@@ -25,7 +25,6 @@ from skore._sklearn._plot import (
     RocCurveDisplay,
 )
 from skore._sklearn.types import (
-    _DEFAULT,
     DataSource,
     Metric,
     PositiveLabel,
@@ -1191,7 +1190,6 @@ class _MetricsAccessor(
         display : display_class
             The display.
         """
-        pos_label = display_kwargs.get("pos_label")
         data_sources = _expand_data_sources(data_source)
 
         # Compute cache key
@@ -1227,7 +1225,7 @@ class _MetricsAccessor(
                 y_true=ds_y,
                 data_source=ds,
                 response_method=response_method,
-                pos_label=pos_label,
+                pos_label=display_kwargs.get("pos_label"),
                 split=None,
             )
             y_true.append(y_true_data)
@@ -1259,7 +1257,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1272,12 +1269,6 @@ class _MetricsAccessor(
             - "train" : use the train set provided when creating the report.
             - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the metric. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report. If `None`,
-            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -1297,11 +1288,8 @@ class _MetricsAccessor(
         >>> display = report.metrics.roc()
         >>> display.set_style(relplot_kwargs={"color": "tab:red"}).plot()
         """
-        if pos_label is _DEFAULT:
-            pos_label = self._parent.pos_label
-
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": pos_label}
+        display_kwargs = {"pos_label": self._parent.pos_label}
         display = cast(
             RocCurveDisplay,
             self._get_display(
@@ -1322,7 +1310,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1333,12 +1320,6 @@ class _MetricsAccessor(
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the metric. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report. If `None`,
-            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -1358,11 +1339,8 @@ class _MetricsAccessor(
         >>> display = report.metrics.precision_recall()
         >>> display.set_style(relplot_kwargs={"color": "tab:red"}).plot()
         """
-        if pos_label is _DEFAULT:
-            pos_label = self._parent.pos_label
-
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": pos_label}
+        display_kwargs = {"pos_label": self._parent.pos_label}
         display = cast(
             PrecisionRecallCurveDisplay,
             self._get_display(
@@ -1450,7 +1428,6 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -1464,11 +1441,6 @@ class _MetricsAccessor(
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when displaying the matrix. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report.
 
         Returns
         -------
@@ -1493,9 +1465,6 @@ class _MetricsAccessor(
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
-        if pos_label is _DEFAULT:
-            pos_label = self._parent.pos_label
-
         response_method: str | list[str] | tuple[str, ...]
         if self._parent._ml_task == "binary-classification":
             response_method = ("predict_proba", "decision_function")
@@ -1504,7 +1473,7 @@ class _MetricsAccessor(
 
         display_kwargs = {
             "display_labels": tuple(self._parent.estimator_.classes_),
-            "pos_label": pos_label,
+            "pos_label": self._parent.pos_label,
             "response_method": response_method,
         }
         display = cast(

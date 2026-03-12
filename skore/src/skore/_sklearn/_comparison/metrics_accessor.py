@@ -1224,10 +1224,8 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
         """
-        pos_label = self._parent.pos_label
-
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": pos_label}
+        display_kwargs = {"pos_label": self._parent.pos_label}
         display = cast(
             PrecisionRecallCurveDisplay,
             self._get_display(
@@ -1354,7 +1352,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
-        pos_label = self._parent.pos_label
         response_method: str | list[str] | tuple[str, ...]
         if self._parent._ml_task == "binary-classification":
             response_method = ("predict_proba", "decision_function")
@@ -1374,7 +1371,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
         display_kwargs = {
             "display_labels": display_labels,
-            "pos_label": pos_label,
+            "pos_label": self._parent.pos_label,
             "response_method": response_method,
         }
         display = cast(
