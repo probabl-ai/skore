@@ -25,7 +25,6 @@ copyright = "2026, Probabl"
 author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
-domain = os.environ["SPHINX_DOMAIN"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -207,7 +206,7 @@ html_theme_options = {
         },
     ],
     "switcher": {
-        "json_url": f"https://{domain}/versions.json",
+        "json_url": f"{os.environ["SPHINX_URL"]}/versions.json",
         "version_match": release,
     },
     "check_switcher": True,

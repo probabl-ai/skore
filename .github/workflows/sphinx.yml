@@ -239,7 +239,7 @@ jobs:
         env:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
-          SPHINX_DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
+          SPHINX_URL: ${{ vars.DOCUMENTATION_URL }}
           SPHINX_EXAMPLE_API_KEY: ${{ secrets.DOCUMENTATION_EXAMPLE_API_KEY }}
           SPHINX_EXAMPLE_WORKSPACE: ${{ vars.DOCUMENTATION_EXAMPLE_WORKSPACE }}
           SPHINX_EXAMPLE_BASE_URL: ${{ vars.DOCUMENTATION_EXAMPLE_BASE_URL }}
@@ -347,7 +347,7 @@ jobs:
         env:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
-          SPHINX_URL: https://${{ vars.DOCUMENTATION_DOMAIN }}
+          SPHINX_URL: ${{ vars.DOCUMENTATION_URL }}
 
       - name: Deploy `versions.json` and `index.html`
         uses: ./.github/actions/sphinx/deploy-aws
@@ -379,7 +379,6 @@ jobs:
         run: |
             import os
             import requests
-            import json
 
             version = os.environ["SPHINX_VERSION"]
             url = os.environ["SPHINX_URL"]
@@ -395,7 +394,7 @@ jobs:
                         break
         env:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
-          SPHINX_URL: https://${{ vars.DOCUMENTATION_DOMAIN }}
+          SPHINX_URL: ${{ vars.DOCUMENTATION_URL }}
 
       - name: Download HTML artifacts
         if: steps.version.outputs.preferred == 'true'
