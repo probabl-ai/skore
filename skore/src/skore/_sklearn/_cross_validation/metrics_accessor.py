@@ -237,12 +237,9 @@ class _MetricsAccessor(
             if isinstance(aggregate, str):
                 aggregate = [aggregate]
             timings = timings.aggregate(func=aggregate, axis=1)
+
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
-
-        # Add (s) to time measurements
-        new_index = [f"{idx} (s)" for idx in timings.index]
-
-        timings.index = pd.Index(new_index)
+        timings.index = pd.Index([f"{idx} (s)" for idx in timings.index])
 
         return timings
 
