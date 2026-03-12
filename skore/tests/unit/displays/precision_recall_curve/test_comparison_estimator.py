@@ -142,6 +142,8 @@ def test_source_both(pyplot, fixture_name, request):
     display = report.metrics.precision_recall(data_source="both")
     display.plot()
     plot_data = display.frame(with_average_precision=True)
+    assert "data_source" in plot_data.columns
+    assert set(plot_data["data_source"]) == {"train", "test"}
     labels = (
         display.precision_recall["label"].cat.categories
         if display.ml_task == "multiclass-classification"
