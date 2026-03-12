@@ -26,7 +26,23 @@ Removed
 Fixed
 -----
 
-`0.13.0`_ (2026-02-25)
+`0.13.1`_ (2026-03-05)
+======================
+
+.. _0.13.1: https://github.com/probabl-ai/skore/compare/skore/0.13.1...HEAD
+
+Release highlights
+------------------
+
+- :class:`ComparisonReport` now supports permutation importance through :func:`~ComparisonReport.inspection.permutation_importance`. See :pr:`2511` by :user:`GaetandeCast`.
+- :meth:`ImpurityDecreaseDisplay.frame` now supports aggregation through an `aggregate` parameter. See :pr:`2539` by :user:`MuditAtrey`.
+
+Fixed
+-----
+
+- The figure-level legend is no longer cut off when saving the figure produced by `PredictionErrorDisplay.plot()`. See :pr:`2530` by :user:`MuditAtrey`.
+
+`0.13.0`_ (2026-02-26)
 ======================
 
 .. _0.13.0: https://github.com/probabl-ai/skore/compare/skore/0.12.0...skore/0.13.0
