@@ -188,13 +188,13 @@ class MetricsSummaryDisplay(DisplayMixin):
             The report metrics as a dataframe.
         """
         if self.report_type == "estimator":
-            df = self._frame_estimator(
+            return MetricsSummaryDisplay._frame_estimator(
                 self.data,
                 favorability=favorability,
                 flat_index=flat_index,
             )
         elif self.report_type == "cross-validation":
-            df = MetricsSummaryDisplay._frame_cross_validation(
+            return MetricsSummaryDisplay._frame_cross_validation(
                 self.data,
                 aggregate=aggregate,
                 favorability=favorability,
@@ -224,6 +224,8 @@ class MetricsSummaryDisplay(DisplayMixin):
 
             if flat_index:
                 df = MetricsSummaryDisplay._flatten_index(df)
+
+            return df
 
         else:  # self.report_type == "comparison-cross-validation"
             df = self.data.copy()
@@ -259,7 +261,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             if flat_index:
                 df = MetricsSummaryDisplay._flatten_index(df)
 
-        return df
+            return df
 
     @DisplayMixin.style_plot
     def plot(self):
