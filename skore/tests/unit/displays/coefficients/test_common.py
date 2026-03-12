@@ -129,9 +129,11 @@ class TestCoefficientsDisplay:
         assert figure.get_figheight() == 6
 
         if "estimator_reports" in fixture_prefix:
-            display.set_style(barplot_kwargs={"height": 8}).plot()
+            display.set_style(barplot_kwargs={"height": 8})
+            display.plot()
         else:
-            display.set_style(stripplot_kwargs={"height": 8}).plot()
+            display.set_style(stripplot_kwargs={"height": 8})
+            display.plot()
         assert display.figure_.get_figheight() == 8
 
     def test_frame_select_k(self, fixture_prefix, task, request):

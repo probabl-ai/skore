@@ -581,8 +581,7 @@ class PermutationImportanceDisplay(DisplayMixin):
 
         Returns
         -------
-        self : object
-            Returns the instance itself.
+        None
 
         Raises
         ------
