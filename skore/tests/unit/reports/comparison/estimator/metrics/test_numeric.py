@@ -234,10 +234,6 @@ def test_display_binary_classification_pos_label(
     display.plot()
     assert "Positive label: A" in display.figure_.get_suptitle()
 
-    display = getattr(report.metrics, metric)(pos_label="B")
-    display.plot()
-    assert "Positive label: B" in display.figure_.get_suptitle()
-
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_summarize_pos_label_default(
@@ -271,56 +267,6 @@ def test_summarize_pos_label_default(
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_summarize_pos_label_overwrite(
-    metric, logistic_binary_classification_with_train_test
-):
-    """Check that `pos_label` can be overwritten in `summarize`."""
-    classifier, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    labels = np.array(["A", "B"], dtype=object)
-    y_train = labels[y_train]
-    y_test = labels[y_test]
-    report_1 = EstimatorReport(
-        clone(classifier),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-        pos_label="B",
-    )
-    report_2 = EstimatorReport(
-        clone(classifier),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-        pos_label="B",
-    )
-    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(metric=metric, pos_label=None).frame()
-    result = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert "Label / Average" not in result.columns
-    result = result.set_index("Metric")
-    for report_name in report.reports_:
-        assert (
-            result.loc[metric.capitalize(), report_name]
-            == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
-        )
-
-    result = (
-        report.metrics.summarize(metric=metric, pos_label="A").frame().reset_index()
-    )
-    assert "Label / Average" not in result.columns
-    result = result.set_index("Metric")
-    for report_name in report.reports_:
-        assert (
-            result.loc[metric.capitalize(), report_name]
-            == result_both_labels.loc[(metric.capitalize(), "A"), report_name]
-        )
-
-
-@pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_precision_recall_pos_label_default(
     metric, logistic_binary_classification_with_train_test
 ):
@@ -349,50 +295,3 @@ def test_precision_recall_pos_label_default(
     result_both_labels = getattr(report.metrics, metric)().reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
-
-
-@pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_precision_recall_pos_label_overwrite(
-    metric, logistic_binary_classification_with_train_test
-):
-    """Check that `pos_label` can be overwritten in `summarize`"""
-    classifier, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    labels = np.array(["A", "B"], dtype=object)
-    y_train = labels[y_train]
-    y_test = labels[y_test]
-    report_1 = EstimatorReport(
-        clone(classifier),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-    )
-    report_2 = EstimatorReport(
-        clone(classifier),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-    )
-    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = getattr(report.metrics, metric)(pos_label=None)
-
-    result = getattr(report.metrics, metric)(pos_label="B").reset_index()
-    assert "Label / Average" not in result.columns
-    result = result.set_index("Metric")
-    for report_name in report.reports_:
-        assert (
-            result.loc[metric.capitalize(), report_name]
-            == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
-        )
-
-    result = getattr(report.metrics, metric)(pos_label="A").reset_index()
-    assert "Label / Average" not in result.columns
-    result = result.set_index("Metric")
-    for report_name in report.reports_:
-        assert (
-            result.loc[metric.capitalize(), report_name]
-            == result_both_labels.loc[(metric.capitalize(), "A"), report_name]
-        )

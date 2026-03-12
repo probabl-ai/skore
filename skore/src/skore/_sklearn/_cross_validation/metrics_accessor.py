@@ -829,14 +829,12 @@ class _MetricsAccessor(
         Metric
         MAE     51.4...  1.7...
         """
-        pos_label = self._parent.pos_label
         # create a scorer with `greater_is_better=True` to not alter the output of
         # `metric_function`
         scorer = make_scorer(
             metric_function,
             greater_is_better=True,
             response_method=response_method,
-            pos_label=pos_label,
             **kwargs,
         )
         metric = {metric_name: scorer} if metric_name is not None else [scorer]

@@ -409,7 +409,7 @@ class _MetricsAccessor(
 
             metric_params = inspect.signature(metric_fn).parameters
             kwargs = {**metric_kwargs}
-            if "pos_label" in metric_params:
+            if "pos_label" in metric_params and "pos_label" not in kwargs:
                 kwargs.update(pos_label=pos_label)
             score = metric_fn(y_true, y_pred, **kwargs)
 

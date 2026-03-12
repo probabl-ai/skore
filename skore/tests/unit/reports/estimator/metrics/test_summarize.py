@@ -109,8 +109,8 @@ def test_binary_classification_svc(svc_binary_classification_with_test):
     (no predict_proba).
     """
     estimator, X_test, y_test = svc_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    display = report.metrics.summarize(pos_label=1)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
+    display = report.metrics.summarize()
 
     assert isinstance(display.data, pd.DataFrame)
     # No Brier score
