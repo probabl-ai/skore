@@ -9,7 +9,7 @@ Changelog
 `Unreleased`_
 =============
 
-.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.13.0...HEAD
+.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.13.1...HEAD
 
 Release highlights
 ------------------
