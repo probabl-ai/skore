@@ -376,8 +376,6 @@ class _MetricsAccessor(
     ) -> float | dict[PositiveLabel, float] | list:
         X, y_true = self._get_X_y(data_source=data_source)
 
-        metric_params = inspect.signature(metric_fn).parameters
-
         pos_label = self._parent.pos_label
 
         cache_key = deep_key_sanitize(
@@ -385,18 +383,14 @@ class _MetricsAccessor(
                 self._parent._hash,
                 metric_fn.__name__,
                 data_source,
-                pos_label if "pos_label" in metric_params else None,
+                # TODO None is a placeholder for skore-hub-project
+                None,
                 metric_kwargs,
             )
         )
 
         score = self._parent._cache.get(cache_key)
         if score is None:
-            metric_params = inspect.signature(metric_fn).parameters
-            kwargs = {**metric_kwargs}
-            if "pos_label" in metric_params:
-                kwargs.update(pos_label=pos_label)
-
             results = _get_cached_response_values(
                 cache=self._parent._cache,
                 estimator_hash=int(self._parent._hash),
@@ -412,7 +406,7 @@ class _MetricsAccessor(
                 if key_tuple[-1] != "predict_time":
                     y_pred = value
 
-            score = metric_fn(y_true, y_pred, **kwargs)
+            score = metric_fn(y_true, y_pred, **metric_kwargs)
 
             if isinstance(score, np.ndarray):
                 score = score.tolist()

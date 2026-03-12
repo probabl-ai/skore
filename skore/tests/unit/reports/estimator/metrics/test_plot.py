@@ -45,10 +45,6 @@ def test_display_binary_classification_pos_label(pyplot, metric):
     display.plot()
     assert "Positive label: A" in display.figure_.get_suptitle()
 
-    display = getattr(report.metrics, metric)(pos_label="B")
-    display.plot()
-    assert "Positive label: B" in display.figure_.get_suptitle()
-
 
 @pytest.mark.parametrize("display", ["prediction_error"])
 def test_display_regression(pyplot, linear_regression_with_test, display):

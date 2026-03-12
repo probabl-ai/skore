@@ -153,6 +153,9 @@ def test_check_support_plot(
 @pytest.mark.parametrize(
     "fixture_name, pass_train_data, expected_n_keys",
     [
+        # expected n keys:
+        # (result + time for 'predict'
+        #  & result for 'predict_proba' or 'decision_function') x train, test
         ("forest_binary_classification_with_test", True, 10),
         ("svc_binary_classification_with_test", True, 10),
         ("forest_multiclass_classification_with_test", True, 12),

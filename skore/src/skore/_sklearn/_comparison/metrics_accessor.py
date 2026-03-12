@@ -20,10 +20,8 @@ from skore._sklearn._plot.metrics import (
     RocCurveDisplay,
 )
 from skore._sklearn.types import (
-    _DEFAULT,
     Aggregate,
     Metric,
-    PositiveLabel,
     YPlotData,
 )
 from skore._utils._accessor import (
@@ -58,7 +56,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         metric: Metric | list[Metric] | dict[str, Metric] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
-        pos_label: PositiveLabel | None = _DEFAULT,
         favorability: bool = False,
         flat_index: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
@@ -101,12 +98,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             The estimator's method to be invoked to get the predictions. Only necessary
             for custom metrics.
 
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the metric. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report. If `None`,
-            the metric is computed considering each class as a positive class.
-
         favorability : bool, default=False
             Whether or not to add an indicator of the favorability of the metric as
             an extra column in the returned DataFrame.
@@ -134,15 +125,14 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
+        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data, pos_label=1)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
+        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data, pos_label=1)
         >>> comparison_report = ComparisonReport(
         ...     [estimator_report_1, estimator_report_2]
         ... )
         >>> comparison_report.metrics.summarize(
         ...     metric=["precision", "recall"],
-        ...     pos_label=1,
         ... ).frame()
         Estimator       LogisticRegression_1  LogisticRegression_2
         Metric
@@ -153,7 +143,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             report_metric_name="summarize",
             data_source=data_source,
             metric=metric,
-            pos_label=pos_label,
             metric_kwargs=metric_kwargs,
             favorability=favorability,
             aggregate=aggregate,
@@ -391,7 +380,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         average: (
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
-        pos_label: PositiveLabel | None = _DEFAULT,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the precision score.
@@ -410,8 +398,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             If `None`, the metrics for each class are returned. Otherwise, this
             determines the type of averaging performed on the data:
 
-            - "binary": Only report results for the class specified by `pos_label`.
-              This is applicable only if targets (`y_{true,pred}`) are binary.
+            - "binary": Only report results for the class specified by the
+              report's `pos_label`. This is applicable only if targets
+              (`y_{true,pred}`) are binary.
             - "micro": Calculate metrics globally by counting the total true positives,
               false negatives and false positives.
             - "macro": Calculate metrics for each label, and find their unweighted
@@ -425,15 +414,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
               :func:`accuracy_score`).
 
             .. note::
-                If `pos_label` is specified and `average` is None, then we report
-                only the statistics of the positive class (i.e. equivalent to
-                `average="binary"`).
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the metric. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report. If `None`,
-            the metric is computed considering each class as a positive class.
+                If the report's `pos_label` is specified and `average` is None,
+                then we report only the statistics of the positive class (i.e.
+                equivalent to `average="binary"`).
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -469,7 +452,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         return self.summarize(
             metric=["precision"],
             data_source=data_source,
-            pos_label=pos_label,
             metric_kwargs={"average": average},
             aggregate=aggregate,
         ).frame()
@@ -482,7 +464,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         average: (
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
-        pos_label: PositiveLabel | None = _DEFAULT,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the recall score.
@@ -501,8 +482,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             If `None`, the metrics for each class are returned. Otherwise, this
             determines the type of averaging performed on the data:
 
-            - "binary": Only report results for the class specified by `pos_label`.
-              This is applicable only if targets (`y_{true,pred}`) are binary.
+            - "binary": Only report results for the class specified by the
+              report's `pos_label`. This is applicable only if targets
+              (`y_{true,pred}`) are binary.
             - "micro": Calculate metrics globally by counting the total true positives,
               false negatives and false positives.
             - "macro": Calculate metrics for each label, and find their unweighted
@@ -517,15 +499,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
               :func:`accuracy_score`).
 
             .. note::
-                If `pos_label` is specified and `average` is None, then we report
-                only the statistics of the positive class (i.e. equivalent to
-                `average="binary"`).
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the metric. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report. If `None`,
-            the metric is computed considering each class as a positive class.
+                If the report's `pos_label` is specified and `average` is None,
+                then we report only the statistics of the positive class (i.e.
+                equivalent to `average="binary"`).
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -561,7 +537,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         return self.summarize(
             metric=["recall"],
             data_source=data_source,
-            pos_label=pos_label,
             metric_kwargs={"average": average},
             aggregate=aggregate,
         ).frame()
@@ -1041,7 +1016,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         display : display_class
             The display.
         """
-        pos_label = display_kwargs.get("pos_label")
+        pos_label = self._parent.pos_label
         data_sources = _expand_data_sources(data_source)
 
         # Compute cache key
@@ -1157,7 +1132,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
@@ -1169,12 +1143,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "both" : use both the train and test sets to compute the metrics.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the metric. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report. If `None`,
-            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -1199,8 +1167,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.roc()
         >>> display.plot()
         """
-        if pos_label == _DEFAULT:
-            pos_label = self._parent.pos_label
+        pos_label = self._parent.pos_label
 
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1224,7 +1191,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
@@ -1236,12 +1202,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
             - "both" : use both the train and test sets to compute the metrics.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing the metric. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report. If `None`,
-            the metric is computed considering each class as a positive class.
 
         Returns
         -------
@@ -1266,8 +1226,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
         """
-        if pos_label == _DEFAULT:
-            pos_label = self._parent.pos_label
+        pos_label = self._parent.pos_label
 
         response_method = ("predict_proba", "decision_function")
         display_kwargs = {"pos_label": pos_label}
@@ -1362,7 +1321,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> ConfusionMatrixDisplay:
         """Plot the confusion matrix.
 
@@ -1376,11 +1334,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when displaying the matrix. Use
-            this parameter to override the positive class. By default, the positive
-            class is set to the one provided when creating the report.
 
         Returns
         -------
@@ -1403,8 +1356,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
-        if pos_label == _DEFAULT:
-            pos_label = self._parent.pos_label
+        pos_label = self._parent.pos_label
         response_method: str | list[str] | tuple[str, ...]
         if self._parent._ml_task == "binary-classification":
             response_method = ("predict_proba", "decision_function")

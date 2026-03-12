@@ -155,7 +155,6 @@ class _MetricsAccessor(
                             metric=metric,
                             metric_kwargs=metric_kwargs,
                             response_method=response_method,
-                            pos_label=pos_label,
                         )
                         for report in self._parent.estimator_reports_
                     ),
