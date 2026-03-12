@@ -6,7 +6,7 @@ maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 license = "MIT"
 dependencies = [
   "joblib",
-  "mlflow",
+  "mlflow>=2.20.4",
   "numpy",
   "pandas",
   "rich>=14.2.0",
