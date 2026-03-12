@@ -51,13 +51,10 @@ def evaluate(
     splitter : float, int, str, or cross-validation object, default=0.2
         Determines how the data is split:
 
-        - ``float``: shortcut for
-          ``TrainTestSplit(test_size=float)`` — a single train-test split
-          (e.g. ``0.2`` means 80 %% train / 20 %% test).  The data is
-          shuffled before splitting with a fixed seed
-          (``random_state=0``) for reproducibility.  Pass a
-          :class:`~skore.TrainTestSplit` instance directly for more
-          control over the splitting parameters.
+        - ``float``: perform a single train-test split where the data is shuffled before
+          splitting with a fixed seed (``random_state=0``) for reproducibility.
+          Pass a :class:`~skore.TrainTestSplit` instance for more control over the
+          splitting parameters.
         - ``"prefit"``: the estimator is assumed to be already fitted; ``X``
           and ``y`` are used as the test set.
         - ``int``: number of folds for cross-validation (passed to

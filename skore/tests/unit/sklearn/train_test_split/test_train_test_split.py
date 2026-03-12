@@ -1,6 +1,7 @@
 import warnings
 from datetime import datetime
 
+import numpy as np
 import pandas
 import polars
 import pytest
@@ -295,36 +296,19 @@ class TestTrainTestSplit:
         assert splitter.get_n_splits() == 1
 
     def test_split_yields_one_pair(self):
-        import numpy as np
-
         X = np.arange(20).reshape(10, 2)
         splits = list(TrainTestSplit().split(X))
         assert len(splits) == 1
         train_idx, test_idx = splits[0]
         assert len(train_idx) + len(test_idx) == 10
 
-    def test_split_test_size(self):
-        import numpy as np
-
-        X = np.arange(200).reshape(100, 2)
-        splits = list(TrainTestSplit(test_size=0.3).split(X))
-        _, test_idx = splits[0]
-        assert len(test_idx) == 30
-
-    def test_split_reproducible(self):
-        import numpy as np
-
-        X = np.arange(200).reshape(100, 2)
-        splits_a = list(TrainTestSplit(random_state=42).split(X))
-        splits_b = list(TrainTestSplit(random_state=42).split(X))
-        np.testing.assert_array_equal(splits_a[0][0], splits_b[0][0])
-        np.testing.assert_array_equal(splits_a[0][1], splits_b[0][1])
-
-    def test_default_random_state_is_zero(self):
-        assert TrainTestSplit().random_state == 0
-
-    def test_default_test_size(self):
-        assert TrainTestSplit().test_size == 0.2
+    def test_defaults(self):
+        splitter = TrainTestSplit()
+        assert splitter.test_size == 0.2
+        assert splitter.train_size is None
+        assert splitter.random_state == 0
+        assert splitter.shuffle is True
+        assert splitter.stratify is None
 
     def test_parameters_stored(self):
         splitter = TrainTestSplit(

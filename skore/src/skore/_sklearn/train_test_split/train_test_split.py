@@ -22,11 +22,7 @@ class TrainTestSplit:
 
     This splitter wraps :func:`sklearn.model_selection.train_test_split` and
     exposes ``split`` / ``get_n_splits`` so that it can be passed as the
-    ``splitter`` argument of :func:`~skore.evaluate`.
-
-    Passing ``splitter=float`` to :func:`~skore.evaluate` is a shortcut for
-    ``splitter=TrainTestSplit(test_size=float)``.  Use this class directly
-    when you need more control over the splitting parameters.
+    ``splitter`` argument of any `skore` or `scikit-learn` function.
 
     Parameters
     ----------
@@ -57,8 +53,8 @@ class TrainTestSplit:
     >>> splitter = TrainTestSplit(test_size=0.3, random_state=0)
     >>> X = np.arange(20).reshape(10, 2)
     >>> for train, test in splitter.split(X):
-    ...     print(len(train), len(test))
-    7 3
+    ...     train, test
+    (array([9, 1, 6, 7, 3, 0, 5]), array([2, 8, 4]))
     """
 
     def __init__(
