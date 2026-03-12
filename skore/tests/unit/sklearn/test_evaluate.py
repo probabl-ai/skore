@@ -4,8 +4,6 @@ from sklearn.model_selection import KFold, StratifiedKFold
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport, evaluate
 
-# --- splitter="prefit" ---
-
 
 def test_evaluate_prefit_estimator(regression_data):
     """A fitted estimator with splitter='prefit' returns an EstimatorReport."""
@@ -26,9 +24,6 @@ def test_evaluate_prefit_unfitted_raises(regression_data):
         evaluate(LinearRegression(), X, y, splitter="prefit")
 
 
-# --- splitter=float (train-test split) ---
-
-
 def test_evaluate_float_splitter(regression_data):
     """A float splitter triggers a single split and returns an EstimatorReport."""
     X, y = regression_data
@@ -45,9 +40,6 @@ def test_evaluate_default_splitter(regression_data):
     assert len(report.X_test) == 0.2 * len(X)
 
 
-# --- splitter=int (cross-validation) ---
-
-
 def test_evaluate_int_splitter(regression_data):
     """An int splitter triggers cross-validation."""
     X, y = regression_data
@@ -56,18 +48,12 @@ def test_evaluate_int_splitter(regression_data):
     assert len(report.estimator_reports_) == 3
 
 
-# --- splitter=CV object ---
-
-
 def test_evaluate_cv_object_splitter(regression_data):
     """A CV object splitter triggers cross-validation."""
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=KFold(n_splits=4))
     assert isinstance(report, CrossValidationReport)
     assert len(report.estimator_reports_) == 4
-
-
-# --- multiple estimators ---
 
 
 def test_evaluate_multiple_estimators(regression_data):
@@ -102,17 +88,11 @@ def test_evaluate_multiple_estimators_multiple_X(regression_data):
     assert isinstance(report, ComparisonReport)
 
 
-# --- invalid splitter ---
-
-
 def test_evaluate_invalid_splitter_string(regression_data):
     """An invalid string splitter raises ValueError."""
     X, y = regression_data
     with pytest.raises(ValueError, match="Invalid string value for splitter"):
         evaluate(LinearRegression(), X, y, splitter="invalid")
-
-
-# --- classification ---
 
 
 def test_evaluate_classification(binary_classification_data):
@@ -128,9 +108,6 @@ def test_evaluate_classification_cv(binary_classification_data):
     report = evaluate(LogisticRegression(), X, y, splitter=StratifiedKFold(n_splits=3))
     assert isinstance(report, CrossValidationReport)
     assert len(report.estimator_reports_) == 3
-
-
-# --- pos_label ---
 
 
 def test_evaluate_pos_label(binary_classification_data):

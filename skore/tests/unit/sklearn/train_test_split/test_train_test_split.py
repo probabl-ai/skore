@@ -285,9 +285,6 @@ def test_train_test_split_check_dict_no_X_no_y():
     assert list(keys) == ["z_train", "z_test"]
 
 
-# --- TrainTestSplit ---
-
-
 class TestTrainTestSplit:
     """Tests for the TrainTestSplit splitter class."""
 
