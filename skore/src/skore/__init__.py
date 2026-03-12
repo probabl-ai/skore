@@ -22,6 +22,7 @@ from skore._sklearn import (
     PredictionErrorDisplay,
     RocCurveDisplay,
     TableReportDisplay,
+    TrainTestSplit,
     evaluate,
     train_test_split,
 )
@@ -59,6 +60,7 @@ __all__ = [
     "EstimatorReport",
     "evaluate",
     "ImpurityDecreaseDisplay",
+    "TrainTestSplit",
     "MetricsSummaryDisplay",
     "PermutationImportanceDisplay",
     "PrecisionRecallCurveDisplay",

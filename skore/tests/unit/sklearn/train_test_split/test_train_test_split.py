@@ -6,6 +6,7 @@ import polars
 import pytest
 
 from skore._sklearn.train_test_split.train_test_split import (
+    TrainTestSplit,
     train_test_split,
 )
 from skore._sklearn.train_test_split.warning import (
@@ -281,3 +282,60 @@ def test_train_test_split_check_dict_no_X_no_y():
     output = train_test_split(z=z, random_state=0, as_dict=True)
     keys = output.keys()
     assert list(keys) == ["z_train", "z_test"]
+
+
+# --- TrainTestSplit ---
+
+
+class TestTrainTestSplit:
+    """Tests for the TrainTestSplit splitter class."""
+
+    def test_get_n_splits(self):
+        splitter = TrainTestSplit()
+        assert splitter.get_n_splits() == 1
+
+    def test_split_yields_one_pair(self):
+        import numpy as np
+
+        X = np.arange(20).reshape(10, 2)
+        splits = list(TrainTestSplit().split(X))
+        assert len(splits) == 1
+        train_idx, test_idx = splits[0]
+        assert len(train_idx) + len(test_idx) == 10
+
+    def test_split_test_size(self):
+        import numpy as np
+
+        X = np.arange(200).reshape(100, 2)
+        splits = list(TrainTestSplit(test_size=0.3).split(X))
+        _, test_idx = splits[0]
+        assert len(test_idx) == 30
+
+    def test_split_reproducible(self):
+        import numpy as np
+
+        X = np.arange(200).reshape(100, 2)
+        splits_a = list(TrainTestSplit(random_state=42).split(X))
+        splits_b = list(TrainTestSplit(random_state=42).split(X))
+        np.testing.assert_array_equal(splits_a[0][0], splits_b[0][0])
+        np.testing.assert_array_equal(splits_a[0][1], splits_b[0][1])
+
+    def test_default_random_state_is_zero(self):
+        assert TrainTestSplit().random_state == 0
+
+    def test_default_test_size(self):
+        assert TrainTestSplit().test_size == 0.2
+
+    def test_parameters_stored(self):
+        splitter = TrainTestSplit(
+            test_size=0.4,
+            train_size=0.5,
+            random_state=7,
+            shuffle=False,
+            stratify=[0, 1],
+        )
+        assert splitter.test_size == 0.4
+        assert splitter.train_size == 0.5
+        assert splitter.random_state == 7
+        assert splitter.shuffle is False
+        assert splitter.stratify == [0, 1]
