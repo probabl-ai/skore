@@ -29,7 +29,7 @@ Fixed
 `0.13.1`_ (2026-03-05)
 ======================
 
-.. _0.13.1: https://github.com/probabl-ai/skore/compare/skore/0.13.1...HEAD
+.. _0.13.1: https://github.com/probabl-ai/skore/compare/skore/0.13.0...skore/0.13.1
 
 Release highlights
 ------------------
