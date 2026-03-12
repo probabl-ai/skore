@@ -186,21 +186,21 @@ def case(request):
     indirect=True,
 )
 def test_metrics(case):
-    report, scoring, expected_index, expected_columns = case
+    report, metric, expected_index, expected_columns = case
 
-    result = getattr(report.metrics, scoring)()
+    result = getattr(report.metrics, metric)()
     assert_index_equal(result.index, expected_index)
     assert_index_equal(result.columns, expected_columns)
 
 
 def test_custom_metric(case_accuracy):
-    report, scoring, expected_index, expected_columns = case_accuracy
+    report, metric, expected_index, expected_columns = case_accuracy
 
     result = report.metrics.custom_metric(
         metric_function=accuracy_score,
         response_method="predict",
     )
-    result = getattr(report.metrics, scoring)()
+    result = getattr(report.metrics, metric)()
     assert_index_equal(result.index, expected_index)
     assert_index_equal(result.columns, expected_columns)
 
@@ -223,29 +223,16 @@ def test_custom_metric(case_accuracy):
 )
 def test_metrics_aggregate(case):
     """`aggregate` argument should be taken into account."""
-    report, scoring, expected_index, _ = case
+    report, metric, expected_index, _ = case
 
-    model = "DummyRegressor" if scoring in ("r2", "rmse") else "DummyClassifier"
+    model = "DummyRegressor" if metric in ("r2", "rmse") else "DummyClassifier"
     expected_columns = pd.MultiIndex.from_tuples(
         [("mean", f"{model}_1"), ("mean", f"{model}_2")], names=[None, "Estimator"]
     )
 
-    result = getattr(report.metrics, scoring)(aggregate=["mean"])
+    result = getattr(report.metrics, metric)(aggregate=["mean"])
     assert_index_equal(result.index, expected_index)
     assert_index_equal(result.columns, expected_columns)
-
-
-def test_cache_key_with_string_aggregate_is_not_split(
-    comparison_cross_validation_reports_binary_classification,
-):
-    """Check that string aggregate values are stored as a single cache-key item."""
-    report = comparison_cross_validation_reports_binary_classification
-
-    report.metrics.summarize(aggregate="mean")
-
-    summarize_cache_keys = [key for key in report._cache if key[1] == "summarize"]
-    assert summarize_cache_keys
-    assert any("mean" in key for key in summarize_cache_keys)
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])

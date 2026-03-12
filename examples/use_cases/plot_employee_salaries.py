@@ -286,7 +286,7 @@ linear_model_report.metrics.summarize().frame(favorability=True)
 from skore import ComparisonReport
 
 comparator = ComparisonReport([hgbt_model_report, linear_model_report])
-comparator.metrics.summarize(favorability=True).frame()
+comparator.metrics.summarize().frame(favorability=True)
 
 # %%
 # In addition, if we forgot to compute a specific metric
