@@ -84,25 +84,68 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     "`sklearn.metrics.make_scorer` to create a scorer with "
                     "additional parameters."
                 )
+            m = scorer
             func_name = scorer._score_func.__name__
             if func_name.startswith("neg_"):
                 func_name = func_name[4:]
-            return Metric(
-                name=func_name,
-                verbose_name=func_name.replace("_", " ").title(),
-                greater_is_better=scorer._sign == 1,
-                score_func=scorer,
-            )
-        elif isinstance(m, _BaseScorer):
-            func_name = m._score_func.__name__
-            if func_name.startswith("neg_"):
-                func_name = func_name[4:]
+
+            metrics_kwargs = {**m._kwargs}
+            metrics_params = inspect.signature(m._score_func).parameters
+            pos_label = self._parent.pos_label
+
+            if "pos_label" in metrics_params:
+                if (
+                    "pos_label" in metrics_kwargs
+                    and pos_label != metrics_kwargs["pos_label"]
+                ):
+                    raise ValueError(
+                        "`pos_label` is passed both in the scorer: "
+                        f"{metrics_kwargs['pos_label']!r} and when creating "
+                        f"the report: {pos_label!r}. Please provide a consistent "
+                        "`pos_label` or only pass it whether in the scorer or "
+                        "when creating the report."
+                    )
+                metrics_kwargs["pos_label"] = pos_label
+
             return Metric(
                 name=func_name,
                 verbose_name=func_name.replace("_", " ").title(),
                 greater_is_better=m._sign == 1,
                 score_func=m,
                 response_method=m._response_method,
+                kwargs=metrics_kwargs,
+            )
+        elif isinstance(m, _BaseScorer):
+            func_name = m._score_func.__name__
+            if func_name.startswith("neg_"):
+                func_name = func_name[4:]
+
+            # forward the additional parameters specific to the scorer
+            metrics_kwargs = {**m._kwargs}
+            metrics_params = inspect.signature(m._score_func).parameters
+            pos_label = self._parent.pos_label
+
+            if "pos_label" in metrics_params:
+                if (
+                    "pos_label" in metrics_kwargs
+                    and pos_label != metrics_kwargs["pos_label"]
+                ):
+                    raise ValueError(
+                        "`pos_label` is passed both in the scorer: "
+                        f"{metrics_kwargs['pos_label']!r} and when creating "
+                        f"the report: {pos_label!r}. Please provide a consistent "
+                        "`pos_label` or only pass it whether in the scorer or "
+                        "when creating the report."
+                    )
+                metrics_kwargs["pos_label"] = pos_label
+
+            return Metric(
+                name=func_name,
+                verbose_name=func_name.replace("_", " ").title(),
+                greater_is_better=m._sign == 1,
+                score_func=m._score_func,
+                response_method=m._response_method,
+                kwargs=metrics_kwargs,
             )
         elif callable(m):
             if "response_method" not in metric_kwargs:
@@ -294,33 +337,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         rows = []
         for metric_name, metric_obj in parsed_metrics.items():
-            # NOTE: we have to check specifically for `_BaseScorer` first because this
-            # is also a callable but it has a special private API that we can leverage
-            if isinstance(metric_obj.score_func, _BaseScorer):
-                scorer = metric_obj.score_func
-                metric_fn = partial(
-                    self.custom_metric,
-                    metric_function=scorer._score_func,
-                    response_method=scorer._response_method,
-                )
-                # forward the additional parameters specific to the scorer
-                metrics_kwargs = {**scorer._kwargs}
-                metrics_params = inspect.signature(scorer._score_func).parameters
-                if "pos_label" in metrics_params:
-                    if (
-                        "pos_label" in metrics_kwargs
-                        and pos_label != metrics_kwargs["pos_label"]
-                    ):
-                        raise ValueError(
-                            "`pos_label` is passed both in the scorer: "
-                            f"{metrics_kwargs['pos_label']!r} and when creating "
-                            f"the report: {pos_label!r}. Please provide a consistent "
-                            "`pos_label` or only pass it whether in the scorer or "
-                            "when creating the report."
-                        )
-                    metrics_kwargs["pos_label"] = pos_label
-
-            elif metric_obj.score_func is None:
+            if metric_obj.score_func is None:
                 # Built-in metric: dispatch via the accessor method by name
                 metric_fn = getattr(self, metric_obj.name)
                 metrics_kwargs = metric_obj.kwargs
