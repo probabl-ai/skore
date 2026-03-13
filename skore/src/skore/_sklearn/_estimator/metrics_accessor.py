@@ -94,8 +94,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 func_name = func_name[4:]
 
             # forward the additional parameters specific to the scorer
-            kwargs = {**m._kwargs}
-
+            kwargs = m._kwargs.copy()
             if "pos_label" in inspect.signature(m._score_func).parameters:
                 if (
                     "pos_label" in kwargs
