@@ -73,7 +73,12 @@ X_train, X_external, y_train, y_external = train_test_split(
 from skore import EstimatorReport
 
 report = EstimatorReport(
-    model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    model,
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_test,
+    y_test=y_test,
+    pos_label="allowed",
 )
 report.help()
 
@@ -168,7 +173,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 # The cache also speeds up plots. Let's create a ROC curve:
 
 start = time.time()
-display = report.metrics.roc(pos_label="allowed")
+display = report.metrics.roc()
 display.plot()
 end = time.time()
 
@@ -179,7 +184,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # The second plot is instant because it uses cached data:
 start = time.time()
-display = report.metrics.roc(pos_label="allowed")
+display = report.metrics.roc()
 display.plot()
 end = time.time()
 

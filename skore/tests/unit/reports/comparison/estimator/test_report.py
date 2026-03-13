@@ -114,17 +114,15 @@ def test_non_string_report_names(
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
 @pytest.mark.parametrize("response_method", ["predict", "predict_proba"])
-@pytest.mark.parametrize("pos_label", [None, 0, 1])
 def test_get_predictions(
     comparison_estimator_reports_binary_classification,
     data_source,
     response_method,
-    pos_label,
 ):
     """Check the behaviour of the `get_predictions` method."""
     report = comparison_estimator_reports_binary_classification
     predictions = report.get_predictions(
-        data_source=data_source, response_method=response_method, pos_label=pos_label
+        data_source=data_source, response_method=response_method
     )
     assert len(predictions) == 2
     sub_reports = list(report.reports_.values())

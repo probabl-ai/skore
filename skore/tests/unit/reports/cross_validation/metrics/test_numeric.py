@@ -158,7 +158,7 @@ def test_custom_metric(forest_binary_classification_data):
 def test_precision_recall_pos_label_overwrite(
     metric, logistic_binary_classification_data
 ):
-    """Check that `pos_label` can be overwritten."""
+    """Check that `pos_label` can be set."""
     classifier, X, y = logistic_binary_classification_data
     labels = np.array(["A", "B"], dtype=object)
     y = labels[y]
@@ -168,7 +168,8 @@ def test_precision_recall_pos_label_overwrite(
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
 
-    result = getattr(report.metrics, metric)(pos_label="B").reset_index()
+    report = CrossValidationReport(classifier, X, y, pos_label="B")
+    result = getattr(report.metrics, metric)().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     assert (
@@ -178,7 +179,8 @@ def test_precision_recall_pos_label_overwrite(
         ]
     )
 
-    result = getattr(report.metrics, metric)(pos_label="A").reset_index()
+    report = CrossValidationReport(classifier, X, y, pos_label="A")
+    result = getattr(report.metrics, metric)().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     assert (

@@ -14,7 +14,7 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.types import _DEFAULT, PositiveLabel
+from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._progress_bar import track
 
@@ -340,7 +340,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> list[ArrayLike] | list[list[ArrayLike]]:
         """Get predictions from the underlying reports.
 
@@ -358,17 +357,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         response_method : {"predict", "predict_proba", "decision_function"}, \
                 default="predict"
             The response method to use to get the predictions.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing predictions in
-            binary classification cases. By default, the positive class is set to the
-            one provided when creating the report. If `None`, `estimator_.classes_[1]`
-            is used as positive label.
-
-            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
-            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
-            and `-estimator_.decision_function(X)` for
-            `response_method="decision_function"`.
 
         Returns
         -------
@@ -404,7 +392,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,
-                pos_label=pos_label,
             )
             for report in self.reports_.values()
         ]
