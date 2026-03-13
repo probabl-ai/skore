@@ -68,6 +68,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             }
             return metric_obj
         elif isinstance(m, str):
+            if len(metric_kwargs) != 0:
+                raise ValueError(
+                    "The `metric_kwargs` parameter is not supported when "
+                    "`metric` is a scikit-learn scorer name. Use the function "
+                    "`sklearn.metrics.make_scorer` to create a scorer with "
+                    "additional parameters."
+                )
+
             try:
                 scorer = sklearn.metrics.get_scorer(m)
             except ValueError as err:
@@ -77,13 +85,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     f"metrics: {list(self._builtin_by_name.keys())} "
                     "or a valid scikit-learn metric string."
                 ) from err
-            if len(metric_kwargs) != 0:
-                raise ValueError(
-                    "The `metric_kwargs` parameter is not supported when "
-                    "`metric` is a scikit-learn scorer name. Use the function "
-                    "`sklearn.metrics.make_scorer` to create a scorer with "
-                    "additional parameters."
-                )
 
             return self._parse_metric(scorer, metric_kwargs)
         elif isinstance(m, _BaseScorer):
