@@ -95,22 +95,21 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             # forward the additional parameters specific to the scorer
             kwargs = {**m._kwargs}
-            metrics_params = inspect.signature(m._score_func).parameters
-            pos_label = self._parent.pos_label
 
-            if "pos_label" in metrics_params:
+            if "pos_label" in inspect.signature(m._score_func).parameters:
                 if (
                     "pos_label" in kwargs
-                    and pos_label != kwargs["pos_label"]
+                    and self._parent.pos_label != kwargs["pos_label"]
                 ):
                     raise ValueError(
                         "`pos_label` is passed both in the scorer: "
                         f"{kwargs['pos_label']!r} and when creating "
-                        f"the report: {pos_label!r}. Please provide a consistent "
+                        f"the report: {self._parent.pos_label!r}. "
+                        "Please provide a consistent "
                         "`pos_label` or only pass it whether in the scorer or "
                         "when creating the report."
                     )
-                kwargs["pos_label"] = pos_label
+                kwargs["pos_label"] = self._parent.pos_label
 
             return Metric(
                 name=func_name,
