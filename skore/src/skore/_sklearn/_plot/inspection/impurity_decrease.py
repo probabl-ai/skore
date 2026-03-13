@@ -192,7 +192,6 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 group_columns=[
                     c for c in self._get_columns_to_groupby(frame=frame) if c != "split"
                 ],
-                score_aggregated_column="importance_mean",
                 score_raw_column="importance",
             )
         if select_k is not None:
@@ -202,7 +201,6 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 group_columns=[
                     c for c in self._get_columns_to_groupby(frame=frame) if c != "split"
                 ],
-                score_aggregated_column="importance_mean",
                 score_raw_column="importance",
             )
 
