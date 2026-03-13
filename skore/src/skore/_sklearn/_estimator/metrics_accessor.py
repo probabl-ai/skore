@@ -57,7 +57,37 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         super().__init__(parent)
 
     def _parse_metric(self, m: MetricLike, metric_kwargs: dict[str, Any]) -> Metric:
-        if m in self._builtin_by_name:
+        if isinstance(m, _BaseScorer):
+            func_name = m._score_func.__name__
+            if func_name.startswith("neg_"):
+                func_name = func_name[4:]
+
+            # forward the additional parameters specific to the scorer
+            kwargs = m._kwargs.copy()
+            if "pos_label" in inspect.signature(m._score_func).parameters:
+                if (
+                    "pos_label" in kwargs
+                    and self._parent.pos_label != kwargs["pos_label"]
+                ):
+                    raise ValueError(
+                        "`pos_label` is passed both in the scorer: "
+                        f"{kwargs['pos_label']!r} and when creating "
+                        f"the report: {self._parent.pos_label!r}. "
+                        "Please provide a consistent "
+                        "`pos_label` or only pass it whether in the scorer or "
+                        "when creating the report."
+                    )
+                kwargs["pos_label"] = self._parent.pos_label
+
+            return Metric(
+                name=func_name,
+                verbose_name=func_name.replace("_", " ").title(),
+                greater_is_better=m._sign == 1,
+                score_func=m._score_func,
+                response_method=m._response_method,
+                kwargs=kwargs,
+            )
+        elif m in self._builtin_by_name:
             metric_obj = self._builtin_by_name[m]
 
             # forward parameters specific to the builtin method
@@ -88,36 +118,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 ) from err
 
             return self._parse_metric(scorer, metric_kwargs)
-        elif isinstance(m, _BaseScorer):
-            func_name = m._score_func.__name__
-            if func_name.startswith("neg_"):
-                func_name = func_name[4:]
-
-            # forward the additional parameters specific to the scorer
-            kwargs = m._kwargs.copy()
-            if "pos_label" in inspect.signature(m._score_func).parameters:
-                if (
-                    "pos_label" in kwargs
-                    and self._parent.pos_label != kwargs["pos_label"]
-                ):
-                    raise ValueError(
-                        "`pos_label` is passed both in the scorer: "
-                        f"{kwargs['pos_label']!r} and when creating "
-                        f"the report: {self._parent.pos_label!r}. "
-                        "Please provide a consistent "
-                        "`pos_label` or only pass it whether in the scorer or "
-                        "when creating the report."
-                    )
-                kwargs["pos_label"] = self._parent.pos_label
-
-            return Metric(
-                name=func_name,
-                verbose_name=func_name.replace("_", " ").title(),
-                greater_is_better=m._sign == 1,
-                score_func=m._score_func,
-                response_method=m._response_method,
-                kwargs=kwargs,
-            )
         elif callable(m):
             if "response_method" not in metric_kwargs:
                 raise ValueError(
