@@ -217,22 +217,29 @@ class Metric:
 
     greater_is_better : bool or None
         Whether a higher value is better (``True``), lower is better
-        (``False``), or there is no preference (``None``).
+        (``False``), or there is no preference or information (``None``).
 
     score_func : callable or None, default=None
         The scoring function. ``None`` for built-in metrics that are dispatched
-        by name; a :class:`sklearn.metrics._scorer._BaseScorer` or plain callable
-        for custom metrics.
+        by name; a callable for custom metrics.
+
+    response_method : {"predict", "predict_proba", "decision_function"} or None, \
+        default="predict"
+        The method to call to get the predicted values that will passed to
+        ``score_func``.
+    
+    kwargs : dict, default={}
+        Keyword arguments to pass to ``score_func``.
     """
 
     name: str
     verbose_name: str
     greater_is_better: bool | None
+    score_func: Callable | None = field(default=None)
     response_method: Literal["predict", "predict_proba", "decision_function"] | None = (
         "predict"
     )
     kwargs: dict[str, Any] = field(default_factory=dict)
-    score_func: Callable | None = field(default=None)
 
     @property
     def icon(self) -> str:
