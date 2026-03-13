@@ -102,6 +102,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 verbose_name=func_name.replace("_", " ").title(),
                 greater_is_better=m._sign == 1,
                 score_func=m,
+                response_method=m._response_method,
             )
         elif callable(m):
             if "response_method" not in metric_kwargs:
