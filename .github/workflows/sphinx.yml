@@ -377,23 +377,24 @@ jobs:
         id: version
         shell: python
         run: |
+            import json
             import os
             import requests
 
-            version = os.environ["SPHINX_VERSION"]
+            release = os.environ["SPHINX_RELEASE"]
             url = os.environ["SPHINX_URL"]
 
             # Retrieve history
             response = requests.get(f"{url}/versions.json")
             response.raise_for_status()
 
-            for version in response.json():
-                if version["name"] == version:
+            for entry in response.json():
+                if entry["version"] == release:
                     with open(os.environ["GITHUB_OUTPUT"], mode="a") as file:
-                        file.write(f"preferred={version["preferred"]}\n")
+                        file.write(f"preferred={json.dumps(entry["preferred"])}\n")
                         break
         env:
-          SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
+          SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
           SPHINX_URL: ${{ vars.DOCUMENTATION_URL }}
 
       - name: Download HTML artifacts
