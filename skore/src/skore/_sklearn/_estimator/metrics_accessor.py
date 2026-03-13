@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import sklearn
 from numpy.typing import ArrayLike
+from sklearn.metrics import make_scorer
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
@@ -126,19 +127,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     "callable. Pass it directly or through `metric_kwargs`."
                 )
 
-            # forward parameters specific to the metric callable
-            kwargs = {
-                param: metric_kwargs[param]
-                for param in inspect.signature(m).parameters
-                if param in metric_kwargs
-            }
-            return Metric(
-                name=m.__name__,
-                verbose_name=m.__name__.replace("_", " ").title(),
-                greater_is_better=None,
-                score_func=m,
-                kwargs=kwargs,
-            )
+            return self._parse_metric(make_scorer(m, **metric_kwargs), {})
         else:
             raise ValueError(f"Invalid type of metric: {type(m)} for {m!r}")
 
