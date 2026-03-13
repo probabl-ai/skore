@@ -104,11 +104,24 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 score_func=m,
             )
         elif callable(m):
+            if "response_method" not in metric_kwargs:
+                raise ValueError(
+                    "response_method is required when the metric is a "
+                    "callable. Pass it directly or through `metric_kwargs`."
+                )
+
+            # forward parameters specific to the metric callable
+            kwargs = {
+                param: metric_kwargs[param]
+                for param in inspect.signature(m).parameters
+                if param in metric_kwargs
+            }
             return Metric(
                 name=m.__name__,
                 verbose_name=m.__name__.replace("_", " ").title(),
                 greater_is_better=None,
                 score_func=m,
+                kwargs=kwargs,
             )
         else:
             raise ValueError(f"Invalid type of metric: {type(m)} for {m!r}")
@@ -273,7 +286,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         pos_label = self._parent.pos_label
 
-        metric_kwargs = metric_kwargs or {}
+        metric_kwargs = (metric_kwargs or {}) | (
+            {"response_method": response_method} if response_method else {}
+        )
         parsed_metrics = self._parse_metrics(metric, metric_kwargs)
 
         rows = []
@@ -310,37 +325,12 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 metrics_kwargs = metric_obj.kwargs
             else:
                 # Plain callable metric
-                callable_fn = metric_obj.score_func
-                if response_method is None:
-                    if metric_kwargs is None or "response_method" not in metric_kwargs:
-                        raise ValueError(
-                            "response_method is required when the metric is a "
-                            "callable. Pass it directly or through `metric_kwargs`."
-                        )
-                    response_method = metric_kwargs["response_method"]
-
                 metric_fn = partial(
                     self.custom_metric,
-                    metric_function=callable_fn,
-                    response_method=response_method,
+                    metric_function=cast(Callable, metric_obj.score_func),
+                    response_method=cast(str, metric_obj.response_method),
                 )
-                if metric_kwargs is None:
-                    metrics_kwargs = {}
-                else:
-                    # forward parameters specific to the metric callable
-                    metric_callable_params = inspect.signature(callable_fn).parameters
-                    metrics_kwargs = {
-                        param: metric_kwargs[param]
-                        for param in metric_callable_params
-                        if param in metric_kwargs
-                    }
-                metrics_params = inspect.signature(metric_fn).parameters
-                if metric_kwargs is not None:
-                    for param in metrics_params:
-                        if param in metric_kwargs:
-                            metrics_kwargs[param] = metric_kwargs[param]
-                if "pos_label" in metrics_params:
-                    metrics_kwargs["pos_label"] = pos_label
+                metrics_kwargs = metric_obj.kwargs
 
             score = metric_fn(data_source=data_source, **metrics_kwargs)
 
