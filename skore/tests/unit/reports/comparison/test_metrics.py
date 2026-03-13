@@ -25,17 +25,19 @@ def test_favorability_undefined_metrics(report):
 
     if report is EstimatorReport:
         reports = {
-            name: EstimatorReport(est, X_train=X, X_test=X, y_train=y, y_test=y)
+            name: EstimatorReport(
+                est, X_train=X, X_test=X, y_train=y, y_test=y, pos_label=1
+            )
             for name, est in estimators.items()
         }
     else:
         reports = {
-            name: CrossValidationReport(est, X=X, y=y)
+            name: CrossValidationReport(est, X=X, y=y, pos_label=1)
             for name, est in estimators.items()
         }
 
     comparison_report = ComparisonReport(reports)
-    metrics = comparison_report.metrics.summarize(pos_label=1)
+    metrics = comparison_report.metrics.summarize()
     assert isinstance(metrics, MetricsSummaryDisplay)
     metrics_df = metrics.frame(favorability=True)
 

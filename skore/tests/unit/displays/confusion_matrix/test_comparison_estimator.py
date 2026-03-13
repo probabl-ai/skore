@@ -143,14 +143,31 @@ def test_pos_label(pyplot, binary_classification_train_test_split):
     )
     comparison_report = ComparisonReport([report_1, report_2])
 
-    display = comparison_report.metrics.confusion_matrix(pos_label="A")
+    display = comparison_report.metrics.confusion_matrix()
     display.plot()
     for idx in range(len(comparison_report.reports_)):
         assert display.ax_[idx].get_xticklabels()[1].get_text() == "A*"
     # Only the first subplot has yticklabels
     assert display.ax_[0].get_yticklabels()[1].get_text() == "A*"
 
-    display = comparison_report.metrics.confusion_matrix(pos_label="B")
+    report_1 = EstimatorReport(
+        LogisticRegression(),
+        X_train=X_train,
+        y_train=y_train_labeled,
+        X_test=X_test,
+        y_test=y_test_labeled,
+        pos_label="B",
+    )
+    report_2 = EstimatorReport(
+        LogisticRegression(),
+        X_train=X_train,
+        y_train=y_train_labeled,
+        X_test=X_test,
+        y_test=y_test_labeled,
+        pos_label="B",
+    )
+    comparison_report = ComparisonReport([report_1, report_2])
+    display = comparison_report.metrics.confusion_matrix()
     display.plot()
     for idx in range(len(comparison_report.reports_)):
         assert display.ax_[idx].get_xticklabels()[1].get_text() == "B*"

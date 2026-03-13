@@ -16,7 +16,7 @@ from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
+from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
@@ -282,7 +282,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> list[ArrayLike]:
         """Get estimator's predictions.
 
@@ -300,17 +299,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         response_method : {"predict", "predict_proba", "decision_function"}, \
                 default="predict"
             The response method to use to get the predictions.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing predictions in
-            binary classification cases. By default, the positive class is set to the
-            one provided when creating the report. If `None`, `estimator_.classes_[1]`
-            is used as positive label.
-
-            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
-            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
-            and `-estimator_.decision_function(X)` for
-            `response_method="decision_function"`.
 
         Returns
         -------
@@ -343,7 +331,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,
-                pos_label=pos_label,
             )
             for report in self.estimator_reports_
         ]
@@ -445,13 +432,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     @property
     def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
-
-    @pos_label.setter
-    def pos_label(self, value: PositiveLabel | None) -> None:
-        self._pos_label = value
-        self._initialize_state()
-        for estimator_report in self.estimator_reports_:
-            estimator_report.pos_label = value
 
     ####################################################################################
     # Methods related to the help and repr

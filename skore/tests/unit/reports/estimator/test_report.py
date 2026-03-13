@@ -153,13 +153,16 @@ def test_check_support_plot(
 @pytest.mark.parametrize(
     "fixture_name, pass_train_data, expected_n_keys",
     [
-        ("forest_binary_classification_with_test", True, 10),
-        ("svc_binary_classification_with_test", True, 10),
-        ("forest_multiclass_classification_with_test", True, 12),
+        # expected n keys:
+        # (result + time for 'predict'
+        #  & result for 'predict_proba' or 'decision_function') x train, test
+        ("forest_binary_classification_with_test", True, 6),
+        ("svc_binary_classification_with_test", True, 6),
+        ("forest_multiclass_classification_with_test", True, 6),
         ("linear_regression_with_test", True, 4),
-        ("forest_binary_classification_with_test", False, 5),
-        ("svc_binary_classification_with_test", False, 5),
-        ("forest_multiclass_classification_with_test", False, 6),
+        ("forest_binary_classification_with_test", False, 3),
+        ("svc_binary_classification_with_test", False, 3),
+        ("forest_multiclass_classification_with_test", False, 3),
         ("linear_regression_with_test", False, 2),
     ],
 )
@@ -252,24 +255,12 @@ def test_get_predictions():
     np.testing.assert_allclose(
         predictions, report.estimator_.predict_proba(X_test)[:, 1]
     )
-    predictions = report.get_predictions(
-        data_source="train", response_method="predict_proba", pos_label=0
-    )
-    np.testing.assert_allclose(
-        predictions, report.estimator_.predict_proba(X_train)[:, 0]
-    )
 
     # check the validity of the `decision_function` method
     predictions = report.get_predictions(
         data_source="test", response_method="decision_function"
     )
     np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
-    predictions = report.get_predictions(
-        data_source="train", response_method="decision_function", pos_label=0
-    )
-    np.testing.assert_allclose(
-        predictions, -report.estimator_.decision_function(X_train)
-    )
 
     # check the behaviour in conjunction of a report `pos_label`
     report = EstimatorReport(

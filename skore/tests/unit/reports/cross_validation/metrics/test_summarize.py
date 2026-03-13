@@ -105,8 +105,8 @@ def test_binary_classification_svc(svc_binary_classification_data):
     (no predict_proba).
     """
     estimator, X, y = svc_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    display = report.metrics.summarize(pos_label=1)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2, pos_label=1)
+    display = report.metrics.summarize()
 
     # No Brier score for SVC
     check_display_structure(
@@ -299,9 +299,9 @@ def test_callable_metric_no_response_method(forest_binary_classification_data):
 def test_scorer_metric(forest_binary_classification_data):
     """Test that make_scorer objects work."""
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2, pos_label=1)
 
-    scorer = make_scorer(f1_score, pos_label=1)
+    scorer = make_scorer(f1_score)
     display = report.metrics.summarize(metric=scorer)
 
     check_display_structure(
@@ -315,10 +315,10 @@ def test_scorer_metric(forest_binary_classification_data):
 def test_scorer_greater_is_better(forest_binary_classification_data):
     """Test that scorer favorability respects greater_is_better parameter."""
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2, pos_label=1)
 
     display = report.metrics.summarize(
-        metric=make_scorer(custom_accuracy_metric, pos_label=1, greater_is_better=True)
+        metric=make_scorer(custom_accuracy_metric, greater_is_better=True)
     )
 
     check_display_structure(
@@ -332,11 +332,9 @@ def test_scorer_greater_is_better(forest_binary_classification_data):
 def test_mixed_string_and_scorer(forest_binary_classification_data):
     """Test mixing string metrics and scorer objects."""
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2, pos_label=1)
 
-    display = report.metrics.summarize(
-        metric=["accuracy", make_scorer(f1_score, pos_label=1)]
-    )
+    display = report.metrics.summarize(metric=["accuracy", make_scorer(f1_score)])
 
     check_display_structure(
         display,
