@@ -286,8 +286,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
             return MetricsSummaryDisplay(data=combined, report_type="estimator")
 
-        pos_label = self._parent.pos_label
-
         metric_kwargs = (metric_kwargs or {}) | (
             {"response_method": response_method} if response_method else {}
         )
@@ -323,7 +321,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 self._parent._ml_task == "binary-classification"
                 and metric_obj.kwargs.get("average") == "binary"
             ):
-                rows.append({**row, "label": pos_label})
+                rows.append({**row, "label": self._parent.pos_label})
             elif self._parent._ml_task in (
                 "binary-classification",
                 "multiclass-classification",
