@@ -3,24 +3,20 @@
 import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_index_equal
-from sklearn.base import clone
 from sklearn.dummy import DummyClassifier
 from sklearn.metrics import accuracy_score, get_scorer
 
-from skore import ComparisonReport, CrossValidationReport, MetricsSummaryDisplay
-from skore._utils._testing import check_cache_changed, check_cache_unchanged
+from skore import ComparisonReport, CrossValidationReport
 
 
 def test_aggregate_none(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with `aggregate=None`."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(aggregate=None)
-    assert isinstance(result, MetricsSummaryDisplay)
-    result_df = result.frame()
+    result = report.metrics.summarize().frame(aggregate=None)
 
-    assert_index_equal(result_df.columns, pd.Index(["Value"]))
-    assert result_df.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
-    assert len(result_df) == 36
+    assert result.columns.to_list() == ["Value"]
+    assert result.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
+    assert len(result) == 36
 
 
 def test_aggregate_none_flat_index(
@@ -30,9 +26,9 @@ def test_aggregate_none_flat_index(
     `flat_index=True`.
     """
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(aggregate=None, flat_index=True).frame()
+    result = report.metrics.summarize().frame(aggregate=None, flat_index=True)
 
-    assert_index_equal(result.columns, pd.Index(["Value"]))
+    assert result.columns.to_list() == ["Value"]
     assert len(result) == 36
 
 
@@ -82,35 +78,10 @@ def test_default_regression(comparison_cross_validation_reports_regression):
     )
 
 
-def test_aggregate_sequence_of_one_element(
-    comparison_cross_validation_reports_binary_classification,
-):
-    """Passing a list of one string is the same as passing the string itself."""
-    report = comparison_cross_validation_reports_binary_classification
-    assert_frame_equal(
-        report.metrics.summarize(aggregate="mean").frame(),
-        report.metrics.summarize(aggregate=["mean"]).frame(),
-    )
-
-
-def test_aggregate_is_used_in_cache(
-    comparison_cross_validation_reports_binary_classification,
-):
-    """`aggregate` should be used when computing the cache key.
-
-    In other words, if you call `MetricsSummaryDisplay` twice with different values of
-    `aggregate`, you should get a different result.
-    """
-    report = comparison_cross_validation_reports_binary_classification
-    call1 = report.metrics.summarize(aggregate="mean").frame()
-    call2 = report.metrics.summarize(aggregate=("mean", "std")).frame()
-    assert list(call1.columns) != list(call2.columns)
-
-
 def test_metric(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with the `metric` parameter."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(metric=["accuracy"], aggregate=None).frame()
+    result = report.metrics.summarize(metric=["accuracy"]).frame(aggregate=None)
 
     assert_index_equal(result.columns, pd.Index(["Value"]))
     assert_index_equal(
@@ -130,7 +101,7 @@ def test_metric(comparison_cross_validation_reports_binary_classification):
 def test_favorability(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with `favorability=True`."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(favorability=True).frame()
+    result = report.metrics.summarize().frame(favorability=True)
 
     assert_index_equal(
         result.columns,
@@ -148,68 +119,29 @@ def test_favorability(comparison_cross_validation_reports_binary_classification)
     assert len(result) == 9
 
 
-def test_cache(cross_validation_reports_binary_classification):
-    """`MetricsSummaryDisplay` results are cached."""
-    cv_report_1, cv_report_2 = cross_validation_reports_binary_classification
-    report = ComparisonReport([cv_report_1, cv_report_2])
-    with check_cache_changed(report._cache):
-        result = report.metrics.summarize().frame()
-
-    with check_cache_unchanged(report._cache):
-        cached_result = report.metrics.summarize().frame()
-
-    assert_frame_equal(result, cached_result)
-
-
-def test_init_with_report_names(forest_binary_classification_data):
+def test_init_with_report_names(binary_classification_data):
     """
     If the estimators are passed as a dict, then the estimator names are the dict keys.
     """
-
-    estimator_1, X, y = forest_binary_classification_data
-    estimator_2 = clone(estimator_1)
-    cv_report1 = CrossValidationReport(estimator_1, X, y)
-    cv_report2 = CrossValidationReport(estimator_2, X, y)
-
-    comp = ComparisonReport({"r1": cv_report1, "r2": cv_report2})
-
-    assert_index_equal(
-        (
-            comp.metrics.summarize(aggregate=None)
-            .frame()
-            .index.get_level_values("Estimator")
-            .unique()
-        ),
-        pd.Index(["r1", "r2"], name="Estimator"),
-    )
-
-
-def test_data_source_external(
-    comparison_cross_validation_reports_binary_classification,
-    binary_classification_data,
-):
-    """`MetricsSummaryDisplay` works as intended with `data_source="X_y"`."""
-    report = comparison_cross_validation_reports_binary_classification
     X, y = binary_classification_data
-    result = report.metrics.summarize(data_source="X_y", X=X, y=y).frame()
 
-    assert_index_equal(
-        result.columns,
-        pd.MultiIndex.from_tuples(
-            [
-                ("mean", "DummyClassifier_1"),
-                ("mean", "DummyClassifier_2"),
-                ("std", "DummyClassifier_1"),
-                ("std", "DummyClassifier_2"),
-            ],
-            names=[None, "Estimator"],
-        ),
+    report_1 = CrossValidationReport(
+        DummyClassifier(strategy="uniform", random_state=1), X=X, y=y
     )
-    assert len(result) == 9
+    report_2 = CrossValidationReport(
+        DummyClassifier(strategy="uniform", random_state=2), X=X, y=y
+    )
+    report = ComparisonReport({"model_1": report_1, "model_2": report_2})
+
+    estimator_names = set(
+        report.metrics.summarize().frame(aggregate=None).reset_index()["Estimator"]
+    )
+    assert estimator_names == {"model_1", "model_2"}
 
 
 def test_cache_poisoning(binary_classification_data):
-    """Computing metrics for a ComparisonReport should not influence the
+    """
+    Computing metrics for a ComparisonReport should not influence the
     metrics computation for the internal CVReports.
 
     Non-regression test for https://github.com/probabl-ai/skore/issues/1706
@@ -223,10 +155,21 @@ def test_cache_poisoning(binary_classification_data):
         DummyClassifier(strategy="uniform", random_state=2), X=X, y=y
     )
     report = ComparisonReport({"model_1": report_1, "model_2": report_2})
-    report.metrics.summarize(favorability=True)
-    result = report_1.metrics.summarize(aggregate=None, favorability=True).frame()
+    report.metrics.summarize().frame(favorability=True)
+    result = report_1.metrics.summarize().frame(aggregate=None, favorability=True)
 
     assert "Favorability" in result.columns
+
+
+def test_aggregate_sequence_of_one_element(
+    comparison_cross_validation_reports_binary_classification,
+):
+    """Passing a list of one string is the same as passing the string itself."""
+    report = comparison_cross_validation_reports_binary_classification
+    assert_frame_equal(
+        report.metrics.summarize().frame(aggregate="mean"),
+        report.metrics.summarize().frame(aggregate=["mean"]),
+    )
 
 
 @pytest.mark.parametrize(

@@ -73,7 +73,12 @@ X_train, X_external, y_train, y_external = train_test_split(
 from skore import EstimatorReport
 
 report = EstimatorReport(
-    model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    model,
+    X_train=X_train,
+    y_train=y_train,
+    X_test=X_test,
+    y_test=y_test,
+    pos_label="allowed",
 )
 report.help()
 
@@ -162,58 +167,13 @@ result
 print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
-# Caching external data
-# ^^^^^^^^^^^^^^^^^^^^^
-#
-# The report can also work with external data. We use `data_source="X_y"` to indicate
-# that we want to pass those external data.
-start = time.time()
-result = report.metrics.log_loss(data_source="X_y", X=X_external, y=y_external)
-end = time.time()
-result
-
-# %%
-print(f"Time taken: {end - start:.2f} seconds")
-
-# %%
-#
-# The first calculation of the above cell is slower than when using the internal train
-# or test sets because it needs to compute a hash of the new data for later retrieval.
-# Let's calculate it again:
-start = time.time()
-result = report.metrics.log_loss(data_source="X_y", X=X_external, y=y_external)
-end = time.time()
-result
-
-# %%
-print(f"Time taken: {end - start:.2f} seconds")
-
-# %%
-#
-# It is much faster for the second time as the predictions are cached!
-# The remaining time corresponds to the hash computation.
-# Let's compute the ROC AUC on the same data:
-start = time.time()
-result = report.metrics.roc_auc(data_source="X_y", X=X_external, y=y_external)
-end = time.time()
-result
-
-# %%
-print(f"Time taken: {end - start:.2f} seconds")
-
-# %%
-# We observe that the computation is already efficient because it boils down to two
-# computations: the hash of the data and the ROC-AUC metric.
-# We save a lot of time because we don't need to re-compute the predictions.
-
-# %%
 # Caching for plotting
 # ^^^^^^^^^^^^^^^^^^^^
 #
 # The cache also speeds up plots. Let's create a ROC curve:
 
 start = time.time()
-display = report.metrics.roc(pos_label="allowed")
+display = report.metrics.roc()
 display.plot()
 end = time.time()
 
@@ -224,7 +184,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # The second plot is instant because it uses cached data:
 start = time.time()
-display = report.metrics.roc(pos_label="allowed")
+display = report.metrics.roc()
 display.plot()
 end = time.time()
 
@@ -235,7 +195,8 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # We only use the cache to retrieve the `display` object and not directly the matplotlib
 # figure. It means that we can still customize the cached plot before displaying it:
-display.set_style(relplot_kwargs={"color": "tab:orange"}).plot()
+display.set_style(relplot_kwargs={"color": "tab:orange"})
+display.plot()
 
 # %%
 #

@@ -154,64 +154,11 @@ def test_custom_metric(forest_binary_classification_data):
     assert result.index == ["Accuracy Score"]
 
 
-def test_cache_key_with_string_aggregate_is_not_split(
-    forest_binary_classification_data,
-):
-    """
-    Check that string aggregate values are stored as a single cache-key item.
-    Non-regression test for: https://github.com/probabl-ai/skore/issues/2450
-    """
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
-
-    report.metrics.summarize(aggregate="mean")
-
-    summarize_cache_keys = [key for key in report._cache if key[1] == "summarize"]
-    assert summarize_cache_keys
-    assert any("mean" in key for key in summarize_cache_keys)
-
-
-@pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_summarize_pos_label_overwrite(metric, logistic_binary_classification_data):
-    """Check that `pos_label` can be overwritten in `summarize`"""
-    classifier, X, y = logistic_binary_classification_data
-    labels = np.array(["A", "B"], dtype=object)
-    y = labels[y]
-
-    report = CrossValidationReport(classifier, X, y)
-    result_both_labels = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
-    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
-
-    report = CrossValidationReport(classifier, X, y, pos_label="B")
-    result = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert "Label / Average" not in result.columns
-    result = result.set_index("Metric")
-    assert (
-        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
-        == result_both_labels.loc[
-            (metric.capitalize(), "B"), (report.estimator_name_, "mean")
-        ]
-    )
-
-    result = (
-        report.metrics.summarize(metric=metric, pos_label="A").frame().reset_index()
-    )
-    assert "Label / Average" not in result.columns
-    result = result.set_index("Metric")
-    assert (
-        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
-        == result_both_labels.loc[
-            (metric.capitalize(), "A"), (report.estimator_name_, "mean")
-        ]
-    )
-
-
 @pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_precision_recall_pos_label_overwrite(
     metric, logistic_binary_classification_data
 ):
-    """Check that `pos_label` can be overwritten in `summarize`."""
+    """Check that `pos_label` can be set."""
     classifier, X, y = logistic_binary_classification_data
     labels = np.array(["A", "B"], dtype=object)
     y = labels[y]
@@ -221,7 +168,8 @@ def test_precision_recall_pos_label_overwrite(
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
 
-    result = getattr(report.metrics, metric)(pos_label="B").reset_index()
+    report = CrossValidationReport(classifier, X, y, pos_label="B")
+    result = getattr(report.metrics, metric)().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     assert (
@@ -231,7 +179,8 @@ def test_precision_recall_pos_label_overwrite(
         ]
     )
 
-    result = getattr(report.metrics, metric)(pos_label="A").reset_index()
+    report = CrossValidationReport(classifier, X, y, pos_label="A")
+    result = getattr(report.metrics, metric)().reset_index()
     assert "Label / Average" not in result.columns
     result = result.set_index("Metric")
     assert (
@@ -242,21 +191,15 @@ def test_precision_recall_pos_label_overwrite(
     )
 
 
-def test_invalid_X_y_call_still_raises_after_cache_write(
-    logistic_binary_classification_data,
-):
+def test_data_source_both(logistic_binary_classification_data):
     """
-    Non regression for https://github.com/probabl-ai/skore/issues/2491:
-    Invalid `X`/`y` args should not be masked by a cache hit.
+    data_source="both" is not yet supported for CrossValidationReport.
+
+    Non regression test for https://github.com/probabl-ai/skore/issues/2546
     """
     classifier, X, y = logistic_binary_classification_data
     report = CrossValidationReport(classifier, X, y)
 
-    error_msg = "X and y must be None when data_source is test"
-    with pytest.raises(ValueError, match=error_msg):
-        report.metrics.accuracy(X=X, y=y)
-
-    report.metrics.accuracy()
-
-    with pytest.raises(ValueError, match=error_msg):
-        report.metrics.accuracy(X=X, y=y)
+    error_msg = 'data_source="both" is not yet supported for CrossValidationReport'
+    with pytest.raises(NotImplementedError, match=error_msg):
+        report.metrics.summarize(data_source="both")

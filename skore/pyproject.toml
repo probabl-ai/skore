@@ -75,14 +75,15 @@ sphinx-base = [
   "sphinx_autosummary_accessors",
   "xgboost-cpu",
 ]
-sphinx = ["skore[sphinx-base, hub]", "polars"]
-sphinx-lts-cpu = ["skore[sphinx-base, hub]", "polars-lts-cpu"]
+sphinx = ["skore[sphinx-base, hub, mlflow]", "mlflow", "polars"]
+sphinx-lts-cpu = ["skore[sphinx-base, hub, mlflow]", "mlflow", "polars-lts-cpu"]
 dev = [
   "nbformat",
   "ipykernel",
 ]
 local = ["skore-local-project>=0.0.4"]
 hub = ["skore-hub-project>=0.0.17"]
+mlflow = ["skore-mlflow-project>=0.0.2"]
 
 [project.urls]
 Homepage = "https://probabl.ai"

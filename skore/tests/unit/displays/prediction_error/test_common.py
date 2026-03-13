@@ -93,7 +93,8 @@ class TestPredictionErrorDisplay:
         )
         display.set_style(
             relplot_kwargs=relplot_kwargs,
-        ).plot()
+        )
+        display.plot()
         ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
         np.testing.assert_array_equal(
             ax.collections[0].get_facecolor()[0][:3], [1.0, 0.0, 0.0]
@@ -124,7 +125,7 @@ class TestPredictionErrorDisplay:
             assert estimator_name in title
         else:
             assert "for" not in title
-        if display.data_source in ("train", "test", "X_y"):
+        if display.data_source in ("train", "test"):
             assert "Data source" in title
         else:
             assert "Data source" not in title

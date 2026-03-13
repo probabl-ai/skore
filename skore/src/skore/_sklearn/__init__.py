@@ -11,17 +11,23 @@ from skore._sklearn._plot import (
     RocCurveDisplay,
     TableReportDisplay,
 )
-from skore._sklearn.train_test_split.train_test_split import train_test_split
+from skore._sklearn.evaluate import evaluate
+from skore._sklearn.train_test_split.train_test_split import (
+    TrainTestSplit,
+    train_test_split,
+)
 
 __all__ = [
     "ComparisonReport",
     "ConfusionMatrixDisplay",
     "CrossValidationReport",
     "EstimatorReport",
+    "evaluate",
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",
     "TableReportDisplay",
     "RocCurveDisplay",
     "MetricsSummaryDisplay",
+    "TrainTestSplit",
     "train_test_split",
 ]

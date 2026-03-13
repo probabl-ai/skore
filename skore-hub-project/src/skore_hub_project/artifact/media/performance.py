@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Callable
 from functools import reduce
+from inspect import signature
 from io import BytesIO
 from typing import ClassVar, Literal, cast
 
@@ -63,7 +64,10 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
             else function(data_source=self.data_source)
         )
 
-        frame = display.frame()
+        if "threshold_value" in signature(display.frame).parameters:
+            frame = display.frame(threshold_value="all")
+        else:
+            frame = display.frame()
 
         return dumps(
             frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")

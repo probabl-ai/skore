@@ -158,23 +158,40 @@ def test_pos_label(pyplot, forest_binary_classification_data):
         X=X,
         y=y_labeled,
         splitter=3,
+        pos_label="A",
     )
     cv_report_2 = CrossValidationReport(
         estimator,
         X=X,
         y=y_labeled,
         splitter=3,
+        pos_label="A",
     )
     report = ComparisonReport([cv_report_1, cv_report_2])
 
-    display = report.metrics.confusion_matrix(pos_label="A")
+    display = report.metrics.confusion_matrix()
     display.plot()
     for idx in range(len(report.reports_)):
         assert display.ax_[idx].get_xticklabels()[1].get_text() == "A*"
     # Only the first subplot has yticklabels
     assert display.ax_[0].get_yticklabels()[1].get_text() in "A*"
 
-    display = report.metrics.confusion_matrix(pos_label="B")
+    cv_report_1 = CrossValidationReport(
+        estimator,
+        X=X,
+        y=y_labeled,
+        splitter=3,
+        pos_label="B",
+    )
+    cv_report_2 = CrossValidationReport(
+        estimator,
+        X=X,
+        y=y_labeled,
+        splitter=3,
+        pos_label="B",
+    )
+    report = ComparisonReport([cv_report_1, cv_report_2])
+    display = report.metrics.confusion_matrix()
     display.plot()
     for idx in range(len(report.reports_)):
         assert display.ax_[idx].get_xticklabels()[1].get_text() == "B*"

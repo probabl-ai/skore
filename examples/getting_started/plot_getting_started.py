@@ -148,8 +148,8 @@ simple_cv_report.data.analyze()
 # using :meth:`~skore.CrossValidationReport.metrics.summarize`:
 
 # %%
-simple_metrics = simple_cv_report.metrics.summarize(favorability=True)
-simple_metrics.frame()
+simple_metrics = simple_cv_report.metrics.summarize()
+simple_metrics.frame(favorability=True)
 
 # %%
 # .. note::
@@ -249,8 +249,8 @@ comparison.help()
 # %%
 # We have access to the same tools to perform statistical analysis and compare both
 # models:
-comparison_metrics = comparison.metrics.summarize(favorability=True)
-comparison_metrics.frame()
+comparison_metrics = comparison.metrics.summarize()
+comparison_metrics.frame(favorability=True)
 
 # %%
 comparison.metrics.precision_recall().plot()
@@ -274,7 +274,7 @@ comparison.metrics.precision_recall().plot()
 # %%
 
 final_report = comparison.create_estimator_report(
-    name="Simple Linear Model", X_test=X_holdout, y_test=y_holdout
+    report_key="Simple Linear Model", X_test=X_holdout, y_test=y_holdout
 )
 
 # %%

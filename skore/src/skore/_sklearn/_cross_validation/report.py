@@ -16,7 +16,7 @@ from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import _DEFAULT, PositiveLabel, SKLearnCrossValidator
+from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
@@ -278,12 +278,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def get_predictions(
         self,
         *,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: Literal["train", "test"],
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
-        X: ArrayLike | None = None,
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> list[ArrayLike]:
         """Get estimator's predictions.
 
@@ -297,27 +295,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the train set provided when creating the report and the target
-              variable.
 
         response_method : {"predict", "predict_proba", "decision_function"}, \
                 default="predict"
             The response method to use to get the predictions.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            When `data_source` is "X_y", the input features on which to compute the
-            response method.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing predictions in
-            binary classification cases. By default, the positive class is set to the
-            one provided when creating the report. If `None`, `estimator_.classes_[1]`
-            is used as positive label.
-
-            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
-            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
-            and `-estimator_.decision_function(X)` for
-            `response_method="decision_function"`.
 
         Returns
         -------
@@ -341,17 +322,15 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(50,), (50,)]
         """
-        if data_source not in ("train", "test", "X_y"):
+        if data_source not in ("train", "test"):
             raise ValueError(
                 f"Invalid data source: {data_source}. Valid data sources are "
-                "'train', 'test' and 'X_y'."
+                "'train' and 'test'."
             )
         return [
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,
-                X=X,
-                pos_label=pos_label,
             )
             for report in self.estimator_reports_
         ]
@@ -373,6 +352,30 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
             Testing target.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split
+        >>> from skore import ComparisonReport, CrossValidationReport
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> linear_report = CrossValidationReport(
+        ...     LogisticRegression(random_state=42), X_train, y_train
+        ... )
+        >>> forest_report = CrossValidationReport(
+        ...     RandomForestClassifier(random_state=42), X_train, y_train
+        ... )
+        >>> comparison_report = ComparisonReport([linear_report, forest_report])
+        >>> summary = comparison_report.metrics.summarize().frame()
+
+        >>> # Notice that e.g. the RandomForestClassifier performs best
+        >>> final_report = forest_report.create_estimator_report(
+        ...     X_test=X_test, y_test=y_test
+        ... )
+        >>> final_report.metrics.summarize().frame()
 
         Returns
         -------
@@ -429,13 +432,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     @property
     def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
-
-    @pos_label.setter
-    def pos_label(self, value: PositiveLabel | None) -> None:
-        self._pos_label = value
-        self._initialize_state()
-        for estimator_report in self.estimator_reports_:
-            estimator_report.pos_label = value
 
     ####################################################################################
     # Methods related to the help and repr

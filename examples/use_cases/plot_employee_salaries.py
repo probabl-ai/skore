@@ -156,7 +156,7 @@ data_display.plot(kind="corr")
 
 # %%
 hgbt_split_1 = hgbt_model_report.estimator_reports_[0]
-hgbt_split_1.metrics.summarize(favorability=True).frame()
+hgbt_split_1.metrics.summarize().frame(favorability=True)
 
 # %%
 # The favorability of each metric indicates whether the metric is better
@@ -273,7 +273,7 @@ with warnings.catch_warnings():
 # We can now have a look at the performance of the model with some standard metrics.
 
 # %%
-linear_model_report.metrics.summarize(favorability=True).frame()
+linear_model_report.metrics.summarize().frame(favorability=True)
 
 # %%
 # Comparing the models
@@ -286,7 +286,7 @@ linear_model_report.metrics.summarize(favorability=True).frame()
 from skore import ComparisonReport
 
 comparator = ComparisonReport([hgbt_model_report, linear_model_report])
-comparator.metrics.summarize(favorability=True).frame()
+comparator.metrics.summarize().frame(favorability=True)
 
 # %%
 # In addition, if we forgot to compute a specific metric

@@ -12,7 +12,8 @@ from sklearn.pipeline import Pipeline
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import ReportType
+from skore._sklearn.types import Aggregate, ReportType
+from skore._utils._index import flatten_multi_index
 
 
 class CoefficientsDisplay(DisplayMixin):
@@ -171,6 +172,7 @@ class CoefficientsDisplay(DisplayMixin):
     def frame(
         self,
         *,
+        aggregate: Aggregate | None = ("mean", "std"),
         include_intercept: bool = True,
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
@@ -277,6 +279,20 @@ class CoefficientsDisplay(DisplayMixin):
         if select_k is not None:
             coefficients = self._select_k_features(coefficients, select_k)
 
+        if aggregate is not None and "split" in coefficients.columns:
+            group_by = [
+                c
+                for c in ["estimator", "feature", "label", "output"]
+                if c in coefficients.columns
+            ]
+            coefficients = (
+                coefficients.drop(columns=["split"])
+                .groupby(group_by, sort=False, dropna=False)
+                .aggregate(aggregate)
+            ).reset_index()
+            if isinstance(coefficients.columns, pd.MultiIndex):
+                coefficients.columns = flatten_multi_index(coefficients.columns)
+
         return coefficients
 
     @DisplayMixin.style_plot
@@ -356,6 +372,7 @@ class CoefficientsDisplay(DisplayMixin):
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
         frame = self.frame(
+            aggregate=None,
             include_intercept=include_intercept,
             select_k=select_k,
             sorting_order=sorting_order,
@@ -807,8 +824,7 @@ class CoefficientsDisplay(DisplayMixin):
 
         Returns
         -------
-        self : object
-            The instance with a modified style.
+        None
 
         Raises
         ------

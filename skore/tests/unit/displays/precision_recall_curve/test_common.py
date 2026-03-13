@@ -107,7 +107,8 @@ class TestPrecisionRecallCurveDisplay:
             else {"color": "red"}
         )
 
-        display.set_style(relplot_kwargs=relplot_kwargs).plot()
+        display.set_style(relplot_kwargs=relplot_kwargs)
+        display.plot()
         ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
         assert ax.get_lines()[0].get_color() == "red"
 
@@ -148,7 +149,7 @@ class TestPrecisionRecallCurveDisplay:
             assert estimator_name in title
         else:
             assert "for" not in title
-        if display.data_source in ("train", "test", "X_y"):
+        if display.data_source in ("train", "test"):
             assert "Data source" in title
         else:
             assert "Data source" not in title

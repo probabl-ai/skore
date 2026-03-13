@@ -54,7 +54,8 @@ def test_display_binary_classification_pos_label(
     display.plot()
     assert "Positive label: A" in display.figure_.get_suptitle()
 
-    display = getattr(report.metrics, metric)(pos_label="B")
+    report = CrossValidationReport(classifier, X, y, pos_label="B")
+    display = getattr(report.metrics, metric)()
     display.plot()
     assert "Positive label: B" in display.figure_.get_suptitle()
 
