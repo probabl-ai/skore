@@ -340,17 +340,15 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if metric_obj.score_func is None:
                 # Built-in metric: dispatch via the accessor method by name
                 metric_fn = getattr(self, metric_obj.name)
-                metrics_kwargs = metric_obj.kwargs
             else:
-                # Plain callable metric
+                # Callable metric
                 metric_fn = partial(
                     self.custom_metric,
                     metric_function=cast(Callable, metric_obj.score_func),
                     response_method=cast(str, metric_obj.response_method),
                 )
-                metrics_kwargs = metric_obj.kwargs
 
-            score = metric_fn(data_source=data_source, **metrics_kwargs)
+            score = metric_fn(data_source=data_source, **metric_obj.kwargs)
 
             row = {
                 "metric": metric_name,
@@ -365,7 +363,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             if (
                 self._parent._ml_task == "binary-classification"
-                and metrics_kwargs.get("average") == "binary"
+                and metric_obj.kwargs.get("average") == "binary"
             ):
                 rows.append({**row, "label": pos_label})
             elif self._parent._ml_task in (
@@ -376,7 +374,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     for label in score:
                         rows.append({**row, "label": label, "score": score[label]})  # noqa: PERF401
                 else:
-                    rows.append({**row, "average": metrics_kwargs.get("average")})
+                    rows.append({**row, "average": metric_obj.kwargs.get("average")})
             elif self._parent._ml_task == "multioutput-regression":
                 if isinstance(score, list):
                     for output_idx, output_score in enumerate(score):
@@ -384,7 +382,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                             {**row, "output": output_idx, "score": output_score}
                         )
                 else:
-                    rows.append({**row, "average": metrics_kwargs.get("multioutput")})
+                    rows.append(
+                        {**row, "average": metric_obj.kwargs.get("multioutput")}
+                    )
             else:
                 rows.append(row)
 
