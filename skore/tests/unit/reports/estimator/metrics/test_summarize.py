@@ -421,22 +421,22 @@ def test_custom_metric(linear_regression_with_test):
 
 def test_custom_metric_average_none(forest_binary_classification_with_test):
     """
-    Test binary classification with custom metric returning single value and
-    average is None.
+    Check that passing arguments to a custom metric through metric_kwargs
+    works correctly.
     """
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    def custom_f1(y_true, y_pred, average=None):
-        return f1_score(y_true, y_pred, average="binary")
+    def custom_f1(y_true, y_pred, average="binary"):
+        return f1_score(y_true, y_pred, average=average)
 
     display = report.metrics.summarize(
         metric=custom_f1, response_method="predict", metric_kwargs={"average": None}
     )
 
-    assert len(display.data) == 1
+    assert len(display.data) == 2
     assert display.data["average"].isna().all()
-    assert display.data["label"].isna().all()
+    assert set(display.data["label"]) == {0, 1}
 
 
 def test_custom_metric_no_response_method(forest_binary_classification_with_test):
