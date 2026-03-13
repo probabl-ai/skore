@@ -55,9 +55,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
-    def _parse_metric(
-        self, m: MetricLike, metric_kwargs: dict[str, Any] | None
-    ) -> Metric:
+    def _parse_metric(self, m: MetricLike, metric_kwargs: dict[str, Any]) -> Metric:
         if m in self._builtin_by_name:
             metric_obj = self._builtin_by_name[m]
 
@@ -79,7 +77,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     f"metrics: {list(self._builtin_by_name.keys())} "
                     "or a valid scikit-learn metric string."
                 ) from err
-            if metric_kwargs is not None:
+            if len(metric_kwargs) != 0:
                 raise ValueError(
                     "The `metric_kwargs` parameter is not supported when "
                     "`metric` is a scikit-learn scorer name. Use the function "
@@ -118,7 +116,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def _parse_metrics(
         self,
         metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None,
-        metric_kwargs: dict[str, Any] | None,
+        metric_kwargs: dict[str, Any],
     ) -> dict[str, Metric]:
         """Normalize arguments into a mapping from verbose name to Metric.
 
@@ -275,6 +273,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         pos_label = self._parent.pos_label
 
+        metric_kwargs = metric_kwargs or {}
         parsed_metrics = self._parse_metrics(metric, metric_kwargs)
 
         rows = []
