@@ -59,7 +59,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self, m: MetricLike, metric_kwargs: dict[str, Any] | None
     ) -> Metric:
         if m in self._builtin_by_name:
-            return self._builtin_by_name[m]
+            metric_obj = self._builtin_by_name[m]
+
+            # forward parameters specific to the builtin method
+            data_source_func = getattr(self, metric_obj.name)
+            metric_obj.kwargs = {
+                param: metric_kwargs[param]
+                for param in inspect.signature(data_source_func).parameters
+                if param in metric_kwargs
+            }
+            return metric_obj
         elif isinstance(m, str):
             try:
                 scorer = sklearn.metrics.get_scorer(m)
@@ -299,15 +308,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             elif metric_obj.score_func is None:
                 # Built-in metric: dispatch via the accessor method by name
                 metric_fn = getattr(self, metric_obj.name)
-                metrics_kwargs = {}
-                metrics_params = inspect.signature(metric_fn).parameters
-                if metric_kwargs is not None:
-                    for param in metrics_params:
-                        if param in metric_kwargs:
-                            metrics_kwargs[param] = metric_kwargs[param]
-                if "pos_label" in metrics_params:
-                    metrics_kwargs["pos_label"] = pos_label
-
+                metrics_kwargs = metric_obj.kwargs
             else:
                 # Plain callable metric
                 callable_fn = metric_obj.score_func
