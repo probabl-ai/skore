@@ -109,7 +109,7 @@ inspection_display.plot(select_k=15, sorting_order="descending")
 
 # %%
 # Second report type: cross-validation
-# =====================================
+# ====================================
 #
 # Using the same :func:`~skore.evaluate` with an integer ``splitter`` returns a
 # :class:`~skore.CrossValidationReport`. The same accessors and display API
@@ -129,7 +129,7 @@ cv_report.inspection.coefficients().plot(select_k=10, sorting_order="descending"
 
 # %%
 # Third report type: comparison
-# ============================
+# =============================
 #
 # Passing a **list of estimators** to :func:`~skore.evaluate` returns a
 # :class:`~skore.ComparisonReport`. It exposes the same ``metrics`` and
