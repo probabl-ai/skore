@@ -10,7 +10,7 @@ from typing import ClassVar, Literal, cast
 
 from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.json import dumps
-from skore_hub_project.protocol import Display
+from skore_hub_project.protocol import CrossValidationReport, Display
 
 
 class Inspection(Media[Report], ABC):  # noqa: D101
@@ -44,28 +44,36 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
     name: Literal["permutation_importance"] = "permutation_importance"
 
     def content_to_upload(self) -> bytes | None:  # noqa: D102
-        for key, display in reversed(list(self.report._cache.items())):
+        if not self._has_permutation(self.report):
+            return None
+
+        frame = self.report.inspection.permutation_importance(
+            data_source=self.data_source
+        ).frame(aggregate=None)
+        return dumps(
+            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+        )
+
+    def _has_permutation(self, report: Report) -> bool:
+        if isinstance(report, CrossValidationReport):
+            return all(self._has_permutation(r) for r in report.estimator_reports_)
+
+        for key, _ in reversed(list(report._cache.items())):
             if len(key) < 6:
                 continue
 
             parent_hash, name, data_source, at_step, _, metric, *_ = key
 
             if (
-                parent_hash == self.report._hash
+                parent_hash == report._hash
                 and name == "permutation_importance"
                 and data_source == self.data_source
                 and at_step == 0
                 and metric is None
             ):
-                frame = display.frame(aggregate=None)
+                return True
 
-                return dumps(
-                    frame.astype(object)
-                    .where(frame.notna(), "NaN")
-                    .to_dict(orient="tight")
-                )
-
-        return None
+        return False
 
 
 class PermutationImportanceTrain(PermutationImportance[Report]):  # noqa: D101
