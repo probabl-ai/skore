@@ -132,7 +132,9 @@ matplotlib==3.10.8
 mdurl==0.1.2
     # via markdown-it-py
 mlflow==3.10.1
-    # via skore-mlflow-project (skore-mlflow-project/pyproject.toml)
+    # via
+    #   --override skore-mlflow-project/overrides.txt
+    #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
 mlflow-skinny==3.10.1
     # via mlflow
 mlflow-tracing==3.10.1
@@ -317,8 +319,6 @@ starlette==0.52.1
     # via fastapi
 threadpoolctl==3.6.0
     # via scikit-learn
-tomli==2.4.0
-    # via coverage
 typing-extensions==4.15.0
     # via
     #   alembic

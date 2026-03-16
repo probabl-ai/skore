@@ -132,7 +132,9 @@ matplotlib==3.10.8
 mdurl==0.1.2
     # via markdown-it-py
 mlflow==3.10.1
-    # via skore-mlflow-project (skore-mlflow-project/pyproject.toml)
+    # via
+    #   --override skore-mlflow-project/overrides.txt
+    #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
 mlflow-skinny==3.10.1
     # via mlflow
 mlflow-tracing==3.10.1
@@ -279,7 +281,7 @@ rich==14.3.3
     #   skore-local-project
 rsa==4.9.1
     # via google-auth
-scikit-learn==1.6.1
+scikit-learn==1.7.2
     # via
     #   --override skore-mlflow-project/overrides.txt
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
