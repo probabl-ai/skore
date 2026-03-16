@@ -305,18 +305,18 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         ...    seed=0,
         ... ).frame()
               estimator data_source  metric  ...   value_mean    value_std
-        0  small alpha        test      r2  ...     0.577888     0.226399
-        1  small alpha        test      r2  ...     1.035454     0.180778
-        2  small alpha        test      r2  ...     0.016801     0.003577
-        3  small alpha        test     mse  ...  3749.565731  1468.964660
-        4  small alpha        test     mse  ...  6718.437884  1172.961272
-        5  small alpha        test     mse  ...   109.009650    23.205795
-        6    big alpha        test      r2  ...     0.044482     0.013717
-        7    big alpha        test      r2  ...     0.088916     0.026191
-        8    big alpha        test      r2  ...     0.001826     0.008475
-        9    big alpha        test     mse  ...   288.618702    88.998809
-        10   big alpha        test     mse  ...   576.924696   169.940308
-        11   big alpha        test     mse  ...    11.846779    54.992092
+        0   small alpha        test      r2  ...     0.577888     0.226399
+        1   small alpha        test      r2  ...     1.035454     0.180778
+        2   small alpha        test      r2  ...     0.016801     0.003577
+        3   small alpha        test     mse  ...  3749.565731  1468.964660
+        4   small alpha        test     mse  ...  6718.437884  1172.961272
+        5   small alpha        test     mse  ...   109.009650    23.205795
+        6     big alpha        test      r2  ...     0.044482     0.013717
+        7     big alpha        test      r2  ...     0.088916     0.026191
+        8     big alpha        test      r2  ...     0.001826     0.008475
+        9     big alpha        test     mse  ...   288.618702    88.998809
+        10    big alpha        test     mse  ...   576.924696   169.940308
+        11    big alpha        test     mse  ...    11.846779    54.992092
 
         Notes
         -----

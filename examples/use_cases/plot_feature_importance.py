@@ -415,7 +415,7 @@ engineered_ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicte
 # introduced a *lot* of features:
 
 # %%
-n_features_initial = ridge_report._X_train.shape[1]
+n_features_initial = ridge_report.X_train.shape[1]
 print("Initial number of features:", n_features_initial)
 
 # We slice the scikit-learn pipeline to extract the predictor, using -1 to access
@@ -482,7 +482,7 @@ kmeans = col_transformer.named_transformers_["kmeans"]
 clustering_labels = kmeans.labels_
 
 # adding the cluster labels to our dataframe
-X_train_plot = ridge_report._X_train.copy()
+X_train_plot = ridge_report.X_train.copy()
 X_train_plot.insert(n_features_initial, "clustering_labels", clustering_labels)
 
 # plotting the map

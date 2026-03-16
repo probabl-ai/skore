@@ -554,8 +554,8 @@ class _MetricsAccessor(
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.metrics.accuracy()  # doctest: +ELLIPSIS
-        0.9...
+        >>> report.metrics.accuracy()
+        0.94...
         """
         score = self._compute_metric_scores(
             sklearn.metrics.accuracy_score,
