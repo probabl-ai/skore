@@ -58,6 +58,7 @@ jobs:
   pr-clean-documentation-preview:
     if: always()
     runs-on: ubuntu-latest
+    environment: dev
     permissions:
       id-token: write
     steps:

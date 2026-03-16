@@ -149,14 +149,15 @@ def test_pos_label(pyplot, forest_binary_classification_data):
     labels = np.array(["A", "B"], dtype=object)
     y = labels[y]
     estimator = LogisticRegression()
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv, pos_label="A")
 
-    display = report.metrics.confusion_matrix(pos_label="A")
+    display = report.metrics.confusion_matrix()
     display.plot()
     assert display.ax_.get_xticklabels()[1].get_text() == "A*"
     assert display.ax_.get_yticklabels()[1].get_text() == "A*"
 
-    display = report.metrics.confusion_matrix(pos_label="B")
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv, pos_label="B")
+    display = report.metrics.confusion_matrix()
     display.plot()
     assert display.ax_.get_xticklabels()[1].get_text() == "B*"
     assert display.ax_.get_yticklabels()[1].get_text() == "B*"

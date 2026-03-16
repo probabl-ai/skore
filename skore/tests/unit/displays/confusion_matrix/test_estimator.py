@@ -125,15 +125,28 @@ def test_pos_label(pyplot, forest_binary_classification_with_train_test):
     y_test = labels[y_test]
     estimator.fit(X_train, y_train)
     report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        pos_label="A",
     )
 
-    display = report.metrics.confusion_matrix(pos_label="A")
+    display = report.metrics.confusion_matrix()
     display.plot()
     assert display.ax_.get_xticklabels()[1].get_text() == "A*"
     assert display.ax_.get_yticklabels()[1].get_text() == "A*"
 
-    display = report.metrics.confusion_matrix(pos_label="B")
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        pos_label="B",
+    )
+    display = report.metrics.confusion_matrix()
     display.plot()
     assert display.ax_.get_xticklabels()[1].get_text() == "B*"
     assert display.ax_.get_yticklabels()[1].get_text() == "B*"

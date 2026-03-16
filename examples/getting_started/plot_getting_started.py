@@ -249,8 +249,8 @@ comparison.help()
 # %%
 # We have access to the same tools to perform statistical analysis and compare both
 # models:
-comparison_metrics = comparison.metrics.summarize(favorability=True)
-comparison_metrics.frame()
+comparison_metrics = comparison.metrics.summarize()
+comparison_metrics.frame(favorability=True)
 
 # %%
 comparison.metrics.precision_recall().plot()

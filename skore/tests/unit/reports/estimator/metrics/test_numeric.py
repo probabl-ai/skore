@@ -306,10 +306,12 @@ def test_precision_recall_pos_label_overwrite(metric, metric_fn):
     assert result.keys() == {"A", "B"}
 
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
-    assert getattr(report.metrics, metric)(pos_label="B") == pytest.approx(
+    assert getattr(report.metrics, metric)() == pytest.approx(
         metric_fn(y, classifier.predict(X), pos_label="B")
     )
-    assert getattr(report.metrics, metric)(pos_label="A") == pytest.approx(
+
+    report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")
+    assert getattr(report.metrics, metric)() == pytest.approx(
         metric_fn(y, classifier.predict(X), pos_label="A")
     )
 

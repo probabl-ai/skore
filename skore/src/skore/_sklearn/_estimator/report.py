@@ -18,7 +18,7 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import _DEFAULT, PositiveLabel
+from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
@@ -265,11 +265,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     response_methods += ["predict_proba"]
                 if hasattr(self._estimator, "decision_function"):
                     response_methods += ["decision_function"]
-            pos_labels = self._estimator.classes_.tolist() + [None]
         else:
             if response_methods == "auto":
                 response_methods = ["predict"]
-            pos_labels = [None]
 
         data_sources = [("test", self._X_test)]
         if self._X_train is not None:
@@ -291,15 +289,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     estimator=self._estimator,
                     X=X,
                     response_method=response_method,
-                    pos_label=pos_label,
+                    pos_label=self._pos_label,
                     data_source=data_source,
                 )
-                for response_method, pos_label, (data_source, X) in product(
-                    response_methods, pos_labels, data_sources
+                for response_method, (data_source, X) in product(
+                    response_methods, data_sources
                 )
             ),
             description="Caching predictions",
-            total=(len(response_methods) * len(pos_labels) * len(data_sources)),
+            total=(len(response_methods) * len(data_sources)),
         ):
             results_to_cache.update(
                 (key, value) for key, value, is_cached in results if not is_cached
@@ -315,7 +313,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> ArrayLike:
         """Get estimator's predictions.
 
@@ -333,17 +330,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         response_method : {"predict", "predict_proba", "decision_function"}, \
                 default="predict"
             The response method to use to get the predictions.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing predictions in
-            binary classification cases. By default, the positive class is set to the
-            one provided when creating the report. If `None`, `estimator_.classes_[1]`
-            is used as positive label.
-
-            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
-            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
-            and `-estimator_.decision_function(X)` for
-            `response_method="decision_function"`.
 
         Returns
         -------
@@ -369,9 +355,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> predictions.shape
         (25,)
         """
-        if pos_label is _DEFAULT:
-            pos_label = self.pos_label
-
         if data_source == "test":
             X_ = self._X_test
         elif data_source == "train":
@@ -385,7 +368,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             estimator=self._estimator,
             X=X_,
             response_method=response_method,
-            pos_label=pos_label,
+            pos_label=self._pos_label,
             data_source=data_source,
         )
         for key, value, is_cached in results:
@@ -424,11 +407,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     @property
     def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
-
-    @pos_label.setter
-    def pos_label(self, value: PositiveLabel | None) -> None:
-        self._pos_label = value
-        self._initialize_state()
 
     @property
     def estimator_name_(self) -> str:

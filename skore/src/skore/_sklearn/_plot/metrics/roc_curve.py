@@ -87,7 +87,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     >>> classifier = LogisticRegression(max_iter=10_000)
     >>> report = EstimatorReport(classifier, **split_data)
     >>> display = report.metrics.roc()
-    >>> display.set_style(relplot_kwargs={"color": "tab:red"}).plot()
+    >>> display.set_style(relplot_kwargs={"color": "tab:red"})
+    >>> display.plot()
     """
 
     _default_relplot_kwargs = {
@@ -169,7 +170,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
         >>> display = report.metrics.roc()
-        >>> display.set_style(relplot_kwargs={"color": "tab:red"}).plot()
+        >>> display.set_style(relplot_kwargs={"color": "tab:red"})
+        >>> display.plot()
         """
         return self._plot(
             subplot_by=subplot_by,
@@ -543,8 +545,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         Returns
         -------
-        self : object
-            The instance with a modified style.
+        None
 
         Raises
         ------

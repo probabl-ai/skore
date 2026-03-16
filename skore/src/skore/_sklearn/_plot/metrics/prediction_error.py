@@ -622,8 +622,7 @@ class PredictionErrorDisplay(DisplayMixin):
 
         Returns
         -------
-        self : object
-            The instance with a modified style.
+        None
 
         Raises
         ------
