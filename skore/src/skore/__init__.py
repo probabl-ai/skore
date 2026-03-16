@@ -23,6 +23,7 @@ from skore._sklearn import (
     RocCurveDisplay,
     TableReportDisplay,
     TrainTestSplit,
+    compare,
     evaluate,
     train_test_split,
 )
@@ -54,6 +55,7 @@ if parse_version(joblib_version) < parse_version("1.4"):
 __all__ = [
     "CoefficientsDisplay",
     "ComparisonReport",
+    "compare",
     "ConfusionMatrixDisplay",
     "CrossValidationReport",
     "Display",
