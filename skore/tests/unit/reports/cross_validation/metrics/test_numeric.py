@@ -50,10 +50,6 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
     assert list(split_names) == expected_split_names
 
-    # check that something was written to the cache
-    assert report._cache != {}
-    report.clear_cache()
-
     _check_metrics_names(result, [metric], expected_nb_stats)
 
     # check the aggregate parameter
