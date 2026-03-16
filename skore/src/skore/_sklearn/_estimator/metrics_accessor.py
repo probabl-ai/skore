@@ -120,9 +120,9 @@ class _MetricsAccessor(
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> metrics_report = report.metrics.summarize().frame(favorability=True).frame(
-            favorability=True
-        ).drop(["Fit time (s)", "Predict time (s)"])
+        >>> report.metrics.summarize().frame(favorability=True).drop(
+        ...    ["Fit time (s)", "Predict time (s)"]
+        ... )
                     LogisticRegression Favorability
         Metric
         Accuracy               0.94...         (↗︎)
