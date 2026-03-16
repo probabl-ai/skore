@@ -52,10 +52,6 @@ X, y = make_classification(n_samples=1_000, random_state=42)
 print(f"{X.shape = }")
 
 # %%
-# We use :func:`~skore.evaluate` to fit and evaluate our model (it splits the data
-# internally by default).
-
-# %%
 # Gradient-boosted decision trees with XGBoost
 # ============================================
 #

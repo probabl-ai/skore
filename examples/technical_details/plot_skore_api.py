@@ -5,37 +5,45 @@
 The skore API
 =============
 
-This example illustrates the consistent API shared by skore reports and displays.
-Reports expose the same accessors (``data``, ``metrics``, ``inspection``), and
-each method that produces a visualization returns a **Display** object. All
-displays implement a common interface: ``plot()``, ``frame()``, ``set_style()``,
-and ``help()``.
+Skore has three types of reports: :class:`~skore.EstimatorReport`
+(single train-test evaluation), :class:`~skore.CrossValidationReport`
+(cross-validation), and :class:`~skore.ComparisonReport` (comparing several
+estimators). All three are created via :func:`~skore.evaluate` by passing an
+estimator (or a list of estimators for comparison), the data ``X`` and ``y``,
+and a ``splitter`` that controls the evaluation strategy.
+
+This example showcases the **unified API** shared by these reports: they expose
+the same accessors (``data``, ``metrics``, ``inspection``). Methods that
+produce a visualization return a **Display** object with ``plot()``, ``frame()``,
+``set_style()``, and ``help()``.
 """
 
 # %%
-# Reports share the same accessor structure
-# =========================================
+# Three report types, one API
+# ===========================
 #
-# :class:`~skore.EstimatorReport`, :class:`~skore.CrossValidationReport`, and
-# :class:`~skore.ComparisonReport` all expose the same accessors where applicable:
+# :func:`~skore.evaluate` returns one of three report types depending on its
+# ``splitter`` argument: an :class:`~skore.EstimatorReport` when ``splitter`` is a
+# float or ``"prefit"``, a :class:`~skore.CrossValidationReport` when ``splitter`` is
+# an integer or a scikit-learn cross-validator (e.g. ``KFold``, ``StratifiedKFold``),
+# or a :class:`~skore.ComparisonReport` when passing a list of estimators.
+# All three respect the same accessor layout where applicable:
 #
 # - **data**: dataset analysis
 # - **metrics**: performance metrics and related displays (e.g. ROC, confusion matrix)
 # - **inspection**: model inspection (e.g. coefficients, feature importance)
 #
-# The ``data`` accessor is only available on :class:`~skore.EstimatorReport` and
-# :class:`~skore.CrossValidationReport` because when comparing models, the input data
-# can be different and thus one can access the underlying reports to inspect the data.
-#
-# Calling a method on these accessors returns a **Display** object. The same
-# pattern holds across report types, so once you know one, you know them all.
+# The ``data`` accessor is not available on ComparisonReport because compared
+# models may use different input data; you can still inspect each underlying report.
+# Methods on these accessors return **Display** objects with a common interface.
 
 # %%
-# Minimal setup: one report and one display
-# =========================================
+# First report: single train-test split
+# =====================================
 #
-# We use :func:`~skore.evaluate` to create a report (it performs a train-test split
-# by default). The same accessors and display API apply to all report types.
+# We call :func:`~skore.evaluate` with the default ``splitter=0.2`` to get an
+# :class:`~skore.EstimatorReport`. The accessors and display API shown below
+# are the same for the other report types.
 from sklearn.datasets import load_breast_cancer
 from sklearn.linear_model import LogisticRegression
 from skore import evaluate
@@ -100,11 +108,12 @@ inspection_display = report.inspection.coefficients()
 inspection_display.plot(select_k=15, sorting_order="descending")
 
 # %%
-# Same API with cross-validation
-# ===============================
+# Second report type: cross-validation
+# =====================================
 #
-# The same accessors and display API apply when using cross-validation.
-# Pass an integer as ``splitter`` to get a :class:`~skore.CrossValidationReport`.
+# Using the same :func:`~skore.evaluate` with an integer ``splitter`` returns a
+# :class:`~skore.CrossValidationReport`. The same accessors and display API
+# apply; only the way the report was built changes.
 cv_report = evaluate(estimator, X, y, splitter=3)
 
 # %%
@@ -119,16 +128,22 @@ cv_report.metrics.confusion_matrix().plot()
 cv_report.inspection.coefficients().plot(select_k=10, sorting_order="descending")
 
 # %%
-# The same accessors and display API apply to :class:`~skore.ComparisonReport`
-# (metrics and inspection; no data accessor when comparing reports).
+# Third report type: comparison
+# ============================
+#
+# Passing a **list of estimators** to :func:`~skore.evaluate` returns a
+# :class:`~skore.ComparisonReport`. It exposes the same ``metrics`` and
+# ``inspection`` accessors (no ``data`` accessor, since compared models can
+# use different datasets). The display API is unchanged.
 
 # %%
 # Summary
 # =======
 #
-# - **Reports** (Estimator, CrossValidation, Comparison) use the same accessor
-#   layout: ``report.data``, ``report.metrics``, ``report.inspection`` (where
-#   applicable).
+# - **Three report types** (:class:`~skore.EstimatorReport`,
+#   :class:`~skore.CrossValidationReport`, :class:`~skore.ComparisonReport`) are
+#   all created with :func:`~skore.evaluate` and share the same accessor layout:
+#   ``report.data``, ``report.metrics``, ``report.inspection`` (where applicable).
 # - **Accessor methods** that produce figures or tables return **Display**
 #   objects.
 # - **Displays** share a single, predictable API:

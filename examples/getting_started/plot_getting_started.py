@@ -115,17 +115,16 @@ simple_model = tabular_pipeline(LogisticRegression())
 simple_model
 
 # %%
-# We now cross-validate the model with :func:`~skore.evaluate`.
+# We now evaluate our model with cross-validation, using :func:`~skore.evaluate`
+# with `splitter=5` to perform 5-fold cross-validation.
+# This returns a :class:`~skore.CrossValidationReport` object, which can be used to
+# access the performance metrics and other information about the model.
 
 # %%
 from skore import evaluate
 
 simple_cv_report = evaluate(
-    simple_model,
-    X_experiment,
-    y_experiment,
-    pos_label="good",
-    splitter=5,
+    simple_model, X_experiment, y_experiment, pos_label="good", splitter=5
 )
 
 # %%
@@ -230,16 +229,16 @@ advanced_cv_report = evaluate(
 # ====================
 #
 # Now that we have our two models, we need to decide which one should go into
-# production. We can compare them with :func:`~skore.evaluate` by passing a list
-# of estimators.
+# production. We can compare them with a :class:`skore.ComparisonReport`.
 
 # %%
-comparison = evaluate(
-    [simple_model, advanced_model],
-    X_experiment,
-    y_experiment,
-    pos_label="good",
-    splitter=5,
+from skore import ComparisonReport
+
+comparison = ComparisonReport(
+    {
+        "Simple Linear Model": simple_cv_report,
+        "Advanced Pipeline": advanced_cv_report,
+    },
 )
 
 # %%
@@ -274,7 +273,7 @@ comparison.metrics.precision_recall().plot()
 # %%
 
 final_report = comparison.create_estimator_report(
-    report_key=0, X_test=X_holdout, y_test=y_holdout
+    report_key="Simple Linear Model", X_test=X_holdout, y_test=y_holdout
 )
 
 # %%
