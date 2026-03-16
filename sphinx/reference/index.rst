@@ -30,6 +30,8 @@ ML Assistance
 .. list-table::
    :widths: 30 70
 
+   * - :func:`compare`
+     - Compare reports into a single :class:`~skore.ComparisonReport`
    * - :func:`train_test_split`
      - Split arrays or matrices into random train and test subsets
 
