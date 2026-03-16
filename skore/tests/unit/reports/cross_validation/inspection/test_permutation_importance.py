@@ -87,7 +87,7 @@ def test_cache_parameter_in_cache(regression_data):
     report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test", metric="r2"
     )
-    with check_cache_changed(report._cache):
+    with check_cache_changed(report.estimator_reports_[0]._cache):
         report.inspection.permutation_importance(
             seed=42,
             n_repeats=2,
