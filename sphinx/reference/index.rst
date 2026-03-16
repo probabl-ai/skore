@@ -30,6 +30,8 @@ ML Assistance
 .. list-table::
    :widths: 30 70
 
+   * - :func:`evaluate`
+     - Create an estimator, cross-validation, or comparison report from data
    * - :func:`train_test_split`
      - Split arrays or matrices into random train and test subsets
 

@@ -26,12 +26,12 @@ To try it locally, start an MLflow server with ``uvx mlflow server`` and set
 # %%
 from sklearn.datasets import load_iris
 from sklearn.ensemble import HistGradientBoostingClassifier
-from skore import CrossValidationReport, Project
+from skore import Project, evaluate
 
 X, y = load_iris(return_X_y=True, as_frame=True)
 
 estimator = HistGradientBoostingClassifier()
-report = CrossValidationReport(estimator, X, y)
+report = evaluate(estimator, X, y, splitter=5)
 
 # %%
 # Then, we can push the report to the MLflow backend:

@@ -47,23 +47,18 @@ class ImpurityDecreaseDisplay(DisplayMixin):
     --------
     >>> from sklearn.datasets import load_iris
     >>> from sklearn.ensemble import RandomForestClassifier
-    >>> from skore import EstimatorReport, train_test_split
+    >>> from skore import evaluate
     >>> iris = load_iris(as_frame=True)
     >>> X, y = iris.data, iris.target
     >>> y = iris.target_names[y]
-    >>> split_data = train_test_split(
-    ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
-    ... )
-    >>> report = EstimatorReport(
-    ...     RandomForestClassifier(random_state=0), **split_data
-    ... )
+    >>> report = evaluate(RandomForestClassifier(random_state=0), X, y, splitter=0.2)
     >>> display = report.inspection.impurity_decrease()
     >>> display.frame()
                     feature  importance
     0  sepal length (cm)     0.1...
     1   sepal width (cm)     0.0...
     2  petal length (cm)     0.4...
-    3   petal width (cm)     0.3...
+    3   petal width (cm)     0.4...
     """
 
     _default_barplot_kwargs: dict[str, Any] = {
@@ -183,14 +178,11 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         --------
         >>> from sklearn.datasets import load_iris
         >>> from sklearn.ensemble import RandomForestClassifier
-        >>> from skore import EstimatorReport, train_test_split
+        >>> from skore import evaluate
         >>> iris = load_iris(as_frame=True)
         >>> X, y = iris.data, iris.target
         >>> y = iris.target_names[y]
-        >>> split_data = train_test_split(
-        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
-        ... )
-        >>> report = EstimatorReport(RandomForestClassifier(), **split_data)
+        >>> report = evaluate(RandomForestClassifier(), X, y, splitter=0.2)
         >>> display = report.inspection.impurity_decrease()
         >>> display.plot()
         """

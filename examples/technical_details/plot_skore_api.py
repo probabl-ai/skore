@@ -34,18 +34,17 @@ and ``help()``.
 # Minimal setup: one report and one display
 # =========================================
 #
-# We build a simple :class:`~skore.EstimatorReport` and use it to show how
-# accessors return displays and how those displays behave.
+# We use :func:`~skore.evaluate` to create a report (it performs a train-test split
+# by default). The same accessors and display API apply to all report types.
 from sklearn.datasets import load_breast_cancer
 from sklearn.linear_model import LogisticRegression
-from skore import EstimatorReport, train_test_split
+from skore import evaluate
 from skrub import tabular_pipeline
 
 X, y = load_breast_cancer(return_X_y=True, as_frame=True)
-split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
 estimator = tabular_pipeline(LogisticRegression())
 
-report = EstimatorReport(estimator, **split_data)
+report = evaluate(estimator, X, y, splitter=0.2)
 
 # %%
 # Data accessor: ``report.data.analyze()`` returns a display
@@ -101,14 +100,12 @@ inspection_display = report.inspection.coefficients()
 inspection_display.plot(select_k=15, sorting_order="descending")
 
 # %%
-# Same API with :class:`~skore.CrossValidationReport`
-# ===================================================
+# Same API with cross-validation
+# ===============================
 #
-# The same accessors and display API apply to :class:`~skore.CrossValidationReport`.
-# We use the same dataset and model; only the report type changes.
-from skore import CrossValidationReport
-
-cv_report = CrossValidationReport(estimator, X, y, splitter=3)
+# The same accessors and display API apply when using cross-validation.
+# Pass an integer as ``splitter`` to get a :class:`~skore.CrossValidationReport`.
+cv_report = evaluate(estimator, X, y, splitter=3)
 
 # %%
 # Again: ``data``, ``metrics``, and ``inspection`` return displays with
