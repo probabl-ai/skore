@@ -150,7 +150,7 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable", None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
     "skrub": ("https://skrub-data.org/stable/", None),
-    "pandas": ("http://pandas.pydata.org/pandas-docs/stable", None),
+    "pandas": ("http://pandas.pydata.org/docs/", None),
     "polars": ("https://docs.pola.rs/py-polars/html", None),
     "seaborn": ("http://seaborn.pydata.org", None),
     "xgboost": ("https://xgboost.readthedocs.io/en/stable/", None),
