@@ -117,12 +117,12 @@ summary.info()
 # %%
 # Filter reports by metric (e.g. keep only those above a given accuracy) and
 # work with the result as a table.
-summary.query("log_loss < 0.1")["key"].tolist()
+summary.query("log_loss < 0.2")["key"].tolist()
 
 # %%
 # Use :meth:`~skore.project._summary.Summary.reports` to load the corresponding
 # reports from the project (optionally after filtering the summary).
-reports = summary.query("log_loss < 0.1").reports(return_as="comparison")
+reports = summary.query("log_loss < 0.2").reports(return_as="comparison")
 len(reports.reports_)
 
 # %%
