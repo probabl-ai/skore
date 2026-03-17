@@ -64,10 +64,17 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
             else function(data_source=self.data_source)
         )
 
-        if "threshold_value" in signature(display.frame).parameters:
-            frame = display.frame(threshold_value="all")
-        else:
-            frame = display.frame()
+        # pass optional parameters to the frame method
+        params = signature(display.frame).parameters
+        kwargs: dict[str, str | bool] = {}
+        if "threshold_value" in params:
+            kwargs["threshold_value"] = "all"
+        if "with_average_precision" in params:
+            kwargs["with_average_precision"] = True
+        if "with_roc_auc" in params:
+            kwargs["with_roc_auc"] = True
+
+        frame = display.frame(**kwargs)
 
         return dumps(
             frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
