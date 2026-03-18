@@ -335,9 +335,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
                         max_samples=max_samples,
                         n_jobs=n_jobs,
                         seed=seed,
-                    )
-                    .importances
-                    .assign(estimator=name)
+                    ).importances.assign(estimator=name)
                     for name, report in self._parent.reports_.items()
                 ],
                 ignore_index=True,
