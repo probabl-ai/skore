@@ -263,7 +263,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                         n_jobs=n_jobs,
                         seed=seed,
                     )
-                    .importances.copy()
+                    .importances
                     .assign(split=split_idx)
                     for split_idx, report in enumerate(self._parent.estimator_reports_)
                 ],
