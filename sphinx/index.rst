@@ -15,4 +15,3 @@
    reference/index
    contributing
    changelog
-   release_process

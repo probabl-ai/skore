@@ -228,7 +228,6 @@ html_sidebars = {
     "install": [],
     "contributing": [],
     "changelog": [],
-    "release_process": [],
 }
 
 # Sphinx-Copybutton configuration
