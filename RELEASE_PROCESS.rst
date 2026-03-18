@@ -16,7 +16,7 @@ conda-forge project page.
 To release a new version of skore (e.g., from 0.1.0 to 0.2.0), here are the main
 steps and appropriate resources:
 
-- Create a PR called ``release: <new-version>``, which updates CHANGELOG.rst:
+- Create a PR called ``release(skore): <new-version>``, which updates CHANGELOG.rst:
 
   - Replace "Unreleased" with the new version; make sure to add the release
     date and a link to the diff between the previous version and the new one.
