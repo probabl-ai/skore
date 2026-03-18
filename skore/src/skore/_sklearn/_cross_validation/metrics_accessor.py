@@ -885,7 +885,7 @@ class _MetricsAccessor(
         display = RocCurveDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            split=split_indices,
+            column_data={"split": list(split_indices)},
         )
         return display
 
@@ -930,7 +930,7 @@ class _MetricsAccessor(
         display = PrecisionRecallCurveDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            split=split_indices,
+            column_data={"split": list(split_indices)},
         )
         return display
 
@@ -994,7 +994,7 @@ class _MetricsAccessor(
         display = PredictionErrorDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            split=split_indices,
+            column_data={"split": list(split_indices)},
         )
         return display
 
@@ -1047,6 +1047,6 @@ class _MetricsAccessor(
         display = ConfusionMatrixDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            split=split_indices,
+            column_data={"split": list(split_indices)},
         )
         return display

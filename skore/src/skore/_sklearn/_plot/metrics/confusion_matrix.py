@@ -114,7 +114,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         child_displays: Sequence["ConfusionMatrixDisplay"],
         *,
         report_type: ReportType,
-        **column_data,
+        column_data: dict[str, list] | None = None,
     ) -> "ConfusionMatrixDisplay":
         """Build a confusion-matrix display by concatenating child displays."""
         first_display = child_displays[0]

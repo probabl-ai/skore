@@ -949,20 +949,19 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.roc()
         >>> display.plot()
         """
-        child_displays: list[RocCurveDisplay] = []
-        estimator_names: list[str] = []
-        for report_name, report in track(
-            self._parent.reports_.items(),
-            description="Computing display for each estimator",
-            total=len(self._parent.reports_),
-        ):
-            child_displays.append(report.metrics.roc(data_source=data_source))
-            estimator_names.append(report_name)
+        child_displays = [
+            report.metrics.roc(data_source=data_source)
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
+            )
+        ]
+        estimator_names = self._parent.reports_.keys()
 
         display = RocCurveDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            estimator=estimator_names,
+            column_data={"estimator": list(estimator_names)},
         )
         return display
 
@@ -1010,22 +1009,19 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
         """
-        child_displays: list[PrecisionRecallCurveDisplay] = []
-        estimator_names: list[str] = []
-        for report_name, report in track(
-            self._parent.reports_.items(),
-            description="Computing display for each estimator",
-            total=len(self._parent.reports_),
-        ):
-            child_displays.append(
-                report.metrics.precision_recall(data_source=data_source)
+        child_displays = [
+            report.metrics.precision_recall(data_source=data_source)
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
             )
-            estimator_names.append(report_name)
+        ]
+        estimator_names = self._parent.reports_.keys()
 
         display = PrecisionRecallCurveDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            estimator=estimator_names,
+            column_data={"estimator": list(estimator_names)},
         )
         return display
 
@@ -1088,26 +1084,23 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
-        child_displays: list[PredictionErrorDisplay] = []
-        estimator_names: list[str] = []
-        for report_name, report in track(
-            self._parent.reports_.items(),
-            description="Computing display for each estimator",
-            total=len(self._parent.reports_),
-        ):
-            child_displays.append(
-                report.metrics.prediction_error(
-                    data_source=data_source,
-                    subsample=subsample,
-                    seed=seed,
-                )
+        child_displays = [
+            report.metrics.prediction_error(
+                data_source=data_source,
+                subsample=subsample,
+                seed=seed,
             )
-            estimator_names.append(report_name)
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
+            )
+        ]
+        estimator_names = self._parent.reports_.keys()
 
         display = PredictionErrorDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            estimator=estimator_names,
+            column_data={"estimator": list(estimator_names)},
         )
         return display
 
@@ -1155,21 +1148,18 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
-        child_displays: list[ConfusionMatrixDisplay] = []
-        estimator_names: list[str] = []
-        for report_name, report in track(
-            self._parent.reports_.items(),
-            description="Computing display for each estimator",
-            total=len(self._parent.reports_),
-        ):
-            child_displays.append(
-                report.metrics.confusion_matrix(data_source=data_source)
+        child_displays = [
+            report.metrics.confusion_matrix(data_source=data_source)
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
             )
-            estimator_names.append(report_name)
+        ]
+        estimator_names = self._parent.reports_.keys()
 
         display = ConfusionMatrixDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            estimator=estimator_names,
+            column_data={"estimator": list(estimator_names)},
         )
         return display

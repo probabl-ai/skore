@@ -131,7 +131,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         child_displays: Sequence["PrecisionRecallCurveDisplay"],
         *,
         report_type: ReportType,
-        **column_data,
+        column_data: dict[str, list] | None = None,
     ) -> "PrecisionRecallCurveDisplay":
         """Build a precision-recall display by concatenating child displays."""
         first_display = child_displays[0]

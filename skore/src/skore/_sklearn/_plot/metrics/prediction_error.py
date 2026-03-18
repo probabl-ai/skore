@@ -128,7 +128,7 @@ class PredictionErrorDisplay(DisplayMixin):
         child_displays: list["PredictionErrorDisplay"],
         *,
         report_type: ReportType,
-        **column_data,
+        column_data: dict[str, list] | None = None,
     ) -> "PredictionErrorDisplay":
         """Build a prediction-error display by concatenating child displays."""
         first_display = child_displays[0]

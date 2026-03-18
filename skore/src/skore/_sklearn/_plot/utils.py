@@ -435,7 +435,7 @@ def _format_legend_label(
     )
 
 
-def _column_data_to_records(column_data: dict[str, list]) -> list[dict]:
+def _column_data_to_records(column_data: dict[str, list] | None) -> list[dict]:
     """Convert column-wise data into one record per row.
 
     Examples
@@ -443,7 +443,7 @@ def _column_data_to_records(column_data: dict[str, list]) -> list[dict]:
     >>> _column_data_to_records({"estimator": ["A", "B"], "split": [0, 1]})
     [{'estimator': 'A', 'split': 0}, {'estimator': 'B', 'split': 1}]
     """
-    if not column_data:
+    if column_data is None or not column_data:
         return []
 
     keys = list(column_data)
