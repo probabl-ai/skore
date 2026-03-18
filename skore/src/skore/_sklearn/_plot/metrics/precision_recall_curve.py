@@ -318,7 +318,6 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource,
-        split: int | None,
         pos_label: PositiveLabel | None,
         drop_intermediate: bool = True,
     ) -> "PrecisionRecallCurveDisplay":
@@ -349,9 +348,6 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         data_source : {"train", "test"}
             The data source used to compute the precision recall curve.
-
-        split : int or None
-            Cross-validation split index.
 
         pos_label : int, float, bool, str or none
             The class considered as the positive class when computing the
@@ -392,7 +388,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     {
                         "estimator": estimator_name,
                         "data_source": data_source,
-                        "split": split,
+                        "split": None,
                         "label": pos_label_validated,
                         "threshold": threshold,
                         "precision": precision,
@@ -403,7 +399,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 {
                     "estimator": estimator_name,
                     "data_source": data_source,
-                    "split": split,
+                    "split": None,
                     "label": pos_label_validated,
                     "average_precision": average_precision_i,
                 }
@@ -437,7 +433,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                         {
                             "estimator": estimator_name,
                             "data_source": data_source,
-                            "split": split,
+                            "split": None,
                             "label": class_,
                             "threshold": threshold,
                             "precision": precision,
@@ -448,7 +444,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     {
                         "estimator": estimator_name,
                         "data_source": data_source,
-                        "split": split,
+                        "split": None,
                         "label": class_,
                         "average_precision": average_precision_class_i,
                     }

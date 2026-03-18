@@ -367,7 +367,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource | Literal["both"],
-        split: int | None,
         display_labels: list[str],
         pos_label: PositiveLabel,
         response_method: str | list[str] | tuple[str, ...],
@@ -399,9 +398,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         data_source : {"test", "train"}
             The data source to use.
-
-        split : int or None
-            Cross-validation split index.
 
         display_labels : list of str
             Display labels for plot.
@@ -489,7 +485,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 "normalized_by_pred": normalized_pred_values,
                 "normalized_by_all": normalized_all_values,
                 "threshold": threshold_values,
-                "split": split,
+                "split": None,
                 "estimator": estimator_name,
                 "data_source": data_source,
             }

@@ -420,7 +420,6 @@ class PredictionErrorDisplay(DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource,
-        split: int | None,
         subsample: float | int | None = 1_000,
         seed: int | None = None,
         **kwargs,
@@ -450,9 +449,6 @@ class PredictionErrorDisplay(DisplayMixin):
 
         data_source : {"train", "test"}
             The data source used to compute the prediction error curve.
-
-        split : int or None
-            Cross-validation split index.
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,
@@ -529,7 +525,7 @@ class PredictionErrorDisplay(DisplayMixin):
                         {
                             "estimator": estimator_name,
                             "data_source": data_source,
-                            "split": split,
+                            "split": None,
                             "output": output,
                             "y_true": y_true_sample_i,
                             "y_pred": y_pred_sample_i,
@@ -544,7 +540,7 @@ class PredictionErrorDisplay(DisplayMixin):
                     {
                         "estimator": estimator_name,
                         "data_source": data_source,
-                        "split": split,
+                        "split": None,
                         "output": np.nan,
                         "y_true": y_true_sample_i,
                         "y_pred": y_pred_sample_i,
