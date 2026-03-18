@@ -89,7 +89,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 kwargs=kwargs,
             )
         elif m in self._builtin_by_name:
-            metric_obj = self._builtin_by_name[m]
+            metric_obj = self._builtin_by_name[cast(str, m)]
 
             # Forward parameters specific to the builtin method
             data_source_func = getattr(self, metric_obj.name)
@@ -154,13 +154,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         dict[str, Metric]
         """
+        items: list[tuple[str | None, MetricLike]]
         if metric is None or (isinstance(metric, list) and len(metric) == 0):
-            metric = _get_default_metrics(
+            default_metrics = _get_default_metrics(
                 self._parent._ml_task, self._parent._estimator
             )
-
-        if isinstance(metric, dict):
-            items: list[tuple[str | None, MetricLike]] = list(metric.items())
+            items = [(None, m) for m in default_metrics]
+        elif isinstance(metric, dict):
+            items = list(metric.items())
         elif isinstance(metric, list):
             items = [(None, m) for m in metric]
         else:
@@ -293,10 +294,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
             return MetricsSummaryDisplay(data=combined, report_type="estimator")
 
-        metric_kwargs = (metric_kwargs or {}) | (
-            {"response_method": response_method} if response_method else {}
+        parsed_metrics = self._parse_metrics(
+            metric,
+            (metric_kwargs or {})
+            | ({"response_method": response_method} if response_method else {}),
         )
-        parsed_metrics = self._parse_metrics(metric, metric_kwargs)
 
         rows = []
         for metric_name, metric_obj in parsed_metrics.items():
