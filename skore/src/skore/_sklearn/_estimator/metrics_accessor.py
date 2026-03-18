@@ -49,10 +49,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     You can access this accessor using the `metrics` attribute.
     """
 
-    _score_or_loss_info: dict[str, dict[str, str]] = {
-        metric.name: {"name": metric.verbose_name, "icon": metric.icon}
-        for metric in BUILTIN_METRICS
-    }
     _builtin_by_name: dict[str, Metric] = {m.name: m for m in BUILTIN_METRICS}
 
     def __init__(self, parent: EstimatorReport) -> None:
