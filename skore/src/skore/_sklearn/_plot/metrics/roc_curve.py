@@ -3,7 +3,7 @@ from typing import Any, Literal, cast
 
 import seaborn as sns
 from numpy.typing import ArrayLike, NDArray
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
 from sklearn.preprocessing import LabelBinarizer
@@ -48,6 +48,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         The ROC AUC data to display. The columns are
 
         - `estimator`
+        - `data_source`
         - `split` (may be null)
         - `label`
         - `roc_auc`.
@@ -331,8 +332,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource,
-        split: int | None,
-        pos_label: PositiveLabel | None,
+        pos_label: PositiveLabel | None = None,
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":
         """Private method to create a RocCurveDisplay from predictions.
@@ -379,94 +379,69 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
-        roc_curve_records = []
-        roc_auc_records = []
-
-        if ml_task == "binary-classification":
-            fpr_i, tpr_i, thresholds_i = roc_curve(
-                y_true,
-                y_pred,
-                pos_label=pos_label,
-                drop_intermediate=drop_intermediate,
-            )
-            roc_auc_i = auc(fpr_i, tpr_i)
-
-            pos_label_validated = cast(PositiveLabel, pos_label_validated)
-
-            for fpr, tpr, threshold in zip(fpr_i, tpr_i, thresholds_i, strict=False):
-                roc_curve_records.append(
-                    {
-                        "estimator": estimator_name,
-                        "data_source": data_source,
-                        "split": split,
-                        "label": pos_label_validated,
-                        "threshold": threshold,
-                        "fpr": fpr,
-                        "tpr": tpr,
-                    }
-                )
-
-            roc_auc_records.append(
-                {
-                    "estimator": estimator_name,
-                    "data_source": data_source,
-                    "split": split,
-                    "label": pos_label_validated,
-                    "roc_auc": roc_auc_i,
-                }
-            )
-
-        else:  # multiclass-classification
+        if ml_task == "multiclass-classification":
             classes = estimator.classes_
             # OvR fashion to collect fpr, tpr, and roc_auc
             label_binarizer = LabelBinarizer().fit(classes)
             y_true_onehot: NDArray = label_binarizer.transform(y_true)
-            y_pred_y = cast(NDArray, y_pred)
+            y_pred_arr = cast(NDArray, y_pred)
 
-            for class_idx, class_ in enumerate(classes):
-                fpr_class_i, tpr_class_i, thresholds_class_i = roc_curve(
-                    y_true_onehot[:, class_idx],
-                    y_pred_y[:, class_idx],
-                    pos_label=None,
+            displays = [
+                cls._compute_data_for_display(
+                    y_true=y_true_onehot[:, class_idx],
+                    y_pred=y_pred_arr[:, class_idx],
+                    report_type=report_type,
+                    estimator=estimator,
+                    estimator_name=estimator_name,
+                    ml_task="binary-classification",
+                    data_source=data_source,
+                    pos_label=1,
                     drop_intermediate=drop_intermediate,
                 )
-                roc_auc_class_i = auc(fpr_class_i, tpr_class_i)
+                for class_idx in range(len(classes))
+            ]
 
-                for fpr, tpr, threshold in zip(
-                    fpr_class_i, tpr_class_i, thresholds_class_i, strict=False
-                ):
-                    roc_curve_records.append(
-                        {
-                            "estimator": estimator_name,
-                            "data_source": data_source,
-                            "split": split,
-                            "label": class_,
-                            "threshold": threshold,
-                            "fpr": fpr,
-                            "tpr": tpr,
-                        }
-                    )
+            display = cls.from_child_displays(
+                displays,
+                report_type=report_type,
+                column_data={"label": classes.tolist()},
+            )
+            display.ml_task = ml_task
+            display.pos_label = pos_label_validated
+            return display
 
-                roc_auc_records.append(
-                    {
-                        "estimator": estimator_name,
-                        "data_source": data_source,
-                        "split": split,
-                        "label": class_,
-                        "roc_auc": roc_auc_class_i,
-                    }
-                )
+        # binary-classification
+        fpr, tpr, thresholds = roc_curve(
+            y_true,
+            y_pred,
+            pos_label=pos_label,
+            drop_intermediate=drop_intermediate,
+        )
+        roc_auc = auc(fpr, tpr)
 
-        dtypes = {
-            "estimator": "category",
-            "data_source": "category",
-            "split": "category",
-            "label": "category",
+        metadata = {
+            "estimator": estimator_name,
+            "data_source": data_source,
+            "split": None,
+            "label": pos_label_validated,
         }
 
+        curve_data = {
+            **metadata,
+            "threshold": thresholds,
+            "fpr": fpr,
+            "tpr": tpr,
+        }
+        n = fpr.size
+        for col in metadata:
+            curve_data[col] = Series([curve_data[col]], dtype="category").repeat(n)
+
+        auc_df = DataFrame.from_records([{**metadata, "roc_auc": roc_auc}])
+        auc_df = auc_df.astype(dict.fromkeys(metadata, "category"))
+
         return cls(
-            roc_curve=DataFrame.from_records(roc_curve_records).astype(dtypes),
-            roc_auc=DataFrame.from_records(roc_auc_records).astype(dtypes),
+            roc_curve=DataFrame(curve_data),
+            roc_auc=auc_df,
             pos_label=pos_label_validated,
             data_source=data_source,
             ml_task=ml_task,

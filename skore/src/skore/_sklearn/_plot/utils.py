@@ -8,7 +8,7 @@ from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
 from numpy.typing import ArrayLike
-from pandas import DataFrame
+from pandas import CategoricalDtype, DataFrame
 from sklearn.utils.validation import (
     _check_pos_label_consistency,
     check_consistent_length,
@@ -471,7 +471,19 @@ def _concat_frames_with_column_data(
         ignore_index=True,
     )
 
+    categorical_columns = {
+        column
+        for column in frame.columns
+        if all(
+            column in child_frame.columns
+            and isinstance(child_frame[column].dtype, CategoricalDtype)
+            for child_frame in frames
+        )
+    }
     if column_data:
-        frame = frame.astype(dict.fromkeys(column_data, "category"))
+        categorical_columns.update(column_data)
+
+    if categorical_columns:
+        frame = frame.astype(dict.fromkeys(categorical_columns, "category"))
 
     return frame
