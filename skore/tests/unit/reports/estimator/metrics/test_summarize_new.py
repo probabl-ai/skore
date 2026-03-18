@@ -250,6 +250,8 @@ def test_metric_callables_plain(linear_regression_with_test):
     )
 
     _assert_display(display, expected_metric_names={"My Mae"}, n_rows=1)
+    # skore won't assume the favorability
+    assert set(display.data["favorability"]) == {""}
     score = display.data["score"].values[0]
     assert score == pytest.approx(
         mean_absolute_error(y_test, estimator.predict(X_test))

@@ -58,6 +58,12 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         super().__init__(parent)
 
     def _parse_metric(self, m: MetricLike, metric_kwargs: dict[str, Any]) -> Metric:
+        """
+        Convert a single "metric-like" to a Metric.
+
+        `metric_kwargs` will be stripped down to only the kwargs that the metric
+        will actually accept.
+        """
         if isinstance(m, _BaseScorer):
             func_name = m._score_func.__name__
             if func_name.startswith("neg_"):
@@ -94,7 +100,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             # Forward parameters specific to the builtin method
             data_source_func = getattr(self, metric_obj.name)
 
-            # Avoid mutating metric_obj 
+            # Avoid mutating metric_obj
             metric_obj = dataclasses.replace(
                 metric_obj,
                 kwargs={
@@ -131,7 +137,20 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     "callable. Pass it directly or through `metric_kwargs`."
                 )
 
-            return self._parse_metric(make_scorer(m, **metric_kwargs), {})
+            func_name = m.__name__
+            kwargs = {
+                param: metric_kwargs[param]
+                for param in inspect.signature(m).parameters
+                if param in metric_kwargs
+            }
+            return Metric(
+                name=func_name,
+                verbose_name=func_name.replace("_", " ").title(),
+                greater_is_better=metric_kwargs.get("greater_is_better"),
+                score_func=m,
+                response_method=metric_kwargs["response_method"],
+                kwargs=kwargs,
+            )
         else:
             raise ValueError(f"Invalid type of metric: {type(m)} for {m!r}")
 
