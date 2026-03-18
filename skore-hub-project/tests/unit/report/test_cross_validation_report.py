@@ -112,6 +112,7 @@ class TestCrossValidationReportPayload:
 
     @mark.respx(assert_all_called=False)
     def test_splitting_strategy(self, payload):
+        breakpoint()
         assert payload.splitting_strategy == {
             "repeat_count": 1,
             "seed": "None",

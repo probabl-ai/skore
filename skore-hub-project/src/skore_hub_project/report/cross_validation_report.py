@@ -1,13 +1,20 @@
 """Class definition of the payload used to send a cross-validation report to ``hub``."""
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from functools import cached_property
+from inspect import signature
 from typing import Any, ClassVar
 
 import numpy as np
+import pandas as pd
 from pydantic import computed_field
-from scipy.stats import gaussian_kde
-from sklearn.model_selection._split import _CVIterableWrapper
+from sklearn.model_selection import (
+    KFold,
+    ShuffleSplit,
+    StratifiedKFold,
+    StratifiedShuffleSplit,
+    TimeSeriesSplit,
+)
 
 from skore_hub_project.artifact.media import (
     Coefficients,
@@ -78,6 +85,16 @@ from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport
 from skore_hub_project.report.estimator_report import EstimatorReportPayload
 from skore_hub_project.report.report import ReportPayload
+
+SPLITTERS = {
+    "KFold": KFold,
+    "RepeatedKFold": KFold,
+    "StratifiedKFold": StratifiedKFold,
+    "RepeatedStratifiedKFold": StratifiedKFold,
+    "ShuffleSplit": ShuffleSplit,
+    "StratifiedShuffleSplit": StratifiedShuffleSplit,
+    "TimeSeriesSplit": TimeSeriesSplit,
+}
 
 
 class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
@@ -195,78 +212,73 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def splitting_strategy(self) -> dict[str, Any]:
-        """
-        Splitting strategy used to split the dataset into train and test sets.
+        """The splitting strategy used in the report."""
+        splitter = self.report.splitter
+        target = self.report.y
+        is_classifier = "classification" in self.ml_task
 
-        This includes the number of splits, the number of repeats, the seed,
-        and the distribution of the train and test sets.
+        n_repeats = getattr(splitter, "n_repeats", None)
+        n_splits = splitter.get_n_splits() // (n_repeats or 1)
+        splitter_metadata = {
+            "type": splitter.__class__.__name__,
+            "n_splits": n_splits,
+            "n_repeats": n_repeats,
+            # first check if shuffle is available;
+            # otherwise, we could have splitter always
+            # shuffling and only exposing a random_state
+            "shuffle": getattr(splitter, "shuffle", hasattr(splitter, "random_state")),
+            "random_state": getattr(splitter, "random_state", None),
+        }
 
-        The distribution of each split is computed by dividing the split into a maximum
-        of 200 buckets, and averaging the number of samples belonging to the test-set in
-        each of these buckets. @TODO: find a better representation of the distribution.
-        """
-        from skore._externals._sklearn_compat import (  # type: ignore[attr-defined]
-            _safe_indexing,
-        )
+        # create an undersampled target to create a simplify representation
+        rng = np.random.default_rng(0)
+        n_samples_repr = 100
+        if is_classifier:
+            if not isinstance(target, pd.Series):
+                target = pd.Series(target)
+            probs = target.value_counts(normalize=True)
+            target_repr = rng.choice(
+                probs.index.to_numpy(),  # classes
+                size=n_samples_repr,
+                p=probs.to_numpy(),  # probabilities
+                replace=True,
+            )
+            target_repr.sort()
+        else:  # regression
+            # uniformly sample the target because it will have no impact on the
+            # representation
+            target_repr = rng.choice(target, size=n_samples_repr, replace=False)
 
-        splits = []
+        # create a simplified splitter without randomization and repetitions
+        simplified_cls = SPLITTERS.get(splitter.__class__.__name__, splitter.__class__)
+        simplified_cls_parameters = {}
 
-        for train_indices, test_indices in self.report.split_indices:
-            train_y = _safe_indexing(self.report.y, train_indices)
-            test_y = _safe_indexing(self.report.y, test_indices)
-            train_target_distribution: list[float] = []
-            test_target_distribution: list[float] = []
+        for parameter in signature(simplified_cls.__init__).parameters:
+            if parameter in splitter_metadata:
+                simplified_cls_parameters[parameter] = splitter_metadata[parameter]
+            elif hasattr(splitter, parameter):
+                simplified_cls_parameters[parameter] = getattr(splitter, parameter)
 
-            if self.__classes:
-                train = {str(label): count for label, count in Counter(train_y).items()}
-                test = {str(label): count for label, count in Counter(test_y).items()}
+        simplified_splitter = simplified_cls(**simplified_cls_parameters)
 
-                for label in self.__classes:
-                    train_target_distribution.append(train.get(label, 0))
-                    test_target_distribution.append(test.get(label, 0))
+        # create synthetic indices
+        splits: list[tuple[int, str, int]] = []
+        X = rng.normal(size=(n_samples_repr, 1))
 
-            else:
-                linspace = np.linspace(
-                    float(train_y.min()), float(train_y.max()), num=100
-                )
-                train_kernel = gaussian_kde(train_y)
-                train_target_distribution = [float(x) for x in train_kernel(linspace)]
-                test_kernel = gaussian_kde(test_y)
-                test_target_distribution = [float(x) for x in test_kernel(linspace)]
+        for split_idx, (train_idx, test_idx) in enumerate(
+            simplified_splitter.split(X, target_repr)
+        ):
+            splits.extend(
+                (split_idx, "train", int(train_indice)) for train_indice in train_idx
+            )
 
-            # remove this when a better solution is found
-            # see #2212 for details
-            buckets_number = min(len(self.report.X), 200)
-            split = np.zeros(len(self.report.X), dtype=int)
-            split[test_indices] = 1
-
-            splits.append(
-                {
-                    "train": {
-                        "sample_count": len(train_indices),
-                        "target_distribution": train_target_distribution,
-                        "groups": None,
-                    },
-                    "test": {
-                        "sample_count": len(test_indices),
-                        "target_distribution": test_target_distribution,
-                        "groups": None,
-                    },
-                    "train_test_distribution": [
-                        float(np.mean(bucket))
-                        for bucket in np.array_split(split, buckets_number)
-                    ],
-                }
+            splits.extend(
+                (split_idx, "test", int(test_indice)) for test_indice in test_idx
             )
 
         return {
-            "strategy_name": (
-                isinstance(self.report.splitter, _CVIterableWrapper)
-                and "custom"
-                or self.report.splitter.__class__.__name__
-            ),
-            "repeat_count": getattr(self.report.splitter, "n_repeats", 1),
-            "seed": str(getattr(self.report.splitter, "random_state", "")),
+            "splitter": splitter_metadata,
+            "dataset_size": n_samples_repr,
             "splits": splits,
         }
 
