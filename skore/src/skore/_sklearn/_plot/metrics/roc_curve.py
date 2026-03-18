@@ -132,6 +132,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         child_displays: Sequence["RocCurveDisplay"],
         *,
         report_type: ReportType,
+        data_source: None | Literal["both"] = None,
         column_data: dict[str, list] | None = None,
     ) -> "RocCurveDisplay":
         """Build a ROC display by concatenating child displays."""
@@ -146,7 +147,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 column_data,
             ),
             pos_label=first_display.pos_label,
-            data_source=first_display.data_source,
+            data_source=data_source or first_display.data_source,
             ml_task=first_display.ml_task,
             report_type=report_type,
         )
@@ -329,7 +330,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         report_type: ReportType,
         estimators: Sequence[BaseEstimator],
         ml_task: MLTask,
-        data_source: DataSource | Literal["both"],
+        data_source: DataSource,
         pos_label: PositiveLabel | None,
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":
@@ -355,7 +356,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "both"}
+        data_source : {"train", "test"}
             The data source used to compute the ROC curve.
 
         pos_label : int, float, bool or str, default=None

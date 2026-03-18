@@ -127,6 +127,7 @@ class PredictionErrorDisplay(DisplayMixin):
         child_displays: list["PredictionErrorDisplay"],
         *,
         report_type: ReportType,
+        data_source: None | Literal["both"] = None,
         column_data: dict[str, list] | None = None,
     ) -> "PredictionErrorDisplay":
         """Build a prediction-error display by concatenating child displays."""
@@ -148,7 +149,7 @@ class PredictionErrorDisplay(DisplayMixin):
                 min(display.range_residuals.min for display in child_displays),
                 max(display.range_residuals.max for display in child_displays),
             ),
-            data_source=first_display.data_source,
+            data_source=data_source or first_display.data_source,
             ml_task=first_display.ml_task,
             report_type=report_type,
         )
@@ -416,7 +417,7 @@ class PredictionErrorDisplay(DisplayMixin):
         *,
         report_type: ReportType,
         ml_task: MLTask,
-        data_source: DataSource | Literal["both"],
+        data_source: DataSource,
         subsample: float | int | None = 1_000,
         seed: int | None = None,
         **kwargs,
@@ -441,7 +442,7 @@ class PredictionErrorDisplay(DisplayMixin):
         ml_task : {"regression", "multioutput-regression"}
             The machine learning task.
 
-        data_source : {"train", "test", "both"}
+        data_source : {"train", "test"}
             The data source used to compute the prediction error curve.
 
         subsample : float, int or None, default=1_000
