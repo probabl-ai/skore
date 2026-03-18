@@ -127,7 +127,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.report_type = report_type
 
     @classmethod
-    def from_child_displays(
+    def _concatenate(
         cls,
         child_displays: Sequence["RocCurveDisplay"],
         *,
@@ -401,7 +401,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 for class_idx in range(len(classes))
             ]
 
-            display = cls.from_child_displays(
+            display = cls._concatenate(
                 displays,
                 report_type=report_type,
                 column_data={"label": classes.tolist()},

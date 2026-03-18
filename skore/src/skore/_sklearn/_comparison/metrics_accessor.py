@@ -958,7 +958,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         ]
         estimator_names = self._parent.reports_.keys()
 
-        display = RocCurveDisplay.from_child_displays(
+        display = RocCurveDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
             column_data={"estimator": list(estimator_names)},
@@ -1018,7 +1018,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         ]
         estimator_names = self._parent.reports_.keys()
 
-        display = PrecisionRecallCurveDisplay.from_child_displays(
+        display = PrecisionRecallCurveDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
             column_data={"estimator": list(estimator_names)},
@@ -1097,7 +1097,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         ]
         estimator_names = self._parent.reports_.keys()
 
-        display = PredictionErrorDisplay.from_child_displays(
+        display = PredictionErrorDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
             column_data={"estimator": list(estimator_names)},
@@ -1157,7 +1157,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         ]
         estimator_names = self._parent.reports_.keys()
 
-        display = ConfusionMatrixDisplay.from_child_displays(
+        display = ConfusionMatrixDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
             column_data={"estimator": list(estimator_names)},

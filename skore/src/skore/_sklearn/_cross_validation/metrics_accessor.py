@@ -882,7 +882,7 @@ class _MetricsAccessor(
         ]
         split_indices = range(len(self._parent.estimator_reports_))
 
-        display = RocCurveDisplay.from_child_displays(
+        display = RocCurveDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
             column_data={"split": list(split_indices)},
@@ -927,7 +927,7 @@ class _MetricsAccessor(
         ]
         split_indices = range(len(self._parent.estimator_reports_))
 
-        display = PrecisionRecallCurveDisplay.from_child_displays(
+        display = PrecisionRecallCurveDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
             column_data={"split": list(split_indices)},
@@ -991,7 +991,7 @@ class _MetricsAccessor(
         ]
         split_indices = range(len(self._parent.estimator_reports_))
 
-        display = PredictionErrorDisplay.from_child_displays(
+        display = PredictionErrorDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
             column_data={"split": list(split_indices)},
@@ -1044,7 +1044,7 @@ class _MetricsAccessor(
         ]
         split_indices = range(len(self._parent.estimator_reports_))
 
-        display = ConfusionMatrixDisplay.from_child_displays(
+        display = ConfusionMatrixDisplay._concatenate(
             child_displays,
             report_type=self._parent._report_type,
             column_data={"split": list(split_indices)},

@@ -124,7 +124,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.report_type = report_type
 
     @classmethod
-    def from_child_displays(
+    def _concatenate(
         cls,
         child_displays: Sequence["PrecisionRecallCurveDisplay"],
         *,

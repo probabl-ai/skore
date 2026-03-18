@@ -108,12 +108,13 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.response_method = response_method
 
     @classmethod
-    def from_child_displays(
+    def _concatenate(
         cls,
         child_displays: Sequence["ConfusionMatrixDisplay"],
         *,
         report_type: ReportType,
         column_data: dict[str, list] | None = None,
+        **kwargs,  # for compatibility
     ) -> "ConfusionMatrixDisplay":
         """Build a confusion-matrix display by concatenating child displays."""
         first_display = child_displays[0]
@@ -413,7 +414,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         **kwargs : dict
             Additional keyword arguments that are ignored for compatibility with
-            other metrics displays. Accepts but ignores `estimators` and `data_source`.
+            other metrics displays. Accepts but ignores `estimators`.
 
         Returns
         -------

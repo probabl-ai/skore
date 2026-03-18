@@ -1187,8 +1187,23 @@ class _MetricsAccessor(
         display : display_class
             The display.
         """
+        if data_source == "both":
+            displays = [
+                self._get_display(
+                    data_source=cast(DataSource, ds),
+                    response_method=response_method,
+                    display_class=display_class,
+                    display_kwargs=display_kwargs,
+                )
+                for ds in ["train", "test"]
+            ]
+            return display_class._concatenate(
+                displays,
+                report_type=self._parent._report_type,
+                data_source=data_source,
+            )
+
         # Compute cache key
-        # For "both", we use the string "both" in the cache key
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
@@ -1205,50 +1220,34 @@ class _MetricsAccessor(
         if cache_value is not None:
             return cache_value
 
-        if data_source == "both":
-            child_displays = [
-                self._get_display(
-                    data_source=cast(DataSource, ds),
-                    response_method=response_method,
-                    display_class=display_class,
-                    display_kwargs=display_kwargs,
-                )
-                for ds in ["train", "test"]
-            ]
-            return display_class.from_child_displays(
-                child_displays,
-                report_type=self._parent._report_type,
-                data_source=data_source,
-            )
-        else:
-            data_source = cast(DataSource, data_source)
-            X, y_true = self._get_X_y(data_source=data_source)
+        data_source = cast(DataSource, data_source)
+        X, y_true = self._get_X_y(data_source=data_source)
 
-            results = _get_cached_response_values(
-                cache=self._parent._cache,
-                estimator_hash=int(self._parent._hash),
-                estimator=self._parent.estimator_,
-                X=X,
-                response_method=response_method,
-                pos_label=display_kwargs.get("pos_label"),
-                data_source=data_source,
-            )
-            for key, value, is_cached in results:
-                if not is_cached:
-                    self._parent._cache[key] = value
-                if key[-1] != "predict_time":
-                    y_pred = value
+        results = _get_cached_response_values(
+            cache=self._parent._cache,
+            estimator_hash=int(self._parent._hash),
+            estimator=self._parent.estimator_,
+            X=X,
+            response_method=response_method,
+            pos_label=display_kwargs.get("pos_label"),
+            data_source=data_source,
+        )
+        for key, value, is_cached in results:
+            if not is_cached:
+                self._parent._cache[key] = value
+            if key[-1] != "predict_time":
+                y_pred = value
 
-            display = display_class._compute_data_for_display(
-                y_true=y_true,
-                y_pred=y_pred,
-                report_type=self._parent._report_type,
-                estimator=self._parent.estimator_,
-                estimator_name=self._parent.estimator_name_,
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-            )
+        display = display_class._compute_data_for_display(
+            y_true=y_true,
+            y_pred=y_pred,
+            report_type=self._parent._report_type,
+            estimator=self._parent.estimator_,
+            estimator_name=self._parent.estimator_name_,
+            ml_task=self._parent._ml_task,
+            data_source=data_source,
+            **display_kwargs,
+        )
 
         if cache_key is not None:
             # Unless seed is an int (i.e. the call is deterministic),
