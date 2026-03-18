@@ -89,8 +89,7 @@ html_static_path = ["_static"]
 
 html_css_files = ["css/custom.css"]
 html_js_files = [
-    "js/sg_plotly_resize.js",
-    "js/gtm.js",
+    "js/sg_plotly_resize.js"
 ]
 
 # sphinx_gallery options
