@@ -132,7 +132,9 @@ matplotlib==3.10.8
 mdurl==0.1.2
     # via markdown-it-py
 mlflow==3.10.1
-    # via skore-mlflow-project (skore-mlflow-project/pyproject.toml)
+    # via
+    #   --override skore-mlflow-project/overrides.txt
+    #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
 mlflow-skinny==3.10.1
     # via mlflow
 mlflow-tracing==3.10.1
@@ -211,7 +213,7 @@ protobuf==6.33.5
     #   opentelemetry-proto
 pyarrow==23.0.1
     # via mlflow
-pyasn1==0.6.2
+pyasn1==0.6.3
     # via
     #   pyasn1-modules
     #   rsa
@@ -317,9 +319,12 @@ starlette==0.52.1
     # via fastapi
 threadpoolctl==3.6.0
     # via scikit-learn
+tomli==2.4.0
+    # via coverage
 typing-extensions==4.15.0
     # via
     #   alembic
+    #   anyio
     #   fastapi
     #   graphene
     #   mlflow-skinny
@@ -329,6 +334,7 @@ typing-extensions==4.15.0
     #   pydantic
     #   pydantic-core
     #   sqlalchemy
+    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via

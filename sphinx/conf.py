@@ -25,7 +25,6 @@ copyright = "2026, Probabl"
 author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
-domain = os.environ["SPHINX_DOMAIN"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -90,8 +89,7 @@ html_static_path = ["_static"]
 
 html_css_files = ["css/custom.css"]
 html_js_files = [
-    "js/sg_plotly_resize.js",
-    "js/gtm.js",
+    "js/sg_plotly_resize.js"
 ]
 
 # sphinx_gallery options
@@ -207,7 +205,7 @@ html_theme_options = {
         },
     ],
     "switcher": {
-        "json_url": f"https://{domain}/versions.json",
+        "json_url": f"{os.environ["SPHINX_URL"]}/versions.json",
         "version_match": release,
     },
     "check_switcher": True,

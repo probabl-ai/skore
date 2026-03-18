@@ -1,11 +1,4 @@
 {% extends "!layout.html" %}
-
-{% block body_tag %}
-    {{ super() }}
-
-<!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M9JXX8MX"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
-
+{% block extrahead %}
+    <script async src="https://b.probabl.ai/pb.min.js"></script>
 {% endblock %}

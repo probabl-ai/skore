@@ -105,11 +105,11 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(
-        ...     classifier, X=X, y=y, splitter=2, pos_label=1
+        >>> report = evaluate(
+        ...     classifier, X, y, splitter=2, pos_label=1
         ... )
         >>> report.metrics.summarize(
         ...     metric=["precision", "recall"],
@@ -203,8 +203,8 @@ class _MetricsAccessor(
         >>> from sklearn.linear_model import LogisticRegression
         >>> X, y = make_classification(random_state=42)
         >>> estimator = LogisticRegression()
-        >>> from skore import CrossValidationReport
-        >>> report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+        >>> from skore import evaluate
+        >>> report = evaluate(estimator, X, y, splitter=2)
         >>> report.metrics.timings()
                           mean       std
         Fit time (s)       ...       ...
@@ -267,10 +267,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.accuracy(flat_index=False)
                 LogisticRegression
                             mean      std
@@ -344,10 +344,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.precision()
                                 LogisticRegression
                                                 mean       std
@@ -425,10 +425,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.recall()
                             LogisticRegression
                                             mean       std
@@ -479,10 +479,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.brier_score()
                     LogisticRegression
                                 mean       std
@@ -563,10 +563,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.roc_auc()
                 LogisticRegression
                             mean       std
@@ -613,10 +613,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.log_loss()
                 LogisticRegression
                             mean       std
@@ -673,10 +673,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
+        >>> report = evaluate(regressor, X, y, splitter=2)
         >>> report.metrics.r2()
                 Ridge
                     mean       std
@@ -734,10 +734,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
+        >>> report = evaluate(regressor, X, y, splitter=2)
         >>> report.metrics.rmse()
                     Ridge
                     mean       std
@@ -812,10 +812,10 @@ class _MetricsAccessor(
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.metrics import mean_absolute_error
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
+        >>> report = evaluate(regressor, X, y, splitter=2)
         >>> report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
@@ -983,10 +983,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> display = report.metrics.roc()
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
         >>> display.plot()
@@ -1029,10 +1029,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> display = report.metrics.precision_recall()
         >>> display.plot()
         """
@@ -1088,10 +1088,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
+        >>> report = evaluate(regressor, X, y, splitter=2)
         >>> display = report.metrics.prediction_error()
         >>> display.set_style(perfect_model_kwargs={"color": "tab:red"})
         >>> display.plot(kind="actual_vs_predicted")
@@ -1136,10 +1136,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot()
 
