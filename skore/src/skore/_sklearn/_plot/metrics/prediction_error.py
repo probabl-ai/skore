@@ -81,12 +81,10 @@ class PredictionErrorDisplay(DisplayMixin):
     --------
     >>> from sklearn.datasets import load_diabetes
     >>> from sklearn.linear_model import Ridge
-    >>> from skore import train_test_split
-    >>> from skore import EstimatorReport
+    >>> from skore import evaluate
     >>> X, y = load_diabetes(return_X_y=True)
-    >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
     >>> classifier = Ridge()
-    >>> report = EstimatorReport(classifier, **split_data)
+    >>> report = evaluate(classifier, X, y, splitter=0.2)
     >>> display = report.metrics.prediction_error()
     >>> display.plot(kind="actual_vs_predicted")
     """
@@ -201,12 +199,10 @@ class PredictionErrorDisplay(DisplayMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = Ridge()
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> display = report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
@@ -601,11 +597,10 @@ class PredictionErrorDisplay(DisplayMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import train_test_split, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> reg = Ridge()
-        >>> report = EstimatorReport(reg, **split_data)
+        >>> report = evaluate(reg, X, y, splitter=0.2)
         >>> display = report.metrics.prediction_error()
         >>> df = display.frame()
         """

@@ -115,17 +115,16 @@ simple_model = tabular_pipeline(LogisticRegression())
 simple_model
 
 # %%
-# We now cross-validate the model with :class:`~skore.CrossValidationReport`.
+# We now evaluate our model with cross-validation, using :func:`~skore.evaluate`
+# with `splitter=5` to perform 5-fold cross-validation.
+# This returns a :class:`~skore.CrossValidationReport` object, which can be used to
+# access the performance metrics and other information about the model.
 
 # %%
-from skore import CrossValidationReport
+from skore import evaluate
 
-simple_cv_report = CrossValidationReport(
-    simple_model,
-    X=X_experiment,
-    y=y_experiment,
-    pos_label="good",
-    splitter=5,
+simple_cv_report = evaluate(
+    simple_model, X_experiment, y_experiment, pos_label="good", splitter=5
 )
 
 # %%
@@ -218,8 +217,8 @@ advanced_model = tabular_pipeline(RandomForestClassifier(random_state=0))
 advanced_model
 
 # %%
-advanced_cv_report = CrossValidationReport(
-    advanced_model, X=X_experiment, y=y_experiment, pos_label="good"
+advanced_cv_report = evaluate(
+    advanced_model, X_experiment, y_experiment, pos_label="good", splitter=5
 )
 
 # %%
@@ -230,12 +229,13 @@ advanced_cv_report = CrossValidationReport(
 # ====================
 #
 # Now that we have our two models, we need to decide which one should go into
-# production. We can compare them with a :class:`skore.ComparisonReport`.
+# production. We can compare them with a :func:`~skore.compare` that returns a
+# :class:`~skore.ComparisonReport`.
 
 # %%
-from skore import ComparisonReport
+from skore import compare
 
-comparison = ComparisonReport(
+comparison = compare(
     {
         "Simple Linear Model": simple_cv_report,
         "Advanced Pipeline": advanced_cv_report,
