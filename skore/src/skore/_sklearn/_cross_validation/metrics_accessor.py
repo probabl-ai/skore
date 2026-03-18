@@ -876,15 +876,11 @@ class _MetricsAccessor(
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
         >>> display.plot()
         """
-        child_displays: list[RocCurveDisplay] = []
-        split_indices: list[int] = []
-        for split_idx, report in track(
-            enumerate(self._parent.estimator_reports_),
-            description="Computing display for each split",
-            total=len(self._parent.estimator_reports_),
-        ):
-            child_displays.append(report.metrics.roc(data_source=data_source))
-            split_indices.append(split_idx)
+        child_displays = [
+            report.metrics.roc(data_source=data_source)
+            for report in self._parent.estimator_reports_
+        ]
+        split_indices = range(len(self._parent.estimator_reports_))
 
         display = RocCurveDisplay.from_child_displays(
             child_displays,
@@ -925,17 +921,11 @@ class _MetricsAccessor(
         >>> display = report.metrics.precision_recall()
         >>> display.plot()
         """
-        child_displays: list[PrecisionRecallCurveDisplay] = []
-        split_indices: list[int] = []
-        for split_idx, report in track(
-            enumerate(self._parent.estimator_reports_),
-            description="Computing display for each split",
-            total=len(self._parent.estimator_reports_),
-        ):
-            child_displays.append(
-                report.metrics.precision_recall(data_source=data_source)
-            )
-            split_indices.append(split_idx)
+        child_displays = [
+            report.metrics.precision_recall(data_source=data_source)
+            for report in self._parent.estimator_reports_
+        ]
+        split_indices = range(len(self._parent.estimator_reports_))
 
         display = PrecisionRecallCurveDisplay.from_child_displays(
             child_displays,
@@ -991,21 +981,15 @@ class _MetricsAccessor(
         >>> display.set_style(perfect_model_kwargs={"color": "tab:red"})
         >>> display.plot(kind="actual_vs_predicted")
         """
-        child_displays: list[PredictionErrorDisplay] = []
-        split_indices: list[int] = []
-        for split_idx, report in track(
-            enumerate(self._parent.estimator_reports_),
-            description="Computing display for each split",
-            total=len(self._parent.estimator_reports_),
-        ):
-            child_displays.append(
-                report.metrics.prediction_error(
-                    data_source=data_source,
-                    subsample=subsample,
-                    seed=seed,
-                )
+        child_displays = [
+            report.metrics.prediction_error(
+                data_source=data_source,
+                subsample=subsample,
+                seed=seed,
             )
-            split_indices.append(split_idx)
+            for report in self._parent.estimator_reports_
+        ]
+        split_indices = range(len(self._parent.estimator_reports_))
 
         display = PredictionErrorDisplay.from_child_displays(
             child_displays,
@@ -1054,7 +1038,7 @@ class _MetricsAccessor(
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
-        child_displays: list[ConfusionMatrixDisplay] = [
+        child_displays = [
             report.metrics.confusion_matrix(data_source=data_source)
             for report in self._parent.estimator_reports_
         ]
