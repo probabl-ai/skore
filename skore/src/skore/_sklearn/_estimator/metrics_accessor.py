@@ -28,14 +28,12 @@ from skore._sklearn.types import (
     DataSource,
     Metric,
     PositiveLabel,
-    YPlotData,
 )
 from skore._utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
     _check_roc_auc,
     _check_supported_ml_task,
-    _get_ys_for_single_report,
 )
 from skore._utils._cache_key import deep_key_sanitize
 
@@ -1223,30 +1221,32 @@ class _MetricsAccessor(
                 data_source=data_source,
             )
         else:
-            ds_X, ds_y = self._get_X_y(data_source=data_source)
+            data_source = cast(DataSource, data_source)
+            X, y_true = self._get_X_y(data_source=data_source)
 
-            y_true_data, y_pred_data = _get_ys_for_single_report(
+            results = _get_cached_response_values(
                 cache=self._parent._cache,
                 estimator_hash=int(self._parent._hash),
                 estimator=self._parent.estimator_,
-                estimator_name=self._parent.estimator_name_,
-                X=ds_X,
-                y_true=ds_y,
-                data_source=data_source,
+                X=X,
                 response_method=response_method,
                 pos_label=display_kwargs.get("pos_label"),
-                split=None,
+                data_source=data_source,
             )
-            y_true: list[YPlotData] = [y_true_data]
-            y_pred: list[YPlotData] = [y_pred_data]
+            for key, value, is_cached in results:
+                if not is_cached:
+                    self._parent._cache[key] = value
+                if key[-1] != "predict_time":
+                    y_pred = value
 
             display = display_class._compute_data_for_display(
                 y_true=y_true,
                 y_pred=y_pred,
                 report_type=self._parent._report_type,
-                estimators=[self._parent.estimator_],
+                estimator=self._parent.estimator_,
+                estimator_name=self._parent.estimator_name_,
                 ml_task=self._parent._ml_task,
-                data_source=cast(DataSource, data_source),
+                data_source=data_source,
                 **display_kwargs,
             )
 

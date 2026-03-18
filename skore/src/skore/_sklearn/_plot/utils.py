@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
+from numpy.typing import ArrayLike
 from pandas import DataFrame
 from sklearn.utils.validation import (
     _check_pos_label_consistency,
@@ -18,7 +19,6 @@ from skore._sklearn.types import (
     MLTask,
     PositiveLabel,
     ReportType,
-    YPlotData,
 )
 
 LINESTYLE = [
@@ -51,19 +51,18 @@ class _ClassifierDisplayMixin:
     pos_label: PositiveLabel | None
 
     @classmethod
-    def _validate_from_predictions_params(
+    def _validate_from_prediction_params(
         cls,
-        y_true: Sequence[YPlotData],
-        y_pred: Sequence[YPlotData],
+        y_true: ArrayLike,
+        y_pred: ArrayLike,
         *,
         ml_task: str,
         pos_label: PositiveLabel | None = None,
     ) -> PositiveLabel | None:
-        for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
-            check_consistent_length(y_true_i.y, y_pred_i.y)
+        check_consistent_length(y_true, y_pred)
 
         if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true[0].y)
+            pos_label = _check_pos_label_consistency(pos_label, y_true)
 
         return pos_label
 
