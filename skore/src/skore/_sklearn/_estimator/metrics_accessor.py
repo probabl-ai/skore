@@ -1198,7 +1198,7 @@ class _MetricsAccessor(
                 for ds in ["train", "test"]
             ]
             return display_class._concatenate(
-                displays,
+                displays,  # type: ignore[arg-type]
                 report_type=self._parent._report_type,
                 data_source=data_source,
             )
