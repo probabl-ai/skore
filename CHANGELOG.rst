@@ -1,3 +1,26 @@
+.. Template for a new "Unreleased" section (hidden from docs).
+   Copy-paste at the top of the changelog when releasing, then remove the 3-space indentation.
+
+   `Unreleased`_
+   =============
+
+   .. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/<new-version>...HEAD
+
+   Release highlights
+   ------------------
+
+   Changed
+   -------
+
+   Added
+   -----
+
+   Removed
+   -------
+
+   Fixed
+   -----
+
 .. _changes:
 
 =========

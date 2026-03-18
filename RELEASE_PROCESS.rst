@@ -21,7 +21,7 @@ steps and appropriate resources:
   - Replace "Unreleased" with the new version; make sure to add the release
     date and a link to the diff between the previous version and the new one.
   - Create a new empty "Unreleased" section which will be filled when new PRs
-    come in.
+    come in. A template is available as a comment at the top of ``CHANGELOG.rst``.
 
 - Test skore manually to ensure that it is in releasable state; this includes making
   sure that skore plays well with the ``skore-*-project*`` plugins.
