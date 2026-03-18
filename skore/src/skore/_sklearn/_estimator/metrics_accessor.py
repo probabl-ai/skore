@@ -83,6 +83,48 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         metrics += [FitTime, PredictTime]
         return {m.name: m for m in metrics}
 
+    def register(self, metric: MetricLike) -> None:
+        """Register a custom metric to include in :meth:`summarize` by default.
+
+        Parameters
+        ----------
+        metric : scorer
+            A scikit-learn scorer created with :func:`sklearn.metrics.make_scorer`.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.metrics import make_scorer, mean_absolute_error
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
+        >>> report.metrics.register(
+        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ... )
+        >>> report.metrics.summarize().frame()
+                             LogisticRegression
+        Metric
+        Accuracy                       0.947368
+        Precision                      0.984127
+        Recall                         0.925373
+        ROC AUC                        0.993649
+        Brier score                    0.036154
+        Fit time (s)                   0.324200
+        Predict time (s)               0.000323
+        Mean Absolute Error            0.052632
+        """
+        parsed = self._parse_metric(metric, {})
+        if (
+            parsed.name in self._registry
+            and self._registry[parsed.name].score_func is None
+        ):
+            raise ValueError(
+                f"Cannot register {parsed.name!r}: it is a built-in metric name."
+            )
+        self._registry[parsed.name] = parsed
+
     def _parse_metric(
         self, metric: MetricLike, metric_kwargs: dict[str, Any]
     ) -> Metric:
