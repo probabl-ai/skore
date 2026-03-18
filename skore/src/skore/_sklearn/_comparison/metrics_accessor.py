@@ -951,35 +951,18 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         """
         child_displays: list[RocCurveDisplay] = []
         estimator_names: list[str] = []
-        split_indices: list[int | None] = []
-
-        if self._parent._report_type == "comparison-estimator":
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing display for each estimator",
-                total=len(self._parent.reports_),
-            ):
-                child_displays.append(report.metrics.roc(data_source=data_source))
-                estimator_names.append(report_name)
-                split_indices.append(None)
-        else:
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing display for each estimator",
-                total=len(self._parent.reports_),
-            ):
-                for split, estimator_report in enumerate(report.estimator_reports_):
-                    child_displays.append(
-                        estimator_report.metrics.roc(data_source=data_source)
-                    )
-                    estimator_names.append(report_name)
-                    split_indices.append(split)
+        for report_name, report in track(
+            self._parent.reports_.items(),
+            description="Computing display for each estimator",
+            total=len(self._parent.reports_),
+        ):
+            child_displays.append(report.metrics.roc(data_source=data_source))
+            estimator_names.append(report_name)
 
         display = RocCurveDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
             estimator_names=estimator_names,
-            split_indices=split_indices,
         )
         return display
 
@@ -1029,39 +1012,20 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         """
         child_displays: list[PrecisionRecallCurveDisplay] = []
         estimator_names: list[str] = []
-        split_indices: list[int | None] = []
-
-        if self._parent._report_type == "comparison-estimator":
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing display for each estimator",
-                total=len(self._parent.reports_),
-            ):
-                child_displays.append(
-                    report.metrics.precision_recall(data_source=data_source)
-                )
-                estimator_names.append(report_name)
-                split_indices.append(None)
-        else:
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing display for each estimator",
-                total=len(self._parent.reports_),
-            ):
-                for split, estimator_report in enumerate(report.estimator_reports_):
-                    child_displays.append(
-                        estimator_report.metrics.precision_recall(
-                            data_source=data_source
-                        )
-                    )
-                    estimator_names.append(report_name)
-                    split_indices.append(split)
+        for report_name, report in track(
+            self._parent.reports_.items(),
+            description="Computing display for each estimator",
+            total=len(self._parent.reports_),
+        ):
+            child_displays.append(
+                report.metrics.precision_recall(data_source=data_source)
+            )
+            estimator_names.append(report_name)
 
         display = PrecisionRecallCurveDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
             estimator_names=estimator_names,
-            split_indices=split_indices,
         )
         return display
 
@@ -1126,45 +1090,24 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         """
         child_displays: list[PredictionErrorDisplay] = []
         estimator_names: list[str] = []
-        split_indices: list[int | None] = []
-
-        if self._parent._report_type == "comparison-estimator":
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing display for each estimator",
-                total=len(self._parent.reports_),
-            ):
-                child_displays.append(
-                    report.metrics.prediction_error(
-                        data_source=data_source,
-                        subsample=subsample,
-                        seed=seed,
-                    )
+        for report_name, report in track(
+            self._parent.reports_.items(),
+            description="Computing display for each estimator",
+            total=len(self._parent.reports_),
+        ):
+            child_displays.append(
+                report.metrics.prediction_error(
+                    data_source=data_source,
+                    subsample=subsample,
+                    seed=seed,
                 )
-                estimator_names.append(report_name)
-                split_indices.append(None)
-        else:
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing display for each estimator",
-                total=len(self._parent.reports_),
-            ):
-                for split, estimator_report in enumerate(report.estimator_reports_):
-                    child_displays.append(
-                        estimator_report.metrics.prediction_error(
-                            data_source=data_source,
-                            subsample=subsample,
-                            seed=seed,
-                        )
-                    )
-                    estimator_names.append(report_name)
-                    split_indices.append(split)
+            )
+            estimator_names.append(report_name)
 
         display = PredictionErrorDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
             estimator_names=estimator_names,
-            split_indices=split_indices,
         )
         return display
 
@@ -1214,38 +1157,19 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         """
         child_displays: list[ConfusionMatrixDisplay] = []
         estimator_names: list[str] = []
-        split_indices: list[int | None] = []
-
-        if self._parent._report_type == "comparison-estimator":
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing display for each estimator",
-                total=len(self._parent.reports_),
-            ):
-                child_displays.append(
-                    report.metrics.confusion_matrix(data_source=data_source)
-                )
-                estimator_names.append(report_name)
-                split_indices.append(None)
-        else:
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing display for each estimator",
-                total=len(self._parent.reports_),
-            ):
-                for split, estimator_report in enumerate(report.estimator_reports_):
-                    child_displays.append(
-                        estimator_report.metrics.confusion_matrix(
-                            data_source=data_source
-                        )
-                    )
-                    estimator_names.append(report_name)
-                    split_indices.append(split)
+        for report_name, report in track(
+            self._parent.reports_.items(),
+            description="Computing display for each estimator",
+            total=len(self._parent.reports_),
+        ):
+            child_displays.append(
+                report.metrics.confusion_matrix(data_source=data_source)
+            )
+            estimator_names.append(report_name)
 
         display = ConfusionMatrixDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
             estimator_names=estimator_names,
-            split_indices=split_indices,
         )
         return display
