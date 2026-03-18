@@ -7,7 +7,7 @@ apply to the ``skore-*-project`` packages.
 Going further, we assume you have write-access to the repository and
 conda-forge project page.
 
-.. note:: We follow the scikit-learn versioning convention:
+.. note:: We follow the semantic versioning convention:
 
    - Major/Minor releases are numbered X.Y.0.
    - Bugfix releases are done as needed between major/minor releases and only apply to
