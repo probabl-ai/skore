@@ -11,6 +11,10 @@ from sklearn.utils._response import _check_response_method
 from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
 from skore._sklearn._base import BaseEstimator
 from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn._plot.metrics._children import (
+    _iter_child_displays,
+    _override_display_metadata,
+)
 from skore._sklearn._plot.utils import _ClassifierDisplayMixin, _validate_style_kwargs
 from skore._sklearn.types import (
     DataSource,
@@ -103,6 +107,43 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.data_source = data_source
         self.pos_label = pos_label
         self.response_method = response_method
+
+    @classmethod
+    def from_child_displays(
+        cls,
+        child_displays: Sequence["ConfusionMatrixDisplay"],
+        *,
+        report_type: ReportType,
+        estimator_names: Sequence[str | None] | None = None,
+        split_indices: Sequence[int | None] | None = None,
+    ) -> "ConfusionMatrixDisplay":
+        first_display = child_displays[0]
+        return cls(
+            confusion_matrix=pd.concat(
+                [
+                    _override_display_metadata(
+                        display.confusion_matrix,
+                        estimator_name=estimator_name,
+                        split=split,
+                    )
+                    for display, estimator_name, split in _iter_child_displays(
+                        child_displays,
+                        estimator_names=estimator_names,
+                        split_indices=split_indices,
+                    )
+                ],
+                ignore_index=True,
+            ),
+            display_labels=first_display.display_labels,
+            report_type=report_type,
+            ml_task=first_display.ml_task,
+            thresholds=np.unique(
+                np.concatenate([display.thresholds for display in child_displays])
+            ),
+            data_source=first_display.data_source,
+            pos_label=first_display.pos_label,
+            response_method=first_display.response_method,
+        )
 
     @DisplayMixin.style_plot
     def plot(

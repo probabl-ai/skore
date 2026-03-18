@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
+import pandas as pd
 import seaborn as sns
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -9,6 +10,10 @@ from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 
 from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn._plot.metrics._children import (
+    _iter_child_displays,
+    _override_display_metadata,
+)
 from skore._sklearn._plot.utils import (
     _build_custom_legend_with_stats,
     _ClassifierDisplayMixin,
@@ -122,6 +127,53 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
+
+    @classmethod
+    def from_child_displays(
+        cls,
+        child_displays: Sequence["PrecisionRecallCurveDisplay"],
+        *,
+        report_type: ReportType,
+        estimator_names: Sequence[str | None] | None = None,
+        split_indices: Sequence[int | None] | None = None,
+    ) -> "PrecisionRecallCurveDisplay":
+        first_display = child_displays[0]
+        return cls(
+            precision_recall=pd.concat(
+                [
+                    _override_display_metadata(
+                        display.precision_recall,
+                        estimator_name=estimator_name,
+                        split=split,
+                    )
+                    for display, estimator_name, split in _iter_child_displays(
+                        child_displays,
+                        estimator_names=estimator_names,
+                        split_indices=split_indices,
+                    )
+                ],
+                ignore_index=True,
+            ),
+            average_precision=pd.concat(
+                [
+                    _override_display_metadata(
+                        display.average_precision,
+                        estimator_name=estimator_name,
+                        split=split,
+                    )
+                    for display, estimator_name, split in _iter_child_displays(
+                        child_displays,
+                        estimator_names=estimator_names,
+                        split_indices=split_indices,
+                    )
+                ],
+                ignore_index=True,
+            ),
+            pos_label=first_display.pos_label,
+            data_source=first_display.data_source,
+            ml_task=first_display.ml_task,
+            report_type=report_type,
+        )
 
     @DisplayMixin.style_plot
     def plot(

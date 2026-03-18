@@ -3,6 +3,7 @@ from collections import namedtuple
 from typing import Literal, cast
 
 import numpy as np
+import pandas as pd
 import seaborn as sns
 from matplotlib.lines import Line2D
 from pandas import DataFrame
@@ -10,6 +11,10 @@ from sklearn.utils.validation import _num_samples, check_array
 
 from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn._plot.metrics._children import (
+    _iter_child_displays,
+    _override_display_metadata,
+)
 from skore._sklearn._plot.utils import (
     _despine_matplotlib_axis,
     _validate_style_kwargs,
@@ -119,6 +124,49 @@ class PredictionErrorDisplay(DisplayMixin):
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
+
+    @classmethod
+    def from_child_displays(
+        cls,
+        child_displays: list["PredictionErrorDisplay"],
+        *,
+        report_type: ReportType,
+        estimator_names: list[str | None] | None = None,
+        split_indices: list[int | None] | None = None,
+    ) -> "PredictionErrorDisplay":
+        first_display = child_displays[0]
+        return cls(
+            prediction_error=pd.concat(
+                [
+                    _override_display_metadata(
+                        display._prediction_error,
+                        estimator_name=estimator_name,
+                        split=split,
+                    )
+                    for display, estimator_name, split in _iter_child_displays(
+                        child_displays,
+                        estimator_names=estimator_names,
+                        split_indices=split_indices,
+                    )
+                ],
+                ignore_index=True,
+            ),
+            range_y_true=RangeData(
+                min(display.range_y_true.min for display in child_displays),
+                max(display.range_y_true.max for display in child_displays),
+            ),
+            range_y_pred=RangeData(
+                min(display.range_y_pred.min for display in child_displays),
+                max(display.range_y_pred.max for display in child_displays),
+            ),
+            range_residuals=RangeData(
+                min(display.range_residuals.min for display in child_displays),
+                max(display.range_residuals.max for display in child_displays),
+            ),
+            data_source=first_display.data_source,
+            ml_task=first_display.ml_task,
+            report_type=report_type,
+        )
 
     @DisplayMixin.style_plot
     def plot(

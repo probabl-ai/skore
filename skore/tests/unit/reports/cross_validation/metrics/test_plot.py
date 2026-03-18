@@ -20,9 +20,9 @@ def test_display_binary_classification(
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)()
-    assert report._cache != {}
     display_second_call = getattr(report.metrics, display)()
-    assert display_first_call is display_second_call
+    assert type(display_first_call) is type(display_second_call)
+    assert display_first_call is not display_second_call
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
@@ -32,9 +32,9 @@ def test_display_regression(pyplot, linear_regression_data, display):
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)(seed=0)
-    assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(seed=0)
-    assert display_first_call is display_second_call
+    assert type(display_first_call) is type(display_second_call)
+    assert display_first_call is not display_second_call
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
