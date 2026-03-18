@@ -234,8 +234,8 @@ class Metric:
 
     name: str
     verbose_name: str
-    greater_is_better: bool | None
-    score_func: Callable | None = field(default=None)
+    greater_is_better: bool | None = None
+    score_func: Callable | None = None
     response_method: Literal["predict", "predict_proba", "decision_function"] | None = (
         "predict"
     )
