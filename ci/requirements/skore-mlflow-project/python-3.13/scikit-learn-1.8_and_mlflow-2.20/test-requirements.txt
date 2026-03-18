@@ -177,7 +177,7 @@ protobuf==5.29.6
     #   mlflow-skinny
 pyarrow==19.0.1
     # via mlflow
-pyasn1==0.6.2
+pyasn1==0.6.3
     # via
     #   pyasn1-modules
     #   rsa
