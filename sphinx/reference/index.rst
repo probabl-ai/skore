@@ -30,8 +30,13 @@ ML Assistance
 .. list-table::
    :widths: 30 70
 
+   * - :func:`evaluate`
+     - Create an estimator, cross-validation, or comparison report from data
    * - :func:`train_test_split`
      - Split arrays or matrices into random train and test subsets
+   * - :class:`TrainTestSplit`
+     - Single train-test splitter compatible with the `scikit-learn CV splitter
+       API <https://scikit-learn.org/stable/glossary.html#term-CV-splitter>`_
 
 .. include:: api/accessor_tables.rst
 
