@@ -21,6 +21,8 @@
    Fixed
    -----
 
+.. The changelog follows conventions close to https://common-changelog.org
+
 .. _changes:
 
 =========
