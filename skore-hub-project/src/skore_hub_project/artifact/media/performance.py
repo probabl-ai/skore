@@ -64,7 +64,15 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
             else function(data_source=self.data_source)
         )
 
-        # pass optional parameters to the frame method
+        frame = display.frame(**self.get_frame_kwargs(display))
+
+        return dumps(
+            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+        )
+
+    @staticmethod
+    def get_frame_kwargs(display: Display) -> dict[str, str | bool]:
+        """Get the kwargs to pass to the frame method."""
         params = signature(display.frame).parameters
         kwargs: dict[str, str | bool] = {}
         if "threshold_value" in params:
@@ -74,11 +82,7 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
         if "with_roc_auc" in params:
             kwargs["with_roc_auc"] = True
 
-        frame = display.frame(**kwargs)
-
-        return dumps(
-            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
-        )
+        return kwargs
 
 
 class PrecisionRecallSVG(PerformanceSVG[Report], ABC):  # noqa: D101
