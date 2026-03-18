@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
@@ -453,3 +454,25 @@ def _column_data_to_records(column_data: dict[str, list] | None) -> list[dict]:
         raise ValueError("All column data iterables must have the same length.")
 
     return [dict(zip(keys, row, strict=True)) for row in zip(*values, strict=True)]
+
+
+def _concat_frames_with_column_data(
+    frames: Sequence[DataFrame], column_data: dict[str, list] | None = None
+) -> DataFrame:
+    """Concatenate frames and assign column-wise metadata as categorical columns."""
+    column_records = _column_data_to_records(column_data)
+    if not column_records:
+        column_records = [{} for _ in frames]
+
+    frame = pd.concat(
+        [
+            child_frame.assign(**column_record)
+            for child_frame, column_record in zip(frames, column_records, strict=True)
+        ],
+        ignore_index=True,
+    )
+
+    if column_data:
+        frame = frame.astype(dict.fromkeys(column_data, "category"))
+
+    return frame

@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
-import pandas as pd
 import seaborn as sns
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -13,7 +12,7 @@ from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _build_custom_legend_with_stats,
     _ClassifierDisplayMixin,
-    _column_data_to_records,
+    _concat_frames_with_column_data,
     _despine_matplotlib_axis,
     _get_curve_plot_columns,
     _validate_style_kwargs,
@@ -137,25 +136,14 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     ) -> "RocCurveDisplay":
         """Build a ROC display by concatenating child displays."""
         first_display = child_displays[0]
-        column_records = _column_data_to_records(column_data)
         return cls(
-            roc_curve=pd.concat(
-                [
-                    display.roc_curve.assign(**column_record)
-                    for display, column_record in zip(
-                        child_displays, column_records, strict=True
-                    )
-                ],
-                ignore_index=True,
+            roc_curve=_concat_frames_with_column_data(
+                [display.roc_curve for display in child_displays],
+                column_data,
             ),
-            roc_auc=pd.concat(
-                [
-                    display.roc_auc.assign(**column_record)
-                    for display, column_record in zip(
-                        child_displays, column_records, strict=True
-                    )
-                ],
-                ignore_index=True,
+            roc_auc=_concat_frames_with_column_data(
+                [display.roc_auc for display in child_displays],
+                column_data,
             ),
             pos_label=first_display.pos_label,
             data_source=first_display.data_source,

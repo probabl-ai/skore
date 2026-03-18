@@ -3,7 +3,6 @@ from collections import namedtuple
 from typing import Literal, cast
 
 import numpy as np
-import pandas as pd
 import seaborn as sns
 from matplotlib.lines import Line2D
 from pandas import DataFrame
@@ -12,7 +11,7 @@ from sklearn.utils.validation import _num_samples, check_array
 from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
-    _column_data_to_records,
+    _concat_frames_with_column_data,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
 )
@@ -132,16 +131,10 @@ class PredictionErrorDisplay(DisplayMixin):
     ) -> "PredictionErrorDisplay":
         """Build a prediction-error display by concatenating child displays."""
         first_display = child_displays[0]
-        column_records = _column_data_to_records(column_data)
         return cls(
-            prediction_error=pd.concat(
-                [
-                    display._prediction_error.assign(**column_record)
-                    for display, column_record in zip(
-                        child_displays, column_records, strict=True
-                    )
-                ],
-                ignore_index=True,
+            prediction_error=_concat_frames_with_column_data(
+                [display._prediction_error for display in child_displays],
+                column_data,
             ),
             range_y_true=RangeData(
                 min(display.range_y_true.min for display in child_displays),

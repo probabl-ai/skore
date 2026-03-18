@@ -13,7 +13,7 @@ from skore._sklearn._base import BaseEstimator
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _ClassifierDisplayMixin,
-    _column_data_to_records,
+    _concat_frames_with_column_data,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import (
@@ -118,16 +118,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     ) -> "ConfusionMatrixDisplay":
         """Build a confusion-matrix display by concatenating child displays."""
         first_display = child_displays[0]
-        column_records = _column_data_to_records(column_data)
         return cls(
-            confusion_matrix=pd.concat(
-                [
-                    display.confusion_matrix.assign(**column_record)
-                    for display, column_record in zip(
-                        child_displays, column_records, strict=True
-                    )
-                ],
-                ignore_index=True,
+            confusion_matrix=_concat_frames_with_column_data(
+                [display.confusion_matrix for display in child_displays],
+                column_data,
             ),
             display_labels=first_display.display_labels,
             report_type=report_type,
