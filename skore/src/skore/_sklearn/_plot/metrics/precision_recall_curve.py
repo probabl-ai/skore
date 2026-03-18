@@ -3,7 +3,7 @@ from typing import Any, Literal, cast
 
 import seaborn as sns
 from numpy.typing import ArrayLike, NDArray
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from sklearn.base import BaseEstimator
 from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
@@ -362,104 +362,73 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
-        precision_recall_records = []
-        average_precision_records = []
-
-        if ml_task == "binary-classification":
-            pos_label_validated = cast(PositiveLabel, pos_label_validated)
-            precision_i, recall_i, thresholds_i = precision_recall_curve(
-                y_true,
-                y_pred,
-                pos_label=pos_label_validated,
-                drop_intermediate=drop_intermediate,
-            )
-            average_precision_i = average_precision_score(
-                y_true, y_pred, pos_label=pos_label_validated
-            )
-
-            for precision, recall, threshold in zip(
-                precision_i, recall_i, thresholds_i, strict=False
-            ):
-                precision_recall_records.append(
-                    {
-                        "estimator": estimator_name,
-                        "data_source": data_source,
-                        "split": None,
-                        "label": pos_label_validated,
-                        "threshold": threshold,
-                        "precision": precision,
-                        "recall": recall,
-                    }
-                )
-            average_precision_records.append(
-                {
-                    "estimator": estimator_name,
-                    "data_source": data_source,
-                    "split": None,
-                    "label": pos_label_validated,
-                    "average_precision": average_precision_i,
-                }
-            )
-        else:  # multiclass-classification
+        if ml_task == "multiclass-classification":
             classes = estimator.classes_
             label_binarizer = LabelBinarizer().fit(classes)
             y_true_onehot: NDArray = label_binarizer.transform(y_true)
-            y_pred_y = cast(NDArray, y_pred)
+            y_pred_arr = cast(NDArray, y_pred)
 
-            for class_idx, class_ in enumerate(classes):
-                precision_class_i, recall_class_i, thresholds_class_i = (
-                    precision_recall_curve(
-                        y_true_onehot[:, class_idx],
-                        y_pred_y[:, class_idx],
-                        pos_label=None,
-                        drop_intermediate=drop_intermediate,
-                    )
+            displays = [
+                cls._compute_data_for_display(
+                    y_true=y_true_onehot[:, class_idx],
+                    y_pred=y_pred_arr[:, class_idx],
+                    report_type=report_type,
+                    estimator=estimator,
+                    estimator_name=estimator_name,
+                    ml_task="binary-classification",
+                    data_source=data_source,
+                    pos_label=1,
+                    drop_intermediate=drop_intermediate,
                 )
-                average_precision_class_i = average_precision_score(
-                    y_true_onehot[:, class_idx], y_pred_y[:, class_idx]
-                )
+                for class_idx in range(len(classes))
+            ]
 
-                for precision, recall, threshold in zip(
-                    precision_class_i,
-                    recall_class_i,
-                    thresholds_class_i,
-                    strict=False,
-                ):
-                    precision_recall_records.append(
-                        {
-                            "estimator": estimator_name,
-                            "data_source": data_source,
-                            "split": None,
-                            "label": class_,
-                            "threshold": threshold,
-                            "precision": precision,
-                            "recall": recall,
-                        }
-                    )
-                average_precision_records.append(
-                    {
-                        "estimator": estimator_name,
-                        "data_source": data_source,
-                        "split": None,
-                        "label": class_,
-                        "average_precision": average_precision_class_i,
-                    }
-                )
+            display = cls._concatenate(
+                displays,
+                report_type=report_type,
+                column_data={"label": classes.tolist()},
+            )
+            display.ml_task = ml_task
+            display.pos_label = pos_label_validated
+            return display
 
-        dtypes = {
-            "estimator": "category",
-            "data_source": "category",
-            "split": "category",
-            "label": "category",
+        precision, recall, thresholds = precision_recall_curve(
+            y_true,
+            y_pred,
+            pos_label=pos_label_validated,
+            drop_intermediate=drop_intermediate,
+        )
+        average_precision = average_precision_score(
+            y_true, y_pred, pos_label=pos_label_validated
+        )
+
+        metadata = {
+            "estimator": estimator_name,
+            "data_source": data_source,
+            "split": None,
+            "label": pos_label_validated,
         }
 
+        curve_data = {
+            **metadata,
+            "threshold": thresholds,
+            "precision": precision[:-1],
+            "recall": recall[:-1],
+        }
+        n = thresholds.size
+        for col in metadata:
+            curve_data[col] = Series([curve_data[col]], dtype="category").repeat(n)
+
+        average_precision_df = DataFrame(
+            {
+                **metadata,
+                "average_precision": [average_precision],
+            }
+        ).astype(dict.fromkeys(metadata, "category"))
+
         return cls(
-            precision_recall=DataFrame.from_records(precision_recall_records).astype(
-                dtypes
-            ),
-            average_precision=DataFrame.from_records(average_precision_records).astype(
-                dtypes
-            ),
+            precision_recall=DataFrame(curve_data),
+            average_precision=average_precision_df,
             pos_label=pos_label_validated,
             data_source=data_source,
             ml_task=ml_task,
