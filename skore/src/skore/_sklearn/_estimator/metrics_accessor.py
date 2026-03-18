@@ -160,7 +160,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         else:
             items = [(None, metric)]
 
-        result: dict[str, Metric] = {}
+        result = {}
         for display_name, m in items:
             metric_obj = self._parse_metric(m, metric_kwargs)
             key = display_name if display_name else metric_obj.verbose_name
