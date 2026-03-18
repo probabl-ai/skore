@@ -1,5 +1,3 @@
-from collections.abc import Callable
-from dataclasses import dataclass, field
 from functools import cached_property
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
@@ -11,7 +9,7 @@ from rich.panel import Panel
 from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
-from skore._sklearn.types import MLTask, PositiveLabel
+from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._cache_key import make_cache_key
 from skore._utils._measure_time import MeasureTime
@@ -201,101 +199,3 @@ def _get_cached_response_values(
         (cache_key, predictions, False),
         (predict_time_cache_key, predict_time(), False),
     ]
-
-
-@dataclass
-class Metric:
-    """Metadata for a metric in the registry.
-
-    Parameters
-    ----------
-    name : str
-        Technical name used for lookup (e.g. ``"accuracy"``).
-
-    verbose_name : str
-        Display name shown in reports (e.g. ``"Accuracy"``).
-
-    greater_is_better : bool or None
-        Whether a higher value is better (``True``), lower is better
-        (``False``), or there is no preference or information (``None``).
-
-    score_func : callable or None, default=None
-        The scoring function. ``None`` for built-in metrics that are dispatched
-        by name; a callable for custom metrics.
-
-    response_method : {"predict", "predict_proba", "decision_function"} or None, \
-        default="predict"
-        The method to call to get the predicted values that will passed to
-        ``score_func``.
-    
-    kwargs : dict, default={}
-        Keyword arguments to pass to ``score_func``.
-    """
-
-    name: str
-    verbose_name: str
-    greater_is_better: bool | None = None
-    score_func: Callable | None = None
-    response_method: Literal["predict", "predict_proba", "decision_function"] | None = (
-        "predict"
-    )
-    kwargs: dict[str, Any] = field(default_factory=dict)
-
-    @property
-    def icon(self) -> str:
-        """Favorability icon derived from ``greater_is_better``."""
-        if self.greater_is_better is True:
-            return "(↗︎)"
-        elif self.greater_is_better is False:
-            return "(↘︎)"
-        return ""
-
-
-FitTime = Metric(
-    name="fit_time",
-    verbose_name="Fit time (s)",
-    greater_is_better=False,
-    response_method=None,
-)
-PredictTime = Metric(
-    name="predict_time",
-    verbose_name="Predict time (s)",
-    greater_is_better=False,
-    response_method=None,
-)
-Accuracy = Metric(name="accuracy", verbose_name="Accuracy", greater_is_better=True)
-Precision = Metric(name="precision", verbose_name="Precision", greater_is_better=True)
-Recall = Metric(name="recall", verbose_name="Recall", greater_is_better=True)
-Brier = Metric(name="brier_score", verbose_name="Brier score", greater_is_better=False)
-RocAuc = Metric(name="roc_auc", verbose_name="ROC AUC", greater_is_better=True)
-LogLoss = Metric(name="log_loss", verbose_name="Log loss", greater_is_better=False)
-R2 = Metric(name="r2", verbose_name="R²", greater_is_better=True)
-Rmse = Metric(name="rmse", verbose_name="RMSE", greater_is_better=False)
-
-BUILTIN_METRICS = [
-    FitTime,
-    PredictTime,
-    Accuracy,
-    Precision,
-    Recall,
-    Brier,
-    RocAuc,
-    LogLoss,
-    R2,
-    Rmse,
-]
-
-
-def _get_default_metrics(ml_task: MLTask, estimator: BaseEstimator) -> list[str]:
-    if ml_task == "binary-classification":
-        metrics = [Accuracy, Precision, Recall, RocAuc]
-        if hasattr(estimator, "predict_proba"):
-            metrics += [Brier, LogLoss]
-    elif ml_task == "multiclass-classification":
-        metrics = [Accuracy, Precision, Recall]
-        if hasattr(estimator, "predict_proba"):
-            metrics += [RocAuc, LogLoss]
-    else:
-        metrics = [R2, Rmse]
-    metrics += [FitTime, PredictTime]
-    return [m.name for m in metrics]
