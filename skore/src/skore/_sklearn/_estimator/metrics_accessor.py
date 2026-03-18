@@ -8,17 +8,13 @@ import numpy as np
 import pandas as pd
 import sklearn
 from numpy.typing import ArrayLike
-from sklearn.metrics import make_scorer
 from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import (
-    BUILTIN_METRICS,
-    Metric,
     _BaseAccessor,
     _get_cached_response_values,
-    _get_default_metrics,
 )
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
@@ -27,6 +23,11 @@ from skore._sklearn._plot import (
     PrecisionRecallCurveDisplay,
     PredictionErrorDisplay,
     RocCurveDisplay,
+)
+from skore._sklearn.metrics import (
+    BUILTIN_METRICS,
+    Metric,
+    _get_default_metrics,
 )
 from skore._sklearn.types import (
     DataSource,
