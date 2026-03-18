@@ -1,4 +1,3 @@
-from inspect import signature
 from io import BytesIO
 
 from matplotlib import pyplot as plt
@@ -23,6 +22,7 @@ from skore_hub_project.artifact.media import (
     RocSVGTest,
     RocSVGTrain,
 )
+from skore_hub_project.artifact.media.performance import PerformanceDataFrame
 from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.json import dumps
 
@@ -39,10 +39,7 @@ def serialize_svg(display) -> bytes:
 
 
 def serialize_dataframe(display) -> bytes:
-    if "threshold_value" in signature(display.frame).parameters:
-        frame = display.frame(threshold_value="all")
-    else:
-        frame = display.frame()
+    frame = display.frame(**PerformanceDataFrame.get_frame_kwargs(display))
 
     return dumps(
         frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
