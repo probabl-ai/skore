@@ -11,11 +11,8 @@ from sklearn.utils.validation import _num_samples, check_array
 
 from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn._plot.metrics._children import (
-    _iter_child_displays,
-    _override_display_metadata,
-)
 from skore._sklearn._plot.utils import (
+    _column_data_to_records,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
 )
@@ -131,22 +128,17 @@ class PredictionErrorDisplay(DisplayMixin):
         child_displays: list["PredictionErrorDisplay"],
         *,
         report_type: ReportType,
-        estimator_names: list[str | None] | None = None,
-        split_indices: list[int | None] | None = None,
+        **column_data,
     ) -> "PredictionErrorDisplay":
+        """Build a prediction-error display by concatenating child displays."""
         first_display = child_displays[0]
+        column_records = _column_data_to_records(column_data)
         return cls(
             prediction_error=pd.concat(
                 [
-                    _override_display_metadata(
-                        display._prediction_error,
-                        estimator_name=estimator_name,
-                        split=split,
-                    )
-                    for display, estimator_name, split in _iter_child_displays(
-                        child_displays,
-                        estimator_names=estimator_names,
-                        split_indices=split_indices,
+                    display._prediction_error.assign(**column_record)
+                    for display, column_record in zip(
+                        child_displays, column_records, strict=True
                     )
                 ],
                 ignore_index=True,

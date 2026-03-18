@@ -433,3 +433,23 @@ def _format_legend_label(
         )
         + f" ({statistic})"
     )
+
+
+def _column_data_to_records(column_data: dict[str, list]) -> list[dict]:
+    """Convert column-wise data into one record per row.
+
+    Examples
+    --------
+    >>> _column_data_to_records({"estimator": ["A", "B"], "split": [0, 1]})
+    [{'estimator': 'A', 'split': 0}, {'estimator': 'B', 'split': 1}]
+    """
+    if not column_data:
+        return []
+
+    keys = list(column_data)
+    values = [list(column_data[key]) for key in keys]
+    lengths = {len(value) for value in values}
+    if len(lengths) > 1:
+        raise ValueError("All column data iterables must have the same length.")
+
+    return [dict(zip(keys, row, strict=True)) for row in zip(*values, strict=True)]

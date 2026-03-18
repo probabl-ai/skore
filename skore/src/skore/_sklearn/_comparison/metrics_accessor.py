@@ -962,7 +962,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         display = RocCurveDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            estimator_names=estimator_names,
+            estimator=estimator_names,
         )
         return display
 
@@ -1025,7 +1025,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         display = PrecisionRecallCurveDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            estimator_names=estimator_names,
+            estimator=estimator_names,
         )
         return display
 
@@ -1107,7 +1107,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         display = PredictionErrorDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            estimator_names=estimator_names,
+            estimator=estimator_names,
         )
         return display
 
@@ -1170,6 +1170,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         display = ConfusionMatrixDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            estimator_names=estimator_names,
+            estimator=estimator_names,
         )
         return display

@@ -889,7 +889,7 @@ class _MetricsAccessor(
         display = RocCurveDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            split_indices=split_indices,
+            split=split_indices,
         )
         return display
 
@@ -940,7 +940,7 @@ class _MetricsAccessor(
         display = PrecisionRecallCurveDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            split_indices=split_indices,
+            split=split_indices,
         )
         return display
 
@@ -1010,7 +1010,7 @@ class _MetricsAccessor(
         display = PredictionErrorDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            split_indices=split_indices,
+            split=split_indices,
         )
         return display
 
@@ -1054,21 +1054,15 @@ class _MetricsAccessor(
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
-        child_displays: list[ConfusionMatrixDisplay] = []
-        split_indices: list[int] = []
-        for split_idx, report in track(
-            enumerate(self._parent.estimator_reports_),
-            description="Computing display for each split",
-            total=len(self._parent.estimator_reports_),
-        ):
-            child_displays.append(
-                report.metrics.confusion_matrix(data_source=data_source)
-            )
-            split_indices.append(split_idx)
+        child_displays: list[ConfusionMatrixDisplay] = [
+            report.metrics.confusion_matrix(data_source=data_source)
+            for report in self._parent.estimator_reports_
+        ]
+        split_indices = range(len(self._parent.estimator_reports_))
 
         display = ConfusionMatrixDisplay.from_child_displays(
             child_displays,
             report_type=self._parent._report_type,
-            split_indices=split_indices,
+            split=split_indices,
         )
         return display

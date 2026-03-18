@@ -10,13 +10,10 @@ from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
 
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn._plot.metrics._children import (
-    _iter_child_displays,
-    _override_display_metadata,
-)
 from skore._sklearn._plot.utils import (
     _build_custom_legend_with_stats,
     _ClassifierDisplayMixin,
+    _column_data_to_records,
     _despine_matplotlib_axis,
     _get_curve_plot_columns,
     _validate_style_kwargs,
@@ -134,37 +131,26 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         child_displays: Sequence["PrecisionRecallCurveDisplay"],
         *,
         report_type: ReportType,
-        estimator_names: Sequence[str | None] | None = None,
-        split_indices: Sequence[int | None] | None = None,
+        **column_data,
     ) -> "PrecisionRecallCurveDisplay":
+        """Build a precision-recall display by concatenating child displays."""
         first_display = child_displays[0]
+        column_records = _column_data_to_records(column_data)
         return cls(
             precision_recall=pd.concat(
                 [
-                    _override_display_metadata(
-                        display.precision_recall,
-                        estimator_name=estimator_name,
-                        split=split,
-                    )
-                    for display, estimator_name, split in _iter_child_displays(
-                        child_displays,
-                        estimator_names=estimator_names,
-                        split_indices=split_indices,
+                    display.precision_recall.assign(**column_record)
+                    for display, column_record in zip(
+                        child_displays, column_records, strict=True
                     )
                 ],
                 ignore_index=True,
             ),
             average_precision=pd.concat(
                 [
-                    _override_display_metadata(
-                        display.average_precision,
-                        estimator_name=estimator_name,
-                        split=split,
-                    )
-                    for display, estimator_name, split in _iter_child_displays(
-                        child_displays,
-                        estimator_names=estimator_names,
-                        split_indices=split_indices,
+                    display.average_precision.assign(**column_record)
+                    for display, column_record in zip(
+                        child_displays, column_records, strict=True
                     )
                 ],
                 ignore_index=True,

@@ -11,11 +11,11 @@ from sklearn.utils._response import _check_response_method
 from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
 from skore._sklearn._base import BaseEstimator
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn._plot.metrics._children import (
-    _iter_child_displays,
-    _override_display_metadata,
+from skore._sklearn._plot.utils import (
+    _ClassifierDisplayMixin,
+    _column_data_to_records,
+    _validate_style_kwargs,
 )
-from skore._sklearn._plot.utils import _ClassifierDisplayMixin, _validate_style_kwargs
 from skore._sklearn.types import (
     DataSource,
     MLTask,
@@ -114,22 +114,17 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         child_displays: Sequence["ConfusionMatrixDisplay"],
         *,
         report_type: ReportType,
-        estimator_names: Sequence[str | None] | None = None,
-        split_indices: Sequence[int | None] | None = None,
+        **column_data,
     ) -> "ConfusionMatrixDisplay":
+        """Build a confusion-matrix display by concatenating child displays."""
         first_display = child_displays[0]
+        column_records = _column_data_to_records(column_data)
         return cls(
             confusion_matrix=pd.concat(
                 [
-                    _override_display_metadata(
-                        display.confusion_matrix,
-                        estimator_name=estimator_name,
-                        split=split,
-                    )
-                    for display, estimator_name, split in _iter_child_displays(
-                        child_displays,
-                        estimator_names=estimator_names,
-                        split_indices=split_indices,
+                    display.confusion_matrix.assign(**column_record)
+                    for display, column_record in zip(
+                        child_displays, column_records, strict=True
                     )
                 ],
                 ignore_index=True,
