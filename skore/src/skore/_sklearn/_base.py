@@ -271,9 +271,6 @@ RocAuc = Metric(name="roc_auc", verbose_name="ROC AUC", greater_is_better=True)
 LogLoss = Metric(name="log_loss", verbose_name="Log loss", greater_is_better=False)
 R2 = Metric(name="r2", verbose_name="R²", greater_is_better=True)
 Rmse = Metric(name="rmse", verbose_name="RMSE", greater_is_better=False)
-CustomMetric = Metric(
-    name="custom_metric", verbose_name="Custom metric", greater_is_better=None
-)
 
 BUILTIN_METRICS = [
     FitTime,
@@ -286,7 +283,6 @@ BUILTIN_METRICS = [
     LogLoss,
     R2,
     Rmse,
-    CustomMetric,
 ]
 
 
