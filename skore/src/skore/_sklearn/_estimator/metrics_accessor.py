@@ -1,3 +1,4 @@
+import dataclasses
 import inspect
 from collections.abc import Callable
 from functools import partial
@@ -90,13 +91,18 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         elif m in self._builtin_by_name:
             metric_obj = self._builtin_by_name[m]
 
-            # forward parameters specific to the builtin method
+            # Forward parameters specific to the builtin method
             data_source_func = getattr(self, metric_obj.name)
-            metric_obj.kwargs = {
-                param: metric_kwargs[param]
-                for param in inspect.signature(data_source_func).parameters
-                if param in metric_kwargs
-            }
+
+            # Avoid mutating metric_obj 
+            metric_obj = dataclasses.replace(
+                metric_obj,
+                kwargs={
+                    param: metric_kwargs[param]
+                    for param in inspect.signature(data_source_func).parameters
+                    if param in metric_kwargs
+                },
+            )
             return metric_obj
         elif isinstance(m, str):
             if len(metric_kwargs) != 0:
