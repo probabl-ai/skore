@@ -20,6 +20,7 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
 from skore._sklearn.find_ml_task import _find_ml_task
+from skore._sklearn.metrics import Metric
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -30,9 +31,7 @@ from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
-    from skore._sklearn._estimator.inspection_accessor import (
-        _InspectionAccessor,
-    )
+    from skore._sklearn._estimator.inspection_accessor import _InspectionAccessor
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
@@ -200,6 +199,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
         self._cache = Cache()
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
+        self._metrics_registry: dict[str, Metric] = {}
 
     # NOTE:
     # For the moment, we do not allow to alter the estimator and the training data.

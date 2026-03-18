@@ -49,10 +49,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     You can access this accessor using the `metrics` attribute.
     """
 
-    _builtin_by_name: dict[str, Metric] = {m.name: m for m in BUILTIN_METRICS}
-
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
+        if not self._parent._metrics_registry:
+            self._parent._metrics_registry = {m.name: m for m in BUILTIN_METRICS}
+
+    @property
+    def _registry(self) -> dict[str, Metric]:
+        return self._parent._metrics_registry
 
     def _parse_metric(self, m: MetricLike, metric_kwargs: dict[str, Any]) -> Metric:
         """
@@ -91,8 +95,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 response_method=m._response_method,
                 kwargs=kwargs,
             )
-        elif m in self._builtin_by_name:
-            metric_obj = self._builtin_by_name[cast(str, m)]
+        elif m in self._registry:
+            metric_obj = self._registry[cast(str, m)]
 
             # Forward parameters specific to the builtin method
             data_source_func = getattr(self, metric_obj.name)
@@ -122,7 +126,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 raise ValueError(
                     f"Invalid metric: {m!r}. "
                     "Please use a valid metric from the list of supported "
-                    f"metrics: {list(self._builtin_by_name.keys())} "
+                    f"metrics: {list(self._registry.keys())} "
                     "or a valid scikit-learn metric string."
                 ) from err
 
@@ -175,7 +179,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             default_metrics = _get_default_metrics(
                 self._parent._ml_task, self._parent._estimator
             )
-            items = [(None, m) for m in default_metrics]
+            custom_metrics = [
+                name for name, m in self._registry.items() if m.score_func is not None
+            ]
+            items = [(None, m) for m in default_metrics + custom_metrics]
         elif isinstance(metric, dict):
             items = list(metric.items())
         elif isinstance(metric, list):
