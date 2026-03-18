@@ -229,12 +229,13 @@ advanced_cv_report = evaluate(
 # ====================
 #
 # Now that we have our two models, we need to decide which one should go into
-# production. We can compare them with a :class:`skore.ComparisonReport`.
+# production. We can compare them with a :func:`~skore.compare` that returns a
+# :class:`~skore.ComparisonReport`.
 
 # %%
-from skore import ComparisonReport
+from skore import compare
 
-comparison = ComparisonReport(
+comparison = compare(
     {
         "Simple Linear Model": simple_cv_report,
         "Advanced Pipeline": advanced_cv_report,
