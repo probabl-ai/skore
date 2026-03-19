@@ -275,8 +275,8 @@ linear_model_report.metrics.summarize().frame(favorability=True)
 # Comparing the models
 # ====================
 #
-# Now that we cross-validated our models, we can make some further comparison using the
-# a :func:`~skore.compare` that returns a :class:`~skore.ComparisonReport`:
+# Now that we cross-validated our models, we can make some further comparison using
+# the :func:`~skore.compare` function that returns a :class:`~skore.ComparisonReport`:
 
 # %%
 from skore import compare

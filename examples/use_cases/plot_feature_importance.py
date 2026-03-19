@@ -384,7 +384,7 @@ engineered_ridge
 
 # %%
 # Now, let us compute the metrics and compare it to our previous model using
-# a :func:`~skore.compare` that returns a :class:`~skore.ComparisonReport`:
+# the :func:`~skore.compare` function that returns a :class:`~skore.ComparisonReport`:
 
 # %%
 from skore import compare
