@@ -34,17 +34,21 @@ class Metric:
     is_builtin : bool, default=False
         Whether this metric is a skore built-in.  Built-ins cannot be
         overridden via :meth:`register`.
+
+    source_code : str or None, default=None
+        Source code of the score function, captured at registration time.
     """
 
     name: str
     verbose_name: str
     greater_is_better: bool | None = None
     score_func: Callable | None = None
-    response_method: Literal["predict", "predict_proba", "decision_function"] | None = (
-        "predict"
-    )
+    response_method: (
+        Literal["predict", "predict_proba", "decision_function"] | list[str] | None
+    ) = "predict"
     kwargs: dict[str, Any] = field(default_factory=dict)
     is_builtin: bool = False
+    source_code: str | None = None
 
     @property
     def icon(self) -> str:
@@ -56,6 +60,35 @@ class Metric:
                 return "(↘︎)"
             case _:
                 return ""
+
+    def is_callable(self) -> bool:
+        """Return whether the score function is callable."""
+        return self.score_func is not None and callable(self.score_func)
+
+    def __getstate__(self) -> dict[str, Any]:
+        state = self.__dict__.copy()
+        if state.get("score_func") is not None:
+            import pickle as _pickle
+
+            try:
+                _pickle.dumps(state["score_func"])
+            except Exception:
+                state["score_func"] = None
+                state["_score_func_lost"] = True
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        if state.pop("_score_func_lost", False):
+            import warnings
+
+            warnings.warn(
+                f"The score function for metric {state.get('name', '?')!r} "
+                "could not be restored after pickling (e.g., it was a lambda "
+                "or closure).",
+                UserWarning,
+                stacklevel=2,
+            )
+        self.__dict__.update(state)
 
 
 FitTime = Metric(
