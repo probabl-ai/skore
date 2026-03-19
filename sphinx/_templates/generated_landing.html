@@ -1,0 +1,742 @@
+  <!-- Feature Section 1 -->
+  <div class="row mb-0 row-padding-between-features">
+    <div class="col-md-5 mb-5">
+      <h4 class="feature-title">Reports for your Experiments</h4>
+      <p class="feature-text">Create structured reports to quickly evaluate and inspect
+        your predictive models by using
+        <a class="reference internal"
+        href="reference/api/skore.EstimatorReport.html#estimatorreport"
+        title="skore.EstimatorReport"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">EstimatorReport</span></code></a>
+        or
+        <a class="reference internal"
+        href="reference/api/skore.CrossValidationReport.html#crossvalidationreport"
+        title="skore.CrossValidationReport"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">CrossValidationReport</span></code></a>
+        and even compare them by using
+        <a class="reference internal"
+        href="reference/api/skore.ComparisonReport.html#comparisonreport"
+        title="skore.ComparisonReport"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">ComparisonReport</span></code></a>.
+      </p>
+    </div>
+
+    <div class="col-md-7">
+      <div class="container-fluid" style="max-width: 58rem;">
+        <div class="sd-card card-landing">
+          <div class="card-body">
+            <details>
+              <summary>Given some data
+                <code class="docutils literal notranslate"><span class="pre">df</span></code>: <i>(expand for full code)</i>
+              </summary>
+              <div class="doctest highlight-default notranslate">
+                <div class="highlight">
+                  <pre style="overflow-x: auto;"><span class="kn">from</span><span class="w"> </span><span class="nn">skrub.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch_employee_salaries</span>
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">fetch_employee_salaries</span><span class="p">()</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">X</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">dataset</span><span class="o">.</span><span class="n">y</span>
+</pre>
+                </div>
+              </div>
+            </details>
+          </div>
+          <div class="highlight">
+            <pre style="overflow-x: auto;"><span class="kn">import</span><span class="w"> </span><span class="nn">sklearn</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skore</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">skrub</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">skrub</span><span class="o">.</span><span class="n">tabular_pipeline</span><span class="p">(</span><span class="n">sklearn</span><span class="o">.</span><span class="n">linear_model</span><span class="o">.</span><span class="n">Ridge</span><span class="p">())</span>
+<span class="n">report_ridge</span> <span class="o">=</span> <span class="n">skore</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">splitter</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+</pre>
+          </div>
+        </div>
+      </div>
+      <div class="container-fluid" style="max-width: 58rem;">
+        <div class="sd-card card-landing">
+          <div id="skore-help-a53b902c-wrapper">
+    <template id="skore-help-a53b902c-template">
+        <style>
+/* Light theme (default) */
+.container,
+:host {
+    --color-blue: #3043f0;
+    --color-orange: #f97316;
+    --color-text: #000;
+    --color-background: #fff;
+    --color-orange-hover: rgba(249, 115, 22, 0.1);
+    --color-blue-hover: rgba(48, 67, 240, 0.1);
+}
+
+/* Dark theme */
+.container.dark-theme,
+.container[data-theme="dark"],
+:host(.dark-theme),
+:host([data-theme="dark"]) {
+    --color-blue: #6b42f6;
+    --color-orange: #f97316;
+    --color-text: #fff;
+    --color-background: #000;
+    --color-orange-hover: rgba(249, 115, 22, 0.2);
+    --color-blue-hover: rgba(107, 66, 246, 0.2);
+}
+
+.container {
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px;
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    background-color: var(--color-background);
+    margin: 10px 0;
+    width: fit-content;
+    min-width: 500px;
+    max-width: 800px;
+}
+
+.title {
+    font-weight: bold;
+    color: var(--color-text);
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.tree {
+    margin-left: 0;
+}
+
+.node {
+    margin: 0;
+    padding: 0;
+}
+
+.label {
+    color: var(--color-text);
+    font-weight: bold;
+}
+
+.root-content {
+    margin-left: 16px;
+    position: relative;
+}
+
+/* Vertical lines for root content items - using border-left pattern */
+.root-content > .node,
+.root-content > .method {
+    border-left: 2px solid var(--color-text);
+    padding-left: 16px;
+    position: relative;
+    margin-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Extend border to connect with previous element */
+.root-content > .node:not(:first-child),
+.root-content > .method:not(:first-child) {
+    border-top: 2px solid transparent;
+    margin-top: -2px;
+    padding-top: 2px;
+}
+
+/* Hide vertical line on last item below middle */
+.root-content > .node:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Add half-height vertical line for last item */
+.root-content > .node:last-child::after,
+.root-content > .method:last-child::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    height: calc(1.5em / 2); /* Half of line-height */
+    width: 2px;
+    background-color: var(--color-text);
+}
+
+/* Hide border below middle for last item */
+.root-content > .node:last-child,
+.root-content > .method:last-child {
+    border-left-color: transparent;
+}
+
+/* Horizontal connector lines for root content items */
+.root-content > .node::before,
+.root-content > .method::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: calc(1.5em / 2); /* Half of line-height */
+    width: 12px;
+    height: 2px;
+    background-color: var(--color-text);
+}
+
+.toggle {
+    display: none;
+}
+
+.branch-label {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    color: var(--color-blue);
+    font-weight: bold;
+    position: relative;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5em;
+}
+
+/* Orange hover for accessors */
+.branch-label:has(.name):hover {
+    background-color: var(--color-orange-hover);
+}
+
+/* Blue hover for Methods and Attributes sections */
+.branch-label:has(.section-name):hover {
+    background-color: var(--color-blue-hover);
+}
+
+.name {
+    color: var(--color-orange);
+}
+
+.section-name {
+    color: var(--color-blue);
+}
+
+.branch-content {
+    margin-left: 16px;
+    position: relative;
+    padding-left: 0;
+    display: none;
+}
+
+.branch-label:has(.toggle:checked) + .branch-content {
+    display: block;
+}
+
+/* Vertical lines for items inside branch content */
+.branch-content > .node,
+.branch-content > .method {
+    border-left: 2px solid var(--color-text);
+    padding-left: 16px;
+    position: relative;
+    margin-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Extend border to connect with previous element */
+.branch-content > .node:not(:first-child),
+.branch-content > .method:not(:first-child) {
+    border-top: 2px solid transparent;
+    margin-top: -2px;
+    padding-top: 2px;
+}
+
+/* Hide vertical line on last item below middle */
+.branch-content > .node:last-child,
+.branch-content > .method:last-child {
+    border-left-color: transparent;
+}
+
+/* Add half-height vertical line for last items */
+.branch-content > .node:last-child::after,
+.branch-content > .method:last-child::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    height: calc(1.5em / 2); /* Half of line-height */
+    width: 2px;
+    background-color: var(--color-text);
+}
+
+/* Horizontal connector lines for items inside branch content */
+.branch-content > .node::before,
+.branch-content > .method::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: calc(1.5em / 2); /* Half of line-height */
+    width: 12px;
+    height: 2px;
+    background-color: var(--color-text);
+}
+
+.method {
+    color: var(--color-text);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5em;
+}
+
+.method-name {
+    color: var(--color-text);
+}
+
+
+.method-tooltip {
+    position: relative;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-underline-offset: 0.3em;
+    cursor: help;
+    color: inherit;
+    text-decoration-color: inherit;
+}
+
+.method-tooltip:hover {
+    color: inherit;
+}
+
+.method-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    background-color: var(--color-text);
+    color: var(--color-background);
+    text-align: left;
+    border-radius: 4px;
+    padding: 8px 10px;
+    position: absolute;
+    z-index: 1000;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    margin-left: 8px;
+    white-space: normal;
+    width: 250px;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: opacity 0.2s, visibility 0.2s;
+}
+
+.arrow {
+    vertical-align: text-top;
+}
+
+.tooltip-text::before {
+    content: "";
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: var(--color-text);
+}
+
+.legend {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-text);
+    font-size: 12px;
+    color: var(--color-text);
+}
+        </style>
+        <div class="container">
+    <header class="title">Tools to diagnose estimator Ridge</header>
+    <div class="tree">
+        
+            
+            <div class="node">
+                <span class="label">CrossValidationReport</span>
+            </div>
+            <div class="root-content">
+            
+            
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="name">.data</span>
+                    </label>
+                    <div class="branch-content" id="56db43ea-594c-4a9c-a4ca-b9e0bc0d2598">
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.data.analyze.html" target="_blank" class="method-tooltip">analyze<span class="tooltip-text">Plot dataset statistics.</span></a>(with_y, subsample, subsample_strategy, seed)</span>
+                                </div>
+                        
+                    </div>
+                </div>
+            
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="name">.metrics</span>
+                    </label>
+                    <div class="branch-content" id="39806c68-a88c-4239-8ede-3ec8c820c4cc">
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.metrics.custom_metric.html" target="_blank" class="method-tooltip">custom_metric<span class="tooltip-text">Compute a custom metric.</span></a>(metric_function, response_method, metric_name, data_source, aggregate, flat_index, kwargs)</span>
+                                </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.metrics.prediction_error.html" target="_blank" class="method-tooltip">prediction_error<span class="tooltip-text">Plot the prediction error of a regression model.</span></a>(data_source, subsample, seed)</span>
+                                </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.metrics.r2.html" target="_blank" class="method-tooltip">r2<span class="tooltip-text">Compute the R² score. Higher value is better.</span></a>(data_source, multioutput, aggregate, flat_index)</span>
+                                </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.metrics.rmse.html" target="_blank" class="method-tooltip">rmse<span class="tooltip-text">Compute the root mean squared error. Lower value is better.</span></a>(data_source, multioutput, aggregate, flat_index)</span>
+                                </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.metrics.summarize.html" target="_blank" class="method-tooltip">summarize<span class="tooltip-text">Report a set of metrics for our estimator.</span></a>(data_source, metric, metric_kwargs, response_method)</span>
+                                </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.metrics.timings.html" target="_blank" class="method-tooltip">timings<span class="tooltip-text">Get all measured processing times related to the estimator.</span></a>(aggregate)</span>
+                                </div>
+                        
+                    </div>
+                </div>
+            
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="name">.inspection</span>
+                    </label>
+                    <div class="branch-content" id="1d30084b-517c-4097-a3ab-3b22aa0d3a49">
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.inspection.coefficients.html" target="_blank" class="method-tooltip">coefficients<span class="tooltip-text">Retrieve the coefficients across splits, including the intercept.</span></a>()</span>
+                                </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.inspection.permutation_importance.html" target="_blank" class="method-tooltip">permutation_importance<span class="tooltip-text">Display the permutation feature importance.</span></a>(data_source, at_step, metric, n_repeats, max_samples, n_jobs, seed)</span>
+                                </div>
+                        
+                    </div>
+                </div>
+            
+
+            
+            
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="section-name">Methods</span>
+                    </label>
+                    <div class="branch-content" id="4a87d889-69fb-49ae-b00d-0089c2473cfc">
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#skore.CrossValidationReport.cache_predictions" target="_blank" class="method-tooltip">cache_predictions<span class="tooltip-text">Cache the predictions for sub-estimators reports.</span></a>(response_methods, n_jobs)</span>
+                                </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#skore.CrossValidationReport.clear_cache" target="_blank" class="method-tooltip">clear_cache<span class="tooltip-text">Clear the cache.</span></a>()</span>
+                                </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#skore.CrossValidationReport.create_estimator_report" target="_blank" class="method-tooltip">create_estimator_report<span class="tooltip-text">Create an estimator report from the cross-validation report.</span></a>(X_test, y_test)</span>
+                                </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#skore.CrossValidationReport.get_predictions" target="_blank" class="method-tooltip">get_predictions<span class="tooltip-text">Get estimator&#39;s predictions.</span></a>(data_source, response_method)</span>
+                                </div>
+                        
+                    </div>
+                </div>
+            
+
+            
+            
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="section-name">Attributes</span>
+                    </label>
+                    <div class="branch-content" id="8d1a06eb-7cc0-4af7-8b49-ec859a59bd8f">
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=X,-%7Barray-like%2C%20sparse%20matrix%7D%20of%20shape%20%28n_samples%2C%20n_features%29" target="_blank" class="method-tooltip">X<span class="tooltip-text">The data to fit</span></a></span>
+                            </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=estimator,-estimator%20object" target="_blank" class="method-tooltip">estimator<span class="tooltip-text">Estimator to make the cross-validation report from</span></a></span>
+                            </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=estimator_,-estimator%20object" target="_blank" class="method-tooltip">estimator_<span class="tooltip-text">The cloned or copied estimator</span></a></span>
+                            </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=estimator_name_,-str" target="_blank" class="method-tooltip">estimator_name_<span class="tooltip-text">The name of the estimator</span></a></span>
+                            </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=estimator_reports_,-list%20of%20EstimatorReport" target="_blank" class="method-tooltip">estimator_reports_<span class="tooltip-text">The estimator reports for each split</span></a></span>
+                            </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=ml_task" target="_blank" class="method-tooltip">ml_task<span class="tooltip-text">No description available</span></a></span>
+                            </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=n_jobs,-int%2C%20default%3DNone" target="_blank" class="method-tooltip">n_jobs<span class="tooltip-text">Number of jobs to run in parallel</span></a></span>
+                            </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=pos_label,-int%2C%20float%2C%20bool%20or%20str%2C%20default%3DNone" target="_blank" class="method-tooltip">pos_label<span class="tooltip-text">For binary classification, the positive class</span></a></span>
+                            </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=split_indices" target="_blank" class="method-tooltip">split_indices<span class="tooltip-text">No description available</span></a></span>
+                            </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=splitter,-int%2C%20cross-validation%20generator%20or%20an%20iterable%2C%20default%3D5" target="_blank" class="method-tooltip">splitter<span class="tooltip-text">Determines the cross-validation splitting strategy</span></a></span>
+                            </div>
+                        
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/1000.0/reference/api/skore.CrossValidationReport.html#:~:text=y,-array-like%20of%20shape%20%28n_samples%2C%29%20or%20%28n_samples%2C%20n_outputs%29%2C%20default%3DNone" target="_blank" class="method-tooltip">y<span class="tooltip-text">The target variable to try to predict in the case of supervised learning</span></a></span>
+                            </div>
+                        
+                    </div>
+                </div>
+            
+            </div>
+        
+    </div>
+</div>
+    </template>
+
+    <div id="skore-help-a53b902c"></div>
+
+    <script>
+function detectTheme(refElementId) {
+    const body = document.querySelector('body');
+
+    // Check VSCode theme
+    const themeKindAttr = body.getAttribute('data-vscode-theme-kind');
+    const themeNameAttr = body.getAttribute('data-vscode-theme-name');
+
+    if (themeKindAttr && themeNameAttr) {
+        const themeKind = themeKindAttr.toLowerCase();
+        const themeName = themeNameAttr.toLowerCase();
+
+        if (themeKind.includes("dark") || themeName.includes("dark")) {
+            return "dark";
+        }
+        if (themeKind.includes("light") || themeName.includes("light")) {
+            return "light";
+        }
+    }
+
+    // Check Jupyter theme
+    if (body.getAttribute('data-jp-theme-light') === 'false') {
+        return 'dark';
+    } else if (body.getAttribute('data-jp-theme-light') === 'true') {
+        return 'light';
+    }
+
+    // Guess based on a reference element's color (luma)
+    if (refElementId) {
+        const refElement = document.getElementById(refElementId);
+        if (refElement) {
+            const color = window.getComputedStyle(refElement, null).getPropertyValue('color');
+            const match = color.match(/^rgb[a]?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+            if (match) {
+                const r = parseInt(match[1], 10);
+                const g = parseInt(match[2], 10);
+                const b = parseInt(match[3], 10);
+                // https://en.wikipedia.org/wiki/HSL_and_HSV#Lightness
+                const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                if (luma > 180) {
+                    return 'dark';
+                }
+                if (luma < 75) {
+                    return 'light';
+                }
+            }
+        }
+    }
+
+    // Fallback to system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyThemeToHelpContainer(container, refElementId) {
+    const theme = detectTheme(refElementId);
+    if (theme === 'dark') {
+        container.setAttribute('data-theme', 'dark');
+        container.classList.add('dark-theme');
+    } else {
+        container.removeAttribute('data-theme');
+        container.classList.remove('dark-theme');
+    }
+}
+    </script>
+</div>
+
+<script>
+(function() {
+    const wrapper = document.getElementById('skore-help-a53b902c-wrapper');
+    const container = document.getElementById('skore-help-a53b902c');
+    if (!wrapper || !container) {
+        return;
+    }
+
+    const template = document.getElementById('skore-help-a53b902c-template');
+    if (!template) {
+        return;
+    }
+
+    // Create shadow root with closed mode for better isolation
+    const shadowRoot = container.attachShadow({ mode: 'closed' });
+    shadowRoot.appendChild(template.content.cloneNode(true));
+
+    // Apply theme to the container (wrapper is ref for luma-based detection)
+    const helpContainer = shadowRoot.querySelector('.container');
+    if (helpContainer) {
+        applyThemeToHelpContainer(helpContainer, 'skore-help-a53b902c-wrapper');
+    }
+})();
+</script>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Section 2 -->
+  <div class="row mb-0 flex-md-row-reverse row-padding-between-features">
+    <div class="col-md-5">
+      <h4 class="feature-title">Get Insights that Matter</h4>
+      <p class="feature-text">Quickly generate beautiful visualizations with
+        <code class="highlight python"><span class="n">display</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span></code>
+        <div class="doctest highlight-default notranslate">
+<div class="highlight hl-ipython3 code-margin"><pre><span></span><span class="n">error</span> <span class="o">=</span> <span class="n">report_ridge</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">prediction_error</span><span class="p">()</span>
+<span class="n">error</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">&quot;actual_vs_predicted&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+
+        and access the raw data with
+        <code class="highlight python"><span class="n">display</span><span class="o">.</span><span class="n">frame</span><span class="p">()</span></code>
+        <div class="doctest highlight-default notranslate">
+<div class="highlight hl-ipython3 code-margin"><pre><span></span><span class="n">report_ridge</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">summarize</span><span class="p">()</span><span class="o">.</span><span class="n">frame</span><span class="p">()</span>
+</pre></div>
+</div>
+
+      </p>
+    </div>
+    <div class="col-md-7">
+      <div class="prediction-error-image"></div>
+      <div class="container-fluid" style="max-width: 58rem">
+        <div class="sd-card card-landing">
+          <div class="card-body">
+            <div class="output_subarea output_html rendered_html output_result">
+              <div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead tr th {
+        text-align: left;
+    }
+
+    .dataframe thead tr:last-of-type th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr>
+      <th></th>
+      <th colspan="2" halign="left">Ridge</th>
+    </tr>
+    <tr>
+      <th></th>
+      <th>mean</th>
+      <th>std</th>
+    </tr>
+    <tr>
+      <th>Metric</th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>R²</th>
+      <td>0.774610</td>
+      <td>0.017097</td>
+    </tr>
+    <tr>
+      <th>RMSE</th>
+      <td>13819.356029</td>
+      <td>1017.705132</td>
+    </tr>
+    <tr>
+      <th>Fit time (s)</th>
+      <td>0.806576</td>
+      <td>0.118193</td>
+    </tr>
+    <tr>
+      <th>Predict time (s)</th>
+      <td>0.131053</td>
+      <td>0.003900</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Section 3 -->
+  <div class="row mb-0 row-padding-between-features">
+    <div class="col-md-5">
+      <h4 class="feature-title">Store and Retrieve your Reports, Locally or on Skore Hub</h4>
+      <p class="feature-text">
+        Store your reports by using
+        <a class="reference internal"
+        href="reference/api/skore.Project.html#project"
+        title="skore.Project"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">Project</span></code></a>.
+        Retrieve the most important reports to revisit your insights or compare with
+        new experiments later.
+      </p>
+      <div class="doctest highlight-default notranslate">
+<div class="highlight hl-ipython3 code-margin"><pre><span></span><span class="n">project</span> <span class="o">=</span> <span class="n">skore</span><span class="o">.</span><span class="n">Project</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;adult_census_survey&quot;</span><span class="p">)</span>
+<span class="n">project</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s2">&quot;ridge&quot;</span><span class="p">,</span> <span class="n">report_ridge</span><span class="p">)</span>
+</pre></div>
+</div>
+
+      <p class="feature-text">
+        When using
+        <a class="reference internal"
+        href="reference/api/skore.Project.html#project"
+        title="skore.Project"><code class="xref py py-class docutils literal notranslate sk-landing-code"><span class="pre">Project</span></code></a>
+        with <code>mode="hub"</code>, you can view your reports on
+        <a href="https://skore.probabl.ai" target="_blank" rel="noopener noreferrer">Skore Hub</a>.
+        For seeing an example of project and reports stored on Skore Hub, view the example
+        <a href="{{ skore_hub_example_url }}" target="_blank" rel="noopener noreferrer">here</a>.
+      </p>
+    </div>
+    <div class="col-md-7 pe-5">
+      <div class="project-summary-image"></div>
+    </div>
+  </div>
