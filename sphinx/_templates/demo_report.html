@@ -22,10 +22,9 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">skore</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">skrub</span>
 
-<span class="n">report_ridge</span> <span class="o">=</span> <span class="n">skore</span><span class="o">.</span><span class="n">CrossValidationReport</span><span class="p">(</span>
-    <span class="n">skrub</span><span class="o">.</span><span class="n">tabular_pipeline</span><span class="p">(</span><span class="n">sklearn</span><span class="o">.</span><span class="n">linear_model</span><span class="o">.</span><span class="n">Ridge</span><span class="p">()),</span> <span class="n">df</span><span class="p">,</span> <span class="n">y</span>
-<span class="p">)</span>
-<span class="n">report_ridge</span><span class="o">.</span><span class="n">help</span><span class="p">()</span></pre>
+<span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">skrub</span><span class="o">.</span><span class="n">tabular_pipeline</span><span class="p">(</span><span class="n">sklearn</span><span class="o">.</span><span class="n">linear_model</span><span class="o">.</span><span class="n">Ridge</span><span class="p">())</span>
+
+<span class="n">report_ridge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">skore</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">model</span><span class="p">,</span><span class="w"> </span><span class="n">df</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">splitter</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span></pre>
     </div>
   </div>
 </div>

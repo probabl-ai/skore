@@ -21,9 +21,9 @@ def generate_help_demo(_app: Sphinx, _config: Any) -> None:
     dataset = skrub.datasets.fetch_employee_salaries()
     X, y = dataset.X, dataset.y
 
-    report_ridge = skore.CrossValidationReport(
-        skrub.tabular_pipeline(sklearn.linear_model.Ridge()), X, y
-    )
+    model = skrub.tabular_pipeline(sklearn.linear_model.Ridge())
+    report_ridge = skore.evaluate(model, X, y, splitter=5)
+
     with open("_templates/demo_report_help_generated.html", "w", encoding="utf-8") as f:
         f.write(report_ridge._create_help_html())
 
