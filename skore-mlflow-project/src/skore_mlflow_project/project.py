@@ -345,13 +345,18 @@ def _cache_cleared_for_pickle(
 ) -> Iterator[None]:
     # Keep track of nested estimator report caches to restore local object state.
     reports = [report] + getattr(report, "estimator_reports_", [])
-    caches = [report_to_clear._cache for report_to_clear in reports]
+    reports_with_cache = [
+        report_to_clear
+        for report_to_clear in reports
+        if hasattr(report_to_clear, "_cache")
+    ]
+    caches = [report_to_clear._cache for report_to_clear in reports_with_cache]
     report.clear_cache()
 
     try:
         yield
     finally:
-        for report_to_restore, cache in zip(reports, caches, strict=True):
+        for report_to_restore, cache in zip(reports_with_cache, caches, strict=True):
             report_to_restore._cache = cache
 
 

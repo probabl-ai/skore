@@ -251,23 +251,18 @@ class TestProject:
 
     def test_put_pickles_cv_without_cache(self, cv_reg_report):
         project = Project("<project>")
-        root_cache = cv_reg_report._cache
         split_cache = cv_reg_report.estimator_reports_[0]._cache
-        cv_reg_report._cache[self.CACHE_SENTINEL] = "root"
         cv_reg_report.estimator_reports_[0]._cache[self.CACHE_SENTINEL] = "split"
 
         project.put("<key>", cv_reg_report)
 
-        assert cv_reg_report._cache is root_cache
         assert cv_reg_report.estimator_reports_[0]._cache is split_cache
-        assert cv_reg_report._cache[self.CACHE_SENTINEL] == "root"
         assert (
             cv_reg_report.estimator_reports_[0]._cache[self.CACHE_SENTINEL] == "split"
         )
 
         summary = project.summarize()
         restored = project.get(summary[0]["id"])
-        assert self.CACHE_SENTINEL not in restored._cache
         assert self.CACHE_SENTINEL not in restored.estimator_reports_[0]._cache
 
     def test_get_unknown_id_with_explicit_tracking_uri(self, tmp_path):

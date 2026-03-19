@@ -46,7 +46,6 @@ class CrossValidationReport(Protocol):
     metrics: Any
     data: Any
     splitter: Any
-    _cache: Any
 
     def create_estimator_report(self) -> EstimatorReport:
         """Create a representative estimator report."""
