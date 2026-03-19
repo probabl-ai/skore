@@ -16,15 +16,12 @@ from pygments.lexers import PythonLexer
 from sphinx.application import Sphinx
 
 
-def _highlight(code: str) -> str:
-    return highlight(code, PythonLexer(), HtmlFormatter(nowrap=True))
-
-
 def _code_block(code: str) -> str:
+    highlighted = highlight(code, PythonLexer(), HtmlFormatter(nowrap=True))
     return (
         '<div class="doctest highlight-default notranslate">\n'
         '<div class="highlight hl-ipython3 code-margin">'
-        f"<pre><span></span>{_highlight(code)}</pre></div>\n"
+        f"<pre><span></span>{highlighted}</pre></div>\n"
         "</div>\n"
     )
 
@@ -75,8 +72,8 @@ project.put("ridge", report_ridge)"""
     template = env.get_template("landing.html")
 
     output = template.render(
-        load_data=_highlight(data_loading_code),
-        create_report=_highlight(report_creation_code),
+        load_data=_code_block(data_loading_code),
+        create_report=_code_block(report_creation_code),
         help_html=help_html,
         frame_html=frame_html,
         plot_error=_code_block(plot_code),
