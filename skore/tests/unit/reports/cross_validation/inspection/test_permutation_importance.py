@@ -9,6 +9,15 @@ from skore import CrossValidationReport, PermutationImportanceDisplay
 from skore._utils._testing import check_cache_changed
 
 
+def _children_cache_size(report):
+    sizes = {
+        len(estimator_report._cache) for estimator_report in report.estimator_reports_
+    }
+    assert len(sizes) == 1
+    (size,) = sizes
+    return size
+
+
 @pytest.mark.parametrize(
     "data_fixture, estimator",
     [
@@ -52,32 +61,30 @@ def test_at_step(regression_data):
 def test_cache_seed_int(regression_data):
     X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
-    assert report._cache == {}
+    assert _children_cache_size(report) == 0
 
     display1 = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test"
     )
-    assert len(report._cache) == 1
+    assert _children_cache_size(report) == 1
 
     display2 = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test"
     )
     assert display1.importances.equals(display2.importances)
-    assert len(report._cache) == 1
+    assert _children_cache_size(report) == 1
 
 
 def test_cache_seed_none(regression_data):
     X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
-    assert report._cache == {}
+    assert _children_cache_size(report) == 0
 
     report.inspection.permutation_importance(n_repeats=2, data_source="test")
-    assert len(report._cache) == 1
+    assert _children_cache_size(report) == 1
 
-    display2 = report.inspection.permutation_importance(n_repeats=2, data_source="test")
-    assert len(report._cache) == 1
-    cached_display = next(iter(report._cache.values()))
-    assert cached_display is display2
+    report.inspection.permutation_importance(n_repeats=2, data_source="test")
+    assert _children_cache_size(report) == 1
 
 
 def test_cache_parameter_in_cache(regression_data):
@@ -87,7 +94,7 @@ def test_cache_parameter_in_cache(regression_data):
     report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test", metric="r2"
     )
-    with check_cache_changed(report._cache):
+    with check_cache_changed(report.estimator_reports_[0]._cache):
         report.inspection.permutation_importance(
             seed=42,
             n_repeats=2,
