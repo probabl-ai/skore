@@ -116,6 +116,55 @@ class TestImpurityDecreaseDisplay:
             display.plot()
         assert display.figure_.get_figheight() == 8
 
+    def test_frame_select_k(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.impurity_decrease()
+        full = display.frame(sorting_order=None)
+        sub = display.frame(select_k=2)
+        group_cols = [
+            c for c in ("estimator",) if c in sub.columns and sub[c].nunique() > 1
+        ]
+        assert set(sub.columns) == set(full.columns)
+        if group_cols:
+            for _, group in sub.groupby(group_cols, sort=False):
+                assert len(group) == 2
+        else:
+            assert len(sub) == 2
+        assert set(sub["feature"]).issubset(set(full["feature"]))
+
+    @pytest.mark.parametrize(
+        "sorting_order",
+        ["descending", "ascending"],
+    )
+    def test_frame_sorting_order(self, fixture_prefix, task, sorting_order, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.impurity_decrease()
+        frame = display.frame(sorting_order=sorting_order)
+        value_col = (
+            "importance_mean" if "importance_mean" in frame.columns else "importance"
+        )
+        group_cols = [
+            c
+            for c in frame.columns
+            if c not in ("feature", value_col, "importance_std")
+        ]
+        if group_cols:
+            groups = frame.groupby(group_cols, sort=False, dropna=False)
+        else:
+            groups = [(None, frame)]
+        for _, group in groups:
+            feature_order = group["feature"].unique()
+            values = [
+                group.loc[group["feature"] == f, value_col].mean()
+                for f in feature_order
+            ]
+            expected = sorted(values, reverse=(sorting_order == "descending"))
+            assert values == expected
+
 
 @pytest.mark.parametrize(
     "fixture_prefix",
