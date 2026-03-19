@@ -24,7 +24,6 @@ from skore._sklearn.types import (
     Metric,
 )
 from skore._utils._accessor import _check_estimator_report_has_method
-from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
