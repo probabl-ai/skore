@@ -1,5 +1,6 @@
+import numbers
 from collections.abc import Callable
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import joblib
 import pandas as pd
@@ -22,13 +23,10 @@ from skore._sklearn._plot.metrics import (
 from skore._sklearn.types import (
     Aggregate,
     Metric,
-    YPlotData,
 )
 from skore._utils._accessor import (
     _check_any_sub_report_has_metric,
     _check_supported_ml_task,
-    _expand_data_sources,
-    _get_ys_for_single_report,
 )
 from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -827,160 +825,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         """Return a string representation using rich."""
         return self._rich_repr(class_name="skore.ComparisonReport.metrics")
 
-    ####################################################################################
-    # Methods related to displays
-    ####################################################################################
-
-    def _get_display(
-        self,
-        *,
-        data_source: DataSource | Literal["both"],
-        response_method: str | list[str] | tuple[str, ...],
-        display_class: type[
-            RocCurveDisplay
-            | PrecisionRecallCurveDisplay
-            | PredictionErrorDisplay
-            | ConfusionMatrixDisplay
-        ],
-        display_kwargs: dict[str, Any],
-    ) -> (
-        RocCurveDisplay
-        | PrecisionRecallCurveDisplay
-        | PredictionErrorDisplay
-        | ConfusionMatrixDisplay
-    ):
-        """Get the display from the cache or compute it.
-
-        Parameters
-        ----------
-        data_source : {"test", "train", "both"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metric.
-
-        response_method : str, list of str or tuple of str
-            The response method.
-
-        display_class : class
-            The display class.
-
-        display_kwargs : dict
-            The display kwargs used by `display_class._from_predictions`.
-
-        Returns
-        -------
-        display : display_class
-            The display.
-        """
-        pos_label = self._parent.pos_label
-        data_sources = _expand_data_sources(data_source)
-
-        # Compute cache key
-        if "seed" in display_kwargs and display_kwargs["seed"] is None:
-            cache_key = None
-        else:
-            cache_key = deep_key_sanitize(
-                (
-                    self._parent._hash,
-                    display_class.__name__,
-                    display_kwargs,
-                    data_source,
-                )
-            )
-
-        cache_value = self._parent._cache.get(cache_key)
-        if cache_value is not None:
-            return cache_value
-
-        y_true: list[YPlotData] = []
-        y_pred: list[YPlotData] = []
-
-        if self._parent._report_type == "comparison-estimator":
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing predictions for display",
-                total=len(self._parent.reports_),
-            ):
-                for ds in data_sources:
-                    report_X, report_y = report.metrics._get_X_y(data_source=ds)
-
-                    y_true_data, y_pred_data = _get_ys_for_single_report(
-                        cache=report._cache,
-                        estimator_hash=int(report._hash),
-                        estimator=report._estimator,
-                        estimator_name=report_name,
-                        X=report_X,
-                        y_true=report_y,
-                        data_source=ds,
-                        response_method=response_method,
-                        pos_label=pos_label,
-                        split=None,
-                    )
-                    y_true.append(y_true_data)
-                    y_pred.append(y_pred_data)
-
-            display = display_class._compute_data_for_display(
-                y_true=y_true,
-                y_pred=y_pred,
-                report_type=self._parent._report_type,
-                estimators=[
-                    report.estimator_ for report in self._parent.reports_.values()
-                ],
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-            )
-
-        else:
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing predictions for display",
-                total=len(self._parent.reports_),
-            ):
-                for split, estimator_report in enumerate(report.estimator_reports_):
-                    for ds in data_sources:
-                        report_X, report_y = estimator_report.metrics._get_X_y(
-                            data_source=ds
-                        )
-
-                        y_true_data, y_pred_data = _get_ys_for_single_report(
-                            cache=estimator_report._cache,
-                            estimator_hash=int(estimator_report._hash),
-                            estimator=estimator_report.estimator_,
-                            estimator_name=report_name,
-                            X=report_X,
-                            y_true=report_y,
-                            data_source=ds,
-                            response_method=response_method,
-                            pos_label=pos_label,
-                            split=split,
-                        )
-                        y_true.append(y_true_data)
-                        y_pred.append(y_pred_data)
-
-            display = display_class._compute_data_for_display(
-                y_true=y_true,
-                y_pred=y_pred,
-                report_type=self._parent._report_type,
-                estimators=[
-                    estimator_report.estimator_
-                    for report in self._parent.reports_.values()
-                    for estimator_report in report.estimator_reports_
-                ],
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-            )
-
-        if cache_key is not None:
-            # Unless seed is an int (i.e. the call is deterministic),
-            # we do not cache
-            self._parent._cache[cache_key] = display
-
-        return display
-
     @available_if(
         _check_supported_ml_task(
             supported_ml_tasks=["binary-classification", "multiclass-classification"]
@@ -1019,16 +863,19 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.roc()
         >>> display.plot()
         """
-        response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": self._parent.pos_label}
-        display = cast(
-            RocCurveDisplay,
-            self._get_display(
-                data_source=data_source,
-                response_method=response_method,
-                display_class=RocCurveDisplay,
-                display_kwargs=display_kwargs,
-            ),
+        child_displays = [
+            report.metrics.roc(data_source=data_source)
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
+            )
+        ]
+        estimator_names = self._parent.reports_.keys()
+
+        display = RocCurveDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"estimator": list(estimator_names)},
         )
         return display
 
@@ -1070,16 +917,19 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
         """
-        response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": self._parent.pos_label}
-        display = cast(
-            PrecisionRecallCurveDisplay,
-            self._get_display(
-                data_source=data_source,
-                response_method=response_method,
-                display_class=PrecisionRecallCurveDisplay,
-                display_kwargs=display_kwargs,
-            ),
+        child_displays = [
+            report.metrics.precision_recall(data_source=data_source)
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
+            )
+        ]
+        estimator_names = self._parent.reports_.keys()
+
+        display = PrecisionRecallCurveDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"estimator": list(estimator_names)},
         )
         return display
 
@@ -1136,15 +986,31 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
-        display_kwargs = {"subsample": subsample, "seed": seed}
-        display = cast(
-            PredictionErrorDisplay,
-            self._get_display(
+        if isinstance(subsample, numbers.Integral):
+            # Preserve the total number of sub-samples:
+            n_children = len(self._parent.reports_)
+            if 0 < subsample < n_children:
+                subsample = 1
+            else:
+                subsample //= n_children
+
+        child_displays = [
+            report.metrics.prediction_error(
                 data_source=data_source,
-                response_method="predict",
-                display_class=PredictionErrorDisplay,
-                display_kwargs=display_kwargs,
-            ),
+                subsample=subsample,
+                seed=seed,
+            )
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
+            )
+        ]
+        estimator_names = self._parent.reports_.keys()
+
+        display = PredictionErrorDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"estimator": list(estimator_names)},
         )
         return display
 
@@ -1192,35 +1058,18 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
-        response_method: str | list[str] | tuple[str, ...]
-        if self._parent._ml_task == "binary-classification":
-            response_method = ("predict_proba", "decision_function")
-        else:
-            response_method = "predict"
-
-        if self._parent._report_type == "comparison-cross-validation":
-            display_labels = tuple(
-                next(iter(self._parent.reports_.values()))
-                .estimator_reports_[0]
-                .estimator_.classes_
+        child_displays = [
+            report.metrics.confusion_matrix(data_source=data_source)
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
             )
-        else:
-            display_labels = tuple(
-                next(iter(self._parent.reports_.values())).estimator_.classes_
-            )
+        ]
+        estimator_names = self._parent.reports_.keys()
 
-        display_kwargs = {
-            "display_labels": display_labels,
-            "pos_label": self._parent.pos_label,
-            "response_method": response_method,
-        }
-        display = cast(
-            ConfusionMatrixDisplay,
-            self._get_display(
-                data_source=data_source,
-                response_method=response_method,
-                display_class=ConfusionMatrixDisplay,
-                display_kwargs=display_kwargs,
-            ),
+        display = ConfusionMatrixDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"estimator": list(estimator_names)},
         )
         return display

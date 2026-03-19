@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import seaborn as sns
-from numpy.typing import NDArray
+from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame
 from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
@@ -12,6 +12,7 @@ from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _build_custom_legend_with_stats,
     _ClassifierDisplayMixin,
+    _concat_frames_with_column_data,
     _despine_matplotlib_axis,
     _get_curve_plot_columns,
     _validate_style_kwargs,
@@ -21,7 +22,6 @@ from skore._sklearn.types import (
     MLTask,
     PositiveLabel,
     ReportType,
-    YPlotData,
 )
 
 
@@ -48,6 +48,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         The ROC AUC data to display. The columns are
 
         - `estimator`
+        - `data_source`
         - `split` (may be null)
         - `label`
         - `roc_auc`.
@@ -122,6 +123,32 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
+
+    @classmethod
+    def _concatenate(
+        cls,
+        child_displays: Sequence["RocCurveDisplay"],
+        *,
+        report_type: ReportType,
+        data_source: None | Literal["both"] = None,
+        column_data: dict[str, list] | None = None,
+    ) -> "RocCurveDisplay":
+        """Build a ROC display by concatenating child displays."""
+        first_display = child_displays[0]
+        return cls(
+            roc_curve=_concat_frames_with_column_data(
+                [display.roc_curve for display in child_displays],
+                column_data,
+            ),
+            roc_auc=_concat_frames_with_column_data(
+                [display.roc_auc for display in child_displays],
+                column_data,
+            ),
+            pos_label=first_display.pos_label,
+            data_source=data_source or first_display.data_source,
+            ml_task=first_display.ml_task,
+            report_type=report_type,
+        )
 
     @DisplayMixin.style_plot
     def plot(
@@ -293,24 +320,25 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     @classmethod
     def _compute_data_for_display(
         cls,
-        y_true: Sequence[YPlotData],
-        y_pred: Sequence[YPlotData],
+        y_true: ArrayLike,
+        y_pred: ArrayLike,
         *,
         report_type: ReportType,
-        estimators: Sequence[BaseEstimator],
+        estimator: BaseEstimator,
+        estimator_name: str,
         ml_task: MLTask,
-        data_source: DataSource | Literal["both"],
-        pos_label: PositiveLabel | None,
+        data_source: DataSource,
+        pos_label: PositiveLabel | None = None,
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":
         """Private method to create a RocCurveDisplay from predictions.
 
         Parameters
         ----------
-        y_true : list of array-like of shape (n_samples,)
+        y_true : array-like of shape (n_samples,)
             True binary labels in binary classification.
 
-        y_pred : list of ndarray of shape (n_samples,)
+        y_pred : array-like of shape (n_samples,) or (n_samples, n_classes)
             Target scores, can either be probability estimates of the positive class,
             confidence values, or non-thresholded measure of decisions (as returned by
             "decision_function" on some classifiers).
@@ -319,13 +347,16 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 "cross-validation", "estimator"}
             The type of report.
 
-        estimators : list of estimator instances
-            The estimators from which `y_pred` is obtained.
+        estimator : estimator instance
+            The estimator from which `y_pred` is obtained.
+
+        estimator_name : str
+            The estimator name to attach to the display data.
 
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "both"}
+        data_source : {"train", "test"}
             The data source used to compute the ROC curve.
 
         pos_label : int, float, bool or str, default=None
@@ -340,7 +371,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         display : RocCurveDisplay
             Object that stores computed values.
         """
-        pos_label_validated = cls._validate_from_predictions_params(
+        pos_label_validated = cls._validate_from_prediction_params(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
@@ -348,26 +379,62 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         roc_auc_records = []
 
         if ml_task == "binary-classification":
-            for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
-                fpr_i, tpr_i, thresholds_i = roc_curve(
-                    y_true_i.y,
-                    y_pred_i.y,
-                    pos_label=pos_label,
+            fpr_i, tpr_i, thresholds_i = roc_curve(
+                y_true,
+                y_pred,
+                pos_label=pos_label,
+                drop_intermediate=drop_intermediate,
+            )
+            roc_auc_i = auc(fpr_i, tpr_i)
+            pos_label_validated = cast(PositiveLabel, pos_label_validated)
+
+            for fpr, tpr, threshold in zip(fpr_i, tpr_i, thresholds_i, strict=False):
+                roc_curve_records.append(
+                    {
+                        "estimator": estimator_name,
+                        "data_source": data_source,
+                        "split": None,
+                        "label": pos_label_validated,
+                        "threshold": threshold,
+                        "fpr": fpr,
+                        "tpr": tpr,
+                    }
+                )
+
+            roc_auc_records.append(
+                {
+                    "estimator": estimator_name,
+                    "data_source": data_source,
+                    "split": None,
+                    "label": pos_label_validated,
+                    "roc_auc": roc_auc_i,
+                }
+            )
+        else:  # multiclass-classification
+            classes = estimator.classes_
+            # OvR fashion to collect fpr, tpr, and roc_auc
+            label_binarizer = LabelBinarizer().fit(classes)
+            y_true_onehot_i: NDArray = label_binarizer.transform(y_true)
+            y_pred_i_y = cast(NDArray, y_pred)
+
+            for class_idx, class_ in enumerate(classes):
+                fpr_class_i, tpr_class_i, thresholds_class_i = roc_curve(
+                    y_true_onehot_i[:, class_idx],
+                    y_pred_i_y[:, class_idx],
+                    pos_label=None,
                     drop_intermediate=drop_intermediate,
                 )
-                roc_auc_i = auc(fpr_i, tpr_i)
-
-                pos_label_validated = cast(PositiveLabel, pos_label_validated)
+                roc_auc_class_i = auc(fpr_class_i, tpr_class_i)
 
                 for fpr, tpr, threshold in zip(
-                    fpr_i, tpr_i, thresholds_i, strict=False
+                    fpr_class_i, tpr_class_i, thresholds_class_i, strict=False
                 ):
                     roc_curve_records.append(
                         {
-                            "estimator": y_true_i.estimator_name,
-                            "data_source": y_true_i.data_source,
-                            "split": y_true_i.split,
-                            "label": pos_label_validated,
+                            "estimator": estimator_name,
+                            "data_source": data_source,
+                            "split": None,
+                            "label": class_,
                             "threshold": threshold,
                             "fpr": fpr,
                             "tpr": tpr,
@@ -376,55 +443,13 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
                 roc_auc_records.append(
                     {
-                        "estimator": y_true_i.estimator_name,
-                        "data_source": y_true_i.data_source,
-                        "split": y_true_i.split,
-                        "label": pos_label_validated,
-                        "roc_auc": roc_auc_i,
+                        "estimator": estimator_name,
+                        "data_source": data_source,
+                        "split": None,
+                        "label": class_,
+                        "roc_auc": roc_auc_class_i,
                     }
                 )
-
-        else:  # multiclass-classification
-            classes = estimators[0].classes_
-            # OvR fashion to collect fpr, tpr, and roc_auc
-            for y_true_i, y_pred_i in zip(y_true, y_pred, strict=True):
-                label_binarizer = LabelBinarizer().fit(classes)
-                y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
-                y_pred_i_y = cast(NDArray, y_pred_i.y)
-
-                for class_idx, class_ in enumerate(classes):
-                    fpr_class_i, tpr_class_i, thresholds_class_i = roc_curve(
-                        y_true_onehot_i[:, class_idx],
-                        y_pred_i_y[:, class_idx],
-                        pos_label=None,
-                        drop_intermediate=drop_intermediate,
-                    )
-                    roc_auc_class_i = auc(fpr_class_i, tpr_class_i)
-
-                    for fpr, tpr, threshold in zip(
-                        fpr_class_i, tpr_class_i, thresholds_class_i, strict=False
-                    ):
-                        roc_curve_records.append(
-                            {
-                                "estimator": y_true_i.estimator_name,
-                                "data_source": y_true_i.data_source,
-                                "split": y_true_i.split,
-                                "label": class_,
-                                "threshold": threshold,
-                                "fpr": fpr,
-                                "tpr": tpr,
-                            }
-                        )
-
-                    roc_auc_records.append(
-                        {
-                            "estimator": y_true_i.estimator_name,
-                            "data_source": y_true_i.data_source,
-                            "split": y_true_i.split,
-                            "label": class_,
-                            "roc_auc": roc_auc_class_i,
-                        }
-                    )
 
         dtypes = {
             "estimator": "category",
