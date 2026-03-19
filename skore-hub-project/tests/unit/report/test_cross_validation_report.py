@@ -202,6 +202,14 @@ class TestCrossValidationReportPayload:
             "splits": expected_splits,
         }
 
+    @mark.filterwarnings(
+        # ignore deprecation warning due to `scikit-learn` misusing `scipy` arguments,
+        # raised by `scipy`
+        (
+            "ignore:scipy.optimize.*The `disp` and `iprint` options of the L-BFGS-B "
+            "solver are deprecated:DeprecationWarning"
+        ),
+    )
     @mark.parametrize(
         ("splitter", "metadata", "expected_splits"),
         [
