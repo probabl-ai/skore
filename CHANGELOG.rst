@@ -61,8 +61,6 @@ Release highlights
 
 - :func:`skore.evaluate` and :func:`skore.compare` are new top-level dispatcher functions that create the appropriate report class from an estimator in a single function call. See :pr:`2573` by :user:`raotalha71` and :pr:`2604` by :user:`glemaitre`.
 - skore can now integrate with MLflow by passing `mode="mlflow"` and the new `tracking_uri` option to :class:`~skore.Project`. Example usage is available `here <https://docs.skore.probabl.ai/dev/auto_examples/technical_details/plot_skore_mlflow_project.html>`__. See :pr:`2527` by :user:`cakedev0`.
-- :class:`PermutationImportanceDisplay` now supports a ``level`` parameter to select which level of a multi-index DataFrame to use for feature names. See :pr:`2565` by :user:`GaetandeCast`.
-- :class:`CoefficientsDisplay` now supports aggregation via an ``aggregate`` parameter in :meth:`~CoefficientsDisplay.frame`, following the same pattern as :class:`ImpurityDecreaseDisplay`. See :pr:`2552` by :user:`MuditAtrey`.
 
 Changed
 -------
@@ -71,6 +69,13 @@ Changed
 - **Breaking:** :meth:`Display.set_style` now returns ``None`` instead of ``self``. Method chaining such as ``display.set_style(...).plot()`` is no longer supported. See :pr:`2579` by :user:`direkkakkar319-ops`.
 - **Breaking:** ``pos_label`` can no longer be overridden when calling a metric or a display; it must be set when creating the report. See :pr:`2588` by :user:`jeromedockes`.
 - **Breaking:** The ``name`` parameter of :meth:`ComparisonReport.create_estimator_report` has been renamed to ``report_key``. See :pr:`2561` by :user:`GaetandeCast`.
+
+Added
+-----
+
+- :class:`PermutationImportanceDisplay` now supports a ``level`` parameter to select which level of a multi-index DataFrame to use for feature names. See :pr:`2565` by :user:`GaetandeCast`.
+- :class:`CoefficientsDisplay` now supports aggregation via an ``aggregate`` parameter in :meth:`~CoefficientsDisplay.frame`, following the same pattern as :class:`ImpurityDecreaseDisplay`. See :pr:`2552` by :user:`MuditAtrey`.
+- :class:`PermutationImportanceDisplay` and :class:`ImpurityDecreaseDisplay` now support parameters `select_k` and `sorting_order`, with the same behaviour already available in :class:`CoefficientsDisplay`. Passing `select_k=0` now raises a clearer error. See :pr:`2591` by :user:`GaetandeCast`.
 
 Removed
 -------
