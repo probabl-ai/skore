@@ -24,8 +24,10 @@ def test_report_can_be_rebuilt_using_parameters(linear_regression_with_test):
 
     for parameter in inspect.signature(EstimatorReport).parameters:
         assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
-
-        parameters[parameter] = getattr(report, parameter)
+        if parameter == "diagnose":
+            parameters[parameter] = report._diagnose_on_init
+        else:
+            parameters[parameter] = getattr(report, parameter)
 
     EstimatorReport(**parameters)
 

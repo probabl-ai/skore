@@ -243,3 +243,16 @@ def test_repr_html_mixin_repr_mimebundle():
     assert "text/html" in out
     assert out["text/html"] == "<p>test</p>"
     assert repr(obj) in out["text/plain"]
+
+
+def test_report_repr_html_contains_diagnostics_panel(report_with_base_help):
+    html = report_with_base_help._repr_html_()
+    assert "Diagnostics" in html
+    assert ".diagnose()" in html
+
+
+def test_report_repr_mimebundle_contains_diagnostics_panel(report_with_base_help):
+    out = report_with_base_help._repr_mimebundle_()
+    assert "text/plain" in out
+    assert "text/html" in out
+    assert "Diagnostics" in out["text/html"]

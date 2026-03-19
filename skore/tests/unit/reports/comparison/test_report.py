@@ -26,6 +26,13 @@ def report(request):
     return request.getfixturevalue(request.param)
 
 
+def test_diagnose_is_deferred(report):
+    messages = report.diagnose()
+    assert len(messages) == 1
+    assert "[SKD901]" in messages[0]
+    assert "not evaluated" in messages[0]
+
+
 def test_pickle(tmp_path, report):
     """Check that we can pickle a comparison report."""
     with BytesIO() as stream:

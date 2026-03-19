@@ -20,6 +20,7 @@ report are accessible through accessors.
    :template: class_methods_no_index.rst
 
    EstimatorReport.help
+   EstimatorReport.diagnose
    EstimatorReport.cache_predictions
    EstimatorReport.clear_cache
    EstimatorReport.get_predictions

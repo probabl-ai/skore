@@ -11,9 +11,14 @@ from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 
+from skore._config import configuration
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._cross_validation.diagnostics import (
+    run_cross_validation_diagnostics,
+)
+from skore._sklearn._diagnostics.base import DiagnosticResult
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
@@ -38,6 +43,7 @@ def _generate_estimator_report(
     pos_label: PositiveLabel | None,
     train_indices: ArrayLike,
     test_indices: ArrayLike,
+    diagnose: bool | None = False,
 ) -> EstimatorReport:
     if y is None:
         # In the case of clustering, we do not have y
@@ -54,6 +60,7 @@ def _generate_estimator_report(
         X_test=_safe_indexing(X, test_indices),
         y_test=y_test,
         pos_label=pos_label,
+        diagnose=diagnose,
     )
 
 
@@ -106,6 +113,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
 
+    diagnose : bool, default=False
+        Whether to run :meth:`diagnose` at the end of initialization.
+        If ``skore.config.diagnose`` is enabled, this is treated as ``True``.
+
     Attributes
     ----------
     estimator_ : estimator object
@@ -154,8 +165,15 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         pos_label: PositiveLabel | None = None,
         splitter: int | SKLearnCrossValidator | Generator | None = None,
         n_jobs: int | None = None,
+        diagnose: bool = False,
     ) -> None:
         self._estimator = clone(estimator)
+        if diagnose is None:
+            self._diagnose_on_init = False
+        elif diagnose:
+            self._diagnose_on_init = True
+        else:
+            self._diagnose_on_init = bool(configuration.diagnose)
 
         # private storage to be able to invalidate the cache when the user alters
         # those attributes
@@ -168,6 +186,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
         self._initialize_state()
+        if self._diagnose_on_init:
+            self.diagnose()
 
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
@@ -205,6 +225,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                         self._pos_label,
                         train_indices,
                         test_indices,
+                        diagnose=None,
                     )
                     for (train_indices, test_indices) in self.split_indices
                 ),
@@ -436,6 +457,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     ####################################################################################
     # Methods related to the help and repr
     ####################################################################################
+
+    def _collect_diagnostics(
+        self, *, expensive: bool = False
+    ) -> list[DiagnosticResult]:
+        return run_cross_validation_diagnostics(self, expensive=expensive)
 
     def _get_help_title(self) -> str:
         return f"Tools to diagnose estimator {self.estimator_name_}"

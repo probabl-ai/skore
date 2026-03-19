@@ -40,6 +40,7 @@ from skore._utils._show_versions import show_versions
 
 plt.ion()
 setup_jupyter_display()
+config = configuration
 
 
 if parse_version(joblib_version) < parse_version("1.4"):
@@ -70,6 +71,7 @@ __all__ = [
     "Project",
     "RocCurveDisplay",
     "TableReportDisplay",
+    "config",
     "configuration",
     "login",
     "show_versions",

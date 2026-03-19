@@ -7,10 +7,25 @@ from threading import current_thread, main_thread
 from threading import local as Local
 
 
+def _normalize_ignore_diagnostics(value):
+    if value is None:
+        return ()
+    return tuple(str(code).strip().upper() for code in value if str(code).strip())
+
+
 class LocalConfiguration(Local):
-    def __init__(self, *, show_progress=True, plot_backend="matplotlib"):
+    def __init__(
+        self,
+        *,
+        show_progress=True,
+        plot_backend="matplotlib",
+        diagnose=False,
+        ignore_diagnostics=(),
+    ):
         self.show_progress = show_progress
         self.plot_backend = plot_backend
+        self.diagnose = diagnose
+        self.ignore_diagnostics = _normalize_ignore_diagnostics(ignore_diagnostics)
 
 
 class Configuration:
@@ -31,6 +46,14 @@ class Configuration:
         Backend used for rendering plots (e.g. ``"matplotlib"``).
         Default is ``"matplotlib"``.
 
+    diagnose : bool
+        Whether reports should run ``.diagnose()`` at initialization by default.
+        Default is ``False``.
+
+    ignore_diagnostics : tuple of str
+        Global diagnostic codes ignored by ``report.diagnose(...)``.
+        Default is empty.
+
     Examples
     --------
     **Global configuration** using the ``configuration`` instance from skore:
@@ -39,6 +62,8 @@ class Configuration:
     >>> from skore import configuration
     >>> configuration.show_progress = False
     >>> configuration.plot_backend = "matplotlib"
+    >>> configuration.diagnose = True
+    >>> configuration.ignore_diagnostics = ("SKD001",)
 
     **Temporary overrides** using the context manager (previous values are
     restored on exit):
@@ -48,6 +73,8 @@ class Configuration:
     ...     report.fit(X, y)
     >>> with configuration(plot_backend="plotly"):
     ...     report.plot()
+    >>> with configuration(diagnose=True, ignore_diagnostics=("SKD002",)):
+    ...     report.diagnose()
     """
 
     def __init__(self):
@@ -57,7 +84,9 @@ class Configuration:
         return (
             f"Configuration("
             f"show_progress={self.local.show_progress}, "
-            f"plot_backend={self.local.plot_backend!r}"
+            f"plot_backend={self.local.plot_backend!r}, "
+            f"diagnose={self.local.diagnose}, "
+            f"ignore_diagnostics={self.local.ignore_diagnostics!r}"
             ")"
         )
 
@@ -74,6 +103,8 @@ class Configuration:
         self.local = LocalConfiguration(
             show_progress=value,
             plot_backend=self.local.plot_backend,
+            diagnose=self.local.diagnose,
+            ignore_diagnostics=self.local.ignore_diagnostics,
         )
 
     @property
@@ -89,12 +120,57 @@ class Configuration:
         self.local = LocalConfiguration(
             show_progress=self.local.show_progress,
             plot_backend=value,
+            diagnose=self.local.diagnose,
+            ignore_diagnostics=self.local.ignore_diagnostics,
+        )
+
+    @property
+    def diagnose(self):
+        return self.local.diagnose
+
+    @diagnose.setter
+    def diagnose(self, value):
+        if current_thread().ident != main_thread().ident:
+            self.local.diagnose = value
+            return
+
+        self.local = LocalConfiguration(
+            show_progress=self.local.show_progress,
+            plot_backend=self.local.plot_backend,
+            diagnose=value,
+            ignore_diagnostics=self.local.ignore_diagnostics,
+        )
+
+    @property
+    def ignore_diagnostics(self):
+        return self.local.ignore_diagnostics
+
+    @ignore_diagnostics.setter
+    def ignore_diagnostics(self, value):
+        if current_thread().ident != main_thread().ident:
+            self.local.ignore_diagnostics = _normalize_ignore_diagnostics(value)
+            return
+
+        self.local = LocalConfiguration(
+            show_progress=self.local.show_progress,
+            plot_backend=self.local.plot_backend,
+            diagnose=self.local.diagnose,
+            ignore_diagnostics=_normalize_ignore_diagnostics(value),
         )
 
     @contextmanager
-    def __call__(self, *, show_progress=..., plot_backend=...):
+    def __call__(
+        self,
+        *,
+        show_progress=...,
+        plot_backend=...,
+        diagnose=...,
+        ignore_diagnostics=...,
+    ):
         show_progress_copy = self.show_progress
         plot_backend_copy = self.plot_backend
+        diagnose_copy = self.diagnose
+        ignore_diagnostics_copy = self.ignore_diagnostics
 
         if show_progress is not ...:
             self.show_progress = show_progress
@@ -102,11 +178,19 @@ class Configuration:
         if plot_backend is not ...:
             self.plot_backend = plot_backend
 
+        if diagnose is not ...:
+            self.diagnose = diagnose
+
+        if ignore_diagnostics is not ...:
+            self.ignore_diagnostics = ignore_diagnostics
+
         try:
             yield
         finally:
             self.show_progress = show_progress_copy
             self.plot_backend = plot_backend_copy
+            self.diagnose = diagnose_copy
+            self.ignore_diagnostics = ignore_diagnostics_copy
 
 
 configuration = Configuration()

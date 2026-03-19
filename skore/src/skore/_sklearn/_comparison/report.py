@@ -10,9 +10,11 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 
+from skore._config import configuration
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
+from skore._sklearn._diagnostics.base import DiagnosticResult
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
@@ -59,6 +61,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         parameter is used to parallelize the computation.
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
+
+    diagnose : bool, default=False
+        Whether to run :meth:`diagnose` at the end of initialization.
+        If ``skore.config.diagnose`` is enabled, this is treated as ``True``.
 
     Attributes
     ----------
@@ -237,6 +243,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ),
         *,
         n_jobs: int | None = None,
+        diagnose: bool = False,
     ) -> None:
         """
         ComparisonReport instance initializer.
@@ -254,12 +261,20 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         )
 
         self.n_jobs = n_jobs
+        if diagnose is None:
+            self._diagnose_on_init = False
+        elif diagnose:
+            self._diagnose_on_init = True
+        else:
+            self._diagnose_on_init = bool(configuration.diagnose)
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
+        if self._diagnose_on_init:
+            self.diagnose()
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -492,6 +507,24 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ####################################################################################
     # Methods related to the help and repr
     ####################################################################################
+
+    def _collect_diagnostics(
+        self, *, expensive: bool = False
+    ) -> list[DiagnosticResult]:
+        return [
+            DiagnosticResult(
+                code="SKD901",
+                title="Comparison diagnostics deferred",
+                kind="info",
+                docs_anchor="comparison-report-diagnostics",
+                explanation=(
+                    "ComparisonReport diagnostics are not available in this version. "
+                    "Use diagnose() on component EstimatorReport or CrossValidationReport instances."
+                ),
+                is_issue=False,
+                evaluated=False,
+            )
+        ]
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

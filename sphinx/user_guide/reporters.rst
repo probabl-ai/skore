@@ -173,3 +173,12 @@ The caching mechanism is also available and exposes the same methods.
 
 Refer to the :ref:`cross_validation_metrics` section for more details on the
 metrics available in `skore` for comparison.
+
+Diagnostics
+-----------
+
+Reports expose :meth:`EstimatorReport.diagnose` and
+:meth:`CrossValidationReport.diagnose` to run quality diagnostics and return
+human-readable findings with stable diagnostic codes and links to guidance.
+See :ref:`diagnostics` for the catalog of available diagnostics, detection logic,
+and mitigation tips.

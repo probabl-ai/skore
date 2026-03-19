@@ -7,6 +7,12 @@ from rich.panel import Panel
 from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
+from skore._config import configuration
+from skore._sklearn._diagnostics.base import (
+    DiagnosticResult,
+    format_diagnostic_message,
+    normalize_ignore_codes,
+)
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._measure_time import MeasureTime
@@ -28,6 +34,71 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
+
+    def _collect_diagnostics(
+        self, *, expensive: bool = False
+    ) -> list[DiagnosticResult]:
+        return [
+            DiagnosticResult(
+                code="SKD900",
+                title="Diagnostics not implemented",
+                kind="info",
+                docs_anchor="comparison-report-diagnostics",
+                explanation=(
+                    f"{self.__class__.__name__} does not implement diagnostics for this version."
+                ),
+                is_issue=False,
+                evaluated=False,
+            )
+        ]
+
+    def diagnose(
+        self,
+        *,
+        expensive: bool = False,
+        ignore: list[str] | tuple[str, ...] | None = None,
+    ) -> list[str]:
+        ignored = normalize_ignore_codes(ignore) | normalize_ignore_codes(
+            tuple(configuration.ignore_diagnostics)
+        )
+        diagnostics = [
+            diagnostic
+            for diagnostic in self._collect_diagnostics(expensive=expensive)
+            if diagnostic.code not in ignored
+        ]
+        self._latest_diagnostics_ = diagnostics
+        return [format_diagnostic_message(diagnostic) for diagnostic in diagnostics]
+
+    def _diagnostics_panel_html(self) -> str:
+        diagnostics = getattr(self, "_latest_diagnostics_", None)
+        if diagnostics is None:
+            details = "No diagnostics have run yet."
+            summary = "0 issue(s) across 0 diagnostic(s)."
+        else:
+            details = (
+                f"{sum(diagnostic.is_issue for diagnostic in diagnostics)} issue(s) across "
+                f"{len(diagnostics)} diagnostic(s)."
+            )
+            summary = (
+                f"{sum(diagnostic.evaluated for diagnostic in diagnostics)} diagnostic(s) evaluated "
+                f"in the latest run."
+            )
+        return (
+            '<div style="margin:10px 0;padding:10px;border:1px solid #f97316;border-radius:4px;'
+            'font-family:monospace;font-size:13px;line-height:1.5;">'
+            '<div style="font-weight:700;margin-bottom:6px;">Diagnostics</div>'
+            f"<div>{details}</div>"
+            f"<div>{summary}</div>"
+            "<div>Run <code>.diagnose()</code> for details and "
+            "<code>.diagnose(expensive=True)</code> for deeper checks.</div>"
+            "</div>"
+        )
+
+    def _repr_html_(self) -> str:
+        return f"{self._create_help_html()}{self._diagnostics_panel_html()}"
+
+    def _repr_mimebundle_(self, **kwargs) -> dict[str, str]:
+        return {"text/plain": repr(self), "text/html": self._repr_html_()}
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")

@@ -1,0 +1,147 @@
+from sklearn.datasets import make_classification
+from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier
+
+from skore import EstimatorReport, configuration
+
+
+def test_diagnose_detects_overfitting():
+    X, y = make_classification(
+        n_samples=500,
+        n_features=20,
+        n_informative=2,
+        n_redundant=0,
+        class_sep=0.4,
+        flip_y=0.25,
+        random_state=0,
+    )
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.5, random_state=0
+    )
+    report = EstimatorReport(
+        DecisionTreeClassifier(random_state=0),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    messages = report.diagnose()
+    assert any(
+        "[SKD001]" in message and "issue detected" in message for message in messages
+    )
+
+
+def test_diagnose_detects_underfitting():
+    X, y = make_classification(n_samples=400, n_features=8, random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.5, random_state=0
+    )
+    report = EstimatorReport(
+        DummyClassifier(strategy="uniform", random_state=0),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    messages = report.diagnose()
+    assert any(
+        "[SKD002]" in message and "issue detected" in message for message in messages
+    )
+
+
+def test_diagnose_ignore(logistic_binary_classification_with_train_test):
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    messages = report.diagnose(ignore=["SKD001"])
+    assert all("[SKD001]" not in message for message in messages)
+
+
+def test_diagnose_expensive_flag(logistic_binary_classification_with_train_test):
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    assert len(report.diagnose(expensive=True)) == len(report.diagnose(expensive=False))
+
+
+def test_diagnose_not_evaluated_when_train_data_missing(regression_data):
+    X, y = regression_data
+    estimator = LogisticRegression(max_iter=1_000).fit(X, y > y.mean())
+    report = EstimatorReport(estimator, X_test=X, y_test=y > y.mean())
+    messages = report.diagnose()
+    assert any(
+        "[SKD001]" in message and "not evaluated" in message for message in messages
+    )
+    assert any(
+        "[SKD002]" in message and "not evaluated" in message for message in messages
+    )
+
+
+def test_diagnose_called_on_init(monkeypatch, regression_train_test_split):
+    calls = []
+
+    def _diagnose(self, *, expensive=False, ignore=None):
+        calls.append((expensive, ignore))
+        return []
+
+    monkeypatch.setattr(EstimatorReport, "diagnose", _diagnose)
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        diagnose=True,
+    )
+    assert calls == [(False, None)]
+
+
+def test_diagnose_uses_global_ignore(logistic_binary_classification_with_train_test):
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    assert any("[SKD001]" in message for message in report.diagnose())
+    with configuration(ignore_diagnostics=["SKD001"]):
+        assert all("[SKD001]" not in message for message in report.diagnose())
+
+
+def test_diagnose_follows_global_config_default(
+    logistic_binary_classification_with_train_test,
+):
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    with configuration(diagnose=True):
+        report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+    assert hasattr(report, "_latest_diagnostics_")
+    assert len(report._latest_diagnostics_) > 0

@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from joblib import Parallel, parallel_config
 from pytest import mark, raises
 
-from skore import configuration
+from skore import config, configuration
 from skore._utils._parallel import delayed
 from skore._utils._testing import _change_configuration_for_testing
 
@@ -27,9 +27,31 @@ def test_configuration_plot_backend():
     assert configuration.plot_backend == "plotly"
 
 
+def test_configuration_diagnose():
+    assert configuration.diagnose is False
+
+    configuration.diagnose = True
+
+    assert configuration.diagnose is True
+
+
+def test_configuration_ignore_diagnostics():
+    assert configuration.ignore_diagnostics == ()
+
+    configuration.ignore_diagnostics = ["skd001", "SKD002", ""]
+
+    assert configuration.ignore_diagnostics == ("SKD001", "SKD002")
+
+
+def test_config_alias():
+    assert config is configuration
+
+
 def test_configuration_call():
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
+    assert configuration.diagnose is False
+    assert configuration.ignore_diagnostics == ()
 
     with configuration():
         assert configuration.show_progress is True
@@ -37,6 +59,8 @@ def test_configuration_call():
 
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
+    assert configuration.diagnose is False
+    assert configuration.ignore_diagnostics == ()
 
     with configuration(show_progress=False):
         assert configuration.show_progress is False
@@ -71,6 +95,15 @@ def test_configuration_call():
 
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
+    assert configuration.diagnose is False
+    assert configuration.ignore_diagnostics == ()
+
+    with configuration(diagnose=True, ignore_diagnostics=["skd001"]):
+        assert configuration.diagnose is True
+        assert configuration.ignore_diagnostics == ("SKD001",)
+
+    assert configuration.diagnose is False
+    assert configuration.ignore_diagnostics == ()
 
 
 @mark.parametrize("backend", ["loky", "multiprocessing", "threading"])
