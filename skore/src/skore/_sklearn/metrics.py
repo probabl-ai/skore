@@ -34,6 +34,10 @@ class Metric:
 
     kwargs : dict, default={}
         Keyword arguments to pass to ``score_func``.
+
+    is_builtin : bool, default=False
+        Whether this metric is a skore built-in.  Built-ins cannot be
+        overridden via :meth:`register`.
     """
 
     name: str
@@ -44,6 +48,7 @@ class Metric:
         "predict"
     )
     kwargs: dict[str, Any] = field(default_factory=dict)
+    is_builtin: bool = False
 
     @property
     def icon(self) -> str:
@@ -62,21 +67,63 @@ FitTime = Metric(
     verbose_name="Fit time (s)",
     greater_is_better=False,
     response_method=None,
+    is_builtin=True,
 )
 PredictTime = Metric(
     name="predict_time",
     verbose_name="Predict time (s)",
     greater_is_better=False,
     response_method=None,
+    is_builtin=True,
 )
-Accuracy = Metric(name="accuracy", verbose_name="Accuracy", greater_is_better=True)
-Precision = Metric(name="precision", verbose_name="Precision", greater_is_better=True)
-Recall = Metric(name="recall", verbose_name="Recall", greater_is_better=True)
-Brier = Metric(name="brier_score", verbose_name="Brier score", greater_is_better=False)
-RocAuc = Metric(name="roc_auc", verbose_name="ROC AUC", greater_is_better=True)
-LogLoss = Metric(name="log_loss", verbose_name="Log loss", greater_is_better=False)
-R2 = Metric(name="r2", verbose_name="R²", greater_is_better=True)
-Rmse = Metric(name="rmse", verbose_name="RMSE", greater_is_better=False)
+Accuracy = Metric(
+    name="accuracy",
+    verbose_name="Accuracy",
+    greater_is_better=True,
+    is_builtin=True,
+)
+Precision = Metric(
+    name="precision",
+    verbose_name="Precision",
+    greater_is_better=True,
+    is_builtin=True,
+)
+Recall = Metric(
+    name="recall",
+    verbose_name="Recall",
+    greater_is_better=True,
+    is_builtin=True,
+)
+Brier = Metric(
+    name="brier_score",
+    verbose_name="Brier score",
+    greater_is_better=False,
+    is_builtin=True,
+)
+RocAuc = Metric(
+    name="roc_auc",
+    verbose_name="ROC AUC",
+    greater_is_better=True,
+    is_builtin=True,
+)
+LogLoss = Metric(
+    name="log_loss",
+    verbose_name="Log loss",
+    greater_is_better=False,
+    is_builtin=True,
+)
+R2 = Metric(
+    name="r2",
+    verbose_name="R²",
+    greater_is_better=True,
+    is_builtin=True,
+)
+Rmse = Metric(
+    name="rmse",
+    verbose_name="RMSE",
+    greater_is_better=False,
+    is_builtin=True,
+)
 
 BUILTIN_METRICS = [
     FitTime,

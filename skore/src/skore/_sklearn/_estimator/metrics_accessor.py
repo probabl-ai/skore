@@ -180,7 +180,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 self._parent._ml_task, self._parent._estimator
             )
             custom_metrics = [
-                name for name, m in self._registry.items() if m.score_func is not None
+                name for name, m in self._registry.items() if not m.is_builtin
             ]
             items = [(None, m) for m in default_metrics + custom_metrics]
         elif isinstance(metric, dict):
@@ -323,7 +323,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         rows = []
         for metric_name, metric_obj in parsed_metrics.items():
-            if metric_obj.score_func is None:
+            if metric_obj.is_builtin:
                 # Built-in metric: dispatch via the accessor method by name
                 metric_fn = getattr(self, metric_obj.name)
             else:
