@@ -31,9 +31,9 @@ ML Assistance
    :widths: 30 70
 
    * - :func:`evaluate`
-     - Create an estimator, cross-validation, or comparison report from data
+     - Evaluate one or more estimators on the given data.
    * - :func:`compare`
-     - Compare reports into a single :class:`~skore.ComparisonReport`
+     - Compare pre-existing reports with a :class:`~skore.ComparisonReport`
    * - :func:`train_test_split`
      - Split arrays or matrices into random train and test subsets
    * - :class:`TrainTestSplit`
