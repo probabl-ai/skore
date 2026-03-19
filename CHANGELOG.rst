@@ -128,9 +128,6 @@ Added
 - :class:`ComparisonReport` now supports mean decrease in impurity (MDI) feature importance through :func:`~ComparisonReport.inspection.impurity_decrease`. See :pr:`2387` by :user:`auguste-probabl`.
 - :class:`ConfusionMatrixDisplay` now supports ``threshold_value="all"`` to display confusion matrices for all available thresholds. See :pr:`2463` by :user:`glemaitre`.
 
-Removed
--------
-
 Fixed
 -----
 
