@@ -574,7 +574,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                 group_columns=[
                     c for c in self._get_columns_to_groupby(frame=frame) if c != "split"
                 ],
-                score_raw_column="value",
+                importance_column="value",
             )
         if select_k is not None:
             frame = select_k_features(
@@ -583,7 +583,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                 group_columns=[
                     c for c in self._get_columns_to_groupby(frame=frame) if c != "split"
                 ],
-                score_raw_column="value",
+                importance_column="value",
             )
 
         if aggregate is not None:

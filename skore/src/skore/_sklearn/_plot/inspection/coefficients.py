@@ -210,7 +210,7 @@ class CoefficientsDisplay(DisplayMixin):
                 coefficients,
                 sorting_order,
                 group_columns=self._get_columns_to_groupby(frame=coefficients),
-                score_raw_column="coefficient",
+                importance_column="coefficient",
                 use_absolute=True,
             )
         if select_k is not None:
@@ -218,7 +218,7 @@ class CoefficientsDisplay(DisplayMixin):
                 coefficients,
                 select_k,
                 group_columns=self._get_columns_to_groupby(frame=coefficients),
-                score_raw_column="coefficient",
+                importance_column="coefficient",
                 use_absolute=True,
             )
 
