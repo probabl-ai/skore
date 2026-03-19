@@ -1,0 +1,106 @@
+  <!-- Feature Section 1 -->
+  <div class="row mb-0 row-padding-between-features">
+    <div class="col-md-5 mb-5">
+      <h4 class="feature-title">Reports for your Experiments</h4>
+      <p class="feature-text">Create structured reports to quickly evaluate and inspect
+        your predictive models by using
+        <a class="reference internal"
+        href="reference/api/skore.EstimatorReport.html#estimatorreport"
+        title="skore.EstimatorReport"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">EstimatorReport</span></code></a>
+        or
+        <a class="reference internal"
+        href="reference/api/skore.CrossValidationReport.html#crossvalidationreport"
+        title="skore.CrossValidationReport"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">CrossValidationReport</span></code></a>
+        and even compare them by using
+        <a class="reference internal"
+        href="reference/api/skore.ComparisonReport.html#comparisonreport"
+        title="skore.ComparisonReport"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">ComparisonReport</span></code></a>.
+      </p>
+    </div>
+
+    <div class="col-md-7">
+      <div class="container-fluid" style="max-width: 58rem;">
+        <div class="sd-card card-landing">
+          <div class="card-body">
+            <details>
+              <summary>Given some data
+                <code class="docutils literal notranslate"><span class="pre">df</span></code>: <i>(expand for full code)</i>
+              </summary>
+              <div class="doctest highlight-default notranslate">
+                <div class="highlight">
+                  <pre style="overflow-x: auto;">{{ load_data }}</pre>
+                </div>
+              </div>
+            </details>
+          </div>
+          <div class="highlight">
+            <pre style="overflow-x: auto;">{{ create_report }}</pre>
+          </div>
+        </div>
+      </div>
+      <div class="container-fluid" style="max-width: 58rem;">
+        <div class="sd-card card-landing">
+          {{ help_html }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Section 2 -->
+  <div class="row mb-0 flex-md-row-reverse row-padding-between-features">
+    <div class="col-md-5">
+      <h4 class="feature-title">Get Insights that Matter</h4>
+      <p class="feature-text">Quickly generate beautiful visualizations with
+        <code class="highlight python"><span class="n">display</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span></code>
+        {{ plot_error }}
+        and access the raw data with
+        <code class="highlight python"><span class="n">display</span><span class="o">.</span><span class="n">frame</span><span class="p">()</span></code>
+        {{ summarize }}
+      </p>
+    </div>
+    <div class="col-md-7">
+      <div class="prediction-error-image"></div>
+      <div class="container-fluid" style="max-width: 58rem">
+        <div class="sd-card card-landing">
+          <div class="card-body">
+            <div class="output_subarea output_html rendered_html output_result">
+              {{ frame_html }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Section 3 -->
+  <div class="row mb-0 row-padding-between-features">
+    <div class="col-md-5">
+      <h4 class="feature-title">Store and Retrieve your Reports, Locally or on Skore Hub</h4>
+      <p class="feature-text">
+        Store your reports by using
+        <a class="reference internal"
+        href="reference/api/skore.Project.html#project"
+        title="skore.Project"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">Project</span></code></a>.
+        Retrieve the most important reports to revisit your insights or compare with
+        new experiments later.
+      </p>
+      {{ put_in_project }}
+      <p class="feature-text">
+        When using
+        <a class="reference internal"
+        href="reference/api/skore.Project.html#project"
+        title="skore.Project"><code class="xref py py-class docutils literal notranslate sk-landing-code"><span class="pre">Project</span></code></a>
+        with <code>mode="hub"</code>, you can view your reports on
+        <a href="https://skore.probabl.ai" target="_blank" rel="noopener noreferrer">Skore Hub</a>.
+        For seeing an example of project and reports stored on Skore Hub, view the example
+        <a href="{% raw %}{{ skore_hub_example_url }}{% endraw %}" target="_blank" rel="noopener noreferrer">here</a>.
+      </p>
+    </div>
+    <div class="col-md-7 pe-5">
+      <div class="project-summary-image"></div>
+    </div>
+  </div>
