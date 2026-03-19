@@ -200,3 +200,6 @@ skore-hub-project/LICENSE
 skore-local-project/LICENSE
 skore-mlflow-project/LICENSE
 .aider*
+
+# uv
+uv.lock

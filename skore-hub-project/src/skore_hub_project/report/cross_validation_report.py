@@ -86,6 +86,7 @@ from skore_hub_project.protocol import CrossValidationReport
 from skore_hub_project.report.estimator_report import EstimatorReportPayload
 from skore_hub_project.report.report import ReportPayload
 
+SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
 SPLITTERS = {
     "KFold": KFold,
     "RepeatedKFold": KFold,
@@ -232,14 +233,13 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
         # create an undersampled target to create a simplify representation
         rng = np.random.default_rng(0)
-        n_samples_repr = 100
         if is_classifier:
             if not isinstance(target, pd.Series):
                 target = pd.Series(target)
             probs = target.value_counts(normalize=True)
             target_repr = rng.choice(
                 probs.index.to_numpy(),  # classes
-                size=n_samples_repr,
+                size=SPLITTING_STRATEGY_REPR_SAMPLE_COUNT,
                 p=probs.to_numpy(),  # probabilities
                 replace=True,
             )
@@ -247,7 +247,11 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         else:  # regression
             # uniformly sample the target because it will have no impact on the
             # representation
-            target_repr = rng.choice(target, size=n_samples_repr, replace=False)
+            target_repr = rng.choice(
+                target,
+                size=SPLITTING_STRATEGY_REPR_SAMPLE_COUNT,
+                replace=False,
+            )
 
         # create a simplified splitter without randomization and repetitions
         simplified_cls = SPLITTERS.get(splitter.__class__.__name__, splitter.__class__)
@@ -261,24 +265,24 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
         simplified_splitter = simplified_cls(**simplified_cls_parameters)
 
-        # create synthetic indices
-        splits: list[tuple[int, str, int]] = []
-        X = rng.normal(size=(n_samples_repr, 1))
+        # Per split: one list of length N_SAMPLES_REPR, ordered by sample index,
+        # with 0 = train fold and 1 = test fold for that split.
+        splits: list[list[int]] = []
+        X = rng.normal(size=(SPLITTING_STRATEGY_REPR_SAMPLE_COUNT, 1))
 
-        for split_idx, (train_idx, test_idx) in enumerate(
-            simplified_splitter.split(X, target_repr)
-        ):
-            splits.extend(
-                (split_idx, "train", int(train_indice)) for train_indice in train_idx
-            )
+        for train_idx, test_idx in simplified_splitter.split(X, target_repr):
+            split_flags = [-1] * SPLITTING_STRATEGY_REPR_SAMPLE_COUNT
+            for i in train_idx:
+                split_flags[int(i)] = 0
+            for i in test_idx:
+                split_flags[int(i)] = 1
 
-            splits.extend(
-                (split_idx, "test", int(test_indice)) for test_indice in test_idx
-            )
+            splits.append(split_flags)
 
         return {
             "splitter": splitter_metadata,
-            "dataset_size": n_samples_repr,
+            "dataset_size": len(self.report.X),
+            "sample_count": SPLITTING_STRATEGY_REPR_SAMPLE_COUNT,
             "splits": splits,
         }
 
