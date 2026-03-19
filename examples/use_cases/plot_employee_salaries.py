@@ -276,12 +276,12 @@ linear_model_report.metrics.summarize().frame(favorability=True)
 # ====================
 #
 # Now that we cross-validated our models, we can make some further comparison using the
-# :class:`skore.ComparisonReport`:
+# a :func:`~skore.compare` that returns a :class:`~skore.ComparisonReport`:
 
 # %%
-from skore import ComparisonReport
+from skore import compare
 
-comparator = ComparisonReport([hgbt_model_report, linear_model_report])
+comparator = compare([hgbt_model_report, linear_model_report])
 comparator.metrics.summarize().frame(favorability=True)
 
 # %%
