@@ -181,7 +181,7 @@ class Project:
         """
         reports = [report] + getattr(report, "estimator_reports_", [])
         reports_with_cache = [
-            report_to_clear._cache
+            report_to_clear
             for report_to_clear in reports
             if hasattr(report_to_clear, "_cache")
         ]
