@@ -50,7 +50,12 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
     import joblib
 
     reports = [object] + getattr(object, "estimator_reports_", [])
-    caches = [report_to_clear._cache for report_to_clear in reports]
+    reports_with_cache = [
+        report_to_clear
+        for report_to_clear in reports
+        if hasattr(report_to_clear, "_cache")
+    ]
+    caches = [report_to_clear._cache for report_to_clear in reports_with_cache]
 
     object.clear_cache()
 
@@ -59,7 +64,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
             joblib.dump(object, stream)
             pickle_bytes = stream.getvalue()
     finally:
-        for report, cache in zip(reports, caches, strict=True):
+        for report, cache in zip(reports_with_cache, caches, strict=True):
             report._cache = cache
 
     with Serializer(pickle_bytes) as serializer:
