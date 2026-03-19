@@ -89,6 +89,8 @@ jobs:
               - '.github/actions/sphinx/**'
               - '.github/workflows/sphinx.yml'
               - 'ci/requirements/skore/**/sphinx-requirements.txt'
+              - 'CHANGELOG.rst'
+              - 'CONTRIBUTING.rst'
               - 'examples/**'
               - 'sphinx/**'
               - 'skore/**'
@@ -340,7 +342,7 @@ jobs:
               file.write(
                   f"""
                   <head>
-                    <meta http-equiv=\"refresh\" content=\"0; url={url}/stable/}\"/>
+                    <meta http-equiv=\"refresh\" content=\"0; url={url}/stable/\"/>
                   </head>
                   """
               )

@@ -1,3 +1,4 @@
+import numbers
 from collections.abc import Callable
 from typing import Any, Literal
 
@@ -981,6 +982,14 @@ class _MetricsAccessor(
         >>> display.set_style(perfect_model_kwargs={"color": "tab:red"})
         >>> display.plot(kind="actual_vs_predicted")
         """
+        if isinstance(subsample, numbers.Integral):
+            # Preserve the total number of sub-samples:
+            n_children = len(self._parent.estimator_reports_)
+            if 0 < subsample < n_children:
+                subsample = 1
+            else:
+                subsample //= n_children
+
         child_displays = [
             report.metrics.prediction_error(
                 data_source=data_source,
