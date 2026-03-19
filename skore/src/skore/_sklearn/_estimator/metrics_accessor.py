@@ -1,5 +1,6 @@
 import dataclasses
 import inspect
+import warnings
 from collections.abc import Callable
 from functools import partial
 from typing import Any, Literal, cast
@@ -56,13 +57,19 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def _registry(self) -> dict[str, Metric]:
         return self._parent._metrics_registry
 
-    def register(self, metric: MetricLike) -> None:
+    @property
+    def registry(self) -> dict[str, Metric]:
+        """All registered metrics (built-ins and custom), keyed by technical name."""
+        return self._registry
+
+    def register(self, metric: MetricLike | str) -> None:
         """Register a custom metric to include in :meth:`summarize` by default.
 
         Parameters
         ----------
-        metric : scorer
-            A scikit-learn scorer created with :func:`sklearn.metrics.make_scorer`.
+        metric : scorer or str
+            A scikit-learn scorer created with :func:`sklearn.metrics.make_scorer`,
+            or a scikit-learn scorer name string.
 
         Examples
         --------
@@ -88,14 +95,64 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Predict time (s)               0.000323
         Mean Absolute Error            0.052632
         """
+        # Accept sklearn scorer name strings
+        if isinstance(metric, str):
+            try:
+                metric = sklearn.metrics.get_scorer(metric)
+            except ValueError as exc:
+                raise ValueError(
+                    f"Cannot register {metric!r}: not a valid scorer name."
+                ) from exc
+
         parsed = self._parse_metric(metric, {})
-        if (
-            parsed.name in self._registry
-            and self._registry[parsed.name].score_func is None
-        ):
+
+        # Protect built-in names
+        if parsed.name in self._registry and self._registry[parsed.name].is_builtin:
             raise ValueError(
                 f"Cannot register {parsed.name!r}: it is a built-in metric name."
             )
+
+        # Warn for lambdas and closures (not pickle-safe).
+        # Follow __wrapped__ to skip library decorators
+        # (e.g. sklearn's @validate_params)
+        fn = parsed.score_func
+        if fn is not None:
+            fn_inner = fn
+            while hasattr(fn_inner, "__wrapped__"):
+                fn_inner = fn_inner.__wrapped__
+            qualname = getattr(fn_inner, "__qualname__", "") or ""
+            if "<lambda>" in qualname:
+                warnings.warn(
+                    f"Registered metric {parsed.name!r} uses a lambda function, "
+                    "which may not survive pickling.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            elif getattr(fn_inner, "__closure__", None) is not None:
+                warnings.warn(
+                    f"Registered metric {parsed.name!r} uses a closure, "
+                    "which may not survive pickling.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+            # Capture source code for inspection / post-pickle introspection
+            try:
+                source_code = inspect.getsource(fn_inner)
+            except (OSError, TypeError):
+                source_code = None
+            parsed = dataclasses.replace(parsed, source_code=source_code)
+
+        # Invalidate cached results when re-registering an existing metric
+        if parsed.name in self._registry and not self._registry[parsed.name].is_builtin:
+            keys_to_delete = [
+                k
+                for k in self._parent._cache
+                if isinstance(k, tuple) and len(k) >= 2 and k[1] == parsed.name
+            ]
+            for k in keys_to_delete:
+                del self._parent._cache[k]
+
         self._registry[parsed.name] = parsed
 
     def _parse_metric(self, m: MetricLike, metric_kwargs: dict[str, Any]) -> Metric:
@@ -115,6 +172,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             if "pos_label" in inspect.signature(m._score_func).parameters:
                 if (
                     "pos_label" in kwargs
+                    and self._parent.pos_label is not None
                     and self._parent.pos_label != kwargs["pos_label"]
                 ):
                     raise ValueError(
@@ -125,7 +183,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                         "`pos_label` or only pass it whether in the scorer or "
                         "when creating the report."
                     )
-                kwargs["pos_label"] = self._parent.pos_label
+                if self._parent.pos_label is not None:
+                    kwargs["pos_label"] = self._parent.pos_label
 
             return Metric(
                 name=func_name,
@@ -453,7 +512,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             metric_params = inspect.signature(metric_fn).parameters
             kwargs = {**metric_kwargs}
-            if "pos_label" in metric_params and "pos_label" not in kwargs:
+            if (
+                "pos_label" in metric_params
+                and "pos_label" not in kwargs
+                and pos_label is not None
+            ):
                 kwargs.update(pos_label=pos_label)
             score = metric_fn(y_true, y_pred, **kwargs)
 
