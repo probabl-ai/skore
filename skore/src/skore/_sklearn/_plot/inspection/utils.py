@@ -94,7 +94,7 @@ def select_k_features(
         Dataframe containing feature importance.
 
     select_k : int
-        Number of features to keep per group; positive uses largest importance  scores,
+        Number of features to keep per group; positive uses largest importance scores,
         negative smallest.
 
     group_columns : list of str
