@@ -342,7 +342,7 @@ jobs:
               file.write(
                   f"""
                   <head>
-                    <meta http-equiv=\"refresh\" content=\"0; url={url}/stable/}\"/>
+                    <meta http-equiv=\"refresh\" content=\"0; url={url}/stable/\"/>
                   </head>
                   """
               )
