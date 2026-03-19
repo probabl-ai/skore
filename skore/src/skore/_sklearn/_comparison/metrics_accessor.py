@@ -28,7 +28,6 @@ from skore._utils._accessor import (
     _check_any_sub_report_has_metric,
     _check_supported_ml_task,
 )
-from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._progress_bar import track
 
