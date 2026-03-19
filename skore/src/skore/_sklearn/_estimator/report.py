@@ -434,4 +434,23 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+        return f"""{self.__class__.__name__}:
+        {repr(self.estimator_)}
+
+        {self.metrics.summarize().frame()}"""
+
+    def _repr_html_(self):
+        """HTML representation of estimator.
+        This is redundant with the logic of `_repr_mimebundle_`. The latter
+        should be favored in the long term, `_repr_html_` is only
+        implemented for consumers who do not interpret `_repr_mimbundle_`.
+        """
+        return f"""{self.__class__.__name__}: <i>{repr(self.estimator_)}</i>
+
+        {self.metrics.summarize().frame()._repr_html_()}"""
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by jupyter kernels to display estimator"""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output
