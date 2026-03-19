@@ -1,3 +1,4 @@
+import numbers
 from collections.abc import Callable
 from typing import Any, Literal
 
@@ -1002,6 +1003,14 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
+        if isinstance(subsample, numbers.Integral):
+            # Preserve the total number of sub-samples:
+            n_children = len(self._parent.reports_)
+            if 0 < subsample < n_children:
+                subsample = 1
+            else:
+                subsample //= n_children
+
         child_displays = [
             report.metrics.prediction_error(
                 data_source=data_source,
