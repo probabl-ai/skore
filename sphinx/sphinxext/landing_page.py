@@ -6,27 +6,18 @@ outputs) and syntax-highlighted for display on the landing page.
 """
 
 from pathlib import Path
-from typing import Any
 
 import matplotlib.pyplot as plt
 from jinja2 import Environment, FileSystemLoader
-from pygments import highlight
-from pygments.formatters import HtmlFormatter
-from pygments.lexers import PythonLexer
 from sphinx.application import Sphinx
 
 
-def _code_block(code: str) -> str:
-    highlighted = highlight(code, PythonLexer(), HtmlFormatter(nowrap=True))
-    return (
-        '<div class="doctest highlight-default notranslate">\n'
-        '<div class="highlight hl-ipython3 code-margin">'
-        f"<pre><span></span>{highlighted}</pre></div>\n"
-        "</div>\n"
-    )
+def _code_block(app: Sphinx, code: str) -> str:
+    highlighted = app.builder.highlighter.highlight_block(code, "python", force=True)
+    return highlighted
 
 
-def generate_landing_page(app: Sphinx, _config: Any) -> None:
+def generate_landing_page(app: Sphinx) -> None:
     """Generate the landing page feature sections HTML."""
 
     # exec the code blocks in a namespace
@@ -72,13 +63,13 @@ project.put("ridge", report_ridge)"""
     template = env.get_template("landing.html")
 
     output = template.render(
-        load_data=_code_block(data_loading_code),
-        create_report=_code_block(report_creation_code),
+        load_data=_code_block(app, data_loading_code),
+        create_report=_code_block(app, report_creation_code),
         help_html=help_html,
         frame_html=frame_html,
-        plot_error=_code_block(plot_code),
-        summarize=_code_block(frame_code),
-        put_in_project=_code_block(project_code),
+        plot_error=_code_block(app, plot_code),
+        summarize=_code_block(app, frame_code),
+        put_in_project=_code_block(app, project_code),
     )
 
     (template_dir / "generated_landing.html").write_text(output)
@@ -86,7 +77,7 @@ project.put("ridge", report_ridge)"""
 
 def setup(app):
     """Sphinx extension to generate landing page HTML."""
-    app.connect("config-inited", generate_landing_page)
+    app.connect("builder-inited", generate_landing_page)
 
     return {
         "version": "0.1",
