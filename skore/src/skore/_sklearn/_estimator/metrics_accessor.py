@@ -28,15 +28,12 @@ from skore._sklearn.types import (
     DataSource,
     Metric,
     PositiveLabel,
-    YPlotData,
 )
 from skore._utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
     _check_roc_auc,
     _check_supported_ml_task,
-    _expand_data_sources,
-    _get_ys_for_single_report,
 )
 from skore._utils._cache_key import deep_key_sanitize
 
@@ -1169,10 +1166,23 @@ class _MetricsAccessor(
         display : display_class
             The display.
         """
-        data_sources = _expand_data_sources(data_source)
+        if data_source == "both":
+            displays = [
+                self._get_display(
+                    data_source=cast(DataSource, ds),
+                    response_method=response_method,
+                    display_class=display_class,
+                    display_kwargs=display_kwargs,
+                )
+                for ds in ["train", "test"]
+            ]
+            return display_class._concatenate(
+                displays,  # type: ignore[arg-type]
+                report_type=self._parent._report_type,
+                data_source=data_source,
+            )
 
         # Compute cache key
-        # For "both", we use the string "both" in the cache key
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
@@ -1189,32 +1199,30 @@ class _MetricsAccessor(
         if cache_value is not None:
             return cache_value
 
-        y_true: list[YPlotData] = []
-        y_pred: list[YPlotData] = []
+        data_source = cast(DataSource, data_source)
+        X, y_true = self._get_X_y(data_source=data_source)
 
-        for ds in data_sources:
-            ds_X, ds_y = self._get_X_y(data_source=ds)
-
-            y_true_data, y_pred_data = _get_ys_for_single_report(
-                cache=self._parent._cache,
-                estimator_hash=int(self._parent._hash),
-                estimator=self._parent.estimator_,
-                estimator_name=self._parent.estimator_name_,
-                X=ds_X,
-                y_true=ds_y,
-                data_source=ds,
-                response_method=response_method,
-                pos_label=display_kwargs.get("pos_label"),
-                split=None,
-            )
-            y_true.append(y_true_data)
-            y_pred.append(y_pred_data)
+        results = _get_cached_response_values(
+            cache=self._parent._cache,
+            estimator_hash=int(self._parent._hash),
+            estimator=self._parent.estimator_,
+            X=X,
+            response_method=response_method,
+            pos_label=display_kwargs.get("pos_label"),
+            data_source=data_source,
+        )
+        for key, value, is_cached in results:
+            if not is_cached:
+                self._parent._cache[key] = value
+            if key[-1] != "predict_time":
+                y_pred = value
 
         display = display_class._compute_data_for_display(
             y_true=y_true,
             y_pred=y_pred,
             report_type=self._parent._report_type,
-            estimators=[self._parent.estimator_],
+            estimator=self._parent.estimator_,
+            estimator_name=self._parent.estimator_name_,
             ml_task=self._parent._ml_task,
             data_source=data_source,
             **display_kwargs,

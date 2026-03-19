@@ -5,16 +5,18 @@ from typing import Literal, cast
 import numpy as np
 import seaborn as sns
 from matplotlib.lines import Line2D
+from numpy.typing import ArrayLike
 from pandas import DataFrame
 from sklearn.utils.validation import _num_samples, check_array
 
 from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
+    _concat_frames_with_column_data,
     _despine_matplotlib_axis,
     _validate_style_kwargs,
 )
-from skore._sklearn.types import DataSource, MLTask, ReportType, YPlotData
+from skore._sklearn.types import DataSource, MLTask, ReportType
 
 RangeData = namedtuple("RangeData", ["min", "max"])
 
@@ -117,6 +119,39 @@ class PredictionErrorDisplay(DisplayMixin):
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
+
+    @classmethod
+    def _concatenate(
+        cls,
+        child_displays: list["PredictionErrorDisplay"],
+        *,
+        report_type: ReportType,
+        data_source: None | Literal["both"] = None,
+        column_data: dict[str, list] | None = None,
+    ) -> "PredictionErrorDisplay":
+        """Build a prediction-error display by concatenating child displays."""
+        first_display = child_displays[0]
+        return cls(
+            prediction_error=_concat_frames_with_column_data(
+                [display._prediction_error for display in child_displays],
+                column_data,
+            ),
+            range_y_true=RangeData(
+                min(display.range_y_true.min for display in child_displays),
+                max(display.range_y_true.max for display in child_displays),
+            ),
+            range_y_pred=RangeData(
+                min(display.range_y_pred.min for display in child_displays),
+                max(display.range_y_pred.max for display in child_displays),
+            ),
+            range_residuals=RangeData(
+                min(display.range_residuals.min for display in child_displays),
+                max(display.range_residuals.max for display in child_displays),
+            ),
+            data_source=data_source or first_display.data_source,
+            ml_task=first_display.ml_task,
+            report_type=report_type,
+        )
 
     @DisplayMixin.style_plot
     def plot(
@@ -374,12 +409,13 @@ class PredictionErrorDisplay(DisplayMixin):
     @classmethod
     def _compute_data_for_display(
         cls,
-        y_true: list[YPlotData],
-        y_pred: list[YPlotData],
+        y_true: ArrayLike,
+        y_pred: ArrayLike,
         *,
         report_type: ReportType,
+        estimator_name: str,
         ml_task: MLTask,
-        data_source: DataSource | Literal["both"],
+        data_source: DataSource,
         subsample: float | int | None = 1_000,
         seed: int | None = None,
         **kwargs,
@@ -388,11 +424,14 @@ class PredictionErrorDisplay(DisplayMixin):
 
         Parameters
         ----------
-        y_true : list of array-like of shape (n_samples,)
+        y_true : array-like of shape (n_samples,) or (n_samples, n_outputs)
             True target values.
 
-        y_pred : list of array-like of shape (n_samples,)
+        y_pred : array-like of shape (n_samples,) or (n_samples, n_outputs)
             Predicted target values.
+
+        estimator_name : str
+            The estimator name to attach to the display data.
 
         report_type : {"comparison-cross-validation", "comparison-estimator", \
                 "cross-validation", "estimator"}
@@ -404,7 +443,7 @@ class PredictionErrorDisplay(DisplayMixin):
         ml_task : {"regression", "multioutput-regression"}
             The machine learning task.
 
-        data_source : {"train", "test", "both"}
+        data_source : {"train", "test"}
             The data source used to compute the prediction error curve.
 
         subsample : float, int or None, default=1_000
@@ -449,71 +488,68 @@ class PredictionErrorDisplay(DisplayMixin):
         y_pred_min, y_pred_max = np.inf, -np.inf
         residuals_min, residuals_max = np.inf, -np.inf
 
-        for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
-            n_samples = _num_samples(y_true_i.y)
-            if subsample is None:
-                subsample_ = n_samples
-            elif isinstance(subsample, numbers.Integral):
-                subsample_ = subsample
-            else:  # subsample is a float
-                subsample_ = int(n_samples * subsample)
+        n_samples = _num_samples(y_true)
+        if subsample is None:
+            subsample_ = n_samples
+        elif isinstance(subsample, numbers.Integral):
+            subsample_ = subsample
+        else:  # subsample is a float
+            subsample_ = int(n_samples * subsample)
 
-            # normalize subsample based on the number of splits
-            subsample_ = int(subsample_ / len(y_true))
-            if subsample_ < n_samples:
-                indices = rng.choice(np.arange(n_samples), size=subsample_)
-                y_true_sample = check_array(
-                    _safe_indexing(y_true_i.y, indices, axis=0), ensure_2d=False
-                )
-                y_pred_sample = check_array(
-                    _safe_indexing(y_pred_i.y, indices, axis=0), ensure_2d=False
-                )
-            else:
-                y_true_sample = cast(np.typing.NDArray, y_true_i.y)
-                y_pred_sample = cast(np.typing.NDArray, y_pred_i.y)
+        if subsample_ < n_samples:
+            indices = rng.choice(np.arange(n_samples), size=subsample_)
+            y_true_sample = check_array(
+                _safe_indexing(y_true, indices, axis=0), ensure_2d=False
+            )
+            y_pred_sample = check_array(
+                _safe_indexing(y_pred, indices, axis=0), ensure_2d=False
+            )
+        else:
+            y_true_sample = cast(np.typing.NDArray, y_true)
+            y_pred_sample = cast(np.typing.NDArray, y_pred)
 
-            residuals_sample = y_true_sample - y_pred_sample
-            if ml_task == "multioutput-regression":
-                for output in range(y_true_sample.shape[1]):
-                    for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
-                        y_true_sample[:, output],
-                        y_pred_sample[:, output],
-                        residuals_sample[:, output],
-                        strict=True,
-                    ):
-                        prediction_error_records.append(
-                            {
-                                "estimator": y_true_i.estimator_name,
-                                "data_source": y_true_i.data_source,
-                                "split": y_true_i.split,
-                                "output": output,
-                                "y_true": y_true_sample_i,
-                                "y_pred": y_pred_sample_i,
-                                "residuals": residuals_sample_i,
-                            }
-                        )
-            else:
+        residuals_sample = y_true_sample - y_pred_sample
+        if ml_task == "multioutput-regression":
+            for output in range(y_true_sample.shape[1]):
                 for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
-                    y_true_sample, y_pred_sample, residuals_sample, strict=True
+                    y_true_sample[:, output],
+                    y_pred_sample[:, output],
+                    residuals_sample[:, output],
+                    strict=True,
                 ):
                     prediction_error_records.append(
                         {
-                            "estimator": y_true_i.estimator_name,
-                            "data_source": y_true_i.data_source,
-                            "split": y_true_i.split,
-                            "output": np.nan,
+                            "estimator": estimator_name,
+                            "data_source": data_source,
+                            "split": None,
+                            "output": output,
                             "y_true": y_true_sample_i,
                             "y_pred": y_pred_sample_i,
                             "residuals": residuals_sample_i,
                         }
                     )
+        else:
+            for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
+                y_true_sample, y_pred_sample, residuals_sample, strict=True
+            ):
+                prediction_error_records.append(
+                    {
+                        "estimator": estimator_name,
+                        "data_source": data_source,
+                        "split": None,
+                        "output": np.nan,
+                        "y_true": y_true_sample_i,
+                        "y_pred": y_pred_sample_i,
+                        "residuals": residuals_sample_i,
+                    }
+                )
 
-            y_true_min = min(y_true_min, np.min(y_true_sample))
-            y_true_max = max(y_true_max, np.max(y_true_sample))
-            y_pred_min = min(y_pred_min, np.min(y_pred_sample))
-            y_pred_max = max(y_pred_max, np.max(y_pred_sample))
-            residuals_min = min(residuals_min, np.min(residuals_sample))
-            residuals_max = max(residuals_max, np.max(residuals_sample))
+        y_true_min = min(y_true_min, np.min(y_true_sample))
+        y_true_max = max(y_true_max, np.max(y_true_sample))
+        y_pred_min = min(y_pred_min, np.min(y_pred_sample))
+        y_pred_max = max(y_pred_max, np.max(y_pred_sample))
+        residuals_min = min(residuals_min, np.min(residuals_sample))
+        residuals_max = max(residuals_max, np.max(residuals_sample))
 
         range_y_true = RangeData(min=y_true_min, max=y_true_max)
         range_y_pred = RangeData(min=y_pred_min, max=y_pred_max)
