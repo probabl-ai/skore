@@ -197,7 +197,6 @@ class TestCrossValidationReportPayload:
         )
         assert payload.splitting_strategy == {
             "splitter": metadata,
-            "dataset_size": 10,
             "splits": expected_splits,
         }
 
@@ -280,7 +279,6 @@ class TestCrossValidationReportPayload:
         )
         assert payload.splitting_strategy == {
             "splitter": metadata,
-            "dataset_size": 10,
             "splits": expected_splits,
         }
 
