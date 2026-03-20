@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import time
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal
 
-import numpy as np
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone, is_classifier
@@ -171,10 +169,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
         self._cache = Cache()
         self._ml_task = _find_ml_task(
             self._y, estimator=self.estimator_reports_[0]._estimator

@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import copy
 import html
-import time
 import warnings
 from itertools import product
 from typing import TYPE_CHECKING, Any, Literal
 
-import numpy as np
 import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
@@ -188,16 +186,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_test = y_test
         self._pos_label = pos_label
         self.fit_time_ = fit_time
-        self._parent_hash: np.int64 | None = None
+        self._parent_hash: int | None = None
 
         self._initialize_state()
 
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
         self._cache = Cache()
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
 
