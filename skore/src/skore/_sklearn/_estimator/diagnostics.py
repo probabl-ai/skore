@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 OVERFITTING_CODE = "SKD001"
 UNDERFITTING_CODE = "SKD002"
 _TIMING_METRICS = {"fit time (s)", "predict time (s)"}
+_MetricKey = tuple[str, str, str, str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,6 +28,16 @@ class _MetricPair:
     favorability: str
     train: float
     test: float
+
+
+@dataclass(frozen=True, slots=True)
+class _DiagnosticsContext:
+    metric_pairs: dict[_MetricKey, _MetricPair]
+    metrics_evaluated: bool
+    metrics_explanation: str
+    baseline_pairs: dict[_MetricKey, _MetricPair]
+    baseline_evaluated: bool
+    baseline_explanation: str
 
 
 def _metric_key(value: object) -> str:
@@ -46,8 +57,8 @@ def _to_float(value: object) -> float | None:
 
 def _metric_pairs(
     report: EstimatorReport,
-) -> dict[tuple[str, str, str, str], _MetricPair]:
-    pairs: dict[tuple[str, str, str, str], dict[str, object]] = {}
+) -> dict[_MetricKey, _MetricPair]:
+    pairs: dict[_MetricKey, dict[str, object]] = {}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
         data = report.metrics.summarize(data_source="both").data
@@ -64,7 +75,7 @@ def _metric_pairs(
         if key not in pairs:
             pairs[key] = {"favorability": str(row.favorability)}
         pairs[key][str(row.data_source)] = row.score
-    metric_pairs: dict[tuple[str, str, str, str], _MetricPair] = {}
+    metric_pairs: dict[_MetricKey, _MetricPair] = {}
     for key, values in pairs.items():
         if "train" not in values or "test" not in values:
             continue
@@ -150,7 +161,7 @@ def _create_dummy_report(report: EstimatorReport) -> EstimatorReport | None:
 
 def _overfitting_result(
     *,
-    metric_pairs: dict[tuple[str, str, str, str], _MetricPair],
+    metric_pairs: dict[_MetricKey, _MetricPair],
     evaluated: bool,
     explanation: str,
 ) -> DiagnosticResult:
@@ -197,8 +208,8 @@ def _overfitting_result(
 
 def _underfitting_result(
     *,
-    metric_pairs: dict[tuple[str, str, str, str], _MetricPair],
-    baseline_pairs: dict[tuple[str, str, str, str], _MetricPair],
+    metric_pairs: dict[_MetricKey, _MetricPair],
+    baseline_pairs: dict[_MetricKey, _MetricPair],
     evaluated: bool,
     explanation: str,
 ) -> DiagnosticResult:
@@ -276,9 +287,7 @@ def _underfitting_result(
     )
 
 
-def run_estimator_diagnostics(
-    report: EstimatorReport,
-) -> list[DiagnosticResult]:
+def _build_diagnostics_context(report: EstimatorReport) -> _DiagnosticsContext:
     if (
         report.X_train is None
         or report.y_train is None
@@ -286,67 +295,91 @@ def run_estimator_diagnostics(
         or report.y_test is None
     ):
         explanation = "Train and test data are both required to run this diagnostic."
-        return [
-            _overfitting_result(
-                metric_pairs={}, evaluated=False, explanation=explanation
-            ),
-            _underfitting_result(
-                metric_pairs={},
-                baseline_pairs={},
-                evaluated=False,
-                explanation=explanation,
-            ),
-        ]
+        return _DiagnosticsContext(
+            metric_pairs={},
+            metrics_evaluated=False,
+            metrics_explanation=explanation,
+            baseline_pairs={},
+            baseline_evaluated=False,
+            baseline_explanation=explanation,
+        )
     try:
         metric_pairs = _metric_pairs(report)
     except Exception as error:
         explanation = f"Failed to compute report metrics for diagnostics: {error}."
-        return [
-            _overfitting_result(
-                metric_pairs={}, evaluated=False, explanation=explanation
-            ),
-            _underfitting_result(
-                metric_pairs={},
-                baseline_pairs={},
-                evaluated=False,
-                explanation=explanation,
-            ),
-        ]
+        return _DiagnosticsContext(
+            metric_pairs={},
+            metrics_evaluated=False,
+            metrics_explanation=explanation,
+            baseline_pairs={},
+            baseline_evaluated=False,
+            baseline_explanation=explanation,
+        )
     if not metric_pairs:
         explanation = (
             "No predictive metrics were available to evaluate this diagnostic."
         )
-        return [
-            _overfitting_result(
-                metric_pairs={}, evaluated=False, explanation=explanation
-            ),
-            _underfitting_result(
-                metric_pairs={},
-                baseline_pairs={},
-                evaluated=False,
-                explanation=explanation,
-            ),
-        ]
+        return _DiagnosticsContext(
+            metric_pairs={},
+            metrics_evaluated=False,
+            metrics_explanation=explanation,
+            baseline_pairs={},
+            baseline_evaluated=False,
+            baseline_explanation=explanation,
+        )
+    baseline_pairs: dict[_MetricKey, _MetricPair] = {}
     baseline_report = _create_dummy_report(report)
-    baseline_pairs: dict[tuple[str, str, str, str], _MetricPair] = {}
     if baseline_report is not None:
         try:
             baseline_pairs = _metric_pairs(baseline_report)
         except Exception:
             baseline_pairs = {}
-    underfitting_evaluated = bool(baseline_pairs)
-    underfitting_explanation = (
-        "A dummy baseline could not be computed for this report."
-        if not underfitting_evaluated
-        else ""
-    )
-    diagnostics = [
-        _overfitting_result(metric_pairs=metric_pairs, evaluated=True, explanation=""),
-        _underfitting_result(
-            metric_pairs=metric_pairs,
-            baseline_pairs=baseline_pairs,
-            evaluated=underfitting_evaluated,
-            explanation=underfitting_explanation,
+    return _DiagnosticsContext(
+        metric_pairs=metric_pairs,
+        metrics_evaluated=True,
+        metrics_explanation="",
+        baseline_pairs=baseline_pairs,
+        baseline_evaluated=bool(baseline_pairs),
+        baseline_explanation=(
+            ""
+            if baseline_pairs
+            else "A dummy baseline could not be computed for this report."
         ),
-    ]
-    return diagnostics
+    )
+
+
+def _run_overfitting_diagnostic(context: _DiagnosticsContext) -> DiagnosticResult:
+    return _overfitting_result(
+        metric_pairs=context.metric_pairs,
+        evaluated=context.metrics_evaluated,
+        explanation=context.metrics_explanation,
+    )
+
+
+def _run_underfitting_diagnostic(context: _DiagnosticsContext) -> DiagnosticResult:
+    if not context.metrics_evaluated:
+        return _underfitting_result(
+            metric_pairs={},
+            baseline_pairs={},
+            evaluated=False,
+            explanation=context.metrics_explanation,
+        )
+    return _underfitting_result(
+        metric_pairs=context.metric_pairs,
+        baseline_pairs=context.baseline_pairs,
+        evaluated=context.baseline_evaluated,
+        explanation=context.baseline_explanation,
+    )
+
+
+_ESTIMATOR_DIAGNOSTIC_RUNNERS = (
+    _run_overfitting_diagnostic,
+    _run_underfitting_diagnostic,
+)
+
+
+def run_estimator_diagnostics(
+    report: EstimatorReport,
+) -> list[DiagnosticResult]:
+    context = _build_diagnostics_context(report)
+    return [runner(context) for runner in _ESTIMATOR_DIAGNOSTIC_RUNNERS]

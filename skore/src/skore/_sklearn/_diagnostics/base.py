@@ -29,9 +29,12 @@ class DiagnosticResults(list[str]):
         self,
         messages: list[str],
         diagnostics: list[DiagnosticResult],
+        *,
+        display_diagnostics: list[DiagnosticResult] | None = None,
     ) -> None:
         super().__init__(messages)
         self._diagnostics = tuple(diagnostics)
+        self._display_diagnostics = tuple(display_diagnostics or ())
 
     @property
     def diagnostics(self) -> tuple[DiagnosticResult, ...]:
@@ -61,11 +64,18 @@ class DiagnosticResults(list[str]):
         if not self:
             items_html = "<div>No diagnostics available.</div>"
         else:
-            items_html = "".join(f"<li>{escape(message)}</li>" for message in self)
+            if len(self._display_diagnostics) == len(self):
+                items_html = "".join(
+                    f"<li>{format_diagnostic_message_html(diagnostic)}</li>"
+                    for diagnostic in self._display_diagnostics
+                )
+            else:
+                items_html = "".join(f"<li>{escape(message)}</li>" for message in self)
             items_html = f'<ul style="margin:8px 0 0 18px;padding:0;">{items_html}</ul>'
         return (
             '<div style="margin:8px 0;padding:10px;border:1px solid #f97316;'
-            'border-radius:4px;font-family:monospace;font-size:13px;line-height:1.5;">'
+            "border-radius:4px;display:inline-block;"
+            'font-family:monospace;font-size:13px;line-height:1.5;">'
             f'<div style="font-weight:700;">{escape(header)}</div>'
             f"{items_html}"
             "</div>"
@@ -107,19 +117,37 @@ def get_diagnostics_documentation_url(*, docs_anchor: str) -> str:
     return f"https://docs.skore.probabl.ai/{url_version}/user_guide/diagnostics.html#{docs_anchor}"
 
 
+def _diagnostic_status(diagnostic: DiagnosticResult) -> str:
+    if diagnostic.is_issue:
+        return "issue detected"
+    if not diagnostic.evaluated:
+        return "not evaluated"
+    return "no issue detected"
+
+
 def format_diagnostic_message(diagnostic: DiagnosticResult) -> str:
-    status = (
-        "issue detected"
-        if diagnostic.is_issue
-        else "not evaluated"
-        if not diagnostic.evaluated
-        else "no issue detected"
-    )
     return (
-        f"[{diagnostic.code}] {diagnostic.title}: {status}. "
+        f"[{diagnostic.code}] {diagnostic.title}: {_diagnostic_status(diagnostic)}. "
         f"{diagnostic.explanation} "
         f"See {get_diagnostics_documentation_url(docs_anchor=diagnostic.docs_anchor)}. "
         f"Mute with ignore=['{diagnostic.code}']."
+    )
+
+
+def format_diagnostic_message_html(diagnostic: DiagnosticResult) -> str:
+    code = escape(diagnostic.code)
+    title = escape(diagnostic.title)
+    explanation = escape(diagnostic.explanation)
+    docs_url = escape(
+        get_diagnostics_documentation_url(docs_anchor=diagnostic.docs_anchor),
+        quote=True,
+    )
+    return (
+        f"[{code}] {title}: {_diagnostic_status(diagnostic)}. "
+        f"{explanation} "
+        f'See <a href="{docs_url}" target="_blank" rel="noopener noreferrer">'
+        "user guide</a>. "
+        f"Mute with ignore=['{code}']."
     )
 
 

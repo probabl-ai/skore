@@ -27,11 +27,14 @@ def report(request):
 
 
 def test_diagnose_collects_component_diagnostics(report):
-    messages = report.diagnose()
-    assert len(messages) >= len(report.reports_)
-    assert any("[SKD001]" in message for message in messages)
-    assert any("[SKD002]" in message for message in messages)
-    assert all(any(name in message for name in report.reports_) for message in messages)
+    results = report.diagnose()
+    assert len(results.diagnostics) >= len(report.reports_)
+    assert any(diagnostic.code == "SKD001" for diagnostic in results.diagnostics)
+    assert any(diagnostic.code == "SKD002" for diagnostic in results.diagnostics)
+    if results != ["No issues were detected in your report!"]:
+        assert all(
+            any(name in message for name in report.reports_) for message in results
+        )
 
 
 def test_diagnose_uses_component_cache(report, monkeypatch):

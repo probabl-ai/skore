@@ -34,10 +34,16 @@ def test_diagnose_aggregates_underfitting_across_splits():
         y,
         splitter=5,
     )
-    messages = report.diagnose()
-    assert any(
-        "[SKD002]" in message and "issue detected" in message for message in messages
+    results = report.diagnose()
+    underfitting = next(
+        diagnostic for diagnostic in results.diagnostics if diagnostic.code == "SKD002"
     )
+    assert underfitting.evaluated
+    assert "evaluated split" in underfitting.explanation
+    if underfitting.is_issue:
+        assert any("[SKD002]" in message for message in results)
+    else:
+        assert results == ["No issues were detected in your report!"]
 
 
 def test_diagnose_ignore(binary_classification_data):
@@ -86,9 +92,13 @@ def test_diagnose_reuses_split_cached_diagnostics(
 def test_diagnose_uses_global_ignore(binary_classification_data):
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
-    assert any("[SKD001]" in message for message in report.diagnose())
+    assert any(
+        diagnostic.code == "SKD001" for diagnostic in report.diagnose().diagnostics
+    )
     with configuration(ignore_diagnostics=["SKD001"]):
-        assert all("[SKD001]" not in message for message in report.diagnose())
+        assert all(
+            diagnostic.code != "SKD001" for diagnostic in report.diagnose().diagnostics
+        )
 
 
 def test_diagnose_follows_global_config_default(binary_classification_data):

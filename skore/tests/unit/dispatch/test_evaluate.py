@@ -2,7 +2,13 @@ import pytest
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import KFold, StratifiedKFold
 
-from skore import ComparisonReport, CrossValidationReport, EstimatorReport, evaluate
+from skore import (
+    ComparisonReport,
+    CrossValidationReport,
+    EstimatorReport,
+    configuration,
+    evaluate,
+)
 
 
 def test_evaluate_prefit_estimator(regression_data):
@@ -116,3 +122,12 @@ def test_evaluate_pos_label(binary_classification_data):
     report = evaluate(LogisticRegression(), X, y, splitter=0.2, pos_label=0)
     assert isinstance(report, EstimatorReport)
     assert report.pos_label == 0
+
+
+def test_evaluate_follows_global_config_default(binary_classification_data):
+    """Global diagnose config triggers diagnostics in evaluate."""
+    X, y = binary_classification_data
+    with configuration(diagnose=True):
+        report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    assert hasattr(report, "_latest_diagnostics_")
+    assert len(report._latest_diagnostics_) > 0

@@ -115,17 +115,18 @@ def evaluate(
 
         if not isinstance(X, list):
             X = [X] * len(estimator)
-        reports = [
-            evaluate(
-                est,
-                x,
-                y,
-                splitter=splitter,
-                pos_label=pos_label,
-                n_jobs=n_jobs,
-            )
-            for est, x in zip(estimator, X, strict=True)
-        ]
+        with configuration(diagnose=False):
+            reports = [
+                evaluate(
+                    est,
+                    x,
+                    y,
+                    splitter=splitter,
+                    pos_label=pos_label,
+                    n_jobs=n_jobs,
+                )
+                for est, x in zip(estimator, X, strict=True)
+            ]
         return ComparisonReport(
             cast(
                 list[EstimatorReport] | list[CrossValidationReport],
@@ -164,6 +165,6 @@ def evaluate(
         )
     if hasattr(splitter, "get_n_splits") and splitter.get_n_splits() == 1:
         report = report.estimator_reports_[0]
-    if diagnose:
+    if diagnose or configuration.diagnose:
         report._display_diagnose_results(report.diagnose())
     return report

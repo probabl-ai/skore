@@ -63,6 +63,20 @@ class _BaseReport(ReportHelpMixin):
 
         console.print(results)
 
+    @staticmethod
+    def _build_diagnose_messages(
+        diagnostics: list[DiagnosticResult],
+    ) -> tuple[list[str], list[DiagnosticResult]]:
+        issue_diagnostics = [
+            diagnostic for diagnostic in diagnostics if diagnostic.is_issue
+        ]
+        if not issue_diagnostics:
+            return ["No issues were detected in your report!"], []
+        return (
+            [format_diagnostic_message(diagnostic) for diagnostic in issue_diagnostics],
+            issue_diagnostics,
+        )
+
     def diagnose(
         self,
         *,
@@ -77,8 +91,12 @@ class _BaseReport(ReportHelpMixin):
             if diagnostic.code not in ignored
         ]
         self._latest_diagnostics_ = diagnostics
-        messages = [format_diagnostic_message(diagnostic) for diagnostic in diagnostics]
-        results = DiagnosticResults(messages, diagnostics)
+        messages, display_diagnostics = self._build_diagnose_messages(diagnostics)
+        results = DiagnosticResults(
+            messages,
+            diagnostics,
+            display_diagnostics=display_diagnostics,
+        )
         self._latest_diagnose_result_ = results
         return results
 
@@ -94,7 +112,7 @@ class _BaseReport(ReportHelpMixin):
             summary = f"{evaluated_count} diagnostic(s) evaluated in the latest run."
         return (
             '<div style="margin:10px 0;padding:10px;'
-            "border:1px solid #f97316;border-radius:4px;"
+            "border:1px solid #f97316;border-radius:4px;display:inline-block;"
             'font-family:monospace;font-size:13px;line-height:1.5;">'
             '<div style="font-weight:700;margin-bottom:6px;">Diagnostics</div>'
             f"<div>{details}</div>"
