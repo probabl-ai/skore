@@ -100,9 +100,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             # Forward parameters specific to the builtin method
             data_source_func = getattr(self, metric_obj.name)
-
-            # Avoid mutating metric_obj
-            metric_obj = dataclasses.replace(
+            return dataclasses.replace(
                 metric_obj,
                 kwargs={
                     param: metric_kwargs[param]
@@ -110,7 +108,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     if param in metric_kwargs
                 },
             )
-            return metric_obj
         elif isinstance(m, str):
             if len(metric_kwargs) != 0:
                 raise ValueError(
