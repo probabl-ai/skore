@@ -459,10 +459,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 data_source = "both"
         if data_source is None:
             table_report_html = "<p>No data provided</p>"
+            metrics_html = "<p>No data provided</p>"
         else:
             table_report = skrub.TableReport(
                 self.data._prepare_dataframe_for_display(
-                    data_source="both",
+                    data_source=data_source,
                     with_y=True,
                     subsample=None,
                     subsample_strategy="head",
@@ -474,10 +475,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
             table_report._set_minimal_mode()
             table_report_html = table_report.html_snippet()
+            metrics_html = (
+                self.metrics.summarize(
+                    data_source="train" if data_source == "train" else "test"
+                )
+                .frame()
+                ._repr_html_()
+            )
         return render_template(
             "estimator_report.html.j2",
             {
-                "metrics_summary": self.metrics.summarize().frame()._repr_html_(),
+                "metrics_summary": metrics_html,
                 "estimator_display": self.estimator_._repr_html_(),
                 "table_report": table_report_html,
             },
