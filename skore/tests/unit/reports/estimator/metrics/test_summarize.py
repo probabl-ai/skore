@@ -562,8 +562,8 @@ def test_sklearn_metric_strings(forest_binary_classification_with_test):
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    display = report.metrics.summarize(metric=["accuracy", "log_loss", "roc_auc"])
-    assert set(display.data["metric"]) == {"Accuracy", "Log loss", "ROC AUC"}
+    display = report.metrics.summarize(metric=["rand_score", "v_measure_score"])
+    assert set(display.data["metric"]) == {"Rand Score", "V Measure Score"}
 
 
 def test_sklearn_metric_strings_regression(linear_regression_with_test):
