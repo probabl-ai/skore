@@ -25,7 +25,9 @@ def _missing_data_result(
         title=title,
         kind=kind,
         docs_anchor=docs_anchor,
-        explanation="No cross-validation split was available to evaluate this diagnostic.",
+        explanation=(
+            "No cross-validation split was available to evaluate this diagnostic."
+        ),
         is_issue=False,
         evaluated=False,
     )
@@ -56,7 +58,8 @@ def _aggregate_split_diagnostics(
     missing_count = total_count - evaluated_count
     if is_issue:
         explanation = (
-            f"Detected in {issue_count}/{evaluated_count} evaluated splits ({issue_pct:.0f}%), "
+            "Detected in "
+            f"{issue_count}/{evaluated_count} evaluated splits ({issue_pct:.0f}%), "
             "which is above the majority threshold."
         )
     elif issue_count == 0:
@@ -65,7 +68,8 @@ def _aggregate_split_diagnostics(
         )
     else:
         explanation = (
-            f"Detected in {issue_count}/{evaluated_count} evaluated splits ({issue_pct:.0f}%), "
+            "Detected in "
+            f"{issue_count}/{evaluated_count} evaluated splits ({issue_pct:.0f}%), "
             "which is below the majority threshold."
         )
     if missing_count > 0:
@@ -103,6 +107,9 @@ def run_cross_validation_diagnostics(
         ]
     split_results: dict[str, list[DiagnosticResult]] = {}
     for estimator_report in report.estimator_reports_:
-        for result in run_estimator_diagnostics(estimator_report, expensive=expensive):
+        for result in run_estimator_diagnostics(
+            estimator_report,
+            expensive=expensive,
+        ):
             split_results.setdefault(result.code, []).append(result)
     return [_aggregate_split_diagnostics(results) for results in split_results.values()]

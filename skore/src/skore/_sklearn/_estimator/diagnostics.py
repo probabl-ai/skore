@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import inspect
 import warnings
 from dataclasses import dataclass
+from numbers import Real
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -10,6 +10,7 @@ import pandas as pd
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
+from skore._config import configuration
 from skore._sklearn._diagnostics.base import DiagnosticResult
 
 if TYPE_CHECKING:
@@ -30,6 +31,17 @@ class _MetricPair:
 
 def _metric_key(value: object) -> str:
     return "" if pd.isna(value) else str(value)
+
+
+def _to_float(value: object) -> float | None:
+    if isinstance(value, Real):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
 
 
 def _metric_pairs(
@@ -56,10 +68,9 @@ def _metric_pairs(
     for key, values in pairs.items():
         if "train" not in values or "test" not in values:
             continue
-        try:
-            train_score = float(values["train"])
-            test_score = float(values["test"])
-        except (TypeError, ValueError):
+        train_score = _to_float(values["train"])
+        test_score = _to_float(values["test"])
+        if train_score is None or test_score is None:
             continue
         if not (np.isfinite(train_score) and np.isfinite(test_score)):
             continue
@@ -121,18 +132,18 @@ def _create_dummy_report(report: EstimatorReport) -> EstimatorReport | None:
         return None
     from skore._sklearn._estimator.report import EstimatorReport
 
-    kwargs: dict[str, object] = {
-        "fit": True,
-        "X_train": report.X_train,
-        "y_train": report.y_train,
-        "X_test": report.X_test,
-        "y_test": report.y_test,
-        "pos_label": report.pos_label,
-    }
-    if "diagnose" in inspect.signature(EstimatorReport).parameters:
-        kwargs["diagnose"] = None
     try:
-        return EstimatorReport(dummy_estimator, **kwargs)
+        with configuration(diagnose=False):
+            return EstimatorReport(
+                dummy_estimator,
+                fit=True,
+                X_train=report.X_train,
+                y_train=report.y_train,
+                X_test=report.X_test,
+                y_test=report.y_test,
+                pos_label=report.pos_label,
+                diagnose=False,
+            )
     except Exception:
         return None
 
@@ -158,12 +169,19 @@ def _overfitting_result(
     total = len(votes)
     is_issue = triggered > total / 2
     if triggered == 0:
-        explanation = f"No significant train/test gap was found across {total} default predictive metrics."
+        explanation = (
+            "No significant train/test gap was found across "
+            f"{total} default predictive metrics."
+        )
     elif is_issue:
-        explanation = f"Significant train/test gaps were found for {triggered}/{total} default predictive metrics."
+        explanation = (
+            "Significant train/test gaps were found for "
+            f"{triggered}/{total} default predictive metrics."
+        )
     else:
         explanation = (
-            f"Significant train/test gaps were found for {triggered}/{total} default predictive metrics, "
+            "Significant train/test gaps were found for "
+            f"{triggered}/{total} default predictive metrics, "
             "which is below the majority threshold."
         )
     return DiagnosticResult(
@@ -201,7 +219,10 @@ def _underfitting_result(
             title="Potential underfitting",
             kind="underfitting",
             docs_anchor="skd002-underfitting",
-            explanation="No shared predictive metrics were available to compare against the dummy baseline.",
+            explanation=(
+                "No shared predictive metrics were available to compare "
+                "against the dummy baseline."
+            ),
             is_issue=False,
             evaluated=False,
         )
@@ -227,18 +248,22 @@ def _underfitting_result(
     is_issue = triggered > total / 2
     if triggered == 0:
         explanation = (
-            f"Train and test scores are meaningfully better than the dummy baseline for all {total} "
+            "Train and test scores are meaningfully better than the dummy "
+            f"baseline for all {total} "
             "comparable metrics."
         )
     elif is_issue:
         explanation = (
-            f"Train/test scores are on par and not significantly better than the dummy baseline for "
+            "Train/test scores are on par and not significantly better than "
+            "the dummy baseline for "
             f"{triggered}/{total} comparable metrics."
         )
     else:
         explanation = (
-            f"Train/test scores are on par and not significantly better than the dummy baseline for "
-            f"{triggered}/{total} comparable metrics, which is below the majority threshold."
+            "Train/test scores are on par and not significantly better than "
+            "the dummy baseline for "
+            f"{triggered}/{total} comparable metrics, "
+            "which is below the majority threshold."
         )
     return DiagnosticResult(
         code=UNDERFITTING_CODE,

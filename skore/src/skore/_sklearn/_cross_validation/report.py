@@ -43,7 +43,7 @@ def _generate_estimator_report(
     pos_label: PositiveLabel | None,
     train_indices: ArrayLike,
     test_indices: ArrayLike,
-    diagnose: bool | None = False,
+    diagnose: bool = False,
 ) -> EstimatorReport:
     if y is None:
         # In the case of clustering, we do not have y
@@ -52,16 +52,17 @@ def _generate_estimator_report(
     else:
         y_train = _safe_indexing(y, train_indices)
         y_test = _safe_indexing(y, test_indices)
-    return EstimatorReport(
-        estimator,
-        fit=True,
-        X_train=_safe_indexing(X, train_indices),
-        y_train=y_train,
-        X_test=_safe_indexing(X, test_indices),
-        y_test=y_test,
-        pos_label=pos_label,
-        diagnose=diagnose,
-    )
+    with configuration(diagnose=False):
+        return EstimatorReport(
+            estimator,
+            fit=True,
+            X_train=_safe_indexing(X, train_indices),
+            y_train=y_train,
+            X_test=_safe_indexing(X, test_indices),
+            y_test=y_test,
+            pos_label=pos_label,
+            diagnose=diagnose,
+        )
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
@@ -156,6 +157,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
+    _diagnose_on_init: bool
 
     def __init__(
         self,
@@ -168,12 +170,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         diagnose: bool = False,
     ) -> None:
         self._estimator = clone(estimator)
-        if diagnose is None:
-            self._diagnose_on_init = False
-        elif diagnose:
-            self._diagnose_on_init = True
-        else:
-            self._diagnose_on_init = bool(configuration.diagnose)
+        self._diagnose_on_init = bool(diagnose or configuration.diagnose)
 
         # private storage to be able to invalidate the cache when the user alters
         # those attributes
@@ -225,7 +222,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                         self._pos_label,
                         train_indices,
                         test_indices,
-                        diagnose=None,
+                        diagnose=False,
                     )
                     for (train_indices, test_indices) in self.split_indices
                 ),

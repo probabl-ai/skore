@@ -119,6 +119,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor
+    _diagnose_on_init: bool
 
     @staticmethod
     def _fit_estimator(
@@ -164,12 +165,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         diagnose: bool = False,
     ) -> None:
         self._fit = fit
-        if diagnose is None:
-            self._diagnose_on_init = False
-        elif diagnose:
-            self._diagnose_on_init = True
-        else:
-            self._diagnose_on_init = bool(configuration.diagnose)
+        self._diagnose_on_init = bool(diagnose or configuration.diagnose)
 
         if is_clusterer(estimator):
             raise ValueError(

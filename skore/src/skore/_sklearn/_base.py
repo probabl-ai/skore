@@ -45,7 +45,8 @@ class _BaseReport(ReportHelpMixin):
                 kind="info",
                 docs_anchor="comparison-report-diagnostics",
                 explanation=(
-                    f"{self.__class__.__name__} does not implement diagnostics for this version."
+                    f"{self.__class__.__name__} does not implement "
+                    "diagnostics for this version."
                 ),
                 is_issue=False,
                 evaluated=False,
@@ -75,16 +76,13 @@ class _BaseReport(ReportHelpMixin):
             details = "No diagnostics have run yet."
             summary = "0 issue(s) across 0 diagnostic(s)."
         else:
-            details = (
-                f"{sum(diagnostic.is_issue for diagnostic in diagnostics)} issue(s) across "
-                f"{len(diagnostics)} diagnostic(s)."
-            )
-            summary = (
-                f"{sum(diagnostic.evaluated for diagnostic in diagnostics)} diagnostic(s) evaluated "
-                f"in the latest run."
-            )
+            issue_count = sum(diagnostic.is_issue for diagnostic in diagnostics)
+            evaluated_count = sum(diagnostic.evaluated for diagnostic in diagnostics)
+            details = f"{issue_count} issue(s) across {len(diagnostics)} diagnostic(s)."
+            summary = f"{evaluated_count} diagnostic(s) evaluated in the latest run."
         return (
-            '<div style="margin:10px 0;padding:10px;border:1px solid #f97316;border-radius:4px;'
+            '<div style="margin:10px 0;padding:10px;'
+            "border:1px solid #f97316;border-radius:4px;"
             'font-family:monospace;font-size:13px;line-height:1.5;">'
             '<div style="font-weight:700;margin-bottom:6px;">Diagnostics</div>'
             f"<div>{details}</div>"

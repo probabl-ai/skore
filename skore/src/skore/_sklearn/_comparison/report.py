@@ -118,6 +118,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     }
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
+    _diagnose_on_init: bool
 
     _report_type: ComparisonReportType
 
@@ -261,12 +262,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         )
 
         self.n_jobs = n_jobs
-        if diagnose is None:
-            self._diagnose_on_init = False
-        elif diagnose:
-            self._diagnose_on_init = True
-        else:
-            self._diagnose_on_init = bool(configuration.diagnose)
+        self._diagnose_on_init = bool(diagnose or configuration.diagnose)
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
@@ -519,7 +515,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 docs_anchor="comparison-report-diagnostics",
                 explanation=(
                     "ComparisonReport diagnostics are not available in this version. "
-                    "Use diagnose() on component EstimatorReport or CrossValidationReport instances."
+                    "Use diagnose() on component EstimatorReport or "
+                    "CrossValidationReport instances."
                 ),
                 is_issue=False,
                 evaluated=False,
