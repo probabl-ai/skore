@@ -266,10 +266,7 @@ def _dataset_from_Xy(
         if isinstance(y, pd.Series):
             y = y.to_numpy()
         elif isinstance(y, pd.DataFrame):
-            if len(y.columns) == 1:
-                y = y.iloc[:, 0].to_numpy()
-            else:
-                y = {column: y[column].to_numpy() for column in y.columns}
+            y = {column: y[column].to_numpy() for column in y.columns}
 
         return Dataset(
             dataset=mlflow.data.from_numpy(X, targets=y),  # type: ignore[attr-defined]
