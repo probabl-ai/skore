@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import copy
+import html
 import time
 import warnings
 from itertools import product
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
+import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone
@@ -24,6 +26,7 @@ from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
@@ -434,4 +437,67 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+        return f"""{self.__class__.__name__}:
+        {self.estimator_!r}
+
+        {self.metrics.summarize().frame()}"""
+
+    def _repr_html_(self):
+        """HTML representation of estimator.
+
+        This is redundant with the logic of `_repr_mimebundle_`. The latter
+        should be favored in the long term, `_repr_html_` is only
+        implemented for consumers who do not interpret `_repr_mimbundle_`.
+        """
+        match self.X_train, self.X_test:
+            case None, None:
+                data_source = None
+            case _, None:
+                data_source = "train"
+            case None, _:
+                data_source = "test"
+            case _:
+                data_source = "both"
+        if data_source is None:
+            table_report_html = "<p>No data provided</p>"
+            metrics_html = "<p>No data provided</p>"
+        else:
+            table_report = skrub.TableReport(
+                self.data._prepare_dataframe_for_display(
+                    data_source=data_source,
+                    with_y=True,
+                    subsample=None,
+                    subsample_strategy="head",
+                    seed=None,
+                ),
+                max_plot_columns=0,
+                max_association_columns=0,
+                verbose=False,
+            )
+            table_report._set_minimal_mode()
+            table_report_html = table_report.html_snippet()
+            metrics_html = (
+                self.metrics.summarize(
+                    data_source="train" if data_source == "train" else "test"
+                )
+                .frame()
+                ._repr_html_()
+            )
+        try:
+            estimator_html = self.estimator_._repr_html_()
+        except Exception:
+            estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
+        return render_template(
+            "estimator_report.html.j2",
+            {
+                "metrics_summary": metrics_html,
+                "estimator_display": estimator_html,
+                "table_report": table_report_html,
+            },
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by jupyter kernels to display estimator."""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output
