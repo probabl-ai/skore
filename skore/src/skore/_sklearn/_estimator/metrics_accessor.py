@@ -165,7 +165,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             The metrics to parse.
 
         metric_kwargs : dict or None
-            Forwarded only to detect incompatible scorer + metric_kwargs usage.
+            The kwargs to pass to each metric; each metric takes
+            only the kwargs they can accept.
 
         Returns
         -------
@@ -269,9 +270,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics.summarize(
-        ...     metric=["f1"],
-        ... ).frame(favorability=True)
+        >>> report.metrics.summarize(metric="f1").frame(favorability=True)
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.95...          (↗︎)
@@ -285,13 +284,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Recall                          0.97...                     0.92...          (↗︎)
         ROC AUC                         0.99...                     0.99...          (↗︎)
         Brier score                     0.02...                     0.03...          (↘︎)
-        >>> # Using scikit-learn metrics
-        >>> report.metrics.summarize(
-        ...     metric=["f1"],
-        ... ).frame(favorability=True)
-                                  LogisticRegression Favorability
-        Metric   Label / Average
-        F1 Score               1             0.95...          (↗︎)
         """
         if data_source == "both":
             train_summary = self.summarize(
