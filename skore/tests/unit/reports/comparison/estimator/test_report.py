@@ -34,8 +34,8 @@ def test_different_test_data(
     ):
         ComparisonReport(
             [
-                EstimatorReport(estimator, y_test=y_test),
-                EstimatorReport(estimator, y_test=y_test[1:]),
+                EstimatorReport(estimator, X_test=X_test, y_test=y_test),
+                EstimatorReport(estimator, X_test=X_test, y_test=y_test[1:]),
             ]
         )
 
@@ -66,7 +66,7 @@ def test_init_different_ml_usecases(
 
     # Simulate that the regression and classification reports share the same testing
     # targets which is not unlikely.
-    regression_report._y_test = classification_report._y_test
+    regression_report._test_data["_skrub_y"] = classification_report.y_test
     with pytest.raises(
         ValueError, match="Expected all estimators to have the same ML usecase"
     ):

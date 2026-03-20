@@ -49,8 +49,8 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             The target data.
         """
         err_msg = "{} is required when `data_source={!r}`."
-        X = getattr(self._parent, f"_X_{dataset}")
-        y = getattr(self._parent, f"_y_{dataset}")
+        X = getattr(self._parent, f"X_{dataset}")
+        y = getattr(self._parent, f"y_{dataset}")
 
         if X is None:
             raise ValueError(err_msg.format(f"X_{dataset}", data_source))
