@@ -253,12 +253,8 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 replace=False,
             )
 
-        # create a simplified splitter without randomization and repetitions
-        splitter_metadata_overloaded = splitter_metadata | {
-            "shuffle": False,
-            "random_state": None,
-        }
-
+        # create a simplified splitter without shuffling and repetitions
+        splitter_metadata_overloaded = splitter_metadata | {"shuffle": False}
         simplified_cls = SPLITTERS.get(splitter.__class__.__name__, splitter.__class__)
         simplified_cls_parameters = {}
 
@@ -267,7 +263,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 simplified_cls_parameters[key] = splitter_metadata_overloaded[key]
             elif hasattr(splitter, key):
                 simplified_cls_parameters[key] = getattr(splitter, key)
-
         simplified_splitter = simplified_cls(**simplified_cls_parameters)
 
         # Per split: one list of length N_SAMPLES_REPR, ordered by sample index,
