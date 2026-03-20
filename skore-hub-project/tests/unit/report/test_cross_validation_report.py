@@ -198,7 +198,6 @@ class TestCrossValidationReportPayload:
         assert payload.splitting_strategy == {
             "splitter": metadata,
             "dataset_size": 10,
-            "representation_sample_count": 8,
             "splits": expected_splits,
         }
 
@@ -282,7 +281,6 @@ class TestCrossValidationReportPayload:
         assert payload.splitting_strategy == {
             "splitter": metadata,
             "dataset_size": 10,
-            "representation_sample_count": 8,
             "splits": expected_splits,
         }
 

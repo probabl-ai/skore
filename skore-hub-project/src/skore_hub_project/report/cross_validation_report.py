@@ -282,7 +282,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         return {
             "splitter": splitter_metadata,
             "dataset_size": len(self.report.X),
-            "representation_sample_count": SPLITTING_STRATEGY_REPR_SAMPLE_COUNT,
             "splits": splits,
         }
 
