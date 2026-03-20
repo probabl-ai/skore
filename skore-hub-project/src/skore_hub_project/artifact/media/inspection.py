@@ -51,7 +51,7 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
             parent_hash, name, data_source, at_step, _, metric, *_ = key
 
             if (
-                parent_hash == getattr(self.report, "_hash", None)
+                parent_hash == self.report._hash
                 and name == "permutation_importance"
                 and data_source == self.data_source
                 and at_step == 0
