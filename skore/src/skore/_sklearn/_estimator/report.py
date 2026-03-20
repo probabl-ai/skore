@@ -448,20 +448,32 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         should be favored in the long term, `_repr_html_` is only
         implemented for consumers who do not interpret `_repr_mimbundle_`.
         """
-        table_report = skrub.TableReport(
-            self.data._prepare_dataframe_for_display(
-                data_source="both",
-                with_y=True,
-                subsample=None,
-                subsample_strategy="head",
-                seed=None,
-            ),
-            max_plot_columns=0,
-            max_association_columns=0,
-            verbose=False,
-        )
-        table_report._set_minimal_mode()
-        table_report_html = table_report.html_snippet()
+        match self.X_train, self.X_test:
+            case None, None:
+                data_source = None
+            case _, None:
+                data_source = "train"
+            case None, _:
+                data_source = "test"
+            case _:
+                data_source = "both"
+        if data_source is None:
+            table_report_html = "<p>No data provided</p>"
+        else:
+            table_report = skrub.TableReport(
+                self.data._prepare_dataframe_for_display(
+                    data_source="both",
+                    with_y=True,
+                    subsample=None,
+                    subsample_strategy="head",
+                    seed=None,
+                ),
+                max_plot_columns=0,
+                max_association_columns=0,
+                verbose=False,
+            )
+            table_report._set_minimal_mode()
+            table_report_html = table_report.html_snippet()
         return render_template(
             "estimator_report.html.j2",
             {
