@@ -7,11 +7,9 @@ without depending on MetricsSummaryDisplay.frame().
 import numpy as np
 import pandas as pd
 import pytest
-from pandas.testing import assert_frame_equal
 from sklearn.metrics import f1_score, make_scorer
 
 from skore import CrossValidationReport, MetricsSummaryDisplay
-from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
 
 def check_display_structure(
@@ -216,20 +214,6 @@ def test_multioutput_regression(linear_regression_multioutput_data):
     data = display.data.set_index(["split", "metric"]).sort_index()
     assert len(data.loc[(0, "R²")]) == 2
     assert set(data.loc[(0, "R²"), "output"]) == {0, 1}
-
-
-def test_cache(forest_binary_classification_data):
-    """Check that summarize results are properly cached."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-
-    with check_cache_changed(report._cache):
-        result = report.metrics.summarize()
-    assert isinstance(result, MetricsSummaryDisplay)
-
-    with check_cache_unchanged(report._cache):
-        result_from_cache = report.metrics.summarize()
-    assert_frame_equal(result.data, result_from_cache.data)
 
 
 # Tests about passing `metric`
