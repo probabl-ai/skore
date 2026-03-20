@@ -1,4 +1,6 @@
+import dataclasses
 import inspect
+import warnings
 from collections.abc import Callable
 from functools import partial
 from typing import Any, Literal, cast
@@ -11,7 +13,10 @@ from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore._sklearn._base import (
+    _BaseAccessor,
+    _get_cached_response_values,
+)
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -20,9 +25,10 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore._sklearn.metrics import Metric, _get_default_metrics
 from skore._sklearn.types import (
     DataSource,
-    Metric,
+    MetricLike,
     PositiveLabel,
 )
 from skore._utils._accessor import (
@@ -40,28 +46,254 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     You can access this accessor using the `metrics` attribute.
     """
 
-    _score_or_loss_info: dict[str, dict[str, str]] = {
-        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
-        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
-    }
-
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
+        if not self._parent._metrics_registry:
+            self._parent._metrics_registry = _get_default_metrics(
+                self._parent._ml_task, self._parent._estimator
+            )
+
+    @property
+    def _registry(self) -> dict[str, Metric]:
+        return self._parent._metrics_registry
+
+    @property
+    def registry(self) -> dict[str, Metric]:
+        """All registered metrics (built-ins and custom), keyed by technical name."""
+        return self._registry
+
+    def register(self, metric: MetricLike | str) -> None:
+        """Register a custom metric to include in :meth:`summarize` by default.
+
+        Parameters
+        ----------
+        metric : scorer or str
+            A scikit-learn scorer created with :func:`sklearn.metrics.make_scorer`,
+            or a scikit-learn scorer name string.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.metrics import make_scorer, mean_absolute_error
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
+        >>> report.metrics.register(
+        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ... )
+        >>> report.metrics.summarize().frame()
+                             LogisticRegression
+        Metric
+        Accuracy                       0.947368
+        Precision                      0.984127
+        Recall                         0.925373
+        ROC AUC                        0.993649
+        Brier score                    0.036154
+        Fit time (s)                   0.324200
+        Predict time (s)               0.000323
+        Mean Absolute Error            0.052632
+        """
+        # Accept sklearn scorer name strings
+        if isinstance(metric, str):
+            try:
+                metric = sklearn.metrics.get_scorer(metric)
+            except ValueError as exc:
+                raise ValueError(
+                    f"Cannot register {metric!r}: not a valid scorer name."
+                ) from exc
+
+        parsed = self._parse_metric(metric, {})
+
+        # Protect built-in names
+        if parsed.name in self._registry and self._registry[parsed.name].is_builtin:
+            raise ValueError(
+                f"Cannot register {parsed.name!r}: it is a built-in metric name."
+            )
+
+        # Warn for lambdas and closures (not pickle-safe).
+        # Follow __wrapped__ to skip library decorators
+        # (e.g. sklearn's @validate_params)
+        fn = parsed.score_func
+        if fn is not None:
+            fn_inner = fn
+            while hasattr(fn_inner, "__wrapped__"):
+                fn_inner = fn_inner.__wrapped__
+            qualname = getattr(fn_inner, "__qualname__", "") or ""
+            if "<lambda>" in qualname:
+                warnings.warn(
+                    f"Registered metric {parsed.name!r} uses a lambda function, "
+                    "which may not survive pickling.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            elif getattr(fn_inner, "__closure__", None) is not None:
+                warnings.warn(
+                    f"Registered metric {parsed.name!r} uses a closure, "
+                    "which may not survive pickling.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+            # Capture source code for inspection / post-pickle introspection
+            try:
+                source_code = inspect.getsource(fn_inner)
+            except (OSError, TypeError):
+                source_code = None
+            parsed = dataclasses.replace(parsed, source_code=source_code)
+
+        # Invalidate cached results when re-registering an existing metric
+        if parsed.name in self._registry and not self._registry[parsed.name].is_builtin:
+            keys_to_delete = [
+                k
+                for k in self._parent._cache
+                if isinstance(k, tuple) and len(k) >= 2 and k[1] == parsed.name
+            ]
+            for k in keys_to_delete:
+                del self._parent._cache[k]
+
+        self._registry[parsed.name] = parsed
+
+    def _parse_metric(self, m: MetricLike, metric_kwargs: dict[str, Any]) -> Metric:
+        """
+        Convert a single "metric-like" to a Metric.
+
+        `metric_kwargs` will be stripped down to only the kwargs that the metric
+        will actually accept.
+        """
+        if isinstance(m, _BaseScorer):
+            func_name = m._score_func.__name__
+            if func_name.startswith("neg_"):
+                func_name = func_name[4:]
+
+            # forward the additional parameters specific to the scorer
+            kwargs = m._kwargs.copy()
+            if "pos_label" in inspect.signature(m._score_func).parameters:
+                if (
+                    "pos_label" in kwargs
+                    and self._parent.pos_label is not None
+                    and self._parent.pos_label != kwargs["pos_label"]
+                ):
+                    raise ValueError(
+                        "`pos_label` is passed both in the scorer: "
+                        f"{kwargs['pos_label']!r} and when creating "
+                        f"the report: {self._parent.pos_label!r}. "
+                        "Please provide a consistent "
+                        "`pos_label` or only pass it whether in the scorer or "
+                        "when creating the report."
+                    )
+                if self._parent.pos_label is not None:
+                    kwargs["pos_label"] = self._parent.pos_label
+
+            return Metric(
+                name=func_name,
+                verbose_name=func_name.replace("_", " ").title(),
+                greater_is_better=m._sign == 1,
+                score_func=m._score_func,
+                response_method=m._response_method,
+                kwargs=kwargs,
+            )
+        elif m in self._registry:
+            metric_obj = self._registry[cast(str, m)]
+
+            # Forward parameters specific to the builtin method
+            data_source_func = getattr(self, metric_obj.name)
+            return dataclasses.replace(
+                metric_obj,
+                kwargs={
+                    param: metric_kwargs[param]
+                    for param in inspect.signature(data_source_func).parameters
+                    if param in metric_kwargs
+                },
+            )
+        elif isinstance(m, str):
+            if len(metric_kwargs) != 0:
+                raise ValueError(
+                    "The `metric_kwargs` parameter is not supported when "
+                    "`metric` is a scikit-learn scorer name. Use the function "
+                    "`sklearn.metrics.make_scorer` to create a scorer with "
+                    "additional parameters."
+                )
+
+            try:
+                scorer = sklearn.metrics.get_scorer(m)
+            except ValueError as err:
+                raise ValueError(
+                    f"Invalid metric: {m!r}. "
+                    "Please use a valid metric from the list of supported "
+                    f"metrics: {list(self._registry.keys())} "
+                    "or a valid scikit-learn metric string."
+                ) from err
+
+            return self._parse_metric(scorer, metric_kwargs)
+        elif callable(m):
+            if "response_method" not in metric_kwargs:
+                raise ValueError(
+                    "response_method is required when the metric is a "
+                    "callable. Pass it directly or through `metric_kwargs`."
+                )
+
+            func_name = m.__name__
+            kwargs = {
+                param: metric_kwargs[param]
+                for param in inspect.signature(m).parameters
+                if param in metric_kwargs
+            }
+            return Metric(
+                name=func_name,
+                verbose_name=func_name.replace("_", " ").title(),
+                greater_is_better=metric_kwargs.get("greater_is_better"),
+                score_func=m,
+                response_method=metric_kwargs["response_method"],
+                kwargs=kwargs,
+            )
+        else:
+            raise ValueError(f"Invalid type of metric: {type(m)} for {m!r}")
+
+    def _parse_metrics(
+        self,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None,
+        metric_kwargs: dict[str, Any],
+    ) -> dict[str, Metric]:
+        """Normalize arguments into a mapping from verbose name to Metric.
+
+        Parameters
+        ----------
+        metric : MetricLike, list of MetricLike, dict of MetricLike, or None
+            The metrics to parse.
+
+        metric_kwargs : dict or None
+            The kwargs to pass to each metric; each metric takes
+            only the kwargs they can accept.
+
+        Returns
+        -------
+        dict[str, Metric]
+        """
+        items: list[tuple[str | None, MetricLike]]
+        if metric is None or metric == []:
+            items = [(None, m) for m in self._registry]
+        elif isinstance(metric, dict):
+            items = list(metric.items())
+        elif isinstance(metric, list):
+            items = [(None, m) for m in metric]
+        else:
+            items = [(None, metric)]
+
+        result = {}
+        for display_name, m in items:
+            metric_obj = self._parse_metric(m, metric_kwargs)
+            key = display_name if display_name else metric_obj.verbose_name
+            result[key] = metric_obj
+
+        return result
 
     def summarize(
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
@@ -131,9 +363,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics.summarize(
-        ...     metric=["f1"],
-        ... ).frame(favorability=True)
+        >>> report.metrics.summarize(metric="f1").frame(favorability=True)
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.95...          (↗︎)
@@ -147,13 +377,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Recall                          0.97...                     0.92...          (↗︎)
         ROC AUC                         0.99...                     0.99...          (↗︎)
         Brier score                     0.02...                     0.03...          (↘︎)
-        >>> # Using scikit-learn metrics
-        >>> report.metrics.summarize(
-        ...     metric=["f1"],
-        ... ).frame(favorability=True)
-                                  LogisticRegression Favorability
-        Metric   Label / Average
-        F1 Score               1             0.95...          (↗︎)
         """
         if data_source == "both":
             train_summary = self.summarize(
@@ -174,152 +397,32 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
             return MetricsSummaryDisplay(data=combined, report_type="estimator")
 
-        pos_label = self._parent.pos_label
-
-        # Handle dictionary metrics
-        metric_names: list[str | None] | None = None
-        if isinstance(metric, dict):
-            metric_names = list(metric.keys())
-            metrics = list(metric.values())
-        elif metric is not None and not isinstance(metric, list):
-            metrics = [metric]
-        elif isinstance(metric, list):
-            metrics = metric
-
-        # Treat empty list same as None - use defaults
-        if metric is None or (isinstance(metric, list) and len(metric) == 0):
-            # Equivalent to _get_scorers_to_add
-            if self._parent._ml_task == "binary-classification":
-                metrics = ["accuracy", "precision", "recall", "roc_auc"]
-                if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics.append("brier_score")
-            elif self._parent._ml_task == "multiclass-classification":
-                metrics = ["accuracy", "precision", "recall"]
-                if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics += ["roc_auc", "log_loss"]
-            else:
-                metrics = ["r2", "rmse"]
-            metrics += ["fit_time", "predict_time"]
-
-        if metric_names is None:
-            metric_names = [None] * len(metrics)
+        parsed_metrics = self._parse_metrics(
+            metric,
+            (metric_kwargs or {})
+            | ({"response_method": response_method} if response_method else {}),
+        )
 
         rows = []
-        for metric_name, metric_ in zip(metric_names, metrics, strict=True):
-            if isinstance(metric_, str) and metric_ not in self._score_or_loss_info:
-                try:
-                    metric_ = sklearn.metrics.get_scorer(metric_)
-                except ValueError as err:
-                    raise ValueError(
-                        f"Invalid metric: {metric_!r}. "
-                        f"Please use a valid metric from the "
-                        f"list of supported metrics: "
-                        f"{list(self._score_or_loss_info.keys())} "
-                        "or a valid scikit-learn metric string."
-                    ) from err
-                if metric_kwargs is not None:
-                    raise ValueError(
-                        "The `metric_kwargs` parameter is not supported when "
-                        "`metric` is a scikit-learn scorer name. Use the function "
-                        "`sklearn.metrics.make_scorer` to create a scorer with "
-                        "additional parameters."
-                    )
-
-            # NOTE: we have to check specifically for `_BaseScorer` first because this
-            # is also a callable but it has a special private API that we can leverage
-            if isinstance(metric_, _BaseScorer):
-                # scorers have the advantage to have scoped defined kwargs
+        for metric_name, metric_obj in parsed_metrics.items():
+            if metric_obj.is_builtin:
+                # Built-in metric: dispatch via the accessor method by name
+                metric_fn = getattr(self, metric_obj.name)
+            else:
+                # Callable metric
                 metric_fn = partial(
                     self.custom_metric,
-                    metric_function=metric_._score_func,
-                    response_method=metric_._response_method,
-                )
-                # forward the additional parameters specific to the scorer
-                metrics_kwargs = {**metric_._kwargs}
-                metrics_params = inspect.signature(metric_._score_func).parameters
-                if "pos_label" in metrics_params:
-                    if (
-                        "pos_label" in metrics_kwargs
-                        and pos_label != metrics_kwargs["pos_label"]
-                    ):
-                        raise ValueError(
-                            "`pos_label` is passed both in the scorer: "
-                            f"{metrics_kwargs['pos_label']!r} and when creating "
-                            f"the report: {pos_label!r}. Please provide a consistent "
-                            "`pos_label` or only pass it whether in the scorer or "
-                            "when creating the report."
-                        )
-                    metrics_kwargs["pos_label"] = pos_label
-
-                metric_favorability = "(↗︎)" if metric_._sign == 1 else "(↘︎)"
-                if metric_name is None:
-                    metric_name = metric_._score_func.__name__.replace("_", " ").title()
-
-            elif isinstance(metric_, str) or callable(metric_):
-                if isinstance(metric_, str):
-                    metric_fn = getattr(
-                        self,
-                        f"_{metric_}"
-                        if metric_ in ["fit_time", "predict_time"]
-                        else metric_,
-                    )
-                    metrics_kwargs = {}
-                    if metric_name is None:
-                        metric_name = self._score_or_loss_info[metric_]["name"]
-                    metric_favorability = self._score_or_loss_info[metric_]["icon"]
-                else:
-                    # Handle callable metrics
-                    if response_method is None:
-                        if (
-                            metric_kwargs is None
-                            or "response_method" not in metric_kwargs
-                        ):
-                            raise ValueError(
-                                "response_method is required when the metric is a "
-                                "callable. Pass it directly or through `metric_kwargs`."
-                            )
-
-                        response_method = metric_kwargs["response_method"]
-
-                    metric_fn = partial(
-                        self.custom_metric,
-                        metric_function=metric_,
-                        response_method=response_method,
-                    )
-                    if metric_kwargs is None:
-                        metrics_kwargs = {}
-                    else:
-                        # check if we should pass any parameters specific to the metric
-                        # callable
-                        metric_callable_params = inspect.signature(metric_).parameters
-                        metrics_kwargs = {
-                            param: metric_kwargs[param]
-                            for param in metric_callable_params
-                            if param in metric_kwargs
-                        }
-                    if metric_name is None:
-                        metric_name = metric_.__name__.replace("_", " ").title()
-                    metric_favorability = ""
-
-                metrics_params = inspect.signature(metric_fn).parameters
-                if metric_kwargs is not None:
-                    for param in metrics_params:
-                        if param in metric_kwargs:
-                            metrics_kwargs[param] = metric_kwargs[param]
-                if "pos_label" in metrics_params:
-                    metrics_kwargs["pos_label"] = pos_label
-            else:
-                raise ValueError(
-                    f"Invalid type of metric: {type(metric_)} for {metric_!r}"
+                    metric_function=metric_obj.score_func,
+                    response_method=cast(str, metric_obj.response_method),
                 )
 
-            score = metric_fn(data_source=data_source, **metrics_kwargs)
+            score = metric_fn(data_source=data_source, **metric_obj.kwargs)
 
             row = {
                 "metric": metric_name,
                 "estimator_name": self._parent.estimator_name_,
                 "data_source": data_source,
-                "favorability": metric_favorability,
+                "favorability": metric_obj.icon,
                 "label": None,
                 "average": None,
                 "output": None,
@@ -328,9 +431,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             if (
                 self._parent._ml_task == "binary-classification"
-                and metrics_kwargs.get("average") == "binary"
+                and metric_obj.kwargs.get("average") == "binary"
             ):
-                rows.append({**row, "label": pos_label})
+                rows.append({**row, "label": self._parent.pos_label})
             elif self._parent._ml_task in (
                 "binary-classification",
                 "multiclass-classification",
@@ -339,7 +442,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     for label in score:
                         rows.append({**row, "label": label, "score": score[label]})  # noqa: PERF401
                 else:
-                    rows.append({**row, "average": metrics_kwargs.get("average")})
+                    rows.append({**row, "average": metric_obj.kwargs.get("average")})
             elif self._parent._ml_task == "multioutput-regression":
                 if isinstance(score, list):
                     for output_idx, output_score in enumerate(score):
@@ -347,7 +450,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                             {**row, "output": output_idx, "score": output_score}
                         )
                 else:
-                    rows.append({**row, "average": metrics_kwargs.get("multioutput")})
+                    rows.append(
+                        {**row, "average": metric_obj.kwargs.get("multioutput")}
+                    )
             else:
                 rows.append(row)
 
@@ -407,7 +512,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             metric_params = inspect.signature(metric_fn).parameters
             kwargs = {**metric_kwargs}
-            if "pos_label" in metric_params and "pos_label" not in kwargs:
+            if (
+                "pos_label" in metric_params
+                and "pos_label" not in kwargs
+                and pos_label is not None
+            ):
                 kwargs.update(pos_label=pos_label)
             score = metric_fn(y_true, y_pred, **kwargs)
 
@@ -432,7 +541,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         return score
 
-    def _fit_time(self, cast: bool = True, **kwargs) -> float | None:
+    def fit_time(self, cast: bool = True, **kwargs) -> float | None:
         """Get time to fit the estimator.
 
         Parameters
@@ -449,7 +558,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             return float("nan")
         return self._parent.fit_time_
 
-    def _predict_time(
+    def predict_time(
         self,
         *,
         data_source: DataSource = "test",
@@ -504,7 +613,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.timings()
         {'fit_time': ..., 'predict_time_test': ...}
         """
-        fit_time_ = self._fit_time(cast=False)
+        fit_time_ = self.fit_time(cast=False)
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
         # predict_time cache keys are of the form
