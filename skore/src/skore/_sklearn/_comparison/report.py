@@ -54,6 +54,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         if a list, the labels are computed from the estimator class names.
         Expects at least two reports to compare, with the same test target.
 
+    diagnose : bool, default=False
+        Whether to run :meth:`diagnose` at the end of initialization.
+
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimators and computing
         the scores are parallelized.
@@ -61,10 +64,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         parameter is used to parallelize the computation.
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
-
-    diagnose : bool, default=False
-        Whether to run :meth:`diagnose` at the end of initialization.
-        If ``skore.config.diagnose`` is enabled, this is treated as ``True``.
 
     Attributes
     ----------
@@ -242,8 +241,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             | dict[str, CrossValidationReport]
         ),
         *,
-        n_jobs: int | None = None,
         diagnose: bool = False,
+        n_jobs: int | None = None,
     ) -> None:
         """
         ComparisonReport instance initializer.
@@ -266,9 +265,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
+        self._clear_diagnostics_cache()
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
         if diagnose or configuration.diagnose:
-            self.diagnose()
+            self._display_diagnose_results(self.diagnose())
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -295,6 +295,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             report.clear_cache()
 
         self._cache = Cache()
+        self._clear_diagnostics_cache()
 
     def cache_predictions(
         self,

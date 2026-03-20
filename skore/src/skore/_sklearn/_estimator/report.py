@@ -74,7 +74,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     diagnose : bool, default=False
         Whether to run :meth:`diagnose` at the end of initialization.
-        If ``skore.config.diagnose`` is enabled, this is treated as ``True``.
 
     Attributes
     ----------
@@ -197,7 +196,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         self._initialize_state()
         if diagnose or configuration.diagnose:
-            self.diagnose()
+            self._display_diagnose_results(self.diagnose())
 
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
@@ -206,6 +205,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
+        self._clear_diagnostics_cache()
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
 
     # NOTE:
@@ -234,6 +234,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         {}
         """
         self._cache = Cache()
+        self._clear_diagnostics_cache()
 
     def cache_predictions(
         self,

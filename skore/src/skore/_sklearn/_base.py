@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
 
@@ -11,11 +10,16 @@ from sklearn.utils._response import _check_response_method, _get_response_values
 from skore._config import configuration
 from skore._sklearn._diagnostics.base import (
     DiagnosticResult,
+    DiagnosticResults,
     format_diagnostic_message,
     normalize_ignore_codes,
 )
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
+from skore._utils._environment import (
+    is_environment_notebook_like,
+    is_environment_sphinx_build,
+)
 from skore._utils._measure_time import MeasureTime
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
@@ -37,11 +41,10 @@ class _BaseReport(ReportHelpMixin):
     ]
     _diagnostics_cache: dict[bool, list[DiagnosticResult]]
 
-    @abstractmethod
     def _collect_diagnostics(
         self, *, expensive: bool = False
     ) -> list[DiagnosticResult]:
-        """Collect diagnostics."""
+        return []
 
     def _get_diagnostics(self, *, expensive: bool) -> list[DiagnosticResult]:
         if not hasattr(self, "_diagnostics_cache"):
@@ -51,6 +54,21 @@ class _BaseReport(ReportHelpMixin):
                 expensive=expensive
             )
         return self._diagnostics_cache[expensive]
+
+    def _clear_diagnostics_cache(self) -> None:
+        self._diagnostics_cache = {}
+
+    def _display_diagnose_results(self, results: list[str]) -> None:
+        if is_environment_sphinx_build():
+            return
+        if is_environment_notebook_like():
+            from IPython.display import display
+
+            display(results)
+            return
+        from skore import console
+
+        console.print(results)
 
     def diagnose(
         self,
@@ -67,7 +85,10 @@ class _BaseReport(ReportHelpMixin):
             if diagnostic.code not in ignored
         ]
         self._latest_diagnostics_ = diagnostics
-        return [format_diagnostic_message(diagnostic) for diagnostic in diagnostics]
+        messages = [format_diagnostic_message(diagnostic) for diagnostic in diagnostics]
+        results = DiagnosticResults(messages, diagnostics)
+        self._latest_diagnose_result_ = results
+        return results
 
     def _diagnostics_panel_html(self) -> str:
         diagnostics = getattr(self, "_latest_diagnostics_", None)
@@ -90,6 +111,12 @@ class _BaseReport(ReportHelpMixin):
             "<code>.diagnose(expensive=True)</code> for deeper checks.</div>"
             "</div>"
         )
+
+    def _repr_html_(self) -> str:
+        return f"{self._create_help_html()}{self._diagnostics_panel_html()}"
+
+    def _repr_mimebundle_(self, **kwargs: object) -> dict[str, str]:
+        return {"text/plain": repr(self), "text/html": self._repr_html_()}
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")

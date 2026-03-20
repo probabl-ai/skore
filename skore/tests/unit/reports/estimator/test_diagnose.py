@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -111,6 +113,50 @@ def test_diagnose_called_on_init(monkeypatch, regression_train_test_split):
         diagnose=True,
     )
     assert calls == [(False, None)]
+
+
+def test_diagnose_result_has_repr(logistic_binary_classification_with_train_test):
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    results = report.diagnose()
+    assert isinstance(results, list)
+    assert "Diagnostics:" in repr(results)
+    bundle = results._repr_mimebundle_()
+    assert "text/plain" in bundle
+    assert "text/html" in bundle
+
+
+def test_diagnose_displayed_on_init_notebook(monkeypatch, regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    mock_sphinx = Mock(return_value=False)
+    mock_notebook = Mock(return_value=True)
+    mock_display = Mock()
+    monkeypatch.setattr(
+        "skore._sklearn._base.is_environment_sphinx_build",
+        mock_sphinx,
+    )
+    monkeypatch.setattr(
+        "skore._sklearn._base.is_environment_notebook_like",
+        mock_notebook,
+    )
+    monkeypatch.setattr("IPython.display.display", mock_display)
+    EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        diagnose=True,
+    )
+    mock_display.assert_called_once()
 
 
 def test_diagnose_uses_global_ignore(logistic_binary_classification_with_train_test):

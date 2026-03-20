@@ -106,6 +106,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         Refer to scikit-learn's :ref:`User Guide <cross_validation>` for the various
         cross-validation strategies that can be used here.
 
+    diagnose : bool, default=False
+        Whether to run :meth:`diagnose` at the end of initialization.
+
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimator and computing
         the score are parallelized over the cross-validation splits.
@@ -113,10 +116,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         parameter is used to parallelize the computation.
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
-
-    diagnose : bool, default=False
-        Whether to run :meth:`diagnose` at the end of initialization.
-        If ``skore.config.diagnose`` is enabled, this is treated as ``True``.
 
     Attributes
     ----------
@@ -165,8 +164,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = None,
         splitter: int | SKLearnCrossValidator | Generator | None = None,
-        n_jobs: int | None = None,
         diagnose: bool = False,
+        n_jobs: int | None = None,
     ) -> None:
         self._estimator = clone(estimator)
 
@@ -182,7 +181,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
         self._initialize_state()
         if diagnose or configuration.diagnose:
-            self.diagnose()
+            self._display_diagnose_results(self.diagnose())
 
     def _initialize_state(self) -> None:
         """Initialize/reset the random number generator, hash, and cache."""
