@@ -1,5 +1,6 @@
 """HTML-based help rendering mixins."""
 
+import re
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import asdict
@@ -22,6 +23,24 @@ def get_jinja_env():
 
 def render_template(template_name, data):
     return get_jinja_env().get_template(template_name).render(**data)
+
+
+_SCRIPT_TAG_RE = re.compile(r"(?is)<script\b[^>]*>.*?</script>")
+_SCRIPT_VOID_RE = re.compile(r"(?is)<script\b[^>]*/>")
+
+
+def sanitize_html_scripts(html: str) -> str:
+    """Remove ``<script>`` elements from HTML fragments for safe embedding.
+
+    Third-party HTML (e.g. dataframe repr, table widgets) may include scripts.
+    EstimatorReport keeps all executable logic in bundled ``help.js`` /
+    ``estimator_report.js`` so hosts can replace those files or omit scripts
+    when sanitizing the outer document.
+    """
+    if not html:
+        return html
+    without_scripts = _SCRIPT_TAG_RE.sub("", html)
+    return _SCRIPT_VOID_RE.sub("", without_scripts)
 
 
 class _BaseHTMLHelpMixin(ABC):

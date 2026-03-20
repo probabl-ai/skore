@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import html
 import time
+import uuid
 import warnings
 from itertools import product
 from typing import TYPE_CHECKING, Any, Literal
@@ -26,7 +27,8 @@ from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
-from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.data import get_documentation_url
+from skore._utils.repr.html_repr import render_template, sanitize_html_scripts
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
@@ -487,12 +489,29 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             estimator_html = self.estimator_._repr_html_()
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
+
+        container_id = f"skore-estimator-report-{uuid.uuid4().hex[:8]}"
+        help_doc_url = get_documentation_url(obj=self, method_name="help")
+        report_class_name = self.__class__.__name__
+        metrics_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="metrics"
+        )
+        inspection_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="inspection"
+        )
+        data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
         return render_template(
             "estimator_report.html.j2",
             {
-                "metrics_summary": metrics_html,
-                "estimator_display": estimator_html,
-                "table_report": table_report_html,
+                "container_id": container_id,
+                "help_doc_url": help_doc_url,
+                "report_class_name": report_class_name,
+                "metrics_accessor_doc_url": metrics_accessor_doc_url,
+                "inspection_accessor_doc_url": inspection_accessor_doc_url,
+                "data_accessor_doc_url": data_accessor_doc_url,
+                "metrics_summary": sanitize_html_scripts(metrics_html),
+                "estimator_display": sanitize_html_scripts(estimator_html),
+                "table_report": sanitize_html_scripts(table_report_html),
             },
         )
 
