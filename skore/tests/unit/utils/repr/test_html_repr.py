@@ -9,7 +9,6 @@ from skore._utils.repr.html_repr import (
     _HTMLAccessorHelpMixin,
     _HTMLHelpDisplayMixin,
     _HTMLReportHelpMixin,
-    sanitize_html_scripts,
 )
 
 
@@ -64,20 +63,3 @@ def test_html_display_help_mixin_creates_container():
     display = _DisplayWithHTML()
     html = display._create_help_html()
     assert "skore-display-help-" in html
-
-
-def test_sanitize_html_scripts_strips_script_tags():
-    """sanitize_html_scripts removes script elements from untrusted HTML."""
-    raw = (
-        '<div><p id="x">a</p><script>alert(1)</script>'
-        '<script type="text/javascript" src="evil.js"></script></div>'
-    )
-    clean = sanitize_html_scripts(raw)
-    assert "<script" not in clean.lower()
-    assert 'id="x"' in clean
-    assert "alert" not in clean
-
-
-def test_sanitize_html_scripts_void_element():
-    clean = sanitize_html_scripts('<div><script src="x.js"/></div>')
-    assert "<script" not in clean.lower()

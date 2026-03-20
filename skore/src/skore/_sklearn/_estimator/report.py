@@ -28,7 +28,7 @@ from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 from skore._utils.repr.data import get_documentation_url
-from skore._utils.repr.html_repr import render_template, sanitize_html_scripts
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
@@ -509,9 +509,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "metrics_summary": sanitize_html_scripts(metrics_html),
-                "estimator_display": sanitize_html_scripts(estimator_html),
-                "table_report": sanitize_html_scripts(table_report_html),
+                "metrics_summary": metrics_html,
+                "estimator_display": estimator_html,
+                "table_report": table_report_html,
             },
         )
 
