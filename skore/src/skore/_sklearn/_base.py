@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
 
@@ -39,24 +40,16 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
-    _diagnostics_cache: dict[bool, list[DiagnosticResult]]
+    _diagnostics_cache: list[DiagnosticResult]
 
-    def _collect_diagnostics(
-        self, *, expensive: bool = False
-    ) -> list[DiagnosticResult]:
-        return []
+    @abstractmethod
+    def _collect_diagnostics(self) -> list[DiagnosticResult]:
+        """Collect diagnostics."""
 
-    def _get_diagnostics(self, *, expensive: bool) -> list[DiagnosticResult]:
+    def _get_diagnostics(self) -> list[DiagnosticResult]:
         if not hasattr(self, "_diagnostics_cache"):
-            self._diagnostics_cache = {}
-        if expensive not in self._diagnostics_cache:
-            self._diagnostics_cache[expensive] = self._collect_diagnostics(
-                expensive=expensive
-            )
-        return self._diagnostics_cache[expensive]
-
-    def _clear_diagnostics_cache(self) -> None:
-        self._diagnostics_cache = {}
+            self._diagnostics_cache = self._collect_diagnostics()
+        return self._diagnostics_cache
 
     def _display_diagnose_results(self, results: list[str]) -> None:
         if is_environment_sphinx_build():
@@ -73,15 +66,14 @@ class _BaseReport(ReportHelpMixin):
     def diagnose(
         self,
         *,
-        expensive: bool = False,
         ignore: list[str] | tuple[str, ...] | None = None,
-    ) -> list[str]:
+    ) -> DiagnosticResults:
         ignored = normalize_ignore_codes(ignore) | normalize_ignore_codes(
             tuple(configuration.ignore_diagnostics)
         )
         diagnostics = [
             diagnostic
-            for diagnostic in self._get_diagnostics(expensive=expensive)
+            for diagnostic in self._get_diagnostics()
             if diagnostic.code not in ignored
         ]
         self._latest_diagnostics_ = diagnostics
@@ -108,7 +100,7 @@ class _BaseReport(ReportHelpMixin):
             f"<div>{details}</div>"
             f"<div>{summary}</div>"
             "<div>Run <code>.diagnose()</code> for details and "
-            "<code>.diagnose(expensive=True)</code> for deeper checks.</div>"
+            "<code>.diagnose(ignore=...)</code> to ignore specific diagnostics.</div>"
             "</div>"
         )
 

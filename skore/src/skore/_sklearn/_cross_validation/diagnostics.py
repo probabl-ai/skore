@@ -6,7 +6,6 @@ from skore._sklearn._diagnostics.base import DiagnosticKind, DiagnosticResult
 from skore._sklearn._estimator.diagnostics import (
     OVERFITTING_CODE,
     UNDERFITTING_CODE,
-    run_estimator_diagnostics,
 )
 
 if TYPE_CHECKING:
@@ -87,8 +86,6 @@ def _aggregate_split_diagnostics(
 
 def run_cross_validation_diagnostics(
     report: CrossValidationReport,
-    *,
-    expensive: bool = False,
 ) -> list[DiagnosticResult]:
     if not report.estimator_reports_:
         return [
@@ -107,9 +104,6 @@ def run_cross_validation_diagnostics(
         ]
     split_results: dict[str, list[DiagnosticResult]] = {}
     for estimator_report in report.estimator_reports_:
-        for result in run_estimator_diagnostics(
-            estimator_report,
-            expensive=expensive,
-        ):
+        for result in estimator_report._get_diagnostics():
             split_results.setdefault(result.code, []).append(result)
     return [_aggregate_split_diagnostics(results) for results in split_results.values()]

@@ -151,6 +151,7 @@ def evaluate(
     if isinstance(splitter, float):
         splitter = TrainTestSplit(test_size=splitter)
 
+    report: EstimatorReport | CrossValidationReport
     with configuration(diagnose=False):
         report = CrossValidationReport(
             estimator,
@@ -162,7 +163,7 @@ def evaluate(
             n_jobs=n_jobs,
         )
     if hasattr(splitter, "get_n_splits") and splitter.get_n_splits() == 1:
-        return report.estimator_reports_[0]
+        report = report.estimator_reports_[0]
     if diagnose:
-        report.diagnose()
+        report._display_diagnose_results(report.diagnose())
     return report

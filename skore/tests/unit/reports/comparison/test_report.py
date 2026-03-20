@@ -39,10 +39,10 @@ def test_diagnose_uses_component_cache(report, monkeypatch):
     calls = 0
     original = sub_report._collect_diagnostics
 
-    def wrapped(*, expensive=False):
+    def wrapped():
         nonlocal calls
         calls += 1
-        return original(expensive=expensive)
+        return original()
 
     monkeypatch.setattr(sub_report, "_collect_diagnostics", wrapped)
 

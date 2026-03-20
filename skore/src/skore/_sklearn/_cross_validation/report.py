@@ -53,7 +53,7 @@ def _generate_estimator_report(
         y_train = _safe_indexing(y, train_indices)
         y_test = _safe_indexing(y, test_indices)
     with configuration(diagnose=False):
-        return EstimatorReport(
+        report = EstimatorReport(
             estimator,
             fit=True,
             X_train=_safe_indexing(X, train_indices),
@@ -61,8 +61,11 @@ def _generate_estimator_report(
             X_test=_safe_indexing(X, test_indices),
             y_test=y_test,
             pos_label=pos_label,
-            diagnose=diagnose,
+            diagnose=False,
         )
+    if diagnose:
+        report.diagnose()
+    return report
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
@@ -178,8 +181,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._split_indices = tuple(self._splitter.split(self._X, self._y))
         self.n_jobs = n_jobs
 
-        self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
+        self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports(
+            diagnose=diagnose or configuration.diagnose
+        )
         self._initialize_state()
+
         if diagnose or configuration.diagnose:
             self._display_diagnose_results(self.diagnose())
 
@@ -194,7 +200,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             self._y, estimator=self.estimator_reports_[0]._estimator
         )
 
-    def _fit_estimator_reports(self) -> list[EstimatorReport]:
+    def _fit_estimator_reports(
+        self, *, diagnose: bool = False
+    ) -> list[EstimatorReport]:
         """Fit the estimator reports.
 
         Returns
@@ -219,7 +227,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                         self._pos_label,
                         train_indices,
                         test_indices,
-                        diagnose=False,
+                        diagnose=diagnose,
                     )
                     for (train_indices, test_indices) in self.split_indices
                 ),
@@ -452,10 +460,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _collect_diagnostics(
-        self, *, expensive: bool = False
-    ) -> list[DiagnosticResult]:
-        return run_cross_validation_diagnostics(self, expensive=expensive)
+    def _collect_diagnostics(self) -> list[DiagnosticResult]:
+        return run_cross_validation_diagnostics(self)
 
     def _get_help_title(self) -> str:
         return f"Tools to diagnose estimator {self.estimator_name_}"

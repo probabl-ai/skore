@@ -3,7 +3,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 
-from skore import CrossValidationReport, configuration
+from skore import CrossValidationReport, EstimatorReport, configuration
 
 
 def test_diagnose_aggregates_overfitting_across_splits():
@@ -47,23 +47,40 @@ def test_diagnose_ignore(binary_classification_data):
     assert all("[SKD001]" not in message for message in messages)
 
 
-def test_diagnose_expensive_flag(binary_classification_data):
-    X, y = binary_classification_data
-    report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
-    assert len(report.diagnose(expensive=True)) == len(report.diagnose(expensive=False))
-
-
 def test_diagnose_called_on_init(monkeypatch, binary_classification_data):
     calls = []
 
-    def _diagnose(self, *, expensive=False, ignore=None):
-        calls.append((expensive, ignore))
+    def _collect_diagnostics(self):
+        calls.append(True)
         return []
 
-    monkeypatch.setattr(CrossValidationReport, "diagnose", _diagnose)
+    monkeypatch.setattr(
+        CrossValidationReport, "_collect_diagnostics", _collect_diagnostics
+    )
     X, y = binary_classification_data
     CrossValidationReport(LogisticRegression(), X, y, splitter=2, diagnose=True)
-    assert calls == [(False, None)]
+    assert calls == [True]
+
+
+def test_diagnose_reuses_split_cached_diagnostics(
+    monkeypatch, binary_classification_data
+):
+    calls = 0
+    original = EstimatorReport._collect_diagnostics
+
+    def _collect_diagnostics(self):
+        nonlocal calls
+        calls += 1
+        return original(self)
+
+    monkeypatch.setattr(EstimatorReport, "_collect_diagnostics", _collect_diagnostics)
+    X, y = binary_classification_data
+    report = CrossValidationReport(
+        LogisticRegression(), X, y, splitter=3, diagnose=True
+    )
+    calls_after_init = calls
+    report.diagnose()
+    assert calls == calls_after_init
 
 
 def test_diagnose_uses_global_ignore(binary_classification_data):

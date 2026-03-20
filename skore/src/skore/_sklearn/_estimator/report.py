@@ -195,6 +195,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._parent_hash: np.int64 | None = None
 
         self._initialize_state()
+
         if diagnose or configuration.diagnose:
             self._display_diagnose_results(self.diagnose())
 
@@ -205,7 +206,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
-        self._clear_diagnostics_cache()
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
 
     # NOTE:
@@ -234,7 +234,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         {}
         """
         self._cache = Cache()
-        self._clear_diagnostics_cache()
 
     def cache_predictions(
         self,
@@ -435,10 +434,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _collect_diagnostics(
-        self, *, expensive: bool = False
-    ) -> list[DiagnosticResult]:
-        return run_estimator_diagnostics(self, expensive=expensive)
+    def _collect_diagnostics(self) -> list[DiagnosticResult]:
+        return run_estimator_diagnostics(self)
 
     def _get_help_title(self) -> str:
         return f"Tools to diagnose estimator {self.estimator_name_}"

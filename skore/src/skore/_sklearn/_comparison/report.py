@@ -265,8 +265,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
-        self._clear_diagnostics_cache()
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
+
         if diagnose or configuration.diagnose:
             self._display_diagnose_results(self.diagnose())
 
@@ -295,7 +295,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             report.clear_cache()
 
         self._cache = Cache()
-        self._clear_diagnostics_cache()
 
     def cache_predictions(
         self,
@@ -503,9 +502,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _collect_diagnostics(
-        self, *, expensive: bool = False
-    ) -> list[DiagnosticResult]:
+    def _collect_diagnostics(self) -> list[DiagnosticResult]:
         diagnostics: list[DiagnosticResult] = []
         for report_name, report in self.reports_.items():
             diagnostics.extend(
@@ -518,7 +515,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     is_issue=diagnostic.is_issue,
                     evaluated=diagnostic.evaluated,
                 )
-                for diagnostic in report._get_diagnostics(expensive=expensive)
+                for diagnostic in report._get_diagnostics()
             )
         return diagnostics
 

@@ -278,8 +278,6 @@ def _underfitting_result(
 
 def run_estimator_diagnostics(
     report: EstimatorReport,
-    *,
-    expensive: bool = False,
 ) -> list[DiagnosticResult]:
     if (
         report.X_train is None
@@ -351,6 +349,4 @@ def run_estimator_diagnostics(
             explanation=underfitting_explanation,
         ),
     ]
-    if expensive:
-        return diagnostics
     return diagnostics
