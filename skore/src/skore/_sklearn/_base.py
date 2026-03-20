@@ -200,35 +200,3 @@ def _get_cached_response_values(
         (cache_key, predictions, False),
         (predict_time_cache_key, predict_time(), False),
     ]
-
-
-class _BaseMetricsAccessor:
-    _score_or_loss_info: dict[str, dict[str, str]] = {
-        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
-        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
-        "report_metrics": {"name": "Report metrics", "icon": ""},
-    }
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def _get_favorability_text(self, name: str) -> str | None:
-        """Get favorability text for a method, or None if not applicable."""
-        if name not in self._score_or_loss_info:
-            return None
-        icon = self._score_or_loss_info[name]["icon"]
-        if icon == "(↗︎)":
-            return "Higher value is better."
-        elif icon == "(↘︎)":
-            return "Lower value is better."
-        return None
