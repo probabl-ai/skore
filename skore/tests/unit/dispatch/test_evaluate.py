@@ -129,5 +129,4 @@ def test_evaluate_follows_global_config_default(binary_classification_data):
     X, y = binary_classification_data
     with configuration(diagnose=True):
         report = evaluate(LogisticRegression(), X, y, splitter=0.2)
-    assert hasattr(report, "_latest_diagnostics_")
-    assert len(report._latest_diagnostics_) > 0
+    assert len(report._diagnostics_cache) > 0

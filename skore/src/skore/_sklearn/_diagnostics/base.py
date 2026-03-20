@@ -149,9 +149,3 @@ def format_diagnostic_message_html(diagnostic: DiagnosticResult) -> str:
         "user guide</a>. "
         f"Mute with ignore=['{code}']."
     )
-
-
-def normalize_ignore_codes(ignore: list[str] | tuple[str, ...] | None) -> set[str]:
-    if ignore is None:
-        return set()
-    return {code.strip().upper() for code in ignore if code.strip()}

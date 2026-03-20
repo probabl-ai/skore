@@ -68,6 +68,17 @@ def test_diagnose_called_on_init(monkeypatch, binary_classification_data):
     assert calls == [True]
 
 
+def test_diagnose_result_has_repr(binary_classification_data):
+    X, y = binary_classification_data
+    report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
+    results = report.diagnose()
+    assert isinstance(results, list)
+    assert "Diagnostics:" in repr(results)
+    bundle = results._repr_mimebundle_()
+    assert "text/plain" in bundle
+    assert "text/html" in bundle
+
+
 def test_diagnose_reuses_split_cached_diagnostics(
     monkeypatch, binary_classification_data
 ):
@@ -105,5 +116,4 @@ def test_diagnose_follows_global_config_default(binary_classification_data):
     X, y = binary_classification_data
     with configuration(diagnose=True):
         report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
-    assert hasattr(report, "_latest_diagnostics_")
-    assert len(report._latest_diagnostics_) > 0
+    assert len(report._diagnostics_cache) > 0

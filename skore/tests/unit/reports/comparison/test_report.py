@@ -55,6 +55,15 @@ def test_diagnose_uses_component_cache(report, monkeypatch):
     assert calls == 1
 
 
+def test_diagnose_result_has_repr(report):
+    results = report.diagnose()
+    assert isinstance(results, list)
+    assert "Diagnostics:" in repr(results)
+    bundle = results._repr_mimebundle_()
+    assert "text/plain" in bundle
+    assert "text/html" in bundle
+
+
 def test_pickle(tmp_path, report):
     """Check that we can pickle a comparison report."""
     with BytesIO() as stream:

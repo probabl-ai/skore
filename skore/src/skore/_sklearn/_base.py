@@ -13,7 +13,6 @@ from skore._sklearn._diagnostics.base import (
     DiagnosticResult,
     DiagnosticResults,
     format_diagnostic_message,
-    normalize_ignore_codes,
 )
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
@@ -47,6 +46,7 @@ class _BaseReport(ReportHelpMixin):
         """Collect diagnostics."""
 
     def _get_diagnostics(self) -> list[DiagnosticResult]:
+        """Get the diagnostics from the cache or collect them."""
         if not hasattr(self, "_diagnostics_cache"):
             self._diagnostics_cache = self._collect_diagnostics()
         return self._diagnostics_cache
@@ -82,26 +82,30 @@ class _BaseReport(ReportHelpMixin):
         *,
         ignore: list[str] | tuple[str, ...] | None = None,
     ) -> DiagnosticResults:
-        ignored = normalize_ignore_codes(ignore) | normalize_ignore_codes(
-            tuple(configuration.ignore_diagnostics)
-        )
+        ignored: set[str] = set()
+        if ignore:
+            ignored.update(code.strip().upper() for code in ignore if code.strip())
+        if configuration.ignore_diagnostics:
+            ignored.update(
+                code.strip().upper()
+                for code in configuration.ignore_diagnostics
+                if code.strip()
+            )
         diagnostics = [
             diagnostic
             for diagnostic in self._get_diagnostics()
             if diagnostic.code not in ignored
         ]
-        self._latest_diagnostics_ = diagnostics
         messages, display_diagnostics = self._build_diagnose_messages(diagnostics)
         results = DiagnosticResults(
             messages,
             diagnostics,
             display_diagnostics=display_diagnostics,
         )
-        self._latest_diagnose_result_ = results
         return results
 
     def _diagnostics_panel_html(self) -> str:
-        diagnostics = getattr(self, "_latest_diagnostics_", None)
+        diagnostics = getattr(self, "_diagnostics_cache", None)
         if diagnostics is None:
             details = "No diagnostics have run yet."
             summary = "0 issue(s) across 0 diagnostic(s)."

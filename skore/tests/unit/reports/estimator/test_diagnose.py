@@ -225,5 +225,4 @@ def test_diagnose_follows_global_config_default(
             X_test=X_test,
             y_test=y_test,
         )
-    assert hasattr(report, "_latest_diagnostics_")
-    assert len(report._latest_diagnostics_) > 0
+    assert len(report._diagnostics_cache) > 0
