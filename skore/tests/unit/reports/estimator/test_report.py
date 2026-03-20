@@ -327,11 +327,17 @@ def test_has_no_deep_copy():
 
 @pytest.mark.parametrize("with_train", [False, True])
 @pytest.mark.parametrize("with_test", [False, True])
-def test_report_repr_html(with_train, with_test):
+@pytest.mark.parametrize("bad_estimator", [False, True])
+def test_report_repr_html(with_train, with_test, bad_estimator):
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
-    estimator = DummyClassifier().fit(X_train, y_train)
+    class DummyClassifierBadRepr(DummyClassifier):
+        def _repr_html_(self):
+            raise TypeError("error")
+
+    estimator = DummyClassifierBadRepr() if bad_estimator else DummyClassifier()
+    estimator.fit(X_train, y_train)
     kwargs = {}
     if with_train:
         kwargs.update(X_train=X_train, y_train=y_train)
