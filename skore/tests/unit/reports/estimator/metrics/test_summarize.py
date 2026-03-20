@@ -401,22 +401,22 @@ def test_custom_metric(linear_regression_with_test):
 
 def test_custom_metric_average_none(forest_binary_classification_with_test):
     """
-    Test binary classification with custom metric returning single value and
-    average is None.
+    Check that passing arguments to a custom metric through metric_kwargs
+    works correctly.
     """
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    def custom_f1(y_true, y_pred, average=None):
-        return f1_score(y_true, y_pred, average="binary")
+    def custom_f1(y_true, y_pred, average="binary"):
+        return f1_score(y_true, y_pred, average=average)
 
     display = report.metrics.summarize(
         metric=custom_f1, response_method="predict", metric_kwargs={"average": None}
     )
 
-    assert len(display.data) == 1
+    assert len(display.data) == 2
     assert display.data["average"].isna().all()
-    assert display.data["label"].isna().all()
+    assert set(display.data["label"]) == {0, 1}
 
 
 def test_custom_metric_no_response_method(forest_binary_classification_with_test):
@@ -542,8 +542,8 @@ def test_sklearn_metric_strings(forest_binary_classification_with_test):
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    display = report.metrics.summarize(metric=["accuracy", "log_loss", "roc_auc"])
-    assert set(display.data["metric"]) == {"Accuracy", "Log loss", "ROC AUC"}
+    display = report.metrics.summarize(metric=["rand_score", "v_measure_score"])
+    assert set(display.data["metric"]) == {"Rand Score", "V Measure Score"}
 
 
 def test_sklearn_metric_strings_regression(linear_regression_with_test):
@@ -798,3 +798,74 @@ def test_pos_label_overwrite(metric, metric_fn):
     assert len(display.data) == 1
     score_A = display.data["score"].values[0]
     assert score_A == pytest.approx(metric_fn(y, classifier.predict(X), pos_label="A"))
+
+
+# Tests for issues #2203 and #2204: scorer API ergonomics
+
+
+def test_scorer_response_method_not_required_in_summarize(linear_regression_with_test):
+    """Regression test for #2203: when passing a scorer to summarize(), the
+    response_method embedded in the scorer should be used automatically —
+    the user should not need to pass it a second time."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def business_loss(y_true, y_pred):
+        return np.mean(np.abs(y_true - y_pred))
+
+    scorer = make_scorer(
+        business_loss, greater_is_better=False, response_method="predict"
+    )
+
+    # response_method is already in the scorer — no need to pass it explicitly
+    display = report.metrics.summarize(metric=scorer)
+
+    assert len(display.data) == 1
+    expected = business_loss(y_test, estimator.predict(X_test))
+    assert display.data["score"].iloc[0] == pytest.approx(expected)
+
+
+def test_custom_metric_with_scorer_no_attribute_error(linear_regression_with_test):
+    """Regression test for #2204: passing a make_scorer object to custom_metric()
+    used to raise AttributeError because the code accessed ._score_func.__name__
+    instead of scorer.__name__."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def business_loss(y_true, y_pred):
+        return np.mean(np.abs(y_true - y_pred))
+
+    scorer = make_scorer(
+        business_loss, greater_is_better=False, response_method="predict"
+    )
+
+    result = report.metrics.custom_metric(
+        metric_function=scorer, response_method="predict"
+    )
+    assert result == pytest.approx(business_loss(y_test, estimator.predict(X_test)))
+
+
+def test_scorer_metric_kwargs_override(linear_regression_with_test):
+    """Regression test for #2203 follow-up: when a scorer has kwargs baked in,
+    passing metric_kwargs to summarize() should override them."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    weights_in_scorer = np.ones_like(y_test)
+    weights_override = np.ones_like(y_test) * 2
+
+    def weighted_mae(y_true, y_pred, sample_weight=None):
+        return np.average(np.abs(y_true - y_pred), weights=sample_weight)
+
+    scorer = make_scorer(
+        weighted_mae, response_method="predict", sample_weight=weights_in_scorer
+    )
+
+    display = report.metrics.summarize(
+        metric=scorer, metric_kwargs={"sample_weight": weights_override}
+    )
+
+    expected = weighted_mae(
+        y_test, estimator.predict(X_test), sample_weight=weights_override
+    )
+    assert display.data["score"].iloc[0] == pytest.approx(expected)
