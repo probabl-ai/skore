@@ -7,6 +7,7 @@ from itertools import product
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
+import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone
@@ -447,13 +448,26 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         should be favored in the long term, `_repr_html_` is only
         implemented for consumers who do not interpret `_repr_mimbundle_`.
         """
-        report = self.data.analyze()._repr_html_()
+        table_report = skrub.TableReport(
+            self.data._prepare_dataframe_for_display(
+                data_source="both",
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            max_plot_columns=0,
+            max_association_columns=0,
+            verbose=False,
+        )
+        table_report._set_minimal_mode()
+        table_report_html = table_report.html_snippet()
         return render_template(
             "estimator_report.html.j2",
             {
                 "metrics_summary": self.metrics.summarize().frame()._repr_html_(),
                 "estimator_display": self.estimator_._repr_html_(),
-                "table_report": report,
+                "table_report": table_report_html,
             },
         )
 
