@@ -157,7 +157,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
-    _diagnose_on_init: bool
 
     def __init__(
         self,
@@ -170,7 +169,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         diagnose: bool = False,
     ) -> None:
         self._estimator = clone(estimator)
-        self._diagnose_on_init = bool(diagnose or configuration.diagnose)
 
         # private storage to be able to invalidate the cache when the user alters
         # those attributes
@@ -183,7 +181,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
         self._initialize_state()
-        if self._diagnose_on_init:
+        if diagnose or configuration.diagnose:
             self.diagnose()
 
     def _initialize_state(self) -> None:

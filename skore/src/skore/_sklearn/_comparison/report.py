@@ -118,7 +118,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     }
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
-    _diagnose_on_init: bool
 
     _report_type: ComparisonReportType
 
@@ -262,14 +261,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         )
 
         self.n_jobs = n_jobs
-        self._diagnose_on_init = bool(diagnose or configuration.diagnose)
         self._rng = np.random.default_rng(time.time_ns())
         self._hash = self._rng.integers(
             low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
         )
         self._cache = Cache()
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
-        if self._diagnose_on_init:
+        if diagnose or configuration.diagnose:
             self.diagnose()
 
     def clear_cache(self) -> None:
