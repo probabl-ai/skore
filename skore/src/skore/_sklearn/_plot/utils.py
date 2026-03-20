@@ -2,11 +2,13 @@ from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
-from pandas import DataFrame
+from numpy.typing import ArrayLike
+from pandas import CategoricalDtype, DataFrame
 from sklearn.utils.validation import (
     _check_pos_label_consistency,
     check_consistent_length,
@@ -17,7 +19,6 @@ from skore._sklearn.types import (
     MLTask,
     PositiveLabel,
     ReportType,
-    YPlotData,
 )
 
 LINESTYLE = [
@@ -50,19 +51,18 @@ class _ClassifierDisplayMixin:
     pos_label: PositiveLabel | None
 
     @classmethod
-    def _validate_from_predictions_params(
+    def _validate_from_prediction_params(
         cls,
-        y_true: Sequence[YPlotData],
-        y_pred: Sequence[YPlotData],
+        y_true: ArrayLike,
+        y_pred: ArrayLike,
         *,
         ml_task: str,
         pos_label: PositiveLabel | None = None,
     ) -> PositiveLabel | None:
-        for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
-            check_consistent_length(y_true_i.y, y_pred_i.y)
+        check_consistent_length(y_true, y_pred)
 
         if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true[0].y)
+            pos_label = _check_pos_label_consistency(pos_label, y_true)
 
         return pos_label
 
@@ -433,3 +433,57 @@ def _format_legend_label(
         )
         + f" ({statistic})"
     )
+
+
+def _column_data_to_records(column_data: dict[str, list] | None) -> list[dict]:
+    """Convert column-wise data into one record per row.
+
+    Examples
+    --------
+    >>> _column_data_to_records({"estimator": ["A", "B"], "split": [0, 1]})
+    [{'estimator': 'A', 'split': 0}, {'estimator': 'B', 'split': 1}]
+    """
+    if column_data is None or not column_data:
+        return []
+
+    keys = list(column_data)
+    values = [list(column_data[key]) for key in keys]
+    lengths = {len(value) for value in values}
+    if len(lengths) > 1:
+        raise ValueError("All column data iterables must have the same length.")
+
+    return [dict(zip(keys, row, strict=True)) for row in zip(*values, strict=True)]
+
+
+def _concat_frames_with_column_data(
+    frames: Sequence[DataFrame], column_data: dict[str, list] | None = None
+) -> DataFrame:
+    """Concatenate frames and assign column-wise metadata as categorical columns."""
+    column_records = _column_data_to_records(column_data)
+    if not column_records:
+        column_records = [{} for _ in frames]
+
+    frame = pd.concat(
+        [
+            child_frame.assign(**column_record)
+            for child_frame, column_record in zip(frames, column_records, strict=True)
+        ],
+        ignore_index=True,
+    )
+
+    categorical_columns = {
+        column
+        for column in frame.columns
+        if all(
+            column in child_frame.columns
+            and isinstance(child_frame[column].dtype, CategoricalDtype)
+            for child_frame in frames
+        )
+    }
+    if column_data:
+        categorical_columns.update(column_data)
+
+    if categorical_columns:
+        frame = frame.astype(dict.fromkeys(categorical_columns, "category"))
+
+    return frame

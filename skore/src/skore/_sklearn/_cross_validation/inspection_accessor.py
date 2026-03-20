@@ -42,9 +42,9 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_regression
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = make_regression(n_features=3, random_state=42)
-        >>> report = CrossValidationReport(estimator=Ridge(), X=X, y=y, splitter=2)
+        >>> report = evaluate(Ridge(), X, y, splitter=2)
         >>> display = report.inspection.coefficients()
         >>> display.frame()
               feature  coefficient_mean  coefficient_std
@@ -166,10 +166,9 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_regression
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import train_test_split
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = make_regression(n_features=3, random_state=0)
-        >>> report = CrossValidationReport(estimator=Ridge(), X=X, y=y, splitter=2)
+        >>> report = evaluate(Ridge(), X, y, splitter=2)
         >>> report.inspection.permutation_importance(
         ...    n_repeats=2,
         ...    seed=0,
@@ -223,9 +222,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> from sklearn.pipeline import make_pipeline
         >>> from sklearn.preprocessing import StandardScaler
         >>> pipeline = make_pipeline(StandardScaler(), Ridge())
-        >>> pipeline_report = CrossValidationReport(
-        ...     estimator=pipeline, X=X, y=y, splitter=2
-        ... )
+        >>> pipeline_report = evaluate(pipeline, X, y, splitter=2)
         >>> pipeline_report.inspection.permutation_importance(
         ...    n_repeats=2,
         ...    seed=0,
@@ -334,13 +331,11 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_iris
         >>> from sklearn.ensemble import RandomForestClassifier
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> iris = load_iris(as_frame=True)
         >>> X, y = iris.data, iris.target
         >>> y = iris.target_names[y]
-        >>> report = CrossValidationReport(
-        ...     estimator=RandomForestClassifier(random_state=0), X=X, y=y, splitter=5
-        ... )
+        >>> report = evaluate(RandomForestClassifier(random_state=0), X, y, splitter=5)
         >>> display = report.inspection.impurity_decrease()
         >>> display.frame()
                      feature  importance_mean  importance_std

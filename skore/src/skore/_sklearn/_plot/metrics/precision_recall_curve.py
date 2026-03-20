@@ -2,8 +2,8 @@ from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import seaborn as sns
-from numpy.typing import NDArray
-from pandas import DataFrame
+from numpy.typing import ArrayLike, NDArray
+from pandas import DataFrame, Series
 from sklearn.base import BaseEstimator
 from sklearn.metrics import average_precision_score, precision_recall_curve
 from sklearn.preprocessing import LabelBinarizer
@@ -12,6 +12,7 @@ from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _build_custom_legend_with_stats,
     _ClassifierDisplayMixin,
+    _concat_frames_with_column_data,
     _despine_matplotlib_axis,
     _get_curve_plot_columns,
     _validate_style_kwargs,
@@ -21,7 +22,6 @@ from skore._sklearn.types import (
     MLTask,
     PositiveLabel,
     ReportType,
-    YPlotData,
 )
 
 
@@ -82,12 +82,10 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     --------
     >>> from sklearn.datasets import load_breast_cancer
     >>> from sklearn.linear_model import LogisticRegression
-    >>> from skore import train_test_split
-    >>> from skore import EstimatorReport
+    >>> from skore import evaluate
     >>> X, y = load_breast_cancer(return_X_y=True)
-    >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
     >>> classifier = LogisticRegression(max_iter=10_000)
-    >>> report = EstimatorReport(classifier, **split_data)
+    >>> report = evaluate(classifier, X, y, splitter=0.2)
     >>> display = report.metrics.precision_recall()
     >>> display.set_style(relplot_kwargs={"palette": "Set2"})
     >>> display.plot()
@@ -122,6 +120,32 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
+
+    @classmethod
+    def _concatenate(
+        cls,
+        child_displays: Sequence["PrecisionRecallCurveDisplay"],
+        *,
+        report_type: ReportType,
+        data_source: None | Literal["both"] = None,
+        column_data: dict[str, list] | None = None,
+    ) -> "PrecisionRecallCurveDisplay":
+        """Build a precision-recall display by concatenating child displays."""
+        first_display = child_displays[0]
+        return cls(
+            precision_recall=_concat_frames_with_column_data(
+                [display.precision_recall for display in child_displays],
+                column_data,
+            ),
+            average_precision=_concat_frames_with_column_data(
+                [display.average_precision for display in child_displays],
+                column_data,
+            ),
+            pos_label=first_display.pos_label,
+            data_source=data_source or first_display.data_source,
+            ml_task=first_display.ml_task,
+            report_type=report_type,
+        )
 
     @DisplayMixin.style_plot
     def plot(
@@ -161,12 +185,10 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> display = report.metrics.precision_recall()
         >>> display.set_style(relplot_kwargs={"palette": "Set2", "alpha": 0.8})
         >>> display.plot()
@@ -284,13 +306,14 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     @classmethod
     def _compute_data_for_display(
         cls,
-        y_true: Sequence[YPlotData],
-        y_pred: Sequence[YPlotData],
+        y_true: ArrayLike,
+        y_pred: ArrayLike,
         *,
         report_type: ReportType,
-        estimators: Sequence[BaseEstimator],
+        estimator: BaseEstimator,
+        estimator_name: str,
         ml_task: MLTask,
-        data_source: DataSource | Literal["both"],
+        data_source: DataSource,
         pos_label: PositiveLabel | None,
         drop_intermediate: bool = True,
     ) -> "PrecisionRecallCurveDisplay":
@@ -298,10 +321,10 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         Parameters
         ----------
-        y_true : list of array-like of shape (n_samples,)
+        y_true : array-like of shape (n_samples,)
             True binary labels.
 
-        y_pred : list of array-like of shape (n_samples,)
+        y_pred : array-like of shape (n_samples,) or (n_samples, n_classes)
             Target scores, can either be probability estimates of the positive class,
             confidence values, or non-thresholded measure of decisions (as returned by
             "decision_function" on some classifiers).
@@ -310,13 +333,16 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 "cross-validation", "estimator"}
             The type of report.
 
-        estimators : list of estimator instances
-            The estimators from which `y_pred` is obtained.
+        estimator : estimator instance
+            The estimator from which `y_pred` is obtained.
+
+        estimator_name : str
+            The estimator name to attach to the display data.
 
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
-        data_source : {"train", "test", "both"}
+        data_source : {"train", "test"}
             The data source used to compute the precision recall curve.
 
         pos_label : int, float, bool, str or none
@@ -332,110 +358,77 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         -------
         display : PrecisionRecallCurveDisplay
         """
-        pos_label_validated = cls._validate_from_predictions_params(
+        pos_label_validated = cls._validate_from_prediction_params(
             y_true, y_pred, ml_task=ml_task, pos_label=pos_label
         )
 
-        precision_recall_records = []
-        average_precision_records = []
+        if ml_task == "multiclass-classification":
+            classes = estimator.classes_
+            label_binarizer = LabelBinarizer().fit(classes)
+            y_true_onehot: NDArray = label_binarizer.transform(y_true)
+            y_pred_arr = cast(NDArray, y_pred)
 
-        if ml_task == "binary-classification":
-            for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
-                pos_label_validated = cast(PositiveLabel, pos_label_validated)
-                precision_i, recall_i, thresholds_i = precision_recall_curve(
-                    y_true_i.y,
-                    y_pred_i.y,
-                    pos_label=pos_label_validated,
+            displays = [
+                cls._compute_data_for_display(
+                    y_true=y_true_onehot[:, class_idx],
+                    y_pred=y_pred_arr[:, class_idx],
+                    report_type=report_type,
+                    estimator=estimator,
+                    estimator_name=estimator_name,
+                    ml_task="binary-classification",
+                    data_source=data_source,
+                    pos_label=1,
                     drop_intermediate=drop_intermediate,
                 )
-                average_precision_i = average_precision_score(
-                    y_true_i.y, y_pred_i.y, pos_label=pos_label_validated
-                )
+                for class_idx in range(len(classes))
+            ]
 
-                for precision, recall, threshold in zip(
-                    precision_i, recall_i, thresholds_i, strict=False
-                ):
-                    precision_recall_records.append(
-                        {
-                            "estimator": y_true_i.estimator_name,
-                            "data_source": y_true_i.data_source,
-                            "split": y_true_i.split,
-                            "label": pos_label_validated,
-                            "threshold": threshold,
-                            "precision": precision,
-                            "recall": recall,
-                        }
-                    )
-                average_precision_records.append(
-                    {
-                        "estimator": y_true_i.estimator_name,
-                        "data_source": y_true_i.data_source,
-                        "split": y_true_i.split,
-                        "label": pos_label_validated,
-                        "average_precision": average_precision_i,
-                    }
-                )
-        else:  # multiclass-classification
-            classes = estimators[0].classes_
-            for y_true_i, y_pred_i in zip(y_true, y_pred, strict=True):
-                label_binarizer = LabelBinarizer().fit(classes)
-                y_true_onehot_i: NDArray = label_binarizer.transform(y_true_i.y)
-                y_pred_i_y = cast(NDArray, y_pred_i.y)
+            display = cls._concatenate(
+                displays,
+                report_type=report_type,
+                column_data={"label": classes.tolist()},
+            )
+            display.ml_task = ml_task
+            display.pos_label = pos_label_validated
+            return display
 
-                for class_idx, class_ in enumerate(classes):
-                    precision_class_i, recall_class_i, thresholds_class_i = (
-                        precision_recall_curve(
-                            y_true_onehot_i[:, class_idx],
-                            y_pred_i_y[:, class_idx],
-                            pos_label=None,
-                            drop_intermediate=drop_intermediate,
-                        )
-                    )
-                    average_precision_class_i = average_precision_score(
-                        y_true_onehot_i[:, class_idx], y_pred_i_y[:, class_idx]
-                    )
+        precision, recall, thresholds = precision_recall_curve(
+            y_true,
+            y_pred,
+            pos_label=pos_label_validated,
+            drop_intermediate=drop_intermediate,
+        )
+        average_precision = average_precision_score(
+            y_true, y_pred, pos_label=pos_label_validated
+        )
 
-                    for precision, recall, threshold in zip(
-                        precision_class_i,
-                        recall_class_i,
-                        thresholds_class_i,
-                        strict=False,
-                    ):
-                        precision_recall_records.append(
-                            {
-                                "estimator": y_true_i.estimator_name,
-                                "data_source": y_true_i.data_source,
-                                "split": y_true_i.split,
-                                "label": class_,
-                                "threshold": threshold,
-                                "precision": precision,
-                                "recall": recall,
-                            }
-                        )
-                    average_precision_records.append(
-                        {
-                            "estimator": y_true_i.estimator_name,
-                            "data_source": y_true_i.data_source,
-                            "split": y_true_i.split,
-                            "label": class_,
-                            "average_precision": average_precision_class_i,
-                        }
-                    )
-
-        dtypes = {
-            "estimator": "category",
-            "data_source": "category",
-            "split": "category",
-            "label": "category",
+        metadata = {
+            "estimator": estimator_name,
+            "data_source": data_source,
+            "split": None,
+            "label": pos_label_validated,
         }
 
+        curve_data = {
+            **metadata,
+            "threshold": thresholds,
+            "precision": precision[:-1],
+            "recall": recall[:-1],
+        }
+        n = thresholds.size
+        for col in metadata:
+            curve_data[col] = Series([curve_data[col]], dtype="category").repeat(n)
+
+        average_precision_df = DataFrame(
+            {
+                **metadata,
+                "average_precision": [average_precision],
+            }
+        ).astype(dict.fromkeys(metadata, "category"))
+
         return cls(
-            precision_recall=DataFrame.from_records(precision_recall_records).astype(
-                dtypes
-            ),
-            average_precision=DataFrame.from_records(average_precision_records).astype(
-                dtypes
-            ),
+            precision_recall=DataFrame(curve_data),
+            average_precision=average_precision_df,
             pos_label=pos_label_validated,
             data_source=data_source,
             ml_task=ml_task,
@@ -470,11 +463,10 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> clf = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(clf, **split_data)
+        >>> report = evaluate(clf, X, y, splitter=0.2)
         >>> display = report.metrics.precision_recall()
         >>> df = display.frame()
         """

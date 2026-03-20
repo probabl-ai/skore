@@ -16,7 +16,7 @@ interacting with a reporter. Let's provide an example:
 
     from sklearn.datasets import make_classification
     from sklearn.linear_model import LogisticRegression
-    from skore import CrossValidationReport
+    from skore import evaluate
 
     X, y = make_classification(
         n_samples=10_000,
@@ -25,7 +25,7 @@ interacting with a reporter. Let's provide an example:
         n_clusters_per_class=1,
         random_state=42,
     )
-    report = CrossValidationReport(LogisticRegression(), X, y)
+    report = evaluate(LogisticRegression(), X, y, splitter=5)
     display = report.metrics.roc()
     display.plot()
 

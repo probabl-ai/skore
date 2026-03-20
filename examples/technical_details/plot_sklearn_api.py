@@ -8,10 +8,8 @@ Using skore with scikit-learn compatible estimators
 This example shows how to use skore with scikit-learn compatible estimators.
 
 Any model that can be used with the scikit-learn API can be used with skore.
-Skore's :class:`~skore.EstimatorReport` can be used to report on any estimator
-that has a ``fit`` and ``predict`` method.
-In fact, skore only requires the ``predict`` method if the estimator has already
-been fitted.
+Use :func:`~skore.evaluate` to create a report from any estimator that has a
+``fit`` and ``predict`` method (or only ``predict`` if already fitted).
 
 .. note::
 
@@ -54,14 +52,6 @@ X, y = make_classification(n_samples=1_000, random_state=42)
 print(f"{X.shape = }")
 
 # %%
-# We split our data:
-
-# %%
-from skore import train_test_split
-
-split_data = train_test_split(X, y, random_state=42, as_dict=True)
-
-# %%
 # Gradient-boosted decision trees with XGBoost
 # ============================================
 #
@@ -70,12 +60,12 @@ split_data = train_test_split(X, y, random_state=42, as_dict=True)
 # One of the most popular is `XGBoost <https://github.com/dmlc/xgboost>`_.
 
 # %%
-from skore import EstimatorReport
+from skore import evaluate
 from xgboost import XGBClassifier
 
 xgb = XGBClassifier(n_estimators=50, max_depth=3, learning_rate=0.1, random_state=42)
 
-xgb_report = EstimatorReport(xgb, pos_label=1, **split_data)
+xgb_report = evaluate(xgb, X, y, splitter=0.2, pos_label=1)
 xgb_report.metrics.summarize().frame()
 
 # %%
@@ -135,7 +125,7 @@ class CustomClassifier(ClassifierMixin, BaseEstimator):
 # We can now use this model with skore:
 
 # %%
-custom_report = EstimatorReport(CustomClassifier(), pos_label=1, **split_data)
+custom_report = evaluate(CustomClassifier(), X, y, splitter=0.2, pos_label=1)
 custom_report.metrics.precision()
 
 # %%

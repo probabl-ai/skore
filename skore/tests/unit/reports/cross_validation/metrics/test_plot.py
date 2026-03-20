@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from skore import CrossValidationReport, RocCurveDisplay
+from skore._utils._testing import check_cache_unchanged
 
 
 def test_plot_roc(forest_binary_classification_data):
@@ -19,10 +20,11 @@ def test_display_binary_classification(
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)()
-    assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)()
-    assert display_first_call is display_second_call
+    _ = getattr(report.metrics, display)()
+    child_cache = report.estimator_reports_[0]._cache
+    assert child_cache != {}
+    with check_cache_unchanged(child_cache):
+        _ = getattr(report.metrics, display)()
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
@@ -31,10 +33,11 @@ def test_display_regression(pyplot, linear_regression_data, display):
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)(seed=0)
-    assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)(seed=0)
-    assert display_first_call is display_second_call
+    _ = getattr(report.metrics, display)(seed=0)
+    child_cache = report.estimator_reports_[0]._cache
+    assert child_cache != {}
+    with check_cache_unchanged(child_cache):
+        _ = getattr(report.metrics, display)(seed=0)
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])

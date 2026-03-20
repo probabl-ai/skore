@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -10,7 +10,11 @@ from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
-from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
+from skore._sklearn._plot.inspection.utils import (
+    _decorate_matplotlib_axis,
+    select_k_features,
+    sort_features,
+)
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import Aggregate, ReportType
 from skore._utils._index import flatten_multi_index
@@ -49,29 +53,26 @@ class CoefficientsDisplay(DisplayMixin):
     --------
     >>> from sklearn.datasets import load_iris
     >>> from sklearn.linear_model import LogisticRegression
-    >>> from skore import EstimatorReport, train_test_split
+    >>> from skore import evaluate
     >>> iris = load_iris(as_frame=True)
     >>> X, y = iris.data, iris.target
     >>> y = iris.target_names[y]
-    >>> split_data = train_test_split(
-    ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
-    ... )
-    >>> report = EstimatorReport(LogisticRegression(), **split_data)
+    >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
     >>> display = report.inspection.coefficients()
     >>> display.frame()
                   feature       label  coefficient
     0           Intercept      setosa        9.2...
-    1   sepal length (cm)      setosa       -0.4...
+    1   sepal length (cm)      setosa       -0.3...
     2    sepal width (cm)      setosa        0.8...
     3   petal length (cm)      setosa       -2.3...
-    4    petal width (cm)      setosa       -0.9...
-    5           Intercept  versicolor        1.7...
-    6   sepal length (cm)  versicolor        0.5...
-    7    sepal width (cm)  versicolor       -0.2...
-    8   petal length (cm)  versicolor       -0.2...
+    4    petal width (cm)      setosa       -1.0...
+    5           Intercept  versicolor        2.3...
+    6   sepal length (cm)  versicolor        0.4...
+    7    sepal width (cm)  versicolor       -0.3...
+    8   petal length (cm)  versicolor       -0.1...
     9    petal width (cm)  versicolor       -0.7...
-    10          Intercept   virginica      -11.0...
-    11  sepal length (cm)   virginica       -0.1...
+    10          Intercept   virginica      -11.5...
+    11  sepal length (cm)   virginica       -0.0...
     12   sepal width (cm)   virginica       -0.5...
     13  petal length (cm)   virginica        2.5...
     14   petal width (cm)   virginica        1.7...
@@ -96,78 +97,6 @@ class CoefficientsDisplay(DisplayMixin):
     def __init__(self, *, coefficients: pd.DataFrame, report_type: ReportType):
         self.coefficients = coefficients
         self.report_type = report_type
-
-    def _select_k_features_in_group(
-        self, frame: pd.DataFrame, select_k: int
-    ) -> pd.DataFrame:
-        coefs = frame.groupby("feature")["coefficient"]
-
-        if "split" in frame:
-            # Cross-validation
-            scores = coefs.apply(lambda x: x.abs().mean())
-        else:
-            scores = coefs.first().abs()
-        scores = cast(pd.Series, scores)
-
-        if select_k > 0:
-            selected_features = scores.nlargest(abs(select_k)).index
-        else:
-            selected_features = scores.nsmallest(abs(select_k)).index
-
-        return frame[frame["feature"].isin(selected_features)]
-
-    def _sort_features_in_group(
-        self,
-        frame: pd.DataFrame,
-        sorting_order: Literal["descending", "ascending"],
-    ) -> pd.DataFrame:
-        ascending = sorting_order == "ascending"
-        if "split" in frame:
-            # Cross-validation
-            scores = frame.groupby("feature")["coefficient"].apply(
-                lambda x: x.abs().mean()
-            )
-            scores = cast(pd.Series, scores)
-            feature_order = scores.sort_values(ascending=ascending).index
-            return frame.set_index("feature").loc[feature_order].reset_index()
-
-        return frame.sort_values(
-            by="coefficient",
-            key=lambda s: s.abs(),
-            ascending=ascending,
-        ).reset_index(drop=True)
-
-    def _select_k_features(self, frame: pd.DataFrame, select_k: int) -> pd.DataFrame:
-        """Select top-k or bottom-k features based on absolute coefficient values."""
-        group_cols = self._get_columns_to_groupby(frame=frame)
-
-        if not group_cols:
-            return self._select_k_features_in_group(frame, select_k)
-
-        return pd.concat(
-            [
-                self._select_k_features_in_group(group, select_k)
-                for _, group in frame.groupby(group_cols, observed=True)
-            ],
-            ignore_index=True,
-        )
-
-    def _sort_features(
-        self, frame: pd.DataFrame, sorting_order: Literal["descending", "ascending"]
-    ) -> pd.DataFrame:
-        """Sort features by absolute coefficient values."""
-        group_cols = self._get_columns_to_groupby(frame=frame)
-
-        if not group_cols:
-            return self._sort_features_in_group(frame, sorting_order=sorting_order)
-
-        return pd.concat(
-            [
-                self._sort_features_in_group(group, sorting_order=sorting_order)
-                for _, group in frame.groupby(group_cols, sort=False, observed=True)
-            ],
-            ignore_index=True,
-        )
 
     def frame(
         self,
@@ -226,29 +155,26 @@ class CoefficientsDisplay(DisplayMixin):
         --------
         >>> from sklearn.datasets import load_iris
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import EstimatorReport, train_test_split
+        >>> from skore import evaluate
         >>> iris = load_iris(as_frame=True)
         >>> X, y = iris.data, iris.target
         >>> y = iris.target_names[y]
-        >>> split_data = train_test_split(
-        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
-        ... )
-        >>> report = EstimatorReport(LogisticRegression(), **split_data)
+        >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
         >>> display = report.inspection.coefficients()
         >>> display.frame()
                       feature       label  coefficient
         0           Intercept      setosa        9.2...
-        1   sepal length (cm)      setosa       -0.4...
+        1   sepal length (cm)      setosa       -0.3...
         2    sepal width (cm)      setosa        0.8...
         3   petal length (cm)      setosa       -2.3...
-        4    petal width (cm)      setosa       -0.9...
-        5           Intercept  versicolor        1.7...
-        6   sepal length (cm)  versicolor        0.5...
-        7    sepal width (cm)  versicolor       -0.2...
-        8   petal length (cm)  versicolor       -0.2...
+        4    petal width (cm)      setosa       -1.0...
+        5           Intercept  versicolor        2.3...
+        6   sepal length (cm)  versicolor        0.4...
+        7    sepal width (cm)  versicolor       -0.3...
+        8   petal length (cm)  versicolor       -0.1...
         9    petal width (cm)  versicolor       -0.7...
-        10          Intercept   virginica      -11.0...
-        11  sepal length (cm)   virginica       -0.1...
+        10          Intercept   virginica      -11.5...
+        11  sepal length (cm)   virginica       -0.0...
         12   sepal width (cm)   virginica       -0.5...
         13  petal length (cm)   virginica        2.5...
         14   petal width (cm)   virginica        1.7...
@@ -274,10 +200,21 @@ class CoefficientsDisplay(DisplayMixin):
             coefficients = coefficients.query("feature != 'Intercept'")
 
         if sorting_order is not None:
-            coefficients = self._sort_features(coefficients, sorting_order)
-
+            coefficients = sort_features(
+                coefficients,
+                sorting_order,
+                group_columns=self._get_columns_to_groupby(frame=coefficients),
+                importance_column="coefficient",
+                use_absolute=True,
+            )
         if select_k is not None:
-            coefficients = self._select_k_features(coefficients, select_k)
+            coefficients = select_k_features(
+                coefficients,
+                select_k,
+                group_columns=self._get_columns_to_groupby(frame=coefficients),
+                importance_column="coefficient",
+                use_absolute=True,
+            )
 
         if aggregate is not None and "split" in coefficients.columns:
             group_by = [
@@ -344,14 +281,11 @@ class CoefficientsDisplay(DisplayMixin):
         --------
         >>> from sklearn.datasets import load_iris
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import EstimatorReport, train_test_split
+        >>> from skore import evaluate
         >>> iris = load_iris(as_frame=True)
         >>> X, y = iris.data, iris.target
         >>> y = iris.target_names[y]
-        >>> split_data = train_test_split(
-        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
-        ... )
-        >>> report = EstimatorReport(LogisticRegression(), **split_data)
+        >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
         >>> display = report.inspection.coefficients()
         >>> display.plot()
         """
@@ -371,6 +305,11 @@ class CoefficientsDisplay(DisplayMixin):
         sorting_order: Literal["descending", "ascending", None] = None,
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
+        if select_k == 0:
+            raise ValueError(
+                "select_k=0 would produce an empty plot. Use a non-zero value or "
+                "omit select_k to plot all features."
+            )
         frame = self.frame(
             aggregate=None,
             include_intercept=include_intercept,

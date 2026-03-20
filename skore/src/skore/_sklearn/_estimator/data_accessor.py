@@ -112,12 +112,10 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
+        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
         >>> report.data.analyze().frame()
         """
         if data_source not in (data_source_options := ("train", "test", "both")):
