@@ -24,6 +24,7 @@ from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
@@ -435,22 +436,29 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"""{self.__class__.__name__}:
-        {repr(self.estimator_)}
+        {self.estimator_!r}
 
         {self.metrics.summarize().frame()}"""
 
     def _repr_html_(self):
         """HTML representation of estimator.
+
         This is redundant with the logic of `_repr_mimebundle_`. The latter
         should be favored in the long term, `_repr_html_` is only
         implemented for consumers who do not interpret `_repr_mimbundle_`.
         """
-        return f"""{self.__class__.__name__}: <i>{repr(self.estimator_)}</i>
-
-        {self.metrics.summarize().frame()._repr_html_()}"""
+        report = self.data.analyze()._repr_html_()
+        return render_template(
+            "estimator_report.html.j2",
+            {
+                "metrics_summary": self.metrics.summarize().frame()._repr_html_(),
+                "estimator_display": self.estimator_._repr_html_(),
+                "table_report": report,
+            },
+        )
 
     def _repr_mimebundle_(self, **kwargs):
-        """Mime bundle used by jupyter kernels to display estimator"""
+        """Mime bundle used by jupyter kernels to display estimator."""
         output = {"text/plain": repr(self)}
         output["text/html"] = self._repr_html_()
         return output
