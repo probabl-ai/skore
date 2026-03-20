@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import html
 import time
 import warnings
 from itertools import product
@@ -482,11 +483,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 .frame()
                 ._repr_html_()
             )
+        try:
+            estimator_html = self.estimator_._repr_html_()
+        except Exception:
+            estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
         return render_template(
             "estimator_report.html.j2",
             {
                 "metrics_summary": metrics_html,
-                "estimator_display": self.estimator_._repr_html_(),
+                "estimator_display": estimator_html,
                 "table_report": table_report_html,
             },
         )
