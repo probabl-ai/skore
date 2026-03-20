@@ -15,7 +15,7 @@ from skore._utils._accessor import (
     _check_estimator_has_coef,
     _check_estimator_has_feature_importances,
 )
-from skore._utils._cache_key import deep_key_sanitize
+from skore._utils._cache_key import make_cache_key
 
 
 class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -300,13 +300,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             "max_samples": max_samples,
             "seed": seed,
         }
-        cache_key = deep_key_sanitize(
-            (
-                data_source,
-                "permutation_importance",
-                kwargs,
-            )
-        )
+        cache_key = make_cache_key(data_source, "permutation_importance", kwargs)
 
         # NOTE: avoid to fetch from the cache if the seed is None because we want
         # to trigger the computation in this case. We only have the permutation

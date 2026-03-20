@@ -9,6 +9,7 @@ from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
+from skore._utils._cache_key import make_cache_key
 from skore._utils._measure_time import MeasureTime
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
@@ -165,11 +166,8 @@ def _get_cached_response_values(
         # and decision functions
         pos_label = None
 
-    cache_key: tuple[Any, ...] = (
-        data_source,
-        prediction_method,
-        pos_label,
-    )
+    kwargs = {"pos_label": pos_label}
+    cache_key = make_cache_key(data_source, prediction_method, kwargs)
 
     if cache_key in cache:
         cached_predictions = cast(NDArray, cache[cache_key])
@@ -184,10 +182,7 @@ def _get_cached_response_values(
             return_response_method_used=False,
         )
 
-    predict_time_cache_key: tuple[Any, ...] = (
-        data_source,
-        "predict_time",
-    )
+    predict_time_cache_key = make_cache_key(data_source, "predict_time")
 
     return [
         (cache_key, predictions, False),
