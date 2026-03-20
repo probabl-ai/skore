@@ -293,20 +293,17 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 
         # n_jobs should not be in cache
-        kwargs = {"n_repeats": n_repeats, "max_samples": max_samples, "seed": seed}
+        kwargs = {
+            "at_step": at_step,
+            "metric": metric,
+            "n_repeats": n_repeats,
+            "max_samples": max_samples,
+            "seed": seed,
+        }
         cache_key = deep_key_sanitize(
             (
-                self._parent._hash,
-                "permutation_importance",
                 data_source,
-                at_step,
-                #
-                # skore-hub-project expects an item for data_source_hash (but
-                # ignores its value). Until skore-hub-project is updated we
-                # insert None as a placeholder.
-                None,
-                #
-                metric,
+                "permutation_importance",
                 kwargs,
             )
         )

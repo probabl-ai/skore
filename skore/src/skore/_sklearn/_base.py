@@ -107,7 +107,6 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 def _get_cached_response_values(
     *,
     cache: Cache,
-    estimator_hash: int,
     estimator: BaseEstimator,
     X: ArrayLike | None,
     response_method: str | list[str] | tuple[str, ...],
@@ -125,10 +124,6 @@ def _get_cached_response_values(
     ----------
     cache : Cache
         The cache backend to use.
-
-    estimator_hash : int
-        A hash associated with the estimator such that we can retrieve the data from
-        the cache.
 
     estimator : estimator object
         The estimator used to generate the predictions.
@@ -171,10 +166,9 @@ def _get_cached_response_values(
         pos_label = None
 
     cache_key: tuple[Any, ...] = (
-        estimator_hash,
-        pos_label,
-        prediction_method,
         data_source,
+        prediction_method,
+        pos_label,
     )
 
     if cache_key in cache:
@@ -191,7 +185,6 @@ def _get_cached_response_values(
         )
 
     predict_time_cache_key: tuple[Any, ...] = (
-        estimator_hash,
         data_source,
         "predict_time",
     )

@@ -376,11 +376,8 @@ class _MetricsAccessor(
 
         cache_key = deep_key_sanitize(
             (
-                self._parent._hash,
-                metric_fn.__name__,
                 data_source,
-                # TODO None is a placeholder for skore-hub-project
-                None,
+                metric_fn.__name__,
                 metric_kwargs,
             )
         )
@@ -389,7 +386,6 @@ class _MetricsAccessor(
         if score is None:
             results = _get_cached_response_values(
                 cache=self._parent._cache,
-                estimator_hash=int(self._parent._hash),
                 estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,
@@ -461,7 +457,6 @@ class _MetricsAccessor(
             is `None` when the predictions have never been computed.
         """
         predict_time_cache_key = (
-            self._parent._hash,
             data_source,
             "predict_time",
         )
@@ -505,10 +500,10 @@ class _MetricsAccessor(
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
         # predict_time cache keys are of the form
-        # (self._parent._hash, data_source, "predict_time")
+        # (data_source, "predict_time")
 
         def make_key(k: tuple) -> str:
-            return f"predict_time_{k[1]}"
+            return f"predict_time_{k[0]}"
 
         predict_times = {
             make_key(k): v
@@ -1188,10 +1183,9 @@ class _MetricsAccessor(
         else:
             cache_key = deep_key_sanitize(
                 (
-                    self._parent._hash,
+                    data_source,
                     display_class.__name__,
                     display_kwargs,
-                    data_source,
                 )
             )
 
@@ -1204,7 +1198,6 @@ class _MetricsAccessor(
 
         results = _get_cached_response_values(
             cache=self._parent._cache,
-            estimator_hash=int(self._parent._hash),
             estimator=self._parent.estimator_,
             X=X,
             response_method=response_method,
