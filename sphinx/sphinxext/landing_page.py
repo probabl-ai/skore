@@ -54,7 +54,9 @@ error.plot(kind="actual_vs_predicted")"""
     plt.close("all")
 
     project_code = """\
-project = skore.Project(name="adult_census_survey")
+project = skore.Project(
+    name="adult_census_survey", mode="local"
+)
 project.put("ridge", report_ridge)"""
     exec(project_code, ns)
 
