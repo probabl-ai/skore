@@ -16,6 +16,7 @@ These functions and classes build upon scikit-learn's functionality.
     :template: base.rst
 
     evaluate
+    compare
     train_test_split
     TrainTestSplit
 
