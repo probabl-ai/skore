@@ -256,6 +256,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self._cache = Cache()
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
 
+        # used only as a unique ID in skore-hub-project for now:
+        self._hash = np.random.default_rng().integers(
+            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
+        )
+
     def clear_cache(self) -> None:
         """Clear the cache.
 

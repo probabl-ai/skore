@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal
 
+import numpy as np
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone, is_classifier
@@ -163,8 +164,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self.n_jobs = n_jobs
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
-        self._cache = Cache()
         self._ml_task = self.estimator_reports_[0].ml_task
+        self._cache = Cache()
+
+        # used only as a unique ID in skore-hub-project for now:
+        self._hash = np.random.default_rng().integers(
+            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
+        )
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
@@ -217,7 +223,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         """
         for report in self.estimator_reports_:
             report.clear_cache()
-
         self._cache = Cache()
 
     def cache_predictions(
