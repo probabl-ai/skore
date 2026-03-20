@@ -83,7 +83,7 @@ dev = [
   "ipykernel",
 ]
 local = ["skore-local-project>=0.0.4"]
-hub = ["skore-hub-project>=0.0.17"]
+hub = ["skore-hub-project>=0.0.19"]
 mlflow = ["skore-mlflow-project>=0.0.2"]
 
 [project.urls]
