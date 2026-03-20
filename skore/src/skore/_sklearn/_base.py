@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
 
@@ -34,24 +35,22 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
+    _diagnostics_cache: dict[bool, list[DiagnosticResult]]
 
+    @abstractmethod
     def _collect_diagnostics(
         self, *, expensive: bool = False
     ) -> list[DiagnosticResult]:
-        return [
-            DiagnosticResult(
-                code="SKD900",
-                title="Diagnostics not implemented",
-                kind="info",
-                docs_anchor="comparison-report-diagnostics",
-                explanation=(
-                    f"{self.__class__.__name__} does not implement "
-                    "diagnostics for this version."
-                ),
-                is_issue=False,
-                evaluated=False,
+        """Collect diagnostics."""
+
+    def _get_diagnostics(self, *, expensive: bool) -> list[DiagnosticResult]:
+        if not hasattr(self, "_diagnostics_cache"):
+            self._diagnostics_cache = {}
+        if expensive not in self._diagnostics_cache:
+            self._diagnostics_cache[expensive] = self._collect_diagnostics(
+                expensive=expensive
             )
-        ]
+        return self._diagnostics_cache[expensive]
 
     def diagnose(
         self,
@@ -64,7 +63,7 @@ class _BaseReport(ReportHelpMixin):
         )
         diagnostics = [
             diagnostic
-            for diagnostic in self._collect_diagnostics(expensive=expensive)
+            for diagnostic in self._get_diagnostics(expensive=expensive)
             if diagnostic.code not in ignored
         ]
         self._latest_diagnostics_ = diagnostics
@@ -91,12 +90,6 @@ class _BaseReport(ReportHelpMixin):
             "<code>.diagnose(expensive=True)</code> for deeper checks.</div>"
             "</div>"
         )
-
-    def _repr_html_(self) -> str:
-        return f"{self._create_help_html()}{self._diagnostics_panel_html()}"
-
-    def _repr_mimebundle_(self, **kwargs) -> dict[str, str]:
-        return {"text/plain": repr(self), "text/html": self._repr_html_()}
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")

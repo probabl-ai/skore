@@ -26,11 +26,30 @@ def report(request):
     return request.getfixturevalue(request.param)
 
 
-def test_diagnose_is_deferred(report):
+def test_diagnose_collects_component_diagnostics(report):
     messages = report.diagnose()
-    assert len(messages) == 1
-    assert "[SKD901]" in messages[0]
-    assert "not evaluated" in messages[0]
+    assert len(messages) >= len(report.reports_)
+    assert any("[SKD001]" in message for message in messages)
+    assert any("[SKD002]" in message for message in messages)
+    assert all(any(name in message for name in report.reports_) for message in messages)
+
+
+def test_diagnose_uses_component_cache(report, monkeypatch):
+    sub_report = next(iter(report.reports_.values()))
+    calls = 0
+    original = sub_report._collect_diagnostics
+
+    def wrapped(*, expensive=False):
+        nonlocal calls
+        calls += 1
+        return original(expensive=expensive)
+
+    monkeypatch.setattr(sub_report, "_collect_diagnostics", wrapped)
+
+    report.diagnose()
+    report.diagnose()
+
+    assert calls == 1
 
 
 def test_pickle(tmp_path, report):

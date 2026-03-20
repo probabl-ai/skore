@@ -505,21 +505,21 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def _collect_diagnostics(
         self, *, expensive: bool = False
     ) -> list[DiagnosticResult]:
-        return [
-            DiagnosticResult(
-                code="SKD901",
-                title="Comparison diagnostics deferred",
-                kind="info",
-                docs_anchor="comparison-report-diagnostics",
-                explanation=(
-                    "ComparisonReport diagnostics are not available in this version. "
-                    "Use diagnose() on component EstimatorReport or "
-                    "CrossValidationReport instances."
-                ),
-                is_issue=False,
-                evaluated=False,
+        diagnostics: list[DiagnosticResult] = []
+        for report_name, report in self.reports_.items():
+            diagnostics.extend(
+                DiagnosticResult(
+                    code=diagnostic.code,
+                    title=diagnostic.title,
+                    kind=diagnostic.kind,
+                    docs_anchor=diagnostic.docs_anchor,
+                    explanation=f"[{report_name}] {diagnostic.explanation}",
+                    is_issue=diagnostic.is_issue,
+                    evaluated=diagnostic.evaluated,
+                )
+                for diagnostic in report._get_diagnostics(expensive=expensive)
             )
-        ]
+        return diagnostics
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

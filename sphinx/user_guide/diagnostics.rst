@@ -31,7 +31,7 @@ Current coverage
 
 - :class:`EstimatorReport`: full v1 diagnostics.
 - :class:`CrossValidationReport`: split-level aggregation of the same diagnostics.
-- :class:`ComparisonReport`: diagnostics are deferred for a later version.
+- :class:`ComparisonReport`: component-report diagnostics are shown one by one.
 
 
 Estimator and cross-validation behavior
@@ -109,6 +109,6 @@ How to reduce the risk
 ComparisonReport diagnostics
 ----------------------------
 
-Comparison-level diagnostics are intentionally deferred in this version.
-For now, call :meth:`diagnose` on each component estimator or cross-validation report.
-Later versions will aggregate those diagnostics at comparison level.
+Comparison diagnostics are built from each component report in the comparison.
+Each emitted diagnostic line includes the component name and keeps the original
+diagnostic code (`SKD001`, `SKD002`, ...).
