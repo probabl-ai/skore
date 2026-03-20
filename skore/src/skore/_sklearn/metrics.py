@@ -139,7 +139,9 @@ BUILTIN_METRICS = [
 ]
 
 
-def _get_default_metrics(ml_task: MLTask, estimator: BaseEstimator) -> list[str]:
+def _get_default_metrics(
+    ml_task: MLTask, estimator: BaseEstimator
+) -> dict[str, Metric]:
     if ml_task == "binary-classification":
         metrics = [Accuracy, Precision, Recall, RocAuc]
         if hasattr(estimator, "predict_proba"):
@@ -151,4 +153,4 @@ def _get_default_metrics(ml_task: MLTask, estimator: BaseEstimator) -> list[str]
     else:
         metrics = [R2, Rmse]
     metrics += [FitTime, PredictTime]
-    return [m.name for m in metrics]
+    return {m.name: m for m in metrics}

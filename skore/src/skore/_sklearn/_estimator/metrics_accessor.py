@@ -24,11 +24,7 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.metrics import (
-    BUILTIN_METRICS,
-    Metric,
-    _get_default_metrics,
-)
+from skore._sklearn.metrics import Metric, _get_default_metrics
 from skore._sklearn.types import (
     DataSource,
     MetricLike,
@@ -52,7 +48,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
         if not self._parent._metrics_registry:
-            self._parent._metrics_registry = {m.name: m for m in BUILTIN_METRICS}
+            self._parent._metrics_registry = _get_default_metrics(
+                self._parent._ml_task, self._parent._estimator
+            )
 
     @property
     def _registry(self) -> dict[str, Metric]:
@@ -173,14 +171,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         dict[str, Metric]
         """
         items: list[tuple[str | None, MetricLike]]
-        if metric is None or (isinstance(metric, list) and len(metric) == 0):
-            default_metrics = _get_default_metrics(
-                self._parent._ml_task, self._parent._estimator
-            )
-            custom_metrics = [
-                name for name, m in self._registry.items() if not m.is_builtin
-            ]
-            items = [(None, m) for m in default_metrics + custom_metrics]
+        if metric is None or metric == []:
+            items = [(None, m) for m in self._registry]
         elif isinstance(metric, dict):
             items = list(metric.items())
         elif isinstance(metric, list):
