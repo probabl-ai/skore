@@ -278,7 +278,8 @@ class _MetricsAccessor(
                 or metric_ in self._score_or_loss_info
             ):
                 try:
-                    metric_ = sklearn_metrics.get_scorer(metric_)
+                    resovd_metric = self._METRIC_ALIASES.get(metric_, metric_)
+                    metric_ = sklearn_metrics.get_scorer(resovd_metric)
                 except ValueError as err:
                     raise ValueError(
                         f"Invalid metric: {metric_!r}. "
