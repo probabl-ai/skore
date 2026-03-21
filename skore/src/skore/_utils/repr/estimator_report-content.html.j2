@@ -28,7 +28,7 @@
                     class="report-tooltip-accessor-link"
                 >{{ report_class_name }}.inspection</a></span></span>
         </summary>
-        <div class="report-section report-estimator">{{ estimator_display | safe }}</div>
+        <div class="report-section report-estimator"><slot name="estimator-display"></slot></div>
     </details>
     <details class="report-disclosure">
         <summary>
