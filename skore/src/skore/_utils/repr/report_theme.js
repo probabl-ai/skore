@@ -1,11 +1,3 @@
-/**
- * Light/dark theme detection and application for skore HTML reports.
- *
- * Used by EstimatorReport and the `.help()` shadow-DOM UIs. The reference
- * element id (typically `*-wrapper`) is used for luma-based fallback when
- * Jupyter/VS Code theme attributes are absent.
- */
-
 function detectTheme(refElementId) {
     const body = document.querySelector("body");
 
