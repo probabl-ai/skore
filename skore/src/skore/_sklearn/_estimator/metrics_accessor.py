@@ -11,11 +11,7 @@ from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import (
-    _BaseAccessor,
-    _BaseMetricsAccessor,
-    _get_cached_response_values,
-)
+from skore._sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -28,30 +24,34 @@ from skore._sklearn.types import (
     DataSource,
     Metric,
     PositiveLabel,
-    YPlotData,
 )
 from skore._utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
     _check_roc_auc,
     _check_supported_ml_task,
-    _expand_data_sources,
-    _get_ys_for_single_report,
 )
 from skore._utils._cache_key import deep_key_sanitize
 
 
-class _MetricsAccessor(
-    _BaseMetricsAccessor, _BaseAccessor["EstimatorReport"], DirNamesMixin
-):
+class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
 
     _score_or_loss_info: dict[str, dict[str, str]] = {
-        **_BaseMetricsAccessor._score_or_loss_info,
-        "confusion_matrix": {"name": "Confusion Matrix", "icon": ""},
+        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
+        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
+        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
+        "precision": {"name": "Precision", "icon": "(↗︎)"},
+        "recall": {"name": "Recall", "icon": "(↗︎)"},
+        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
+        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
+        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
+        "r2": {"name": "R²", "icon": "(↗︎)"},
+        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
+        "custom_metric": {"name": "Custom metric", "icon": ""},
     }
 
     def __init__(self, parent: EstimatorReport) -> None:
@@ -116,19 +116,18 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-        ...
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
-        >>> report.metrics.summarize().frame(favorability=True)
+        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
+        >>> report.metrics.summarize().frame(favorability=True).drop(
+        ...    ["Fit time (s)", "Predict time (s)"]
+        ... )
                     LogisticRegression Favorability
         Metric
-        Accuracy               0.95...         (↗︎)
+        Accuracy               0.94...         (↗︎)
         Precision              0.98...         (↗︎)
-        Recall                 0.93...         (↗︎)
+        Recall                 0.92...         (↗︎)
         ROC AUC                0.99...         (↗︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
@@ -137,15 +136,15 @@ class _MetricsAccessor(
         ... ).frame(favorability=True)
                                   LogisticRegression Favorability
         Metric   Label / Average
-        F1 Score               1             0.96...          (↗︎)
+        F1 Score               1             0.95...          (↗︎)
         >>> report.metrics.summarize(
         ...    data_source="both"
         ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
         Metric
-        Accuracy                        0.96...                     0.95...          (↗︎)
+        Accuracy                        0.96...                     0.94...          (↗︎)
         Precision                       0.96...                     0.98...          (↗︎)
-        Recall                          0.97...                     0.93...          (↗︎)
+        Recall                          0.97...                     0.92...          (↗︎)
         ROC AUC                         0.99...                     0.99...          (↗︎)
         Brier score                     0.02...                     0.03...          (↘︎)
         >>> # Using scikit-learn metrics
@@ -154,7 +153,7 @@ class _MetricsAccessor(
         ... ).frame(favorability=True)
                                   LogisticRegression Favorability
         Metric   Label / Average
-        F1 Score               1             0.96...          (↗︎)
+        F1 Score               1             0.95...          (↗︎)
         """
         if data_source == "both":
             train_summary = self.summarize(
@@ -494,13 +493,11 @@ class _MetricsAccessor(
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator = LogisticRegression()
-        >>> from skore import EstimatorReport
-        >>> report = EstimatorReport(estimator, **split_data)
+        >>> report = evaluate(estimator, X, y, splitter=0.2)
         >>> report.metrics.timings()
         {'fit_time': ...}
         >>> report.cache_predictions(response_methods=["predict"])
@@ -553,14 +550,12 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.metrics.accuracy()
-        0.95...
+        0.94...
         """
         score = self._compute_metric_scores(
             sklearn.metrics.accuracy_score,
@@ -622,12 +617,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
+        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
         >>> report.metrics.precision()
         0.98...
         """
@@ -709,14 +702,12 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
+        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
         >>> report.metrics.recall()
-        0.93...
+        0.92...
         """
         pos_label = self._parent.pos_label
 
@@ -769,12 +760,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.metrics.brier_score()
         0.03...
         """
@@ -857,12 +846,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.metrics.roc_auc()
         0.99...
         """
@@ -914,14 +901,12 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.metrics.log_loss()
-        0.10...
+        0.11...
         """
         result = self._compute_metric_scores(
             sklearn.metrics.log_loss,
@@ -972,14 +957,12 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(regressor, **split_data)
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
         >>> report.metrics.r2()
-        0.35...
+        0.34...
         """
         result = self._compute_metric_scores(
             sklearn.metrics.r2_score,
@@ -1036,14 +1019,12 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(regressor, **split_data)
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
         >>> report.metrics.rmse()
-        56.5...
+        58.1...
         """
         result = self._compute_metric_scores(
             sklearn.metrics.root_mean_squared_error,
@@ -1106,24 +1087,22 @@ class _MetricsAccessor(
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
         >>> from sklearn.metrics import mean_absolute_error
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(regressor, **split_data)
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
         >>> report.metrics.custom_metric(
         ...     metric_function=mean_absolute_error,
         ...     response_method="predict",
         ... )
-        44.9...
+        46.5...
         >>> def metric_function(y_true, y_pred):
         ...     return {"output": float(mean_absolute_error(y_true, y_pred))}
         >>> report.metrics.custom_metric(
         ...     metric_function=metric_function,
         ...     response_method="predict",
         ... )
-        {'output': 44.9...}
+        {'output': 46.5...}
         """
         if isinstance(metric_function, _BaseScorer):
             metric_function = metric_function._score_func
@@ -1190,10 +1169,23 @@ class _MetricsAccessor(
         display : display_class
             The display.
         """
-        data_sources = _expand_data_sources(data_source)
+        if data_source == "both":
+            displays = [
+                self._get_display(
+                    data_source=cast(DataSource, ds),
+                    response_method=response_method,
+                    display_class=display_class,
+                    display_kwargs=display_kwargs,
+                )
+                for ds in ["train", "test"]
+            ]
+            return display_class._concatenate(
+                displays,  # type: ignore[arg-type]
+                report_type=self._parent._report_type,
+                data_source=data_source,
+            )
 
         # Compute cache key
-        # For "both", we use the string "both" in the cache key
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
@@ -1210,32 +1202,30 @@ class _MetricsAccessor(
         if cache_value is not None:
             return cache_value
 
-        y_true: list[YPlotData] = []
-        y_pred: list[YPlotData] = []
+        data_source = cast(DataSource, data_source)
+        X, y_true = self._get_X_y(data_source=data_source)
 
-        for ds in data_sources:
-            ds_X, ds_y = self._get_X_y(data_source=ds)
-
-            y_true_data, y_pred_data = _get_ys_for_single_report(
-                cache=self._parent._cache,
-                estimator_hash=int(self._parent._hash),
-                estimator=self._parent.estimator_,
-                estimator_name=self._parent.estimator_name_,
-                X=ds_X,
-                y_true=ds_y,
-                data_source=ds,
-                response_method=response_method,
-                pos_label=display_kwargs.get("pos_label"),
-                split=None,
-            )
-            y_true.append(y_true_data)
-            y_pred.append(y_pred_data)
+        results = _get_cached_response_values(
+            cache=self._parent._cache,
+            estimator_hash=int(self._parent._hash),
+            estimator=self._parent.estimator_,
+            X=X,
+            response_method=response_method,
+            pos_label=display_kwargs.get("pos_label"),
+            data_source=data_source,
+        )
+        for key, value, is_cached in results:
+            if not is_cached:
+                self._parent._cache[key] = value
+            if key[-1] != "predict_time":
+                y_pred = value
 
         display = display_class._compute_data_for_display(
             y_true=y_true,
             y_pred=y_pred,
             report_type=self._parent._report_type,
-            estimators=[self._parent.estimator_],
+            estimator=self._parent.estimator_,
+            estimator_name=self._parent.estimator_name_,
             ml_task=self._parent._ml_task,
             data_source=data_source,
             **display_kwargs,
@@ -1279,12 +1269,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> display = report.metrics.roc()
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
         >>> display.plot()
@@ -1331,12 +1319,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> display = report.metrics.precision_recall()
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
         >>> display.plot()
@@ -1400,12 +1386,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> regressor = Ridge()
-        >>> report = EstimatorReport(regressor, **split_data)
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
         >>> display = report.metrics.prediction_error()
         >>> display.set_style(perfect_model_kwargs={"color": "tab:red"})
         >>> display.plot()
@@ -1454,12 +1438,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot()
 

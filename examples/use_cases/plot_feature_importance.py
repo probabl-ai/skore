@@ -9,8 +9,7 @@ In this example, we tackle the California housing dataset where the goal is to p
 a regression task: predicting house prices based on features such as the number of
 bedrooms, the geolocation, etc.
 For that, we try out several families of models.
-We evaluate these methods using skore's :class:`~skore.EstimatorReport` and its
-report on metrics.
+We evaluate these methods using :func:`~skore.evaluate` and the report's metrics.
 
 .. seealso::
     As shown in :ref:`example_estimator_report`, the :class:`~skore.EstimatorReport` has
@@ -174,19 +173,6 @@ fig
 # Taking into account the coordinates in our modelling will be very important.
 
 # %%
-# Splitting the data
-# ------------------
-
-# %%
-# Just before diving into our first model, let us split our data into a train and a
-# test split:
-
-# %%
-from sklearn.model_selection import train_test_split
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-
-# %%
 # Linear models: coefficients
 # ===========================
 
@@ -201,22 +187,18 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 # %%
 # Before trying any complex feature engineering, we start with a simple pipeline to
 # have a baseline of what a "good score" is (remember that all scores are relative).
-# Here, we use a Ridge regression along with some scaling and evaluate it using
-# :meth:`skore.EstimatorReport.metrics`:
+# We use a Ridge regression with feature scaling; and evaluate its performance using
+# :func:`~skore.evaluate` with ``splitter=0.2``. This will evaluate the model on 20% of
+# the data after training on the remaining 80%, and report the results in an
+# :class:`~skore.EstimatorReport`.
 
 # %%
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from skore import EstimatorReport
+from skore import evaluate
 
-ridge_report = EstimatorReport(
-    make_pipeline(StandardScaler(), Ridge()),
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-)
+ridge_report = evaluate(make_pipeline(StandardScaler(), Ridge()), X, y, splitter=0.2)
 ridge_report.metrics.summarize().frame()
 
 # %%
@@ -402,23 +384,17 @@ engineered_ridge
 
 # %%
 # Now, let us compute the metrics and compare it to our previous model using
-# a :class:`skore.ComparisonReport`:
+# the :func:`~skore.compare` function that returns a :class:`~skore.ComparisonReport`:
 
 # %%
-from skore import ComparisonReport
+from skore import compare
 
-engineered_ridge_report = EstimatorReport(
-    engineered_ridge,
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-)
+engineered_ridge_report = evaluate(engineered_ridge, X, y, splitter=0.2)
 reports_to_compare = {
     "Vanilla Ridge": ridge_report,
     "Ridge w/ feature engineering": engineered_ridge_report,
 }
-comparator = ComparisonReport(reports=reports_to_compare)
+comparator = compare(reports_to_compare)
 comparator.metrics.summarize().frame()
 
 # %%
@@ -439,7 +415,8 @@ engineered_ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicte
 # introduced a *lot* of features:
 
 # %%
-print("Initial number of features:", X_train.shape[1])
+n_features_initial = ridge_report.X_train.shape[1]
+print("Initial number of features:", n_features_initial)
 
 # We slice the scikit-learn pipeline to extract the predictor, using -1 to access
 # the last step:
@@ -505,8 +482,8 @@ kmeans = col_transformer.named_transformers_["kmeans"]
 clustering_labels = kmeans.labels_
 
 # adding the cluster labels to our dataframe
-X_train_plot = X_train.copy()
-X_train_plot.insert(X_train.shape[1], "clustering_labels", clustering_labels)
+X_train_plot = ridge_report.X_train.copy()
+X_train_plot.insert(n_features_initial, "clustering_labels", clustering_labels)
 
 # plotting the map
 plot_map(X_train_plot, "clustering_labels")
@@ -668,22 +645,16 @@ selectkbest_ridge = make_pipeline(
 # Let us get the metrics for our model and compare it with our previous iterations:
 
 # %%
-selectk_ridge_report = EstimatorReport(
-    selectkbest_ridge,
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-)
+selectk_ridge_report = evaluate(selectkbest_ridge, X, y, splitter=0.2)
 reports_to_compare["Ridge w/ feature engineering and selection"] = selectk_ridge_report
-comparator = ComparisonReport(reports=reports_to_compare)
+comparator = compare(reports_to_compare)
 comparator.metrics.summarize().frame()
 
 # %%
 # We get a good score and much less features:
 
 # %%
-print("Initial number of features:", X_train.shape[1])
+print("Initial number of features:", n_features_initial)
 print("Number of features after feature engineering:", n_features_engineered)
 
 n_features_selectk = selectk_ridge_report.estimator_[-1].n_features_in_
@@ -771,20 +742,14 @@ print(selectk_features)
 # %%
 from sklearn.tree import DecisionTreeRegressor
 
-tree_report = EstimatorReport(
-    DecisionTreeRegressor(random_state=0),
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-)
+tree_report = evaluate(DecisionTreeRegressor(random_state=0), X, y, splitter=0.2)
 reports_to_compare["Decision tree"] = tree_report
 
 # %%
 # We compare its performance with the models in our benchmark:
 
 # %%
-comparator = ComparisonReport(reports=reports_to_compare)
+comparator = compare(reports_to_compare)
 comparator.metrics.summarize().frame()
 
 # %%
@@ -886,16 +851,12 @@ tree_report.inspection.impurity_decrease().plot()
 from sklearn.ensemble import RandomForestRegressor
 
 n_estimators = 100
-rf_report = EstimatorReport(
-    RandomForestRegressor(random_state=0, n_estimators=n_estimators),
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
+rf_report = evaluate(
+    RandomForestRegressor(random_state=0, n_estimators=n_estimators), X, y, splitter=0.2
 )
 reports_to_compare["Random forest"] = rf_report
 
-comparator = ComparisonReport(reports=reports_to_compare)
+comparator = compare(reports_to_compare)
 comparator.metrics.summarize().frame()
 
 # %%

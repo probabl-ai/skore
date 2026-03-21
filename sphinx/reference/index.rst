@@ -30,8 +30,15 @@ ML Assistance
 .. list-table::
    :widths: 30 70
 
+   * - :func:`evaluate`
+     - Evaluate one or more estimators on the given data.
+   * - :func:`compare`
+     - Compare pre-existing reports with a :class:`~skore.ComparisonReport`
    * - :func:`train_test_split`
      - Split arrays or matrices into random train and test subsets
+   * - :class:`TrainTestSplit`
+     - Single train-test splitter compatible with the `scikit-learn CV splitter
+       API <https://scikit-learn.org/stable/glossary.html#term-CV-splitter>`_
 
 .. include:: api/accessor_tables.rst
 

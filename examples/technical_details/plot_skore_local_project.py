@@ -31,22 +31,22 @@ project = Project("example-project", workspace=tmp_path)
 # %%
 from sklearn.datasets import load_breast_cancer
 from sklearn.linear_model import LogisticRegression
-from skore import train_test_split
 from skrub import tabular_pipeline
 
 X, y = load_breast_cancer(return_X_y=True, as_frame=True)
-split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
 estimator = tabular_pipeline(LogisticRegression(max_iter=1_000))
 
 # %%
 import numpy as np
 from sklearn.base import clone
-from skore import EstimatorReport
+from skore import evaluate
 
 for regularization in np.logspace(-7, 7, 31):
-    report = EstimatorReport(
+    report = evaluate(
         clone(estimator).set_params(logisticregression__C=regularization),
-        **split_data,
+        X,
+        y,
+        splitter=0.2,
         pos_label=1,
     )
     project.put(f"lr-regularization-{regularization:.1e}", report)

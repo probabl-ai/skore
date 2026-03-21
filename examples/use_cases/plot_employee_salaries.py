@@ -87,25 +87,24 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.pipeline import make_pipeline
 from skrub import StringEncoder, TableVectorizer
 
-model = make_pipeline(
+hgbt_model = make_pipeline(
     TableVectorizer(high_cardinality=StringEncoder()),
     HistGradientBoostingRegressor(),
 )
-model
+hgbt_model
 
 # %%
 # Evaluation
 # ^^^^^^^^^^
 #
-# Let us compute the cross-validation report for this model using a
-# :class:`skore.CrossValidationReport`:
+# Let us compute the 5-fold cross-validation report for this model using
+# :func:`~skore.evaluate` with ``splitter=5``. This will return a
+# :class:`~skore.CrossValidationReport` object.
 
 # %%
-from skore import CrossValidationReport
+from skore import evaluate
 
-hgbt_model_report = CrossValidationReport(
-    estimator=model, X=df, y=y, splitter=5, n_jobs=4
-)
+hgbt_model_report = evaluate(hgbt_model, df, y, splitter=5, n_jobs=4)
 hgbt_model_report.help()
 
 # %%
@@ -220,8 +219,8 @@ preprocessing = make_column_transformer(
     (GapEncoder(n_components=100), "employee_position_title"),
 )
 
-model = make_pipeline(preprocessing, RidgeCV(alphas=np.logspace(-3, 3, 100)))
-model
+linear_model = make_pipeline(preprocessing, RidgeCV(alphas=np.logspace(-3, 3, 100)))
+linear_model
 
 # %%
 # In the diagram above, we can see what how we performed our feature engineering:
@@ -243,13 +242,10 @@ model
 # ^^^^^^^^^^
 #
 # Now, we want to evaluate this linear model via cross-validation (with 5 folds).
-# For that, we use skore's :class:`~skore.CrossValidationReport` to investigate the
-# performance of our model.
+# For that, we use again :func:`~skore.evaluate` with ``splitter=5``.
 
 # %%
-linear_model_report = CrossValidationReport(
-    estimator=model, X=df, y=y, splitter=5, n_jobs=4
-)
+linear_model_report = evaluate(linear_model, df, y, splitter=5, n_jobs=4)
 linear_model_report.help()
 
 # %%
@@ -279,13 +275,13 @@ linear_model_report.metrics.summarize().frame(favorability=True)
 # Comparing the models
 # ====================
 #
-# Now that we cross-validated our models, we can make some further comparison using the
-# :class:`skore.ComparisonReport`:
+# Now that we cross-validated our models, we can make some further comparison using
+# the :func:`~skore.compare` function that returns a :class:`~skore.ComparisonReport`:
 
 # %%
-from skore import ComparisonReport
+from skore import compare
 
-comparator = ComparisonReport([hgbt_model_report, linear_model_report])
+comparator = compare([hgbt_model_report, linear_model_report])
 comparator.metrics.summarize().frame(favorability=True)
 
 # %%

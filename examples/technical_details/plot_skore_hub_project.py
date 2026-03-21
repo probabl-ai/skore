@@ -68,26 +68,26 @@ except HTTPStatusError as e:
 # %%
 from sklearn.datasets import load_breast_cancer
 from sklearn.linear_model import LogisticRegression
-from skore import train_test_split
 from skrub import tabular_pipeline
 
 X, y = load_breast_cancer(return_X_y=True, as_frame=True)
-split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
 estimator = tabular_pipeline(LogisticRegression(max_iter=1_000))
 
 # %%
 from numpy import logspace
 from sklearn.base import clone
-from skore import EstimatorReport, Project
+from skore import Project, evaluate
 
 project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
 
 for regularization in logspace(-3, 3, 5):
     project.put(
         f"lr-regularization-{regularization:.1e}",
-        EstimatorReport(
+        evaluate(
             clone(estimator).set_params(logisticregression__C=regularization),
-            **split_data,
+            X,
+            y,
+            splitter=0.2,
             pos_label=1,
         ),
     )
@@ -117,12 +117,12 @@ summary.info()
 # %%
 # Filter reports by metric (e.g. keep only those above a given accuracy) and
 # work with the result as a table.
-summary.query("log_loss < 0.1")["key"].tolist()
+summary.query("log_loss < 0.2")["key"].tolist()
 
 # %%
 # Use :meth:`~skore.project._summary.Summary.reports` to load the corresponding
 # reports from the project (optionally after filtering the summary).
-reports = summary.query("log_loss < 0.1").reports(return_as="comparison")
+reports = summary.query("log_loss < 0.2").reports(return_as="comparison")
 len(reports.reports_)
 
 # %%

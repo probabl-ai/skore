@@ -25,7 +25,6 @@ copyright = "2026, Probabl"
 author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
-domain = os.environ["SPHINX_DOMAIN"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -41,12 +40,13 @@ extensions = [
     "sphinx_copybutton",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
+    "sphinx_issues",
     "sphinx_tabs.tabs",
     # Custom extensions
     "generate_accessor_tables",
     "github_link",
+    "landing_page",
     "matplotlib_skore_scraper",
-    "report_help",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
@@ -90,8 +90,7 @@ html_static_path = ["_static"]
 
 html_css_files = ["css/custom.css"]
 html_js_files = [
-    "js/sg_plotly_resize.js",
-    "js/gtm.js",
+    "js/sg_plotly_resize.js"
 ]
 
 # sphinx_gallery options
@@ -150,7 +149,7 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable", None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
     "skrub": ("https://skrub-data.org/stable/", None),
-    "pandas": ("http://pandas.pydata.org/pandas-docs/stable", None),
+    "pandas": ("http://pandas.pydata.org/docs/", None),
     "polars": ("https://docs.pola.rs/py-polars/html", None),
     "seaborn": ("http://seaborn.pydata.org", None),
     "xgboost": ("https://xgboost.readthedocs.io/en/stable/", None),
@@ -207,7 +206,7 @@ html_theme_options = {
         },
     ],
     "switcher": {
-        "json_url": f"https://{domain}/versions.json",
+        "json_url": f"{os.environ["SPHINX_URL"]}/versions.json",
         "version_match": release,
     },
     "check_switcher": True,
@@ -221,20 +220,17 @@ html_theme_options = {
 # template names.
 html_additional_pages = {"index": "index.html"}
 
-# Sphinx remove the sidebar from some pages
+# Remove the sidebar from some pages
 html_sidebars = {
     "index": [],
     "install": [],
     "contributing": [],
+    "changelog": [],
 }
 
 # Sphinx-Copybutton configuration
 copybutton_prompt_text = r">>> |\.\.\. |\$ "
 copybutton_prompt_is_regexp = True
 
-# -- Options for github link for what's new -----------------------------------
-
-# Config for sphinx_issues
-issues_uri = "https://github.com/probabl-ai/skore/issues/{issue}"
+# sphinx-issues config
 issues_github_path = "probabl-ai/skore"
-issues_user_uri = "https://github.com/{user}"
