@@ -15,7 +15,7 @@ function skoreInitEstimatorReport(containerId) {
 
     const root = shadowRoot.querySelector(".container");
     if (root) {
-        applyThemeToHelpContainer(root, containerId + "-wrapper");
+        applyThemeToReportContainer(root, containerId + "-wrapper");
     }
 
     shadowRoot.querySelectorAll(".report-disclosure .tooltip-text a").forEach((a) => {
