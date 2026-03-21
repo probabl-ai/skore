@@ -58,7 +58,7 @@ class _MetricsAccessor(
     }
 
     _METRIC_ALIASES: dict[str, str] = {
-        "mean_squared_error": "neg_meansquared_error",
+        "mean_squared_error": "neg_mean_squared_error",
         "mean_absolute_error": "neg_mean_absolute_error",
         "root_mean_squared_error": "neg_root_mean_squared_error",
         "mean_absolute_percentage_error": "neg_mean_absolute_percentage_error",
@@ -278,8 +278,8 @@ class _MetricsAccessor(
                 or metric_ in self._score_or_loss_info
             ):
                 try:
-                    resovd_metric = self._METRIC_ALIASES.get(metric_, metric_)
-                    metric_ = sklearn_metrics.get_scorer(resovd_metric)
+                    resolved_metric = self._METRIC_ALIASES.get(metric_, metric_)
+                    metric_ = sklearn_metrics.get_scorer(resolved_metric)
                 except ValueError as err:
                     raise ValueError(
                         f"Invalid metric: {metric_!r}. "
