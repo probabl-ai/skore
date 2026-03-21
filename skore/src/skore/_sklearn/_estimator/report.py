@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import copy
+import html
 import time
 import warnings
 from itertools import product
 from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
+import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone
@@ -18,12 +20,13 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import _DEFAULT, PositiveLabel
+from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
@@ -265,11 +268,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     response_methods += ["predict_proba"]
                 if hasattr(self._estimator, "decision_function"):
                     response_methods += ["decision_function"]
-            pos_labels = self._estimator.classes_.tolist() + [None]
         else:
             if response_methods == "auto":
                 response_methods = ["predict"]
-            pos_labels = [None]
 
         data_sources = [("test", self._X_test)]
         if self._X_train is not None:
@@ -291,15 +292,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     estimator=self._estimator,
                     X=X,
                     response_method=response_method,
-                    pos_label=pos_label,
+                    pos_label=self._pos_label,
                     data_source=data_source,
                 )
-                for response_method, pos_label, (data_source, X) in product(
-                    response_methods, pos_labels, data_sources
+                for response_method, (data_source, X) in product(
+                    response_methods, data_sources
                 )
             ),
             description="Caching predictions",
-            total=(len(response_methods) * len(pos_labels) * len(data_sources)),
+            total=(len(response_methods) * len(data_sources)),
         ):
             results_to_cache.update(
                 (key, value) for key, value, is_cached in results if not is_cached
@@ -311,12 +312,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def get_predictions(
         self,
         *,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: Literal["train", "test"],
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
-        X: ArrayLike | None = None,
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> ArrayLike:
         """Get estimator's predictions.
 
@@ -325,31 +324,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the predictions.
 
         response_method : {"predict", "predict_proba", "decision_function"}, \
                 default="predict"
             The response method to use to get the predictions.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            When `data_source` is "X_y", the input features on which to compute the
-            response method.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing predictions in
-            binary classification cases. By default, the positive class is set to the
-            one provided when creating the report. If `None`, `estimator_.classes_[1]`
-            is used as positive label.
-
-            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
-            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
-            and `-estimator_.decision_function(X)` for
-            `response_method="decision_function"`.
 
         Returns
         -------
@@ -375,19 +358,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> predictions.shape
         (25,)
         """
-        if pos_label is _DEFAULT:
-            pos_label = self.pos_label
-
         if data_source == "test":
             X_ = self._X_test
         elif data_source == "train":
             X_ = self._X_train
-        elif data_source == "X_y":
-            if X is None:
-                raise ValueError(
-                    "The `X` parameter is required when `data_source` is 'X_y'."
-                )
-            X_ = X
         else:
             raise ValueError(f"Invalid data source: {data_source}")
 
@@ -397,7 +371,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             estimator=self._estimator,
             X=X_,
             response_method=response_method,
-            pos_label=pos_label,
+            pos_label=self._pos_label,
             data_source=data_source,
         )
         for key, value, is_cached in results:
@@ -429,28 +403,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def X_test(self) -> ArrayLike | None:
         return self._X_test
 
-    @X_test.setter
-    def X_test(self, value):
-        self._X_test = value
-        self._initialize_state()
-
     @property
     def y_test(self) -> ArrayLike | None:
         return self._y_test
 
-    @y_test.setter
-    def y_test(self, value):
-        self._y_test = value
-        self._initialize_state()
-
     @property
     def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
-
-    @pos_label.setter
-    def pos_label(self, value: PositiveLabel | None) -> None:
-        self._pos_label = value
-        self._initialize_state()
 
     @property
     def estimator_name_(self) -> str:
@@ -478,4 +437,67 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+        return f"""{self.__class__.__name__}:
+        {self.estimator_!r}
+
+        {self.metrics.summarize().frame()}"""
+
+    def _repr_html_(self):
+        """HTML representation of estimator.
+
+        This is redundant with the logic of `_repr_mimebundle_`. The latter
+        should be favored in the long term, `_repr_html_` is only
+        implemented for consumers who do not interpret `_repr_mimbundle_`.
+        """
+        match self.X_train, self.X_test:
+            case None, None:
+                data_source = None
+            case _, None:
+                data_source = "train"
+            case None, _:
+                data_source = "test"
+            case _:
+                data_source = "both"
+        if data_source is None:
+            table_report_html = "<p>No data provided</p>"
+            metrics_html = "<p>No data provided</p>"
+        else:
+            table_report = skrub.TableReport(
+                self.data._prepare_dataframe_for_display(
+                    data_source=data_source,
+                    with_y=True,
+                    subsample=None,
+                    subsample_strategy="head",
+                    seed=None,
+                ),
+                max_plot_columns=0,
+                max_association_columns=0,
+                verbose=False,
+            )
+            table_report._set_minimal_mode()
+            table_report_html = table_report.html_snippet()
+            metrics_html = (
+                self.metrics.summarize(
+                    data_source="train" if data_source == "train" else "test"
+                )
+                .frame()
+                ._repr_html_()
+            )
+        try:
+            estimator_html = self.estimator_._repr_html_()
+        except Exception:
+            estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
+        return render_template(
+            "estimator_report.html.j2",
+            {
+                "metrics_summary": metrics_html,
+                "estimator_display": estimator_html,
+                "table_report": table_report_html,
+            },
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by jupyter kernels to display estimator."""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output

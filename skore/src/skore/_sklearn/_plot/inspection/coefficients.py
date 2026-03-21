@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
-from typing import Any, Literal, cast
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -11,9 +10,14 @@ from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
-from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
+from skore._sklearn._plot.inspection.utils import (
+    _decorate_matplotlib_axis,
+    select_k_features,
+    sort_features,
+)
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import ReportType
+from skore._sklearn.types import Aggregate, ReportType
+from skore._utils._index import flatten_multi_index
 
 
 class CoefficientsDisplay(DisplayMixin):
@@ -49,29 +53,26 @@ class CoefficientsDisplay(DisplayMixin):
     --------
     >>> from sklearn.datasets import load_iris
     >>> from sklearn.linear_model import LogisticRegression
-    >>> from skore import EstimatorReport, train_test_split
+    >>> from skore import evaluate
     >>> iris = load_iris(as_frame=True)
     >>> X, y = iris.data, iris.target
     >>> y = iris.target_names[y]
-    >>> split_data = train_test_split(
-    ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
-    ... )
-    >>> report = EstimatorReport(LogisticRegression(), **split_data)
+    >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
     >>> display = report.inspection.coefficients()
     >>> display.frame()
                   feature       label  coefficient
     0           Intercept      setosa        9.2...
-    1   sepal length (cm)      setosa       -0.4...
+    1   sepal length (cm)      setosa       -0.3...
     2    sepal width (cm)      setosa        0.8...
     3   petal length (cm)      setosa       -2.3...
-    4    petal width (cm)      setosa       -0.9...
-    5           Intercept  versicolor        1.7...
-    6   sepal length (cm)  versicolor        0.5...
-    7    sepal width (cm)  versicolor       -0.2...
-    8   petal length (cm)  versicolor       -0.2...
+    4    petal width (cm)      setosa       -1.0...
+    5           Intercept  versicolor        2.3...
+    6   sepal length (cm)  versicolor        0.4...
+    7    sepal width (cm)  versicolor       -0.3...
+    8   petal length (cm)  versicolor       -0.1...
     9    petal width (cm)  versicolor       -0.7...
-    10          Intercept   virginica      -11.0...
-    11  sepal length (cm)   virginica       -0.1...
+    10          Intercept   virginica      -11.5...
+    11  sepal length (cm)   virginica       -0.0...
     12   sepal width (cm)   virginica       -0.5...
     13  petal length (cm)   virginica        2.5...
     14   petal width (cm)   virginica        1.7...
@@ -97,81 +98,10 @@ class CoefficientsDisplay(DisplayMixin):
         self.coefficients = coefficients
         self.report_type = report_type
 
-    def _select_k_features_in_group(
-        self, frame: pd.DataFrame, select_k: int
-    ) -> pd.DataFrame:
-        coefs = frame.groupby("feature")["coefficient"]
-
-        if "split" in frame:
-            # Cross-validation
-            scores = coefs.apply(lambda x: x.abs().mean())
-        else:
-            scores = coefs.first().abs()
-        scores = cast(pd.Series, scores)
-
-        if select_k > 0:
-            selected_features = scores.nlargest(abs(select_k)).index
-        else:
-            selected_features = scores.nsmallest(abs(select_k)).index
-
-        return frame[frame["feature"].isin(selected_features)]
-
-    def _sort_features_in_group(
-        self,
-        frame: pd.DataFrame,
-        sorting_order: Literal["descending", "ascending"],
-    ) -> pd.DataFrame:
-        ascending = sorting_order == "ascending"
-        if "split" in frame:
-            # Cross-validation
-            scores = frame.groupby("feature")["coefficient"].apply(
-                lambda x: x.abs().mean()
-            )
-            scores = cast(pd.Series, scores)
-            feature_order = scores.sort_values(ascending=ascending).index
-            return frame.set_index("feature").loc[feature_order].reset_index()
-
-        return frame.sort_values(
-            by="coefficient",
-            key=lambda s: s.abs(),
-            ascending=ascending,
-        ).reset_index(drop=True)
-
-    def _select_k_features(self, frame: pd.DataFrame, select_k: int) -> pd.DataFrame:
-        """Select top-k or bottom-k features based on absolute coefficient values."""
-        group_cols = self._get_columns_to_groupby(frame=frame)
-
-        if not group_cols:
-            return self._select_k_features_in_group(frame, select_k)
-
-        return pd.concat(
-            [
-                self._select_k_features_in_group(group, select_k)
-                for _, group in frame.groupby(group_cols, observed=True)
-            ],
-            ignore_index=True,
-        )
-
-    def _sort_features(
-        self, frame: pd.DataFrame, sorting_order: Literal["descending", "ascending"]
-    ) -> pd.DataFrame:
-        """Sort features by absolute coefficient values."""
-        group_cols = self._get_columns_to_groupby(frame=frame)
-
-        if not group_cols:
-            return self._sort_features_in_group(frame, sorting_order=sorting_order)
-
-        return pd.concat(
-            [
-                self._sort_features_in_group(group, sorting_order=sorting_order)
-                for _, group in frame.groupby(group_cols, sort=False, observed=True)
-            ],
-            ignore_index=True,
-        )
-
     def frame(
         self,
         *,
+        aggregate: Aggregate | None = ("mean", "std"),
         include_intercept: bool = True,
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
@@ -225,29 +155,26 @@ class CoefficientsDisplay(DisplayMixin):
         --------
         >>> from sklearn.datasets import load_iris
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import EstimatorReport, train_test_split
+        >>> from skore import evaluate
         >>> iris = load_iris(as_frame=True)
         >>> X, y = iris.data, iris.target
         >>> y = iris.target_names[y]
-        >>> split_data = train_test_split(
-        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
-        ... )
-        >>> report = EstimatorReport(LogisticRegression(), **split_data)
+        >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
         >>> display = report.inspection.coefficients()
         >>> display.frame()
                       feature       label  coefficient
         0           Intercept      setosa        9.2...
-        1   sepal length (cm)      setosa       -0.4...
+        1   sepal length (cm)      setosa       -0.3...
         2    sepal width (cm)      setosa        0.8...
         3   petal length (cm)      setosa       -2.3...
-        4    petal width (cm)      setosa       -0.9...
-        5           Intercept  versicolor        1.7...
-        6   sepal length (cm)  versicolor        0.5...
-        7    sepal width (cm)  versicolor       -0.2...
-        8   petal length (cm)  versicolor       -0.2...
+        4    petal width (cm)      setosa       -1.0...
+        5           Intercept  versicolor        2.3...
+        6   sepal length (cm)  versicolor        0.4...
+        7    sepal width (cm)  versicolor       -0.3...
+        8   petal length (cm)  versicolor       -0.1...
         9    petal width (cm)  versicolor       -0.7...
-        10          Intercept   virginica      -11.0...
-        11  sepal length (cm)   virginica       -0.1...
+        10          Intercept   virginica      -11.5...
+        11  sepal length (cm)   virginica       -0.0...
         12   sepal width (cm)   virginica       -0.5...
         13  petal length (cm)   virginica        2.5...
         14   petal width (cm)   virginica        1.7...
@@ -273,10 +200,35 @@ class CoefficientsDisplay(DisplayMixin):
             coefficients = coefficients.query("feature != 'Intercept'")
 
         if sorting_order is not None:
-            coefficients = self._sort_features(coefficients, sorting_order)
-
+            coefficients = sort_features(
+                coefficients,
+                sorting_order,
+                group_columns=self._get_columns_to_groupby(frame=coefficients),
+                importance_column="coefficient",
+                use_absolute=True,
+            )
         if select_k is not None:
-            coefficients = self._select_k_features(coefficients, select_k)
+            coefficients = select_k_features(
+                coefficients,
+                select_k,
+                group_columns=self._get_columns_to_groupby(frame=coefficients),
+                importance_column="coefficient",
+                use_absolute=True,
+            )
+
+        if aggregate is not None and "split" in coefficients.columns:
+            group_by = [
+                c
+                for c in ["estimator", "feature", "label", "output"]
+                if c in coefficients.columns
+            ]
+            coefficients = (
+                coefficients.drop(columns=["split"])
+                .groupby(group_by, sort=False, dropna=False)
+                .aggregate(aggregate)
+            ).reset_index()
+            if isinstance(coefficients.columns, pd.MultiIndex):
+                coefficients.columns = flatten_multi_index(coefficients.columns)
 
         return coefficients
 
@@ -329,14 +281,11 @@ class CoefficientsDisplay(DisplayMixin):
         --------
         >>> from sklearn.datasets import load_iris
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import EstimatorReport, train_test_split
+        >>> from skore import evaluate
         >>> iris = load_iris(as_frame=True)
         >>> X, y = iris.data, iris.target
         >>> y = iris.target_names[y]
-        >>> split_data = train_test_split(
-        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
-        ... )
-        >>> report = EstimatorReport(LogisticRegression(), **split_data)
+        >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
         >>> display = report.inspection.coefficients()
         >>> display.plot()
         """
@@ -356,7 +305,13 @@ class CoefficientsDisplay(DisplayMixin):
         sorting_order: Literal["descending", "ascending", None] = None,
     ) -> None:
         """Dispatch the plotting function for matplotlib backend."""
+        if select_k == 0:
+            raise ValueError(
+                "select_k=0 would produce an empty plot. Use a non-zero value or "
+                "omit select_k to plot all features."
+            )
         frame = self.frame(
+            aggregate=None,
             include_intercept=include_intercept,
             select_k=select_k,
             sorting_order=sorting_order,
@@ -688,23 +643,19 @@ class CoefficientsDisplay(DisplayMixin):
     def _compute_data_for_display(
         cls,
         *,
-        estimators: Sequence[BaseEstimator],
-        names: list[str],
-        splits: list[int | float],
+        estimator: BaseEstimator,
+        name: str,
         report_type: ReportType,
     ) -> CoefficientsDisplay:
-        """Compute the data for the display.
+        """Compute the data for the display from a single estimator.
 
         Parameters
         ----------
-        estimators : list of estimator
-            The estimators to compute the data for.
+        estimator : estimator
+            The estimator to compute the data for.
 
-        names : list of str
-            The names of the estimators.
-
-        splits : list of int or np.nan
-            The splits to compute the data for.
+        name : str
+            The name of the estimator.
 
         report_type : {"estimator", "cross-validation", "comparison-estimator", \
                 "comparison-cross-validation"}
@@ -715,37 +666,33 @@ class CoefficientsDisplay(DisplayMixin):
         CoefficientsDisplay
             The data for the display.
         """
-        feature_names, est_names, coefficients, split_indices = [], [], [], []
-        for estimator, name, split in zip(estimators, names, splits, strict=True):
-            if isinstance(estimator, Pipeline):
-                preprocessor, predictor = estimator[:-1], estimator[-1]
-            else:
-                preprocessor, predictor = None, estimator
+        if isinstance(estimator, Pipeline):
+            preprocessor, predictor = estimator[:-1], estimator[-1]
+        else:
+            preprocessor, predictor = None, estimator
 
-            if isinstance(predictor, TransformedTargetRegressor):
-                predictor = predictor.regressor_
+        if isinstance(predictor, TransformedTargetRegressor):
+            predictor = predictor.regressor_
 
-            coef = np.atleast_2d(predictor.coef_).T
-            intercept = np.atleast_2d(predictor.intercept_)
-            if coef.shape[1] != intercept.shape[1]:
-                # it happens that with `fit_intercept=False` and a multi-output
-                # regression problem, intercept is a single float. Thus, we need to
-                # repeat it for each output
-                intercept = np.repeat(intercept, coef.shape[1], axis=1)
+        coef = np.atleast_2d(predictor.coef_).T
+        intercept = np.atleast_2d(predictor.intercept_)
+        if coef.shape[1] != intercept.shape[1]:
+            # it happens that with `fit_intercept=False` and a multi-output
+            # regression problem, intercept is a single float. Thus, we need to
+            # repeat it for each output
+            intercept = np.repeat(intercept, coef.shape[1], axis=1)
 
-            coefficients.append(np.concatenate([intercept, coef]))
+        coef_data = np.concatenate([intercept, coef])
 
-            feat_names = ["Intercept"] + _get_feature_names(
-                predictor, transformer=preprocessor, n_features=coef.shape[0]
-            )
-            feature_names.extend(feat_names)
-            est_names.extend([name] * len(feat_names))
-            split_indices.extend([split] * len(feat_names))
+        feature_names = ["Intercept"] + _get_feature_names(
+            predictor, transformer=preprocessor, n_features=coef.shape[0]
+        )
+        n_features = len(feature_names)
 
         index = pd.DataFrame(
             {
-                "estimator": est_names,
-                "split": split_indices,
+                "estimator": [name] * n_features,
+                "split": [np.nan] * n_features,
                 "feature": feature_names,
             }
         )
@@ -766,13 +713,10 @@ class CoefficientsDisplay(DisplayMixin):
                 index["label"] = np.nan
             id_vars, value_name = index.columns.tolist(), "coefficient"
 
-        coefficients = pd.DataFrame(
-            np.concatenate(coefficients, axis=0), columns=columns
+        coefficients = pd.concat(
+            [index, pd.DataFrame(coef_data, columns=columns)], axis=1
         )
-        coefficients = pd.concat([index, coefficients], axis=1)
         if require_melting:
-            # melt the coefficients and ensure alignment with the label/output, split
-            # feature names, and estimator names
             coefficients = coefficients.melt(
                 id_vars=id_vars,
                 value_vars=columns,
@@ -819,8 +763,7 @@ class CoefficientsDisplay(DisplayMixin):
 
         Returns
         -------
-        self : object
-            The instance with a modified style.
+        None
 
         Raises
         ------

@@ -25,8 +25,8 @@ class Project:
     insert a key-report pair into the project, to obtain the metadata/metrics of the
     inserted reports and to get a specific report by its id.
 
-    Two mutually exclusive modes are available and can be configured using the ``mode``
-    parameter of the constructor:
+    Three mutually exclusive modes are available and can be configured using the
+    ``mode`` parameter of the constructor:
 
     .. rubric:: Hub mode
 
@@ -57,13 +57,18 @@ class Project:
     - on Linux, usually ``${HOME}/.local/share/skore``,
     - on macOS, usually ``${HOME}/Library/Application Support/skore``.
 
+    .. rubric:: MLflow mode
+
+    In this mode, ``name`` is used as the MLflow experiment name. Reports are persisted
+    as MLflow model artifacts in runs created under this experiment.
+
     Refer to the :ref:`project` section of the user guide for more details.
 
     Parameters
     ----------
     name : str
         The name of the project.
-    mode : {"hub", "local"}
+    mode : {"hub", "local", "mlflow"}
         The mode of the project.
     **kwargs : dict
         Extra keyword arguments passed to the project, depending on its mode.
@@ -75,7 +80,7 @@ class Project:
     ----------
     name : str
         The name of the project.
-    mode : {"hub", "local"}
+    mode : {"hub", "local", "mlflow"}
         The mode of the project.
     ml_task : MLTask
         The ML task of the project; unset until a first report is put.
@@ -86,32 +91,16 @@ class Project:
 
     >>> from sklearn.datasets import make_classification, make_regression
     >>> from sklearn.linear_model import LinearRegression, LogisticRegression
-    >>> from sklearn.model_selection import train_test_split
-    >>> from skore import CrossValidationReport, EstimatorReport
+    >>> from skore import evaluate
     >>>
     >>> X, y = make_classification(random_state=42)
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> classifier = LogisticRegression(max_iter=10)
-    >>> classifier_report = EstimatorReport(
-    >>>     classifier,
-    >>>     X_train=X_train,
-    >>>     y_train=y_train,
-    >>>     X_test=X_test,
-    >>>     y_test=y_test,
-    >>> )
+    >>> classifier_report = evaluate(classifier, X, y, splitter=0.2)
     >>>
     >>> X, y = make_regression(random_state=42)
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> regressor = LinearRegression()
-    >>> regressor_report = EstimatorReport(
-    >>>     regressor,
-    >>>     X_train=X_train,
-    >>>     y_train=y_train,
-    >>>     X_test=X_test,
-    >>>     y_test=y_test,
-    >>> )
-    >>>
-    >>> cv_regressor_report = CrossValidationReport(regressor, X, y)
+    >>> regressor_report = evaluate(regressor, X, y, splitter=0.2)
+    >>> cv_regressor_report = evaluate(regressor, X, y, splitter=5)
 
     Construct the project in local mode, persisted in a temporary directory.
 
@@ -151,10 +140,12 @@ class Project:
                 )
 
             parameters = {"workspace": match["workspace"], "name": match["name"]}
-        elif mode == "local":
+        elif mode == "local" or mode == "mlflow":
             parameters = {"name": name}
         else:
-            raise ValueError(f'`mode` must be "hub" or "local" (found {mode})')
+            raise ValueError(
+                f'`mode` must be "hub", "local" or "mlflow" (found {mode})'
+            )
 
         return plugin.get(group="skore.plugins.project", mode=mode), parameters
 
@@ -166,7 +157,8 @@ class Project:
         ----------
         name : str
             The name of the project.
-        mode : {"hub", "local"}, default "local"
+            For mode:mlflow, this name will be used as the experiment name.
+        mode : {"hub", "local", "mlflow"}, default "local"
             The mode of the project.
         **kwargs : dict
             Extra keyword arguments passed to the project, depending on its mode.
@@ -183,6 +175,9 @@ class Project:
                 - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
                 - on Linux, usually ``${HOME}/.cache/skore``,
                 - on macOS, usually ``${HOME}/Library/Caches/skore``.
+
+            tracking_uri : str, mode:mlflow only.
+                The URI of the MLflow tracking server.
         """
         plugin, parameters = Project.__setup_plugin(mode, name)
 
@@ -221,6 +216,7 @@ class Project:
         ----------
         key : str
             The key to associate with ``report`` in the project.
+            Name of the run for mode:mlflow
         report : EstimatorReport | CrossValidationReport
             The report to associate with ``key`` in the project.
 
@@ -282,13 +278,13 @@ class Project:
     @staticmethod
     def delete(name: str, *, mode: ProjectMode = "local", **kwargs):
         r"""
-        Delete a project.
+        Delete a project. Not implemented for MLFlow projects.
 
         Parameters
         ----------
         name : str
             The name of the project.
-        mode : {"hub", "local"}, default "local"
+        mode : {"hub", "local", "mlflow"}, default "local"
             The mode of the project.
         **kwargs : dict
             Extra keyword arguments passed to the project, depending on its mode.
@@ -305,6 +301,9 @@ class Project:
                 - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
                 - on Linux, usually ``${HOME}/.cache/skore``,
                 - on macOS, usually ``${HOME}/Library/Caches/skore``.
+
+            tracking_uri : str, mode:mlflow only.
+                The URI of the MLflow tracking server.
         """
         plugin, parameters = Project.__setup_plugin(mode, name)
 

@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -113,17 +114,6 @@ def test_from_fitted_pipeline(
     assert report.y_test is y
 
 
-def test_invalidate_cache_data(forest_binary_classification_with_test):
-    """Check that we invalidate the cache when the data is changed."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    for attribute in ("X_test", "y_test"):
-        report._cache["mocking"] = "mocking"  # mock writing to cache
-        setattr(report, attribute, None)
-        assert report._cache == {}
-
-
 @pytest.mark.parametrize(
     "Estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods",
     [
@@ -164,13 +154,16 @@ def test_check_support_plot(
 @pytest.mark.parametrize(
     "fixture_name, pass_train_data, expected_n_keys",
     [
-        ("forest_binary_classification_with_test", True, 10),
-        ("svc_binary_classification_with_test", True, 10),
-        ("forest_multiclass_classification_with_test", True, 12),
+        # expected n keys:
+        # (result + time for 'predict'
+        #  & result for 'predict_proba' or 'decision_function') x train, test
+        ("forest_binary_classification_with_test", True, 6),
+        ("svc_binary_classification_with_test", True, 6),
+        ("forest_multiclass_classification_with_test", True, 6),
         ("linear_regression_with_test", True, 4),
-        ("forest_binary_classification_with_test", False, 5),
-        ("svc_binary_classification_with_test", False, 5),
-        ("forest_multiclass_classification_with_test", False, 6),
+        ("forest_binary_classification_with_test", False, 3),
+        ("svc_binary_classification_with_test", False, 3),
+        ("forest_multiclass_classification_with_test", False, 3),
         ("linear_regression_with_test", False, 2),
     ],
 )
@@ -219,7 +212,7 @@ def test_flat_index(forest_binary_classification_with_test):
     """
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize(flat_index=True).frame()
+    result = report.metrics.summarize().frame(flat_index=True)
     assert result.shape == (9, 1)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
@@ -255,8 +248,6 @@ def test_get_predictions():
     np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
     predictions = report.get_predictions(data_source="train")
     np.testing.assert_allclose(predictions, report.estimator_.predict(X_train))
-    predictions = report.get_predictions(data_source="X_y", X=X_test)
-    np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
 
     # check the validity of the `predict_proba` method
     predictions = report.get_predictions(
@@ -265,32 +256,10 @@ def test_get_predictions():
     np.testing.assert_allclose(
         predictions, report.estimator_.predict_proba(X_test)[:, 1]
     )
-    predictions = report.get_predictions(
-        data_source="train", response_method="predict_proba", pos_label=0
-    )
-    np.testing.assert_allclose(
-        predictions, report.estimator_.predict_proba(X_train)[:, 0]
-    )
-    predictions = report.get_predictions(
-        data_source="X_y", response_method="predict_proba", X=X_test
-    )
-    np.testing.assert_allclose(
-        predictions, report.estimator_.predict_proba(X_test)[:, 1]
-    )
 
     # check the validity of the `decision_function` method
     predictions = report.get_predictions(
         data_source="test", response_method="decision_function"
-    )
-    np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
-    predictions = report.get_predictions(
-        data_source="train", response_method="decision_function", pos_label=0
-    )
-    np.testing.assert_allclose(
-        predictions, -report.estimator_.decision_function(X_train)
-    )
-    predictions = report.get_predictions(
-        data_source="X_y", response_method="decision_function", X=X_test
     )
     np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
 
@@ -332,3 +301,47 @@ def test_clustering():
         "classification or regression model instead.",
     ):
         EstimatorReport(KMeans())
+
+
+def test_has_no_deep_copy():
+    """Check that we raise a warning if the deep copy failed with a fitted
+    estimator."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression()
+    # Make it so deepcopy does not work
+    estimator.__reduce_ex__ = None
+    estimator.__reduce__ = None
+
+    with pytest.warns(UserWarning, match="Deepcopy failed"):
+        EstimatorReport(
+            estimator,
+            fit=False,
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+        )
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+@pytest.mark.parametrize("with_test", [False, True])
+@pytest.mark.parametrize("bad_estimator", [False, True])
+def test_report_repr_html(with_train, with_test, bad_estimator):
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    class DummyClassifierBadRepr(DummyClassifier):
+        def _repr_html_(self):
+            raise TypeError("error")
+
+    estimator = DummyClassifierBadRepr() if bad_estimator else DummyClassifier()
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    if with_test:
+        kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    assert "DummyClassifier" in report._repr_html_()

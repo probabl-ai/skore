@@ -14,7 +14,7 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.types import _DEFAULT, PositiveLabel
+from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._progress_bar import track
 
@@ -336,12 +336,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def get_predictions(
         self,
         *,
-        data_source: Literal["train", "test", "X_y"],
+        data_source: Literal["train", "test"],
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
-        X: ArrayLike | None = None,
-        pos_label: PositiveLabel | None = _DEFAULT,
     ) -> list[ArrayLike] | list[list[ArrayLike]]:
         """Get predictions from the underlying reports.
 
@@ -350,31 +348,15 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "X_y"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "X_y" : use the provided `X` and `y` to compute the metric.
 
         response_method : {"predict", "predict_proba", "decision_function"}, \
                 default="predict"
             The response method to use to get the predictions.
-
-        X : array-like of shape (n_samples, n_features), default=None
-            When `data_source` is "X_y", the input features on which to compute the
-            response method.
-
-        pos_label : int, float, bool, str or None, default=_DEFAULT
-            The label to consider as the positive class when computing predictions in
-            binary classification cases. By default, the positive class is set to the
-            one provided when creating the report. If `None`, `estimator_.classes_[1]`
-            is used as positive label.
-
-            When `pos_label` is equal to `estimator_.classes_[0]`, it will be equivalent
-            to `estimator_.predict_proba(X)[:, 0]` for `response_method="predict_proba"`
-            and `-estimator_.decision_function(X)` for
-            `response_method="decision_function"`.
 
         Returns
         -------
@@ -410,8 +392,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             report.get_predictions(
                 data_source=data_source,
                 response_method=response_method,
-                X=X,
-                pos_label=pos_label,
             )
             for report in self.reports_.values()
         ]
@@ -419,7 +399,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def create_estimator_report(
         self,
         *,
-        name: str,
+        report_key: str,
         X_test: ArrayLike | None = None,
         y_test: ArrayLike | None = None,
     ) -> EstimatorReport:
@@ -432,8 +412,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        name : str
-            The name of the estimator to create a report for.
+        report_key : str
+            The key associated with the estimator to create a report for, as stored in
+            the :attr:`reports_` attribute of the :class:`~skore.ComparisonReport`.
+            List the available keys with `reports_.keys()`.
 
         X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
             Testing data. It should have the same structure as the training data.
@@ -441,23 +423,47 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
             Testing target.
 
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import train_test_split
+        >>> from skore import ComparisonReport, CrossValidationReport
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> linear_report = CrossValidationReport(
+        ...     LogisticRegression(random_state=42), X_train, y_train
+        ... )
+        >>> forest_report = CrossValidationReport(
+        ...     RandomForestClassifier(random_state=42), X_train, y_train
+        ... )
+        >>> comparison_report = ComparisonReport([linear_report, forest_report])
+        >>> summary = comparison_report.metrics.summarize().frame()
+
+        >>> # Notice that e.g. the RandomForestClassifier performs best
+        >>> final_report = comparison_report.create_estimator_report(
+        ...     report_key="RandomForestClassifier", X_test=X_test, y_test=y_test
+        ... )
+        >>> final_report.metrics.summarize().frame()
+
         Returns
         -------
         report : :class:`~skore.EstimatorReport`
             The estimator report.
         """
-        if name not in self.reports_:
+        if report_key not in self.reports_:
             raise ValueError(
-                f"Estimator name {name} not found in the comparison report. "
-                f"Available names are: {list(self.reports_.keys())}."
+                f"Estimator with key {report_key} not found in the comparison report. "
+                f"Available keys are: {list(self.reports_.keys())}."
             )
 
-        if isinstance(self.reports_[name], CrossValidationReport):
+        if isinstance(self.reports_[report_key], CrossValidationReport):
             return cast(
-                CrossValidationReport, self.reports_[name]
+                CrossValidationReport, self.reports_[report_key]
             ).create_estimator_report(X_test=X_test, y_test=y_test)
 
-        estimator_report = cast(EstimatorReport, self.reports_[name])
+        estimator_report = cast(EstimatorReport, self.reports_[report_key])
         X_concat = (
             pd.concat([estimator_report._X_train, estimator_report._X_test])
             if isinstance(estimator_report._X_train, pd.DataFrame)

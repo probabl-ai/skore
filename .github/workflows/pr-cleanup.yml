@@ -58,6 +58,7 @@ jobs:
   pr-clean-documentation-preview:
     if: always()
     runs-on: ubuntu-latest
+    environment: dev
     permissions:
       id-token: write
     steps:
@@ -68,7 +69,28 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Clean documentation preview
-        run: aws s3 rm "s3://${BUCKET}/${PULL_REQUEST_NUMBER}/" --recursive
+        run: aws s3 rm "s3://${BUCKET}/${GITHUB_EVENT_NUMBER}/" --recursive
         env:
           BUCKET: ${{ vars.DOCUMENTATION_PREVIEW_BUCKET }}
-          PULL_REQUEST_NUMBER: ${{ github.event.number }}
+          GITHUB_EVENT_NUMBER: ${{ github.event.number }}
+
+  pr-clean-documentation-examples:
+    if: always()
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - "example-getting-started"
+          - "example-skore-hub-project"
+    steps:
+      - name: Clean documentation examples
+        run: |
+          set -u
+          curl -X DELETE "${API}/projects/${WORKSPACE}/${PROJECT}-pull-${GITHUB_EVENT_NUMBER}" -H "X-API-Key: ${API_KEY}"
+        env:
+          GITHUB_EVENT_NUMBER: ${{ github.event.number }}
+          API: https://api.skore.probabl.ai
+          API_KEY: ${{ secrets.DOCUMENTATION_EXAMPLE_API_KEY }}
+          WORKSPACE: ${{ vars.DOCUMENTATION_EXAMPLE_WORKSPACE }}
+          PROJECT: ${{ matrix.project }}

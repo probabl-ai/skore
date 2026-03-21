@@ -94,3 +94,8 @@ def setup(app):
         package="skore",
         url_fmt="https://github.com/probabl-ai/skore/blob/{revision}/skore/src/skore/{path}#L{lineno}",
     )
+
+    return {
+        'parallel_read_safe': True,
+        'parallel_write_safe': True,
+    }

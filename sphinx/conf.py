@@ -13,20 +13,18 @@ extensions, themes, and gallery settings.
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import sys
 import os
-from sphinx_gallery.sorting import ExplicitOrder
-from pathlib import Path
+import pathlib
+import sys
 
 # Make it possible to load custom extensions from sphinxext directory
-sys.path.append(str(Path("sphinxext").resolve()))
+sys.path.append(str(pathlib.Path("sphinxext").resolve()))
 
 project = "skore"
 copyright = "2026, Probabl"
 author = "Probabl"
 version = os.environ["SPHINX_VERSION"]
 release = os.environ["SPHINX_RELEASE"]
-domain = os.environ["SPHINX_DOMAIN"]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -38,16 +36,17 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
     "sphinx.ext.linkcode",
+    "sphinx_autosummary_accessors",
+    "sphinx_copybutton",
     "sphinx_design",
     "sphinx_gallery.gen_gallery",
-    "sphinx_copybutton",
+    "sphinx_issues",
     "sphinx_tabs.tabs",
-    "sphinx_autosummary_accessors",
     # Custom extensions
     "generate_accessor_tables",
     "github_link",
+    "landing_page",
     "matplotlib_skore_scraper",
-    "report_help",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
@@ -91,25 +90,20 @@ html_static_path = ["_static"]
 
 html_css_files = ["css/custom.css"]
 html_js_files = [
-    "js/sg_plotly_resize.js",
-    "js/gtm.js",
-]
-
-# list of examples in explicit order
-subsections_order = [
-    "../examples/getting_started",
-    "../examples/use_cases",
-    "../examples/model_evaluation",
-    "../examples/technical_details",
+    "js/sg_plotly_resize.js"
 ]
 
 # sphinx_gallery options
 sphinx_gallery_conf = {
     "examples_dirs": "../examples",  # path to example scripts
     "gallery_dirs": "auto_examples",  # path to gallery generated output
-    "filename_pattern": "plot_",  # pattern to select examples; change this to only build some of the examples
-    "subsection_order": ExplicitOrder(subsections_order),  # sorting gallery subsections
-    # see https://sphinx-gallery.github.io/stable/configuration.html#sub-gallery-order
+    "filename_pattern": "plot_",
+    "subsection_order": [
+        "../examples/getting_started",
+        "../examples/use_cases",
+        "../examples/model_evaluation",
+        "../examples/technical_details",
+    ],
     "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
     "show_memory": False,
     "write_computation_times": False,
@@ -121,8 +115,32 @@ sphinx_gallery_conf = {
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
     "abort_on_example_error": True,
+    "parallel": True,
 }
 
+# Build the HUB examples conditionally, only when credentials are available:
+# - after each __commit__ on the `main` branch,
+# - after each __release__ (tag `skore/X.Y.Z`).
+if not (
+    os.environ.get("GITHUB_ACTIONS")
+    and os.environ.get("SPHINX_EXAMPLE_API_KEY")
+    and os.environ.get("SPHINX_EXAMPLE_WORKSPACE")
+):
+    sphinx_gallery_conf["ignore_pattern"] = (
+        r"plot_getting_started\.py|plot_skore_hub_project\.py"
+    )
+
+# Expose HUB URLs to RST
+example_base_url = (os.environ.get("SPHINX_EXAMPLE_BASE_URL") or "https://example.com")
+rst_epilog = f"""
+.. _example-getting-started: {example_base_url}/example-getting-started-{version}/cross-validations
+.. _example-skore-hub-project: {example_base_url}/example-skore-hub-project-{version}
+"""
+
+# Skore Hub base URL for landing page link (versioned example on Hub)
+html_context = {
+    "skore_hub_example_url": f"{example_base_url}/example-getting-started-{version}/cross-validations/",
+}
 # intersphinx configuration
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
@@ -131,7 +149,7 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org/stable", None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
     "skrub": ("https://skrub-data.org/stable/", None),
-    "pandas": ("http://pandas.pydata.org/pandas-docs/stable", None),
+    "pandas": ("http://pandas.pydata.org/docs/", None),
     "polars": ("https://docs.pola.rs/py-polars/html", None),
     "seaborn": ("http://seaborn.pydata.org", None),
     "xgboost": ("https://xgboost.readthedocs.io/en/stable/", None),
@@ -188,7 +206,7 @@ html_theme_options = {
         },
     ],
     "switcher": {
-        "json_url": f"https://{domain}/versions.json",
+        "json_url": f"{os.environ["SPHINX_URL"]}/versions.json",
         "version_match": release,
     },
     "check_switcher": True,
@@ -202,20 +220,17 @@ html_theme_options = {
 # template names.
 html_additional_pages = {"index": "index.html"}
 
-# Sphinx remove the sidebar from some pages
+# Remove the sidebar from some pages
 html_sidebars = {
     "index": [],
     "install": [],
     "contributing": [],
+    "changelog": [],
 }
 
 # Sphinx-Copybutton configuration
 copybutton_prompt_text = r">>> |\.\.\. |\$ "
 copybutton_prompt_is_regexp = True
 
-# -- Options for github link for what's new -----------------------------------
-
-# Config for sphinx_issues
-issues_uri = "https://github.com/probabl-ai/skore/issues/{issue}"
+# sphinx-issues config
 issues_github_path = "probabl-ai/skore"
-issues_user_uri = "https://github.com/{user}"

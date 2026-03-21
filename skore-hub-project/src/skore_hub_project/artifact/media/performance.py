@@ -5,6 +5,7 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Callable
 from functools import reduce
+from inspect import signature
 from io import BytesIO
 from typing import ClassVar, Literal, cast
 
@@ -63,11 +64,25 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
             else function(data_source=self.data_source)
         )
 
-        frame = display.frame()
+        frame = display.frame(**self.get_frame_kwargs(display))
 
         return dumps(
             frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
         )
+
+    @staticmethod
+    def get_frame_kwargs(display: Display) -> dict[str, str | bool]:
+        """Get the kwargs to pass to the frame method."""
+        params = signature(display.frame).parameters
+        kwargs: dict[str, str | bool] = {}
+        if "threshold_value" in params:
+            kwargs["threshold_value"] = "all"
+        if "with_average_precision" in params:
+            kwargs["with_average_precision"] = True
+        if "with_roc_auc" in params:
+            kwargs["with_roc_auc"] = True
+
+        return kwargs
 
 
 class PrecisionRecallSVG(PerformanceSVG[Report], ABC):  # noqa: D101

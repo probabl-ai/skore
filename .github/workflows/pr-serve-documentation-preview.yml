@@ -15,6 +15,7 @@ jobs:
   pr-serve-documentation-preview:
     if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    environment: dev
     permissions:
       actions: read
       contents: read
@@ -58,5 +59,5 @@ jobs:
           number: ${{ steps.acquire-pr-context.outputs.pr-number }}
           header: documentation-preview
           message: >-
-            [Documentation preview](https://${{ vars.DOCUMENTATION_PREVIEW_DOMAIN }}/${{ steps.acquire-pr-context.outputs.pr-number }})
+            [Documentation preview](${{ vars.DOCUMENTATION_PREVIEW_URL }}/${{ steps.acquire-pr-context.outputs.pr-number }})
             @ ${{ steps.acquire-pr-context.outputs.pr-head-sha }}

@@ -1,8 +1,19 @@
-def test_zero(comparison_estimator_reports_binary_classification):
-    """If `select_k` is zero then the output is an empty dataframe."""
+import pytest
+
+
+def test_zero_frame(comparison_estimator_reports_binary_classification):
+    """If `select_k` is zero then the frame is empty."""
     report = comparison_estimator_reports_binary_classification
     frame = report.inspection.coefficients().frame(select_k=0)
     assert frame.empty
+
+
+def test_zero_plot_raises(comparison_estimator_reports_binary_classification):
+    """`plot(select_k=0)` raises ValueError."""
+    report = comparison_estimator_reports_binary_classification
+    display = report.inspection.coefficients()
+    with pytest.raises(ValueError, match="select_k=0 would produce an empty plot"):
+        display.plot(select_k=0)
 
 
 def test_negative(comparison_estimator_reports_binary_classification):

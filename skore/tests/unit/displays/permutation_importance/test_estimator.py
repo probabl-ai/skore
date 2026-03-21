@@ -22,11 +22,7 @@ from skore._utils._testing import custom_r2_score
 )
 def test_invalid_subplot_by(pyplot, task, request):
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
-    valid_values = ["auto", "None"]
-    err_msg = (
-        f"The column 'invalid' is not available for subplotting. You can use the "
-        f"following values to create subplots: {', '.join(valid_values)}"
-    )
+    err_msg = "The column 'invalid' is not available for subplotting."
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by="invalid")
@@ -44,15 +40,15 @@ def test_invalid_subplot_by(pyplot, task, request):
 @pytest.mark.parametrize(
     "subplot_by, expected_len",
     [
-        (None, 0),
-        ("auto", 0),
+        (None, 1),
+        ("auto", 1),
     ],
 )
 def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
     display.plot(subplot_by=subplot_by)
-    if expected_len == 0:
+    if expected_len == 1:
         assert isinstance(display.ax_, mpl.axes.Axes)
     else:
         assert len(display.ax_.flatten()) == expected_len

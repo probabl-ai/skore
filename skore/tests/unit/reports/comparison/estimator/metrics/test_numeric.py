@@ -2,12 +2,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.base import clone
-from sklearn.metrics import accuracy_score
 
 from skore import ComparisonReport, EstimatorReport
 
 
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
 @pytest.mark.parametrize(
     "metric_name, expected",
     [
@@ -34,7 +32,7 @@ from skore import ComparisonReport, EstimatorReport
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
-                    [("Precision", 0), ("Precision", 1)],
+                    [("Precision", "0"), ("Precision", "1")],
                     names=["Metric", "Label / Average"],
                 ),
             ),
@@ -51,7 +49,7 @@ from skore import ComparisonReport, EstimatorReport
                     name="Estimator",
                 ),
                 index=pd.MultiIndex.from_tuples(
-                    [("Recall", 0), ("Recall", 1)],
+                    [("Recall", "0"), ("Recall", "1")],
                     names=["Metric", "Label / Average"],
                 ),
             ),
@@ -92,36 +90,20 @@ from skore import ComparisonReport, EstimatorReport
     ],
 )
 def test_binary_classification(
-    metric_name,
-    expected,
-    data_source,
-    comparison_estimator_reports_binary_classification,
+    metric_name, expected, comparison_estimator_reports_binary_classification
 ):
     """Check the metrics work."""
     report = comparison_estimator_reports_binary_classification
-    sub_report = next(iter(report.reports_.values()))
-    X_test, y_test = sub_report.X_test, sub_report.y_test
 
     # ensure metric is valid
-    if data_source == "X_y":
-        result = getattr(report.metrics, metric_name)(
-            data_source=data_source, X=X_test, y=y_test
-        )
-    else:
-        result = getattr(report.metrics, metric_name)(data_source=data_source)
+    result = getattr(report.metrics, metric_name)()
     pd.testing.assert_frame_equal(result, expected)
 
     # ensure metric is valid even from the cache
-    if data_source == "X_y":
-        result = getattr(report.metrics, metric_name)(
-            data_source=data_source, X=X_test, y=y_test
-        )
-    else:
-        result = getattr(report.metrics, metric_name)(data_source=data_source)
+    result = getattr(report.metrics, metric_name)()
     pd.testing.assert_frame_equal(result, expected)
 
 
-@pytest.mark.parametrize("data_source", ["test", "X_y"])
 @pytest.mark.parametrize(
     "metric_name, expected",
     [
@@ -149,67 +131,16 @@ def test_binary_classification(
         ),
     ],
 )
-def test_regression(
-    metric_name, expected, data_source, comparison_estimator_reports_regression
-):
+def test_regression(metric_name, expected, comparison_estimator_reports_regression):
     """Check the metrics work."""
     comp = comparison_estimator_reports_regression
-    sub_report = next(iter(comp.reports_.values()))
-    X_test, y_test = sub_report.X_test, sub_report.y_test
-
     # ensure metric is valid
-    if data_source == "X_y":
-        result = getattr(comp.metrics, metric_name)(
-            data_source=data_source, X=X_test, y=y_test
-        )
-    else:
-        result = getattr(comp.metrics, metric_name)()
-    pd.testing.assert_frame_equal(result, expected)
+    result = getattr(comp.metrics, metric_name)()
+    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
     # ensure metric is valid even from the cache
-    if data_source == "X_y":
-        result = getattr(comp.metrics, metric_name)(
-            data_source=data_source, X=X_test, y=y_test
-        )
-    else:
-        result = getattr(comp.metrics, metric_name)()
-    pd.testing.assert_frame_equal(result, expected)
-
-
-def test_custom_metric_data_source_external(
-    binary_classification_data, comparison_estimator_reports_binary_classification
-):
-    """Check that `custom_metric` works with an "X_y" data source."""
-    X_test, y_test = binary_classification_data
-    report = comparison_estimator_reports_binary_classification
-
-    expected = pd.DataFrame(
-        [[0.48, 0.41]],
-        columns=pd.Index(["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"),
-        index=pd.Index(["Acc"], name="Metric"),
-    )
-
-    # ensure metric is valid
-    result = report.metrics.custom_metric(
-        metric_function=accuracy_score,
-        response_method="predict",
-        metric_name="Acc",
-        data_source="X_y",
-        X=X_test,
-        y=y_test,
-    )
-    pd.testing.assert_frame_equal(result, expected)
-
-    # ensure metric is valid even from the cache
-    result = report.metrics.custom_metric(
-        metric_function=accuracy_score,
-        response_method="predict",
-        metric_name="Acc",
-        data_source="X_y",
-        X=X_test,
-        y=y_test,
-    )
-    pd.testing.assert_frame_equal(result, expected)
+    result = getattr(comp.metrics, metric_name)()
+    pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
 
 def test_timings(comparison_estimator_reports_binary_classification):
@@ -235,22 +166,6 @@ def test_timings(comparison_estimator_reports_binary_classification):
         "Predict time test (s)",
     ]
     assert timings.columns.tolist() == list(report.reports_.keys())
-
-
-def test_timings_flat_index(
-    comparison_estimator_reports_binary_classification,
-):
-    """Check that time measurements have _s suffix with flat_index=True."""
-    report = comparison_estimator_reports_binary_classification
-    report.get_predictions(data_source="train")
-    report.get_predictions(data_source="test")
-
-    # Get metrics with flat_index=True
-    results = report.metrics.summarize(flat_index=True).frame()
-
-    # Check that expected time measurements are in index with _s suffix
-    assert "fit_time_s" in results.index
-    assert "predict_time_s" in results.index
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
@@ -303,10 +218,6 @@ def test_display_binary_classification_pos_label(
     display.plot()
     assert "Positive label: A" in display.figure_.get_suptitle()
 
-    display = getattr(report.metrics, metric)(pos_label="B")
-    display.plot()
-    assert "Positive label: B" in display.figure_.get_suptitle()
-
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_summarize_pos_label_default(
@@ -340,56 +251,6 @@ def test_summarize_pos_label_default(
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_summarize_pos_label_overwrite(
-    metric, logistic_binary_classification_with_train_test
-):
-    """Check that `pos_label` can be overwritten in `summarize`."""
-    classifier, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    labels = np.array(["A", "B"], dtype=object)
-    y_train = labels[y_train]
-    y_test = labels[y_test]
-    report_1 = EstimatorReport(
-        clone(classifier),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-        pos_label="B",
-    )
-    report_2 = EstimatorReport(
-        clone(classifier),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-        pos_label="B",
-    )
-    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(metric=metric, pos_label=None).frame()
-    result = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert "Label / Average" not in result.columns
-    result = result.set_index("Metric")
-    for report_name in report.reports_:
-        assert (
-            result.loc[metric.capitalize(), report_name]
-            == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
-        )
-
-    result = (
-        report.metrics.summarize(metric=metric, pos_label="A").frame().reset_index()
-    )
-    assert "Label / Average" not in result.columns
-    result = result.set_index("Metric")
-    for report_name in report.reports_:
-        assert (
-            result.loc[metric.capitalize(), report_name]
-            == result_both_labels.loc[(metric.capitalize(), "A"), report_name]
-        )
-
-
-@pytest.mark.parametrize("metric", ["precision", "recall"])
 def test_precision_recall_pos_label_default(
     metric, logistic_binary_classification_with_train_test
 ):
@@ -418,50 +279,3 @@ def test_precision_recall_pos_label_default(
     result_both_labels = getattr(report.metrics, metric)().reset_index()
     assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
-
-
-@pytest.mark.parametrize("metric", ["precision", "recall"])
-def test_precision_recall_pos_label_overwrite(
-    metric, logistic_binary_classification_with_train_test
-):
-    """Check that `pos_label` can be overwritten in `summarize`"""
-    classifier, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    labels = np.array(["A", "B"], dtype=object)
-    y_train = labels[y_train]
-    y_test = labels[y_test]
-    report_1 = EstimatorReport(
-        clone(classifier),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-    )
-    report_2 = EstimatorReport(
-        clone(classifier),
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-    )
-    report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = getattr(report.metrics, metric)(pos_label=None)
-
-    result = getattr(report.metrics, metric)(pos_label="B").reset_index()
-    assert "Label / Average" not in result.columns
-    result = result.set_index("Metric")
-    for report_name in report.reports_:
-        assert (
-            result.loc[metric.capitalize(), report_name]
-            == result_both_labels.loc[(metric.capitalize(), "B"), report_name]
-        )
-
-    result = getattr(report.metrics, metric)(pos_label="A").reset_index()
-    assert "Label / Average" not in result.columns
-    result = result.set_index("Metric")
-    for report_name in report.reports_:
-        assert (
-            result.loc[metric.capitalize(), report_name]
-            == result_both_labels.loc[(metric.capitalize(), "A"), report_name]
-        )

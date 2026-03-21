@@ -1,0 +1,18 @@
+<div>
+  <h2>EstimatorReport</h2>
+  <p>
+    Use <code>.help()</code> for information on available functionality.
+  </p>
+  <details open>
+    <summary>Results</summary>
+    {{ metrics_summary | safe }}
+  </details>
+  <details>
+    <summary>Estimator</summary>
+    {{ estimator_display | safe }}
+  </details>
+  <details>
+    <summary>Data</summary>
+    {{ table_report | safe }}
+  </details>
+</div>

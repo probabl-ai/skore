@@ -98,9 +98,12 @@ def test_attributes(fixture_name, request, cv, n_jobs):
 @pytest.mark.parametrize(
     "fixture_name, expected_n_keys",
     [
-        ("forest_binary_classification_data", 10),
-        ("svc_binary_classification_data", 10),
-        ("forest_multiclass_classification_data", 12),
+        # expected n keys:
+        # (result + time for 'predict'
+        #  & result for 'predict_proba' or 'decision_function') x train, test
+        ("forest_binary_classification_data", 6),
+        ("svc_binary_classification_data", 6),
+        ("forest_multiclass_classification_data", 6),
         ("linear_regression_data", 4),
     ],
 )
@@ -123,7 +126,7 @@ def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
         assert estimator_report._cache == {}
 
 
-@pytest.mark.parametrize("data_source", ["train", "test", "X_y"])
+@pytest.mark.parametrize("data_source", ["train", "test"])
 @pytest.mark.parametrize(
     "response_method", ["predict", "predict_proba", "decision_function"]
 )
@@ -133,29 +136,25 @@ def test_get_predictions(
 ):
     """Check the behaviour of the `get_predictions` method."""
     estimator, X, y = logistic_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
+    report = CrossValidationReport(
+        estimator,
+        X,
+        y,
+        splitter=2,
+        pos_label=pos_label,
+    )
 
-    if data_source == "X_y":
-        predictions = report.get_predictions(
-            data_source=data_source,
-            response_method=response_method,
-            X=X,
-            pos_label=pos_label,
-        )
-    else:
-        predictions = report.get_predictions(
-            data_source=data_source,
-            response_method=response_method,
-            pos_label=pos_label,
-        )
+    predictions = report.get_predictions(
+        data_source=data_source,
+        response_method=response_method,
+    )
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
             expected_shape = report.estimator_reports_[split_idx].y_train.shape
-        elif data_source == "test":
+        else:
+            assert data_source == "test"
             expected_shape = report.estimator_reports_[split_idx].y_test.shape
-        else:  # data_source == "X_y"
-            expected_shape = (X.shape[0],)
         assert split_predictions.shape == expected_shape
 
 
@@ -168,9 +167,6 @@ def test_get_predictions_error(
 
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid")
-
-    with pytest.raises(ValueError, match="The `X` parameter is required"):
-        report.get_predictions(data_source="X_y")
 
 
 def test_pickle(tmp_path, logistic_binary_classification_data):
@@ -246,25 +242,3 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
     assert joblib.hash(est_report_with_test.X_test) == joblib.hash(X_heldout)
     assert joblib.hash(est_report_with_test.y_test) == joblib.hash(y_heldout)
     assert est_report_with_test.pos_label == cv_report.pos_label
-
-
-def test_pos_label_setter_propagates_to_underlying_estimator_reports(
-    forest_binary_classification_data,
-):
-    """Check that setting pos_label on CrossValidationReport updates the report, all
-    underlying estimator reports, and re-initializes internal state (hash and RNG)."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
-
-    assert report.pos_label is None
-
-    report.metrics.summarize()  # trigger cache usage
-    hash_before = report._hash
-    rng_id_before = id(report._rng)
-
-    report.pos_label = 1
-    assert report.pos_label == 1
-    for estimator_report in report.estimator_reports_:
-        assert estimator_report.pos_label == 1
-    assert report._hash != hash_before
-    assert id(report._rng) != rng_id_before

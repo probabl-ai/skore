@@ -2,6 +2,7 @@ from typing import cast
 
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
 from numpy.typing import ArrayLike
 from skrub import _dataframe as sbd
 
@@ -10,6 +11,12 @@ from skore._externals._sklearn_compat import check_array
 
 def _normalize_X_as_dataframe(X: ArrayLike) -> pd.DataFrame:
     """Normalize feature data as a pandas DataFrame with string column names."""
+    if sp.issparse(X):
+        raise NotImplementedError(
+            "Data analysis via skrub is currently not supported for sparse matrices. "
+            "Please use dense data."
+        )
+
     if not sbd.is_dataframe(X):
         X = check_array(X, accept_sparse=False, ensure_2d=True, ensure_all_finite=False)
         X = cast(np.ndarray, X)
@@ -27,6 +34,12 @@ def _normalize_X_as_dataframe(X: ArrayLike) -> pd.DataFrame:
 
 def _normalize_y_as_dataframe(y: ArrayLike) -> pd.DataFrame:
     """Normalize target data as a pandas DataFrame with predictable column names."""
+    if sp.issparse(y):
+        raise NotImplementedError(
+            "Data analysis via skrub is currently not supported for sparse matrices. "
+            "Please use dense data."
+        )
+
     if isinstance(y, pd.Series):
         name = y.name if y.name is not None else "Target"
         return y.to_frame(name=name)
