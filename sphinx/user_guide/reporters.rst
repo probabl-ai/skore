@@ -84,9 +84,7 @@ regression). Nevertheless, you can specify the metrics you want to compute thank
 `scoring` parameter. We accept different types:
 
 1. A string that corresponds to a scikit-learn scorer name or a built-in `skore`
-   metric name, For error metrics, you can pass the name with or without the
-   ``neg_`` prefix (e.g., ``"mean_squared_error"`` or ``"neg_mean_squared_error"``
-   are both valid),
+   metric name,
 
 2. A callable,
 
