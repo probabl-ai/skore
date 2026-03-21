@@ -7,7 +7,9 @@
         {% include "estimator_report-content.html.j2" %}
     </template>
 
-    <div id="{{ container_id }}"></div>
+    <div id="{{ container_id }}">
+        <div slot="table-report">{{ table_report | safe }}</div>
+    </div>
 
     <script>
 {% include "help.js" %}

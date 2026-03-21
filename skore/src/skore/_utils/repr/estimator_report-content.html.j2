@@ -43,7 +43,7 @@
                     class="report-tooltip-accessor-link"
                 >{{ report_class_name }}.data</a></span></span>
         </summary>
-        <div class="report-section report-data">{{ table_report | safe }}</div>
+        <div class="report-section report-data"><slot name="table-report"></slot></div>
     </details>
     <p class="report-hint-note" role="note">
         Use
