@@ -242,6 +242,7 @@ comparison = compare(
         "Advanced Pipeline": advanced_cv_report,
     },
 )
+comparison
 
 # %%
 # This report follows the same API as :class:`~skore.CrossValidationReport`:
