@@ -6,6 +6,7 @@ from typing import Any, Literal, cast
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.figure import Figure
 from numpy.typing import ArrayLike
 from scipy.sparse import issparse, spmatrix
 from sklearn.base import BaseEstimator, is_classifier
@@ -45,17 +46,6 @@ class PermutationImportanceDisplay(DisplayMixin):
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
         Report type from which the display is created.
-
-    Attributes
-    ----------
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the permutation importance.
-
-    figure_ : matplotlib Figure
-        Figure containing the permutation importance.
-
-    ax_ : matplotlib Axes
-        Axes with permutation importance.
     """
 
     _default_boxplot_kwargs: dict[str, Any] = {
@@ -211,7 +201,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         subplot_by: str | None = "auto",
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
-    ) -> None:
+    ) -> Figure:
         """Plot the permutation importance.
 
         Parameters
@@ -237,6 +227,10 @@ class PermutationImportanceDisplay(DisplayMixin):
         sorting_order : {"descending", "ascending", None}, default=None
             Sort features by importance before plotting. See :meth:`frame` for details.
 
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the permutation importance plot.
         """
         return self._plot(
             subplot_by=subplot_by,
@@ -252,7 +246,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         subplot_by: str | None = "auto",
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
-    ) -> None:
+    ) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
         if select_k == 0:
             raise ValueError(
@@ -321,7 +315,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             # we don't need the palette and we are at risk of raising an error or
             # deprecation warning if passing palette without a hue
 
-        self._categorical_plot(
+        figure = self._categorical_plot(
             frame=frame,
             hue=hue,
             col=col,
@@ -330,19 +324,17 @@ class PermutationImportanceDisplay(DisplayMixin):
             sharey=has_same_features,
         )
 
-        title = f"Permutation importance{aggregate_info}"
-        if subplot_by is not None:
-            title += f" by {subplot_by}"
         data_source = frame["data_source"].unique()[0]
         estimator_info = (
             ""
             if "comparison" in self.report_type
             else f" of {self.importances['estimator'].unique()[0]}"
         )
-        self.figure_.suptitle(
+        figure.suptitle(
             f"Permutation importance{estimator_info}\n"
             f"{aggregate_info} on {data_source} set"
         )
+        return figure
 
     @staticmethod
     def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
@@ -391,7 +383,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
         sharey: bool,
-    ) -> None:
+    ) -> Figure:
         """Plot importances with strip + box overlays.
 
         Parameters
@@ -416,7 +408,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         """
         # Ensure seaborn receives a clean, unique index when concatenating groups.
         frame = frame.reset_index(drop=True)
-        self.facet_ = sns.catplot(
+        facet = sns.catplot(
             data=frame,
             x="value",
             y="feature",
@@ -437,7 +429,8 @@ class PermutationImportanceDisplay(DisplayMixin):
         )
         add_background_features = hue is not None
         metric_name = frame["metric"].unique()[0]
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
+        figure = facet.figure
+        ax_grid = facet.axes.squeeze()
         n_features = (
             [frame["feature"].nunique()]
             if col is None
@@ -446,7 +439,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                 for col_value in frame[col].unique()
             ]
         )
-        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
+        for ax, n_feature in zip(ax_grid.flatten(), n_features, strict=True):
             _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
@@ -454,8 +447,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                 xlabel=f"Decrease in {metric_name}",
                 ylabel="",
             )
-        if len(self.ax_.flatten()) == 1:
-            self.ax_ = self.ax_.flatten()[0]
+        return figure
 
     def frame(
         self,

@@ -31,10 +31,9 @@ class TestPermutationImportanceDisplay:
         assert hasattr(display, "importances")
         assert hasattr(display, "report_type")
 
-        display.plot()
-        assert hasattr(display, "facet_")
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
+        fig = display.plot()
+        assert fig is not None
+        assert len(fig.axes) >= 1
 
     def test_internal_data_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -67,9 +66,8 @@ class TestPermutationImportanceDisplay:
         assert set(frame.columns) == expected
 
     def test_plot_structure(self, pyplot, fixture_prefix, task, request):
-        _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
-        if hasattr(ax, "flatten"):
-            ax = ax.flatten()[0]
+        _, axes = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        ax = axes[0]
         assert "Decrease in" in ax.get_xlabel()
         assert ax.get_ylabel() == ""
 
@@ -98,8 +96,8 @@ class TestPermutationImportanceDisplay:
         assert figure.get_figheight() == 6
 
         display.set_style(stripplot_kwargs={"height": 8})
-        display.plot()
-        assert display.figure_.get_figheight() == 8
+        fig = display.plot()
+        assert fig.get_figheight() == 8
 
     @pytest.mark.parametrize(
         "aggregate, expected_value_columns",

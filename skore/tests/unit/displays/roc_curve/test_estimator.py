@@ -11,8 +11,7 @@ def test_legend_binary_classification(
     report = estimator_reports_binary_classification[0]
     display = report.metrics.roc()
     _, ax = estimator_reports_binary_classification_figure_axes
-    assert isinstance(ax, mpl.axes.Axes)
-    legend = ax.get_legend()
+    legend = ax[0].get_legend()
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
     plot_data = display.frame(with_roc_auc=True)
@@ -33,8 +32,7 @@ def test_legend_multiclass_classification(
     _, ax = estimator_reports_multiclass_classification_figure_axes
     labels = display.roc_curve["label"].cat.categories
 
-    assert isinstance(ax, mpl.axes.Axes)
-    legend = ax.get_legend()
+    legend = ax[0].get_legend()
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
     for label_idx, label in enumerate(labels):
@@ -80,11 +78,13 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.roc()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
         if subplot_by is None:
-            assert isinstance(display.ax_, mpl.axes.Axes)
+            assert len(axes) == 1
+            assert isinstance(axes[0], mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            assert len(axes) == expected_len
 
 
 @pytest.mark.parametrize(
@@ -98,8 +98,8 @@ def test_source_both(pyplot, fixture_name, request):
     """Check the behaviour of the plot when data_source='both'."""
     report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.roc(data_source="both")
-    display.plot()
-    ax = display.ax_
+    fig = display.plot()
+    ax = fig.axes[0]
     assert isinstance(ax, mpl.axes.Axes)
     assert len(ax.get_lines()) == 3 if "binary" in fixture_name else 7
     legend = ax.get_legend()

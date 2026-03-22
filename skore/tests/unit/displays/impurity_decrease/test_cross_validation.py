@@ -41,15 +41,13 @@ def test_with_pipeline(pyplot, forest_binary_classification_data):
         np.testing.assert_allclose(imp, fitted.feature_importances_)
     frame = display.frame()
     assert list(frame.columns) == ["feature", "importance_mean", "importance_std"]
-    display.plot()
-    assert hasattr(display, "facet_")
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, mpl.axes.Axes)
+    fig = display.plot()
+    ax = fig.axes[0]
+    assert isinstance(ax, mpl.axes.Axes)
     assert (
-        display.figure_.get_suptitle()
+        fig.get_suptitle()
         == "Mean decrease in impurity (MDI) of RandomForestClassifier"
     )
-    assert display.ax_.get_xlabel() == "Mean decrease in impurity"
-    yticklabels = [label.get_text() for label in display.ax_.get_yticklabels()]
+    assert ax.get_xlabel() == "Mean decrease in impurity"
+    yticklabels = [label.get_text() for label in ax.get_yticklabels()]
     assert yticklabels == ["Feature #0", "Feature #1", "Feature #2", "Feature #3"]

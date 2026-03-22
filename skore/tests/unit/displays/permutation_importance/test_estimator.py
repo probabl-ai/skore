@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import pytest
+from matplotlib.figure import Figure
 from sklearn.metrics import (
     make_scorer,
     mean_squared_error,
@@ -47,11 +48,12 @@ def test_invalid_subplot_by(pyplot, task, request):
 def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot(subplot_by=subplot_by)
+    fig = display.plot(subplot_by=subplot_by)
+    axes = fig.axes
     if expected_len == 1:
-        assert isinstance(display.ax_, mpl.axes.Axes)
+        assert isinstance(axes[0], mpl.axes.Axes)
     else:
-        assert len(display.ax_.flatten()) == expected_len
+        assert len(axes) == expected_len
 
 
 @pytest.mark.parametrize(
@@ -80,8 +82,9 @@ def test_subplot_by_non_averaged_metrics(
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metric
     )
-    display.plot(metric=metric_name, subplot_by=subplot_by)
-    assert len(display.ax_) == expected_len
+    fig = display.plot(metric=metric_name, subplot_by=subplot_by)
+    axes = fig.axes
+    assert len(axes) == expected_len
 
     valid_values = [subplot_by, "auto", "None"]
     err_msg = (
@@ -100,10 +103,12 @@ def test_multiple_metrics_require_metric_param(pyplot, estimator_reports_regress
     with pytest.raises(ValueError, match="Please select a metric"):
         display.plot()
 
-    display.plot(metric="r2")
-    assert display.ax_.get_xlabel() == "Decrease in r2"
-    display.plot(metric="neg_mean_squared_error")
-    assert display.ax_.get_xlabel() == "Decrease in neg_mean_squared_error"
+    fig = display.plot(metric="r2")
+    ax = fig.axes[0]
+    assert ax.get_xlabel() == "Decrease in r2"
+    fig = display.plot(metric="neg_mean_squared_error")
+    ax = fig.axes[0]
+    assert ax.get_xlabel() == "Decrease in neg_mean_squared_error"
 
 
 def test_frame_metric_filter(estimator_reports_regression):
@@ -123,8 +128,9 @@ def test_callable_metric_name(pyplot, estimator_reports_regression):
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=custom_r2_score
     )
-    display.plot(metric="custom r2 score")
-    assert display.ax_.get_xlabel() == "Decrease in custom r2 score"
+    fig = display.plot(metric="custom r2 score")
+    ax = fig.axes[0]
+    assert ax.get_xlabel() == "Decrease in custom r2 score"
 
 
 def test_per_label_metrics_frame(
@@ -196,10 +202,10 @@ def test_plot_mixed_averaged_and_non_averaged_metrics(
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metrics
     )
-    display.plot(metric="accuracy")
-    assert hasattr(display, "figure_")
-    display.plot(metric="precision")
-    assert hasattr(display, "figure_")
+    fig = display.plot(metric="accuracy")
+    assert isinstance(fig, Figure)
+    fig = display.plot(metric="precision")
+    assert isinstance(fig, Figure)
 
 
 def test_default_metric_name_classifier(estimator_reports_binary_classification):

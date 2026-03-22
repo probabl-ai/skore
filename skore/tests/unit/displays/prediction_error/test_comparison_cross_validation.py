@@ -28,15 +28,16 @@ def test_legend_actual_vs_predicted(pyplot, task, legend_prefix, request):
     """Check the legend when kind is actual_vs_predicted."""
     report = request.getfixturevalue(f"comparison_cross_validation_reports_{task}")
     display = report.metrics.prediction_error()
-    display.plot(kind="actual_vs_predicted")
-    legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+    fig = display.plot(kind="actual_vs_predicted")
+    axes = fig.axes
+    legend = fig.axes[len(fig.axes) // 2].get_legend()
     legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == 3
     assert legend_texts[0] == f"{legend_prefix} #0"
     assert legend_texts[1] == f"{legend_prefix} #1"
     assert legend_texts[2] == "Perfect predictions"
 
-    for ax in display.ax_:
+    for ax in axes:
         assert ax.get_xlim() == ax.get_ylim()
         assert np.array_equal(ax.get_xticks(), ax.get_yticks())
 
@@ -82,5 +83,6 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.prediction_error()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
-        assert len(display.ax_) == expected_len
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
+        assert len(axes) == expected_len

@@ -102,11 +102,12 @@ def test_truncate_top_k_categories_return_as_is(col):
 
 def test_corr_plot(pyplot, estimator_report):
     display = estimator_report.data.analyze(data_source="train")
-    display.plot(kind="corr")
-    assert isinstance(display.ax_.collections[0], QuadMesh)
-    assert len(display.ax_.get_xticklabels()) == 6
-    assert len(display.ax_.get_yticklabels()) == 6
-    assert display.ax_.title.get_text() == "Cramer's V Correlation"
+    fig = display.plot(kind="corr")
+    ax = fig.axes[0]
+    assert isinstance(ax.collections[0], QuadMesh)
+    assert len(ax.get_xticklabels()) == 6
+    assert len(ax.get_yticklabels()) == 6
+    assert ax.title.get_text() == "Cramer's V Correlation"
 
 
 def test_repr(display):

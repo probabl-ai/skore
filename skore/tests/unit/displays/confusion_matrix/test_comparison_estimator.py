@@ -28,9 +28,10 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
         with pytest.raises(ValueError, match=err_msg):
             display.plot(subplot_by=subplot_by)
     elif subplot_by in ["estimator", "auto"]:
-        display.plot(subplot_by=subplot_by)
-        assert isinstance(display.ax_[0], mpl.axes.Axes)
-        assert len(display.ax_) == len(report.reports_)
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
+        assert isinstance(axes[0], mpl.axes.Axes)
+        assert len(axes) == len(report.reports_)
 
 
 @pytest.mark.parametrize(
@@ -100,16 +101,17 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
     ) / 2 - 1e-6
     assert threshold not in display.thresholds
 
-    display.plot(threshold_value=threshold)
+    fig = display.plot(threshold_value=threshold)
+    axes = fig.axes
     expected_title = (
         f"Confusion Matrix\nDecision threshold: {threshold:.2f}"
         + "\nData source: Test set"
     )
-    assert display.figure_.get_suptitle() == expected_title
+    assert fig.get_suptitle() == expected_title
 
     for idx, estimator in enumerate(report.reports_):
         np.testing.assert_allclose(
-            display.ax_[idx].collections[0].get_array(),
+            axes[idx].collections[0].get_array(),
             display.frame(normalize=None, threshold_value=threshold)
             .query(f"estimator == '{estimator}'")
             .pivot(index="true_label", columns="predicted_label", values="value")
@@ -144,11 +146,12 @@ def test_pos_label(pyplot, binary_classification_train_test_split):
     comparison_report = ComparisonReport([report_1, report_2])
 
     display = comparison_report.metrics.confusion_matrix()
-    display.plot()
+    fig = display.plot()
+    axes = fig.axes
     for idx in range(len(comparison_report.reports_)):
-        assert display.ax_[idx].get_xticklabels()[1].get_text() == "A*"
+        assert axes[idx].get_xticklabels()[1].get_text() == "A*"
     # Only the first subplot has yticklabels
-    assert display.ax_[0].get_yticklabels()[1].get_text() == "A*"
+    assert axes[0].get_yticklabels()[1].get_text() == "A*"
 
     report_1 = EstimatorReport(
         LogisticRegression(),
@@ -168,7 +171,8 @@ def test_pos_label(pyplot, binary_classification_train_test_split):
     )
     comparison_report = ComparisonReport([report_1, report_2])
     display = comparison_report.metrics.confusion_matrix()
-    display.plot()
+    fig = display.plot()
+    axes = fig.axes
     for idx in range(len(comparison_report.reports_)):
-        assert display.ax_[idx].get_xticklabels()[1].get_text() == "B*"
-    assert display.ax_[0].get_yticklabels()[1].get_text() == "B*"
+        assert axes[idx].get_xticklabels()[1].get_text() == "B*"
+    assert axes[0].get_yticklabels()[1].get_text() == "B*"

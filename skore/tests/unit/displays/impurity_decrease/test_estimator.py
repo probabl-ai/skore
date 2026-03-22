@@ -41,15 +41,12 @@ def test_with_pipeline(pyplot, forest_binary_classification_with_train_test):
     frame = display.frame()
     assert list(frame.columns) == ["feature", "importance"]
     assert frame["feature"].tolist() == columns_names
-    display.plot()
-    assert hasattr(display, "figure_")
-    assert hasattr(display, "ax_")
-    assert isinstance(display.ax_, mpl.axes.Axes)
+    fig = display.plot()
+    ax = fig.axes[0]
+    assert isinstance(fig, mpl.figure.Figure)
+    assert isinstance(ax, mpl.axes.Axes)
     estimator_name = display.importances["estimator"][0]
-    assert (
-        display.figure_.get_suptitle()
-        == f"Mean decrease in impurity (MDI) of {estimator_name}"
-    )
-    assert display.ax_.get_xlabel() == "Mean decrease in impurity"
-    yticklabels = [label.get_text() for label in display.ax_.get_yticklabels()]
+    assert fig.get_suptitle() == f"Mean decrease in impurity (MDI) of {estimator_name}"
+    assert ax.get_xlabel() == "Mean decrease in impurity"
+    yticklabels = [label.get_text() for label in ax.get_yticklabels()]
     assert yticklabels == ["Feature #0", "Feature #1", "Feature #2", "Feature #3"]

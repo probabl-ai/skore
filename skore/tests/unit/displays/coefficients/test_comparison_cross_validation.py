@@ -60,11 +60,13 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
     display = report.inspection.coefficients()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
         if subplot_by is None:
-            assert isinstance(display.ax_, mpl.axes.Axes)
+            assert len(axes) == 1
+            assert isinstance(axes[0], mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            assert len(axes) == expected_len
 
 
 @pytest.mark.parametrize(
@@ -119,5 +121,6 @@ def test_different_features(pyplot, fixture_name, subplot_by, request):
     with pytest.raises(ValueError, match=err_msg):
         display.plot(subplot_by=subplot_by)
 
-    display.plot(subplot_by="estimator")
-    assert hasattr(display, "facet_")
+    fig = display.plot(subplot_by="estimator")
+    assert fig is not None
+    assert len(fig.axes) >= 1

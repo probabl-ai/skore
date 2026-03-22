@@ -29,9 +29,13 @@ from skore_hub_project.json import dumps
 
 def serialize_svg(display) -> bytes:
     with BytesIO() as stream:
-        display.plot()
-        display.figure_.savefig(stream, format="svg", bbox_inches="tight")
-        plt.close(display.figure_)
+        fig = display.plot()
+        if fig is None:
+            # NOTE: backward compatibility for when `figure_` was stored as an attribute
+            # in the display object instead of being returned by `plot`.
+            fig = display.figure_
+        fig.savefig(stream, format="svg", bbox_inches="tight")
+        plt.close(fig)
 
         figure_bytes = stream.getvalue()
 

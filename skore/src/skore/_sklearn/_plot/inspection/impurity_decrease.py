@@ -5,6 +5,7 @@ from typing import Any, Literal
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.figure import Figure
 from sklearn.base import BaseEstimator
 from sklearn.pipeline import Pipeline
 
@@ -35,17 +36,6 @@ class ImpurityDecreaseDisplay(DisplayMixin):
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
         Report type from which the display is created.
-
-    Attributes
-    ----------
-    ax_ : matplotlib Axes
-        Matplotlib Axes with the plot.
-
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the plot.
-
-    figure_ : matplotlib Figure
-        Figure containing the plot.
 
     Examples
     --------
@@ -226,7 +216,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         *,
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
-    ) -> None:
+    ) -> Figure:
         """Plot the mean decrease in impurity for the different features.
 
         Parameters
@@ -238,6 +228,11 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         sorting_order : {"descending", "ascending", None}, default=None
             Sort features by importance before plotting. See :meth:`frame`
             for details.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the MDI plot.
 
         Examples
         --------
@@ -258,7 +253,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         *,
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
-    ) -> None:
+    ) -> Figure:
         """Dispatch the plotting function for matplotlib backend.
 
         This method creates a bar plot showing the mean decrease in impurity for each
@@ -308,7 +303,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         barplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
-    ) -> None:
+    ) -> Figure:
         """Plot the mean decrease in impurity.
 
         For `EstimatorReport`, a bar plot is used to display the mean decrease in
@@ -341,7 +336,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             rendering the mean decrease in impurity with a
             :class:`~skore.CrossValidationReport`.
         """
-        self._categorical_plot(
+        figure = self._categorical_plot(
             frame=frame,
             report_type=report_type,
             hue=None,
@@ -351,7 +346,8 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             stripplot_kwargs=stripplot_kwargs,
         )
 
-        self.figure_.suptitle(f"Mean decrease in impurity (MDI) of {estimator_name}")
+        figure.suptitle(f"Mean decrease in impurity (MDI) of {estimator_name}")
+        return figure
 
     def _categorical_plot(
         self,
@@ -363,9 +359,9 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         barplot_kwargs: dict[str, Any] | None = None,
         boxplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
-    ):
+    ) -> Figure:
         if "estimator" in report_type:
-            self.facet_ = sns.catplot(
+            facet = sns.catplot(
                 data=frame,
                 x="importance",
                 y="feature",
@@ -375,7 +371,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 **barplot_kwargs,
             )
         else:  # "cross-validation" in report_type
-            self.facet_ = sns.catplot(
+            facet = sns.catplot(
                 data=frame,
                 x="importance",
                 y="feature",
@@ -394,7 +390,8 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             )
         add_background_features = hue is not None
 
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
+        figure = facet.figure
+        ax_grid = facet.axes.squeeze()
         n_features = (
             [frame["feature"].nunique()]
             if col is None
@@ -403,7 +400,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 for col_value in frame[col].unique()
             ]
         )
-        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
+        for ax, n_feature in zip(ax_grid.flatten(), n_features, strict=True):
             _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
@@ -411,8 +408,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 xlabel="Mean decrease in impurity",
                 ylabel="",
             )
-        if len(self.ax_.flatten()) == 1:
-            self.ax_ = self.ax_.flatten()[0]
+        return figure
 
     @staticmethod
     def _has_same_features(*, frame: pd.DataFrame) -> bool:
@@ -435,7 +431,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         barplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
-    ) -> None:
+    ) -> Figure:
         """Plot the mean decrease in impurity for a `ComparisonReport`.
 
         Parameters
@@ -472,7 +468,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
         else:
             hue, col = "estimator", None
 
-        self._categorical_plot(
+        figure = self._categorical_plot(
             frame=frame,
             report_type=report_type,
             hue=hue,
@@ -481,7 +477,8 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs={"sharey": has_same_features} | stripplot_kwargs,
         )
-        self.figure_.suptitle("Mean decrease in impurity (MDI)")
+        figure.suptitle("Mean decrease in impurity (MDI)")
+        return figure
 
     # ignore the type signature because we override kwargs by specifying the name of
     # the parameters for the user.

@@ -1,6 +1,7 @@
 from typing import Literal, cast
 
 import pandas as pd
+from matplotlib.figure import Figure
 
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn.types import Aggregate, ReportType
@@ -264,6 +265,6 @@ class MetricsSummaryDisplay(DisplayMixin):
             return df
 
     @DisplayMixin.style_plot
-    def plot(self):
+    def plot(self) -> Figure:
         """Not yet implemented."""
         raise NotImplementedError

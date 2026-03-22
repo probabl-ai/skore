@@ -41,11 +41,12 @@ def test_invalid_subplot_by(pyplot, task, request):
 def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
     report = request.getfixturevalue(f"comparison_cross_validation_reports_{task}")
     display = report.inspection.permutation_importance(seed=0, n_repeats=2)
-    display.plot(subplot_by=subplot_by)
+    fig = display.plot(subplot_by=subplot_by)
+    axes = fig.axes
     if expected_len == 1:
-        assert isinstance(display.ax_, mpl.axes.Axes)
+        assert isinstance(axes[0], mpl.axes.Axes)
     else:
-        assert len(display.ax_.flatten()) == expected_len
+        assert len(axes) == expected_len
 
 
 @pytest.mark.parametrize(
@@ -70,8 +71,9 @@ def test_different_features(pyplot, task, request):
         with pytest.raises(ValueError, match=err_msg):
             display.plot(subplot_by=subplot_by)
 
-    display.plot(subplot_by="estimator")
-    assert len(display.ax_) == 2
+    fig = display.plot(subplot_by="estimator")
+    axes = fig.axes
+    assert len(axes) == 2
 
 
 @pytest.mark.parametrize(
@@ -100,8 +102,9 @@ def test_subplot_by_non_averaged_metrics(
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metric
     )
-    display.plot(metric=metric_name, subplot_by=subplot_by)
-    assert len(display.ax_) == expected_len
+    fig = display.plot(metric=metric_name, subplot_by=subplot_by)
+    axes = fig.axes
+    assert len(axes) == expected_len
 
     valid_values = ["estimator", subplot_by, "split", "auto", "None"]
     err_msg = (

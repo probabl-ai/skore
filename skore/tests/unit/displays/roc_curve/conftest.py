@@ -10,8 +10,9 @@ def estimator_reports_binary_classification_figure_axes(
 ):
     report = estimator_reports_binary_classification[0]
     display = report.metrics.roc()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -20,8 +21,9 @@ def estimator_reports_multiclass_classification_figure_axes(
 ):
     report = estimator_reports_multiclass_classification[0]
     display = report.metrics.roc()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -30,8 +32,9 @@ def cross_validation_reports_binary_classification_figure_axes(
 ):
     report = cross_validation_reports_binary_classification[0]
     display = report.metrics.roc()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -40,8 +43,9 @@ def cross_validation_reports_multiclass_classification_figure_axes(
 ):
     report = cross_validation_reports_multiclass_classification[0]
     display = report.metrics.roc()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -50,8 +54,9 @@ def comparison_estimator_reports_binary_classification_figure_axes(
 ):
     report = comparison_estimator_reports_binary_classification
     display = report.metrics.roc()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -60,8 +65,9 @@ def comparison_estimator_reports_multiclass_classification_figure_axes(
 ):
     report = comparison_estimator_reports_multiclass_classification
     display = report.metrics.roc()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -70,8 +76,9 @@ def comparison_cross_validation_reports_binary_classification_figure_axes(
 ):
     report = comparison_cross_validation_reports_binary_classification
     display = report.metrics.roc()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -80,5 +87,6 @@ def comparison_cross_validation_reports_multiclass_classification_figure_axes(
 ):
     report = comparison_cross_validation_reports_multiclass_classification
     display = report.metrics.roc()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes

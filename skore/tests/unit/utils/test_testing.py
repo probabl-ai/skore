@@ -2,6 +2,7 @@
 
 import numpy as np
 import pytest
+from matplotlib.figure import Figure
 
 from skore._utils._testing import (
     MockAccessor,
@@ -107,10 +108,10 @@ def test_mock_accessor_get_help_tree_title():
 
 
 def test_mock_display_plot():
-    """MockDisplay.plot accepts kwargs and returns None."""
+    """MockDisplay.plot accepts kwargs and returns a matplotlib Figure."""
     disp = MockDisplay()
-    assert disp.plot() is None
-    assert disp.plot(a=1, b=2) is None
+    assert isinstance(disp.plot(), Figure)
+    assert isinstance(disp.plot(a=1, b=2), Figure)
 
 
 def test_mock_display_set_style():

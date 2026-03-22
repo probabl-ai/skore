@@ -28,8 +28,8 @@ def test_legend_actual_vs_predicted(pyplot, task, n_legend_entries, request):
     """Check the legend when kind is actual_vs_predicted."""
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.metrics.prediction_error()
-    display.plot(kind="actual_vs_predicted")
-    legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+    fig = display.plot(kind="actual_vs_predicted")
+    legend = fig.axes[len(fig.axes) // 2].get_legend()
     legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == n_legend_entries
     if task == "multioutput_regression":
@@ -76,8 +76,9 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.prediction_error()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
-        assert len(display.ax_) == expected_len
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
+        assert len(axes) == expected_len
 
 
 @pytest.mark.parametrize("task", ["regression", "multioutput_regression"])
@@ -93,9 +94,10 @@ def test_subplot_by_data_source(pyplot, task, request):
         ):
             display.plot(subplot_by="data_source")
     else:
-        display.plot(subplot_by="data_source")
-        assert len(display.ax_) == 2
-        legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+        fig = display.plot(subplot_by="data_source")
+        axes = fig.axes
+        assert len(axes) == 2
+        legend = fig.axes[len(fig.axes) // 2].get_legend()
         legend_texts = [t.get_text() for t in legend.get_texts()]
         assert len(legend_texts) == 3
         assert legend_texts[0] == "DummyRegressor_1"
@@ -108,8 +110,8 @@ def test_source_both(pyplot, task, request):
     """Check the behaviour of the plot when data_source='both'."""
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.metrics.prediction_error(data_source="both")
-    display.plot()
-    legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+    fig = display.plot()
+    legend = fig.axes[len(fig.axes) // 2].get_legend()
     assert legend is not None
     legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == 3 if task == "regression" else 7

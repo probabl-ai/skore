@@ -35,10 +35,9 @@ class TestPredictionErrorDisplay:
         assert hasattr(display, "ml_task")
         assert hasattr(display, "data_source")
 
-        display.plot()
-        assert hasattr(display, "facet_")
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
+        fig = display.plot()
+        assert fig is not None
+        assert len(fig.axes) >= 1
 
     def test_frame_structure(self, fixture_prefix, request, task):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -81,7 +80,7 @@ class TestPredictionErrorDisplay:
             report = report[0]
         display = report.metrics.prediction_error()
         _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
-        ax = ax[0] if isinstance(ax, np.ndarray) else ax
+        ax = ax[0]
         np.testing.assert_array_equal(
             ax.collections[0].get_facecolor()[0][:3], sns.color_palette()[0]
         )
@@ -94,8 +93,8 @@ class TestPredictionErrorDisplay:
         display.set_style(
             relplot_kwargs=relplot_kwargs,
         )
-        display.plot()
-        ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+        fig = display.plot()
+        ax = fig.axes[0]
         np.testing.assert_array_equal(
             ax.collections[0].get_facecolor()[0][:3], [1.0, 0.0, 0.0]
         )
@@ -105,7 +104,7 @@ class TestPredictionErrorDisplay:
         if isinstance(report, tuple):
             report = report[0]
         _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
-        ax = ax[0] if isinstance(ax, np.ndarray) else ax
+        ax = ax[0]
 
         assert len(ax.get_lines()) >= 1
         assert ax.get_xlabel() == "Predicted values"

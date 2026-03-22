@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import seaborn as sns
+from matplotlib.figure import Figure
 from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame, Series
 from sklearn.base import BaseEstimator
@@ -65,17 +66,6 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
         The type of report.
-
-    Attributes
-    ----------
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the ROC curve.
-
-    figure_ : matplotlib figure
-        The figure on which the ROC curve is plotted.
-
-    ax_ : matplotlib axes or array of axes
-        The axes on which the ROC curve is plotted.
 
     Examples
     --------
@@ -158,7 +148,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         | None = "auto",
         plot_chance_level: bool = True,
         despine: bool = True,
-    ) -> None:
+    ) -> Figure:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
@@ -183,6 +173,12 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
+
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the ROC curve.
 
         Examples
         --------
@@ -209,7 +205,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         | None = "auto",
         plot_chance_level: bool = True,
         despine: bool = True,
-    ) -> None:
+    ) -> Figure:
         """Matplotlib implementation of the `plot` method."""
         plot_data = self.frame(with_roc_auc=True)
 
@@ -244,7 +240,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             # warning. See: https://github.com/mwaskom/seaborn/issues/3891
             plot_data["split"] = plot_data["split"].astype(str)
 
-        self.facet_ = sns.relplot(
+        facet = sns.relplot(
             data=plot_data,
             kind="line",
             estimator=None,
@@ -253,19 +249,19 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             **_validate_style_kwargs(relplot_kwargs, self._default_relplot_kwargs),
         )
 
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.flatten()
+        figure, axes = facet.figure, facet.axes.flatten()
 
         # Create space under the plot to fit the manually created legends.
         n_legend_rows = plot_data[hue].nunique() if hue else 1
         legend_height_inches = (
             n_legend_rows * 0.25 + 1 + (0.25 if plot_chance_level else 0)
         )
-        current_height = self.figure_.get_figheight()
+        current_height = figure.get_figheight()
         new_height = current_height + legend_height_inches
-        self.figure_.set_figheight(new_height)
+        figure.set_figheight(new_height)
 
         # Build a legend for each subplot.
-        for idx, ax in enumerate(self.ax_):
+        for idx, ax in enumerate(axes):
             if plot_chance_level:
                 ax.plot((0, 1), (0, 1), **self._default_chance_level_kwargs)
             col_value = (
@@ -301,11 +297,11 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         title = "ROC Curve"
         if "comparison" not in self.report_type:
             title += f" for {self.roc_curve['estimator'].cat.categories.item()}"
-        self.figure_.suptitle(
+        figure.suptitle(
             "\n".join(filter(None, [title, info_pos_label, info_data_source]))
         )
 
-        for ax in self.ax_:
+        for ax in axes:
             ax.set(
                 xlabel="False Positive Rate",
                 ylabel="True Positive Rate",
@@ -314,8 +310,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             if despine:
                 _despine_matplotlib_axis(ax)
 
-        if len(self.ax_) == 1:
-            self.ax_ = self.ax_[0]
+        return figure
 
     @classmethod
     def _compute_data_for_display(

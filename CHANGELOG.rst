@@ -42,6 +42,12 @@ Release highlights
 Changed
 -------
 
+- **Breaking change:** :meth:`Display.plot` (and all concrete displays) now returns a
+  :class:`matplotlib.figure.Figure` instead of storing plotting artifacts on the display.
+  The attributes ``figure_``, ``ax_``, and ``facet_`` are no longer set. Use
+  ``fig = display.plot(...)`` and then ``fig.axes``, ``fig.show()``, or rely on the
+  figure's rich representation in notebooks.
+
 Added
 -----
 

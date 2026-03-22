@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
+from matplotlib.figure import Figure
 from sklearn.dummy import DummyRegressor
 from skrub.datasets import fetch_employee_salaries
 
@@ -117,17 +118,17 @@ def test_frame(estimator_report, data_source):
 
 def test_categorical_plots_1d(pyplot, display):
     """Check the plot output with categorical data in 1-d."""
-    display.plot(x="gender")
-    assert hasattr(display, "ax_")
-    assert hasattr(display, "figure_")
-    assert display.ax_.get_xlabel() == "gender"
-    assert [label.get_text() for label in display.ax_.get_xticklabels()] == ["M", "F"]
-    labels = display.ax_.get_yticklabels()
+    fig = display.plot(x="gender")
+    ax = fig.axes[0]
+    assert isinstance(fig, Figure)
+    assert ax.get_xlabel() == "gender"
+    assert [label.get_text() for label in ax.get_xticklabels()] == ["M", "F"]
+    labels = ax.get_yticklabels()
     assert labels[0].get_text() == "0"
     assert labels[-1].get_text() == "5000"
-    assert display.ax_.get_ylabel() == "Count"
+    assert ax.get_ylabel() == "Count"
     # orange
-    assert display.ax_.containers[0].patches[0].get_facecolor() == (
+    assert ax.containers[0].patches[0].get_facecolor() == (
         1.0,
         0.4980392156862745,
         0.054901960784313725,
@@ -135,11 +136,12 @@ def test_categorical_plots_1d(pyplot, display):
     )
 
     display.set_style(histplot_kwargs={"color": "blue"})
-    display.plot(y="gender")
-    assert display.ax_.get_xlabel() == "Count"
-    assert display.ax_.get_ylabel() == "gender"
+    fig = display.plot(y="gender")
+    ax = fig.axes[0]
+    assert ax.get_xlabel() == "Count"
+    assert ax.get_ylabel() == "gender"
     # blue
-    assert display.ax_.containers[0].patches[0].get_facecolor() == (0.0, 0.0, 1.0, 0.75)
+    assert ax.containers[0].patches[0].get_facecolor() == (0.0, 0.0, 1.0, 0.75)
 
 
 def test_numeric_plots_1d(pyplot, estimator_report):
@@ -147,120 +149,137 @@ def test_numeric_plots_1d(pyplot, estimator_report):
     display = estimator_report.data.analyze(data_source="train")
     ## for integers numeric values
     display.set_style(histplot_kwargs={"color": "red"})
-    display.plot(x="year_first_hired")
-    assert display.ax_.get_xlabel() == "year_first_hired"
-    labels = display.ax_.get_xticklabels()
+    fig = display.plot(x="year_first_hired")
+    ax = fig.axes[0]
+    assert ax.get_xlabel() == "year_first_hired"
+    labels = ax.get_xticklabels()
     assert labels[0].get_text() == "1970"
     assert labels[-1].get_text() == "2010"
-    labels = display.ax_.get_yticklabels()
+    labels = ax.get_yticklabels()
     assert labels[0].get_text() == "0"
     assert labels[-1].get_text() == "500"
-    assert display.ax_.get_ylabel() == "Count"
+    assert ax.get_ylabel() == "Count"
     # red
-    assert display.ax_.containers[0].patches[0].get_facecolor() == (1.0, 0.0, 0.0, 0.75)
+    assert ax.containers[0].patches[0].get_facecolor() == (1.0, 0.0, 0.0, 0.75)
 
     display.set_style()
-    display.plot(y="year_first_hired")
-    assert display.ax_.get_xlabel() == "Count"
-    assert display.ax_.get_ylabel() == "year_first_hired"
+    fig = display.plot(y="year_first_hired")
+    ax = fig.axes[0]
+    assert ax.get_xlabel() == "Count"
+    assert ax.get_ylabel() == "year_first_hired"
 
 
 def test_top_k_categorical_plots_1d(pyplot, display):
     """Check the plot output with categorical data in 1-d and top k categories."""
-    display.plot(x="division")
-    assert len(display.ax_.get_xticklabels()) == 20
-    display.plot(x="division", top_k_categories=30)
-    assert len(display.ax_.get_xticklabels()) == 30
+    fig = display.plot(x="division")
+    ax = fig.axes[0]
+    assert len(ax.get_xticklabels()) == 20
+    fig = display.plot(x="division", top_k_categories=30)
+    ax = fig.axes[0]
+    assert len(ax.get_xticklabels()) == 30
 
 
 def test_hue_plots_1d(pyplot, display):
     """Check the plot output with hue in 1-d."""
-    display.plot(x="gender", hue="current_annual_salary")
-    assert "BoxPlotContainer" in display.ax_.containers[0].__class__.__name__
-    legend_labels = display.ax_.legend_.texts
+    fig = display.plot(x="gender", hue="current_annual_salary")
+    ax = fig.axes[0]
+    assert "BoxPlotContainer" in ax.containers[0].__class__.__name__
+    legend_labels = ax.legend_.texts
     assert legend_labels[0].get_text() == "50000"
     assert legend_labels[-1].get_text() == "300000"
-    assert display.ax_.legend_.get_title().get_text() == "current_annual_salary"
+    assert ax.legend_.get_title().get_text() == "current_annual_salary"
 
-    display.plot(y="gender", hue="current_annual_salary")
-    assert "BoxPlotContainer" in display.ax_.containers[0].__class__.__name__
+    fig = display.plot(y="gender", hue="current_annual_salary")
+    ax = fig.axes[0]
+    assert "BoxPlotContainer" in ax.containers[0].__class__.__name__
 
     msg = "If 'x' and 'y' are categories, 'hue' must be continuous"
     with pytest.raises(ValueError, match=msg):
         display.plot(x="gender", hue="division", top_k_categories=30)
 
-    display.plot(y="year_first_hired", hue="current_annual_salary")
-    assert display.ax_.get_xlabel() == "current_annual_salary"
-    assert display.ax_.get_ylabel() == "year_first_hired"
-    assert display.ax_.legend_.get_title().get_text() == "current_annual_salary"
+    fig = display.plot(y="year_first_hired", hue="current_annual_salary")
+    ax = fig.axes[0]
+    assert ax.get_xlabel() == "current_annual_salary"
+    assert ax.get_ylabel() == "year_first_hired"
+    assert ax.legend_.get_title().get_text() == "current_annual_salary"
 
 
 def test_plot_duration_data_1d(pyplot, display):
     """Check the plot output with duration data in 1-d."""
     ## 1D - timedelta as x
-    display.plot(x="timedelta_hired")
-    assert display.ax_.get_xlabel() == "Years"
+    fig = display.plot(x="timedelta_hired")
+    ax = fig.axes[0]
+    assert ax.get_xlabel() == "Years"
 
     ## 1D - timedelta as y
-    display.plot(y="timedelta_hired")
-    assert display.ax_.get_ylabel() == "Years"
+    fig = display.plot(y="timedelta_hired")
+    ax = fig.axes[0]
+    assert ax.get_ylabel() == "Years"
 
 
 def test_plots_2d(pyplot, display):
     """Check the general behaviour of the 2-d plots."""
     # scatter plot
-    display.plot(y="current_annual_salary", x="year_first_hired")
-    assert display.ax_.get_xlabel() == "year_first_hired"
-    assert display.ax_.get_ylabel() == "current_annual_salary"
-    labels = display.ax_.get_xticklabels()
+    fig = display.plot(y="current_annual_salary", x="year_first_hired")
+    ax = fig.axes[0]
+    assert ax.get_xlabel() == "year_first_hired"
+    assert ax.get_ylabel() == "current_annual_salary"
+    labels = ax.get_xticklabels()
     assert labels[0].get_text() == "1970"
     assert labels[-1].get_text() == "2010"
-    labels = display.ax_.get_yticklabels()
+    labels = ax.get_yticklabels()
     assert labels[0].get_text() == "0"
     assert labels[-1].get_text() == "300000"
 
     # box plot
-    display.plot(x="cents", y="division")
-    assert display.ax_.get_ylabel() == "division"
-    assert display.ax_.get_xlabel() == "cents"
-    assert len(display.ax_.lines) == 147
-    assert display.ax_.get_xticklabels()[-1].get_text() == "3.0"
+    fig = display.plot(x="cents", y="division")
+    ax = fig.axes[0]
+    assert ax.get_ylabel() == "division"
+    assert ax.get_xlabel() == "cents"
+    assert len(ax.lines) == 147
+    assert ax.get_xticklabels()[-1].get_text() == "3.0"
 
     # with categories on the x-axis, the tick labels are rotated
-    display.plot(x="department_name", y="current_annual_salary")
-    x_tick_labels = display.ax_.get_xticklabels()
+    fig = display.plot(x="department_name", y="current_annual_salary")
+    ax = fig.axes[0]
+    x_tick_labels = ax.get_xticklabels()
     assert all(label.get_rotation() == 45.0 for label in x_tick_labels)
 
     # heatmap
-    display.plot(x="gender", y="division")
-    assert len(display.ax_.get_yticklabels()) == 20
-    assert display.ax_.get_ylabel() == "division"
-    assert display.ax_.get_xlabel() == "gender"
-    assert isinstance(display.ax_.collections[0], QuadMesh)
+    fig = display.plot(x="gender", y="division")
+    ax = fig.axes[0]
+    assert len(ax.get_yticklabels()) == 20
+    assert ax.get_ylabel() == "division"
+    assert ax.get_xlabel() == "gender"
+    assert isinstance(ax.collections[0], QuadMesh)
     # check that with small numbers, we don't use scientific notation
-    annotations = [text.get_text() for text in display.ax_.texts]
+    annotations = [text.get_text() for text in ax.texts]
     assert not any("e+" in annotation for annotation in annotations)
 
     # check that we use scientific notation when numbers are too large
-    display.plot(x="gender", y="department_name", hue="current_annual_salary")
-    annotations = [text.get_text() for text in display.ax_.texts]
+    fig = display.plot(x="gender", y="department_name", hue="current_annual_salary")
+    ax = fig.axes[0]
+    annotations = [text.get_text() for text in ax.texts]
     assert any("e+" in annotation for annotation in annotations)
 
 
 def test_hue_plots_2d(pyplot, display):
     """Check the plot output with hue parameter in 2-d."""
-    display.plot(x="year_first_hired", y="current_annual_salary", hue="division")
-    assert len(display.ax_.legend_.texts) == 21
-    assert display.ax_.legend_.get_title().get_text() == "division"
+    fig = display.plot(x="year_first_hired", y="current_annual_salary", hue="division")
+    ax = fig.axes[0]
+    assert len(ax.legend_.texts) == 21
+    assert ax.legend_.get_title().get_text() == "division"
 
-    display.plot(x="year_first_hired", y="gender", hue="division")
-    assert len(display.ax_.lines) == 35
-    assert len(display.ax_.legend_.texts) == 21
-    assert display.ax_.legend_.get_title().get_text() == "division"
+    fig = display.plot(x="year_first_hired", y="gender", hue="division")
+    ax = fig.axes[0]
+    assert len(ax.lines) == 35
+    assert len(ax.legend_.texts) == 21
+    assert ax.legend_.get_title().get_text() == "division"
 
-    display.plot(x="gender", y="division", hue="current_annual_salary")
-    assert isinstance(display.ax_.collections[0], QuadMesh)
-    colorbar = display.ax_.collections[0].colorbar
+    fig = display.plot(x="gender", y="division", hue="current_annual_salary")
+    ax = fig.axes[0]
+    assert isinstance(ax.collections[0], QuadMesh)
+    colorbar = ax.collections[0].colorbar
     assert colorbar.vmin == pytest.approx(17184.21, rel=1e-1)
     assert colorbar.vmax == pytest.approx(82980.51, rel=1e-1)
 
