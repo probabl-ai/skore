@@ -137,6 +137,10 @@ def iter_cv_metrics(
         yield Artifact(f"metrics_details/{name}", display.frame())
         with switch_mpl_backend(), plt.ioff():
             figure = display.plot()
+            if figure is None:
+                # NOTE: backward compatibility for when `figure_` was stored as an
+                # attribute in the display object instead of being returned by `plot`.
+                figure = display.figure_
             try:
                 yield Artifact(f"metrics.{name}", figure)
             finally:
@@ -175,6 +179,10 @@ def iter_estimator_metrics(
         yield Artifact(f"metrics_details/{name}", display.frame())
         with switch_mpl_backend(), plt.ioff():
             figure = display.plot()
+            if figure is None:
+                # NOTE: backward compatibility for when `figure_` was stored as an
+                # attribute in the display object instead of being returned by `plot`.
+                figure = display.figure_
             try:
                 yield Artifact(f"metrics.{name}", figure)
             finally:
