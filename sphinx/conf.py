@@ -45,8 +45,8 @@ extensions = [
     # Custom extensions
     "generate_accessor_tables",
     "github_link",
+    "landing_page",
     "matplotlib_skore_scraper",
-    "report_help",
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 

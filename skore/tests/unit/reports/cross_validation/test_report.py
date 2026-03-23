@@ -28,10 +28,8 @@ def test_report_can_be_rebuilt_using_parameters(
 
     for parameter in inspect.signature(CrossValidationReport).parameters:
         assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
-        if parameter == "diagnose":
-            parameters[parameter] = report._diagnose_on_init
-        else:
-            parameters[parameter] = getattr(report, parameter)
+
+        parameters[parameter] = getattr(report, parameter)
 
     CrossValidationReport(**parameters)
 

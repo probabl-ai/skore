@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import time
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal
 
-import numpy as np
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone, is_classifier
@@ -20,7 +18,6 @@ from skore._sklearn._cross_validation.diagnostics import (
 )
 from skore._sklearn._diagnostics.base import DiagnosticResult
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -172,8 +169,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     ) -> None:
         self._estimator = clone(estimator)
 
-        # private storage to be able to invalidate the cache when the user alters
-        # those attributes
+        # private storage to ensure properties are read-only
         self._X = X
         self._y = y
         self._pos_label = pos_label
@@ -184,21 +180,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports(
             diagnose=diagnose or configuration.diagnose
         )
-        self._initialize_state()
+        self._ml_task = self.estimator_reports_[0].ml_task
+        self._cache = Cache()
 
         if diagnose or configuration.diagnose:
             self._display_diagnose_results(self.diagnose())
-
-    def _initialize_state(self) -> None:
-        """Initialize/reset the random number generator, hash, and cache."""
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
-        self._cache = Cache()
-        self._ml_task = _find_ml_task(
-            self._y, estimator=self.estimator_reports_[0]._estimator
-        )
 
     def _fit_estimator_reports(
         self, *, diagnose: bool = False
@@ -254,7 +240,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         """
         for report in self.estimator_reports_:
             report.clear_cache()
-
         self._cache = Cache()
 
     def cache_predictions(
@@ -413,7 +398,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             y_test=y_test,
             pos_label=self._pos_label,
         )
-        report._parent_hash = self._hash
         return report
 
     @property

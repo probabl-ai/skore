@@ -118,6 +118,18 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
         >>> report.data.analyze().frame()
         """
+        df = self._prepare_dataframe_for_display(
+            data_source=data_source,
+            with_y=with_y,
+            subsample=subsample,
+            subsample_strategy=subsample_strategy,
+            seed=seed,
+        )
+        return TableReportDisplay._compute_data_for_display(df)
+
+    def _prepare_dataframe_for_display(
+        self, data_source, with_y, subsample, subsample_strategy, seed
+    ):
         if data_source not in (data_source_options := ("train", "test", "both")):
             raise ValueError(
                 f"'data_source' options are {data_source_options!r}, got {data_source}."
@@ -154,7 +166,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             else:  # subsample_strategy == "random":
                 df = sbd.sample(df, subsample, seed=seed)
 
-        return TableReportDisplay._compute_data_for_display(df)
+        return df
 
     ####################################################################################
     # Methods related to the help tree

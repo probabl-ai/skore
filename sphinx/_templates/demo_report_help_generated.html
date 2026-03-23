@@ -1,0 +1,555 @@
+<div id="skore-help-927470ab-wrapper">
+    <template id="skore-help-927470ab-template">
+        <style>
+/* Light theme (default) */
+.container,
+:host {
+    --color-blue: #3043f0;
+    --color-orange: #f97316;
+    --color-text: #000;
+    --color-background: #fff;
+    --color-orange-hover: rgba(249, 115, 22, 0.1);
+    --color-blue-hover: rgba(48, 67, 240, 0.1);
+}
+
+/* Dark theme */
+.container.dark-theme,
+.container[data-theme="dark"],
+:host(.dark-theme),
+:host([data-theme="dark"]) {
+    --color-blue: #6b42f6;
+    --color-orange: #f97316;
+    --color-text: #fff;
+    --color-background: #000;
+    --color-orange-hover: rgba(249, 115, 22, 0.2);
+    --color-blue-hover: rgba(107, 66, 246, 0.2);
+}
+
+.container {
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px;
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    background-color: var(--color-background);
+    margin: 10px 0;
+    width: fit-content;
+    min-width: 500px;
+    max-width: 800px;
+}
+
+.title {
+    font-weight: bold;
+    color: var(--color-text);
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-align: center;
+}
+
+.tree {
+    margin-left: 0;
+}
+
+.node {
+    margin: 0;
+    padding: 0;
+}
+
+.label {
+    color: var(--color-text);
+    font-weight: bold;
+}
+
+.root-content {
+    margin-left: 16px;
+    position: relative;
+}
+
+/* Vertical lines for root content items - using border-left pattern */
+.root-content > .node,
+.root-content > .method {
+    border-left: 2px solid var(--color-text);
+    padding-left: 16px;
+    position: relative;
+    margin-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Extend border to connect with previous element */
+.root-content > .node:not(:first-child),
+.root-content > .method:not(:first-child) {
+    border-top: 2px solid transparent;
+    margin-top: -2px;
+    padding-top: 2px;
+}
+
+/* Hide vertical line on last item below middle */
+.root-content > .node:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+/* Add half-height vertical line for last item */
+.root-content > .node:last-child::after,
+.root-content > .method:last-child::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    height: calc(1.5em / 2); /* Half of line-height */
+    width: 2px;
+    background-color: var(--color-text);
+}
+
+/* Hide border below middle for last item */
+.root-content > .node:last-child,
+.root-content > .method:last-child {
+    border-left-color: transparent;
+}
+
+/* Horizontal connector lines for root content items */
+.root-content > .node::before,
+.root-content > .method::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: calc(1.5em / 2); /* Half of line-height */
+    width: 12px;
+    height: 2px;
+    background-color: var(--color-text);
+}
+
+.toggle {
+    display: none;
+}
+
+.branch-label {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    color: var(--color-blue);
+    font-weight: bold;
+    position: relative;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5em;
+}
+
+/* Orange hover for accessors */
+.branch-label:has(.name):hover {
+    background-color: var(--color-orange-hover);
+}
+
+/* Blue hover for Methods and Attributes sections */
+.branch-label:has(.section-name):hover {
+    background-color: var(--color-blue-hover);
+}
+
+.name {
+    color: var(--color-orange);
+}
+
+.section-name {
+    color: var(--color-blue);
+}
+
+.branch-content {
+    margin-left: 16px;
+    position: relative;
+    padding-left: 0;
+    display: none;
+}
+
+.branch-label:has(.toggle:checked) + .branch-content {
+    display: block;
+}
+
+/* Vertical lines for items inside branch content */
+.branch-content > .node,
+.branch-content > .method {
+    border-left: 2px solid var(--color-text);
+    padding-left: 16px;
+    position: relative;
+    margin-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Extend border to connect with previous element */
+.branch-content > .node:not(:first-child),
+.branch-content > .method:not(:first-child) {
+    border-top: 2px solid transparent;
+    margin-top: -2px;
+    padding-top: 2px;
+}
+
+/* Hide vertical line on last item below middle */
+.branch-content > .node:last-child,
+.branch-content > .method:last-child {
+    border-left-color: transparent;
+}
+
+/* Add half-height vertical line for last items */
+.branch-content > .node:last-child::after,
+.branch-content > .method:last-child::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    height: calc(1.5em / 2); /* Half of line-height */
+    width: 2px;
+    background-color: var(--color-text);
+}
+
+/* Horizontal connector lines for items inside branch content */
+.branch-content > .node::before,
+.branch-content > .method::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: calc(1.5em / 2); /* Half of line-height */
+    width: 12px;
+    height: 2px;
+    background-color: var(--color-text);
+}
+
+.method {
+    color: var(--color-text);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5em;
+}
+
+.method-name {
+    color: var(--color-text);
+}
+
+
+.method-tooltip {
+    position: relative;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-underline-offset: 0.3em;
+    cursor: help;
+    color: inherit;
+    text-decoration-color: inherit;
+}
+
+.method-tooltip:hover {
+    color: inherit;
+}
+
+.method-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    background-color: var(--color-text);
+    color: var(--color-background);
+    text-align: left;
+    border-radius: 4px;
+    padding: 8px 10px;
+    position: absolute;
+    z-index: 1000;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    margin-left: 8px;
+    white-space: normal;
+    width: 250px;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: opacity 0.2s, visibility 0.2s;
+}
+
+.arrow {
+    vertical-align: text-top;
+}
+
+.tooltip-text::before {
+    content: "";
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: var(--color-text);
+}
+
+.legend {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-text);
+    font-size: 12px;
+    color: var(--color-text);
+}
+        </style>
+        <div class="container">
+    <header class="title">Tools to diagnose estimator Ridge</header>
+    <div class="tree">
+
+
+            <div class="node">
+                <span class="label">CrossValidationReport</span>
+            </div>
+            <div class="root-content">
+
+
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="name">.data</span>
+                    </label>
+                    <div class="branch-content" id="c33d96f5-65a6-4967-82ec-f6ee05c0c4cd">
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.data.analyze.html" target="_blank" class="method-tooltip">analyze<span class="tooltip-text">Plot dataset statistics.</span></a>(with_y, subsample, subsample_strategy, seed)</span>
+                                </div>
+
+                    </div>
+                </div>
+
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="name">.metrics</span>
+                    </label>
+                    <div class="branch-content" id="1fc81524-22a3-47b1-a5bc-2daa9a6998e3">
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.metrics.custom_metric.html" target="_blank" class="method-tooltip">custom_metric<span class="tooltip-text">Compute a custom metric.</span></a>(metric_function, response_method, metric_name, data_source, aggregate, flat_index, kwargs)</span>
+                                </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.metrics.prediction_error.html" target="_blank" class="method-tooltip">prediction_error<span class="tooltip-text">Plot the prediction error of a regression model.</span></a>(data_source, subsample, seed)</span>
+                                </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.metrics.r2.html" target="_blank" class="method-tooltip">r2<span class="tooltip-text">Compute the R² score. Higher value is better.</span></a>(data_source, multioutput, aggregate, flat_index)</span>
+                                </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.metrics.rmse.html" target="_blank" class="method-tooltip">rmse<span class="tooltip-text">Compute the root mean squared error. Lower value is better.</span></a>(data_source, multioutput, aggregate, flat_index)</span>
+                                </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.metrics.summarize.html" target="_blank" class="method-tooltip">summarize<span class="tooltip-text">Report a set of metrics for our estimator.</span></a>(data_source, metric, metric_kwargs, response_method)</span>
+                                </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.metrics.timings.html" target="_blank" class="method-tooltip">timings<span class="tooltip-text">Get all measured processing times related to the estimator.</span></a>(aggregate)</span>
+                                </div>
+
+                    </div>
+                </div>
+
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="name">.inspection</span>
+                    </label>
+                    <div class="branch-content" id="51e18dfd-9f07-4986-a0e2-501df2e4e0d0">
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.inspection.coefficients.html" target="_blank" class="method-tooltip">coefficients<span class="tooltip-text">Retrieve the coefficients across splits, including the intercept.</span></a>()</span>
+                                </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.inspection.permutation_importance.html" target="_blank" class="method-tooltip">permutation_importance<span class="tooltip-text">Display the permutation feature importance.</span></a>(data_source, at_step, metric, n_repeats, max_samples, n_jobs, seed)</span>
+                                </div>
+
+                    </div>
+                </div>
+
+
+
+
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="section-name">Methods</span>
+                    </label>
+                    <div class="branch-content" id="87bc0f66-9bb8-4c31-bbfd-ae206bf1fa78">
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#skore.CrossValidationReport.cache_predictions" target="_blank" class="method-tooltip">cache_predictions<span class="tooltip-text">Cache the predictions for sub-estimators reports.</span></a>(response_methods, n_jobs)</span>
+                                </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#skore.CrossValidationReport.clear_cache" target="_blank" class="method-tooltip">clear_cache<span class="tooltip-text">Clear the cache.</span></a>()</span>
+                                </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#skore.CrossValidationReport.create_estimator_report" target="_blank" class="method-tooltip">create_estimator_report<span class="tooltip-text">Create an estimator report from the cross-validation report.</span></a>(X_test, y_test)</span>
+                                </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#skore.CrossValidationReport.get_predictions" target="_blank" class="method-tooltip">get_predictions<span class="tooltip-text">Get estimator&#39;s predictions.</span></a>(data_source, response_method)</span>
+                                </div>
+
+                    </div>
+                </div>
+
+
+
+
+                <div class="node branch">
+                    <label class="branch-label">
+                        <input type="checkbox" class="toggle">
+                        <span class="section-name">Attributes</span>
+                    </label>
+                    <div class="branch-content" id="7aee5c47-aad6-454f-bf87-9a807fbe8bfb">
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=X,-%7Barray-like%2C%20sparse%20matrix%7D%20of%20shape%20%28n_samples%2C%20n_features%29" target="_blank" class="method-tooltip">X<span class="tooltip-text">The data to fit</span></a></span>
+                            </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=estimator,-estimator%20object" target="_blank" class="method-tooltip">estimator<span class="tooltip-text">Estimator to make the cross-validation report from</span></a></span>
+                            </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=estimator_,-estimator%20object" target="_blank" class="method-tooltip">estimator_<span class="tooltip-text">The cloned or copied estimator</span></a></span>
+                            </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=estimator_name_,-str" target="_blank" class="method-tooltip">estimator_name_<span class="tooltip-text">The name of the estimator</span></a></span>
+                            </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=estimator_reports_,-list%20of%20EstimatorReport" target="_blank" class="method-tooltip">estimator_reports_<span class="tooltip-text">The estimator reports for each split</span></a></span>
+                            </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=ml_task" target="_blank" class="method-tooltip">ml_task<span class="tooltip-text">No description available</span></a></span>
+                            </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=n_jobs,-int%2C%20default%3DNone" target="_blank" class="method-tooltip">n_jobs<span class="tooltip-text">Number of jobs to run in parallel</span></a></span>
+                            </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=pos_label,-int%2C%20float%2C%20bool%20or%20str%2C%20default%3DNone" target="_blank" class="method-tooltip">pos_label<span class="tooltip-text">For binary classification, the positive class</span></a></span>
+                            </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=split_indices" target="_blank" class="method-tooltip">split_indices<span class="tooltip-text">No description available</span></a></span>
+                            </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=splitter,-int%2C%20cross-validation%20generator%20or%20an%20iterable%2C%20default%3D5" target="_blank" class="method-tooltip">splitter<span class="tooltip-text">Determines the cross-validation splitting strategy</span></a></span>
+                            </div>
+
+                            <div class="node method">
+                                <span class="method-name">.<a href="https://docs.skore.probabl.ai/dev/reference/api/skore.CrossValidationReport.html#:~:text=y,-array-like%20of%20shape%20%28n_samples%2C%29%20or%20%28n_samples%2C%20n_outputs%29%2C%20default%3DNone" target="_blank" class="method-tooltip">y<span class="tooltip-text">The target variable to try to predict in the case of supervised learning</span></a></span>
+                            </div>
+
+                    </div>
+                </div>
+
+            </div>
+
+    </div>
+</div>
+    </template>
+
+    <div id="skore-help-927470ab"></div>
+
+    <script>
+function detectTheme(refElementId) {
+    const body = document.querySelector('body');
+
+    // Check VSCode theme
+    const themeKindAttr = body.getAttribute('data-vscode-theme-kind');
+    const themeNameAttr = body.getAttribute('data-vscode-theme-name');
+
+    if (themeKindAttr && themeNameAttr) {
+        const themeKind = themeKindAttr.toLowerCase();
+        const themeName = themeNameAttr.toLowerCase();
+
+        if (themeKind.includes("dark") || themeName.includes("dark")) {
+            return "dark";
+        }
+        if (themeKind.includes("light") || themeName.includes("light")) {
+            return "light";
+        }
+    }
+
+    // Check Jupyter theme
+    if (body.getAttribute('data-jp-theme-light') === 'false') {
+        return 'dark';
+    } else if (body.getAttribute('data-jp-theme-light') === 'true') {
+        return 'light';
+    }
+
+    // Guess based on a reference element's color (luma)
+    if (refElementId) {
+        const refElement = document.getElementById(refElementId);
+        if (refElement) {
+            const color = window.getComputedStyle(refElement, null).getPropertyValue('color');
+            const match = color.match(/^rgb[a]?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+            if (match) {
+                const r = parseInt(match[1], 10);
+                const g = parseInt(match[2], 10);
+                const b = parseInt(match[3], 10);
+                // https://en.wikipedia.org/wiki/HSL_and_HSV#Lightness
+                const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                if (luma > 180) {
+                    return 'dark';
+                }
+                if (luma < 75) {
+                    return 'light';
+                }
+            }
+        }
+    }
+
+    // Fallback to system preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function applyThemeToHelpContainer(container, refElementId) {
+    const theme = detectTheme(refElementId);
+    if (theme === 'dark') {
+        container.setAttribute('data-theme', 'dark');
+        container.classList.add('dark-theme');
+    } else {
+        container.removeAttribute('data-theme');
+        container.classList.remove('dark-theme');
+    }
+}
+    </script>
+</div>
+
+<script>
+(function() {
+    const wrapper = document.getElementById('skore-help-927470ab-wrapper');
+    const container = document.getElementById('skore-help-927470ab');
+    if (!wrapper || !container) {
+        return;
+    }
+
+    const template = document.getElementById('skore-help-927470ab-template');
+    if (!template) {
+        return;
+    }
+
+    // Create shadow root with closed mode for better isolation
+    const shadowRoot = container.attachShadow({ mode: 'closed' });
+    shadowRoot.appendChild(template.content.cloneNode(true));
+
+    // Apply theme to the container (wrapper is ref for luma-based detection)
+    const helpContainer = shadowRoot.querySelector('.container');
+    if (helpContainer) {
+        applyThemeToHelpContainer(helpContainer, 'skore-help-927470ab-wrapper');
+    }
+})();
+</script>

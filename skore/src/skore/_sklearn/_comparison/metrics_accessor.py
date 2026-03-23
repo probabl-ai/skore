@@ -8,10 +8,7 @@ from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import (
-    _BaseAccessor,
-    _BaseMetricsAccessor,
-)
+from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._plot.metrics import (
     ConfusionMatrixDisplay,
@@ -28,14 +25,13 @@ from skore._utils._accessor import (
     _check_any_sub_report_has_metric,
     _check_supported_ml_task,
 )
-from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._progress_bar import track
 
 DataSource = Literal["test", "train", "both"]
 
 
-class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
+class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -114,57 +110,40 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Precision                    0.98...               0.98...
         Recall                       0.92...               0.92...
         """
-        cache_key = deep_key_sanitize(
-            (
-                self._parent._hash,
-                data_source,
-                metric,
-                metric_kwargs,
-                response_method,
+        parallel = joblib.Parallel(
+            **_validate_joblib_parallel_params(
+                n_jobs=self._parent.n_jobs, return_as="generator"
             )
         )
 
-        results = self._parent._cache.get(cache_key)
-        if results is None:
-            parallel = joblib.Parallel(
-                **_validate_joblib_parallel_params(
-                    n_jobs=self._parent.n_jobs, return_as="generator"
-                )
-            )
-
-            results = [
-                result.data
-                for result in track(
-                    parallel(
-                        joblib.delayed(report.metrics.summarize)(
-                            data_source=data_source,
-                            metric=metric,
-                            metric_kwargs=metric_kwargs,
-                            response_method=response_method,
-                        )
-                        for report in self._parent.reports_.values()
-                    ),
-                    description="Compute metric for each estimator",
-                    total=len(self._parent.reports_),
-                )
-            ]
-
-            data = pd.concat(
-                [
-                    df.assign(estimator_name=estimator_name)
-                    for df, estimator_name in zip(
-                        results, self._parent.reports_.keys(), strict=True
+        results = [
+            result.data
+            for result in track(
+                parallel(
+                    joblib.delayed(report.metrics.summarize)(
+                        data_source=data_source,
+                        metric=metric,
+                        metric_kwargs=metric_kwargs,
+                        response_method=response_method,
                     )
-                ],
-                axis="index",
+                    for report in self._parent.reports_.values()
+                ),
+                description="Compute metric for each estimator",
+                total=len(self._parent.reports_),
             )
+        ]
 
-            results = MetricsSummaryDisplay(
-                data=data, report_type=self._parent._report_type
-            )
+        data = pd.concat(
+            [
+                df.assign(estimator_name=estimator_name)
+                for df, estimator_name in zip(
+                    results, self._parent.reports_.keys(), strict=True
+                )
+            ],
+            axis="index",
+        )
 
-            self._parent._cache[cache_key] = results
-        return results
+        return MetricsSummaryDisplay(data=data, report_type=self._parent._report_type)
 
     def timings(
         self,

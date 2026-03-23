@@ -1,6 +1,8 @@
 from abc import abstractmethod
+from functools import cached_property
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
+from uuid import uuid4
 
 from numpy.typing import ArrayLike, NDArray
 from rich.console import Console
@@ -15,6 +17,7 @@ from skore._sklearn._diagnostics.base import (
 )
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
+from skore._utils._cache_key import make_cache_key
 from skore._utils._environment import (
     is_environment_notebook_like,
     is_environment_sphinx_build,
@@ -156,6 +159,15 @@ class _BaseReport(ReportHelpMixin):
     def _repr_mimebundle_(self, **kwargs: object) -> dict[str, str]:
         return {"text/plain": repr(self), "text/html": self._repr_html_()}
 
+    @cached_property
+    def id(self) -> int:
+        return uuid4().int
+
+    @property
+    def _hash(self) -> int:
+        # FIXME: only for backward compatibility
+        return self.id
+
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
 
@@ -234,7 +246,6 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 def _get_cached_response_values(
     *,
     cache: Cache,
-    estimator_hash: int,
     estimator: BaseEstimator,
     X: ArrayLike | None,
     response_method: str | list[str] | tuple[str, ...],
@@ -252,10 +263,6 @@ def _get_cached_response_values(
     ----------
     cache : Cache
         The cache backend to use.
-
-    estimator_hash : int
-        A hash associated with the estimator such that we can retrieve the data from
-        the cache.
 
     estimator : estimator object
         The estimator used to generate the predictions.
@@ -297,12 +304,8 @@ def _get_cached_response_values(
         # and decision functions
         pos_label = None
 
-    cache_key: tuple[Any, ...] = (
-        estimator_hash,
-        pos_label,
-        prediction_method,
-        data_source,
-    )
+    kwargs = {"pos_label": pos_label}
+    cache_key = make_cache_key(data_source, prediction_method, kwargs)
 
     if cache_key in cache:
         cached_predictions = cast(NDArray, cache[cache_key])
@@ -317,45 +320,9 @@ def _get_cached_response_values(
             return_response_method_used=False,
         )
 
-    predict_time_cache_key: tuple[Any, ...] = (
-        estimator_hash,
-        data_source,
-        "predict_time",
-    )
+    predict_time_cache_key = make_cache_key(data_source, "predict_time")
 
     return [
         (cache_key, predictions, False),
         (predict_time_cache_key, predict_time(), False),
     ]
-
-
-class _BaseMetricsAccessor:
-    _score_or_loss_info: dict[str, dict[str, str]] = {
-        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
-        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
-        "report_metrics": {"name": "Report metrics", "icon": ""},
-    }
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def _get_favorability_text(self, name: str) -> str | None:
-        """Get favorability text for a method, or None if not applicable."""
-        if name not in self._score_or_loss_info:
-            return None
-        icon = self._score_or_loss_info[name]["icon"]
-        if icon == "(↗︎)":
-            return "Higher value is better."
-        elif icon == "(↘︎)":
-            return "Lower value is better."
-        return None

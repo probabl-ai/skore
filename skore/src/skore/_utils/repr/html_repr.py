@@ -20,6 +20,10 @@ def get_jinja_env():
     return Environment(loader=FileSystemLoader(str(template_dir)), autoescape=True)
 
 
+def render_template(template_name, data):
+    return get_jinja_env().get_template(template_name).render(**data)
+
+
 class _BaseHTMLHelpMixin(ABC):
     """Base mixin for HTML-based help rendering."""
 
