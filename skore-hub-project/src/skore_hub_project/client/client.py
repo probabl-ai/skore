@@ -127,9 +127,8 @@ class Client(HTTPXClient):
         )
 
         with suppress(Exception):
+            logger.debug(f"{message}\n{json.dumps(response.json(), indent=4)}")
             message += f": {response.json()['message']}"
-
-        logger.debug(f"{message}\n{json.dumps(response.json(), indent=4)}")
 
         raise HTTPStatusError(message, request=response.request, response=response)
 
