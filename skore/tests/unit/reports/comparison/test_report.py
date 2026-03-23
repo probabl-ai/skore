@@ -14,6 +14,7 @@ from sklearn.svm import LinearSVC
 from sklearn.utils._testing import _convert_container
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+from skore._sklearn._diagnostics.base import ComparisonDiagnosticResults
 
 
 @pytest.fixture(
@@ -28,13 +29,11 @@ def report(request):
 
 def test_diagnose_collects_component_diagnostics(report):
     results = report.diagnose()
+    assert isinstance(results, ComparisonDiagnosticResults)
     assert len(results.diagnostics) >= len(report.reports_)
     assert any(diagnostic.code == "SKD001" for diagnostic in results.diagnostics)
     assert any(diagnostic.code == "SKD002" for diagnostic in results.diagnostics)
-    if results != ["No issues were detected in your report!"]:
-        assert all(
-            any(name in message for name in report.reports_) for message in results
-        )
+    assert set(results._grouped) == set(report.reports_)
 
 
 def test_diagnose_uses_component_cache(report, monkeypatch):

@@ -14,7 +14,10 @@ from skore._config import configuration
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
-from skore._sklearn._diagnostics.base import DiagnosticResult
+from skore._sklearn._diagnostics.base import (
+    ComparisonDiagnosticResults,
+    DiagnosticResult,
+)
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
@@ -518,6 +521,45 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 for diagnostic in report._get_diagnostics()
             )
         return diagnostics
+
+    def diagnose(
+        self,
+        *,
+        ignore: list[str] | tuple[str, ...] | None = None,
+    ) -> ComparisonDiagnosticResults:
+        ignored: set[str] = set()
+        if ignore:
+            ignored.update(code.strip().upper() for code in ignore if code.strip())
+        if configuration.ignore_diagnostics:
+            ignored.update(
+                code.strip().upper()
+                for code in configuration.ignore_diagnostics
+                if code.strip()
+            )
+
+        all_diagnostics: list[DiagnosticResult] = []
+        flat_messages: list[str] = []
+        grouped: dict[str, tuple[list[str], list[DiagnosticResult]]] = {}
+
+        for report_name, report in self.reports_.items():
+            filtered = [d for d in report._get_diagnostics() if d.code not in ignored]
+            all_diagnostics.extend(filtered)
+            messages, display_diags = self._build_diagnose_messages(filtered)
+            if not display_diags:
+                grouped[report_name] = (
+                    ["No issues detected in this report."],
+                    [],
+                )
+            else:
+                grouped[report_name] = (messages, display_diags)
+            flat_messages.extend(messages)
+
+        if not hasattr(self, "_diagnostics_cache"):
+            self._diagnostics_cache = self._collect_diagnostics()
+
+        return ComparisonDiagnosticResults(
+            flat_messages, all_diagnostics, grouped=grouped
+        )
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

@@ -109,7 +109,7 @@ def get_diagnostics_documentation_url(*, docs_anchor: str) -> str:
         skore_version = parse_version(version("skore"))
         url_version = (
             "dev"
-            if skore_version < parse_version("0.1")
+            if skore_version < parse_version("0.15")
             else f"{skore_version.major}.{skore_version.minor}"
         )
     except PackageNotFoundError:
@@ -129,8 +129,9 @@ def format_diagnostic_message(diagnostic: DiagnosticResult) -> str:
     return (
         f"[{diagnostic.code}] {diagnostic.title}: {_diagnostic_status(diagnostic)}. "
         f"{diagnostic.explanation} "
-        f"See {get_diagnostics_documentation_url(docs_anchor=diagnostic.docs_anchor)}. "
-        f"Mute with ignore=['{diagnostic.code}']."
+        "Read our documentation for more details: "
+        f"{get_diagnostics_documentation_url(docs_anchor=diagnostic.docs_anchor)}. "
+        f"Mute with `ignore=['{diagnostic.code}']`."
     )
 
 
@@ -145,7 +146,79 @@ def format_diagnostic_message_html(diagnostic: DiagnosticResult) -> str:
     return (
         f"[{code}] {title}: {_diagnostic_status(diagnostic)}. "
         f"{explanation} "
-        f'See <a href="{docs_url}" target="_blank" rel="noopener noreferrer">'
-        "user guide</a>. "
-        f"Mute with ignore=['{code}']."
+        f'Read <a href="{docs_url}" target="_blank" rel="noopener noreferrer">'
+        "our documentation</a> for more details. "
+        f"Mute with <code>ignore=['{code}']</code>."
     )
+
+
+class ComparisonDiagnosticResults(DiagnosticResults):
+    """Diagnostic results grouped by estimator for comparison reports."""
+
+    def __init__(
+        self,
+        messages: list[str],
+        diagnostics: list[DiagnosticResult],
+        *,
+        grouped: dict[str, tuple[list[str], list[DiagnosticResult]]],
+    ) -> None:
+        super().__init__(messages, diagnostics)
+        self._grouped = grouped
+
+    def _to_plain_text(self) -> str:
+        issue_count, evaluated_count, total_count = self._summary()
+        lines: list[str] = [
+            f"Diagnostics: {issue_count} issue(s), "
+            f"{evaluated_count}/{total_count} evaluated."
+        ]
+        for name, (msgs, _) in self._grouped.items():
+            lines.append(f"[{name}]")
+            lines.extend(f"- {m}" for m in msgs)
+        return "\n".join(lines)
+
+    def _repr_html_(self) -> str:
+        issue_count, evaluated_count, total_count = self._summary()
+        header = (
+            f"Diagnostics: {issue_count} issue(s), "
+            f"{evaluated_count}/{total_count} evaluated."
+        )
+        groups_html = ""
+        for name, (msgs, display_diags) in self._grouped.items():
+            groups_html += (
+                f'<div style="font-weight:600;margin-top:8px;">{escape(name)}</div>'
+            )
+            if display_diags:
+                items = "".join(
+                    f"<li>{format_diagnostic_message_html(d)}</li>"
+                    for d in display_diags
+                )
+            else:
+                items = "".join(f"<li>{escape(m)}</li>" for m in msgs)
+            groups_html += f'<ul style="margin:4px 0 0 18px;padding:0;">{items}</ul>'
+        return (
+            '<div style="margin:8px 0;padding:10px;border:1px solid #f97316;'
+            "border-radius:4px;display:inline-block;"
+            'font-family:monospace;font-size:13px;line-height:1.5;">'
+            f'<div style="font-weight:700;">{escape(header)}</div>'
+            f"{groups_html}"
+            "</div>"
+        )
+
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        issue_count, evaluated_count, total_count = self._summary()
+        title = (
+            "Diagnostics "
+            f"({issue_count} issue(s), {evaluated_count}/{total_count} evaluated)"
+        )
+        lines: list[str] = []
+        for name, (msgs, _) in self._grouped.items():
+            lines.append(f"[bold]{name}[/bold]")
+            lines.extend(f"  - {m}" for m in msgs)
+        yield Panel(
+            "\n".join(lines) or "No diagnostics available.",
+            title=title,
+            border_style="orange1",
+            expand=False,
+        )
