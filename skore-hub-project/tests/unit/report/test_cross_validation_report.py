@@ -214,6 +214,19 @@ class TestCrossValidationReportPayload:
             assert all(0 <= distribution <= 1 for distribution in train_distribution)
             assert all(0 <= distribution <= 1 for distribution in test_distribution)
 
+        train_target_distributions_sample_count = payload.splitting_strategy.pop(
+            "train_target_distributions_sample_count"
+        )
+        test_target_distributions_sample_count = payload.splitting_strategy.pop(
+            "test_target_distributions_sample_count"
+        )
+        assert len(train_target_distributions_sample_count) == len(
+            test_target_distributions_sample_count
+        )
+        assert len(train_target_distributions_sample_count) == len(
+            test_target_distributions_sample_count
+        )
+
         assert payload.splitting_strategy == {
             "splitter": metadata,
             "splits": expected_splits,
@@ -308,6 +321,19 @@ class TestCrossValidationReportPayload:
             train_target_distributions, test_target_distributions, strict=True
         ):
             assert len(train_distribution) == len(test_distribution) == 2
+
+        train_target_distributions_sample_count = payload.splitting_strategy.pop(
+            "train_target_distributions_sample_count"
+        )
+        test_target_distributions_sample_count = payload.splitting_strategy.pop(
+            "test_target_distributions_sample_count"
+        )
+        assert len(train_target_distributions_sample_count) == len(
+            test_target_distributions
+        )
+        assert len(train_target_distributions_sample_count) == len(
+            test_target_distributions_sample_count
+        )
 
         assert payload.splitting_strategy == {
             "splitter": metadata,

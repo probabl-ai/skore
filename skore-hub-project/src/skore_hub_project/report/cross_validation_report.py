@@ -291,7 +291,9 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
         # compute target distributions
         train_target_distributions = []
+        train_target_distributions_sample_count = []
         test_target_distributions = []
+        test_target_distributions_sample_count = []
         for train_indices, test_indices in self.report.split_indices:
             train_y = _safe_indexing(self.report.y, train_indices)
             test_y = _safe_indexing(self.report.y, test_indices)
@@ -318,13 +320,21 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 test_target_distribution = [float(x) for x in test_kernel(linspace)]
 
             train_target_distributions.append(train_target_distribution)
+            train_target_distributions_sample_count.append(len(train_indices))
             test_target_distributions.append(test_target_distribution)
+            test_target_distributions_sample_count.append(len(test_indices))
 
         return {
             "splitter": splitter_metadata,
             "splits": splits,
             "train_target_distributions": train_target_distributions,
+            "train_target_distributions_sample_count": (
+                train_target_distributions_sample_count
+            ),
             "test_target_distributions": test_target_distributions,
+            "test_target_distributions_sample_count": (
+                test_target_distributions_sample_count
+            ),
         }
 
     groups: list[int] | None = None
