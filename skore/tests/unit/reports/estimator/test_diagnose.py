@@ -58,7 +58,6 @@ def test_diagnose_ignore(monkeypatch, regression_train_test_split):
     diagnostic = DiagnosticResult(
         code="SKD001",
         title="Mock overfitting",
-        kind="overfitting",
         docs_anchor="skd001-overfitting",
         explanation="Mock overfitting detected.",
     )
@@ -132,7 +131,6 @@ def test_diagnose_result_has_repr(monkeypatch, regression_train_test_split):
     diagnostic = DiagnosticResult(
         code="SKD999",
         title="Mock issue",
-        kind="info",
         docs_anchor="skd001-overfitting",
         explanation="Mock issue for repr rendering.",
     )
@@ -188,7 +186,6 @@ def test_diagnose_uses_global_ignore(monkeypatch, regression_train_test_split):
     diagnostic = DiagnosticResult(
         code="SKD001",
         title="Mock overfitting",
-        kind="overfitting",
         docs_anchor="skd001-overfitting",
         explanation="Mock overfitting detected.",
     )

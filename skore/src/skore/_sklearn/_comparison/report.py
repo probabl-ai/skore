@@ -515,7 +515,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 DiagnosticResult(
                     code=diagnostic.code,
                     title=diagnostic.title,
-                    kind=diagnostic.kind,
                     docs_anchor=diagnostic.docs_anchor,
                     explanation=f"[{report_name}] {diagnostic.explanation}",
                 )

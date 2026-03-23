@@ -30,7 +30,6 @@ def run_cross_validation_diagnostics(
                 DiagnosticResult(
                     code=ref.code,
                     title=ref.title,
-                    kind=ref.kind,
                     docs_anchor=ref.docs_anchor,
                     explanation=(
                         f"Detected in {len(positives)}/{total_splits} evaluated splits."

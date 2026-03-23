@@ -3,14 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from html import escape
 from importlib.metadata import PackageNotFoundError, version
-from typing import Literal
 
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.panel import Panel
 
 from skore._externals._sklearn_compat import parse_version
-
-DiagnosticKind = Literal["overfitting", "underfitting", "info"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,9 +25,6 @@ class DiagnosticResult:
     title : str
         Short human-readable name of the diagnostic
 
-    kind : {"overfitting", "underfitting", "info"}
-        Category of the diagnostic
-
     docs_anchor : str
         Anchor slug used to build the URL to the documentation page
 
@@ -40,7 +34,6 @@ class DiagnosticResult:
 
     code: str
     title: str
-    kind: DiagnosticKind
     docs_anchor: str
     explanation: str
 
