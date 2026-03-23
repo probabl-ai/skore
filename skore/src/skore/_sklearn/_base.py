@@ -1,5 +1,7 @@
+from functools import cached_property
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
+from uuid import uuid4
 
 from numpy.typing import ArrayLike, NDArray
 from rich.console import Console
@@ -28,6 +30,15 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
+
+    @cached_property
+    def id(self) -> int:
+        return uuid4().int
+
+    @property
+    def _hash(self) -> int:
+        # FIXME: only for backward compatibility
+        return self.id
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
