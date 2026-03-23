@@ -6,7 +6,6 @@ import warnings
 from itertools import product
 from typing import TYPE_CHECKING, Any, Literal
 
-import numpy as np
 import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
@@ -186,16 +185,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_test = y_test
         self._pos_label = pos_label
         self.fit_time_ = fit_time
-        self._parent_hash: np.int64 | None = None
 
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
         self._cache = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
-
-        # used only as a unique ID in skore-hub-project for now:
-        self._hash = np.random.default_rng().integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
 
     def clear_cache(self) -> None:
         """Clear the cache.
