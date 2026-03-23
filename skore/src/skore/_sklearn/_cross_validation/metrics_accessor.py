@@ -8,10 +8,7 @@ from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import (
-    _BaseAccessor,
-    _BaseMetricsAccessor,
-)
+from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -32,9 +29,7 @@ from skore._utils._progress_bar import track
 DataSource = Literal["test", "train"]
 
 
-class _MetricsAccessor(
-    _BaseMetricsAccessor, _BaseAccessor["CrossValidationReport"], DirNamesMixin
-):
+class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.

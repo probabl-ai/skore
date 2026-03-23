@@ -78,12 +78,6 @@ class _ReportWithExplicitMethods(MockReport, _ReportHelpDataMixin):
         """A class method; must be excluded from get_public_methods."""
         pass
 
-    def _get_favorability_text(self, name: str) -> str | None:
-        """Return favorability indicator for _build_help_data coverage."""
-        if name == "public_action":
-            return "(↗︎)"
-        return None
-
 
 class _ReportWithAccessor(_ReportWithExplicitMethods):
     """Report with _ACCESSOR_CONFIG and attached accessor for _build_help_data
@@ -411,7 +405,6 @@ def test_accessor_build_help_data_output(accessor_with_methods):
     assert m.name == "fetch"
     assert m.parameters == "()"
     assert "Fetch" in m.description
-    assert m.favorability is None
     assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
     assert "mock_accessor" in m.doc_url and "fetch" in m.doc_url
 
@@ -431,7 +424,6 @@ def test_report_build_help_data_output(report_with_methods):
     assert m.name == "public_action"
     assert m.parameters == "()"
     assert "public" in m.description.lower()
-    assert m.favorability == "(↗︎)"
     assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
     assert data.methods_section is not None
     assert isinstance(data.methods_section, HelpSection)
@@ -454,7 +446,6 @@ def test_report_build_help_data_output_with_accessors(report_with_accessor):
     assert m.name == "fetch"
     assert m.parameters == "()"
     assert "Fetch" in m.description
-    assert m.favorability is None
     assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
     assert "metrics" in m.doc_url and "fetch" in m.doc_url
 

@@ -1,6 +1,7 @@
 """Client exchanging with ``skore hub``."""
 
 import importlib.metadata
+import json
 from contextlib import suppress
 from http import HTTPStatus
 from logging import getLogger
@@ -126,6 +127,7 @@ class Client(HTTPXClient):
         )
 
         with suppress(Exception):
+            logger.debug(f"{message}\n{json.dumps(response.json(), indent=4)}")
             message += f": {response.json()['message']}"
 
         raise HTTPStatusError(message, request=response.request, response=response)

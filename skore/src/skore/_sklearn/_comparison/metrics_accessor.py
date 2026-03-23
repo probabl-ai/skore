@@ -8,10 +8,7 @@ from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import (
-    _BaseAccessor,
-    _BaseMetricsAccessor,
-)
+from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._plot.metrics import (
     ConfusionMatrixDisplay,
@@ -34,7 +31,7 @@ from skore._utils._progress_bar import track
 DataSource = Literal["test", "train", "both"]
 
 
-class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
+class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
