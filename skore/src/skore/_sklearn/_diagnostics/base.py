@@ -15,68 +15,109 @@ DiagnosticKind = Literal["overfitting", "underfitting", "info"]
 
 @dataclass(frozen=True, slots=True)
 class DiagnosticResult:
+    """A detected issue from a diagnostic check.
+
+    Each instance represents an issue that was found by a diagnostic check
+    (e.g. overfitting, underfitting).
+
+    Attributes
+    ----------
+    code : str
+        Unique identifier for the diagnostic, e.g. `"SKD001"`
+
+    title : str
+        Short human-readable name of the diagnostic
+
+    kind : {"overfitting", "underfitting", "info"}
+        Category of the diagnostic
+
+    docs_anchor : str
+        Anchor slug used to build the URL to the documentation page
+
+    explanation : str
+        Detailed message describing what was found
+    """
+
     code: str
     title: str
     kind: DiagnosticKind
     docs_anchor: str
     explanation: str
-    is_issue: bool
-    evaluated: bool = True
 
 
-class DiagnosticResults(list[str]):
-    def __init__(
-        self,
-        messages: list[str],
-        diagnostics: list[DiagnosticResult],
-        *,
-        display_diagnostics: list[DiagnosticResult] | None = None,
-    ) -> None:
-        super().__init__(messages)
-        self._diagnostics = tuple(diagnostics)
-        self._display_diagnostics = tuple(display_diagnostics or ())
+class DiagnosticResults:
+    """Collection of diagnostic results returned by :meth:`Report.diagnose`.
+
+    This object is iterable and yields human-readable message strings for every
+    detected issue. When no issues are found, iterating yields a single
+    "No issues were detected" message. Access the underlying
+    :class:`DiagnosticResult` objects via the :attr:`diagnostics` property.
+
+    Parameters
+    ----------
+    diagnostics : list of DiagnosticResult
+        Detected issues produced by the report.
+
+    checks_ran : int
+        Total number of diagnostic checks that were executed.
+    """
+
+    def __init__(self, diagnostics: list[DiagnosticResult], checks_ran: int) -> None:
+        self._diagnostics = diagnostics
+        self._checks_ran = checks_ran
+        if diagnostics:
+            self._messages = [format_diagnostic_message(d) for d in diagnostics]
+        else:
+            self._messages = ["No issues were detected in your report!"]
+        self.header = (
+            f"Diagnostics: {len(self._diagnostics)} issue(s) detected, "
+            f"{self._checks_ran} check(s) ran."
+        )
 
     @property
-    def diagnostics(self) -> tuple[DiagnosticResult, ...]:
+    def diagnostics(self) -> list[DiagnosticResult]:
+        """All detected diagnostic issues."""
         return self._diagnostics
 
-    def _summary(self) -> tuple[int, int, int]:
-        issue_count = sum(diagnostic.is_issue for diagnostic in self._diagnostics)
-        evaluated_count = sum(diagnostic.evaluated for diagnostic in self._diagnostics)
-        return issue_count, evaluated_count, len(self._diagnostics)
+    def __iter__(self):
+        return iter(self._messages)
+
+    def __len__(self):
+        return len(self._messages)
+
+    def __getitem__(self, index):
+        return self._messages[index]
+
+    def __contains__(self, item):
+        return item in self._messages
+
+    def __eq__(self, other):
+        if isinstance(other, DiagnosticResults):
+            return self._messages == other._messages
+        if isinstance(other, (list, tuple)):
+            return list(self._messages) == list(other)
+        return NotImplemented
+
+    def __bool__(self):
+        return bool(self._messages)
 
     def _to_plain_text(self) -> str:
-        issue_count, evaluated_count, total_count = self._summary()
-        header = (
-            f"Diagnostics: {issue_count} issue(s), "
-            f"{evaluated_count}/{total_count} evaluated."
-        )
-        if not self:
-            return header
-        return "\n".join([header, *[f"- {message}" for message in self]])
+        return "\n".join([self.header, *[f"- {message}" for message in self._messages]])
 
     def _repr_html_(self) -> str:
-        issue_count, evaluated_count, total_count = self._summary()
-        header = (
-            f"Diagnostics: {issue_count} issue(s), "
-            f"{evaluated_count}/{total_count} evaluated."
-        )
-        if not self:
-            items_html = "<div>No diagnostics available.</div>"
+        if self._diagnostics:
+            items_html = "".join(
+                f"<li>{format_diagnostic_message_html(d)}</li>"
+                for d in self._diagnostics
+            )
         else:
-            if len(self._display_diagnostics) == len(self):
-                items_html = "".join(
-                    f"<li>{format_diagnostic_message_html(diagnostic)}</li>"
-                    for diagnostic in self._display_diagnostics
-                )
-            else:
-                items_html = "".join(f"<li>{escape(message)}</li>" for message in self)
-            items_html = f'<ul style="margin:8px 0 0 18px;padding:0;">{items_html}</ul>'
+            items_html = f"<li>{escape(self._messages[0])}</li>"
+        items_html = f'<ul style="margin:8px 0 0 18px;padding:0;">{items_html}</ul>'
         return (
             '<div style="margin:8px 0;padding:10px;border:1px solid #f97316;'
             "border-radius:4px;display:inline-block;"
             'font-family:monospace;font-size:13px;line-height:1.5;">'
-            f'<div style="font-weight:700;">{escape(header)}</div>'
+            f'<div style="font-weight:700;">{escape(self.header)}</div>'
             f"{items_html}"
             "</div>"
         )
@@ -93,15 +134,12 @@ class DiagnosticResults(list[str]):
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        issue_count, evaluated_count, total_count = self._summary()
-        title = (
-            "Diagnostics "
-            f"({issue_count} issue(s), {evaluated_count}/{total_count} evaluated)"
+        yield Panel(
+            "\n".join(f"- {message}" for message in self._messages),
+            title=f"Diagnostics ({self.header})",
+            border_style="orange1",
+            expand=False,
         )
-        body = "No diagnostics available."
-        if self:
-            body = "\n".join(f"- {message}" for message in self)
-        yield Panel(body, title=title, border_style="orange1", expand=False)
 
 
 def get_diagnostics_documentation_url(*, docs_anchor: str) -> str:
@@ -117,17 +155,9 @@ def get_diagnostics_documentation_url(*, docs_anchor: str) -> str:
     return f"https://docs.skore.probabl.ai/{url_version}/user_guide/diagnostics.html#{docs_anchor}"
 
 
-def _diagnostic_status(diagnostic: DiagnosticResult) -> str:
-    if diagnostic.is_issue:
-        return "issue detected"
-    if not diagnostic.evaluated:
-        return "not evaluated"
-    return "no issue detected"
-
-
 def format_diagnostic_message(diagnostic: DiagnosticResult) -> str:
     return (
-        f"[{diagnostic.code}] {diagnostic.title}: {_diagnostic_status(diagnostic)}. "
+        f"[{diagnostic.code}] {diagnostic.title}: issue detected. "
         f"{diagnostic.explanation} "
         "Read our documentation for more details: "
         f"{get_diagnostics_documentation_url(docs_anchor=diagnostic.docs_anchor)}. "
@@ -144,7 +174,7 @@ def format_diagnostic_message_html(diagnostic: DiagnosticResult) -> str:
         quote=True,
     )
     return (
-        f"[{code}] {title}: {_diagnostic_status(diagnostic)}. "
+        f"[{code}] {title}: issue detected. "
         f"{explanation} "
         f'Read <a href="{docs_url}" target="_blank" rel="noopener noreferrer">'
         "our documentation</a> for more details. "
@@ -152,54 +182,70 @@ def format_diagnostic_message_html(diagnostic: DiagnosticResult) -> str:
     )
 
 
+def _group_messages(
+    diagnostics: list[DiagnosticResult],
+) -> tuple[list[str], list[DiagnosticResult]]:
+    if diagnostics:
+        return [format_diagnostic_message(d) for d in diagnostics], diagnostics
+    return ["No issues detected in this report."], []
+
+
 class ComparisonDiagnosticResults(DiagnosticResults):
-    """Diagnostic results grouped by estimator for comparison reports."""
+    """Diagnostic results grouped by report for :class:`~skore.ComparisonReport`.
+
+    Behaves like :class:`DiagnosticResults` but its text and HTML representations
+    group messages under the name of each sub-report.
+
+    Parameters
+    ----------
+    diagnostics : list of DiagnosticResult
+        flat list of all detected issues across every compared report
+
+    checks_ran : int
+        total number of diagnostic checks that were executed
+
+    grouped : dict of {str: list of DiagnosticResult}
+        detected issues keyed by report name
+    """
 
     def __init__(
         self,
-        messages: list[str],
         diagnostics: list[DiagnosticResult],
+        checks_ran: int,
         *,
-        grouped: dict[str, tuple[list[str], list[DiagnosticResult]]],
+        grouped: dict[str, list[DiagnosticResult]],
     ) -> None:
-        super().__init__(messages, diagnostics)
-        self._grouped = grouped
+        super().__init__(diagnostics, checks_ran)
+        self._grouped = {
+            name: _group_messages(diags) for name, diags in grouped.items()
+        }
 
     def _to_plain_text(self) -> str:
-        issue_count, evaluated_count, total_count = self._summary()
-        lines: list[str] = [
-            f"Diagnostics: {issue_count} issue(s), "
-            f"{evaluated_count}/{total_count} evaluated."
-        ]
-        for name, (msgs, _) in self._grouped.items():
+        lines: list[str] = [self.header]
+        for name, (messages, _) in self._grouped.items():
             lines.append(f"[{name}]")
-            lines.extend(f"- {m}" for m in msgs)
+            lines.extend(f"- {message}" for message in messages)
         return "\n".join(lines)
 
     def _repr_html_(self) -> str:
-        issue_count, evaluated_count, total_count = self._summary()
-        header = (
-            f"Diagnostics: {issue_count} issue(s), "
-            f"{evaluated_count}/{total_count} evaluated."
-        )
         groups_html = ""
-        for name, (msgs, display_diags) in self._grouped.items():
+        for name, (messages, display_diagnostics) in self._grouped.items():
             groups_html += (
                 f'<div style="font-weight:600;margin-top:8px;">{escape(name)}</div>'
             )
-            if display_diags:
+            if display_diagnostics:
                 items = "".join(
-                    f"<li>{format_diagnostic_message_html(d)}</li>"
-                    for d in display_diags
+                    f"<li>{format_diagnostic_message_html(diagnostic)}</li>"
+                    for diagnostic in display_diagnostics
                 )
             else:
-                items = "".join(f"<li>{escape(m)}</li>" for m in msgs)
+                items = f"<li>{escape(messages[0])}</li>"
             groups_html += f'<ul style="margin:4px 0 0 18px;padding:0;">{items}</ul>'
         return (
             '<div style="margin:8px 0;padding:10px;border:1px solid #f97316;'
             "border-radius:4px;display:inline-block;"
             'font-family:monospace;font-size:13px;line-height:1.5;">'
-            f'<div style="font-weight:700;">{escape(header)}</div>'
+            f'<div style="font-weight:700;">{escape(self.header)}</div>'
             f"{groups_html}"
             "</div>"
         )
@@ -207,18 +253,13 @@ class ComparisonDiagnosticResults(DiagnosticResults):
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        issue_count, evaluated_count, total_count = self._summary()
-        title = (
-            "Diagnostics "
-            f"({issue_count} issue(s), {evaluated_count}/{total_count} evaluated)"
-        )
         lines: list[str] = []
-        for name, (msgs, _) in self._grouped.items():
+        for name, (messages, _) in self._grouped.items():
             lines.append(f"[bold]{name}[/bold]")
-            lines.extend(f"  - {m}" for m in msgs)
+            lines.extend(f"  - {message}" for message in messages)
         yield Panel(
             "\n".join(lines) or "No diagnostics available.",
-            title=title,
+            title=f"Diagnostics ({self.header})",
             border_style="orange1",
             expand=False,
         )

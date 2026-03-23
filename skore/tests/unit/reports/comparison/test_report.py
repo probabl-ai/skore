@@ -14,7 +14,10 @@ from sklearn.svm import LinearSVC
 from sklearn.utils._testing import _convert_container
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
-from skore._sklearn._diagnostics.base import ComparisonDiagnosticResults
+from skore._sklearn._diagnostics.base import (
+    ComparisonDiagnosticResults,
+    DiagnosticResults,
+)
 
 
 @pytest.fixture(
@@ -30,23 +33,20 @@ def report(request):
 def test_diagnose_collects_component_diagnostics(report):
     results = report.diagnose()
     assert isinstance(results, ComparisonDiagnosticResults)
-    assert len(results.diagnostics) >= len(report.reports_)
-    assert any(diagnostic.code == "SKD001" for diagnostic in results.diagnostics)
-    assert any(diagnostic.code == "SKD002" for diagnostic in results.diagnostics)
     assert set(results._grouped) == set(report.reports_)
 
 
 def test_diagnose_uses_component_cache(report, monkeypatch):
     sub_report = next(iter(report.reports_.values()))
     calls = 0
-    original = sub_report._collect_diagnostics
+    original = sub_report._compute_diagnostics
 
     def wrapped():
         nonlocal calls
         calls += 1
         return original()
 
-    monkeypatch.setattr(sub_report, "_collect_diagnostics", wrapped)
+    monkeypatch.setattr(sub_report, "_compute_diagnostics", wrapped)
 
     report.diagnose()
     report.diagnose()
@@ -56,7 +56,7 @@ def test_diagnose_uses_component_cache(report, monkeypatch):
 
 def test_diagnose_result_has_repr(report):
     results = report.diagnose()
-    assert isinstance(results, list)
+    assert isinstance(results, DiagnosticResults)
     assert "Diagnostics:" in repr(results)
     bundle = results._repr_mimebundle_()
     assert "text/plain" in bundle

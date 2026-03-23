@@ -505,9 +505,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _collect_diagnostics(self) -> list[DiagnosticResult]:
+    def _compute_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
         diagnostics: list[DiagnosticResult] = []
+        all_checked: set[str] = set()
         for report_name, report in self.reports_.items():
+            results, checked = report._get_diagnostics()
+            all_checked |= checked
             diagnostics.extend(
                 DiagnosticResult(
                     code=diagnostic.code,
@@ -515,50 +518,28 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     kind=diagnostic.kind,
                     docs_anchor=diagnostic.docs_anchor,
                     explanation=f"[{report_name}] {diagnostic.explanation}",
-                    is_issue=diagnostic.is_issue,
-                    evaluated=diagnostic.evaluated,
                 )
-                for diagnostic in report._get_diagnostics()
+                for diagnostic in results
             )
-        return diagnostics
+        return diagnostics, all_checked
 
-    def diagnose(
+    def _build_results(
         self,
-        *,
-        ignore: list[str] | tuple[str, ...] | None = None,
+        diagnostics: list[DiagnosticResult],
+        checks_ran: int,
+        ignored: set[str],
     ) -> ComparisonDiagnosticResults:
-        ignored: set[str] = set()
-        if ignore:
-            ignored.update(code.strip().upper() for code in ignore if code.strip())
-        if configuration.ignore_diagnostics:
-            ignored.update(
-                code.strip().upper()
-                for code in configuration.ignore_diagnostics
-                if code.strip()
-            )
-
-        all_diagnostics: list[DiagnosticResult] = []
-        flat_messages: list[str] = []
-        grouped: dict[str, tuple[list[str], list[DiagnosticResult]]] = {}
-
-        for report_name, report in self.reports_.items():
-            filtered = [d for d in report._get_diagnostics() if d.code not in ignored]
-            all_diagnostics.extend(filtered)
-            messages, display_diags = self._build_diagnose_messages(filtered)
-            if not display_diags:
-                grouped[report_name] = (
-                    ["No issues detected in this report."],
-                    [],
-                )
-            else:
-                grouped[report_name] = (messages, display_diags)
-            flat_messages.extend(messages)
-
-        if not hasattr(self, "_diagnostics_cache"):
-            self._diagnostics_cache = self._collect_diagnostics()
-
         return ComparisonDiagnosticResults(
-            flat_messages, all_diagnostics, grouped=grouped
+            diagnostics,
+            checks_ran,
+            grouped={
+                name: [
+                    diagnostic
+                    for diagnostic in report._get_diagnostics()[0]
+                    if diagnostic.code not in ignored
+                ]
+                for name, report in self.reports_.items()
+            },
         )
 
     def _get_help_title(self) -> str:

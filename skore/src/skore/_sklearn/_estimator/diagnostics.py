@@ -30,16 +30,6 @@ class _MetricPair:
     test: float
 
 
-@dataclass(frozen=True, slots=True)
-class _DiagnosticsContext:
-    metric_pairs: dict[_MetricKey, _MetricPair]
-    metrics_evaluated: bool
-    metrics_explanation: str
-    baseline_pairs: dict[_MetricKey, _MetricPair]
-    baseline_evaluated: bool
-    baseline_explanation: str
-
-
 def _metric_key(value: object) -> str:
     return "" if pd.isna(value) else str(value)
 
@@ -93,6 +83,31 @@ def _metric_pairs(
     return metric_pairs
 
 
+def _baseline_metric_pairs(
+    report: EstimatorReport,
+) -> dict[_MetricKey, _MetricPair]:
+    if "classification" in report.ml_task:
+        dummy_estimator = DummyClassifier(strategy="prior")
+    elif "regression" in report.ml_task:
+        dummy_estimator = DummyRegressor(strategy="mean")
+    else:
+        return {}
+    from skore._sklearn._estimator.report import EstimatorReport as _ER
+
+    with configuration(diagnose=False):
+        baseline_report = _ER(
+            dummy_estimator,
+            fit=True,
+            X_train=report.X_train,
+            y_train=report.y_train,
+            X_test=report.X_test,
+            y_test=report.y_test,
+            pos_label=report.pos_label,
+            diagnose=False,
+        )
+    return _metric_pairs(baseline_report)
+
+
 def _gap_threshold(reference: float) -> float:
     return max(0.03, 0.10 * max(abs(reference), 1.0))
 
@@ -127,116 +142,33 @@ def _is_significantly_better(
     return False
 
 
-def _create_dummy_report(report: EstimatorReport) -> EstimatorReport | None:
-    if (
-        report.X_train is None
-        or report.y_train is None
-        or report.X_test is None
-        or report.y_test is None
-    ):
-        return None
-    if "classification" in report.ml_task:
-        dummy_estimator = DummyClassifier(strategy="prior")
-    elif "regression" in report.ml_task:
-        dummy_estimator = DummyRegressor(strategy="mean")
-    else:
-        return None
-    from skore._sklearn._estimator.report import EstimatorReport
-
-    try:
-        with configuration(diagnose=False):
-            return EstimatorReport(
-                dummy_estimator,
-                fit=True,
-                X_train=report.X_train,
-                y_train=report.y_train,
-                X_test=report.X_test,
-                y_test=report.y_test,
-                pos_label=report.pos_label,
-                diagnose=False,
-            )
-    except Exception:
-        return None
-
-
-def _overfitting_result(
-    *,
+def _check_overfitting(
     metric_pairs: dict[_MetricKey, _MetricPair],
-    evaluated: bool,
-    explanation: str,
-) -> DiagnosticResult:
-    if not evaluated:
-        return DiagnosticResult(
-            code=OVERFITTING_CODE,
-            title="Potential overfitting",
-            kind="overfitting",
-            docs_anchor="skd001-overfitting",
-            explanation=explanation,
-            is_issue=False,
-            evaluated=False,
-        )
+) -> DiagnosticResult | None:
     votes = [_is_significant_gap(metric) for metric in metric_pairs.values()]
     triggered = sum(votes)
     total = len(votes)
-    is_issue = triggered > total / 2
-    if triggered == 0:
-        explanation = (
-            "No significant train/test gap was found across "
-            f"{total} default predictive metrics."
-        )
-    elif is_issue:
-        explanation = (
-            "Significant train/test gaps were found for "
-            f"{triggered}/{total} default predictive metrics."
-        )
-    else:
-        explanation = (
-            "Significant train/test gaps were found for "
-            f"{triggered}/{total} default predictive metrics, "
-            "which is below the majority threshold."
-        )
+    if triggered <= total / 2:
+        return None
     return DiagnosticResult(
         code=OVERFITTING_CODE,
         title="Potential overfitting",
         kind="overfitting",
         docs_anchor="skd001-overfitting",
-        explanation=explanation,
-        is_issue=is_issue,
-        evaluated=True,
+        explanation=(
+            "Significant train/test gaps were found for "
+            f"{triggered}/{total} default predictive metrics."
+        ),
     )
 
 
-def _underfitting_result(
-    *,
+def _check_underfitting(
     metric_pairs: dict[_MetricKey, _MetricPair],
     baseline_pairs: dict[_MetricKey, _MetricPair],
-    evaluated: bool,
-    explanation: str,
-) -> DiagnosticResult:
-    if not evaluated:
-        return DiagnosticResult(
-            code=UNDERFITTING_CODE,
-            title="Potential underfitting",
-            kind="underfitting",
-            docs_anchor="skd002-underfitting",
-            explanation=explanation,
-            is_issue=False,
-            evaluated=False,
-        )
+) -> DiagnosticResult | None:
     shared_keys = metric_pairs.keys() & baseline_pairs.keys()
     if not shared_keys:
-        return DiagnosticResult(
-            code=UNDERFITTING_CODE,
-            title="Potential underfitting",
-            kind="underfitting",
-            docs_anchor="skd002-underfitting",
-            explanation=(
-                "No shared predictive metrics were available to compare "
-                "against the dummy baseline."
-            ),
-            is_issue=False,
-            evaluated=False,
-        )
+        return None
     votes = []
     for key in shared_keys:
         metric = metric_pairs[key]
@@ -256,130 +188,39 @@ def _underfitting_result(
         )
     triggered = sum(votes)
     total = len(votes)
-    is_issue = triggered > total / 2
-    if triggered == 0:
-        explanation = (
-            "Train and test scores are meaningfully better than the dummy "
-            f"baseline for all {total} "
-            "comparable metrics."
-        )
-    elif is_issue:
-        explanation = (
-            "Train/test scores are on par and not significantly better than "
-            "the dummy baseline for "
-            f"{triggered}/{total} comparable metrics."
-        )
-    else:
-        explanation = (
-            "Train/test scores are on par and not significantly better than "
-            "the dummy baseline for "
-            f"{triggered}/{total} comparable metrics, "
-            "which is below the majority threshold."
-        )
+    if triggered <= total / 2:
+        return None
     return DiagnosticResult(
         code=UNDERFITTING_CODE,
         title="Potential underfitting",
         kind="underfitting",
         docs_anchor="skd002-underfitting",
-        explanation=explanation,
-        is_issue=is_issue,
-        evaluated=True,
-    )
-
-
-def _build_diagnostics_context(report: EstimatorReport) -> _DiagnosticsContext:
-    if (
-        report.X_train is None
-        or report.y_train is None
-        or report.X_test is None
-        or report.y_test is None
-    ):
-        explanation = "Train and test data are both required to run this diagnostic."
-        return _DiagnosticsContext(
-            metric_pairs={},
-            metrics_evaluated=False,
-            metrics_explanation=explanation,
-            baseline_pairs={},
-            baseline_evaluated=False,
-            baseline_explanation=explanation,
-        )
-    try:
-        metric_pairs = _metric_pairs(report)
-    except Exception as error:
-        explanation = f"Failed to compute report metrics for diagnostics: {error}."
-        return _DiagnosticsContext(
-            metric_pairs={},
-            metrics_evaluated=False,
-            metrics_explanation=explanation,
-            baseline_pairs={},
-            baseline_evaluated=False,
-            baseline_explanation=explanation,
-        )
-    if not metric_pairs:
-        explanation = (
-            "No predictive metrics were available to evaluate this diagnostic."
-        )
-        return _DiagnosticsContext(
-            metric_pairs={},
-            metrics_evaluated=False,
-            metrics_explanation=explanation,
-            baseline_pairs={},
-            baseline_evaluated=False,
-            baseline_explanation=explanation,
-        )
-    baseline_pairs: dict[_MetricKey, _MetricPair] = {}
-    baseline_report = _create_dummy_report(report)
-    if baseline_report is not None:
-        try:
-            baseline_pairs = _metric_pairs(baseline_report)
-        except Exception:
-            baseline_pairs = {}
-    return _DiagnosticsContext(
-        metric_pairs=metric_pairs,
-        metrics_evaluated=True,
-        metrics_explanation="",
-        baseline_pairs=baseline_pairs,
-        baseline_evaluated=bool(baseline_pairs),
-        baseline_explanation=(
-            ""
-            if baseline_pairs
-            else "A dummy baseline could not be computed for this report."
+        explanation=(
+            "Train/test scores are on par and not significantly better than "
+            "the dummy baseline for "
+            f"{triggered}/{total} comparable metrics."
         ),
     )
 
 
-def _run_overfitting_diagnostic(context: _DiagnosticsContext) -> DiagnosticResult:
-    return _overfitting_result(
-        metric_pairs=context.metric_pairs,
-        evaluated=context.metrics_evaluated,
-        explanation=context.metrics_explanation,
-    )
-
-
-def _run_underfitting_diagnostic(context: _DiagnosticsContext) -> DiagnosticResult:
-    if not context.metrics_evaluated:
-        return _underfitting_result(
-            metric_pairs={},
-            baseline_pairs={},
-            evaluated=False,
-            explanation=context.metrics_explanation,
-        )
-    return _underfitting_result(
-        metric_pairs=context.metric_pairs,
-        baseline_pairs=context.baseline_pairs,
-        evaluated=context.baseline_evaluated,
-        explanation=context.baseline_explanation,
-    )
-
-
-_ESTIMATOR_DIAGNOSTIC_RUNNERS = (
-    _run_overfitting_diagnostic,
-    _run_underfitting_diagnostic,
-)
-
-
 def run_estimator_diagnostics(
     report: EstimatorReport,
-) -> list[DiagnosticResult]:
-    context = _build_diagnostics_context(report)
-    return [runner(context) for runner in _ESTIMATOR_DIAGNOSTIC_RUNNERS]
+) -> tuple[list[DiagnosticResult], set[str]]:
+    positive_results: list[DiagnosticResult] = []
+    checked_codes: set[str] = set()
+    if (
+        report.X_train is not None
+        and report.y_train is not None
+        and report.X_test is not None
+        and report.y_test is not None
+    ):
+        metric_pairs = _metric_pairs(report)
+        baseline_pairs = _baseline_metric_pairs(report)
+        checks = [
+            _check_overfitting(metric_pairs),
+            _check_underfitting(metric_pairs, baseline_pairs),
+        ]
+        positive_results.extend([r for r in checks if r is not None])
+        checked_codes.update([OVERFITTING_CODE, UNDERFITTING_CODE])
+
+    return positive_results, checked_codes

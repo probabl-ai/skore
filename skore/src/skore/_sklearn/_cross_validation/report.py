@@ -460,7 +460,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _collect_diagnostics(self) -> list[DiagnosticResult]:
+    def _compute_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
         return run_cross_validation_diagnostics(self)
 
     def _get_help_title(self) -> str:

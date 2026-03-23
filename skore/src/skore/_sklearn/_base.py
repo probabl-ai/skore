@@ -12,7 +12,6 @@ from skore._config import configuration
 from skore._sklearn._diagnostics.base import (
     DiagnosticResult,
     DiagnosticResults,
-    format_diagnostic_message,
 )
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
@@ -28,7 +27,7 @@ class _BaseReport(ReportHelpMixin):
     """Base class for all reports.
 
     This class centralizes shared report logic (e.g. configuration, accessors) and
-    inherits from ``ReportHelpMixin`` to provide a consistent ``help()`` and rich/HTML
+    inherits from ``ReportHelpMixin`` to provide a consistent `help()` and rich/HTML
     representation across all report types.
     """
 
@@ -39,19 +38,19 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
-    _diagnostics_cache: list[DiagnosticResult]
+    _diagnostics_cache: tuple[list[DiagnosticResult], set[str]]
 
     @abstractmethod
-    def _collect_diagnostics(self) -> list[DiagnosticResult]:
-        """Collect diagnostics."""
+    def _compute_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
+        """Return detected issues and the set of diagnostic codes that were checked."""
 
-    def _get_diagnostics(self) -> list[DiagnosticResult]:
-        """Get the diagnostics from the cache or collect them."""
+    def _get_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
+        """Get the diagnostics from the cache or compute them."""
         if not hasattr(self, "_diagnostics_cache"):
-            self._diagnostics_cache = self._collect_diagnostics()
+            self._diagnostics_cache = self._compute_diagnostics()
         return self._diagnostics_cache
 
-    def _display_diagnose_results(self, results: list[str]) -> None:
+    def _display_diagnose_results(self, results: DiagnosticResults) -> None:
         if is_environment_sphinx_build():
             return
         if is_environment_notebook_like():
@@ -63,25 +62,57 @@ class _BaseReport(ReportHelpMixin):
 
         console.print(results)
 
-    @staticmethod
-    def _build_diagnose_messages(
+    def _build_results(
+        self,
         diagnostics: list[DiagnosticResult],
-    ) -> tuple[list[str], list[DiagnosticResult]]:
-        issue_diagnostics = [
-            diagnostic for diagnostic in diagnostics if diagnostic.is_issue
-        ]
-        if not issue_diagnostics:
-            return ["No issues were detected in your report!"], []
-        return (
-            [format_diagnostic_message(diagnostic) for diagnostic in issue_diagnostics],
-            issue_diagnostics,
-        )
+        checks_ran: int,
+        ignored: set[str],
+    ) -> DiagnosticResults:
+        """Build the results from the diagnostics. Overwritten in `ComparisonReport`."""
+        return DiagnosticResults(diagnostics, checks_ran)
 
     def diagnose(
         self,
         *,
         ignore: list[str] | tuple[str, ...] | None = None,
     ) -> DiagnosticResults:
+        """Run diagnostics and return a summary of detected issues.
+
+        Diagnostics check for common modeling problems such as overfitting and
+        underfitting. Codes can be muted per-call via `ignore` or globally via
+        :func:`~skore.configuration(ignore_diagnostics=...)` .
+
+        Parameters
+        ----------
+        ignore : list of str or tuple of str or None, default=None
+            diagnostic codes to exclude from the results, e.g.
+            `["SKD001"]`
+
+        Returns
+        -------
+        DiagnosticResults
+            an iterable of human-readable messages for every detected issue,
+            with the full :class:`~skore.DiagnosticResult` objects accessible
+            via the :attr:`~DiagnosticResults.diagnostics` property
+
+        Examples
+        --------
+        >>> from skore import evaluate
+        >>> from sklearn.dummy import DummyClassifier
+        >>> from sklearn.datasets import make_classification
+        >>> X, y = make_classification(random_state=42)
+        >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
+        >>> report.diagnose()
+        Diagnostics: 1 issue(s) detected, 2 check(s) ran.
+        - [SKD002] Potential underfitting: issue detected. Train/test scores are on par
+        and not significantly better than the dummy baseline for 5/7 comparable metrics.
+        Read our documentation for more details:
+        https://docs.skore.probabl.ai/dev/user_guide/diagnostics.html#skd002-underfitting.
+        Mute with `ignore=['SKD002']`.
+        >>> report.diagnose(ignore=["SKD002"])
+        Diagnostics: 0 issue(s) detected, 1 check(s) ran.
+        - No issues were detected in your report!
+        """
         ignored: set[str] = set()
         if ignore:
             ignored.update(code.strip().upper() for code in ignore if code.strip())
@@ -91,29 +122,22 @@ class _BaseReport(ReportHelpMixin):
                 for code in configuration.ignore_diagnostics
                 if code.strip()
             )
-        diagnostics = [
-            diagnostic
-            for diagnostic in self._get_diagnostics()
-            if diagnostic.code not in ignored
-        ]
-        messages, display_diagnostics = self._build_diagnose_messages(diagnostics)
-        results = DiagnosticResults(
-            messages,
-            diagnostics,
-            display_diagnostics=display_diagnostics,
-        )
-        return results
+        diagnostics, checked_codes = self._get_diagnostics()
+        filtered = [d for d in diagnostics if d.code not in ignored]
+        checks_ran = len(checked_codes - ignored)
+        return self._build_results(filtered, checks_ran, ignored)
 
     def _diagnostics_panel_html(self) -> str:
-        diagnostics = getattr(self, "_diagnostics_cache", None)
-        if diagnostics is None:
+        cache = getattr(self, "_diagnostics_cache", None)
+        if cache is None:
             details = "No diagnostics have run yet."
-            summary = "0 issue(s) across 0 diagnostic(s)."
+            summary = "0 issue(s) across 0 check(s)."
         else:
-            issue_count = sum(diagnostic.is_issue for diagnostic in diagnostics)
-            evaluated_count = sum(diagnostic.evaluated for diagnostic in diagnostics)
-            details = f"{issue_count} issue(s) across {len(diagnostics)} diagnostic(s)."
-            summary = f"{evaluated_count} diagnostic(s) evaluated in the latest run."
+            diagnostics, checked_codes = cache
+            details = (
+                f"{len(diagnostics)} issue(s) across {len(checked_codes)} check(s)."
+            )
+            summary = f"{len(checked_codes)} check(s) ran in the latest run."
         return (
             '<div style="margin:10px 0;padding:10px;'
             "border:1px solid #f97316;border-radius:4px;display:inline-block;"
@@ -140,7 +164,7 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
     """Base class for all accessors.
 
     Accessors expose additional views on a report (e.g. data, metrics) and inherit from
-    ``AccessorHelpMixin`` to provide a dedicated ``help()`` and rich/HTML help tree.
+    `AccessorHelpMixin` to provide a dedicated `help()` and rich/HTML help tree.
     """
 
     def __init__(self, parent: ParentT) -> None:

@@ -4,6 +4,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 
 from skore import CrossValidationReport, EstimatorReport, configuration
+from skore._sklearn._diagnostics.base import DiagnosticResults
 
 
 def test_diagnose_aggregates_overfitting_across_splits():
@@ -35,12 +36,8 @@ def test_diagnose_aggregates_underfitting_across_splits():
         splitter=5,
     )
     results = report.diagnose()
-    underfitting = next(
-        diagnostic for diagnostic in results.diagnostics if diagnostic.code == "SKD002"
-    )
-    assert underfitting.evaluated
-    assert "evaluated split" in underfitting.explanation
-    if underfitting.is_issue:
+    underfitting = [d for d in results.diagnostics if d.code == "SKD002"]
+    if underfitting:
         assert any("[SKD002]" in message for message in results)
     else:
         assert results == ["No issues were detected in your report!"]
@@ -56,12 +53,12 @@ def test_diagnose_ignore(binary_classification_data):
 def test_diagnose_called_on_init(monkeypatch, binary_classification_data):
     calls = []
 
-    def _collect_diagnostics(self):
+    def _compute_diagnostics(self):
         calls.append(True)
-        return []
+        return [], set()
 
     monkeypatch.setattr(
-        CrossValidationReport, "_collect_diagnostics", _collect_diagnostics
+        CrossValidationReport, "_compute_diagnostics", _compute_diagnostics
     )
     X, y = binary_classification_data
     CrossValidationReport(LogisticRegression(), X, y, splitter=2, diagnose=True)
@@ -72,7 +69,7 @@ def test_diagnose_result_has_repr(binary_classification_data):
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
     results = report.diagnose()
-    assert isinstance(results, list)
+    assert isinstance(results, DiagnosticResults)
     assert "Diagnostics:" in repr(results)
     bundle = results._repr_mimebundle_()
     assert "text/plain" in bundle
@@ -83,14 +80,14 @@ def test_diagnose_reuses_split_cached_diagnostics(
     monkeypatch, binary_classification_data
 ):
     calls = 0
-    original = EstimatorReport._collect_diagnostics
+    original = EstimatorReport._compute_diagnostics
 
-    def _collect_diagnostics(self):
+    def _compute_diagnostics(self):
         nonlocal calls
         calls += 1
         return original(self)
 
-    monkeypatch.setattr(EstimatorReport, "_collect_diagnostics", _collect_diagnostics)
+    monkeypatch.setattr(EstimatorReport, "_compute_diagnostics", _compute_diagnostics)
     X, y = binary_classification_data
     report = CrossValidationReport(
         LogisticRegression(), X, y, splitter=3, diagnose=True
@@ -102,18 +99,18 @@ def test_diagnose_reuses_split_cached_diagnostics(
 
 def test_diagnose_uses_global_ignore(binary_classification_data):
     X, y = binary_classification_data
-    report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
-    assert any(
-        diagnostic.code == "SKD001" for diagnostic in report.diagnose().diagnostics
+    report = CrossValidationReport(
+        LogisticRegression(), X, y, splitter=3, diagnose=True
     )
-    with configuration(ignore_diagnostics=["SKD001"]):
-        assert all(
-            diagnostic.code != "SKD001" for diagnostic in report.diagnose().diagnostics
-        )
+    _results, checked_codes = report._diagnostics_cache
+    assert len(checked_codes) > 0
+    with configuration(ignore_diagnostics=list(checked_codes)):
+        assert report.diagnose().diagnostics == []
 
 
 def test_diagnose_follows_global_config_default(binary_classification_data):
     X, y = binary_classification_data
     with configuration(diagnose=True):
         report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
-    assert len(report._diagnostics_cache) > 0
+    _results, checked_codes = report._diagnostics_cache
+    assert len(checked_codes) > 0
