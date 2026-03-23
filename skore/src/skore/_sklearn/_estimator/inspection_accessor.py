@@ -15,7 +15,7 @@ from skore._utils._accessor import (
     _check_estimator_has_coef,
     _check_estimator_has_feature_importances,
 )
-from skore._utils._cache_key import deep_key_sanitize
+from skore._utils._cache_key import make_cache_key
 
 
 class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -293,23 +293,14 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 
         # n_jobs should not be in cache
-        kwargs = {"n_repeats": n_repeats, "max_samples": max_samples, "seed": seed}
-        cache_key = deep_key_sanitize(
-            (
-                self._parent._hash,
-                "permutation_importance",
-                data_source,
-                at_step,
-                #
-                # skore-hub-project expects an item for data_source_hash (but
-                # ignores its value). Until skore-hub-project is updated we
-                # insert None as a placeholder.
-                None,
-                #
-                metric,
-                kwargs,
-            )
-        )
+        kwargs = {
+            "at_step": at_step,
+            "metric": metric,
+            "n_repeats": n_repeats,
+            "max_samples": max_samples,
+            "seed": seed,
+        }
+        cache_key = make_cache_key(data_source, "permutation_importance", kwargs)
 
         # NOTE: avoid to fetch from the cache if the seed is None because we want
         # to trigger the computation in this case. We only have the permutation

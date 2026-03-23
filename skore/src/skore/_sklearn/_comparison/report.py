@@ -477,7 +477,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             y_test=y_test,
             pos_label=self._pos_label,
         )
-        report._parent_hash = self._hash
         return report
 
     @property

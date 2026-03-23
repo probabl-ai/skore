@@ -178,32 +178,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:  # fit is False
             self._estimator = self._copy_estimator(estimator)
 
-        # private storage to be able to invalidate the cache when the user alters
-        # those attributes
+        # private storage to ensure properties are read-only
         self._X_train = X_train
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
         self._pos_label = pos_label
         self.fit_time_ = fit_time
-        self._parent_hash: int | None = None
 
-        self._initialize_state()
-
-    def _initialize_state(self) -> None:
-        """Initialize/reset the random number generator, hash, and cache."""
-        self._cache = Cache()
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
-
-    # NOTE:
-    # For the moment, we do not allow to alter the estimator and the training data.
-    # For the validation set, we allow it and we invalidate the cache.
+        self._cache = Cache()
+        # NOTE: Reports are immutable so we don't need cache invalidation
 
     def clear_cache(self) -> None:
         """Clear the cache.
-
-        Note that the cache might not be empty after this method is run as some
-        values need to be kept, such as the fit time.
 
         Examples
         --------
@@ -282,7 +270,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             parallel(
                 delayed(_get_cached_response_values)(
                     cache=self._cache,
-                    estimator_hash=self._hash,
                     estimator=self._estimator,
                     X=X,
                     response_method=response_method,
@@ -361,7 +348,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         results = _get_cached_response_values(
             cache=self._cache,
-            estimator_hash=int(self._hash),
             estimator=self._estimator,
             X=X_,
             response_method=response_method,
