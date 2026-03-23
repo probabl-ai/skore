@@ -188,6 +188,11 @@ class TestCrossValidationReportPayload:
             "skore_hub_project.report.cross_validation_report.SPLITTING_STRATEGY_REPR_SAMPLE_COUNT",
             8,
         )
+        monkeypatch.setattr(
+            "skore_hub_project.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
+            10,
+        )
+
         X, y = make_regression(random_state=42, n_samples=10)
         estimator = LinearRegression()
 
@@ -195,6 +200,13 @@ class TestCrossValidationReportPayload:
         payload = CrossValidationReportPayload(
             project=project, report=report, key="<key>"
         )
+
+        target_distributions = payload.splitting_strategy.pop("target_distributions")
+        for train_distribution, test_distribution in target_distributions:
+            assert len(train_distribution) == len(test_distribution) == 10
+            assert all(0 <= distribution <= 1 for distribution in train_distribution)
+            assert all(0 <= distribution <= 1 for distribution in test_distribution)
+
         assert payload.splitting_strategy == {
             "splitter": metadata,
             "splits": expected_splits,
@@ -270,13 +282,19 @@ class TestCrossValidationReportPayload:
             "skore_hub_project.report.cross_validation_report.SPLITTING_STRATEGY_REPR_SAMPLE_COUNT",
             8,
         )
-        X, y = make_classification(random_state=42, n_samples=10)
+        X, y = make_classification(random_state=42, n_samples=10, n_classes=2)
         estimator = LogisticRegression(random_state=42)
 
         report = CrossValidationReport(estimator, X, y, splitter=splitter)
         payload = CrossValidationReportPayload(
             project=project, report=report, key="<key>"
         )
+
+        target_distributions = payload.splitting_strategy.pop("target_distributions")
+
+        for train_distribution, test_distribution in target_distributions:
+            assert len(train_distribution) == len(test_distribution) == 2
+
         assert payload.splitting_strategy == {
             "splitter": metadata,
             "splits": expected_splits,

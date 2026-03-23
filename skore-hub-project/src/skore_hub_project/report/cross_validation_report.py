@@ -1,6 +1,6 @@
 """Class definition of the payload used to send a cross-validation report to ``hub``."""
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from functools import cached_property
 from inspect import signature
 from typing import Any, ClassVar
@@ -8,6 +8,7 @@ from typing import Any, ClassVar
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
+from scipy.stats import gaussian_kde
 from sklearn.model_selection import (
     KFold,
     ShuffleSplit,
@@ -87,6 +88,7 @@ from skore_hub_project.report.estimator_report import EstimatorReportPayload
 from skore_hub_project.report.report import ReportPayload
 
 SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
+TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT = 100
 SPLITTERS = {
     "KFold": KFold,
     "RepeatedKFold": KFold,
@@ -214,6 +216,10 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     @cached_property
     def splitting_strategy(self) -> dict[str, Any]:
         """The splitting strategy used in the report."""
+        from skore._externals._sklearn_compat import (  # type: ignore[attr-defined]
+            _safe_indexing,
+        )
+
         splitter = self.report.splitter
         target = self.report.y
         is_classifier = "classification" in self.ml_task
@@ -283,9 +289,41 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
             splits.append(split_flags)
 
+        # compute target distributions
+        target_distributions = []
+        for train_indices, test_indices in self.report.split_indices:
+            train_y = _safe_indexing(self.report.y, train_indices)
+            test_y = _safe_indexing(self.report.y, test_indices)
+            train_target_distribution: list[float] = []
+            test_target_distribution: list[float] = []
+
+            if self.__classes:
+                train = {str(label): count for label, count in Counter(train_y).items()}
+                test = {str(label): count for label, count in Counter(test_y).items()}
+
+                for label in self.__classes:
+                    train_target_distribution.append(train.get(label, 0))
+                    test_target_distribution.append(test.get(label, 0))
+
+            else:
+                linspace = np.linspace(
+                    float(train_y.min()),
+                    float(train_y.max()),
+                    num=TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT,
+                )
+                train_kernel = gaussian_kde(train_y)
+                train_target_distribution = [float(x) for x in train_kernel(linspace)]
+                test_kernel = gaussian_kde(test_y)
+                test_target_distribution = [float(x) for x in test_kernel(linspace)]
+
+            target_distributions.append(
+                (train_target_distribution, test_target_distribution)
+            )
+
         return {
             "splitter": splitter_metadata,
             "splits": splits,
+            "target_distributions": target_distributions,
         }
 
     groups: list[int] | None = None
