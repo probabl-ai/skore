@@ -4,6 +4,7 @@ from typing import Any, Literal, Protocol, runtime_checkable
 
 import matplotlib.pyplot as plt
 import pandas as pd
+from matplotlib.figure import Figure
 
 from skore import configuration
 from skore._sklearn.types import PlotBackend
@@ -22,8 +23,8 @@ class Display(Protocol):
        This class is a Python protocol and it is not intended to be inherited from.
     """
 
-    def plot(self, **kwargs: Any) -> None:
-        """Display a figure containing the information of the display."""
+    def plot(self, **kwargs: Any) -> Figure:
+        """Build and return a matplotlib figure for the display."""
 
     def set_style(
         self, *, policy: Literal["override", "update"] = "update", **kwargs: Any
@@ -188,8 +189,8 @@ class StyleDisplayMixin:
 
         This decorator:
         1. Applies default style settings
-        2. Executes `plot_func`
-        3. Calls `plt.tight_layout()` to make sure axis does not overlap
+        2. Runs `plot_func` under `plt.ioff()` so figures are not shown until returned
+        3. Calls `Figure.tight_layout()` on the returned figure when applicable
         4. Restores the original style settings
 
         Parameters
@@ -210,13 +211,13 @@ class StyleDisplayMixin:
             # See https://github.com/matplotlib/matplotlib/issues/25041
             original_params = {key: plt.rcParams[key] for key in DEFAULT_STYLE}
             plt.rcParams.update(DEFAULT_STYLE)
+            result: Any = None
             try:
-                result = plot_func(self, *args, **kwargs)
+                with plt.ioff():
+                    result = plot_func(self, *args, **kwargs)
             finally:
-                if hasattr(self, "facet_"):
-                    self.facet_.tight_layout()
-                else:
-                    plt.tight_layout()
+                if isinstance(result, Figure):
+                    result.tight_layout()
                 plt.rcParams.update(original_params)
             return result
 

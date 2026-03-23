@@ -20,8 +20,9 @@ def estimator_reports_binary_classification_figure_axes(
 ):
     report = estimator_reports_binary_classification[0]
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -33,16 +34,18 @@ def estimator_reports_multiclass_classification_figure_axes(
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metric
     )
-    display.plot(metric="precision score")
-    return display.figure_, display.ax_
+    fig = display.plot(metric="precision score")
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
 def estimator_reports_regression_figure_axes(pyplot, estimator_reports_regression):
     report = estimator_reports_regression[0]
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -54,8 +57,9 @@ def estimator_reports_multioutput_regression_figure_axes(
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metric
     )
-    display.plot(metric="r2 score")
-    return display.figure_, display.ax_
+    fig = display.plot(metric="r2 score")
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -64,8 +68,9 @@ def cross_validation_reports_binary_classification_figure_axes(
 ):
     report = cross_validation_reports_binary_classification[0]
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -77,8 +82,9 @@ def cross_validation_reports_multiclass_classification_figure_axes(
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metric
     )
-    display.plot(metric="precision score")
-    return display.figure_, display.ax_
+    fig = display.plot(metric="precision score")
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -87,8 +93,9 @@ def cross_validation_reports_regression_figure_axes(
 ):
     report = cross_validation_reports_regression[0]
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -100,8 +107,9 @@ def cross_validation_reports_multioutput_regression_figure_axes(
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metric
     )
-    display.plot(metric="r2 score")
-    return display.figure_, display.ax_
+    fig = display.plot(metric="r2 score")
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -110,8 +118,9 @@ def comparison_estimator_reports_binary_classification_figure_axes(
 ):
     report = comparison_estimator_reports_binary_classification
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -123,8 +132,9 @@ def comparison_estimator_reports_multiclass_classification_figure_axes(
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metric
     )
-    display.plot(metric="precision score")
-    return display.figure_, display.ax_
+    fig = display.plot(metric="precision score")
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -134,8 +144,9 @@ def comparison_estimator_reports_regression_figure_axes(
     display = comparison_estimator_reports_regression.inspection.permutation_importance(
         n_repeats=2, seed=0
     )
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -144,8 +155,9 @@ def comparison_estimator_reports_multioutput_regression_figure_axes(
 ):
     report = comparison_estimator_reports_multioutput_regression
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -154,8 +166,9 @@ def comparison_cross_validation_reports_binary_classification_figure_axes(
 ):
     report = comparison_cross_validation_reports_binary_classification
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -164,8 +177,9 @@ def comparison_cross_validation_reports_multiclass_classification_figure_axes(
 ):
     report = comparison_cross_validation_reports_multiclass_classification
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -174,8 +188,9 @@ def comparison_cross_validation_reports_regression_figure_axes(
 ):
     report = comparison_cross_validation_reports_regression
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -184,8 +199,9 @@ def comparison_cross_validation_reports_multioutput_regression_figure_axes(
 ):
     report = comparison_cross_validation_reports_multioutput_regression
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
