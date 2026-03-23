@@ -201,8 +201,15 @@ class TestCrossValidationReportPayload:
             project=project, report=report, key="<key>"
         )
 
-        target_distributions = payload.splitting_strategy.pop("target_distributions")
-        for train_distribution, test_distribution in target_distributions:
+        train_target_distributions = payload.splitting_strategy.pop(
+            "train_target_distributions"
+        )
+        test_target_distributions = payload.splitting_strategy.pop(
+            "test_target_distributions"
+        )
+        for train_distribution, test_distribution in zip(
+            train_target_distributions, test_target_distributions, strict=True
+        ):
             assert len(train_distribution) == len(test_distribution) == 10
             assert all(0 <= distribution <= 1 for distribution in train_distribution)
             assert all(0 <= distribution <= 1 for distribution in test_distribution)
@@ -290,9 +297,16 @@ class TestCrossValidationReportPayload:
             project=project, report=report, key="<key>"
         )
 
-        target_distributions = payload.splitting_strategy.pop("target_distributions")
+        train_target_distributions = payload.splitting_strategy.pop(
+            "train_target_distributions"
+        )
+        test_target_distributions = payload.splitting_strategy.pop(
+            "test_target_distributions"
+        )
 
-        for train_distribution, test_distribution in target_distributions:
+        for train_distribution, test_distribution in zip(
+            train_target_distributions, test_target_distributions, strict=True
+        ):
             assert len(train_distribution) == len(test_distribution) == 2
 
         assert payload.splitting_strategy == {

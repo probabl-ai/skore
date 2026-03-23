@@ -290,7 +290,8 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             splits.append(split_flags)
 
         # compute target distributions
-        target_distributions = []
+        train_target_distributions = []
+        test_target_distributions = []
         for train_indices, test_indices in self.report.split_indices:
             train_y = _safe_indexing(self.report.y, train_indices)
             test_y = _safe_indexing(self.report.y, test_indices)
@@ -316,14 +317,14 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 test_kernel = gaussian_kde(test_y)
                 test_target_distribution = [float(x) for x in test_kernel(linspace)]
 
-            target_distributions.append(
-                (train_target_distribution, test_target_distribution)
-            )
+            train_target_distributions.append(train_target_distribution)
+            test_target_distributions.append(test_target_distribution)
 
         return {
             "splitter": splitter_metadata,
             "splits": splits,
-            "target_distributions": target_distributions,
+            "train_target_distributions": train_target_distributions,
+            "test_target_distributions": test_target_distributions,
         }
 
     groups: list[int] | None = None
