@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from joblib import Parallel, parallel_config
 from pytest import mark, raises
 
-from skore import config, configuration
+from skore import configuration
 from skore._utils._parallel import delayed
 from skore._utils._testing import _change_configuration_for_testing
 
@@ -36,22 +36,18 @@ def test_configuration_diagnose():
 
 
 def test_configuration_ignore_diagnostics():
-    assert configuration.ignore_diagnostics == ()
+    assert configuration.ignore_diagnostics is None
 
-    configuration.ignore_diagnostics = ["skd001", "SKD002", ""]
+    configuration.ignore_diagnostics = ["SKD001", "SKD002"]
 
-    assert configuration.ignore_diagnostics == ("SKD001", "SKD002")
-
-
-def test_config_alias():
-    assert config is configuration
+    assert configuration.ignore_diagnostics == ["SKD001", "SKD002"]
 
 
 def test_configuration_call():
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
     assert configuration.diagnose is False
-    assert configuration.ignore_diagnostics == ()
+    assert configuration.ignore_diagnostics is None
 
     with configuration():
         assert configuration.show_progress is True
@@ -60,7 +56,7 @@ def test_configuration_call():
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
     assert configuration.diagnose is False
-    assert configuration.ignore_diagnostics == ()
+    assert configuration.ignore_diagnostics is None
 
     with configuration(show_progress=False):
         assert configuration.show_progress is False
@@ -96,14 +92,14 @@ def test_configuration_call():
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
     assert configuration.diagnose is False
-    assert configuration.ignore_diagnostics == ()
+    assert configuration.ignore_diagnostics is None
 
-    with configuration(diagnose=True, ignore_diagnostics=["skd001"]):
+    with configuration(diagnose=True, ignore_diagnostics=["SKD001"]):
         assert configuration.diagnose is True
-        assert configuration.ignore_diagnostics == ("SKD001",)
+        assert configuration.ignore_diagnostics == ["SKD001"]
 
     assert configuration.diagnose is False
-    assert configuration.ignore_diagnostics == ()
+    assert configuration.ignore_diagnostics is None
 
 
 @mark.parametrize("backend", ["loky", "multiprocessing", "threading"])

@@ -30,7 +30,7 @@ class _BaseReport(ReportHelpMixin):
     """Base class for all reports.
 
     This class centralizes shared report logic (e.g. configuration, accessors) and
-    inherits from ``ReportHelpMixin`` to provide a consistent `help()` and rich/HTML
+    inherits from ``ReportHelpMixin`` to provide a consistent ``help()`` and rich/HTML
     representation across all report types.
     """
 
@@ -53,17 +53,20 @@ class _BaseReport(ReportHelpMixin):
             self._diagnostics_cache = self._compute_diagnostics()
         return self._diagnostics_cache
 
-    def _display_diagnose_results(self, results: DiagnosticResults) -> None:
+    def _display_diagnose_results(
+        self, results: DiagnosticResults
+    ) -> DiagnosticResults | None:
         if is_environment_sphinx_build():
-            return
+            return results
         if is_environment_notebook_like():
             from IPython.display import display
 
             display(results)
-            return
+            return None
         from skore import console
 
         console.print(results)
+        return None
 
     def _build_results(
         self,
@@ -176,7 +179,7 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
     """Base class for all accessors.
 
     Accessors expose additional views on a report (e.g. data, metrics) and inherit from
-    `AccessorHelpMixin` to provide a dedicated `help()` and rich/HTML help tree.
+    ``AccessorHelpMixin`` to provide a dedicated ``help()`` and rich/HTML help tree.
     """
 
     def __init__(self, parent: ParentT) -> None:
