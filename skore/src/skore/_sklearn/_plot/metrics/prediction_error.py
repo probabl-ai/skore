@@ -4,9 +4,10 @@ from typing import Literal, cast
 
 import numpy as np
 import seaborn as sns
+from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from numpy.typing import ArrayLike
-from pandas import DataFrame
+from pandas import DataFrame, Series
 from sklearn.utils.validation import _num_samples, check_array
 
 from skore._externals._sklearn_compat import _safe_indexing
@@ -65,17 +66,6 @@ class PredictionErrorDisplay(DisplayMixin):
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
         The type of report.
-
-    Attributes
-    ----------
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the prediction error.
-
-    figure_ : matplotlib Figure
-        The figure on which the prediction error is plotted.
-
-    ax_ : matplotlib Axes
-        The axes on which the prediction error is plotted.
 
     Examples
     --------
@@ -163,7 +153,7 @@ class PredictionErrorDisplay(DisplayMixin):
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
-    ) -> None:
+    ) -> Figure:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
@@ -195,6 +185,11 @@ class PredictionErrorDisplay(DisplayMixin):
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the prediction error plot.
+
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
@@ -221,7 +216,7 @@ class PredictionErrorDisplay(DisplayMixin):
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
-    ) -> None:
+    ) -> Figure:
         """Matplolib implementation of the `plot` method."""
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
@@ -264,14 +259,14 @@ class PredictionErrorDisplay(DisplayMixin):
         if style == "data_source":
             relplot_kwargs["style_order"] = ["train", "test"]
 
-        self.facet_ = sns.relplot(
+        facet = sns.relplot(
             data=plot_data,
             x="y_pred",
             y=y_plot,
             kind="scatter",
             **_validate_style_kwargs(relplot_kwargs, {}),
         )
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.flatten()
+        figure, axes = facet.figure, facet.axes.flatten()
 
         title = "Prediction Error"
         if "comparison" not in self.report_type:
@@ -285,9 +280,9 @@ class PredictionErrorDisplay(DisplayMixin):
         )
         if info_data_source is not None:
             title += f"\n{info_data_source}"
-        self.figure_.suptitle(title)
+        figure.suptitle(title)
 
-        for ax in self.ax_:
+        for ax in axes:
             ax.plot(
                 x_range_perfect_pred,
                 y_line,
@@ -316,10 +311,10 @@ class PredictionErrorDisplay(DisplayMixin):
         # and create a new legend manually.
         handles = []
         labels = []
-        if self.facet_._legend is not None:
-            handles = list(self.facet_._legend.legend_handles)
-            labels = [t.get_text() for t in self.facet_._legend.get_texts()]
-            self.facet_._legend.remove()
+        if facet._legend is not None:
+            handles = list(facet._legend.legend_handles)
+            labels = [t.get_text() for t in facet._legend.get_texts()]
+            facet._legend.remove()
             if hue == "split":
                 labels = [f"Split #{label}" for label in labels]
             if hue == "output" and style is None:
@@ -330,7 +325,7 @@ class PredictionErrorDisplay(DisplayMixin):
 
         labels.append("Perfect predictions")
 
-        self.ax_[len(self.ax_) // 2].legend(
+        axes[len(axes) // 2].legend(
             handles,
             labels,
             loc="upper center",
@@ -339,12 +334,10 @@ class PredictionErrorDisplay(DisplayMixin):
             frameon=True,
         )
 
-        if len(self.ax_) == 1:
-            self.ax_ = self.ax_[0]
+        w, h = figure.get_size_inches()
+        figure.set_size_inches(w, h + 0.25 * len(labels))
 
-        w, h = self.figure_.get_size_inches()
-        self.figure_.set_size_inches(w, h + 0.25 * len(labels))
-        self.figure_.tight_layout()
+        return figure
 
     def _get_plot_columns(
         self,
@@ -483,11 +476,6 @@ class PredictionErrorDisplay(DisplayMixin):
                 f" 'multioutput-regression'. Got {ml_task} instead."
             )
 
-        prediction_error_records = []
-        y_true_min, y_true_max = np.inf, -np.inf
-        y_pred_min, y_pred_max = np.inf, -np.inf
-        residuals_min, residuals_max = np.inf, -np.inf
-
         n_samples = _num_samples(y_true)
         if subsample is None:
             subsample_ = n_samples
@@ -509,63 +497,47 @@ class PredictionErrorDisplay(DisplayMixin):
             y_pred_sample = cast(np.typing.NDArray, y_pred)
 
         residuals_sample = y_true_sample - y_pred_sample
+        n = len(y_true_sample)
+
+        def repeat_category(value: object, n_repeats: int) -> object:
+            return Series([value], dtype="category").repeat(n_repeats).array
+
         if ml_task == "multioutput-regression":
-            for output in range(y_true_sample.shape[1]):
-                for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
-                    y_true_sample[:, output],
-                    y_pred_sample[:, output],
-                    residuals_sample[:, output],
-                    strict=True,
-                ):
-                    prediction_error_records.append(
-                        {
-                            "estimator": estimator_name,
-                            "data_source": data_source,
-                            "split": None,
-                            "output": output,
-                            "y_true": y_true_sample_i,
-                            "y_pred": y_pred_sample_i,
-                            "residuals": residuals_sample_i,
-                        }
-                    )
+            n_outputs = y_true_sample.shape[1]
+            prediction_error_data = {
+                "output": (
+                    Series(np.arange(n_outputs), dtype="category").repeat(n).array
+                ),
+                "y_true": y_true_sample.reshape(-1, order="F"),
+                "y_pred": y_pred_sample.reshape(-1, order="F"),
+                "residuals": residuals_sample.reshape(-1, order="F"),
+            }
         else:
-            for y_true_sample_i, y_pred_sample_i, residuals_sample_i in zip(
-                y_true_sample, y_pred_sample, residuals_sample, strict=True
-            ):
-                prediction_error_records.append(
-                    {
-                        "estimator": estimator_name,
-                        "data_source": data_source,
-                        "split": None,
-                        "output": np.nan,
-                        "y_true": y_true_sample_i,
-                        "y_pred": y_pred_sample_i,
-                        "residuals": residuals_sample_i,
-                    }
-                )
+            prediction_error_data = {
+                "output": repeat_category(np.nan, n),
+                "y_true": y_true_sample,
+                "y_pred": y_pred_sample,
+                "residuals": residuals_sample,
+            }
 
-        y_true_min = min(y_true_min, np.min(y_true_sample))
-        y_true_max = max(y_true_max, np.max(y_true_sample))
-        y_pred_min = min(y_pred_min, np.min(y_pred_sample))
-        y_pred_max = max(y_pred_max, np.max(y_pred_sample))
-        residuals_min = min(residuals_min, np.min(residuals_sample))
-        residuals_max = max(residuals_max, np.max(residuals_sample))
+        n_display = len(prediction_error_data["y_true"])
+        prediction_error = DataFrame(
+            {
+                "estimator": repeat_category(estimator_name, n_display),
+                "data_source": repeat_category(data_source, n_display),
+                "split": repeat_category(None, n_display),
+                **prediction_error_data,
+            }
+        )
 
-        range_y_true = RangeData(min=y_true_min, max=y_true_max)
-        range_y_pred = RangeData(min=y_pred_min, max=y_pred_max)
-        range_residuals = RangeData(min=residuals_min, max=residuals_max)
-
-        dtypes = {
-            "estimator": "category",
-            "data_source": "category",
-            "split": "category",
-            "output": "category",
-        }
+        range_y_true = RangeData(min=np.min(y_true_sample), max=np.max(y_true_sample))
+        range_y_pred = RangeData(min=np.min(y_pred_sample), max=np.max(y_pred_sample))
+        range_residuals = RangeData(
+            min=np.min(residuals_sample), max=np.max(residuals_sample)
+        )
 
         return cls(
-            prediction_error=DataFrame.from_records(prediction_error_records).astype(
-                dtypes
-            ),
+            prediction_error=prediction_error,
             range_y_true=range_y_true,
             range_y_pred=range_y_pred,
             range_residuals=range_residuals,

@@ -253,8 +253,8 @@ def test_binary_classification_pos_label(pyplot, metric):
     report_2 = CrossValidationReport(LogisticRegression(C=2), X, y, pos_label="A")
     report = ComparisonReport([report_1, report_2])
     display = getattr(report.metrics, metric)()
-    display.plot()
-    assert "Positive label: A" in display.figure_.get_suptitle()
+    fig = display.plot()
+    assert "Positive label: A" in fig.get_suptitle()
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])

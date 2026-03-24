@@ -34,13 +34,19 @@ Changelog
 `Unreleased`_
 =============
 
-.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.13.1...HEAD
+.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.14.0...HEAD
 
 Release highlights
 ------------------
 
 Changed
 -------
+
+- **Breaking change:** :meth:`Display.plot` (and all concrete displays) now returns a
+  :class:`matplotlib.figure.Figure` instead of storing plotting artifacts on the display.
+  The attributes ``figure_``, ``ax_``, and ``facet_`` are no longer set. Use
+  ``fig = display.plot(...)`` and then ``fig.axes``, ``fig.show()``, or rely on the
+  figure's rich representation in notebooks.
 
 Added
 -----
@@ -50,6 +56,43 @@ Removed
 
 Fixed
 -----
+
+`0.14.0`_ (2026-03-19)
+======================
+
+.. _0.14.0: https://github.com/probabl-ai/skore/compare/skore/0.13.1...skore/0.14.0
+
+Release highlights
+------------------
+
+- :func:`skore.evaluate` and :func:`skore.compare` are new top-level dispatcher functions that create the appropriate report class from an estimator in a single function call. See :pr:`2573` by :user:`raotalha71` and :pr:`2604` by :user:`glemaitre`.
+- skore can now integrate with MLflow by passing `mode="mlflow"` and the new `tracking_uri` option to :class:`~skore.Project`. Example usage is available `here <https://docs.skore.probabl.ai/dev/auto_examples/technical_details/plot_skore_mlflow_project.html>`__. See :pr:`2527` by :user:`cakedev0`.
+
+Changed
+-------
+
+- **Breaking:** The filtering and display arguments previously accepted by ``.summarize()``, e.g. `aggregate`, `flat_index`, `favorability`, have been moved to :meth:`~MetricsSummaryDisplay.frame()`, for every report. See :pr:`2536`, :pr:`2545`, and :pr:`2566` by :user:`auguste-probabl`.
+- **Breaking:** :meth:`Display.set_style` now returns ``None`` instead of ``self``. Method chaining such as ``display.set_style(...).plot()`` is no longer supported. See :pr:`2579` by :user:`direkkakkar319-ops`.
+- **Breaking:** ``pos_label`` can no longer be overridden when calling a metric or a display; it must be set when creating the report. See :pr:`2588` by :user:`jeromedockes`.
+- **Breaking:** The ``name`` parameter of :meth:`ComparisonReport.create_estimator_report` has been renamed to ``report_key``. See :pr:`2561` by :user:`GaetandeCast`.
+
+Added
+-----
+
+- :class:`PermutationImportanceDisplay` now supports a ``level`` parameter to select which level of a multi-index DataFrame to use for feature names. See :pr:`2565` by :user:`GaetandeCast`.
+- :class:`CoefficientsDisplay` now supports aggregation via an ``aggregate`` parameter in :meth:`~CoefficientsDisplay.frame`, following the same pattern as :class:`ImpurityDecreaseDisplay`. See :pr:`2552` by :user:`MuditAtrey`.
+- :class:`PermutationImportanceDisplay` and :class:`ImpurityDecreaseDisplay` now support parameters `select_k` and `sorting_order`, with the same behaviour already available in :class:`CoefficientsDisplay`. Passing `select_k=0` now raises a clearer error. See :pr:`2591` by :user:`GaetandeCast`.
+
+Removed
+-------
+
+- **Breaking:** The ``data_source="X_y"`` option has been removed from report classes; ``"train"`` and ``"test"`` are now the only options. See :pr:`2537` by :user:`jeromedockes`.
+
+Fixed
+-----
+
+- :class:`CrossValidationReport.metrics.summarize` now raises a ``NotImplementedError`` upon ``data_source="both"``. See :pr:`2548` by :user:`auguste-probabl`.
+- Passing sparse matrices to data accessors now raises a ``NotImplementedError`` instead of crashing with an unhelpful error. See :pr:`2543` by :user:`KaranSinghDev`.
 
 `0.13.1`_ (2026-03-05)
 ======================
@@ -95,9 +138,6 @@ Added
 - :class:`CrossValidationReport` now supports permutation feature importance through :func:`~CrossValidationReport.inspection.permutation_importance`. See :pr:`2370` by :user:`glemaitre`.
 - :class:`ComparisonReport` now supports mean decrease in impurity (MDI) feature importance through :func:`~ComparisonReport.inspection.impurity_decrease`. See :pr:`2387` by :user:`auguste-probabl`.
 - :class:`ConfusionMatrixDisplay` now supports ``threshold_value="all"`` to display confusion matrices for all available thresholds. See :pr:`2463` by :user:`glemaitre`.
-
-Removed
--------
 
 Fixed
 -----

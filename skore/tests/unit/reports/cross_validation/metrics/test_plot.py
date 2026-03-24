@@ -54,13 +54,13 @@ def test_display_binary_classification_pos_label(
 
     report = CrossValidationReport(classifier, X, y, pos_label="A")
     display = getattr(report.metrics, metric)()
-    display.plot()
-    assert "Positive label: A" in display.figure_.get_suptitle()
+    fig = display.plot()
+    assert "Positive label: A" in fig.get_suptitle()
 
     report = CrossValidationReport(classifier, X, y, pos_label="B")
     display = getattr(report.metrics, metric)()
-    display.plot()
-    assert "Positive label: B" in display.figure_.get_suptitle()
+    fig = display.plot()
+    assert "Positive label: B" in fig.get_suptitle()
 
 
 def test_seed_none(linear_regression_data):

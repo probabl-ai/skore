@@ -384,17 +384,17 @@ engineered_ridge
 
 # %%
 # Now, let us compute the metrics and compare it to our previous model using
-# a :class:`skore.ComparisonReport`:
+# the :func:`~skore.compare` function that returns a :class:`~skore.ComparisonReport`:
 
 # %%
-from skore import ComparisonReport
+from skore import compare
 
 engineered_ridge_report = evaluate(engineered_ridge, X, y, splitter=0.2)
 reports_to_compare = {
     "Vanilla Ridge": ridge_report,
     "Ridge w/ feature engineering": engineered_ridge_report,
 }
-comparator = ComparisonReport(reports=reports_to_compare)
+comparator = compare(reports_to_compare)
 comparator.metrics.summarize().frame()
 
 # %%
@@ -647,7 +647,7 @@ selectkbest_ridge = make_pipeline(
 # %%
 selectk_ridge_report = evaluate(selectkbest_ridge, X, y, splitter=0.2)
 reports_to_compare["Ridge w/ feature engineering and selection"] = selectk_ridge_report
-comparator = ComparisonReport(reports=reports_to_compare)
+comparator = compare(reports_to_compare)
 comparator.metrics.summarize().frame()
 
 # %%
@@ -749,7 +749,7 @@ reports_to_compare["Decision tree"] = tree_report
 # We compare its performance with the models in our benchmark:
 
 # %%
-comparator = ComparisonReport(reports=reports_to_compare)
+comparator = compare(reports_to_compare)
 comparator.metrics.summarize().frame()
 
 # %%
@@ -856,7 +856,7 @@ rf_report = evaluate(
 )
 reports_to_compare["Random forest"] = rf_report
 
-comparator = ComparisonReport(reports=reports_to_compare)
+comparator = compare(reports_to_compare)
 comparator.metrics.summarize().frame()
 
 # %%

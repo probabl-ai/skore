@@ -229,8 +229,8 @@ advanced_cv_report = evaluate(
 # ====================
 #
 # Now that we have our two models, we need to decide which one should go into
-# production. We can compare them with a :func:`~skore.compare` that returns a
-# :class:`~skore.ComparisonReport`.
+# production. We can compare them with the :func:`~skore.compare` function that returns a
+# :class:`~skore.ComparisonReport`:
 
 # %%
 from skore import compare

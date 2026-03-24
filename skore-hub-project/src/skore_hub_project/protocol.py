@@ -6,6 +6,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
+    from matplotlib.figure import Figure
     from pandas import DataFrame
 
 DataSource = Literal["train", "test"] | None
@@ -17,7 +18,7 @@ class Display(Protocol):
     """Protocol equivalent to ``skore.Display``."""
 
     frame: Callable[..., DataFrame]
-    plot: Callable[..., None]
+    plot: Callable[..., Figure]
 
 
 @runtime_checkable

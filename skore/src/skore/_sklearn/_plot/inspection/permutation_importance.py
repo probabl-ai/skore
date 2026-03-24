@@ -6,6 +6,7 @@ from typing import Any, Literal, cast
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.figure import Figure
 from numpy.typing import ArrayLike
 from scipy.sparse import issparse, spmatrix
 from sklearn.base import BaseEstimator, is_classifier
@@ -15,7 +16,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import _num_features
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
-from skore._sklearn._plot.inspection.utils import _decorate_matplotlib_axis
+from skore._sklearn._plot.inspection.utils import (
+    _decorate_matplotlib_axis,
+    select_k_features,
+    sort_features,
+)
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import Aggregate, DataSource, Metric, ReportType
 from skore._utils._index import flatten_multi_index
@@ -41,17 +46,6 @@ class PermutationImportanceDisplay(DisplayMixin):
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
         Report type from which the display is created.
-
-    Attributes
-    ----------
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the permutation importance.
-
-    figure_ : matplotlib Figure
-        Figure containing the permutation importance.
-
-    ax_ : matplotlib Axes
-        Axes with permutation importance.
     """
 
     _default_boxplot_kwargs: dict[str, Any] = {
@@ -205,7 +199,9 @@ class PermutationImportanceDisplay(DisplayMixin):
         *,
         metric: str | None = None,
         subplot_by: str | None = "auto",
-    ) -> None:
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = None,
+    ) -> Figure:
         """Plot the permutation importance.
 
         Parameters
@@ -224,20 +220,48 @@ class PermutationImportanceDisplay(DisplayMixin):
             - if `None`, all information is plotted on a single plot. An error is raised
               if there is too much information to plot on a single plot.
 
+        select_k : int, default=None
+            If set, only the top (positive) or bottom (negative) k features by
+            importance are shown. See :meth:`frame` for details.
+
+        sorting_order : {"descending", "ascending", None}, default=None
+            Sort features by importance before plotting. See :meth:`frame` for details.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the permutation importance plot.
         """
-        return self._plot(subplot_by=subplot_by, metric=metric)
+        return self._plot(
+            subplot_by=subplot_by,
+            metric=metric,
+            select_k=select_k,
+            sorting_order=sorting_order,
+        )
 
     def _plot_matplotlib(
         self,
         *,
         metric: str | None = None,
         subplot_by: str | None = "auto",
-    ) -> None:
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = None,
+    ) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
+        if select_k == 0:
+            raise ValueError(
+                "select_k=0 would produce an empty plot. Use a non-zero value or "
+                "omit select_k to plot all features."
+            )
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
         stripplot_kwargs = self._default_stripplot_kwargs.copy()
 
-        frame = self.frame(metric=metric, aggregate=None)
+        frame = self.frame(
+            metric=metric,
+            aggregate=None,
+            select_k=select_k,
+            sorting_order=sorting_order,
+        )
         columns_to_groupby = self._get_columns_to_groupby(frame=frame)
         has_same_features = (
             self._has_same_features(frame=frame)
@@ -291,7 +315,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             # we don't need the palette and we are at risk of raising an error or
             # deprecation warning if passing palette without a hue
 
-        self._categorical_plot(
+        figure = self._categorical_plot(
             frame=frame,
             hue=hue,
             col=col,
@@ -300,19 +324,17 @@ class PermutationImportanceDisplay(DisplayMixin):
             sharey=has_same_features,
         )
 
-        title = f"Permutation importance{aggregate_info}"
-        if subplot_by is not None:
-            title += f" by {subplot_by}"
         data_source = frame["data_source"].unique()[0]
         estimator_info = (
             ""
             if "comparison" in self.report_type
             else f" of {self.importances['estimator'].unique()[0]}"
         )
-        self.figure_.suptitle(
+        figure.suptitle(
             f"Permutation importance{estimator_info}\n"
             f"{aggregate_info} on {data_source} set"
         )
+        return figure
 
     @staticmethod
     def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
@@ -361,7 +383,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
         sharey: bool,
-    ) -> None:
+    ) -> Figure:
         """Plot importances with strip + box overlays.
 
         Parameters
@@ -386,7 +408,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         """
         # Ensure seaborn receives a clean, unique index when concatenating groups.
         frame = frame.reset_index(drop=True)
-        self.facet_ = sns.catplot(
+        facet = sns.catplot(
             data=frame,
             x="value",
             y="feature",
@@ -407,7 +429,8 @@ class PermutationImportanceDisplay(DisplayMixin):
         )
         add_background_features = hue is not None
         metric_name = frame["metric"].unique()[0]
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
+        figure = facet.figure
+        ax_grid = facet.axes.squeeze()
         n_features = (
             [frame["feature"].nunique()]
             if col is None
@@ -416,7 +439,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                 for col_value in frame[col].unique()
             ]
         )
-        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
+        for ax, n_feature in zip(ax_grid.flatten(), n_features, strict=True):
             _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
@@ -424,8 +447,7 @@ class PermutationImportanceDisplay(DisplayMixin):
                 xlabel=f"Decrease in {metric_name}",
                 ylabel="",
             )
-        if len(self.ax_.flatten()) == 1:
-            self.ax_ = self.ax_.flatten()[0]
+        return figure
 
     def frame(
         self,
@@ -433,6 +455,8 @@ class PermutationImportanceDisplay(DisplayMixin):
         metric: str | list[str] | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
         level: Literal["splits", "repetitions"] = "splits",
+        select_k: int | None = None,
+        sorting_order: Literal["descending", "ascending", None] = None,
     ) -> pd.DataFrame:
         """Get the feature importance in a dataframe format.
 
@@ -454,6 +478,25 @@ class PermutationImportanceDisplay(DisplayMixin):
             splits. Only relevant when `aggregate` is not `None` and the report is
             a :class:`~skore.CrossValidationReport` or a
             :class:`~skore.ComparisonReport` containing such type of report.
+
+        select_k : int, default=None
+            Select features by importance:
+
+            - Positive values: the `select_k` features with largest importance
+            - Negative values: the `-select_k` features with smallest importance
+
+            Selection is performed independently within each group (estimator, and
+            per label/output if applicable). For cross-validation, features are
+            ranked by mean importance across splits. When ``aggregate`` is
+            ``None``, ranking uses mean importance per feature over repetitions
+            (and splits); all repetition/split rows are kept for the selected
+            features.
+
+        sorting_order : {"descending", "ascending", None}, default=None
+            Sort features by importance: "descending" (most important first),
+            "ascending" (least important first), or None to preserve original order.
+            Can be used independently of `select_k`. When ``aggregate`` is ``None``,
+            ordering uses mean importance per feature over repetitions (and splits).
 
         Returns
         -------
@@ -515,6 +558,25 @@ class PermutationImportanceDisplay(DisplayMixin):
             group_by.append("output")
 
         frame = frame.drop(columns=columns_to_drop)
+
+        if sorting_order is not None:
+            frame = sort_features(
+                frame,
+                sorting_order,
+                group_columns=[
+                    c for c in self._get_columns_to_groupby(frame=frame) if c != "split"
+                ],
+                importance_column="value",
+            )
+        if select_k is not None:
+            frame = select_k_features(
+                frame,
+                select_k,
+                group_columns=[
+                    c for c in self._get_columns_to_groupby(frame=frame) if c != "split"
+                ],
+                importance_column="value",
+            )
 
         if aggregate is not None:
             if level not in ("splits", "repetitions"):

@@ -136,8 +136,11 @@ def iter_cv_metrics(
         display = method()
         yield Artifact(f"metrics_details/{name}", display.frame())
         with switch_mpl_backend(), plt.ioff():
-            display.plot()
-            figure = display.figure_
+            figure = display.plot()
+            if figure is None:
+                # NOTE: backward compatibility for when `figure_` was stored as an
+                # attribute in the display object instead of being returned by `plot`.
+                figure = display.figure_
             try:
                 yield Artifact(f"metrics.{name}", figure)
             finally:
@@ -175,8 +178,11 @@ def iter_estimator_metrics(
         display = method()
         yield Artifact(f"metrics_details/{name}", display.frame())
         with switch_mpl_backend(), plt.ioff():
-            display.plot()
-            figure = display.figure_
+            figure = display.plot()
+            if figure is None:
+                # NOTE: backward compatibility for when `figure_` was stored as an
+                # attribute in the display object instead of being returned by `plot`.
+                figure = display.figure_
             try:
                 yield Artifact(f"metrics.{name}", figure)
             finally:
@@ -263,10 +269,25 @@ def _dataset_from_Xy(
     context: str | None = None,
 ) -> Dataset:
     if isinstance(X, np.ndarray):
+        if isinstance(y, pd.Series):
+            y = y.to_numpy()
+        elif isinstance(y, pd.DataFrame):
+            y = {column: y[column].to_numpy() for column in y.columns}
+
         return Dataset(
             dataset=mlflow.data.from_numpy(X, targets=y),  # type: ignore[attr-defined]
             context=context,
         )
+
+    if isinstance(y, np.ndarray):
+        if y.ndim == 1:
+            y = pd.Series(y, index=X.index, name="target")
+        else:
+            y = pd.DataFrame(
+                y,
+                index=X.index,
+                columns=[f"target_{idx}" for idx in range(y.shape[1])],
+            )
 
     assert isinstance(y, (pd.DataFrame, pd.Series))
 
