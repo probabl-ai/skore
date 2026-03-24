@@ -180,12 +180,9 @@ class Project:
         The report is pickled without its cache, to avoid salting the hash.
         """
         reports = [report] + getattr(report, "estimator_reports_", [])
-        reports_with_cache = [
-            report_to_clear
-            for report_to_clear in reports
-            if hasattr(report_to_clear, "_cache")
-        ]
-        caches = [report_to_clear._cache for report_to_clear in reports_with_cache]
+        reports_with_cache = (
+            (report, report._cache) for report in reports if hasattr(report, "_cache")
+        )
 
         report.clear_cache()
 
@@ -196,7 +193,7 @@ class Project:
                 pickle_bytes = stream.getvalue()
                 pickle_hash = joblib.hash(pickle_bytes)
         finally:
-            for report, cache in zip(reports_with_cache, caches, strict=True):
+            for report, cache in reports_with_cache:
                 report._cache = cache
 
         return pickle_hash, pickle_bytes
