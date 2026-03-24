@@ -11,7 +11,7 @@ from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -371,29 +371,24 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         *,
         response_method: str | list[str] | tuple[str, ...],
         data_source: DataSource = "test",
+        prediction_pos_label: PositiveLabel | None = None,
         **metric_kwargs: Any,
     ) -> float | dict[PositiveLabel, float] | list:
         X, y_true = self._get_X_y(data_source=data_source)
 
         pos_label = self._parent.pos_label
+        if prediction_pos_label is None:
+            prediction_pos_label = pos_label
 
         cache_key = make_cache_key(data_source, metric_fn.__name__, metric_kwargs)
 
         score = self._parent._cache.get(cache_key)
         if score is None:
-            results = _get_cached_response_values(
-                cache=self._parent._cache,
-                estimator=self._parent.estimator_,
-                X=X,
-                response_method=response_method,
-                pos_label=pos_label,
+            y_pred = self._parent._get_predictions(
                 data_source=data_source,
+                response_method=response_method,
+                pos_label=prediction_pos_label,
             )
-            for key_tuple, value, is_cached in results:
-                if not is_cached:
-                    self._parent._cache[key_tuple] = value
-                if key_tuple[1] != "predict_time":
-                    y_pred = value
 
             metric_params = inspect.signature(metric_fn).parameters
             kwargs = {**metric_kwargs}
@@ -835,14 +830,17 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.roc_auc()
         0.99...
         """
+        is_multiclass = self._parent._ml_task == "multiclass-classification"
+        pred_pos_label = None if is_multiclass else self._parent.estimator_.classes_[-1]
         result = self._compute_metric_scores(
             sklearn.metrics.roc_auc_score,
             data_source=data_source,
             response_method=["predict_proba", "decision_function"],
+            prediction_pos_label=pred_pos_label,
             average=average,
             multi_class=multi_class,
         )
-        if self._parent._ml_task == "multiclass-classification" and average is None:
+        if is_multiclass and average is None:
             return cast(dict[PositiveLabel, float], result)
         return cast(float, result)
 
@@ -1120,6 +1118,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
+        prediction_pos_label=None
     ) -> (
         RocCurveDisplay
         | PrecisionRecallCurveDisplay
@@ -1181,20 +1180,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         data_source = cast(DataSource, data_source)
         X, y_true = self._get_X_y(data_source=data_source)
+        if prediction_pos_label is None:
+            prediction_pos_label = self._parent.pos_label
 
-        results = _get_cached_response_values(
-            cache=self._parent._cache,
-            estimator=self._parent.estimator_,
-            X=X,
-            response_method=response_method,
-            pos_label=display_kwargs.get("pos_label"),
+        y_pred = self._parent._get_predictions(
             data_source=data_source,
+            response_method=response_method,
+            pos_label=prediction_pos_label,
         )
-        for key, value, is_cached in results:
-            if not is_cached:
-                self._parent._cache[key] = value
-            if key[1] != "predict_time":
-                y_pred = value
 
         display = display_class._compute_data_for_display(
             y_true=y_true,
@@ -1427,13 +1420,19 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot(threshold_value=0.7)
         """
         response_method: str | list[str] | tuple[str, ...]
+        pos_label = self._parent.pos_label
+        pred_pos_label: PositiveLabel | None
         if self._parent._ml_task == "binary-classification":
             response_method = ("predict_proba", "decision_function")
+            pred_pos_label = (
+                self._parent.estimator_.classes_[-1] if pos_label is None
+                else pos_label
+            )   
         else:
             response_method = "predict"
+            pred_pos_label = None
 
         display_kwargs = {
-            "display_labels": tuple(self._parent.estimator_.classes_),
             "pos_label": self._parent.pos_label,
             "response_method": response_method,
         }
@@ -1444,6 +1443,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 response_method=response_method,
                 display_class=ConfusionMatrixDisplay,
                 display_kwargs=display_kwargs,
+                prediction_pos_label=pred_pos_label,
             ),
         )
         return display

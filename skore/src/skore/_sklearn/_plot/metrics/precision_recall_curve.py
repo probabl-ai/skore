@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
+import numpy as np
 import seaborn as sns
 from matplotlib.figure import Figure
 from numpy.typing import ArrayLike, NDArray
@@ -352,14 +353,12 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         -------
         display : PrecisionRecallCurveDisplay
         """
-        pos_label_validated = cls._validate_from_prediction_params(
-            y_true, y_pred, ml_task=ml_task, pos_label=pos_label
-        )
-
-        if ml_task == "multiclass-classification":
+        if pos_label is None:
             classes = estimator.classes_
             label_binarizer = LabelBinarizer().fit(classes)
             y_true_onehot: NDArray = label_binarizer.transform(y_true)
+            if len(classes) == 2:
+                y_true_onehot = np.hstack((y_true_onehot, (1 - y_true_onehot)))
             y_pred_arr = cast(NDArray, y_pred)
 
             displays = [
@@ -383,24 +382,24 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 column_data={"label": classes.tolist()},
             )
             display.ml_task = ml_task
-            display.pos_label = pos_label_validated
+            display.pos_label = None
             return display
+
+        # binary-classification with pos_label set:
 
         precision, recall, thresholds = precision_recall_curve(
             y_true,
             y_pred,
-            pos_label=pos_label_validated,
+            pos_label=pos_label,
             drop_intermediate=drop_intermediate,
         )
-        average_precision = average_precision_score(
-            y_true, y_pred, pos_label=pos_label_validated
-        )
+        average_precision = average_precision_score(y_true, y_pred, pos_label=pos_label)
 
         metadata = {
             "estimator": estimator_name,
             "data_source": data_source,
             "split": None,
-            "label": pos_label_validated,
+            "label": pos_label,
         }
 
         curve_data = {
@@ -423,7 +422,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         return cls(
             precision_recall=DataFrame(curve_data),
             average_precision=average_precision_df,
-            pos_label=pos_label_validated,
+            pos_label=pos_label,
             data_source=data_source,
             ml_task=ml_task,
             report_type=report_type,

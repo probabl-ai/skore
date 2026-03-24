@@ -99,11 +99,12 @@ def test_attributes(fixture_name, request, cv, n_jobs):
     "fixture_name, expected_n_keys",
     [
         # expected n keys:
-        # (result + time for 'predict'
-        #  & result for 'predict_proba' or 'decision_function') x train, test
-        ("forest_binary_classification_data", 6),
-        ("svc_binary_classification_data", 6),
-        ("forest_multiclass_classification_data", 6),
+        # 2 (result, time)
+        # x 1-2 ('predict', predict_proba' or 'decision_function')
+        # x 2 (train, test)
+        ("forest_binary_classification_data", 8),
+        ("svc_binary_classification_data", 8),
+        ("forest_multiclass_classification_data", 8),
         ("linear_regression_data", 4),
     ],
 )
@@ -151,11 +152,14 @@ def test_get_predictions(
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+            expected_len = len(report.estimator_reports_[split_idx].y_train)
         else:
             assert data_source == "test"
-            expected_shape = report.estimator_reports_[split_idx].y_test.shape
-        assert split_predictions.shape == expected_shape
+            expected_len = len(report.estimator_reports_[split_idx].y_test)
+        if response_method == "predict_proba" and pos_label is None:
+            assert split_predictions.shape == (expected_len, 2)
+        else:
+            assert split_predictions.shape == (expected_len,)
 
 
 def test_get_predictions_error(

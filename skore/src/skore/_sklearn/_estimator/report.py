@@ -13,13 +13,15 @@ from sklearn.base import BaseEstimator, clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
+from sklearn.utils._response import _check_response_method, _process_predict_proba, _process_decision_function
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
-from skore._sklearn._base import _BaseReport, _get_cached_response_values
+from skore._sklearn._base import _BaseReport
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import PositiveLabel
+from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache import Cache
+from skore._utils._cache_key import make_cache_key
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import delayed
@@ -187,6 +189,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self.fit_time_ = fit_time
 
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
+        if self._ml_task != "binary-classification" and pos_label is not None:
+            raise ValueError(
+                "pos_label is only accepted/used for binary classification"
+            )
+
         self._cache = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
 
@@ -213,6 +220,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def cache_predictions(
         self,
         response_methods: Literal["auto"] | str | list[str] = "auto",
+        data_source: DataSource | Literal["both"] = "both",
         n_jobs: int | None = None,
     ) -> None:
         """Cache estimator's predictions.
@@ -253,42 +261,57 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             if response_methods == "auto":
                 response_methods = ["predict"]
-
-        data_sources = [("test", self._X_test)]
-        if self._X_train is not None:
+            
+        data_sources = []
+        if data_source in ("test", "both"):
+            data_sources += [("test", self._X_test)]
+        if data_source in ("train", "both") and self._X_train is not None:
             data_sources += [("train", self._X_train)]
+ 
+        keys_and_to_compute = [
+            (
+                (data_source, response_method),
+                (self._estimator, X, response_method),
+            )
+            for response_method, (data_source, X) in product(
+                response_methods, data_sources
+            )
+        ]
+
+        keys_and_to_compute = [
+            (key, data) for key, data in keys_and_to_compute
+            if make_cache_key(*key) not in self._cache
+        ]
+
+        if not keys_and_to_compute:
+            return
 
         parallel = Parallel(
             **_validate_joblib_parallel_params(n_jobs=n_jobs, return_as="generator")
         )
 
+        def compute_predictions(estimator, X, response_method):
+            prediction_method = _check_response_method(estimator, response_method)
+            with MeasureTime() as predict_time:
+                predictions = prediction_method(X)
+
+            return predictions, predict_time()
+
         # trigger the computation
         # do not mutate directly `self._cache` during the execution of Parallel
-        results_to_cache: dict[tuple[Any, ...], Any] = {}
+        keys, to_compute = zip(*keys_and_to_compute)
 
-        for results in track(
+        for (data_source, response_method), (preds, time) in zip(keys, track(
             parallel(
-                delayed(_get_cached_response_values)(
-                    cache=self._cache,
-                    estimator=self._estimator,
-                    X=X,
-                    response_method=response_method,
-                    pos_label=self._pos_label,
-                    data_source=data_source,
-                )
-                for response_method, (data_source, X) in product(
-                    response_methods, data_sources
-                )
+                delayed(compute_predictions)(*args)
+                for args in to_compute
             ),
             description="Caching predictions",
             total=(len(response_methods) * len(data_sources)),
-        ):
-            results_to_cache.update(
-                (key, value) for key, value, is_cached in results if not is_cached
-            )
-
-        if results_to_cache:
-            self._cache.update(results_to_cache)
+        )):
+            self._cache[make_cache_key(data_source, response_method)] = preds
+            time_name = f"{response_method}_time"
+            self._cache[make_cache_key(data_source, time_name)] = time
 
     def get_predictions(
         self,
@@ -339,25 +362,54 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> predictions.shape
         (25,)
         """
-        if data_source == "test":
-            X_ = self._X_test
-        elif data_source == "train":
-            X_ = self._X_train
-        else:
+        return self._get_predictions(
+            data_source=data_source,
+            response_method=response_method,
+            pos_label=self._pos_label
+        )
+
+    def _get_predictions(
+        self,
+        *,
+        data_source: Literal["train", "test"],
+        response_method: str | list[str] | tuple[str, ...],
+        pos_label: PositiveLabel | None = None
+    ) -> ArrayLike:
+        """Get estimator's predictions, and adapt them to `pos_label` if needed.
+
+        Internal helpers used by the metrics.
+        """
+        if data_source not in ("train", "test"):
             raise ValueError(f"Invalid data source: {data_source}")
 
-        results = _get_cached_response_values(
-            cache=self._cache,
-            estimator=self._estimator,
-            X=X_,
-            response_method=response_method,
-            pos_label=self._pos_label,
-            data_source=data_source,
+        response_method = _check_response_method(self.estimator_, response_method).__name__
+        self.cache_predictions(
+            response_methods=[response_method],
+            data_source=data_source
         )
-        for key, value, is_cached in results:
-            if not is_cached:
-                self._cache[key] = value
-        return results[0][1]  # return the predictions only
+        cache_key = make_cache_key(data_source, response_method)
+        predictions = self._cache[cache_key]
+
+        if response_method == "predict" or pos_label is None:
+            return predictions
+
+        # Adapt to pos_label if needed:
+        # NOTE: upstream callers make sure that pos_label is not None
+        # only for binary classification
+        if response_method in ("predict_proba", "predict_log_proba"):
+            return _process_predict_proba(
+                y_pred=predictions,
+                target_type="binary",
+                classes=self.estimator_.classes_,
+                pos_label=pos_label
+            )
+        elif response_method == "decision_function":
+            return _process_decision_function(
+                y_pred=predictions,
+                target_type="binary",
+                classes=self.estimator_.classes_,
+                pos_label=pos_label
+            )
 
     @property
     def ml_task(self):

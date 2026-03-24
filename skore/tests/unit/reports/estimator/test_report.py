@@ -155,15 +155,16 @@ def test_check_support_plot(
     "fixture_name, pass_train_data, expected_n_keys",
     [
         # expected n keys:
-        # (result + time for 'predict'
-        #  & result for 'predict_proba' or 'decision_function') x train, test
-        ("forest_binary_classification_with_test", True, 6),
-        ("svc_binary_classification_with_test", True, 6),
-        ("forest_multiclass_classification_with_test", True, 6),
+        # 2 (result, time)
+        # x 1-2 ('predict', predict_proba' or 'decision_function')
+        # x 2 (train, test)
+        ("forest_binary_classification_with_test", True, 8),
+        ("svc_binary_classification_with_test", True, 8),
+        ("forest_multiclass_classification_with_test", True, 8),
         ("linear_regression_with_test", True, 4),
-        ("forest_binary_classification_with_test", False, 3),
-        ("svc_binary_classification_with_test", False, 3),
-        ("forest_multiclass_classification_with_test", False, 3),
+        ("forest_binary_classification_with_test", False, 4),
+        ("svc_binary_classification_with_test", False, 4),
+        ("forest_multiclass_classification_with_test", False, 4),
         ("linear_regression_with_test", False, 2),
     ],
 )
@@ -253,9 +254,7 @@ def test_get_predictions():
     predictions = report.get_predictions(
         data_source="test", response_method="predict_proba"
     )
-    np.testing.assert_allclose(
-        predictions, report.estimator_.predict_proba(X_test)[:, 1]
-    )
+    np.testing.assert_allclose(predictions, report.estimator_.predict_proba(X_test))
 
     # check the validity of the `decision_function` method
     predictions = report.get_predictions(

@@ -364,8 +364,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource | Literal["both"],
-        display_labels: list[str],
-        pos_label: PositiveLabel,
+        pos_label: PositiveLabel | None,
         response_method: str | list[str] | tuple[str, ...],
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
@@ -396,9 +395,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         data_source : {"test", "train"}
             The data source to use.
 
-        display_labels : list of str
-            Display labels for plot.
-
         pos_label : int, float, bool, str or None
             The class considered as the positive class when displaying the confusion
             matrix.
@@ -417,26 +413,23 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         display : ConfusionMatrixDisplay
             The confusion matrix display.
         """
-        pos_label_validated = cls._validate_from_prediction_params(
-            y_true, y_pred, ml_task=ml_task, pos_label=pos_label
-        )
         if data_source == "both":
             raise NotImplementedError(
                 "Displaying both data sources is not supported yet."
             )
         data_source = cast(DataSource, data_source)
-        # When provided, the positive label is set in second position.
-        if ml_task == "binary-classification" and pos_label_validated is not None:
-            neg_label = next(
-                label for label in display_labels if label != pos_label_validated
-            )
-            display_labels = [str(neg_label), str(pos_label_validated)]
+
+        # FIXME? Usually, TP is the top-left cell
+        display_labels = tuple(estimator.classes_)
 
         if ml_task == "binary-classification":
+            # When provided, the positive label is set in second position:
+            if pos_label == display_labels[0]:
+                display_labels = (display_labels[1], display_labels[0])
             tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
                 y_true=y_true,
                 y_score=y_pred,
-                pos_label=pos_label_validated,
+                pos_label=display_labels[1],
             )
             cms = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
         else:
@@ -493,7 +486,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             report_type=report_type,
             ml_task=ml_task,
             data_source=data_source,
-            pos_label=pos_label_validated,
+            pos_label=pos_label,
             response_method=_check_response_method(estimator, response_method).__name__,
             thresholds=np.unique(confusion_matrix["threshold"]),
         )

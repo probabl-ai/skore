@@ -7,7 +7,6 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 
-from skore._sklearn._base import _get_cached_response_values
 from skore._utils._testing import MockAccessor, MockReport
 
 
@@ -65,6 +64,7 @@ class MockRegressor(RegressorMixin, BaseEstimator):
 )
 @pytest.mark.parametrize("data_source", ["train", "test"])
 @pytest.mark.parametrize("pos_label", [0, 1])
+@pytest.mark.skip("_get_cached_response_values was removed")
 def test_get_cached_response_values(
     Estimator,
     response_method,

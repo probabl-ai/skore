@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
+import numpy as np
 import seaborn as sns
 from matplotlib.figure import Figure
 from numpy.typing import ArrayLike, NDArray
@@ -366,15 +367,13 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         display : RocCurveDisplay
             Object that stores computed values.
         """
-        pos_label_validated = cls._validate_from_prediction_params(
-            y_true, y_pred, ml_task=ml_task, pos_label=pos_label
-        )
-
-        if ml_task == "multiclass-classification":
+        if pos_label is None:
             classes = estimator.classes_
             # OvR fashion to collect fpr, tpr, and roc_auc
             label_binarizer = LabelBinarizer().fit(classes)
             y_true_onehot: NDArray = label_binarizer.transform(y_true)
+            if len(classes) == 2:
+                y_true_onehot = np.hstack((y_true_onehot, (1 - y_true_onehot)))
             y_pred_arr = cast(NDArray, y_pred)
 
             displays = [
@@ -398,10 +397,11 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 column_data={"label": classes.tolist()},
             )
             display.ml_task = ml_task
-            display.pos_label = pos_label_validated
+            display.pos_label = None
             return display
 
-        # binary-classification
+        # binary-classification with pos_label set:
+
         fpr, tpr, thresholds = roc_curve(
             y_true,
             y_pred,
@@ -414,7 +414,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             "estimator": estimator_name,
             "data_source": data_source,
             "split": None,
-            "label": pos_label_validated,
+            "label": pos_label,
         }
 
         curve_data = {
@@ -433,7 +433,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         return cls(
             roc_curve=DataFrame(curve_data),
             roc_auc=auc_df,
-            pos_label=pos_label_validated,
+            pos_label=pos_label,
             data_source=data_source,
             ml_task=ml_task,
             report_type=report_type,

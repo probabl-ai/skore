@@ -157,8 +157,8 @@ class TestConfusionMatrixDisplay:
         xticklabels = [label.get_text() for label in ax.get_xticklabels()]
         yticklabels = [label.get_text() for label in ax.get_yticklabels()]
         if task == "binary":
-            assert xticklabels == ["0", "1*"]
-            assert yticklabels == ["0", "1*"]
+            assert xticklabels == ["0", "1"]
+            assert yticklabels == ["0", "1"]
         else:
             assert xticklabels == ["0", "1", "2"]
             assert yticklabels == ["0", "1", "2"]

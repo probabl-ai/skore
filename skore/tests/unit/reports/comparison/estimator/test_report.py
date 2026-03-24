@@ -128,10 +128,13 @@ def test_get_predictions(
     sub_reports = list(report.reports_.values())
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = sub_reports[split_idx].y_train.shape
+            expected_len = len(sub_reports[split_idx].y_train)
         else:
-            expected_shape = sub_reports[split_idx].y_test.shape
-        assert split_predictions.shape == expected_shape
+            expected_len = len(sub_reports[split_idx].y_test)
+        if response_method == "predict_proba":
+            assert split_predictions.shape == (expected_len, 2)
+        else:
+            assert split_predictions.shape == (expected_len,)
 
 
 def test_get_predictions_error(

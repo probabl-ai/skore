@@ -37,8 +37,9 @@ def test_display_binary_classification_pos_label(pyplot, metric):
     y = labels[y]
     classifier = LogisticRegression().fit(X, y)
     report = EstimatorReport(classifier, X_test=X, y_test=y)
-    with pytest.raises(ValueError, match="pos_label is not specified"):
-        getattr(report.metrics, metric)()
+    display = getattr(report.metrics, metric)()
+    fig = display.plot()
+    assert "Positive label" not in fig.get_suptitle()
 
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")
     display = getattr(report.metrics, metric)()
