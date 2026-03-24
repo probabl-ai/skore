@@ -150,8 +150,7 @@ def get_diagnostics_documentation_url(*, docs_anchor: str) -> str:
 
 def format_diagnostic_message(diagnostic: DiagnosticResult) -> str:
     return (
-        f"[{diagnostic.code}] {diagnostic.title}: issue detected. "
-        f"{diagnostic.explanation} "
+        f"[{diagnostic.code}] {diagnostic.title}. {diagnostic.explanation} "
         "Read our documentation for more details: "
         f"{get_diagnostics_documentation_url(docs_anchor=diagnostic.docs_anchor)}. "
         f"Mute with `ignore=['{diagnostic.code}']`."
@@ -167,8 +166,7 @@ def format_diagnostic_message_html(diagnostic: DiagnosticResult) -> str:
         quote=True,
     )
     return (
-        f"[{code}] {title}: issue detected. "
-        f"{explanation} "
+        f"[{code}] {title}. {explanation} "
         f'Read <a href="{docs_url}" target="_blank" rel="noopener noreferrer">'
         "our documentation</a> for more details. "
         f"Mute with <code>ignore=['{code}']</code>."

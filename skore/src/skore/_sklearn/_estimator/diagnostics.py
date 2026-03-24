@@ -3,10 +3,8 @@ from __future__ import annotations
 import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from numbers import Real
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, cast
 
-import numpy as np
 import pandas as pd
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
@@ -44,50 +42,38 @@ def _metric_key(value: object) -> str:
     return "" if pd.isna(value) else str(value)
 
 
-def _to_float(value: object) -> float | None:
-    """Safely coerce `value` to float, returning ``None`` on failure."""
-    if isinstance(value, Real):
-        return float(value)
-    if isinstance(value, str):
-        try:
-            return float(value)
-        except ValueError:
-            return None
-    return None
-
-
 def _adaptive_threshold(
     *, floor: float, fraction: float, references: tuple[float, ...]
 ) -> float:
     """Compute a scale-aware threshold.
 
-    Returns ``max(floor, fraction * max(|ref|..., 1.0))``.  The floor
+    Returns ``max(floor, fraction * abs(references))``. The floor
     prevents the threshold from vanishing on near-zero scores; scaling by
     the reference magnitude keeps it meaningful for large-valued metrics.
     """
-    return max(floor, fraction * max(*map(abs, references), 1.0))
+    return max(floor, fraction * max(abs(reference) for reference in references))
 
 
-def _is_significant_gap(metric: MetricPair) -> bool:
+def _is_significant_gap(metric_pair: MetricPair) -> bool:
     """Check whether the train-favored gap indicates potential overfitting.
 
-    The gap threshold is 10% of the reference score (floor 3%).
+    The gap threshold is 10% of the reference score (floor 0.03).
     """
-    if metric.favorability == "(↗︎)":
-        return metric.train - metric.test >= _adaptive_threshold(
-            floor=0.03, fraction=0.10, references=(metric.train,)
+    if metric_pair.favorability == "(↗︎)":
+        return metric_pair.train - metric_pair.test >= _adaptive_threshold(
+            floor=0.03, fraction=0.10, references=(metric_pair.train,)
         )
-    if metric.favorability == "(↘︎)":
-        return metric.test - metric.train >= _adaptive_threshold(
-            floor=0.03, fraction=0.10, references=(metric.test,)
+    if metric_pair.favorability == "(↘︎)":
+        return metric_pair.test - metric_pair.train >= _adaptive_threshold(
+            floor=0.03, fraction=0.10, references=(metric_pair.test,)
         )
     return False
 
 
-def _is_on_par(metric: MetricPair) -> bool:
-    """Check whether train and test scores are within 5% of each other (floor 3%)."""
-    return abs(metric.train - metric.test) <= _adaptive_threshold(
-        floor=0.03, fraction=0.05, references=(metric.train, metric.test)
+def _is_on_par(metric_pair: MetricPair) -> bool:
+    """Check whether train and test scores are within 5% of each other (floor 0.03)."""
+    return abs(metric_pair.train - metric_pair.test) <= _adaptive_threshold(
+        floor=0.03, fraction=0.05, references=(metric_pair.train, metric_pair.test)
     )
 
 
@@ -96,7 +82,7 @@ def _is_significantly_better(
 ) -> bool:
     """Check whether `score` meaningfully outperforms `baseline`.
 
-    The threshold is 3% of the baseline magnitude (floor 1%).
+    The threshold is 3% of the baseline magnitude (floor 0.01).
     """
     threshold = _adaptive_threshold(floor=0.01, fraction=0.03, references=(baseline,))
     if favorability == "(↗︎)":
@@ -106,22 +92,23 @@ def _is_significantly_better(
     return False
 
 
-def _majority_triggered(votes: list[bool]) -> tuple[bool, int, int]:
+def _majority_vote(votes: list[bool]) -> tuple[bool, int, int]:
     """Apply a strict-majority rule to `votes`.
 
-    Returns ``(triggered, n_positive, n_total)``.
+    Returns ``(majority, n_positive, n_total)``.
     """
-    triggered = sum(votes)
+    n_positive = sum(votes)
     total = len(votes)
-    return triggered > total / 2, triggered, total
+    return n_positive > total / 2, n_positive, total
 
 
 def _metric_pairs(report: EstimatorReport) -> dict[MetricKey, MetricPair]:
     """Extract paired train/test scores for every predictive metric."""
-    pairs: dict[MetricKey, dict[str, object]] = {}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
         data = report.metrics.summarize(data_source="both").data
+
+    pairs: dict[MetricKey, dict[str, object]] = {}
     for row in data.itertuples(index=False):
         metric = str(row.metric)
         if metric.lower() in _TIMING_METRICS:
@@ -135,22 +122,15 @@ def _metric_pairs(report: EstimatorReport) -> dict[MetricKey, MetricPair]:
         if key not in pairs:
             pairs[key] = {"favorability": str(row.favorability)}
         pairs[key][str(row.data_source)] = row.score
-    metric_pairs: dict[MetricKey, MetricPair] = {}
-    for key, values in pairs.items():
-        if "train" not in values or "test" not in values:
-            continue
-        train_score = _to_float(values["train"])
-        test_score = _to_float(values["test"])
-        if train_score is None or test_score is None:
-            continue
-        if not (np.isfinite(train_score) and np.isfinite(test_score)):
-            continue
-        metric_pairs[key] = MetricPair(
+
+    return {
+        key: MetricPair(
             favorability=str(values["favorability"]),
-            train=train_score,
-            test=test_score,
+            train=float(cast(str, values["train"])),
+            test=float(cast(str, values["test"])),
         )
-    return metric_pairs
+        for key, values in pairs.items()
+    }
 
 
 def _baseline_metric_pairs(report: EstimatorReport) -> dict[MetricKey, MetricPair]:
@@ -161,16 +141,15 @@ def _baseline_metric_pairs(report: EstimatorReport) -> dict[MetricKey, MetricPai
     """
     if "classification" in report.ml_task:
         dummy_estimator = DummyClassifier(strategy="prior")
-    elif "regression" in report.ml_task:
-        dummy_estimator = DummyRegressor(strategy="mean")
     else:
-        return {}
-    from skore._sklearn._estimator.report import EstimatorReport as _ER
+        dummy_estimator = DummyRegressor(strategy="mean")
+
+    # Needed to avoid circular import
+    from skore._sklearn._estimator.report import EstimatorReport
 
     with configuration(diagnose=False):
-        baseline_report = _ER(
+        baseline_report = EstimatorReport(
             dummy_estimator,
-            fit=True,
             X_train=report.X_train,
             y_train=report.y_train,
             X_test=report.X_test,
@@ -186,8 +165,8 @@ class DiagnosticContext:
     """Pre-computed inputs shared across all diagnostic checks."""
 
     report: EstimatorReport
-    metric_pairs: dict[MetricKey, MetricPair]
-    baseline_pairs: dict[MetricKey, MetricPair]
+    estimator_metric_pairs: dict[MetricKey, MetricPair]
+    baseline_metric_pairs: dict[MetricKey, MetricPair]
 
 
 class DiagnosticCheck(ABC):
@@ -237,9 +216,12 @@ class OverfittingCheck(DiagnosticCheck):
         return _has_train_and_test(report)
 
     def run(self, context: DiagnosticContext) -> DiagnosticResult | None:
-        votes = [_is_significant_gap(m) for m in context.metric_pairs.values()]
-        fired, triggered, total = _majority_triggered(votes)
-        if not fired:
+        votes = [
+            _is_significant_gap(metric_pair)
+            for metric_pair in context.estimator_metric_pairs.values()
+        ]
+        majority, n_positive, total = _majority_vote(votes)
+        if not majority:
             return None
         return DiagnosticResult(
             code=self.code,
@@ -247,7 +229,7 @@ class OverfittingCheck(DiagnosticCheck):
             docs_anchor=self.docs_anchor,
             explanation=(
                 "Significant train/test gaps were found for "
-                f"{triggered}/{total} default predictive metrics."
+                f"{n_positive}/{total} default predictive metrics."
             ),
         )
 
@@ -256,8 +238,8 @@ class UnderfittingCheck(DiagnosticCheck):
     """Detect potential underfitting by comparing to a dummy baseline.
 
     A metric is flagged when train and test scores are within 5% of
-    each other (floor 3%) AND neither exceeds the dummy baseline by
-    more than 3% of the baseline (floor 1%). The check fires when a
+    each other (floor 0.03) AND neither exceeds the dummy baseline by
+    more than 3% of the baseline (floor 0.01). The check fires when a
     strict majority of comparable metrics are flagged.
     """
 
@@ -269,25 +251,27 @@ class UnderfittingCheck(DiagnosticCheck):
         return _has_train_and_test(report)
 
     def run(self, context: DiagnosticContext) -> DiagnosticResult | None:
-        shared_keys = context.metric_pairs.keys() & context.baseline_pairs.keys()
-        if not shared_keys:
+        shared_metrics = (
+            context.estimator_metric_pairs.keys() & context.baseline_metric_pairs.keys()
+        )
+        if not shared_metrics:
             return None
         votes = [
-            _is_on_par(context.metric_pairs[k])
+            _is_on_par(context.estimator_metric_pairs[metric])
             and not _is_significantly_better(
-                score=context.metric_pairs[k].train,
-                baseline=context.baseline_pairs[k].train,
-                favorability=context.metric_pairs[k].favorability,
+                score=context.estimator_metric_pairs[metric].train,
+                baseline=context.baseline_metric_pairs[metric].train,
+                favorability=context.estimator_metric_pairs[metric].favorability,
             )
             and not _is_significantly_better(
-                score=context.metric_pairs[k].test,
-                baseline=context.baseline_pairs[k].test,
-                favorability=context.metric_pairs[k].favorability,
+                score=context.estimator_metric_pairs[metric].test,
+                baseline=context.baseline_metric_pairs[metric].test,
+                favorability=context.estimator_metric_pairs[metric].favorability,
             )
-            for k in shared_keys
+            for metric in shared_metrics
         ]
-        fired, triggered, total = _majority_triggered(votes)
-        if not fired:
+        majority, n_positive, total = _majority_vote(votes)
+        if not majority:
             return None
         return DiagnosticResult(
             code=self.code,
@@ -295,7 +279,7 @@ class UnderfittingCheck(DiagnosticCheck):
             docs_anchor=self.docs_anchor,
             explanation=(
                 "Train/test scores are on par and not significantly better than "
-                f"the dummy baseline for {triggered}/{total} comparable metrics."
+                f"the dummy baseline for {n_positive}/{total} comparable metrics."
             ),
         )
 
@@ -315,8 +299,8 @@ def run_estimator_diagnostics(
         return [], set()
     context = DiagnosticContext(
         report=report,
-        metric_pairs=_metric_pairs(report),
-        baseline_pairs=_baseline_metric_pairs(report),
+        estimator_metric_pairs=_metric_pairs(report),
+        baseline_metric_pairs=_baseline_metric_pairs(report),
     )
     return (
         [result for check in runnable if (result := check.run(context)) is not None],

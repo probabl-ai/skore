@@ -6,7 +6,6 @@ import itertools
 import re
 import warnings
 from collections.abc import Callable
-from contextlib import nullcontext
 from functools import wraps
 from operator import itemgetter
 from re import sub as substitute
@@ -287,15 +286,8 @@ class Project:
             endpoint = "cross-validation-reports"
             frontend_slug = "cross-validations"
 
-        skore_configuration = getattr(skore, "configuration", None)
-        config_context = (
-            skore_configuration(show_progress=False)
-            if callable(skore_configuration)
-            else nullcontext()
-        )
-
         with (
-            config_context,
+            skore.configuration(show_progress=False),
             switch_plt_backend(),
             Progress(
                 SpinnerColumn(),

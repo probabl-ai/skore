@@ -77,7 +77,7 @@ class ReportMetadata(ABC):
         self.date = datetime.now(timezone.utc).isoformat()
         self.learner = report.estimator_name_
         self.ml_task = report.ml_task
-        self.report_type = getattr(report, "_report_type", "")
+        self.report_type = report._report_type
         self.dataset = hash(report.y_test if hasattr(report, "y_test") else report.y)
 
 
