@@ -214,17 +214,17 @@ class TestCrossValidationReportPayload:
             assert all(0 <= distribution <= 1 for distribution in train_distribution)
             assert all(0 <= distribution <= 1 for distribution in test_distribution)
 
-        train_target_distributions_sample_count = payload.splitting_strategy.pop(
-            "train_target_distributions_sample_count"
+        train_target_distributions_sample_counts = payload.splitting_strategy.pop(
+            "train_target_distributions_sample_counts"
         )
-        test_target_distributions_sample_count = payload.splitting_strategy.pop(
-            "test_target_distributions_sample_count"
+        test_target_distributions_sample_counts = payload.splitting_strategy.pop(
+            "test_target_distributions_sample_counts"
         )
-        assert len(train_target_distributions_sample_count) == len(
-            test_target_distributions_sample_count
+        assert len(train_target_distributions_sample_counts) == len(
+            test_target_distributions_sample_counts
         )
-        assert len(train_target_distributions_sample_count) == len(
-            test_target_distributions_sample_count
+        assert len(train_target_distributions_sample_counts) == len(
+            test_target_distributions_sample_counts
         )
 
         assert payload.splitting_strategy == {
@@ -322,17 +322,17 @@ class TestCrossValidationReportPayload:
         ):
             assert len(train_distribution) == len(test_distribution) == 2
 
-        train_target_distributions_sample_count = payload.splitting_strategy.pop(
-            "train_target_distributions_sample_count"
+        train_target_distributions_sample_counts = payload.splitting_strategy.pop(
+            "train_target_distributions_sample_counts"
         )
-        test_target_distributions_sample_count = payload.splitting_strategy.pop(
-            "test_target_distributions_sample_count"
+        test_target_distributions_sample_counts = payload.splitting_strategy.pop(
+            "test_target_distributions_sample_counts"
         )
-        assert len(train_target_distributions_sample_count) == len(
+        assert len(train_target_distributions_sample_counts) == len(
             test_target_distributions
         )
-        assert len(train_target_distributions_sample_count) == len(
-            test_target_distributions_sample_count
+        assert len(train_target_distributions_sample_counts) == len(
+            test_target_distributions_sample_counts
         )
 
         assert payload.splitting_strategy == {
