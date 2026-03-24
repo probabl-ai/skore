@@ -281,13 +281,11 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         X = rng.normal(size=(SPLITTING_STRATEGY_REPR_SAMPLE_COUNT, 1))
 
         for train_idx, test_idx in simplified_splitter.split(X, target_repr):
-            split_flags = [-1] * SPLITTING_STRATEGY_REPR_SAMPLE_COUNT
-            for i in train_idx:
-                split_flags[int(i)] = 0
-            for i in test_idx:
-                split_flags[int(i)] = 1
+            split_flags = np.full(SPLITTING_STRATEGY_REPR_SAMPLE_COUNT, -1, dtype=int)
+            split_flags[train_idx] = 0
+            split_flags[test_idx] = 1
 
-            splits.append(split_flags)
+            splits.append(split_flags.tolist())
 
         # compute target distributions
         train_target_distributions = []
