@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import copy
-import time
+import html
 import warnings
 from itertools import product
 from typing import TYPE_CHECKING, Any, Literal
 
-import numpy as np
+import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone
@@ -24,6 +24,7 @@ from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
@@ -177,36 +178,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:  # fit is False
             self._estimator = self._copy_estimator(estimator)
 
-        # private storage to be able to invalidate the cache when the user alters
-        # those attributes
+        # private storage to ensure properties are read-only
         self._X_train = X_train
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
         self._pos_label = pos_label
         self.fit_time_ = fit_time
-        self._parent_hash: np.int64 | None = None
 
-        self._initialize_state()
-
-    def _initialize_state(self) -> None:
-        """Initialize/reset the random number generator, hash, and cache."""
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
-        self._cache = Cache()
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
-
-    # NOTE:
-    # For the moment, we do not allow to alter the estimator and the training data.
-    # For the validation set, we allow it and we invalidate the cache.
+        self._cache = Cache()
+        # NOTE: Reports are immutable so we don't need cache invalidation
 
     def clear_cache(self) -> None:
         """Clear the cache.
-
-        Note that the cache might not be empty after this method is run as some
-        values need to be kept, such as the fit time.
 
         Examples
         --------
@@ -285,7 +270,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             parallel(
                 delayed(_get_cached_response_values)(
                     cache=self._cache,
-                    estimator_hash=self._hash,
                     estimator=self._estimator,
                     X=X,
                     response_method=response_method,
@@ -364,7 +348,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         results = _get_cached_response_values(
             cache=self._cache,
-            estimator_hash=int(self._hash),
             estimator=self._estimator,
             X=X_,
             response_method=response_method,
@@ -434,4 +417,67 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+        return f"""{self.__class__.__name__}:
+        {self.estimator_!r}
+
+        {self.metrics.summarize().frame()}"""
+
+    def _repr_html_(self):
+        """HTML representation of estimator.
+
+        This is redundant with the logic of `_repr_mimebundle_`. The latter
+        should be favored in the long term, `_repr_html_` is only
+        implemented for consumers who do not interpret `_repr_mimbundle_`.
+        """
+        match self.X_train, self.X_test:
+            case None, None:
+                data_source = None
+            case _, None:
+                data_source = "train"
+            case None, _:
+                data_source = "test"
+            case _:
+                data_source = "both"
+        if data_source is None:
+            table_report_html = "<p>No data provided</p>"
+            metrics_html = "<p>No data provided</p>"
+        else:
+            table_report = skrub.TableReport(
+                self.data._prepare_dataframe_for_display(
+                    data_source=data_source,
+                    with_y=True,
+                    subsample=None,
+                    subsample_strategy="head",
+                    seed=None,
+                ),
+                max_plot_columns=0,
+                max_association_columns=0,
+                verbose=False,
+            )
+            table_report._set_minimal_mode()
+            table_report_html = table_report.html_snippet()
+            metrics_html = (
+                self.metrics.summarize(
+                    data_source="train" if data_source == "train" else "test"
+                )
+                .frame()
+                ._repr_html_()
+            )
+        try:
+            estimator_html = self.estimator_._repr_html_()
+        except Exception:
+            estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
+        return render_template(
+            "estimator_report.html.j2",
+            {
+                "metrics_summary": metrics_html,
+                "estimator_display": estimator_html,
+                "table_report": table_report_html,
+            },
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by jupyter kernels to display estimator."""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output

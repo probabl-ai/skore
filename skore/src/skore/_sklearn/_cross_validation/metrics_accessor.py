@@ -8,10 +8,7 @@ from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import (
-    _BaseAccessor,
-    _BaseMetricsAccessor,
-)
+from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -25,7 +22,6 @@ from skore._sklearn.types import (
     Metric,
 )
 from skore._utils._accessor import _check_estimator_report_has_method
-from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
@@ -33,9 +29,7 @@ from skore._utils._progress_bar import track
 DataSource = Literal["test", "train"]
 
 
-class _MetricsAccessor(
-    _BaseMetricsAccessor, _BaseAccessor["CrossValidationReport"], DirNamesMixin
-):
+class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -116,62 +110,44 @@ class _MetricsAccessor(
         Precision           0.94...  0.02...         (↗︎)
         Recall              0.96...  0.02...         (↗︎)
         """
-        pos_label = self._parent.pos_label
-
         if data_source == "both":
             raise NotImplementedError(
                 'data_source="both" is not yet supported for CrossValidationReport'
             )
 
-        cache_key = deep_key_sanitize(
-            (
-                self._parent._hash,
-                data_source,
-                metric,
-                metric_kwargs,
-                response_method,
-                pos_label,
+        parallel = Parallel(
+            **_validate_joblib_parallel_params(
+                n_jobs=self._parent.n_jobs, return_as="generator"
             )
         )
 
-        results = self._parent._cache.get(cache_key)
-        if results is None:
-            parallel = Parallel(
-                **_validate_joblib_parallel_params(
-                    n_jobs=self._parent.n_jobs, return_as="generator"
-                )
-            )
-
-            results = [
-                result.data
-                for result in track(
-                    parallel(
-                        delayed(report.metrics.summarize)(
-                            data_source=data_source,
-                            metric=metric,
-                            metric_kwargs=metric_kwargs,
-                            response_method=response_method,
-                        )
-                        for report in self._parent.estimator_reports_
-                    ),
-                    description="Compute metric for each split",
-                    total=len(self._parent.estimator_reports_),
-                )
-            ]
-
-            results = MetricsSummaryDisplay(
-                data=(
-                    pd.concat(
-                        results, axis="index", keys=range(len(results)), names=["split"]
+        results = [
+            result.data
+            for result in track(
+                parallel(
+                    delayed(report.metrics.summarize)(
+                        data_source=data_source,
+                        metric=metric,
+                        metric_kwargs=metric_kwargs,
+                        response_method=response_method,
                     )
-                    .reset_index()
-                    .drop(columns="level_1")
+                    for report in self._parent.estimator_reports_
                 ),
-                report_type="cross-validation",
+                description="Compute metric for each split",
+                total=len(self._parent.estimator_reports_),
             )
+        ]
 
-            self._parent._cache[cache_key] = results
-        return results
+        return MetricsSummaryDisplay(
+            data=(
+                pd.concat(
+                    results, axis="index", keys=range(len(results)), names=["split"]
+                )
+                .reset_index()
+                .drop(columns="level_1")
+            ),
+            report_type="cross-validation",
+        )
 
     def timings(
         self,

@@ -11,11 +11,7 @@ from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import (
-    _BaseAccessor,
-    _BaseMetricsAccessor,
-    _get_cached_response_values,
-)
+from skore._sklearn._base import _BaseAccessor, _get_cached_response_values
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -35,20 +31,27 @@ from skore._utils._accessor import (
     _check_roc_auc,
     _check_supported_ml_task,
 )
-from skore._utils._cache_key import deep_key_sanitize
+from skore._utils._cache_key import make_cache_key
 
 
-class _MetricsAccessor(
-    _BaseMetricsAccessor, _BaseAccessor["EstimatorReport"], DirNamesMixin
-):
+class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
 
     _score_or_loss_info: dict[str, dict[str, str]] = {
-        **_BaseMetricsAccessor._score_or_loss_info,
-        "confusion_matrix": {"name": "Confusion Matrix", "icon": ""},
+        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
+        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
+        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
+        "precision": {"name": "Precision", "icon": "(↗︎)"},
+        "recall": {"name": "Recall", "icon": "(↗︎)"},
+        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
+        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
+        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
+        "r2": {"name": "R²", "icon": "(↗︎)"},
+        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
+        "custom_metric": {"name": "Custom metric", "icon": ""},
     }
 
     def __init__(self, parent: EstimatorReport) -> None:
@@ -374,22 +377,12 @@ class _MetricsAccessor(
 
         pos_label = self._parent.pos_label
 
-        cache_key = deep_key_sanitize(
-            (
-                self._parent._hash,
-                metric_fn.__name__,
-                data_source,
-                # TODO None is a placeholder for skore-hub-project
-                None,
-                metric_kwargs,
-            )
-        )
+        cache_key = make_cache_key(data_source, metric_fn.__name__, metric_kwargs)
 
         score = self._parent._cache.get(cache_key)
         if score is None:
             results = _get_cached_response_values(
                 cache=self._parent._cache,
-                estimator_hash=int(self._parent._hash),
                 estimator=self._parent.estimator_,
                 X=X,
                 response_method=response_method,
@@ -399,7 +392,7 @@ class _MetricsAccessor(
             for key_tuple, value, is_cached in results:
                 if not is_cached:
                     self._parent._cache[key_tuple] = value
-                if key_tuple[-1] != "predict_time":
+                if key_tuple[1] != "predict_time":
                     y_pred = value
 
             metric_params = inspect.signature(metric_fn).parameters
@@ -460,11 +453,7 @@ class _MetricsAccessor(
             Whether to cast the numbers to floats. If `False`, the return value
             is `None` when the predictions have never been computed.
         """
-        predict_time_cache_key = (
-            self._parent._hash,
-            data_source,
-            "predict_time",
-        )
+        predict_time_cache_key = make_cache_key(data_source, "predict_time")
 
         return self._parent._cache.get(
             predict_time_cache_key, (float("nan") if cast else None)
@@ -505,15 +494,11 @@ class _MetricsAccessor(
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
         # predict_time cache keys are of the form
-        # (self._parent._hash, data_source, "predict_time")
-
-        def make_key(k: tuple) -> str:
-            return f"predict_time_{k[1]}"
-
+        # (data_source, "predict_time", None)
         predict_times = {
-            make_key(k): v
-            for k, v in self._parent._cache.items()
-            if k[-1] == "predict_time"
+            f"predict_time_{data_source}": v
+            for (data_source, name, _), v in self._parent._cache.items()
+            if name == "predict_time"
         }
 
         return fit_time | predict_times
@@ -1186,13 +1171,8 @@ class _MetricsAccessor(
         if "seed" in display_kwargs and display_kwargs["seed"] is None:
             cache_key = None
         else:
-            cache_key = deep_key_sanitize(
-                (
-                    self._parent._hash,
-                    display_class.__name__,
-                    display_kwargs,
-                    data_source,
-                )
+            cache_key = make_cache_key(
+                data_source, display_class.__name__, display_kwargs
             )
 
         cache_value = self._parent._cache.get(cache_key)
@@ -1204,7 +1184,6 @@ class _MetricsAccessor(
 
         results = _get_cached_response_values(
             cache=self._parent._cache,
-            estimator_hash=int(self._parent._hash),
             estimator=self._parent.estimator_,
             X=X,
             response_method=response_method,
@@ -1214,7 +1193,7 @@ class _MetricsAccessor(
         for key, value, is_cached in results:
             if not is_cached:
                 self._parent._cache[key] = value
-            if key[-1] != "predict_time":
+            if key[1] != "predict_time":
                 y_pred = value
 
         display = display_class._compute_data_for_display(

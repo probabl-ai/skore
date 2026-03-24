@@ -36,9 +36,13 @@ class PerformanceSVG(Media[Report], ABC):  # noqa: D101
         )
 
         with BytesIO() as stream:
-            display.plot()
-            display.figure_.savefig(stream, format="svg", bbox_inches="tight")  # type: ignore[attr-defined]
-            plt.close(display.figure_)  # type: ignore[attr-defined]
+            fig = display.plot()
+            if fig is None:
+                # NOTE: backward compatibility for when `figure_` was stored as an
+                # attribute in the display object instead of being returned by `plot`.
+                fig = display.figure_
+            fig.savefig(stream, format="svg", bbox_inches="tight")
+            plt.close(fig)
 
             figure_bytes = stream.getvalue()
 

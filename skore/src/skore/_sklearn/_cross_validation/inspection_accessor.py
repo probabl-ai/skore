@@ -16,7 +16,6 @@ from skore._utils._accessor import (
     _check_cross_validation_sub_estimator_has_coef,
     _check_cross_validation_sub_estimator_has_feature_importances,
 )
-from skore._utils._cache_key import deep_key_sanitize
 
 
 class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
@@ -246,70 +245,27 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """  # noqa: E501
-        # NOTE: to temporary improve the `project.put` UX, we always store the
-        # permutation importance into the cache dictionary even when seed is None.
-        # Be aware that if seed is None, we still trigger the computation for all cases.
-        # We only store it such that when we serialize to send to the hub, we only
-        # fetch for the cache store instead of recomputing it because it is expensive.
-        # FIXME: the workaround above should be removed once we are able to trigger
-        # computation on the server side of skore-hub.
-
         if seed is not None and not isinstance(seed, int):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 
-        # n_jobs should not be in cache
-        kwargs = {"n_repeats": n_repeats, "max_samples": max_samples, "seed": seed}
-        cache_key = deep_key_sanitize(
-            (
-                self._parent._hash,
-                "permutation_importance",
-                data_source,
-                at_step,
-                #
-                # skore-hub-project expects an item for data_source_hash (but
-                # ignores its value). Until skore-hub-project is updated we
-                # insert None as a placeholder.
-                None,
-                #
-                metric,
-                kwargs,
-            )
+        return PermutationImportanceDisplay(
+            importances=pd.concat(
+                [
+                    report.inspection.permutation_importance(
+                        data_source=data_source,
+                        at_step=at_step,
+                        metric=metric,
+                        n_repeats=n_repeats,
+                        max_samples=max_samples,
+                        n_jobs=n_jobs,
+                        seed=seed,
+                    ).importances.assign(split=split_idx)
+                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                ],
+                ignore_index=True,
+            ),
+            report_type=self._parent._report_type,
         )
-
-        # NOTE: avoid to fetch from the cache if the seed is None because we want
-        # to trigger the computation in this case. We only have the permutation
-        # stored as a workaround for the serialization for skore-hub as explained
-        # earlier.
-        display = None if seed is None else self._parent._cache.get(cache_key)
-        if display is None:
-            display = PermutationImportanceDisplay(
-                importances=pd.concat(
-                    [
-                        report.inspection.permutation_importance(
-                            data_source=data_source,
-                            at_step=at_step,
-                            metric=metric,
-                            n_repeats=n_repeats,
-                            max_samples=max_samples,
-                            n_jobs=n_jobs,
-                            seed=seed,
-                        )
-                        .importances.copy()
-                        .assign(split=split_idx)
-                        for split_idx, report in enumerate(
-                            self._parent.estimator_reports_
-                        )
-                    ],
-                    ignore_index=True,
-                ),
-                report_type=self._parent._report_type,
-            )
-
-            if cache_key is not None:
-                # NOTE: for the moment, we will always store the permutation importance
-                self._parent._cache[cache_key] = display
-
-        return display
 
     @available_if(_check_cross_validation_sub_estimator_has_feature_importances())
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
