@@ -1,18 +1,12 @@
 from functools import cached_property
 from io import StringIO
-from typing import Any, Generic, Literal, TypeVar, cast
+from typing import Generic, Literal, TypeVar
 from uuid import uuid4
 
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import ArrayLike
 from rich.console import Console
 from rich.panel import Panel
-from sklearn.base import BaseEstimator
-from sklearn.utils._response import _check_response_method, _process_predict_proba, _process_decision_function
 
-from skore._sklearn.types import PositiveLabel
-from skore._utils._cache import Cache
-from skore._utils._cache_key import make_cache_key
-from skore._utils._measure_time import MeasureTime
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 

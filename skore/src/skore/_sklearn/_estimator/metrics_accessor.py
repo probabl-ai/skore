@@ -1118,7 +1118,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
-        prediction_pos_label=None
+        prediction_pos_label=None,
     ) -> (
         RocCurveDisplay
         | PrecisionRecallCurveDisplay
@@ -1425,9 +1425,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if self._parent._ml_task == "binary-classification":
             response_method = ("predict_proba", "decision_function")
             pred_pos_label = (
-                self._parent.estimator_.classes_[-1] if pos_label is None
-                else pos_label
-            )   
+                self._parent.estimator_.classes_[-1] if pos_label is None else pos_label
+            )
         else:
             response_method = "predict"
             pred_pos_label = None

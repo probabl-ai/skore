@@ -6,11 +6,11 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.figure import Figure
 from numpy.typing import ArrayLike, NDArray
+from sklearn.base import BaseEstimator
 from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
 from sklearn.utils._response import _check_response_method
 
 from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
-from skore._sklearn._base import BaseEstimator
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _ClassifierDisplayMixin,
@@ -420,16 +420,16 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         data_source = cast(DataSource, data_source)
 
         # FIXME? Usually, TP is the top-left cell
-        display_labels = tuple(estimator.classes_)
+        classes = estimator.classes_
 
         if ml_task == "binary-classification":
             # When provided, the positive label is set in second position:
-            if pos_label == display_labels[0]:
-                display_labels = (display_labels[1], display_labels[0])
+            if pos_label == classes[0]:
+                classes = (classes[1], classes[0])
             tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
                 y_true=y_true,
                 y_score=y_pred,
-                pos_label=display_labels[1],
+                pos_label=classes[1],
             )
             cms = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
         else:
@@ -437,7 +437,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 y_true=y_true,
                 y_pred=y_pred,
                 normalize=None,  # we will normalize later
-                labels=display_labels,
+                labels=classes,
             )[np.newaxis, ...]
             thresholds = np.array([np.nan])
 
@@ -459,9 +459,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         normalized_all_values = cm_all.reshape(-1)
 
         n_thresholds = len(thresholds)
-        n_classes = len(display_labels)
+        n_classes = len(classes)
         n_cells = n_classes * n_classes
 
+        display_labels = [str(label) for label in classes]
         true_labels = np.tile(np.repeat(display_labels, n_classes), n_thresholds)
         pred_labels = np.tile(np.tile(display_labels, n_classes), n_thresholds)
         threshold_values = np.repeat(thresholds, n_cells)

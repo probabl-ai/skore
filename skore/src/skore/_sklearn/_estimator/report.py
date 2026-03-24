@@ -4,7 +4,7 @@ import copy
 import html
 import warnings
 from itertools import product
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 import skrub
 from joblib import Parallel
@@ -12,8 +12,12 @@ from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
+from sklearn.utils._response import (
+    _check_response_method,
+    _process_decision_function,
+    _process_predict_proba,
+)
 from sklearn.utils.validation import check_is_fitted
-from sklearn.utils._response import _check_response_method, _process_predict_proba, _process_decision_function
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
@@ -261,25 +265,24 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             if response_methods == "auto":
                 response_methods = ["predict"]
-            
+
         data_sources = []
         if data_source in ("test", "both"):
             data_sources += [("test", self._X_test)]
         if data_source in ("train", "both") and self._X_train is not None:
             data_sources += [("train", self._X_train)]
- 
+
         keys_and_to_compute = [
             (
-                (data_source, response_method),
+                (cast(DataSource, ds), response_method),
                 (self._estimator, X, response_method),
             )
-            for response_method, (data_source, X) in product(
-                response_methods, data_sources
-            )
+            for response_method, (ds, X) in product(response_methods, data_sources)
         ]
 
         keys_and_to_compute = [
-            (key, data) for key, data in keys_and_to_compute
+            (key, data)
+            for key, data in keys_and_to_compute
             if make_cache_key(*key) not in self._cache
         ]
 
@@ -299,19 +302,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         # trigger the computation
         # do not mutate directly `self._cache` during the execution of Parallel
-        keys, to_compute = zip(*keys_and_to_compute)
+        keys, to_compute = zip(*keys_and_to_compute, strict=True)
 
-        for (data_source, response_method), (preds, time) in zip(keys, track(
-            parallel(
-                delayed(compute_predictions)(*args)
-                for args in to_compute
+        for (ds, response_method), (preds, time) in zip(
+            keys,
+            track(
+                parallel(delayed(compute_predictions)(*args) for args in to_compute),
+                description="Caching predictions",
+                total=(len(response_methods) * len(data_sources)),
             ),
-            description="Caching predictions",
-            total=(len(response_methods) * len(data_sources)),
-        )):
-            self._cache[make_cache_key(data_source, response_method)] = preds
+            strict=True,
+        ):
+            self._cache[make_cache_key(ds, response_method)] = preds
             time_name = f"{response_method}_time"
-            self._cache[make_cache_key(data_source, time_name)] = time
+            self._cache[make_cache_key(ds, time_name)] = time
 
     def get_predictions(
         self,
@@ -365,7 +369,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return self._get_predictions(
             data_source=data_source,
             response_method=response_method,
-            pos_label=self._pos_label
+            pos_label=self._pos_label,
         )
 
     def _get_predictions(
@@ -373,7 +377,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         *,
         data_source: Literal["train", "test"],
         response_method: str | list[str] | tuple[str, ...],
-        pos_label: PositiveLabel | None = None
+        pos_label: PositiveLabel | None = None,
     ) -> ArrayLike:
         """Get estimator's predictions, and adapt them to `pos_label` if needed.
 
@@ -382,34 +386,33 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if data_source not in ("train", "test"):
             raise ValueError(f"Invalid data source: {data_source}")
 
-        response_method = _check_response_method(self.estimator_, response_method).__name__
-        self.cache_predictions(
-            response_methods=[response_method],
-            data_source=data_source
-        )
-        cache_key = make_cache_key(data_source, response_method)
+        method_name = _check_response_method(self.estimator_, response_method).__name__
+        self.cache_predictions(response_methods=[method_name], data_source=data_source)
+        cache_key = make_cache_key(data_source, method_name)
         predictions = self._cache[cache_key]
 
-        if response_method == "predict" or pos_label is None:
+        if method_name == "predict" or pos_label is None:
             return predictions
 
         # Adapt to pos_label if needed:
         # NOTE: upstream callers make sure that pos_label is not None
         # only for binary classification
-        if response_method in ("predict_proba", "predict_log_proba"):
+        if method_name in ("predict_proba", "predict_log_proba"):
             return _process_predict_proba(
                 y_pred=predictions,
                 target_type="binary",
                 classes=self.estimator_.classes_,
-                pos_label=pos_label
+                pos_label=pos_label,
             )
-        elif response_method == "decision_function":
+        elif method_name == "decision_function":
             return _process_decision_function(
                 y_pred=predictions,
                 target_type="binary",
                 classes=self.estimator_.classes_,
-                pos_label=pos_label
+                pos_label=pos_label,
             )
+        else:
+            raise ValueError(f"Unexpected response_method: {method_name}")
 
     @property
     def ml_task(self):
