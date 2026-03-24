@@ -53,9 +53,14 @@ class DiagnosticResults:
 
     checks_ran : int
         Total number of diagnostic checks that were executed.
+
+    n_ignored : int
+        Total number of diagnostic checks that were ignored.
     """
 
-    def __init__(self, diagnostics: list[DiagnosticResult], checks_ran: int) -> None:
+    def __init__(
+        self, diagnostics: list[DiagnosticResult], checks_ran: int, n_ignored: int
+    ) -> None:
         self._diagnostics = diagnostics
         self._checks_ran = checks_ran
         if diagnostics:
@@ -64,7 +69,7 @@ class DiagnosticResults:
             self._messages = ["No issues were detected in your report!"]
         self.header = (
             f"Diagnostics: {len(self._diagnostics)} issue(s) detected, "
-            f"{self._checks_ran} check(s) ran."
+            f"{self._checks_ran} check(s) ran, {n_ignored} ignored."
         )
 
     @property
@@ -197,6 +202,9 @@ class ComparisonDiagnosticResults(DiagnosticResults):
 
     grouped : dict of {str: list of DiagnosticResult}
         detected issues keyed by report name
+
+    n_ignored : int
+        total number of diagnostic checks that were ignored
     """
 
     def __init__(
@@ -205,8 +213,9 @@ class ComparisonDiagnosticResults(DiagnosticResults):
         checks_ran: int,
         *,
         grouped: dict[str, list[DiagnosticResult]],
+        n_ignored: int,
     ) -> None:
-        super().__init__(diagnostics, checks_ran)
+        super().__init__(diagnostics, checks_ran, n_ignored)
         self._grouped = {
             name: _group_messages(diags) for name, diags in grouped.items()
         }

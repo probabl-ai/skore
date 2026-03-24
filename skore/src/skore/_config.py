@@ -7,12 +7,6 @@ from threading import current_thread, main_thread
 from threading import local as Local
 
 
-def _normalize_ignore_diagnostics(value):
-    if value is None:
-        return ()
-    return tuple(str(code).strip().upper() for code in value if str(code).strip())
-
-
 class LocalConfiguration(Local):
     def __init__(
         self,
@@ -20,12 +14,12 @@ class LocalConfiguration(Local):
         show_progress=True,
         plot_backend="matplotlib",
         diagnose=False,
-        ignore_diagnostics=(),
+        ignore_diagnostics: list[str] | tuple[str, ...] | None = None,
     ):
         self.show_progress = show_progress
         self.plot_backend = plot_backend
         self.diagnose = diagnose
-        self.ignore_diagnostics = _normalize_ignore_diagnostics(ignore_diagnostics)
+        self.ignore_diagnostics = ignore_diagnostics
 
 
 class Configuration:
@@ -50,9 +44,9 @@ class Configuration:
         Whether reports should run ``.diagnose()`` at initialization by default.
         Default is ``False``.
 
-    ignore_diagnostics : tuple of str
+    ignore_diagnostics : list of str or tuple of str or None
         Global diagnostic codes ignored by ``report.diagnose(...)``.
-        Default is empty.
+        Default is ``None``.
 
     Examples
     --------
@@ -63,7 +57,7 @@ class Configuration:
     >>> configuration.show_progress = False
     >>> configuration.plot_backend = "matplotlib"
     >>> configuration.diagnose = True
-    >>> configuration.ignore_diagnostics = ("SKD001",)
+    >>> configuration.ignore_diagnostics = ["SKD001"]
 
     **Temporary overrides** using the context manager (previous values are
     restored on exit):
@@ -73,7 +67,7 @@ class Configuration:
     ...     report.fit(X, y)
     >>> with configuration(plot_backend="plotly"):
     ...     report.plot()
-    >>> with configuration(diagnose=True, ignore_diagnostics=("SKD002",)):
+    >>> with configuration(diagnose=True, ignore_diagnostics=["SKD002"]):
     ...     report.diagnose()
     """
 
@@ -86,7 +80,7 @@ class Configuration:
             f"show_progress={self.local.show_progress}, "
             f"plot_backend={self.local.plot_backend!r}, "
             f"diagnose={self.local.diagnose}, "
-            f"ignore_diagnostics={self.local.ignore_diagnostics!r}"
+            f"ignore_diagnostics={self.local.ignore_diagnostics}"
             ")"
         )
 
@@ -148,14 +142,14 @@ class Configuration:
     @ignore_diagnostics.setter
     def ignore_diagnostics(self, value):
         if current_thread().ident != main_thread().ident:
-            self.local.ignore_diagnostics = _normalize_ignore_diagnostics(value)
+            self.local.ignore_diagnostics = value
             return
 
         self.local = LocalConfiguration(
             show_progress=self.local.show_progress,
             plot_backend=self.local.plot_backend,
             diagnose=self.local.diagnose,
-            ignore_diagnostics=_normalize_ignore_diagnostics(value),
+            ignore_diagnostics=value,
         )
 
     @contextmanager

@@ -165,6 +165,7 @@ def evaluate(
         )
     if hasattr(splitter, "get_n_splits") and splitter.get_n_splits() == 1:
         report = report.estimator_reports_[0]
+    diagnostics = report.diagnose()
     if diagnose or configuration.diagnose:
-        report._display_diagnose_results(report.diagnose())
+        report._display_diagnose_results(diagnostics)
     return report

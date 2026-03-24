@@ -533,6 +533,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 ]
                 for name, report in self.reports_.items()
             },
+            n_ignored=len(ignored),
         )
 
     def _get_help_title(self) -> str:

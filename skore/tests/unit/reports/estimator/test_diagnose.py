@@ -31,9 +31,7 @@ def test_diagnose_detects_overfitting():
         y_test=y_test,
     )
     messages = report.diagnose()
-    assert any(
-        "[SKD001]" in message and "issue detected" in message for message in messages
-    )
+    assert any("[SKD001]" in message for message in messages)
 
 
 def test_diagnose_detects_underfitting():
@@ -49,9 +47,7 @@ def test_diagnose_detects_underfitting():
         y_test=y_test,
     )
     messages = report.diagnose()
-    assert any(
-        "[SKD002]" in message and "issue detected" in message for message in messages
-    )
+    assert any("[SKD002]" in message for message in messages)
 
 
 def test_diagnose_ignore(monkeypatch, regression_train_test_split):

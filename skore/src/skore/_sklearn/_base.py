@@ -72,7 +72,7 @@ class _BaseReport(ReportHelpMixin):
         ignored: set[str],
     ) -> DiagnosticResults:
         """Build the results from the diagnostics. Overwritten in `ComparisonReport`."""
-        return DiagnosticResults(diagnostics, checks_ran)
+        return DiagnosticResults(diagnostics, checks_ran, n_ignored=len(ignored))
 
     def diagnose(
         self,
@@ -106,14 +106,14 @@ class _BaseReport(ReportHelpMixin):
         >>> X, y = make_classification(random_state=42)
         >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
         >>> report.diagnose()
-        Diagnostics: 1 issue(s) detected, 2 check(s) ran.
-        - [SKD002] Potential underfitting: issue detected. Train/test scores are on par
-        and not significantly better than the dummy baseline for 5/7 comparable metrics.
+        Diagnostics: 1 issue(s) detected, 2 check(s) ran, 0 ignored.
+        - [SKD002] Potential underfitting. Train/test scores are on par
+        and not significantly better than the dummy baseline for 6/7 comparable metrics.
         Read our documentation for more details:
         https://docs.skore.probabl.ai/dev/user_guide/diagnostics.html#skd002-underfitting.
         Mute with `ignore=['SKD002']`.
         >>> report.diagnose(ignore=["SKD002"])
-        Diagnostics: 0 issue(s) detected, 1 check(s) ran.
+        Diagnostics: 0 issue(s) detected, 1 check(s) ran, 1 ignored.
         - No issues were detected in your report!
         """
         ignored: set[str] = set()

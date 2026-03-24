@@ -70,13 +70,6 @@ def _is_significant_gap(metric_pair: MetricPair) -> bool:
     return False
 
 
-def _is_on_par(metric_pair: MetricPair) -> bool:
-    """Check whether train and test scores are within 5% of each other (floor 0.03)."""
-    return abs(metric_pair.train - metric_pair.test) <= _adaptive_threshold(
-        floor=0.03, fraction=0.05, references=(metric_pair.train, metric_pair.test)
-    )
-
-
 def _is_significantly_better(
     *, score: float, baseline: float, favorability: str
 ) -> bool:
@@ -140,7 +133,7 @@ def _baseline_metric_pairs(report: EstimatorReport) -> dict[MetricKey, MetricPai
     ``DummyRegressor(strategy="mean")`` for regression.
     """
     if "classification" in report.ml_task:
-        dummy_estimator = DummyClassifier(strategy="prior")
+        dummy_estimator = DummyClassifier(strategy="uniform")
     else:
         dummy_estimator = DummyRegressor(strategy="mean")
 
@@ -203,8 +196,8 @@ def _has_train_and_test(report: EstimatorReport) -> bool:
 class OverfittingCheck(DiagnosticCheck):
     """Detect potential overfitting via train/test score gaps.
 
-    A metric is flagged when the train-favored gap exceeds 10% of the
-    reference score (floor 3%).  The check fires when a strict majority
+    A metric is flagged when the train score is at least 10% better than the test score.
+    with a minimum difference of 0.03. The check fires when a strict majority
     of default predictive metrics are flagged.
     """
 
@@ -237,10 +230,9 @@ class OverfittingCheck(DiagnosticCheck):
 class UnderfittingCheck(DiagnosticCheck):
     """Detect potential underfitting by comparing to a dummy baseline.
 
-    A metric is flagged when train and test scores are within 5% of
-    each other (floor 0.03) AND neither exceeds the dummy baseline by
-    more than 3% of the baseline (floor 0.01). The check fires when a
-    strict majority of comparable metrics are flagged.
+    A metric is flagged when neither the train nor the test score exceeds the dummy
+    baseline by more than 3% (floor 0.01) in favorability direction.
+    The check fires when a strict majority of comparable metrics are flagged.
     """
 
     code = "SKD002"
@@ -257,8 +249,7 @@ class UnderfittingCheck(DiagnosticCheck):
         if not shared_metrics:
             return None
         votes = [
-            _is_on_par(context.estimator_metric_pairs[metric])
-            and not _is_significantly_better(
+            not _is_significantly_better(
                 score=context.estimator_metric_pairs[metric].train,
                 baseline=context.baseline_metric_pairs[metric].train,
                 favorability=context.estimator_metric_pairs[metric].favorability,

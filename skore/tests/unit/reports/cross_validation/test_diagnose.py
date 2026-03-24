@@ -21,9 +21,7 @@ def test_diagnose_aggregates_overfitting_across_splits():
         DecisionTreeClassifier(random_state=0), X, y, splitter=5
     )
     messages = report.diagnose()
-    assert any(
-        "[SKD001]" in message and "issue detected" in message for message in messages
-    )
+    assert any("[SKD001]" in message for message in messages)
     assert any("evaluated splits" in message for message in messages)
 
 
