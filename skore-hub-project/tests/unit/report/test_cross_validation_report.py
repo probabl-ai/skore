@@ -70,9 +70,9 @@ from skore_hub_project.report import (
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
     reports = [object] + getattr(object, "estimator_reports_", [])
-    reports_with_cache = (
+    reports_with_cache = [
         (report, report._cache) for report in reports if hasattr(report, "_cache")
-    )
+    ]
     object.clear_cache()
 
     try:

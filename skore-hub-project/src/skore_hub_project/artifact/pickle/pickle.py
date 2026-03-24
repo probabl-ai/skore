@@ -48,9 +48,9 @@ class Pickle(Artifact):
         The report is pickled without its cache, to avoid salting the checksum.
         """
         reports = [self.report] + getattr(self.report, "estimator_reports_", [])
-        reports_with_cache = (
+        reports_with_cache = [
             (report, report._cache) for report in reports if hasattr(report, "_cache")
-        )
+        ]
         self.report.clear_cache()
 
         try:
