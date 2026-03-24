@@ -133,7 +133,7 @@ def _baseline_metric_pairs(report: EstimatorReport) -> dict[MetricKey, MetricPai
     ``DummyRegressor(strategy="mean")`` for regression.
     """
     if "classification" in report.ml_task:
-        dummy_estimator = DummyClassifier(strategy="uniform")
+        dummy_estimator = DummyClassifier(strategy="prior")
     else:
         dummy_estimator = DummyRegressor(strategy="mean")
 

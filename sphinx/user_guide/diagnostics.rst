@@ -5,42 +5,31 @@ Diagnostics
 ===========
 
 `skore` diagnostics provide quick checks for common model quality pitfalls.
-Use :meth:`EstimatorReport.diagnose` and :meth:`CrossValidationReport.diagnose`
-to get concise findings, each with:
+Use :meth:`report.diagnose()` to get concise findings, each with:
 
 - a short explanation,
 - a stable diagnostic code,
 - and a link to this page.
 
-Muting a diagnostic in v1 is done per call:
+Diagnostics can be muted per call with `ignore=...`:
 
 .. code-block:: python
 
     report.diagnose(ignore=["SKD001"])
 
-You can also set a global ignore list:
+You can also set a global ignore list with `configuration.ignore_diagnostics = ...`:
 
 .. code-block:: python
 
     from skore import config
-    config.ignore_diagnostics = ("SKD001",)
+    config.ignore_diagnostics = ["SKD001"]
 
-
-Current coverage
-----------------
-
-- :class:`EstimatorReport`: full v1 diagnostics.
-- :class:`CrossValidationReport`: split-level aggregation of the same diagnostics.
-- :class:`ComparisonReport`: component-report diagnostics are shown one by one.
-
-
-Estimator and cross-validation behavior
----------------------------------------
-
-For a single estimator report, diagnostics are computed directly from train/test metrics.
-For a cross-validation report, diagnostics are computed per split and then aggregated
+For cross-validation reports, diagnostics are computed per split and then aggregated
 at report level; a diagnostic is reported as an issue only when it appears in a majority
 of evaluated splits.
+
+For comparison reports, diagnostics are built from each component report in the comparison.
+Diagnostics are grouped by component report and emitted as a single message.
 
 
 .. _skd001-overfitting:
@@ -51,13 +40,19 @@ SKD001 - Potential overfitting
 How it is detected
 ^^^^^^^^^^^^^^^^^^
 
-`skore` compares train and test scores across default predictive metrics
-(time metrics are excluded). For each metric:
+`skore` compares train and test scores across the report's default predictive metrics
+(timing metrics are excluded). A metric votes for overfitting when the train-favored
+gap exceeds an adaptive threshold:
 
-- if higher is better, a large train-vs-test drop votes toward overfitting;
-- if lower is better, a large test-vs-train increase votes toward overfitting.
+- **higher-is-better** metrics: ``train - test >= threshold``
+- **lower-is-better** metrics: ``test - train >= threshold``
 
-The diagnostic is flagged when a majority of comparable metrics vote for overfitting.
+The threshold adapts to the scale of the scores:
+``max(0.03, 0.10 * |reference|)`` where the reference is the train score for
+higher-is-better metrics and the test score for lower-is-better metrics.
+The floor of 0.03 prevents the threshold from vanishing on near-zero scores.
+
+The diagnostic is raised when a **strict majority** of metrics vote for overfitting.
 
 Why it matters
 ^^^^^^^^^^^^^^
@@ -82,12 +77,18 @@ SKD002 - Potential underfitting
 How it is detected
 ^^^^^^^^^^^^^^^^^^
 
-`skore` checks two signals together across default predictive metrics:
+`skore` checks two conditions together across the report's default predictive metrics.
+A metric votes for underfitting when **both** hold:
 
-- train and test scores are on par,
-- and both are not significantly better than a dummy baseline.
+1. **Train and test scores are on par**: the absolute difference is within
+   ``max(0.03, 0.05 * max(|train|, |test|))``.
+2. **Neither score significantly outperforms a dummy baseline**: a score is considered
+   significantly better than the baseline only when it exceeds
+   ``max(0.01, 0.03 * |baseline|)``. The baseline is a ``DummyClassifier(strategy="prior")``
+   for classification and a ``DummyRegressor(strategy="mean")`` for regression.
 
-The diagnostic is flagged when a majority of comparable metrics satisfy both conditions.
+The diagnostic is raised when a **strict majority** of comparable metrics (those present
+in both the estimator and dummy reports) vote for underfitting.
 
 Why it matters
 ^^^^^^^^^^^^^^
@@ -102,13 +103,3 @@ How to reduce the risk
 - improve data representation and features,
 - tune hyperparameters,
 - collect richer data if possible.
-
-
-.. _comparison-report-diagnostics:
-
-ComparisonReport diagnostics
-----------------------------
-
-Comparison diagnostics are built from each component report in the comparison.
-Each emitted diagnostic line includes the component name and keeps the original
-diagnostic code (`SKD001`, `SKD002`, ...).
