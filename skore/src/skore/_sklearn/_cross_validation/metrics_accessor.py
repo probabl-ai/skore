@@ -178,10 +178,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> from skore import evaluate
         >>> report = evaluate(estimator, X, y, splitter=2)
         >>> report.metrics.timings()
-                          mean       std
-        Fit time (s)       ...       ...
-        >>> report.cache_predictions(response_methods=["predict"])
-        >>> report.metrics.timings()
                                     mean       std
         Fit time (s)                 ...       ...
         Predict time test (s)        ...       ...
