@@ -326,11 +326,11 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             "splitter": splitter_metadata,
             "splits": splits,
             "train_target_distributions": train_target_distributions,
-            "train_target_distributions_sample_count": (
+            "train_target_distributions_sample_counts": (
                 train_target_distributions_sample_count
             ),
             "test_target_distributions": test_target_distributions,
-            "test_target_distributions_sample_count": (
+            "test_target_distributions_sample_counts": (
                 test_target_distributions_sample_count
             ),
         }
