@@ -44,12 +44,16 @@ deep_tree = DecisionTreeRegressor(random_state=42)
 # ==========================================================
 #
 # Every report exposes a :meth:`~skore.EstimatorReport.diagnose` method.
-# By default, diagnostics are **not** displayed at creation time — you call
-# :meth:`~skore.EstimatorReport.diagnose` yourself.
+# By default, diagnostics are **not** displayed at creation time: you call
+# :meth:`~skore.EstimatorReport.diagnose` yourself, as suggested by the diagnostics
+# panel in the report's HTML representation.
 
 from skore import evaluate
 
 linear_report = evaluate(linear, X, y)
+linear_report
+
+# %%
 linear_report.diagnose()
 
 # %%
