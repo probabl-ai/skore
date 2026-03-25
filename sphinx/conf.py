@@ -115,7 +115,7 @@ sphinx_gallery_conf = {
     "doc_module": "skore",
     # "reset_modules": (reset_mpl, "seaborn"),
     "abort_on_example_error": True,
-    "parallel": True,
+    "parallel": False,
 }
 
 # Build the HUB examples conditionally, only when credentials are available:
