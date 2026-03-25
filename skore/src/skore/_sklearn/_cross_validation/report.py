@@ -463,8 +463,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         """Return a string representation."""
         return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
 
-    def _repr_html_(self) -> str:
-        """HTML representation of the cross-validation report."""
+    def _html_repr_fragments(self) -> dict[str, str]:
+        """HTML snippets for the report body (metrics, estimator diagram, data table).
+
+        Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
+        one report's views in the comparison HTML repr.
+        """
         metrics_html = (
             self.metrics.summarize(data_source="test")
             .frame(aggregate=("mean", "std"), favorability=False)
@@ -488,6 +492,15 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
+        return {
+            "metrics_summary": metrics_html,
+            "estimator_display": estimator_html,
+            "table_report": table_report_html,
+        }
+
+    def _repr_html_(self) -> str:
+        """HTML representation of the cross-validation report."""
+        fragments = self._html_repr_fragments()
         container_id = f"skore-cross-validation-report-{uuid.uuid4().hex[:8]}"
         help_doc_url = get_documentation_url(obj=self, method_name="help")
         report_class_name = self.__class__.__name__
@@ -507,9 +520,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "metrics_summary": metrics_html,
-                "estimator_display": estimator_html,
-                "table_report": table_report_html,
+                **fragments,
+                "diagnostics": self._diagnostics_panel_html(),
             },
         )
 

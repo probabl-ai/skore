@@ -284,3 +284,24 @@ def test_create_estimator_report_invalid_name(
     err_msg = "Estimator with key InvalidEstimator not found in the comparison report."
     with pytest.raises(ValueError, match=err_msg):
         comparison_report.create_estimator_report(report_key="InvalidEstimator")
+
+
+@pytest.mark.parametrize(
+    "comparison_fixture",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_cross_validation_reports_binary_classification",
+    ],
+)
+def test_report_repr_html(comparison_fixture, request):
+    report = request.getfixturevalue(comparison_fixture)
+    html_out = report._repr_html_()
+    assert "skore-comparison-report-" in html_out
+    assert "ComparisonReport" in html_out
+    assert "DummyClassifier" in html_out
+    assert "skoreInitComparisonReport" in html_out
+    assert "report-hint-note" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-disclosure-title" in html_out
+    assert "ComparisonReport.metrics" in html_out
+    assert "skore-comparison-report-select" in html_out

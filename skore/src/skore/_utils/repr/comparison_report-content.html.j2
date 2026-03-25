@@ -1,0 +1,101 @@
+<div class="container">
+    <header class="title">ComparisonReport</header>
+    <details open class="report-disclosure">
+        <summary>
+            <span class="report-disclosure-title">Results</span>
+        </summary>
+        <p class="report-inline-note" role="note">
+            Investigate more with
+            <a
+                href="{{ metrics_accessor_doc_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="report-hint-note-link"
+            >{{ report_class_name }}.metrics</a>.
+        </p>
+        <div class="report-section report-metrics">{{ metrics_summary | safe }}</div>
+    </details>
+    <details class="report-disclosure">
+        <summary>
+            <span class="report-disclosure-title">Diagnostics</span>
+        </summary>
+        <div class="report-section report-diagnostics">
+            <div class="comparison-report-select-row">
+                <label for="{{ container_id }}-report-select-diagnostics">Selected report</label>
+                <select
+                    id="{{ container_id }}-report-select-diagnostics"
+                    class="skore-comparison-report-select"
+                    aria-label="Select which report's diagnostics to show"
+                >
+                    {% for row in comparison_reports %}
+                    <option value="{{ loop.index0 }}">{{ row.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <slot name="diagnostics"></slot>
+        </div>
+    </details>
+    <details class="report-disclosure">
+        <summary>
+            <span class="report-disclosure-title">Estimator</span>
+        </summary>
+        <p class="report-inline-note" role="note">
+            Investigate more with
+            <a
+                href="{{ inspection_accessor_doc_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="report-hint-note-link"
+            >{{ report_class_name }}.inspection</a>.
+        </p>
+        <div class="report-section report-estimator">
+            <div class="comparison-report-select-row">
+                <label for="{{ container_id }}-report-select-estimator">Selected report</label>
+                <select
+                    id="{{ container_id }}-report-select-estimator"
+                    class="skore-comparison-report-select"
+                    aria-label="Select which report's estimator to show"
+                >
+                    {% for row in comparison_reports %}
+                    <option value="{{ loop.index0 }}">{{ row.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <slot name="estimator-display"></slot>
+        </div>
+    </details>
+    <details class="report-disclosure">
+        <summary>
+            <span class="report-disclosure-title">Data</span>
+        </summary>
+        <p class="report-inline-note" role="note">
+            Explore the data for each compared report via that report's
+            <code>.data</code> accessor.
+        </p>
+        <div class="report-section report-data">
+            <div class="comparison-report-select-row">
+                <label for="{{ container_id }}-report-select-data">Selected report</label>
+                <select
+                    id="{{ container_id }}-report-select-data"
+                    class="skore-comparison-report-select"
+                    aria-label="Select which report's data view to show"
+                >
+                    {% for row in comparison_reports %}
+                    <option value="{{ loop.index0 }}">{{ row.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <slot name="table-report"></slot>
+        </div>
+    </details>
+    <p class="report-hint-note" role="note">
+        Use
+        <a
+            href="{{ help_doc_url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="report-hint-note-link"
+        >.help()</a>
+        for information on available functionality.
+    </p>
+</div>

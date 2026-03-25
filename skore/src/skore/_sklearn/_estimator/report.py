@@ -436,12 +436,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         {self.metrics.summarize().frame()}"""
 
-    def _repr_html_(self):
-        """HTML representation of estimator.
+    def _html_repr_fragments(self) -> dict[str, str]:
+        """HTML snippets for the report body (metrics, estimator diagram, data table).
 
-        This is redundant with the logic of `_repr_mimebundle_`. The latter
-        should be favored in the long term, `_repr_html_` is only
-        implemented for consumers who do not interpret `_repr_mimbundle_`.
+        Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
+        one report's views in the comparison HTML repr.
         """
         match self.X_train, self.X_test:
             case None, None:
@@ -482,6 +481,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
+        return {
+            "metrics_summary": metrics_html,
+            "estimator_display": estimator_html,
+            "table_report": table_report_html,
+        }
+
+    def _repr_html_(self) -> str:
+        """HTML representation of estimator.
+
+        This is redundant with the logic of `_repr_mimebundle_`. The latter
+        should be favored in the long term, `_repr_html_` is only
+        implemented for consumers who do not interpret `_repr_mimbundle_`.
+        """
+        fragments = self._html_repr_fragments()
         container_id = f"skore-estimator-report-{uuid.uuid4().hex[:8]}"
         help_doc_url = get_documentation_url(obj=self, method_name="help")
         report_class_name = self.__class__.__name__
@@ -501,10 +514,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "metrics_summary": metrics_html,
+                **fragments,
                 "diagnostics": self._diagnostics_panel_html(),
-                "estimator_display": estimator_html,
-                "table_report": table_report_html,
             },
         )
 
