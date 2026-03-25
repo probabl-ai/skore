@@ -163,7 +163,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - "auto": None for :class:`~skore.EstimatorReport` and \
               :class:`~skore.CrossValidationReport`, "estimator" for \
               :class:`~skore.ComparisonReport`
-            - "label": one subplot per class (multiclass only)
+            - "label": one subplot per class when plotting one-vs-rest curves
             - "estimator": one subplot per estimator (comparison only)
             - "data_source": one subplot per data source \
               (:class:`~skore.EstimatorReport` with both data sources only)
@@ -459,7 +459,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
             - `data_source`: Data source used (when `data_source="both"`)
-            - `label`: Class label (for multiclass-classification)
+            - `label`: Class label (when plotting one-vs-rest curves)
             - `threshold`: Decision threshold
             - `fpr`: False Positive Rate
             - `tpr`: True Positive Rate

@@ -156,7 +156,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
             - "auto": None for EstimatorReport and Cross-Validation Report, \
               "estimator" for ComparisonReport
-            - "label": one subplot per class (multiclass only)
+            - "label": one subplot per class when plotting one-vs-rest curves
             - "estimator": one subplot per estimator (comparison only)
             - "data_source": one subplot per data source (EstimatorReport with both \
                 data sources only)
@@ -447,7 +447,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
             - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
-            - `label`: Class label (for multiclass-classification)
+            - `label`: Class label (when plotting one-vs-rest curves)
             - `threshold`: Decision threshold
             - `precision`: Precision score at threshold
             - `recall`: Recall score at threshold

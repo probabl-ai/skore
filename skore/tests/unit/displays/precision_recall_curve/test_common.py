@@ -56,7 +56,7 @@ class TestPrecisionRecallCurveDisplay:
             expected_index.append("split")
         if "comparison" in fixture_prefix:
             expected_index.append("estimator")
-        if task == "multiclass":
+        if task == "multiclass" or display.pos_label is None:
             expected_index.append("label")
 
         check_frame_structure(frame, expected_index, expected_columns)
@@ -99,16 +99,15 @@ class TestPrecisionRecallCurveDisplay:
         )
         ax = ax[0]
         assert ax.get_lines()[0].get_color() == sns.color_palette()[0]
-        relplot_kwargs = (
-            {"palette": ["red", "green", "blue"]}
-            if task == "multiclass"
-            else {"color": "red"}
-        )
+        palette = ["red", "green", "blue"] if task == "multiclass" else ["red", "green"]
+        relplot_kwargs = {"palette": palette}
 
         display.set_style(relplot_kwargs=relplot_kwargs)
         fig = display.plot()
         ax = fig.axes[0]
-        assert ax.get_lines()[0].get_color() == "red"
+        actual_colors = {line.get_color() for line in ax.get_lines()}
+        expected_colors = set(palette[: 3 if task == "multiclass" else 2])
+        assert actual_colors == expected_colors
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_plot_structure(self, pyplot, fixture_prefix, task, request):
@@ -122,7 +121,7 @@ class TestPrecisionRecallCurveDisplay:
         ax = ax[0]
 
         n_splits = 2 if "cross_validation" in fixture_prefix else 1
-        n_labels = 3 if task == "multiclass" else 1
+        n_labels = 3 if task == "multiclass" else 2
         n_lines = n_splits * n_labels
         assert len(ax.get_lines()) == n_lines
 

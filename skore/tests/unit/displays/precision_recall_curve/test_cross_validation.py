@@ -14,13 +14,15 @@ def test_legend_binary_classification(
     legend = ax[0].get_legend()
     assert legend is not None
     legend_texts = [text.get_text() for text in legend.get_texts()]
-    plot_data = display.frame(with_average_precision=True)
-    average_precision = plot_data["average_precision"]
-    assert (
-        legend_texts[0] == f"AP={average_precision.mean():.2f}"
-        f"±{average_precision.std():.2f}"
-    )
-    assert len(legend_texts) == 1
+    labels = display.precision_recall["label"].cat.categories
+    for label_idx, label in enumerate(labels):
+        plot_data = display.frame(with_average_precision=True)
+        average_precision = plot_data.query(f"label == {label}")["average_precision"]
+        assert (
+            legend_texts[label_idx] == f"{label} (AP={average_precision.mean():.2f}"
+            f"±{average_precision.std():.2f})"
+        )
+    assert len(legend_texts) == len(labels)
 
 
 def test_legend_multiclass_classification(
@@ -49,7 +51,7 @@ def test_legend_multiclass_classification(
 @pytest.mark.parametrize(
     "fixture_name, valid_values",
     [
-        ("cross_validation_reports_binary_classification", ["None", "auto"]),
+        ("cross_validation_reports_binary_classification", ["None", "auto", "label"]),
         (
             "cross_validation_reports_multiclass_classification",
             ["None", "auto", "label"],
@@ -73,7 +75,7 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
 @pytest.mark.parametrize(
     "fixture_name, subplot_by_tuples",
     [
-        ("cross_validation_reports_binary_classification", [(None, 0)]),
+        ("cross_validation_reports_binary_classification", [(None, 0), ("label", 2)]),
         (
             "cross_validation_reports_multiclass_classification",
             [("label", 3)],
