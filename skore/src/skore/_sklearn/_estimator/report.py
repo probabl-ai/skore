@@ -5,7 +5,7 @@ import html
 import uuid
 import warnings
 from itertools import product
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import skrub
 from joblib import Parallel
@@ -180,6 +180,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:  # fit is False
             self._estimator = self._copy_estimator(estimator)
 
+        if X_test is None:
+            raise ValueError(
+                "The test data is required to create an estimator report. "
+            )
+
         # private storage to ensure properties are read-only
         self._X_train = X_train
         self._y_train = y_train
@@ -342,9 +347,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         (25,)
         """
         if data_source == "test":
-            X_ = self._X_test
+            X_ = cast(ArrayLike, self._X_test)
         elif data_source == "train":
-            X_ = self._X_train
+            X_ = cast(ArrayLike, self._X_train)
         else:
             raise ValueError(f"Invalid data source: {data_source}")
 

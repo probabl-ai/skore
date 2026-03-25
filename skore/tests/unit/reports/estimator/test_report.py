@@ -326,9 +326,8 @@ def test_has_no_deep_copy():
 
 
 @pytest.mark.parametrize("with_train", [False, True])
-@pytest.mark.parametrize("with_test", [False, True])
 @pytest.mark.parametrize("bad_estimator", [False, True])
-def test_report_repr_html(with_train, with_test, bad_estimator):
+def test_report_repr_html(with_train, bad_estimator):
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -341,8 +340,7 @@ def test_report_repr_html(with_train, with_test, bad_estimator):
     kwargs = {}
     if with_train:
         kwargs.update(X_train=X_train, y_train=y_train)
-    if with_test:
-        kwargs.update(X_test=X_test, y_test=y_test)
+    kwargs.update(X_test=X_test, y_test=y_test)
     report = EstimatorReport(estimator, fit=False, **kwargs)
     html_out = report._repr_html_()
     assert "skore-estimator-report-" in html_out
