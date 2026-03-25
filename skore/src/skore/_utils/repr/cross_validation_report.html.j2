@@ -5,13 +5,12 @@
 {% include "help.css" %}
 {% include "report.css" %}
         </style>
-        {% include "estimator_report-content.html.j2" %}
+        {% include "cross_validation_report-content.html.j2" %}
     </template>
 
     <div id="{{ container_id }}">
         <div slot="estimator-display">{{ estimator_display | safe }}</div>
         <div slot="table-report">{{ table_report | safe }}</div>
-        <div slot="diagnostics">{{ diagnostics | safe }}</div>
     </div>
 
     <script>

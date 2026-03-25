@@ -51,7 +51,6 @@ class CrossValidationReport(Protocol):
     _hash: int
     cache_predictions: Any
     clear_cache: Any
-    _cache: Any
     metrics: Any
     data: Any
     estimator_reports_: Any
