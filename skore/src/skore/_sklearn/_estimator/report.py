@@ -40,6 +40,14 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
+def _compute_predictions(estimator, X, response_method):
+    prediction_method = _check_response_method(estimator, response_method)
+    with MeasureTime() as predict_time:
+        predictions = prediction_method(X)
+
+    return predictions, predict_time()
+
+
 class EstimatorReport(_BaseReport, DirNamesMixin):
     """Report for a fitted estimator.
 
@@ -293,13 +301,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             **_validate_joblib_parallel_params(n_jobs=n_jobs, return_as="generator")
         )
 
-        def compute_predictions(estimator, X, response_method):
-            prediction_method = _check_response_method(estimator, response_method)
-            with MeasureTime() as predict_time:
-                predictions = prediction_method(X)
-
-            return predictions, predict_time()
-
         # trigger the computation
         # do not mutate directly `self._cache` during the execution of Parallel
         keys, to_compute = zip(*keys_and_to_compute, strict=True)
@@ -307,7 +308,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         for (ds, response_method), (preds, time) in zip(
             keys,
             track(
-                parallel(delayed(compute_predictions)(*args) for args in to_compute),
+                parallel(delayed(_compute_predictions)(*args) for args in to_compute),
                 description="Caching predictions",
                 total=(len(response_methods) * len(data_sources)),
             ),
