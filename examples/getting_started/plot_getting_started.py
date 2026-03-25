@@ -126,7 +126,6 @@ from skore import evaluate
 simple_cv_report = evaluate(
     simple_model, X_experiment, y_experiment, pos_label="good", splitter=5
 )
-simple_cv_report
 
 # %%
 # Skore reports allow us to structure the statistical information
