@@ -344,4 +344,11 @@ def test_report_repr_html(with_train, with_test, bad_estimator):
     if with_test:
         kwargs.update(X_test=X_test, y_test=y_test)
     report = EstimatorReport(estimator, fit=False, **kwargs)
-    assert "DummyClassifier" in report._repr_html_()
+    html_out = report._repr_html_()
+    assert "skore-estimator-report-" in html_out
+    assert "DummyClassifier" in html_out
+    assert "skoreInitEstimatorReport" in html_out
+    assert "report-hint-note" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-disclosure-title" in html_out
+    assert "EstimatorReport.metrics" in html_out
