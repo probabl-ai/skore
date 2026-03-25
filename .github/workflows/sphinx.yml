@@ -230,6 +230,10 @@ jobs:
           path: skore/venv
           key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
 
+      - name: Install graphviz
+        run: |
+          apt install -y graphviz
+
       - name: Install all packages from local branch
         run: |
           python -m pip install --force-reinstall --no-deps skore/
