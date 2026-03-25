@@ -746,8 +746,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
-        # `pos_label`. Since we get the predictions with `get_response_method`, we
-        # can pass any `pos_label`, they will lead to the same result.
+        # `pos_label`. We make sure to pass the same `pos_label` to `_get_predictions`
+        # than to the metric.
         pos_label = self._parent.estimator_.classes_[-1]
         result = self._compute_metric_scores(
             sklearn.metrics.brier_score_loss,
