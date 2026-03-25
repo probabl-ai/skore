@@ -6,6 +6,7 @@ import warnings
 from itertools import product
 from typing import TYPE_CHECKING, Literal, cast
 
+import numpy as np
 import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
@@ -367,10 +368,18 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> predictions.shape
         (25,)
         """
+        pos_label = self.pos_label
+        if (
+            pos_label is None
+            and self.ml_task == "binary-classification"
+            and response_method == "decision_function"
+        ):
+            # we do this to follow scikit-learn convention:
+            pos_label = self.estimator_.classes_[-1]
         return self._get_predictions(
             data_source=data_source,
             response_method=response_method,
-            pos_label=self._pos_label,
+            pos_label=pos_label,
         )
 
     def _get_predictions(
@@ -383,22 +392,33 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """Get estimator's predictions, and adapt them to `pos_label` if needed.
 
         Internal helpers used by the metrics.
+
+        Returns
+        -------
+        np.ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predictions.
+            The shape is (n_samples,) if:
+                - response_method is "predict"
+                - OR if pos_label is specified (binary-classification only)
+            Otherwise it's (n_samples, n_classes)
         """
         if data_source not in ("train", "test"):
             raise ValueError(f"Invalid data source: {data_source}")
+        if pos_label is not None and self.ml_task != "binary-classification":
+            raise ValueError(f"Cannot specify a `pos_label` for task {self.ml_task}")
 
         method_name = _check_response_method(self.estimator_, response_method).__name__
         self.cache_predictions(response_methods=[method_name], data_source=data_source)
         cache_key = make_cache_key(data_source, method_name)
         predictions = self._cache[cache_key]
 
-        if method_name == "predict" or pos_label is None:
+        if method_name == "predict":
             return predictions
-
-        # Adapt to pos_label if needed:
-        # NOTE: upstream callers make sure that pos_label is not None
-        # only for binary classification
+        # Adapt to pos_label / check shape if needed:
         if method_name in ("predict_proba", "predict_log_proba"):
+            if pos_label is None:
+                return predictions
+            # Adapt to pos_label:
             return _process_predict_proba(
                 y_pred=predictions,
                 target_type="binary",
@@ -406,12 +426,24 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 pos_label=pos_label,
             )
         elif method_name == "decision_function":
-            return _process_decision_function(
-                y_pred=predictions,
-                target_type="binary",
-                classes=self.estimator_.classes_,
-                pos_label=pos_label,
-            )
+            if pos_label is not None:
+                # Adapt to pos_label:
+                return _process_decision_function(
+                    y_pred=predictions,
+                    target_type="binary",
+                    classes=self.estimator_.classes_,
+                    pos_label=pos_label,
+                )
+
+            if self.ml_task == "multiclass-classification":
+                _, d = predictions.shape
+                if d != len(self.estimator_.classes_):
+                    raise ValueError(f"Unexpected decision function shape[1]: {d}")
+                return predictions
+            # scikit-learn returns a (n_samples,) array that corresponds to classes[-1]
+            # we normalize to a (n_samples, 2) shape with similar semantic than
+            # predict_proba
+            return np.hstack((-predictions, predictions)).T
         else:
             raise ValueError(f"Unexpected response_method: {method_name}")
 

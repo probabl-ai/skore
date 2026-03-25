@@ -7,8 +7,9 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
-from numpy.typing import ArrayLike
+from numpy.typing import ArrayLike, NDArray
 from pandas import CategoricalDtype, DataFrame
+from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import (
     _check_pos_label_consistency,
     check_consistent_length,
@@ -487,3 +488,11 @@ def _concat_frames_with_column_data(
         frame = frame.astype(dict.fromkeys(categorical_columns, "category"))
 
     return frame
+
+
+def _one_hot_encode(y_true, classes) -> NDArray:
+    label_binarizer = LabelBinarizer().fit(classes)
+    y_true_onehot: NDArray = label_binarizer.transform(y_true)
+    if len(classes) == 2:
+        y_true_onehot = np.hstack(((1 - y_true_onehot), y_true_onehot))
+    return y_true_onehot

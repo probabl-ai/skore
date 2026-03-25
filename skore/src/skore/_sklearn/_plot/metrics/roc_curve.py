@@ -1,14 +1,12 @@
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
-import numpy as np
 import seaborn as sns
 from matplotlib.figure import Figure
 from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame, Series
 from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
-from sklearn.preprocessing import LabelBinarizer
 
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
@@ -17,6 +15,7 @@ from skore._sklearn._plot.utils import (
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
     _get_curve_plot_columns,
+    _one_hot_encode,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import (
@@ -370,14 +369,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if pos_label is None:
             classes = estimator.classes_
             # OvR fashion to collect fpr, tpr, and roc_auc
-            label_binarizer = LabelBinarizer().fit(classes)
-            y_true_onehot: NDArray = label_binarizer.transform(y_true)
-            if len(classes) == 2:
-                y_true_onehot = np.hstack(((1 - y_true_onehot), y_true_onehot))
+            y_true_onehot = _one_hot_encode(y_true, classes)
             y_pred_arr = cast(NDArray, y_pred)
-            if y_pred_arr.ndim == 1:
-                # binary + decision function
-                y_pred_arr = np.vstack((-y_pred_arr, y_pred_arr)).T
 
             displays = [
                 cls._compute_data_for_display(
