@@ -78,9 +78,7 @@ def test_multiclass_str_labels_precision_recall_plot(pyplot):
     report_1 = CrossValidationReport(LogisticRegression(max_iter=500), X=X, y=y)
     report_2 = CrossValidationReport(LogisticRegression(max_iter=1000), X=X, y=y)
     report = ComparisonReport([report_1, report_2])
-
-    display = report.metrics.precision_recall()
-    display.plot()
+    report.metrics.precision_recall().plot()
 
 
 @pytest.mark.parametrize(
@@ -127,8 +125,10 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.precision_recall()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
         if subplot_by is None:
-            assert isinstance(display.ax_, mpl.axes.Axes)
+            assert len(axes) == 1
+            assert isinstance(axes[0], mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            assert len(axes) == expected_len

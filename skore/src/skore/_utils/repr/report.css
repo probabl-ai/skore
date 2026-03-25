@@ -1,0 +1,195 @@
+.report-hint-note {
+    margin: 0.85em 0 0;
+    padding: 0.65em 0.5em 0;
+    border-top: 1px solid color-mix(in srgb, var(--color-orange) 45%, transparent);
+    color: var(--color-text);
+    font-size: 11px;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.45;
+    opacity: 0.88;
+}
+
+.report-hint-note::before {
+    content: "Note";
+    display: block;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-orange);
+    opacity: 0.9;
+    margin-bottom: 0.35em;
+}
+
+.report-hint-note-link {
+    color: var(--color-blue);
+    font-style: normal;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-underline-offset: 0.2em;
+    cursor: help;
+}
+
+.report-hint-note-link:hover {
+    background-color: var(--color-blue-hover);
+    border-radius: 2px;
+}
+
+.report-inline-note {
+    margin: 0.5em 0 0;
+    color: var(--color-text);
+    font-size: 11px;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.4;
+    opacity: 0.88;
+    white-space: nowrap;
+}
+
+.report-disclosure {
+    color: var(--color-text);
+}
+
+.report-disclosure > summary {
+    cursor: pointer;
+    user-select: none;
+    color: var(--color-blue);
+    font-weight: bold;
+    line-height: 1.5em;
+    display: flex;
+    align-items: center;
+    gap: 0.45em;
+    list-style: none;
+    padding: 0.2em 0.15em;
+    margin: 0;
+}
+
+.report-disclosure-title {
+    position: relative;
+    font-weight: inherit;
+    color: inherit;
+}
+
+.report-disclosure-title.method-tooltip {
+    cursor: pointer;
+}
+
+.report-disclosure-title.method-tooltip:hover {
+    background-color: var(--color-blue-hover);
+    border-radius: 2px;
+}
+
+.report-disclosure-title:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+.report-disclosure-title.method-tooltip:focus-within .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.report-disclosure-title .tooltip-text {
+    width: max-content;
+    max-width: calc(100vw - 2rem);
+    white-space: nowrap;
+    overflow-x: auto;
+    box-sizing: border-box;
+    font-weight: 400;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    border: 1px solid var(--color-orange);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.report-disclosure-title .tooltip-text::before {
+    border-right-color: var(--color-orange);
+}
+
+.report-tooltip-accessor-link {
+    color: var(--color-orange);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.report-tooltip-accessor-link:hover {
+    text-decoration-thickness: 2px;
+}
+
+.report-disclosure > summary::-webkit-details-marker {
+    display: none;
+}
+
+.report-disclosure > summary::before {
+    content: "";
+    display: block;
+    width: 0.45em;
+    height: 0.45em;
+    flex-shrink: 0;
+    border-right: 2px solid var(--color-blue);
+    border-bottom: 2px solid var(--color-blue);
+    transform: rotate(-45deg);
+    transition: transform 0.12s ease;
+}
+
+.report-disclosure[open] > summary::before {
+    transform: rotate(45deg);
+}
+
+.report-disclosure > summary:hover {
+    background-color: var(--color-blue-hover);
+    border-radius: 4px;
+}
+
+.report-disclosure > .report-section {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.report-metrics table.dataframe {
+    border: none;
+    border-collapse: collapse;
+    border-spacing: 0;
+    color: var(--color-text);
+    font-size: 12px;
+    font-family: sans-serif;
+    margin: 0.5em 0;
+    min-width: min(100%, 640px);
+}
+
+.report-metrics table.dataframe thead {
+    border-bottom: 1px solid var(--color-text);
+}
+
+.report-metrics table.dataframe th,
+.report-metrics table.dataframe td {
+    text-align: right;
+    padding: 0.35em 0.75em;
+    border: none;
+    vertical-align: middle;
+}
+
+.report-metrics table.dataframe th {
+    font-weight: 600;
+    text-align: right;
+}
+
+.report-metrics table.dataframe tbody tr:nth-child(even) {
+    background-color: var(--color-row-stripe);
+}
+
+.report-metrics table.dataframe tbody tr:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.report-estimator {
+    padding-top: 0.5em;
+}
+
+.report-data {
+    padding-top: 0.5em;
+}

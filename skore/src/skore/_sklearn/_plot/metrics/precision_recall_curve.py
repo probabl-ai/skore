@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import seaborn as sns
+from matplotlib.figure import Figure
 from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame, Series
 from sklearn.base import BaseEstimator
@@ -66,17 +67,6 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
         The type of report.
-
-    Attributes
-    ----------
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the precision-recall curve.
-
-    figure_ : matplotlib figure
-        The figure on which the precision-recall curve is plotted.
-
-    ax_ : matplotlib axes or ndarray of axes
-        The axes on which the precision-recall curve is plotted.
 
     Examples
     --------
@@ -154,7 +144,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         subplot_by: Literal["auto", "label", "estimator", "data_source"]
         | None = "auto",
         despine: bool = True,
-    ) -> None:
+    ) -> Figure:
         """Plot visualization.
 
         Parameters
@@ -173,6 +163,11 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the precision-recall curve.
 
         Notes
         -----
@@ -201,7 +196,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         subplot_by: Literal["auto", "label", "estimator", "data_source"]
         | None = "auto",
         despine: bool = True,
-    ) -> None:
+    ) -> Figure:
         """Matplotlib implementation of the `plot` method."""
         plot_data = self.frame(with_average_precision=True)
 
@@ -236,7 +231,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if style:
             relplot_kwargs["dashes"] = {"train": (5, 5), "test": ""}
 
-        self.facet_ = sns.relplot(
+        facet = sns.relplot(
             data=plot_data,
             kind="line",
             estimator=None,
@@ -245,17 +240,17 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             **_validate_style_kwargs(relplot_kwargs, self._default_relplot_kwargs),
         )
 
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.flatten()
+        figure, axes = facet.figure, facet.axes.flatten()
 
         # Create space under the plot to fit the manually created legends.
         n_legend_rows = plot_data[hue].nunique() if hue else 1
         legend_height_inches = n_legend_rows * 0.25 + 1
-        current_height = self.figure_.get_figheight()
+        current_height = figure.get_figheight()
         new_height = current_height + legend_height_inches
-        self.figure_.set_figheight(new_height)
+        figure.set_figheight(new_height)
 
         # Build a legend for each subplot.
-        for idx, ax in enumerate(self.ax_):
+        for idx, ax in enumerate(axes):
             col_value = (
                 relplot_kwargs["col_order"][idx]
                 if relplot_kwargs["col_order"]
@@ -292,16 +287,15 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         title = "Precision-Recall Curve"
         if "comparison" not in self.report_type:
             title += f" for {self.precision_recall['estimator'].cat.categories.item()}"
-        self.figure_.suptitle(
+        figure.suptitle(
             "\n".join(filter(None, [title, info_pos_label, info_data_source]))
         )
 
         if despine:
-            for ax in self.ax_:
+            for ax in axes:
                 _despine_matplotlib_axis(ax)
 
-        if len(self.ax_) == 1:
-            self.ax_ = self.ax_[0]
+        return figure
 
     @classmethod
     def _compute_data_for_display(

@@ -2,8 +2,10 @@ import contextlib
 import copy
 from typing import Any, Literal
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import r2_score
@@ -161,8 +163,8 @@ class MockAccessor(_BaseAccessor):
 class MockDisplay:
     """Minimal display for testing, following the Display protocol."""
 
-    def plot(self, **kwargs: Any) -> None:
-        pass
+    def plot(self, **kwargs: Any) -> Figure:
+        return plt.figure()
 
     def set_style(
         self, *, policy: Literal["override", "update"] = "update", **kwargs: Any

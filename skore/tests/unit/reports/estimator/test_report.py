@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
@@ -321,3 +322,32 @@ def test_has_no_deep_copy():
             y_train=y_train,
             y_test=y_test,
         )
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+@pytest.mark.parametrize("with_test", [False, True])
+@pytest.mark.parametrize("bad_estimator", [False, True])
+def test_report_repr_html(with_train, with_test, bad_estimator):
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    class DummyClassifierBadRepr(DummyClassifier):
+        def _repr_html_(self):
+            raise TypeError("error")
+
+    estimator = DummyClassifierBadRepr() if bad_estimator else DummyClassifier()
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    if with_test:
+        kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    html_out = report._repr_html_()
+    assert "skore-estimator-report-" in html_out
+    assert "DummyClassifier" in html_out
+    assert "skoreInitEstimatorReport" in html_out
+    assert "report-hint-note" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-disclosure-title" in html_out
+    assert "EstimatorReport.metrics" in html_out

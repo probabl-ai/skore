@@ -8,6 +8,16 @@ from skore import ComparisonReport, EstimatorReport, PermutationImportanceDispla
 from skore._utils._testing import check_cache_changed
 
 
+def _children_cache_size(report):
+    sizes = {
+        len(estimator_report._cache) for estimator_report in report.reports_.values()
+    }
+    msg = "In this test, we expect all children report to have the same cache size"
+    assert len(sizes) == 1, msg
+    (size,) = sizes
+    return size
+
+
 @pytest.fixture
 def comparison_report_linear(regression_train_test_split):
     X_train, X_test, y_train, y_test = regression_train_test_split
@@ -59,43 +69,40 @@ def test_returns_display(regression_train_test_split, estimator):
 
 def test_cache_behavior(comparison_report_linear):
     report = comparison_report_linear
-    assert report._cache == {}
+    assert _children_cache_size(report) == 0
 
-    with check_cache_changed(report._cache):
+    child_report = next(iter(report.reports_.values()))
+    with check_cache_changed(child_report._cache):
         report.inspection.permutation_importance(seed=42, n_repeats=2)
 
-    assert len(report._cache) == 1
+    assert _children_cache_size(report) == 1
 
 
 def test_cache_seed_int(comparison_report_linear):
     report = comparison_report_linear
-    assert report._cache == {}
+    assert _children_cache_size(report) == 0
 
     display_1 = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test"
     )
-    assert len(report._cache) == 1
+    assert _children_cache_size(report) == 1
 
     display_2 = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test"
     )
     assert display_1.importances.equals(display_2.importances)
-    assert len(report._cache) == 1
+    assert _children_cache_size(report) == 1
 
 
 def test_cache_seed_none(comparison_report_linear):
     report = comparison_report_linear
-    assert report._cache == {}
+    assert _children_cache_size(report) == 0
 
     report.inspection.permutation_importance(n_repeats=2, data_source="test")
-    assert len(report._cache) == 1
+    assert _children_cache_size(report) == 1
 
-    display_2 = report.inspection.permutation_importance(
-        n_repeats=2, data_source="test"
-    )
-    assert len(report._cache) == 1
-    cached_display = next(iter(report._cache.values()))
-    assert cached_display is display_2
+    report.inspection.permutation_importance(n_repeats=2, data_source="test")
+    assert _children_cache_size(report) == 1
 
 
 def test_cache_parameter_in_cache(comparison_report_linear):
@@ -104,7 +111,8 @@ def test_cache_parameter_in_cache(comparison_report_linear):
         seed=42, n_repeats=2, data_source="test", metric="r2"
     )
 
-    with check_cache_changed(report._cache):
+    child_report = next(iter(report.reports_.values()))
+    with check_cache_changed(child_report._cache):
         report.inspection.permutation_importance(
             seed=42,
             n_repeats=2,

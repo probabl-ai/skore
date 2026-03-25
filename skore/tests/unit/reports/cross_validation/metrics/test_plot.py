@@ -54,13 +54,13 @@ def test_display_binary_classification_pos_label(
 
     report = CrossValidationReport(classifier, X, y, pos_label="A")
     display = getattr(report.metrics, metric)()
-    display.plot()
-    assert "Positive label: A" in display.figure_.get_suptitle()
+    fig = display.plot()
+    assert "Positive label: A" in fig.get_suptitle()
 
     report = CrossValidationReport(classifier, X, y, pos_label="B")
     display = getattr(report.metrics, metric)()
-    display.plot()
-    assert "Positive label: B" in display.figure_.get_suptitle()
+    fig = display.plot()
+    assert "Positive label: B" in fig.get_suptitle()
 
 
 def test_seed_none(linear_regression_data):
@@ -69,5 +69,9 @@ def test_seed_none(linear_regression_data):
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
     report.metrics.prediction_error(seed=None)
-    # skore should store the y_pred of the internal estimators, but not the plot
-    assert report._cache == {}
+    # skore stores the predictions of the internal estimators, but not the
+    # concatenated cross-validation display.
+    assert all(
+        len(estimator_report._cache) == 2
+        for estimator_report in report.estimator_reports_
+    )
