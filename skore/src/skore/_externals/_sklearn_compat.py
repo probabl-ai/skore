@@ -875,19 +875,6 @@ if sklearn_version < parse_version("1.6"):
         See Also
         --------
         None: No similar entry in the scikit-learn documentation.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import make_classification
-        >>> from sklearn.frozen import FrozenEstimator
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> X, y = make_classification(random_state=0)
-        >>> clf = LogisticRegression(random_state=0).fit(X, y)
-        >>> frozen_clf = FrozenEstimator(clf)
-        >>> frozen_clf.fit(X, y)  # No-op
-        FrozenEstimator(estimator=LogisticRegression(random_state=0))
-        >>> frozen_clf.predict(X)  # Predictions from `clf.predict`
-        array(...)
         """
 
         def __init__(self, estimator):
