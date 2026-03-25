@@ -232,7 +232,7 @@ jobs:
 
       - name: Install graphviz
         run: |
-          apt install -y graphviz
+          sudo apt-get install -y graphviz
 
       - name: Install all packages from local branch
         run: |
