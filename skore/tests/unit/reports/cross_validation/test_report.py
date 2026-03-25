@@ -114,16 +114,15 @@ def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
     """Check that calling cache_predictions fills the cache."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
+    for estimator_report in report.estimator_reports_:
+        assert estimator_report._cache == {}
+
     report.cache_predictions(n_jobs=n_jobs)
-    # no effect on the actual cache of the cross-validation report but only on the
-    # underlying estimator reports
-    assert report._cache == {}
 
     for estimator_report in report.estimator_reports_:
         assert len(estimator_report._cache) == expected_n_keys
 
     report.clear_cache()
-    assert report._cache == {}
     for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
 
@@ -226,7 +225,6 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
     est_report = cv_report.create_estimator_report()
 
     assert isinstance(est_report, EstimatorReport)
-    assert est_report._parent_hash == cv_report._hash
     assert joblib.hash(est_report.X_train) == joblib.hash(X_experiment)
     assert joblib.hash(est_report.y_train) == joblib.hash(y_experiment)
     assert est_report.X_test is None
@@ -238,7 +236,6 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
     )
 
     assert isinstance(est_report_with_test, EstimatorReport)
-    assert est_report_with_test._parent_hash == cv_report._hash
     assert joblib.hash(est_report_with_test.X_train) == joblib.hash(X_experiment)
     assert joblib.hash(est_report_with_test.y_train) == joblib.hash(y_experiment)
     assert joblib.hash(est_report_with_test.X_test) == joblib.hash(X_heldout)

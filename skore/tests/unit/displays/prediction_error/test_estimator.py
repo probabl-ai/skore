@@ -29,8 +29,8 @@ def test_legend_actual_vs_predicted(pyplot, task, n_legend_entries, request):
     """Check the legend when kind is actual_vs_predicted."""
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.metrics.prediction_error()
-    display.plot(kind="actual_vs_predicted")
-    legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+    fig = display.plot(kind="actual_vs_predicted")
+    legend = fig.axes[len(fig.axes) // 2].get_legend()
     legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == n_legend_entries
     if task == "multioutput_regression":
@@ -77,11 +77,13 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.prediction_error()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
         if subplot_by is None:
-            assert isinstance(display.ax_, mpl.axes.Axes)
+            assert len(axes) == 1
+            assert isinstance(axes[0], mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            assert len(axes) == expected_len
 
 
 @pytest.mark.parametrize("task", ["regression", "multioutput_regression"])
@@ -89,10 +91,11 @@ def test_subplot_by_data_source(pyplot, task, request):
     """Check the behaviour when `subplot_by` is `data_source`."""
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.metrics.prediction_error(data_source="both")
-    display.plot(subplot_by="data_source")
-    assert isinstance(display.ax_[0], mpl.axes.Axes)
-    assert len(display.ax_) == 2
-    legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+    fig = display.plot(subplot_by="data_source")
+    axes = fig.axes
+    assert isinstance(axes[0], mpl.axes.Axes)
+    assert len(axes) == 2
+    legend = fig.axes[len(fig.axes) // 2].get_legend()
     legend_texts = [t.get_text() for t in legend.get_texts()]
     assert len(legend_texts) == 1 if task == "regression" else 2
     assert legend_texts[-1] == "Perfect predictions"
@@ -106,8 +109,8 @@ def test_source_both(pyplot, task, request):
     """Check the behaviour of the plot when data_source='both'."""
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.metrics.prediction_error(data_source="both")
-    display.plot()
-    legend = display.figure_.axes[len(display.figure_.axes) // 2].get_legend()
+    fig = display.plot()
+    legend = fig.axes[len(fig.axes) // 2].get_legend()
     assert legend is not None
     legend_texts = [t.get_text() for t in legend.get_texts()]
     assert legend_texts[-1] == "Perfect predictions"

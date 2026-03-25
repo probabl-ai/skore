@@ -32,11 +32,12 @@ def test_split_aggregation(pyplot, forest_binary_classification_data):
     (estimator, X, y), cv = forest_binary_classification_data, 3
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.confusion_matrix()
-    display.plot()
+    fig = display.plot()
+    ax = fig.axes[0]
 
     annotation_texts = [
         text.get_text()
-        for text in display.ax_.texts
+        for text in ax.texts
         if text.get_text() and "±" in text.get_text()
     ]
     assert len(annotation_texts) == len(display.display_labels) ** 2
@@ -70,11 +71,13 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
         with pytest.raises(ValueError, match=err_msg):
             display.plot(subplot_by=subplot_by)
     elif subplot_by == "split":
-        display.plot(subplot_by=subplot_by)
-        assert len(display.ax_) == 3
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
+        assert len(axes) == 3
     else:
-        display.plot(subplot_by=subplot_by)
-        assert isinstance(display.ax_, mpl.axes.Axes)
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
+        assert isinstance(axes[0], mpl.axes.Axes)
 
 
 @pytest.mark.parametrize(
@@ -120,12 +123,13 @@ def test_threshold_closest_match(forest_binary_classification_data):
     ) / 2 - 1e-6
     assert threshold not in display.thresholds
 
-    display.plot(threshold_value=threshold)
+    fig = display.plot(threshold_value=threshold)
+    ax = fig.axes[0]
     expected_title = (
         f"Confusion Matrix\nDecision threshold: {threshold:.2f}"
         + "\nData source: Test set"
     )
-    assert display.figure_.get_suptitle() == expected_title
+    assert fig.get_suptitle() == expected_title
 
     frame = display.frame(normalize=None, threshold_value=threshold)
     aggregated = (
@@ -138,7 +142,7 @@ def test_threshold_closest_match(forest_binary_classification_data):
     ).reindex(index=display.display_labels, columns=display.display_labels)
 
     np.testing.assert_allclose(
-        display.ax_.collections[0].get_array(),
+        ax.collections[0].get_array(),
         expected_values.values,
     )
 
@@ -152,12 +156,14 @@ def test_pos_label(pyplot, forest_binary_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv, pos_label="A")
 
     display = report.metrics.confusion_matrix()
-    display.plot()
-    assert display.ax_.get_xticklabels()[1].get_text() == "A*"
-    assert display.ax_.get_yticklabels()[1].get_text() == "A*"
+    fig = display.plot()
+    ax = fig.axes[0]
+    assert ax.get_xticklabels()[1].get_text() == "A*"
+    assert ax.get_yticklabels()[1].get_text() == "A*"
 
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv, pos_label="B")
     display = report.metrics.confusion_matrix()
-    display.plot()
-    assert display.ax_.get_xticklabels()[1].get_text() == "B*"
-    assert display.ax_.get_yticklabels()[1].get_text() == "B*"
+    fig = display.plot()
+    ax = fig.axes[0]
+    assert ax.get_xticklabels()[1].get_text() == "B*"
+    assert ax.get_yticklabels()[1].get_text() == "B*"

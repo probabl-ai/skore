@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import time
 from collections import Counter
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Literal, cast
@@ -15,7 +14,6 @@ from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
-from skore._utils._cache import Cache
 from skore._utils._progress_bar import track
 
 if TYPE_CHECKING:
@@ -254,11 +252,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         )
 
         self.n_jobs = n_jobs
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
-        self._cache = Cache()
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
 
     def clear_cache(self) -> None:
@@ -279,13 +272,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> report.clear_cache()
-        >>> report._cache
-        {}
         """
         for report in self.reports_.values():
             report.clear_cache()
-
-        self._cache = Cache()
 
     def cache_predictions(
         self,
@@ -320,8 +309,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
-        >>> report._cache
-        {...}
         """
         if n_jobs is None:
             n_jobs = self.n_jobs
@@ -482,7 +469,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             y_test=y_test,
             pos_label=self._pos_label,
         )
-        report._parent_hash = self._hash
         return report
 
     @property

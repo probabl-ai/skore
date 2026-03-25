@@ -23,11 +23,9 @@ class TestImpurityDecreaseDisplay:
         assert isinstance(display, ImpurityDecreaseDisplay)
         assert hasattr(display, "importances")
         assert hasattr(display, "report_type")
-        display.plot()
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
-        if fixture_prefix == "cross_validation_reports":
-            assert hasattr(display, "facet_")
+        fig = display.plot()
+        assert fig is not None
+        assert len(fig.axes) >= 1
 
     def test_frame_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -83,9 +81,8 @@ class TestImpurityDecreaseDisplay:
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
-        _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
-        if hasattr(ax, "flatten"):
-            ax = ax.flatten()[0]
+        _, axes = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        ax = axes[0]
         assert ax.get_xlabel() == "Mean decrease in impurity"
         assert ax.get_ylabel() == ""
 
@@ -110,11 +107,11 @@ class TestImpurityDecreaseDisplay:
         assert figure.get_figheight() == 6
         if "estimator" in fixture_prefix:
             display.set_style(barplot_kwargs={"height": 8})
-            display.plot()
+            fig = display.plot()
         else:  # "cross_validation"
             display.set_style(stripplot_kwargs={"height": 8})
-            display.plot()
-        assert display.figure_.get_figheight() == 8
+            fig = display.plot()
+        assert fig.get_figheight() == 8
 
     def test_frame_select_k(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -196,6 +193,6 @@ def test_multiclass_and_multioutput(pyplot, fixture_prefix, task, request):
     else:
         assert set(frame.columns) >= {"feature", "importance"}
 
-    _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
-    assert isinstance(ax, mpl.axes.Axes)
-    assert ax.get_xlabel() == "Mean decrease in impurity"
+    _, axes = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+    assert isinstance(axes[0], mpl.axes.Axes)
+    assert axes[0].get_xlabel() == "Mean decrease in impurity"

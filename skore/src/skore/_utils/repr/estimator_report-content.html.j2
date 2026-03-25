@@ -2,47 +2,47 @@
     <header class="title">EstimatorReport</header>
     <details open class="report-disclosure">
         <summary>
-            <span
-                class="method-tooltip report-disclosure-title"
-                tabindex="0"
-                aria-label="Results — metrics accessor"
-            >Results<span class="tooltip-text">Investigate more with <a
-                    href="{{ metrics_accessor_doc_url }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="report-tooltip-accessor-link"
-                >{{ report_class_name }}.metrics</a></span></span>
+            <span class="report-disclosure-title">Results</span>
         </summary>
+        <p class="report-inline-note" role="note">
+            Investigate more with
+            <a
+                href="{{ metrics_accessor_doc_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="report-hint-note-link"
+            >{{ report_class_name }}.metrics</a>.
+        </p>
         <div class="report-section report-metrics">{{ metrics_summary | safe }}</div>
     </details>
     <details class="report-disclosure">
         <summary>
-            <span
-                class="method-tooltip report-disclosure-title"
-                tabindex="0"
-                aria-label="Estimator — inspection accessor"
-            >Estimator<span class="tooltip-text">Investigate more with <a
-                    href="{{ inspection_accessor_doc_url }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="report-tooltip-accessor-link"
-                >{{ report_class_name }}.inspection</a></span></span>
+            <span class="report-disclosure-title">Estimator</span>
         </summary>
+        <p class="report-inline-note" role="note">
+            Investigate more with
+            <a
+                href="{{ inspection_accessor_doc_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="report-hint-note-link"
+            >{{ report_class_name }}.inspection</a>.
+        </p>
         <div class="report-section report-estimator"><slot name="estimator-display"></slot></div>
     </details>
     <details class="report-disclosure">
         <summary>
-            <span
-                class="method-tooltip report-disclosure-title"
-                tabindex="0"
-                aria-label="Data — data accessor"
-            >Data<span class="tooltip-text">Investigate more with <a
-                    href="{{ data_accessor_doc_url }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="report-tooltip-accessor-link"
-                >{{ report_class_name }}.data</a></span></span>
+            <span class="report-disclosure-title">Data</span>
         </summary>
+        <p class="report-inline-note" role="note">
+            Investigate more with
+            <a
+                href="{{ data_accessor_doc_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="report-hint-note-link"
+            >{{ report_class_name }}.data</a>.
+        </p>
         <div class="report-section report-data"><slot name="table-report"></slot></div>
     </details>
     <p class="report-hint-note" role="note">

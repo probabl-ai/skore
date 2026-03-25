@@ -1,12 +1,10 @@
 from __future__ import annotations
 
 import html
-import time
 import uuid
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal
 
-import numpy as np
 import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
@@ -18,9 +16,7 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
-from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
@@ -164,8 +160,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     ) -> None:
         self._estimator = clone(estimator)
 
-        # private storage to be able to invalidate the cache when the user alters
-        # those attributes
+        # private storage to ensure properties are read-only
         self._X = X
         self._y = y
         self._pos_label = pos_label
@@ -174,18 +169,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self.n_jobs = n_jobs
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
-        self._initialize_state()
-
-    def _initialize_state(self) -> None:
-        """Initialize/reset the random number generator, hash, and cache."""
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
-        self._cache = Cache()
-        self._ml_task = _find_ml_task(
-            self._y, estimator=self.estimator_reports_[0]._estimator
-        )
+        self._ml_task = self.estimator_reports_[0].ml_task
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
@@ -233,13 +217,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
         >>> report.clear_cache()
-        >>> report._cache
+        >>> report.estimator_reports_[0]._cache
         {}
         """
         for report in self.estimator_reports_:
             report.clear_cache()
-
-        self._cache = Cache()
 
     def cache_predictions(
         self,
@@ -267,7 +249,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
-        >>> report._cache
+        >>> report.estimator_reports_[0]._cache
         {...}
         """
         if n_jobs is None:
@@ -397,7 +379,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             y_test=y_test,
             pos_label=self._pos_label,
         )
-        report._parent_hash = self._hash
         return report
 
     @property

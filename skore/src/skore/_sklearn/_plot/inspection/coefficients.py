@@ -5,6 +5,7 @@ from typing import Any, Literal
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.figure import Figure
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
@@ -37,17 +38,6 @@ class CoefficientsDisplay(DisplayMixin):
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
         Report type from which the display is created.
-
-    Attributes
-    ----------
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the coefficients.
-
-    figure_ : matplotlib Figure
-        Figure containing the plot.
-
-    ax_ : ndarray of matplotlib Axes
-        Array of matplotlib Axes with the different matplotlib axis.
 
     Examples
     --------
@@ -240,7 +230,7 @@ class CoefficientsDisplay(DisplayMixin):
         subplot_by: Literal["auto", "estimator", "label", "output"] | None = "auto",
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
-    ) -> None:
+    ) -> Figure:
         """Plot the coefficients for the different features.
 
         Parameters
@@ -277,6 +267,11 @@ class CoefficientsDisplay(DisplayMixin):
             Can be used independently of `select_k`. Sorting is performed within the
             same groups as selection.
 
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the coefficients plot.
+
         Examples
         --------
         >>> from sklearn.datasets import load_iris
@@ -303,7 +298,7 @@ class CoefficientsDisplay(DisplayMixin):
         subplot_by: Literal["estimator", "label", "output"] | None = None,
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
-    ) -> None:
+    ) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
         if select_k == 0:
             raise ValueError(
@@ -364,9 +359,9 @@ class CoefficientsDisplay(DisplayMixin):
         barplot_kwargs: dict[str, Any] | None = None,
         boxplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
-    ):
+    ) -> Figure:
         if "estimator" in report_type:
-            self.facet_ = sns.catplot(
+            facet = sns.catplot(
                 data=frame,
                 x="coefficient",
                 y="feature",
@@ -376,7 +371,7 @@ class CoefficientsDisplay(DisplayMixin):
                 **barplot_kwargs,
             )
         else:  # "cross-validation" in report_type
-            self.facet_ = sns.catplot(
+            facet = sns.catplot(
                 data=frame,
                 x="coefficient",
                 y="feature",
@@ -396,7 +391,8 @@ class CoefficientsDisplay(DisplayMixin):
             )
         add_background_features = hue is not None
 
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.squeeze()
+        figure = facet.figure
+        ax_grid = facet.axes.squeeze()
         n_features = (
             [frame["feature"].nunique()]
             if col is None
@@ -405,7 +401,7 @@ class CoefficientsDisplay(DisplayMixin):
                 for col_value in frame[col].unique()
             ]
         )
-        for ax, n_feature in zip(self.ax_.flatten(), n_features, strict=True):
+        for ax, n_feature in zip(ax_grid.flatten(), n_features, strict=True):
             _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
@@ -413,8 +409,7 @@ class CoefficientsDisplay(DisplayMixin):
                 xlabel="Magnitude of coefficient",
                 ylabel="",
             )
-        if len(self.ax_.flatten()) == 1:
-            self.ax_ = self.ax_.flatten()[0]
+        return figure
 
     def _plot_single_estimator(
         self,
@@ -426,7 +421,7 @@ class CoefficientsDisplay(DisplayMixin):
         barplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
-    ) -> None:
+    ) -> Figure:
         """Plot the coefficients for an `EstimatorReport` or a `CrossValidationReport`.
 
         An `EstimatorReport` will use a bar plot while a `CrossValidationReport` will
@@ -490,7 +485,7 @@ class CoefficientsDisplay(DisplayMixin):
             barplot_kwargs.pop("palette", None)
             stripplot_kwargs.pop("palette", None)
 
-        self._categorical_plot(
+        figure = self._categorical_plot(
             frame=frame,
             report_type=report_type,
             hue=hue,
@@ -503,7 +498,8 @@ class CoefficientsDisplay(DisplayMixin):
         title = f"Coefficients of {estimator_name}"
         if subplot_by is not None:
             title += f" by {subplot_by}"
-        self.figure_.suptitle(title)
+        figure.suptitle(title)
+        return figure
 
     @staticmethod
     def _has_same_features(*, frame: pd.DataFrame) -> bool:
@@ -527,7 +523,7 @@ class CoefficientsDisplay(DisplayMixin):
         barplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
-    ) -> None:
+    ) -> Figure:
         """Plot the coefficients for a `ComparisonReport`.
 
         Parameters
@@ -624,7 +620,7 @@ class CoefficientsDisplay(DisplayMixin):
                     "different axis using `subplot_by='estimator'`."
                 )
 
-        self._categorical_plot(
+        figure = self._categorical_plot(
             frame=frame,
             report_type=report_type,
             hue=hue,
@@ -637,7 +633,8 @@ class CoefficientsDisplay(DisplayMixin):
         title = "Coefficients"
         if subplot_by is not None:
             title += f" by {subplot_by}"
-        self.figure_.suptitle(title)
+        figure.suptitle(title)
+        return figure
 
     @classmethod
     def _compute_data_for_display(
