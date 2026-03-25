@@ -149,7 +149,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        estimator: BaseEstimator | skrub.SkrubLearner,
+        estimator: BaseEstimator | skrub.SkrubLearner | skrub.DataOp,
         *,
         fit: Literal["auto"] | bool = "auto",
         X_train: ArrayLike | None = None,
