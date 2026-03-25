@@ -56,9 +56,7 @@ class _BaseReport(ReportHelpMixin):
     def _display_diagnose_results(
         self, results: DiagnosticResults
     ) -> DiagnosticResults | None:
-        if is_environment_sphinx_build():
-            return results
-        if is_environment_notebook_like():
+        if is_environment_notebook_like() or is_environment_sphinx_build():
             from IPython.display import display
 
             display(results)

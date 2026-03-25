@@ -40,12 +40,12 @@ linear = LinearRegression()
 deep_tree = DecisionTreeRegressor(random_state=42)
 
 # %%
-# Calling ``.diagnose()`` explicitly
-# ==================================
+# Calling :meth:`~skore.EstimatorReport.diagnose` explicitly
+# ==========================================================
 #
 # Every report exposes a :meth:`~skore.EstimatorReport.diagnose` method.
 # By default, diagnostics are **not** displayed at creation time — you call
-# ``diagnose()`` yourself.
+# :meth:`~skore.EstimatorReport.diagnose` yourself.
 
 from skore import evaluate
 
@@ -54,15 +54,18 @@ linear_report.diagnose()
 
 # %%
 linear_report.metrics.summarize(data_source="both").frame()
+
+# %%
 # The linear model is flagged for underfitting: its scores are on par between
 # train and test, and not significantly better than a dummy baseline.
 
-# %%
 tree_report = evaluate(deep_tree, X, y)
 tree_report.diagnose()
 
 # %%
 tree_report.metrics.summarize(data_source="both").frame()
+
+# %%
 # The deep tree is flagged for overfitting: it achieves a perfect score on
 # train but degrades on test.
 
@@ -94,15 +97,16 @@ with skore.configuration(diagnose=True):
 tree_report.diagnose(ignore=["SKD001"])
 
 # %%
-# Or globally, so that every subsequent ``diagnose()`` call skips them:
+# Or globally, so that every subsequent :meth:`~skore.EstimatorReport.diagnose` call
+# skips them:
 
 with skore.configuration(ignore_diagnostics=["SKD001"]):
     diagnosis = tree_report.diagnose()
 diagnosis
 
 # %%
-# Diagnostics on a ``CrossValidationReport``
-# ==========================================
+# Diagnostics on a :class:`~skore.CrossValidationReport`
+# =====================================================
 #
 # When ``splitter`` is an integer, :func:`~skore.evaluate` returns a
 # :class:`~skore.CrossValidationReport`. Diagnostics aggregate across folds.
@@ -111,8 +115,8 @@ cv_report = evaluate(deep_tree, X, y, splitter=5)
 cv_report.diagnose()
 
 # %%
-# Diagnostics on a ``ComparisonReport``
-# =====================================
+# Diagnostics on a :class:`~skore.ComparisonReport`
+# ================================================
 #
 # Passing a list of estimators returns a :class:`~skore.ComparisonReport`.
 # Diagnostics are grouped by sub-report.
