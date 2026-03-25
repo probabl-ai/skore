@@ -18,8 +18,8 @@ transformations than normal estimators, and also has built-in support from
 skore.
 
 The dataset contains a list of online transactions (each corresponds to a cart,
-or "basket"), each linked to one or more products for which we have a
-description. The task is to predict which involved credit fraud.
+or "basket"), each linked to one or more products for which we have a description.
+The task is to predict which involved credit fraud.
 """
 
 # %%
