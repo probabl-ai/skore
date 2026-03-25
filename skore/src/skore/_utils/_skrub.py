@@ -2,8 +2,9 @@ from typing import Any
 
 import skrub
 from sklearn.base import BaseEstimator
-from sklearn.frozen import FrozenEstimator
 from sklearn.utils.validation import NotFittedError, check_is_fitted
+
+from .._externals._sklearn_compat import FrozenEstimator
 
 
 def eval_X_y(data_op: skrub.DataOp, env: dict) -> dict:
