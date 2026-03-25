@@ -75,26 +75,22 @@ def test_cache_behavior(comparison_report_linear):
     with check_cache_changed(child_report._cache):
         report.inspection.permutation_importance(seed=42, n_repeats=2)
 
-    assert report._cache == {}
     assert _children_cache_size(report) == 1
 
 
 def test_cache_seed_int(comparison_report_linear):
     report = comparison_report_linear
-    assert report._cache == {}
     assert _children_cache_size(report) == 0
 
     display_1 = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test"
     )
-    assert report._cache == {}
     assert _children_cache_size(report) == 1
 
     display_2 = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test"
     )
     assert display_1.importances.equals(display_2.importances)
-    assert report._cache == {}
     assert _children_cache_size(report) == 1
 
 

@@ -14,7 +14,6 @@ from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
-from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
@@ -164,7 +163,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
         self._ml_task = self.estimator_reports_[0].ml_task
-        self._cache = Cache()
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
@@ -212,12 +210,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
         >>> report.clear_cache()
-        >>> report._cache
+        >>> report.estimator_reports_[0]._cache
         {}
         """
         for report in self.estimator_reports_:
             report.clear_cache()
-        self._cache = Cache()
 
     def cache_predictions(
         self,
@@ -245,7 +242,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
-        >>> report._cache
+        >>> report.estimator_reports_[0]._cache
         {...}
         """
         if n_jobs is None:
