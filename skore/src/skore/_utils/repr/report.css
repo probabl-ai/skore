@@ -193,3 +193,29 @@
 .report-data {
     padding-top: 0.5em;
 }
+
+.comparison-report-select-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5em 0.75em;
+    margin: 0 0 0.65em;
+    color: var(--color-text);
+}
+
+.comparison-report-select-row label {
+    font-weight: bold;
+    color: var(--color-blue);
+}
+
+.comparison-report-select-row select {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    padding: 0.2em 0.45em;
+    max-width: min(100%, 28rem);
+}
