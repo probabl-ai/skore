@@ -360,6 +360,9 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             if len(classes) == 2:
                 y_true_onehot = np.hstack(((1 - y_true_onehot), y_true_onehot))
             y_pred_arr = cast(NDArray, y_pred)
+            if y_pred_arr.ndim == 1:
+                # binary + decision function
+                y_pred_arr = np.vstack((-y_pred_arr, y_pred_arr)).T
 
             displays = [
                 cls._compute_data_for_display(
