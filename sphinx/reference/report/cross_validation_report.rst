@@ -1,3 +1,5 @@
+.. _cross_validation_report:
+
 Report for a cross-validation of an estimator
 =============================================
 

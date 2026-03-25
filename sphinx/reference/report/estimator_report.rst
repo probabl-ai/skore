@@ -1,3 +1,5 @@
+.. _estimator_report:
+
 Report for a single estimator
 =============================
 
