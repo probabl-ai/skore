@@ -40,11 +40,12 @@ def test_invalid_subplot_by(pyplot, task, request):
 def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
     report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
-    display.plot(subplot_by=subplot_by)
+    fig = display.plot(subplot_by=subplot_by)
+    axes = fig.axes
     if expected_len == 1:
-        assert isinstance(display.ax_, mpl.axes.Axes)
+        assert isinstance(axes[0], mpl.axes.Axes)
     else:
-        assert len(display.ax_.flatten()) == expected_len
+        assert len(axes) == expected_len
 
 
 @pytest.mark.parametrize(
@@ -73,8 +74,9 @@ def test_subplot_by_non_averaged_metrics(
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=metric
     )
-    display.plot(metric=metric_name, subplot_by=subplot_by)
-    assert len(display.ax_) == expected_len
+    fig = display.plot(metric=metric_name, subplot_by=subplot_by)
+    axes = fig.axes
+    assert len(axes) == expected_len
 
     valid_values = [subplot_by, "split", "auto", "None"]
     err_msg = (
