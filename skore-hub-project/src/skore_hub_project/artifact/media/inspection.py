@@ -47,17 +47,17 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
         cache = getattr(self.report, "_cache", {})
 
         for key, display in reversed(list(cache.items())):
-            if len(key) < 6:
+            if len(key) != 3:
                 continue
 
-            parent_hash, name, data_source, at_step, _, metric, *_ = key
+            data_source, name, kwargs = key
+            kwargs = str(kwargs)
 
             if (
-                parent_hash == self.report._hash
+                data_source == self.data_source
                 and name == "permutation_importance"
-                and data_source == self.data_source
-                and at_step == 0
-                and metric is None
+                and "('at_step', 0)" in kwargs
+                and "('metric', None)" in kwargs
             ):
                 frame = display.frame(aggregate=None)
 
