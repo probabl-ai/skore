@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import KFold, StratifiedKFold
@@ -125,9 +127,22 @@ def test_evaluate_pos_label(binary_classification_data):
 
 
 def test_evaluate_follows_global_config_default(binary_classification_data):
-    """Global diagnose config triggers diagnostics in evaluate."""
+    """Global diagnose config triggers diagnostics display in evaluate."""
     X, y = binary_classification_data
-    with configuration(diagnose=True):
-        report = evaluate(LogisticRegression(), X, y, splitter=0.2)
-    _results, checked_codes = report._diagnostics_cache
-    assert len(checked_codes) > 0
+    with patch.object(EstimatorReport, "_display_diagnose_results") as display_mock:
+        evaluate(LogisticRegression(), X, y, splitter=0.2)
+    display_mock.assert_not_called()
+    with (
+        patch.object(EstimatorReport, "_display_diagnose_results") as display_mock,
+        configuration(diagnose=True),
+    ):
+        evaluate(LogisticRegression(), X, y, splitter=0.2)
+    display_mock.assert_called_once()
+
+
+def test_evaluate_diagnose_param(binary_classification_data):
+    """Explicit diagnose=True triggers diagnostics display in evaluate."""
+    X, y = binary_classification_data
+    with patch.object(EstimatorReport, "_display_diagnose_results") as display_mock:
+        evaluate(LogisticRegression(), X, y, splitter=0.2, diagnose=True)
+    display_mock.assert_called_once()

@@ -106,7 +106,7 @@ diagnosis
 
 # %%
 # Diagnostics on a :class:`~skore.CrossValidationReport`
-# =====================================================
+# ======================================================
 #
 # When ``splitter`` is an integer, :func:`~skore.evaluate` returns a
 # :class:`~skore.CrossValidationReport`. Diagnostics aggregate across folds.
@@ -116,7 +116,7 @@ cv_report.diagnose()
 
 # %%
 # Diagnostics on a :class:`~skore.ComparisonReport`
-# ================================================
+# =================================================
 #
 # Passing a list of estimators returns a :class:`~skore.ComparisonReport`.
 # Diagnostics are grouped by sub-report.

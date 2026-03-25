@@ -4,6 +4,7 @@ CrossValidationReports.
 """
 
 from io import BytesIO
+from unittest.mock import patch
 
 import joblib
 import pytest
@@ -13,9 +14,15 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 from sklearn.utils._testing import _convert_container
 
-from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+from skore import (
+    ComparisonReport,
+    CrossValidationReport,
+    EstimatorReport,
+    configuration,
+)
 from skore._sklearn._diagnostics.base import (
     ComparisonDiagnosticResults,
+    DiagnosticResult,
     DiagnosticResults,
 )
 
@@ -31,12 +38,14 @@ def report(request):
 
 
 def test_diagnose_collects_component_diagnostics(report):
+    """Check the diagnostics are collected from the component reports."""
     results = report.diagnose()
     assert isinstance(results, ComparisonDiagnosticResults)
-    assert set(results._grouped) == set(report.reports_)
+    assert set(results._grouped.keys()) == set(report.reports_.keys())
 
 
 def test_diagnose_uses_component_cache(report, monkeypatch):
+    """Check the diagnostics are cached and reused."""
     sub_report = next(iter(report.reports_.values()))
     calls = 0
     original = sub_report._compute_diagnostics
@@ -55,12 +64,74 @@ def test_diagnose_uses_component_cache(report, monkeypatch):
 
 
 def test_diagnose_result_has_repr(report):
+    """Check the diagnostics result has a repr."""
     results = report.diagnose()
     assert isinstance(results, DiagnosticResults)
     assert "Diagnostics:" in repr(results)
     bundle = results._repr_mimebundle_()
     assert "text/plain" in bundle
     assert "text/html" in bundle
+
+
+def test_diagnose_ignore(report, monkeypatch):
+    """Check the diagnostics are ignored when ignore is passed."""
+    diagnostic = DiagnosticResult(
+        code="SKD001",
+        title="Mock overfitting",
+        docs_anchor="skd001-overfitting",
+        explanation="Mock overfitting detected.",
+    )
+    for sub_report in report.reports_.values():
+        monkeypatch.setattr(
+            sub_report,
+            "_compute_diagnostics",
+            lambda: ([diagnostic], {"SKD001", "SKD002"}),
+        )
+        if hasattr(sub_report, "_diagnostics_cache"):
+            delattr(sub_report, "_diagnostics_cache")
+    if hasattr(report, "_diagnostics_cache"):
+        delattr(report, "_diagnostics_cache")
+    results = report.diagnose(ignore=["SKD001"])
+    assert all("[SKD001]" not in message for message in results)
+    assert all(d.code != "SKD001" for d in results.diagnostics)
+
+
+def test_diagnose_uses_global_ignore(report, monkeypatch):
+    """Check the diagnostics are ignored when global ignore is set."""
+    diagnostic = DiagnosticResult(
+        code="SKD001",
+        title="Mock overfitting",
+        docs_anchor="skd001-overfitting",
+        explanation="Mock overfitting detected.",
+    )
+    for sub_report in report.reports_.values():
+        monkeypatch.setattr(
+            sub_report,
+            "_compute_diagnostics",
+            lambda: ([diagnostic], {"SKD001", "SKD002"}),
+        )
+        if hasattr(sub_report, "_diagnostics_cache"):
+            delattr(sub_report, "_diagnostics_cache")
+    if hasattr(report, "_diagnostics_cache"):
+        delattr(report, "_diagnostics_cache")
+    assert any(d.code == "SKD001" for d in report.diagnose().diagnostics)
+    with configuration(ignore_diagnostics=["SKD001"]):
+        assert all(d.code != "SKD001" for d in report.diagnose().diagnostics)
+
+
+def test_diagnose_follows_global_config_default(
+    estimator_reports_binary_classification,
+):
+    """Check the diagnostics are displayed when global diagnose is set."""
+    with patch.object(ComparisonReport, "_display_diagnose_results") as display_mock:
+        ComparisonReport(list(estimator_reports_binary_classification))
+    display_mock.assert_not_called()
+    with (
+        patch.object(ComparisonReport, "_display_diagnose_results") as display_mock,
+        configuration(diagnose=True),
+    ):
+        ComparisonReport(list(estimator_reports_binary_classification))
+    display_mock.assert_called_once()
 
 
 def test_pickle(tmp_path, report):
