@@ -5,6 +5,8 @@ import numpy as np
 import pytest
 from sklearn.base import clone
 from sklearn.cluster import KMeans
+from sklearn.datasets import make_classification
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
@@ -239,3 +241,24 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
     assert joblib.hash(est_report_with_test.X_test) == joblib.hash(X_heldout)
     assert joblib.hash(est_report_with_test.y_test) == joblib.hash(y_heldout)
     assert est_report_with_test.pos_label == cv_report.pos_label
+
+
+@pytest.mark.parametrize("splitter", [2, 3])
+@pytest.mark.parametrize("bad_estimator", [False, True])
+def test_report_repr_html(splitter, bad_estimator):
+    X, y = make_classification(n_classes=2, random_state=42)
+
+    class DummyClassifierBadRepr(DummyClassifier):
+        def _repr_html_(self):
+            raise TypeError("error")
+
+    estimator = DummyClassifierBadRepr() if bad_estimator else DummyClassifier()
+    report = CrossValidationReport(estimator, X, y, splitter=splitter)
+    html_out = report._repr_html_()
+    assert "skore-cross-validation-report-" in html_out
+    assert "DummyClassifier" in html_out
+    assert "skoreInitEstimatorReport" in html_out
+    assert "report-hint-note" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-disclosure-title" in html_out
+    assert "CrossValidationReport.metrics" in html_out
