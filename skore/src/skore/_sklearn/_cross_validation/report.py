@@ -61,6 +61,29 @@ def _generate_estimator_report(
     )
 
 
+def _check_estimator_and_data(estimator, X, y, data):
+    if is_skrub_learner(estimator):
+        initialized_with_data_op = True
+        if X is not None or y is not None:
+            raise TypeError(
+                "X and y cannot be provided when estimator is a SkrubLearner. "
+                "Provide `data` instead."
+            )
+        if data is None:
+            raise TypeError("data must be provided when estimator is a SkrubLearner")
+        data: dict = eval_X_y(estimator.data_op, data)
+    else:
+        initialized_with_data_op = False
+        if data is not None:
+            raise TypeError(
+                "`data` can only be provided when estimator "
+                "is a SkrubLearner. Provide X and y instead."
+            )
+        estimator = to_learner(estimator)
+        data = eval_X_y(estimator.data_op, {"X": X, "y": y})
+    return initialized_with_data_op, estimator, data
+
+
 class CrossValidationReport(_BaseReport, DirNamesMixin):
     """Report for cross-validation results.
 
@@ -164,30 +187,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._raw_estimator = estimator
         if isinstance(estimator, skrub.DataOp):
             estimator = estimator.skb.make_learner()
-        self._estimator = clone(estimator)
 
-        if is_skrub_learner(estimator):
-            self._initialized_with_data_op = True
-            if X is not None or y is not None:
-                raise TypeError(
-                    "X and y cannot be provided when estimator is a SkrubLearner. "
-                    "Provide `data` instead."
-                )
-            if data is None:
-                raise TypeError(
-                    "data must be provided when estimator is a SkrubLearner"
-                )
-            self._data: dict = eval_X_y(estimator.data_op, data)
-        else:
-            self._initialized_with_data_op = False
-            if data is not None:
-                raise TypeError(
-                    "`data` can only be provided when estimator "
-                    "is a SkrubLearner. Provide X and y instead."
-                )
-            estimator = to_learner(estimator)
-            self._estimator = estimator
-            self._data = eval_X_y(estimator.data_op, {"X": X, "y": y})
+        self._initialized_with_data_op, self._estimator, self._data = (
+            _check_estimator_and_data(clone(estimator), X, y, data)
+        )
         self._pos_label = pos_label
         self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
         self._split_indices = tuple(self._splitter.split(self.X, self.y))

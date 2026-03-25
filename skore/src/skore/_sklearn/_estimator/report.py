@@ -37,6 +37,45 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
+def _check_estimator_and_data(
+    estimator, X_train, y_train, X_test, y_test, train_data, test_data
+):
+    if is_skrub_learner(estimator):
+        initialized_with_data_op = True
+        if any(v is not None for v in (X_train, y_train, X_test, y_test)):
+            raise TypeError(
+                "X_train, y_train, X_test, y_test cannot be provided when "
+                "estimator is a SkrubLearner. "
+                "Provide train_data and test_data instead."
+            )
+        test_data = (
+            None if test_data is None else eval_X_y(estimator.data_op, test_data)
+        )
+        train_data = (
+            None if train_data is None else eval_X_y(estimator.data_op, train_data)
+        )
+    else:
+        initialized_with_data_op = False
+        if train_data is not None or test_data is not None:
+            raise TypeError(
+                "train_data and test_data can only be provided when estimator "
+                "is a SkrubLearner. "
+                "Provide X_train, y_train, X_test, y_test instead."
+            )
+        estimator = to_learner(estimator)
+        test_data = (
+            None
+            if X_test is None
+            else eval_X_y(estimator.data_op, {"X": X_test, "y": y_test})
+        )
+        train_data = (
+            None
+            if X_train is None
+            else eval_X_y(estimator.data_op, {"X": X_train, "y": y_train})
+        )
+    return initialized_with_data_op, estimator, train_data, test_data
+
+
 class EstimatorReport(_BaseReport, DirNamesMixin):
     """Report for a fitted estimator.
 
@@ -175,40 +214,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "Clustering models are not supported yet. Please use a"
                 " classification or regression model instead."
             )
-        if is_skrub_learner(estimator):
-            self._initialized_with_data_op = True
-            if any(v is not None for v in (X_train, y_train, X_test, y_test)):
-                raise TypeError(
-                    "X_train, y_train, X_test, y_test cannot be provided when "
-                    "estimator is a SkrubLearner. "
-                    "Provide train_data and test_data instead."
-                )
-            self._test_data = (
-                None if test_data is None else eval_X_y(estimator.data_op, test_data)
-            )
-            self._train_data = (
-                None if train_data is None else eval_X_y(estimator.data_op, train_data)
-            )
-        else:
-            self._initialized_with_data_op = False
-            if train_data is not None or test_data is not None:
-                raise TypeError(
-                    "train_data and test_data can only be provided when estimator "
-                    "is a SkrubLearner. "
-                    "Provide X_train, y_train, X_test, y_test instead."
-                )
-            estimator = to_learner(estimator)
-            self._test_data = (
-                None
-                if X_test is None
-                else eval_X_y(estimator.data_op, {"X": X_test, "y": y_test})
-            )
-            self._train_data = (
-                None
-                if X_train is None
-                else eval_X_y(estimator.data_op, {"X": X_train, "y": y_train})
-            )
 
+        self._initialized_with_data_op, estimator, self._train_data, self._test_data = (
+            _check_estimator_and_data(
+                estimator, X_train, y_train, X_test, y_test, train_data, test_data
+            )
+        )
         self._fit_time: float | None = None
         if fit == "auto":
             try:
