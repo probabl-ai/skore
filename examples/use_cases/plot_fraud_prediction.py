@@ -1,14 +1,21 @@
 """
-Using skore with a skrub DataOp
-===============================
+Tracking all the data processing
+================================
+
+To track all operations and be able to apply the fitted estimator to unseen
+data, we need to include all the data wrangling in the estimator used for our
+skore report. In very simple cases this can be done with a scikit-learn
+Pipeline. When we have transformations not supported by the Pipeline (such as
+transformations that change the number of rows, or that involve multiple tables
+such as joins), skore allows us to use a skrub DataOp instead.
 
 In this example we consider a dataset that is simple, but still requires some
 data wrangling (encoding, aggregation and joining) which could not be performed
 in a regular scikit-learn estimator.
 
-To track those operations, we use a skrub DataOp instead, which can perform
-richer transformations than normal estimators, and also have built-in support
-from skore.
+To track those operations, we use a skrub DataOp, which can perform richer
+transformations than normal estimators, and also has built-in support from
+skore.
 
 The dataset contains a list of online transactions (each corresponds to a cart,
 or "basket"), each linked to one or more products for which we have a
