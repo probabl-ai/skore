@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from collections import Counter
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Literal, cast
@@ -15,6 +16,8 @@ from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
+from skore._utils.repr.data import get_documentation_url
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._comparison.inspection_accessor import (
@@ -490,6 +493,49 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(...)"
+
+    def _repr_html_(self) -> str:
+        """HTML representation with a selector to inspect one compared report."""
+        metrics_html = self.metrics.summarize(data_source="test").frame()._repr_html_()
+
+        comparison_reports = []
+        for label, report in self.reports_.items():
+            fragments = report._html_repr_fragments()
+            comparison_reports.append(
+                {
+                    "label": label,
+                    "estimator_display": fragments["estimator_display"],
+                    "table_report": fragments["table_report"],
+                }
+            )
+
+        container_id = f"skore-comparison-report-{uuid.uuid4().hex[:8]}"
+        help_doc_url = get_documentation_url(obj=self, method_name="help")
+        report_class_name = self.__class__.__name__
+        metrics_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="metrics"
+        )
+        inspection_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="inspection"
+        )
+        return render_template(
+            "comparison_report.html.j2",
+            {
+                "container_id": container_id,
+                "metrics_summary": metrics_html,
+                "comparison_reports": comparison_reports,
+                "help_doc_url": help_doc_url,
+                "report_class_name": report_class_name,
+                "metrics_accessor_doc_url": metrics_accessor_doc_url,
+                "inspection_accessor_doc_url": inspection_accessor_doc_url,
+            },
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by Jupyter kernels to display the report."""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output
 
 
 def _deduplicate_report_names(report_names: list[str]) -> list[str]:
