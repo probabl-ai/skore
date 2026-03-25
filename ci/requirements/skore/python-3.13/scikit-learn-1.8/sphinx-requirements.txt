@@ -103,6 +103,8 @@ graphql-core==3.2.8
     #   graphql-relay
 graphql-relay==3.2.0
     # via graphene
+greenlet==3.3.2
+    # via sqlalchemy
 gunicorn==25.1.0
     # via mlflow
 h11==0.16.0
@@ -394,7 +396,7 @@ skore-local-project==0.0.5
     # via skore (skore/pyproject.toml)
 skore-mlflow-project==0.0.2
     # via skore (skore/pyproject.toml)
-skrub==0.7.2
+skrub==0.8.0
     # via skore (skore/pyproject.toml)
 smmap==5.0.3
     # via gitdb
