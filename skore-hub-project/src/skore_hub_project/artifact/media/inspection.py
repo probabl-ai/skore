@@ -8,9 +8,11 @@ from collections.abc import Callable
 from functools import reduce
 from typing import ClassVar, Literal, cast
 
+from pandas import concat
+
 from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.json import dumps
-from skore_hub_project.protocol import Display
+from skore_hub_project.protocol import CrossValidationReport, Display, EstimatorReport
 
 
 class Inspection(Media[Report], ABC):  # noqa: D101
@@ -42,6 +44,51 @@ class Inspection(Media[Report], ABC):  # noqa: D101
 class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "inspection.permutation_importance"
     name: Literal["permutation_importance"] = "permutation_importance"
+
+    @staticmethod
+    def display_from_cross_validation_report(
+        data_source: str, report: CrossValidationReport
+    ) -> Display | None:
+        from skore import PermutationImportanceDisplay
+
+        displays = [
+            PermutationImportance.display_from_estimator_report(
+                data_source, estimator_report
+            )
+            for estimator_report in report.estimator_reports_
+        ]
+
+        if None not in displays:
+            return PermutationImportanceDisplay(
+                importances=concat(
+                    [display.frame(aggregate=None) for display in displays],
+                    ignore_index=True,
+                ),
+                report_type=report._report_type,
+            )
+
+        return None
+
+    @staticmethod
+    def display_from_estimator_report(
+        data_source: str, report: EstimatorReport
+    ) -> Display | None:
+        for key, display in reversed(list(report._cache.items())):
+            if len(key) != 3:
+                continue
+
+            data_source, name, kwargs = key
+            kwargs = str(kwargs)
+
+            if (
+                data_source == data_source
+                and name == "permutation_importance"
+                and "('at_step', 0)" in kwargs
+                and "('metric', None)" in kwargs
+            ):
+                return cast(Display, display)
+
+        return None
 
     def content_to_upload(self) -> bytes | None:  # noqa: D102
         cache = getattr(self.report, "_cache", {})
