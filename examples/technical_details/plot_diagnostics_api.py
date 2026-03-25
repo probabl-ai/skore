@@ -1,9 +1,9 @@
 """
-.. _example_diagnostics:
+.. _example_diagnostics_api:
 
-===========
-Diagnostics
-===========
+===================
+The diagnostics API
+===================
 
 `skore` can automatically detect common modeling pitfalls such as overfitting
 and underfitting. This example walks through the diagnostics API: how to
@@ -13,15 +13,16 @@ We use a purely non-linear regression target and deliberately pick models that
 fail in known ways:
 
 - a **linear model** that cannot capture the non-linearity → underfitting,
-- a **deep decision tree** that memorizes the training set → overfitting.
+- a **single deep decision tree** that memorizes the training set perfectly
+  and fails to generalize → overfitting.
 """
 
 # %%
 # Setup
 # =====
 #
-# The target is a product of trigonometric functions of the first two features
-# — completely invisible to a linear model, yet easy to memorize for an
+# The target is a product of trigonometric functions of the first two features:
+# completely invisible to a linear model, yet easy to memorize for an
 # unconstrained tree.
 
 import numpy as np
@@ -52,17 +53,19 @@ linear_report = evaluate(linear, X, y)
 linear_report.diagnose()
 
 # %%
+linear_report.metrics.summarize(data_source="both").frame()
 # The linear model is flagged for underfitting: its scores are on par between
 # train and test, and not significantly better than a dummy baseline.
-linear_report.metrics.summarize(data_source="both").frame()
 
 # %%
 tree_report = evaluate(deep_tree, X, y)
 tree_report.diagnose()
+
 # %%
+tree_report.metrics.summarize(data_source="both").frame()
 # The deep tree is flagged for overfitting: it achieves a perfect score on
 # train but degrades on test.
-tree_report.metrics.summarize(data_source="both").frame()
+
 # %%
 # Showing diagnostics at creation time
 # ====================================
@@ -79,7 +82,7 @@ tree_report = evaluate(deep_tree, X, y, diagnose=True)
 import skore
 
 with skore.configuration(diagnose=True):
-    tree_report = evaluate(linear, X, y)
+    tree_report = evaluate(deep_tree, X, y)
 
 # %%
 # Ignoring specific checks
@@ -88,13 +91,14 @@ with skore.configuration(diagnose=True):
 # Each diagnostic has a stable code (e.g. ``SKD001``, ``SKD002``). You can
 # mute individual checks per call:
 
-tree_report.diagnose(ignore=["SKD002"])
+tree_report.diagnose(ignore=["SKD001"])
 
 # %%
 # Or globally, so that every subsequent ``diagnose()`` call skips them:
 
-with skore.configuration(ignore_diagnostics=["SKD002"]):
-    tree_report.diagnose()
+with skore.configuration(ignore_diagnostics=["SKD001"]):
+    diagnosis = tree_report.diagnose()
+diagnosis
 
 # %%
 # Diagnostics on a ``CrossValidationReport``
@@ -103,9 +107,7 @@ with skore.configuration(ignore_diagnostics=["SKD002"]):
 # When ``splitter`` is an integer, :func:`~skore.evaluate` returns a
 # :class:`~skore.CrossValidationReport`. Diagnostics aggregate across folds.
 
-cv_report = evaluate(deep_tree, X, y, splitter=5, diagnose=True)
-
-# %%
+cv_report = evaluate(deep_tree, X, y, splitter=5)
 cv_report.diagnose()
 
 # %%
@@ -115,7 +117,5 @@ cv_report.diagnose()
 # Passing a list of estimators returns a :class:`~skore.ComparisonReport`.
 # Diagnostics are grouped by sub-report.
 
-comparison_report = evaluate([linear, deep_tree], X, y, diagnose=True)
-
-# %%
+comparison_report = evaluate([linear, deep_tree], X, y)
 comparison_report.diagnose()
