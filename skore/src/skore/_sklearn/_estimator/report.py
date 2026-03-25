@@ -445,7 +445,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             # scikit-learn returns a (n_samples,) array that corresponds to classes[-1]
             # we normalize to a (n_samples, 2) shape with similar semantic than
             # predict_proba
-            return np.hstack((-predictions, predictions)).T
+            return np.vstack((-predictions, predictions)).T
         else:
             raise ValueError(f"Unexpected response_method: {method_name}")
 
