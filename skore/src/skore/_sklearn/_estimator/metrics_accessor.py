@@ -748,11 +748,13 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # integral encoding of `y_true` corresponds to the probabilities of the
         # `pos_label`. Since we get the predictions with `get_response_method`, we
         # can pass any `pos_label`, they will lead to the same result.
+        pos_label = self._parent.estimator_.classes_[-1]
         result = self._compute_metric_scores(
             sklearn.metrics.brier_score_loss,
             data_source=data_source,
             response_method="predict_proba",
-            pos_label=self._parent._estimator.classes_[-1],
+            pos_label=pos_label,
+            prediction_pos_label=pos_label,
         )
         return cast(float, result)
 
