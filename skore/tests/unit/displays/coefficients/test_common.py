@@ -32,10 +32,9 @@ class TestCoefficientsDisplay:
         assert hasattr(display, "coefficients")
         assert hasattr(display, "report_type")
 
-        display.plot()
-        assert hasattr(display, "facet_")
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
+        fig = display.plot()
+        assert fig is not None
+        assert len(fig.axes) >= 1
 
     def test_frame_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -101,9 +100,8 @@ class TestCoefficientsDisplay:
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
-        _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
-        if hasattr(ax, "flatten"):
-            ax = ax.flatten()[0]
+        _, axes = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        ax = axes[0]
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
 
@@ -130,11 +128,11 @@ class TestCoefficientsDisplay:
 
         if "estimator_reports" in fixture_prefix:
             display.set_style(barplot_kwargs={"height": 8})
-            display.plot()
+            fig = display.plot()
         else:
             display.set_style(stripplot_kwargs={"height": 8})
-            display.plot()
-        assert display.figure_.get_figheight() == 8
+            fig = display.plot()
+        assert fig.get_figheight() == 8
 
     def test_frame_select_k(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")

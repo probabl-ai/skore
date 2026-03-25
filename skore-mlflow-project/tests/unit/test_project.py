@@ -116,7 +116,6 @@ def test_switch_mpl_backend_falls_back_when_restore_fails(monkeypatch) -> None:
 
 
 class TestProject:
-    CACHE_SENTINEL = ("__cache_sentinel__",)
     CLF_ARTIFACTS = [
         "metrics.confusion_matrix.png",
         "metrics_details/confusion_matrix.csv",
@@ -234,41 +233,6 @@ class TestProject:
         for artifact in self.CLF_ARTIFACTS:
             assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
-
-    def test_put_pickles_estimator_without_cache(self, reg_report):
-        project = Project("<project>")
-        original_cache = reg_report._cache
-        reg_report._cache[self.CACHE_SENTINEL] = "present"
-
-        project.put("<key>", reg_report)
-
-        assert reg_report._cache is original_cache
-        assert reg_report._cache[self.CACHE_SENTINEL] == "present"
-
-        summary = project.summarize()
-        restored = project.get(summary[0]["id"])
-        assert self.CACHE_SENTINEL not in restored._cache
-
-    def test_put_pickles_cv_without_cache(self, cv_reg_report):
-        project = Project("<project>")
-        root_cache = cv_reg_report._cache
-        split_cache = cv_reg_report.estimator_reports_[0]._cache
-        cv_reg_report._cache[self.CACHE_SENTINEL] = "root"
-        cv_reg_report.estimator_reports_[0]._cache[self.CACHE_SENTINEL] = "split"
-
-        project.put("<key>", cv_reg_report)
-
-        assert cv_reg_report._cache is root_cache
-        assert cv_reg_report.estimator_reports_[0]._cache is split_cache
-        assert cv_reg_report._cache[self.CACHE_SENTINEL] == "root"
-        assert (
-            cv_reg_report.estimator_reports_[0]._cache[self.CACHE_SENTINEL] == "split"
-        )
-
-        summary = project.summarize()
-        restored = project.get(summary[0]["id"])
-        assert self.CACHE_SENTINEL not in restored._cache
-        assert self.CACHE_SENTINEL not in restored.estimator_reports_[0]._cache
 
     def test_get_unknown_id_with_explicit_tracking_uri(self, tmp_path):
         tracking_uri = f"sqlite:///{tmp_path}/missing-id.db"

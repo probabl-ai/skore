@@ -4,6 +4,7 @@ from typing import Literal, cast
 
 import numpy as np
 import seaborn as sns
+from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from numpy.typing import ArrayLike
 from pandas import DataFrame, Series
@@ -65,17 +66,6 @@ class PredictionErrorDisplay(DisplayMixin):
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
         The type of report.
-
-    Attributes
-    ----------
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the prediction error.
-
-    figure_ : matplotlib Figure
-        The figure on which the prediction error is plotted.
-
-    ax_ : matplotlib Axes
-        The axes on which the prediction error is plotted.
 
     Examples
     --------
@@ -163,7 +153,7 @@ class PredictionErrorDisplay(DisplayMixin):
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
-    ) -> None:
+    ) -> Figure:
         """Plot visualization.
 
         Extra keyword arguments will be passed to matplotlib's ``plot``.
@@ -195,6 +185,11 @@ class PredictionErrorDisplay(DisplayMixin):
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the prediction error plot.
+
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
@@ -221,7 +216,7 @@ class PredictionErrorDisplay(DisplayMixin):
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
-    ) -> None:
+    ) -> Figure:
         """Matplolib implementation of the `plot` method."""
         expected_kind = ("actual_vs_predicted", "residual_vs_predicted")
         if kind not in expected_kind:
@@ -264,14 +259,14 @@ class PredictionErrorDisplay(DisplayMixin):
         if style == "data_source":
             relplot_kwargs["style_order"] = ["train", "test"]
 
-        self.facet_ = sns.relplot(
+        facet = sns.relplot(
             data=plot_data,
             x="y_pred",
             y=y_plot,
             kind="scatter",
             **_validate_style_kwargs(relplot_kwargs, {}),
         )
-        self.figure_, self.ax_ = self.facet_.figure, self.facet_.axes.flatten()
+        figure, axes = facet.figure, facet.axes.flatten()
 
         title = "Prediction Error"
         if "comparison" not in self.report_type:
@@ -285,9 +280,9 @@ class PredictionErrorDisplay(DisplayMixin):
         )
         if info_data_source is not None:
             title += f"\n{info_data_source}"
-        self.figure_.suptitle(title)
+        figure.suptitle(title)
 
-        for ax in self.ax_:
+        for ax in axes:
             ax.plot(
                 x_range_perfect_pred,
                 y_line,
@@ -316,10 +311,10 @@ class PredictionErrorDisplay(DisplayMixin):
         # and create a new legend manually.
         handles = []
         labels = []
-        if self.facet_._legend is not None:
-            handles = list(self.facet_._legend.legend_handles)
-            labels = [t.get_text() for t in self.facet_._legend.get_texts()]
-            self.facet_._legend.remove()
+        if facet._legend is not None:
+            handles = list(facet._legend.legend_handles)
+            labels = [t.get_text() for t in facet._legend.get_texts()]
+            facet._legend.remove()
             if hue == "split":
                 labels = [f"Split #{label}" for label in labels]
             if hue == "output" and style is None:
@@ -330,7 +325,7 @@ class PredictionErrorDisplay(DisplayMixin):
 
         labels.append("Perfect predictions")
 
-        self.ax_[len(self.ax_) // 2].legend(
+        axes[len(axes) // 2].legend(
             handles,
             labels,
             loc="upper center",
@@ -339,12 +334,10 @@ class PredictionErrorDisplay(DisplayMixin):
             frameon=True,
         )
 
-        if len(self.ax_) == 1:
-            self.ax_ = self.ax_[0]
+        w, h = figure.get_size_inches()
+        figure.set_size_inches(w, h + 0.25 * len(labels))
 
-        w, h = self.figure_.get_size_inches()
-        self.figure_.set_size_inches(w, h + 0.25 * len(labels))
-        self.figure_.tight_layout()
+        return figure
 
     def _get_plot_columns(
         self,

@@ -2,32 +2,32 @@
     <header class="title">ComparisonReport</header>
     <details open class="report-disclosure">
         <summary>
-            <span
-                class="method-tooltip report-disclosure-title"
-                tabindex="0"
-                aria-label="Results — metrics accessor"
-            >Results<span class="tooltip-text">Investigate more with <a
-                    href="{{ metrics_accessor_doc_url }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="report-tooltip-accessor-link"
-                >{{ report_class_name }}.metrics</a></span></span>
+            <span class="report-disclosure-title">Results</span>
         </summary>
+        <p class="report-inline-note" role="note">
+            Investigate more with
+            <a
+                href="{{ metrics_accessor_doc_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="report-hint-note-link"
+            >{{ report_class_name }}.metrics</a>.
+        </p>
         <div class="report-section report-metrics">{{ metrics_summary | safe }}</div>
     </details>
     <details class="report-disclosure">
         <summary>
-            <span
-                class="method-tooltip report-disclosure-title"
-                tabindex="0"
-                aria-label="Estimator — inspection accessor"
-            >Estimator<span class="tooltip-text">Investigate more with <a
-                    href="{{ inspection_accessor_doc_url }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="report-tooltip-accessor-link"
-                >{{ report_class_name }}.inspection</a></span></span>
+            <span class="report-disclosure-title">Estimator</span>
         </summary>
+        <p class="report-inline-note" role="note">
+            Investigate more with
+            <a
+                href="{{ inspection_accessor_doc_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="report-hint-note-link"
+            >{{ report_class_name }}.inspection</a>.
+        </p>
         <div class="report-section report-estimator">
             <div class="comparison-report-select-row">
                 <label for="{{ container_id }}-report-select-estimator">Selected report</label>
@@ -46,12 +46,12 @@
     </details>
     <details class="report-disclosure">
         <summary>
-            <span
-                class="method-tooltip report-disclosure-title"
-                tabindex="0"
-                aria-label="Data — underlying report only"
-            >Data<span class="tooltip-text">Explore the data associated with each estimator via their respective <code>.data</code> accessors.</span></span>
+            <span class="report-disclosure-title">Data</span>
         </summary>
+        <p class="report-inline-note" role="note">
+            Explore the data for each compared report via that report's
+            <code>.data</code> accessor.
+        </p>
         <div class="report-section report-data">
             <div class="comparison-report-select-row">
                 <label for="{{ container_id }}-report-select-data">Selected report</label>

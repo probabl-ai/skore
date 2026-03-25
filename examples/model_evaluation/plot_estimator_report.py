@@ -307,8 +307,8 @@ display
 display.help()
 
 # %%
-display.plot()
-_ = display.ax_.set_title("Example of a ROC curve")
+fig = display.plot()
+_ = fig.axes[0].set_title("Example of a ROC curve")
 
 # %%
 #

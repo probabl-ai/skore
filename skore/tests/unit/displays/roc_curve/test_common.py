@@ -1,6 +1,5 @@
 """Common tests for RocCurveDisplay."""
 
-import numpy as np
 import pytest
 import seaborn as sns
 
@@ -34,10 +33,9 @@ class TestRocCurveDisplay:
         assert hasattr(display, "data_source")
         assert hasattr(display, "pos_label")
 
-        display.plot()
-        assert hasattr(display, "facet_")
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
+        fig = display.plot()
+        assert fig is not None
+        assert len(fig.axes) >= 1
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     @pytest.mark.parametrize("with_roc_auc", [False, True])
@@ -96,7 +94,7 @@ class TestRocCurveDisplay:
         _, ax = request.getfixturevalue(
             f"{fixture_prefix}_{task}_classification_figure_axes"
         )
-        ax = ax[0] if isinstance(ax, np.ndarray) else ax
+        ax = ax[0]
         assert ax.get_lines()[0].get_color() == sns.color_palette()[0]
         relplot_kwargs = (
             {"palette": ["red", "green", "blue"]}
@@ -105,8 +103,8 @@ class TestRocCurveDisplay:
         )
 
         display.set_style(relplot_kwargs=relplot_kwargs)
-        display.plot()
-        ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+        fig = display.plot()
+        ax = fig.axes[0]
         assert ax.get_lines()[0].get_color() == "red"
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
@@ -117,7 +115,7 @@ class TestRocCurveDisplay:
         _, ax = request.getfixturevalue(
             f"{fixture_prefix}_{task}_classification_figure_axes"
         )
-        ax = ax[0] if isinstance(ax, np.ndarray) else ax
+        ax = ax[0]
 
         n_splits = 2 if "cross_validation" in fixture_prefix else 1
         n_labels = 3 if task == "multiclass" else 1

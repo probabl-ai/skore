@@ -31,5 +31,5 @@ def test_plot_with_sorting_order(
     """`sorting_order` works for plotting."""
     report = comparison_estimator_reports_binary_classification
     display = report.inspection.impurity_decrease()
-    display.plot(sorting_order=sorting_order)
-    assert display.figure_ is not None
+    fig = display.plot(sorting_order=sorting_order)
+    assert fig is not None
