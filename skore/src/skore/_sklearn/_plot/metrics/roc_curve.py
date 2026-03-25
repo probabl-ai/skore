@@ -213,7 +213,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         col, hue, style = _get_curve_plot_columns(
             plot_data=plot_data,
             report_type=self.report_type,
-            ml_task=self.ml_task,
+            pos_label=self.pos_label,
             data_source=self.data_source,
             subplot_by=subplot_by,
         )
@@ -373,7 +373,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             label_binarizer = LabelBinarizer().fit(classes)
             y_true_onehot: NDArray = label_binarizer.transform(y_true)
             if len(classes) == 2:
-                y_true_onehot = np.hstack((y_true_onehot, (1 - y_true_onehot)))
+                y_true_onehot = np.hstack(((1 - y_true_onehot), y_true_onehot))
             y_pred_arr = cast(NDArray, y_pred)
 
             displays = [
@@ -499,7 +499,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if self.data_source == "both":
             indexing_columns += ["data_source"]
 
-        if self.ml_task == "binary-classification":
+        if self.pos_label is not None:
             columns = indexing_columns + statistical_columns
         else:
             columns = indexing_columns + ["label"] + statistical_columns
