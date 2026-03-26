@@ -363,7 +363,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         data_source : DataSource | None, optional
             The data source for the calibration curve. If None, the default data
             source is used.
-        n_bins : int, optional
+        n_bins : int, default=5
             The number of bins to use for the calibration curve. Default is 5.
         strategy : str, optional
             The strategy to use for binning. Default is "uniform".
