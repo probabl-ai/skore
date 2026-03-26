@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import inspect
 from abc import ABC
 from collections.abc import Callable
 from functools import reduce
+from inspect import signature
 from typing import ClassVar, Literal, cast
 
 from pandas import concat
@@ -31,7 +31,7 @@ class Inspection(Media[Report], ABC):  # noqa: D101
         display = function()
         # FIXME: in the future, all inspection methods should have an aggregate
         # parameter and we should be sending unaggregated data to the hub.
-        if "aggregate" in inspect.signature(display.frame).parameters:
+        if "aggregate" in signature(display.frame).parameters:
             frame = display.frame(aggregate=None)
         else:
             frame = display.frame()
@@ -46,32 +46,35 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
     name: Literal["permutation_importance"] = "permutation_importance"
 
     @staticmethod
-    def display_from_cross_validation_report(
-        data_source: str, report: CrossValidationReport
+    def __display_from_cross_validation_report(
+        data_source: str | None,
+        report: CrossValidationReport,
     ) -> Display | None:
         from skore import PermutationImportanceDisplay
 
-        displays = [
-            PermutationImportance.display_from_estimator_report(
-                data_source, estimator_report
-            )
-            for estimator_report in report.estimator_reports_
-        ]
+        frames = []
 
-        if None not in displays:
-            return PermutationImportanceDisplay(
-                importances=concat(
-                    [display.frame(aggregate=None) for display in displays],
-                    ignore_index=True,
-                ),
-                report_type=report._report_type,
-            )
+        for i, display in enumerate(
+            PermutationImportance.__display_from_estimator_report(data_source, report)
+            for report in report.estimator_reports_
+        ):
+            if display is None:
+                return None
 
-        return None
+            frames.append(display.importances.assign(split=i))  # type: ignore[attr-defined]
+
+        return cast(
+            Display,
+            PermutationImportanceDisplay(
+                importances=concat(frames, ignore_index=True),
+                report_type="cross-validation",
+            ),
+        )
 
     @staticmethod
-    def display_from_estimator_report(
-        data_source: str, report: EstimatorReport
+    def __display_from_estimator_report(
+        data_source: str | None,
+        report: EstimatorReport,
     ) -> Display | None:
         for key, display in reversed(list(report._cache.items())):
             if len(key) != 3:
@@ -91,30 +94,22 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
         return None
 
     def content_to_upload(self) -> bytes | None:  # noqa: D102
-        cache = getattr(self.report, "_cache", {})
+        display = (
+            self.__display_from_estimator_report(self.data_source, self.report)
+            if isinstance(self.report, EstimatorReport)
+            else self.__display_from_cross_validation_report(
+                self.data_source, self.report
+            )
+        )
 
-        for key, display in reversed(list(cache.items())):
-            if len(key) != 3:
-                continue
+        if display is None:
+            return None
 
-            data_source, name, kwargs = key
-            kwargs = str(kwargs)
+        frame = display.frame(aggregate=None)
 
-            if (
-                data_source == self.data_source
-                and name == "permutation_importance"
-                and "('at_step', 0)" in kwargs
-                and "('metric', None)" in kwargs
-            ):
-                frame = display.frame(aggregate=None)
-
-                return dumps(
-                    frame.astype(object)
-                    .where(frame.notna(), "NaN")
-                    .to_dict(orient="tight")
-                )
-
-        return None
+        return dumps(
+            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+        )
 
 
 class PermutationImportanceTrain(PermutationImportance[Report]):  # noqa: D101
