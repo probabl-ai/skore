@@ -141,4 +141,9 @@ def test_clustering():
         match="Clustering models are not supported yet. Please use a "
         "classification or regression model instead.",
     ):
-        ComparisonReport([EstimatorReport(KMeans()), EstimatorReport(KMeans())])
+        ComparisonReport(
+            [
+                EstimatorReport(KMeans(), X_test=None),
+                EstimatorReport(KMeans(), X_test=None),
+            ]
+        )
