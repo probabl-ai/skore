@@ -66,12 +66,12 @@ def _check_estimator_and_data(
         test_data = (
             None
             if X_test is None
-            else eval_X_y(estimator.data_op, {"X": X_test, "y": y_test})
+            else {"_skrub_X": X_test, "X": X_test, "_skrub_y": y_test, "y": y_test}
         )
         train_data = (
             None
             if X_train is None
-            else eval_X_y(estimator.data_op, {"X": X_train, "y": y_train})
+            else {"_skrub_X": X_train, "X": X_train, "_skrub_y": y_train, "y": y_train}
         )
     return initialized_with_data_op, estimator, train_data, test_data
 

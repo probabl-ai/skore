@@ -80,7 +80,7 @@ def _check_estimator_and_data(estimator, X, y, data):
                 "is a SkrubLearner. Provide X and y instead."
             )
         estimator = to_learner(estimator)
-        data = eval_X_y(estimator.data_op, {"X": X, "y": y})
+        data = {"X": X, "_skrub_X": X, "y": y, "_skrub_y": y}
     return initialized_with_data_op, estimator, data
 
 

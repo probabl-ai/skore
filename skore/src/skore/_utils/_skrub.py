@@ -1,10 +1,9 @@
+import functools
 from typing import Any
 
 import skrub
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import NotFittedError, check_is_fitted
-
-from .._externals._sklearn_compat import FrozenEstimator
 
 
 def eval_X_y(data_op: skrub.DataOp, env: dict) -> dict:
@@ -28,36 +27,48 @@ def is_skrub_learner(obj: Any) -> bool:
     return hasattr(obj, "__skrub_to_Xy_pipeline__")
 
 
-class _FrozenEstimator(FrozenEstimator):
-    def get_params(self, deep=True):
-        return {}
+class _LearnerAdapter(BaseEstimator):
+    """Wrap an estimator to have the learner interface (accept dicts)."""
 
-    def set_params(self, **kwargs):
-        return self
+    def __init__(self, estimator):
+        self.estimator = estimator
+
+    def __getattr__(self, name):
+        if name not in [
+            "fit",
+            "predict",
+            "decision_function",
+            "predict_proba",
+            "score",
+        ]:
+            return getattr(self.estimator, name)
+        estimator_method = getattr(self.estimator, name)
+
+        @functools.wraps(estimator_method)
+        def learner_method(data):
+            kwargs = {"X": data.get("_skrub_X", data["X"])}
+            if name in ["fit", "score"]:
+                kwargs["y"] = data.get("_skrub_y", data["y"])
+            return estimator_method(**kwargs)
+
+        return learner_method
+
+    def __sklearn_is_fitted__(self):
+        try:
+            check_is_fitted(self.estimator)
+            return True
+        except NotFittedError:
+            return False
+
+    def __sklearn_tags__(self):
+        return self.estimator.__sklearn_tags__()
 
 
 def to_learner(estimator: BaseEstimator):
-    try:
-        check_is_fitted(estimator)
-    except NotFittedError:
-        is_fitted = False
-    else:
-        is_fitted = True
-    if is_fitted:
-        estimator = _FrozenEstimator(estimator)
-    learner = (
-        skrub.X()
-        .skb.apply(estimator, y=skrub.y())
-        .skb.set_name("estimator")
-        .skb.make_learner()
-    )
-    if is_fitted:
-        learner.fit({"X": None, "y": None})
-    return learner
+    return _LearnerAdapter(estimator)
 
 
 def to_estimator(learner: skrub.SkrubLearner):
-    estimator = learner.find_fitted_estimator("estimator")
-    if isinstance(estimator, _FrozenEstimator):
-        estimator = estimator.estimator
-    return estimator
+    if isinstance(learner, _LearnerAdapter):
+        return learner.estimator
+    return learner.find_fitted_estimator("estimator")
