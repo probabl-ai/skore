@@ -245,13 +245,30 @@ def test_repr_html_mixin_repr_mimebundle():
     assert repr(obj) in out["text/plain"]
 
 
-def test_report_repr_html_contains_diagnostics_panel(report_with_base_help):
-    html = report_with_base_help._repr_html_()
+def test_report_diagnostics_html_fragment_no_issues(report_with_base_help):
+    """Fragment shows zero counts when no diagnostics are detected."""
+    html = report_with_base_help._diagnostics_html_fragment()
     assert ".diagnose()" in html
+    assert "0 issue(s) across 0 check(s)" in html
 
 
-def test_report_repr_mimebundle_contains_diagnostics_panel(report_with_base_help):
-    out = report_with_base_help._repr_mimebundle_()
-    assert "text/plain" in out
-    assert "text/html" in out
-    assert ".diagnose()" in out["text/html"]
+def test_report_diagnostics_html_fragment_with_issues(
+    monkeypatch, report_with_base_help
+):
+    """Fragment reflects the correct issue and check counts."""
+    from skore._sklearn._diagnostics.base import DiagnosticResult
+
+    diagnostic = DiagnosticResult(
+        code="SKD001",
+        title="Mock issue",
+        docs_anchor="skd001-overfitting",
+        explanation="Mock explanation.",
+    )
+    monkeypatch.setattr(
+        type(report_with_base_help),
+        "_compute_diagnostics",
+        lambda self: ([diagnostic], {"SKD001", "SKD002"}),
+    )
+    html = report_with_base_help._diagnostics_html_fragment()
+    assert "1 issue(s) across 2 check(s)" in html
+    assert ".diagnose()" in html

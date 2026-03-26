@@ -19,11 +19,7 @@ from skore import (
     EstimatorReport,
     configuration,
 )
-from skore._sklearn._diagnostics.base import (
-    ComparisonDiagnosticResults,
-    DiagnosticResult,
-    DiagnosticResults,
-)
+from skore._sklearn._diagnostics.base import DiagnosticResult, DiagnosticResults
 
 
 @pytest.fixture(
@@ -36,11 +32,28 @@ def report(request):
     return request.getfixturevalue(request.param)
 
 
-def test_diagnose_collects_component_diagnostics(report):
+def test_diagnose_collects_component_diagnostics(report, monkeypatch):
     """Check the diagnostics are collected from the component reports."""
+    diagnostic = DiagnosticResult(
+        code="SKD001",
+        title="Mock overfitting",
+        docs_anchor="skd001-overfitting",
+        explanation="Mock overfitting detected.",
+    )
+    for sub_report in report.reports_.values():
+        monkeypatch.setattr(
+            sub_report,
+            "_compute_diagnostics",
+            lambda: ([diagnostic], {"SKD001"}),
+        )
+        if hasattr(sub_report, "_diagnostics_cache"):
+            delattr(sub_report, "_diagnostics_cache")
+    if hasattr(report, "_diagnostics_cache"):
+        delattr(report, "_diagnostics_cache")
     results = report.diagnose()
-    assert isinstance(results, ComparisonDiagnosticResults)
-    assert set(results._grouped.keys()) == set(report.reports_.keys())
+    assert isinstance(results, DiagnosticResults)
+    for name in report.reports_:
+        assert any(f"[{name}]" in d.explanation for d in results.diagnostics)
 
 
 def test_diagnose_uses_component_cache(report, monkeypatch):

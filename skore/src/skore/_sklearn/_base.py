@@ -50,15 +50,6 @@ class _BaseReport(ReportHelpMixin):
             self._diagnostics_cache = self._compute_diagnostics()
         return self._diagnostics_cache
 
-    def _build_results(
-        self,
-        diagnostics: list[DiagnosticResult],
-        checks_ran: int,
-        ignored: set[str],
-    ) -> DiagnosticResults:
-        """Build the results from the diagnostics. Overwritten in `ComparisonReport`."""
-        return DiagnosticResults(diagnostics, checks_ran, n_ignored=len(ignored))
-
     def diagnose(
         self,
         *,
@@ -113,7 +104,7 @@ class _BaseReport(ReportHelpMixin):
         diagnostics, checked_codes = self._get_diagnostics()
         filtered = [d for d in diagnostics if d.code not in ignored]
         checks_ran = len(checked_codes - ignored)
-        return self._build_results(filtered, checks_ran, ignored)
+        return DiagnosticResults(filtered, checks_ran, n_ignored=len(ignored))
 
     def _diagnostics_html_fragment(self) -> str:
         """HTML fragment for the diagnostics panel, rendered via Jinja template."""

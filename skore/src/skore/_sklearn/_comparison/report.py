@@ -13,10 +13,7 @@ from numpy.typing import ArrayLike
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
-from skore._sklearn._diagnostics.base import (
-    ComparisonDiagnosticResults,
-    DiagnosticResult,
-)
+from skore._sklearn._diagnostics.base import DiagnosticResult
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
@@ -502,26 +499,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 for diagnostic in results
             )
         return diagnostics, all_checked
-
-    def _build_results(
-        self,
-        diagnostics: list[DiagnosticResult],
-        checks_ran: int,
-        ignored: set[str],
-    ) -> ComparisonDiagnosticResults:
-        return ComparisonDiagnosticResults(
-            diagnostics,
-            checks_ran,
-            grouped={
-                name: [
-                    diagnostic
-                    for diagnostic in report._get_diagnostics()[0]
-                    if diagnostic.code not in ignored
-                ]
-                for name, report in self.reports_.items()
-            },
-            n_ignored=len(ignored),
-        )
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"
