@@ -33,15 +33,11 @@ def test_analyze_data_source_not_available(
     """Check that we raise a proper error message when the data source requested is
     not available."""
     classifier, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(classifier)
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
     err_msg = "X_train is required when `data_source='train'`"
     with pytest.raises(ValueError, match=err_msg):
         report.data.analyze(data_source="train")
-
-    err_msg = "X_test is required when `data_source='test'`"
-    with pytest.raises(ValueError, match=err_msg):
-        report.data.analyze(data_source="test")
 
     err_msg = "X_train is required when `data_source='both'`"
     with pytest.raises(ValueError, match=err_msg):
@@ -117,7 +113,9 @@ def test_analyze_data_source_with_y():
 def test_analyze_sequence(X, y):
     """Check that lists/tuples are supported for X and y (like in scikit-learn)"""
 
-    report = EstimatorReport(DecisionTreeRegressor(), X_train=X, y_train=y)
+    report = EstimatorReport(
+        DecisionTreeRegressor(), X_train=X, y_train=y, X_test=X, y_test=y
+    )
     report.data.analyze(data_source="train")  # should not crash
 
 

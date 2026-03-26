@@ -325,7 +325,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ]
 
     def create_estimator_report(
-        self, *, X_test: ArrayLike | None = None, y_test: ArrayLike | None = None
+        self, *, X_test: ArrayLike, y_test: ArrayLike | None = None
     ) -> EstimatorReport:
         """Create an estimator report from the cross-validation report.
 
@@ -336,7 +336,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
             Testing data. It should have the same structure as the training data.
 
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None

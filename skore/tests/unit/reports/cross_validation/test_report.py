@@ -226,14 +226,6 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
     cv_report = CrossValidationReport(estimator, X_experiment, y_experiment, splitter=2)
-    est_report = cv_report.create_estimator_report()
-
-    assert isinstance(est_report, EstimatorReport)
-    assert joblib.hash(est_report.X_train) == joblib.hash(X_experiment)
-    assert joblib.hash(est_report.y_train) == joblib.hash(y_experiment)
-    assert est_report.X_test is None
-    assert est_report.y_test is None
-    assert est_report.pos_label == cv_report.pos_label
 
     est_report_with_test = cv_report.create_estimator_report(
         X_test=X_heldout, y_test=y_heldout
