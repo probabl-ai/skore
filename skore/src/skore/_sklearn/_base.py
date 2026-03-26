@@ -18,10 +18,6 @@ from skore._sklearn._diagnostics.base import (
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._cache_key import make_cache_key
-from skore._utils._environment import (
-    is_environment_notebook_like,
-    is_environment_sphinx_build,
-)
 from skore._utils._measure_time import MeasureTime
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
@@ -52,19 +48,6 @@ class _BaseReport(ReportHelpMixin):
         if not hasattr(self, "_diagnostics_cache"):
             self._diagnostics_cache = self._compute_diagnostics()
         return self._diagnostics_cache
-
-    def _display_diagnose_results(
-        self, results: DiagnosticResults
-    ) -> DiagnosticResults | None:
-        if is_environment_notebook_like() or is_environment_sphinx_build():
-            from IPython.display import display
-
-            display(results)
-            return None
-        from skore import console
-
-        console.print(results)
-        return None
 
     def _build_results(
         self,
@@ -132,16 +115,9 @@ class _BaseReport(ReportHelpMixin):
         return self._build_results(filtered, checks_ran, ignored)
 
     def _diagnostics_panel_html(self) -> str:
-        cache = getattr(self, "_diagnostics_cache", None)
-        if cache is None:
-            details = "No diagnostics have run yet."
-            summary = "0 issue(s) across 0 check(s)."
-        else:
-            diagnostics, checked_codes = cache
-            details = (
-                f"{len(diagnostics)} issue(s) across {len(checked_codes)} check(s)."
-            )
-            summary = f"{len(checked_codes)} check(s) ran in the latest run."
+        diagnostics, checked_codes = self._get_diagnostics()
+        details = f"{len(diagnostics)} issue(s) across {len(checked_codes)} check(s)."
+        summary = f"{len(checked_codes)} check(s) ran in the latest run."
         return (
             '<div style="margin:10px 0;padding:10px;'
             "border:1px solid #f97316;border-radius:4px;display:inline-block;"

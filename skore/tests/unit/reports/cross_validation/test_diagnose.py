@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
@@ -45,20 +43,6 @@ def test_diagnose_ignore(binary_classification_data):
     assert all("[SKD001]" not in message for message in messages)
 
 
-def test_diagnose_called_on_init(monkeypatch, binary_classification_data):
-    """Check the diagnostics are called on init."""
-    calls = []
-
-    def diagnose(self):
-        calls.append(True)
-        return [], set()
-
-    monkeypatch.setattr(CrossValidationReport, "diagnose", diagnose)
-    X, y = binary_classification_data
-    CrossValidationReport(LogisticRegression(), X, y, splitter=2, diagnose=True)
-    assert calls == [True]
-
-
 def test_diagnose_result_has_repr(binary_classification_data):
     """Check the diagnostics result has a repr."""
     X, y = binary_classification_data
@@ -85,39 +69,19 @@ def test_diagnose_reuses_split_cached_diagnostics(
 
     monkeypatch.setattr(EstimatorReport, "_compute_diagnostics", _compute_diagnostics)
     X, y = binary_classification_data
-    report = CrossValidationReport(
-        LogisticRegression(), X, y, splitter=3, diagnose=True
-    )
-    calls_after_init = calls
+    report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
     report.diagnose()
-    assert calls_after_init == calls
+    calls_after_first = calls
+    report.diagnose()
+    assert calls_after_first == calls
 
 
 def test_diagnose_uses_global_ignore(binary_classification_data):
     """Check the diagnostics are ignored when global ignore is set."""
     X, y = binary_classification_data
-    report = CrossValidationReport(
-        LogisticRegression(), X, y, splitter=3, diagnose=True
-    )
+    report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
+    report.diagnose()
     _results, checked_codes = report._diagnostics_cache
     assert len(checked_codes) > 0
     with configuration(ignore_diagnostics=list(checked_codes)):
         assert report.diagnose().diagnostics == []
-
-
-def test_diagnose_follows_global_config_default(binary_classification_data):
-    """Check the diagnostics are displayed when global diagnose is set."""
-    X, y = binary_classification_data
-    with patch.object(
-        CrossValidationReport, "_display_diagnose_results"
-    ) as display_mock:
-        CrossValidationReport(LogisticRegression(), X, y, splitter=3)
-    display_mock.assert_not_called()
-    with (
-        patch.object(
-            CrossValidationReport, "_display_diagnose_results"
-        ) as display_mock,
-        configuration(diagnose=True),
-    ):
-        CrossValidationReport(LogisticRegression(), X, y, splitter=3)
-    display_mock.assert_called_once()

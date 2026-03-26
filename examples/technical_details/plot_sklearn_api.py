@@ -93,7 +93,6 @@ xgb_report.inspection.permutation_importance().frame()
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import euclidean_distances
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted, validate_data
 
@@ -114,11 +113,6 @@ class CustomClassifier(ClassifierMixin, BaseEstimator):
         X = validate_data(self, X, reset=False)
         closest = np.argmin(euclidean_distances(X, self.X_), axis=1)
         return self.y_[closest]
-
-    def predict_proba(self, X):
-        return OneHotEncoder(sparse_output=False).fit_transform(
-            self.predict(X).reshape(-1, 1)
-        )
 
 
 # %%

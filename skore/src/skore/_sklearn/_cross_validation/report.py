@@ -12,7 +12,6 @@ from sklearn.base import BaseEstimator, clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 
-from skore._config import configuration
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
@@ -45,7 +44,6 @@ def _generate_estimator_report(
     pos_label: PositiveLabel | None,
     train_indices: ArrayLike,
     test_indices: ArrayLike,
-    diagnose: bool = False,
 ) -> EstimatorReport:
     if y is None:
         # In the case of clustering, we do not have y
@@ -54,20 +52,15 @@ def _generate_estimator_report(
     else:
         y_train = _safe_indexing(y, train_indices)
         y_test = _safe_indexing(y, test_indices)
-    with configuration(diagnose=False):
-        report = EstimatorReport(
-            estimator,
-            fit=True,
-            X_train=_safe_indexing(X, train_indices),
-            y_train=y_train,
-            X_test=_safe_indexing(X, test_indices),
-            y_test=y_test,
-            pos_label=pos_label,
-            diagnose=False,
-        )
-    if diagnose:
-        report.diagnose()
-    return report
+    return EstimatorReport(
+        estimator,
+        fit=True,
+        X_train=_safe_indexing(X, train_indices),
+        y_train=y_train,
+        X_test=_safe_indexing(X, test_indices),
+        y_test=y_test,
+        pos_label=pos_label,
+    )
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
@@ -110,9 +103,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Refer to scikit-learn's :ref:`User Guide <cross_validation>` for the various
         cross-validation strategies that can be used here.
-
-    diagnose : bool, default=False
-        Whether to run :meth:`diagnose` at the end of initialization.
 
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimator and computing
@@ -170,7 +160,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         y: ArrayLike | None = None,
         pos_label: PositiveLabel | None = None,
         splitter: int | SKLearnCrossValidator | Generator | None = None,
-        diagnose: bool = False,
         n_jobs: int | None = None,
     ) -> None:
         self._estimator = clone(estimator)
@@ -183,17 +172,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._split_indices = tuple(self._splitter.split(self._X, self._y))
         self.n_jobs = n_jobs
 
-        self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports(
-            diagnose=diagnose or configuration.diagnose
-        )
+        self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
         self._ml_task = self.estimator_reports_[0].ml_task
 
-        if diagnose or configuration.diagnose:
-            self._display_diagnose_results(self.diagnose())
-
-    def _fit_estimator_reports(
-        self, *, diagnose: bool = False
-    ) -> list[EstimatorReport]:
+    def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
 
         Returns
@@ -218,7 +200,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                         self._pos_label,
                         train_indices,
                         test_indices,
-                        diagnose=diagnose,
                     )
                     for (train_indices, test_indices) in self.split_indices
                 ),

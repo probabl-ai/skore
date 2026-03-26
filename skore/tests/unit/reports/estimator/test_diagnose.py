@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -99,27 +97,6 @@ def test_diagnose_no_issues(monkeypatch, regression_train_test_split):
     assert messages.diagnostics == []
 
 
-def test_diagnose_called_on_init(monkeypatch, regression_train_test_split):
-    """Check the diagnostics are called on init."""
-    calls = []
-
-    def _compute_diagnostics(self):
-        calls.append(True)
-        return [], set()
-
-    monkeypatch.setattr(EstimatorReport, "_compute_diagnostics", _compute_diagnostics)
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    EstimatorReport(
-        LinearRegression(),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-        diagnose=True,
-    )
-    assert calls == [True]
-
-
 def test_diagnose_result_has_repr(monkeypatch, regression_train_test_split):
     """Check the diagnostics result has a repr."""
     diagnostic = DiagnosticResult(
@@ -171,20 +148,6 @@ def test_diagnose_uses_global_ignore(monkeypatch, regression_data):
         assert all(d.code != "SKD001" for d in report.diagnose().diagnostics)
 
 
-def test_diagnose_follows_global_config_default(regression_data):
-    """Check the diagnostics are displayed on init in console by default."""
-    X, y = regression_data
-    with patch.object(EstimatorReport, "_display_diagnose_results") as display_mock:
-        evaluate(LinearRegression(), X, y, splitter=0.2)
-    display_mock.assert_not_called()
-    with (
-        patch.object(EstimatorReport, "_display_diagnose_results") as display_mock,
-        configuration(diagnose=True),
-    ):
-        evaluate(LinearRegression(), X, y, splitter=0.2)
-    display_mock.assert_called_once()
-
-
 def test_diagnose_reuses_cached_diagnostics(monkeypatch, regression_data):
     """Check the diagnostics are reused across splits."""
     calls = 0
@@ -197,7 +160,8 @@ def test_diagnose_reuses_cached_diagnostics(monkeypatch, regression_data):
 
     monkeypatch.setattr(EstimatorReport, "_compute_diagnostics", _compute_diagnostics)
     X, y = regression_data
-    report = evaluate(LinearRegression(), X, y, splitter=0.2, diagnose=True)
-    calls_after_init = calls
+    report = evaluate(LinearRegression(), X, y, splitter=0.2)
     report.diagnose()
-    assert calls == calls_after_init
+    calls_after_first = calls
+    report.diagnose()
+    assert calls == calls_after_first

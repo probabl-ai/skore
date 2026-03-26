@@ -44,9 +44,8 @@ deep_tree = DecisionTreeRegressor(random_state=42)
 # ==========================================================
 #
 # Every report exposes a :meth:`~skore.EstimatorReport.diagnose` method.
-# By default, diagnostics are **not** displayed at creation time: you call
-# :meth:`~skore.EstimatorReport.diagnose` yourself, as suggested by the diagnostics
-# panel in the report's HTML representation.
+# Diagnostics are computed lazily and cached, so calling
+# :meth:`~skore.EstimatorReport.diagnose` is always cheap after the first call.
 
 from skore import evaluate
 
@@ -74,24 +73,6 @@ tree_report.metrics.summarize(data_source="both").frame()
 # train but degrades on test.
 
 # %%
-# Showing diagnostics at creation time
-# ====================================
-#
-# Pass ``diagnose=True`` to :func:`~skore.evaluate` (or to any report
-# constructor) to run and display diagnostics immediately.
-
-tree_report = evaluate(deep_tree, X, y, diagnose=True)
-
-# %%
-# You can also turn this on globally with :obj:`~skore.configuration` as a
-# context manager:
-
-import skore
-
-with skore.configuration(diagnose=True):
-    tree_report = evaluate(deep_tree, X, y)
-
-# %%
 # Ignoring specific checks
 # ========================
 #
@@ -103,6 +84,8 @@ tree_report.diagnose(ignore=["SKD001"])
 # %%
 # Or globally, so that every subsequent :meth:`~skore.EstimatorReport.diagnose` call
 # skips them:
+
+import skore
 
 with skore.configuration(ignore_diagnostics=["SKD001"]):
     diagnosis = tree_report.diagnose()

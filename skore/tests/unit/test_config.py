@@ -27,14 +27,6 @@ def test_configuration_plot_backend():
     assert configuration.plot_backend == "plotly"
 
 
-def test_configuration_diagnose():
-    assert configuration.diagnose is False
-
-    configuration.diagnose = True
-
-    assert configuration.diagnose is True
-
-
 def test_configuration_ignore_diagnostics():
     assert configuration.ignore_diagnostics is None
 
@@ -46,7 +38,6 @@ def test_configuration_ignore_diagnostics():
 def test_configuration_call():
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
-    assert configuration.diagnose is False
     assert configuration.ignore_diagnostics is None
 
     with configuration():
@@ -55,7 +46,6 @@ def test_configuration_call():
 
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
-    assert configuration.diagnose is False
     assert configuration.ignore_diagnostics is None
 
     with configuration(show_progress=False):
@@ -91,14 +81,11 @@ def test_configuration_call():
 
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
-    assert configuration.diagnose is False
     assert configuration.ignore_diagnostics is None
 
-    with configuration(diagnose=True, ignore_diagnostics=["SKD001"]):
-        assert configuration.diagnose is True
+    with configuration(ignore_diagnostics=["SKD001"]):
         assert configuration.ignore_diagnostics == ["SKD001"]
 
-    assert configuration.diagnose is False
     assert configuration.ignore_diagnostics is None
 
 

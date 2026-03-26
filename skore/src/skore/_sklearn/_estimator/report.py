@@ -15,7 +15,6 @@ from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
-from skore._config import configuration
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
@@ -74,9 +73,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         For binary classification, the positive class. If `None` and the target labels
         are `{0, 1}` or `{-1, 1}`, the positive class is set to `1`. For other labels,
         some metrics might raise an error if `pos_label` is not defined.
-
-    diagnose : bool, default=False
-        Whether to run :meth:`diagnose` at the end of initialization.
 
     Attributes
     ----------
@@ -163,7 +159,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         X_test: ArrayLike | None = None,
         y_test: ArrayLike | None = None,
         pos_label: PositiveLabel | None = None,
-        diagnose: bool = False,
     ) -> None:
         self._fit = fit
 
@@ -197,9 +192,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
         self._cache = Cache()
-
-        if diagnose or configuration.diagnose:
-            self._display_diagnose_results(self.diagnose())
+        # NOTE: Reports are immutable so we don't need cache invalidation
 
     def clear_cache(self) -> None:
         """Clear the cache.

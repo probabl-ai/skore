@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, cast
 
 from sklearn.base import BaseEstimator
 
-from skore._config import configuration
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
@@ -27,7 +26,6 @@ def evaluate(
     *,
     splitter: float | int | str | SKLearnCrossValidator | Generator = 0.2,
     pos_label: int | float | bool | str | None = None,
-    diagnose: bool = False,
     n_jobs: int | None = None,
 ) -> EstimatorReport | CrossValidationReport | ComparisonReport:
     """Evaluate one or more estimators on the given data.
@@ -67,9 +65,6 @@ def evaluate(
     pos_label : int, float, bool or str, default=None
         The positive class label for binary classification metrics. Forwarded
         to the underlying report.
-
-    diagnose : bool, default=False
-        Whether to run :meth:`diagnose` at the end of initialization.
 
     n_jobs : int or None, default=None
         Number of jobs for parallel execution. Forwarded to
@@ -115,24 +110,22 @@ def evaluate(
 
         if not isinstance(X, list):
             X = [X] * len(estimator)
-        with configuration(diagnose=False):
-            reports = [
-                evaluate(
-                    est,
-                    x,
-                    y,
-                    splitter=splitter,
-                    pos_label=pos_label,
-                    n_jobs=n_jobs,
-                )
-                for est, x in zip(estimator, X, strict=True)
-            ]
+        reports = [
+            evaluate(
+                est,
+                x,
+                y,
+                splitter=splitter,
+                pos_label=pos_label,
+                n_jobs=n_jobs,
+            )
+            for est, x in zip(estimator, X, strict=True)
+        ]
         return ComparisonReport(
             cast(
                 list[EstimatorReport] | list[CrossValidationReport],
                 reports,
             ),
-            diagnose=diagnose,
             n_jobs=n_jobs,
         )
 
@@ -145,27 +138,14 @@ def evaluate(
                 f"Invalid string value for splitter: {splitter!r}. "
                 "The only supported string value is 'prefit'."
             )
-        return EstimatorReport(
-            estimator, X_test=X, y_test=y, pos_label=pos_label, diagnose=diagnose
-        )
+        return EstimatorReport(estimator, X_test=X, y_test=y, pos_label=pos_label)
 
     if isinstance(splitter, float):
         splitter = TrainTestSplit(test_size=splitter)
 
-    report: EstimatorReport | CrossValidationReport
-    with configuration(diagnose=False):
-        report = CrossValidationReport(
-            estimator,
-            X,
-            y,
-            pos_label=pos_label,
-            splitter=splitter,
-            diagnose=False,
-            n_jobs=n_jobs,
-        )
+    report = CrossValidationReport(
+        estimator, X, y, pos_label=pos_label, splitter=splitter, n_jobs=n_jobs
+    )
     if hasattr(splitter, "get_n_splits") and splitter.get_n_splits() == 1:
-        report = report.estimator_reports_[0]
-    diagnostics = report.diagnose()
-    if diagnose or configuration.diagnose:
-        report._display_diagnose_results(diagnostics)
+        return report.estimator_reports_[0]
     return report

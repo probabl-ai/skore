@@ -9,7 +9,6 @@ import pandas as pd
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
-from skore._config import configuration
 from skore._sklearn._diagnostics.base import DiagnosticResult
 
 if TYPE_CHECKING:
@@ -140,16 +139,14 @@ def _baseline_metric_pairs(report: EstimatorReport) -> dict[MetricKey, MetricPai
     # Needed to avoid circular import
     from skore._sklearn._estimator.report import EstimatorReport
 
-    with configuration(diagnose=False):
-        baseline_report = EstimatorReport(
-            dummy_estimator,
-            X_train=report.X_train,
-            y_train=report.y_train,
-            X_test=report.X_test,
-            y_test=report.y_test,
-            pos_label=report.pos_label,
-            diagnose=False,
-        )
+    baseline_report = EstimatorReport(
+        dummy_estimator,
+        X_train=report.X_train,
+        y_train=report.y_train,
+        X_test=report.X_test,
+        y_test=report.y_test,
+        pos_label=report.pos_label,
+    )
     return _metric_pairs(baseline_report)
 
 

@@ -21,8 +21,8 @@ You can also set a global ignore list with `configuration.ignore_diagnostics = .
 
 .. code-block:: python
 
-    from skore import config
-    config.ignore_diagnostics = ["SKD001"]
+    from skore import configuration
+    configuration.ignore_diagnostics = ["SKD001"]
 
 For cross-validation reports, diagnostics are computed per split and then aggregated
 at report level; a diagnostic is reported as an issue only when it appears in a majority

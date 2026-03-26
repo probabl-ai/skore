@@ -4,7 +4,6 @@ CrossValidationReports.
 """
 
 from io import BytesIO
-from unittest.mock import patch
 
 import joblib
 import pytest
@@ -117,21 +116,6 @@ def test_diagnose_uses_global_ignore(report, monkeypatch):
     assert any(d.code == "SKD001" for d in report.diagnose().diagnostics)
     with configuration(ignore_diagnostics=["SKD001"]):
         assert all(d.code != "SKD001" for d in report.diagnose().diagnostics)
-
-
-def test_diagnose_follows_global_config_default(
-    estimator_reports_binary_classification,
-):
-    """Check the diagnostics are displayed when global diagnose is set."""
-    with patch.object(ComparisonReport, "_display_diagnose_results") as display_mock:
-        ComparisonReport(list(estimator_reports_binary_classification))
-    display_mock.assert_not_called()
-    with (
-        patch.object(ComparisonReport, "_display_diagnose_results") as display_mock,
-        configuration(diagnose=True),
-    ):
-        ComparisonReport(list(estimator_reports_binary_classification))
-    display_mock.assert_called_once()
 
 
 def test_pickle(tmp_path, report):

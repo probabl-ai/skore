@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 
-from skore._config import configuration
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
@@ -57,9 +56,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         Reports to compare. If a dict, keys will be used to label the estimators;
         if a list, the labels are computed from the estimator class names.
         Expects at least two reports to compare, with the same test target.
-
-    diagnose : bool, default=False
-        Whether to run :meth:`diagnose` at the end of initialization.
 
     n_jobs : int, default=None
         Number of jobs to run in parallel. Training the estimators and computing
@@ -245,7 +241,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             | dict[str, CrossValidationReport]
         ),
         *,
-        diagnose: bool = False,
         n_jobs: int | None = None,
     ) -> None:
         """
@@ -265,9 +260,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         self.n_jobs = n_jobs
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
-
-        if diagnose or configuration.diagnose:
-            self._display_diagnose_results(self.diagnose())
 
     def clear_cache(self) -> None:
         """Clear the cache.
