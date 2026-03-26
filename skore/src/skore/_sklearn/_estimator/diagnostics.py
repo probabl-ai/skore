@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import warnings
-from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, NamedTuple, cast
+from typing import TYPE_CHECKING, NamedTuple, TypeAlias, cast
 
 import pandas as pd
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -153,34 +153,8 @@ def _baseline_metric_pairs(report: EstimatorReport) -> dict[MetricKey, MetricPai
     return _metric_pairs(baseline_report)
 
 
-@dataclass(frozen=True, slots=True)
-class DiagnosticContext:
-    """Pre-computed inputs shared across all diagnostic checks."""
-
-    report: EstimatorReport
-    estimator_metric_pairs: dict[MetricKey, MetricPair]
-    baseline_metric_pairs: dict[MetricKey, MetricPair]
-
-
-class DiagnosticCheck(ABC):
-    """A single diagnostic check that can be registered in the check list.
-
-    Subclasses declare their identity (``code``, ``title``, ``docs_anchor``)
-    and implement ``can_run`` / ``run`` to participate in the diagnostic
-    pipeline without requiring changes to the orchestrator.
-    """
-
-    code: str
-    title: str
-    docs_anchor: str
-
-    @abstractmethod
-    def can_run(self, report: EstimatorReport) -> bool:
-        """Whether the report has the data this check needs."""
-
-    @abstractmethod
-    def run(self, context: DiagnosticContext) -> DiagnosticResult | None:
-        """Run the check.  Return a result if the issue is detected, else ``None``."""
+class DiagnosticNotApplicable(Exception):
+    """Raised when a diagnostic check cannot run on the given report."""
 
 
 def _has_train_and_test(report: EstimatorReport) -> bool:
@@ -193,89 +167,77 @@ def _has_train_and_test(report: EstimatorReport) -> bool:
     )
 
 
-class OverfittingCheck(DiagnosticCheck):
-    """Detect potential overfitting via train/test score gaps.
+def check_overfitting_underfitting(
+    report: EstimatorReport,
+) -> list[DiagnosticResult]:
+    """Check for overfitting (SKD001) and underfitting (SKD002).
 
-    A metric is flagged when the train score is at least 10% better than the test score.
-    with a minimum difference of 0.03. The check fires when a strict majority
-    of default predictive metrics are flagged.
+    Both checks share the same pre-conditions and metric data, so they are
+    grouped in a single function.  Raises :class:`DiagnosticNotApplicable`
+    when train+test data is unavailable.
     """
+    if not _has_train_and_test(report):
+        raise DiagnosticNotApplicable
 
-    code = "SKD001"
-    title = "Potential overfitting"
-    docs_anchor = "skd001-overfitting"
+    estimator_pairs = _metric_pairs(report)
+    baseline_pairs = _baseline_metric_pairs(report)
+    results: list[DiagnosticResult] = []
 
-    def can_run(self, report: EstimatorReport) -> bool:
-        return _has_train_and_test(report)
-
-    def run(self, context: DiagnosticContext) -> DiagnosticResult | None:
-        votes = [
-            _is_significant_gap(metric_pair)
-            for metric_pair in context.estimator_metric_pairs.values()
-        ]
-        majority, n_positive, total = _majority_vote(votes)
-        if not majority:
-            return None
-        return DiagnosticResult(
-            code=self.code,
-            title=self.title,
-            docs_anchor=self.docs_anchor,
-            explanation=(
-                "Significant train/test gaps were found for "
-                f"{n_positive}/{total} default predictive metrics."
-            ),
+    # SKD001 - Overfitting
+    votes = [_is_significant_gap(mp) for mp in estimator_pairs.values()]
+    majority, n_positive, total = _majority_vote(votes)
+    if majority:
+        results.append(
+            DiagnosticResult(
+                code="SKD001",
+                title="Potential overfitting",
+                docs_anchor="skd001-overfitting",
+                explanation=(
+                    "Significant train/test gaps were found for "
+                    f"{n_positive}/{total} default predictive metrics."
+                ),
+            )
         )
 
-
-class UnderfittingCheck(DiagnosticCheck):
-    """Detect potential underfitting by comparing to a dummy baseline.
-
-    A metric is flagged when neither the train nor the test score exceeds the dummy
-    baseline by more than 3% (floor 0.01) in favorability direction.
-    The check fires when a strict majority of comparable metrics are flagged.
-    """
-
-    code = "SKD002"
-    title = "Potential underfitting"
-    docs_anchor = "skd002-underfitting"
-
-    def can_run(self, report: EstimatorReport) -> bool:
-        return _has_train_and_test(report)
-
-    def run(self, context: DiagnosticContext) -> DiagnosticResult | None:
-        shared_metrics = (
-            context.estimator_metric_pairs.keys() & context.baseline_metric_pairs.keys()
-        )
-        if not shared_metrics:
-            return None
+    # SKD002 - Underfitting
+    shared_metrics = estimator_pairs.keys() & baseline_pairs.keys()
+    if shared_metrics:
         votes = [
             not _is_significantly_better(
-                score=context.estimator_metric_pairs[metric].train,
-                baseline=context.baseline_metric_pairs[metric].train,
-                favorability=context.estimator_metric_pairs[metric].favorability,
+                score=estimator_pairs[metric].train,
+                baseline=baseline_pairs[metric].train,
+                favorability=estimator_pairs[metric].favorability,
             )
             and not _is_significantly_better(
-                score=context.estimator_metric_pairs[metric].test,
-                baseline=context.baseline_metric_pairs[metric].test,
-                favorability=context.estimator_metric_pairs[metric].favorability,
+                score=estimator_pairs[metric].test,
+                baseline=baseline_pairs[metric].test,
+                favorability=estimator_pairs[metric].favorability,
             )
             for metric in shared_metrics
         ]
         majority, n_positive, total = _majority_vote(votes)
-        if not majority:
-            return None
-        return DiagnosticResult(
-            code=self.code,
-            title=self.title,
-            docs_anchor=self.docs_anchor,
-            explanation=(
-                "Train/test scores are on par and not significantly better than "
-                f"the dummy baseline for {n_positive}/{total} comparable metrics."
-            ),
-        )
+        if majority:
+            results.append(
+                DiagnosticResult(
+                    code="SKD002",
+                    title="Potential underfitting",
+                    docs_anchor="skd002-underfitting",
+                    explanation=(
+                        "Train/test scores are on par and not significantly better "
+                        f"than the dummy baseline for {n_positive}/{total} "
+                        "comparable metrics."
+                    ),
+                )
+            )
+
+    return results
 
 
-_CHECKS: list[DiagnosticCheck] = [OverfittingCheck(), UnderfittingCheck()]
+DiagnosticCheckFn: TypeAlias = Callable[["EstimatorReport"], list[DiagnosticResult]]
+
+_CHECKS: list[tuple[set[str], DiagnosticCheckFn]] = [
+    ({"SKD001", "SKD002"}, check_overfitting_underfitting),
+]
 
 
 def run_estimator_diagnostics(
@@ -285,15 +247,12 @@ def run_estimator_diagnostics(
 
     Returns a tuple of (detected issues, set of check codes that were evaluated).
     """
-    runnable = [check for check in _CHECKS if check.can_run(report)]
-    if not runnable:
-        return [], set()
-    context = DiagnosticContext(
-        report=report,
-        estimator_metric_pairs=_metric_pairs(report),
-        baseline_metric_pairs=_baseline_metric_pairs(report),
-    )
-    return (
-        [result for check in runnable if (result := check.run(context)) is not None],
-        {check.code for check in runnable},
-    )
+    results: list[DiagnosticResult] = []
+    checked_codes: set[str] = set()
+    for codes, check_fn in _CHECKS:
+        try:
+            results.extend(check_fn(report))
+            checked_codes |= codes
+        except DiagnosticNotApplicable:
+            pass
+    return results, checked_codes
