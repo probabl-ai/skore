@@ -48,6 +48,9 @@ Changed
   ``fig = display.plot(...)`` and then ``fig.axes``, ``fig.show()``, or rely on the
   figure's rich representation in notebooks.
 
+- **Breaking change:** :class:`~skore.EstimatorReport` now requires ``X_test``. If
+  ``X_test`` is omitted (``None``), construction raises ``ValueError``.
+
 Added
 -----
 
