@@ -2,12 +2,7 @@ import pytest
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import KFold, StratifiedKFold
 
-from skore import (
-    ComparisonReport,
-    CrossValidationReport,
-    EstimatorReport,
-    evaluate,
-)
+from skore import ComparisonReport, CrossValidationReport, EstimatorReport, evaluate
 
 
 def test_evaluate_prefit_estimator(regression_data):
