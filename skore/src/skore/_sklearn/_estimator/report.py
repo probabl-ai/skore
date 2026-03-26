@@ -61,7 +61,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     y_train : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Training target.
 
-    X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+    X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
         Testing data. It should have the same structure as the training data.
 
     y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
@@ -154,7 +154,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         fit: Literal["auto"] | bool = "auto",
         X_train: ArrayLike | None = None,
         y_train: ArrayLike | None = None,
-        X_test: ArrayLike | None = None,
+        X_test: ArrayLike,
         y_test: ArrayLike | None = None,
         pos_label: PositiveLabel | None = None,
     ) -> None:
@@ -179,11 +179,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             self._estimator, fit_time = self._fit_estimator(estimator, X_train, y_train)
         else:  # fit is False
             self._estimator = self._copy_estimator(estimator)
-
-        if X_test is None:
-            raise ValueError(
-                "The test data is required to create an estimator report. "
-            )
 
         # private storage to ensure properties are read-only
         self._X_train = X_train
