@@ -1,5 +1,3 @@
-import sys
-
 import joblib
 import numpy as np
 import pytest
@@ -196,15 +194,7 @@ def test_interrupted_propagates_error(binary_classification_data, error, n_jobs)
 
     estimator = MockEstimator(error=error, n_call=0, fail_after_n_clone=8)
 
-    if sys.version_info < (3, 11) and isinstance(error, ValueError):
-        err_type, err_match = (
-            RuntimeError,
-            "Evaluation of node <Apply MockEstimator> failed",
-        )
-    else:
-        err_type, err_match = type(error), str(error) if str(error) else None
-
-    with pytest.raises(err_type, match=err_match):
+    with pytest.raises(type(error), match=str(error) if str(error) else None):
         CrossValidationReport(estimator, X, y, splitter=10, n_jobs=n_jobs)
 
 
