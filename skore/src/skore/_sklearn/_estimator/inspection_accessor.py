@@ -17,6 +17,7 @@ from skore._sklearn.types import DataSource, Metric
 from skore._utils._accessor import (
     _check_estimator_has_coef,
     _check_estimator_has_feature_importances,
+    _check_supported_ml_task,
 )
 from skore._utils._cache_key import deep_key_sanitize
 
@@ -347,14 +348,15 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         return display
 
+    @available_if(
+        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+    )
     def calibration_curve(
         self,
         *,
         data_source: DataSource = "test",
         n_bins: int = 5,
-        strategy: Literal["uniform", "quantile"] = "uniform",
-        response_method: Literal["auto", "predict_proba", "decision_function"] = "auto",
-        pos_label: int | str | None = None,
+        strategy: Literal["uniform", "quantile"] = "quantile",
     ) -> CalibrationDisplay:
         """Display the calibration curve.
 
@@ -398,8 +400,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             y=self._parent.y_test if data_source == "test" else self._parent.y_train,
             n_bins=n_bins,
             strategy=strategy,
-            response_method=response_method,
-            pos_label=pos_label,
+            pos_label=self._parent.pos_label,
         )
 
     ####################################################################################
