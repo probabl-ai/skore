@@ -5,7 +5,7 @@ import html
 import uuid
 import warnings
 from itertools import product
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import skrub
 from joblib import Parallel
@@ -61,7 +61,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     y_train : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Training target.
 
-    X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+    X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
         Testing data. It should have the same structure as the training data.
 
     y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
@@ -154,7 +154,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         fit: Literal["auto"] | bool = "auto",
         X_train: ArrayLike | None = None,
         y_train: ArrayLike | None = None,
-        X_test: ArrayLike | None = None,
+        X_test: ArrayLike,
         y_test: ArrayLike | None = None,
         pos_label: PositiveLabel | None = None,
     ) -> None:
@@ -342,9 +342,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         (25,)
         """
         if data_source == "test":
-            X_ = self._X_test
+            X_ = cast(ArrayLike, self._X_test)
         elif data_source == "train":
-            X_ = self._X_train
+            X_ = cast(ArrayLike, self._X_train)
         else:
             raise ValueError(f"Invalid data source: {data_source}")
 
