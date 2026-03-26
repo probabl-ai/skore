@@ -478,6 +478,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
+            "diagnostics": self._diagnostics_html_fragment(),
         }
 
     def _repr_html_(self) -> str:
@@ -508,7 +509,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
                 **fragments,
-                "diagnostics": self._diagnostics_panel_html(),
             },
         )
 

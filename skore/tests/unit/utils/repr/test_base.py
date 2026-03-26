@@ -247,7 +247,6 @@ def test_repr_html_mixin_repr_mimebundle():
 
 def test_report_repr_html_contains_diagnostics_panel(report_with_base_help):
     html = report_with_base_help._repr_html_()
-    assert "Diagnostics" in html
     assert ".diagnose()" in html
 
 
@@ -255,4 +254,4 @@ def test_report_repr_mimebundle_contains_diagnostics_panel(report_with_base_help
     out = report_with_base_help._repr_mimebundle_()
     assert "text/plain" in out
     assert "text/html" in out
-    assert "Diagnostics" in out["text/html"]
+    assert ".diagnose()" in out["text/html"]

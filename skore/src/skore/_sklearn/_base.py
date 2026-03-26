@@ -20,6 +20,7 @@ from skore._utils._cache import Cache
 from skore._utils._cache_key import make_cache_key
 from skore._utils._measure_time import MeasureTime
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
+from skore._utils.repr.html_repr import render_template
 
 
 class _BaseReport(ReportHelpMixin):
@@ -114,27 +115,16 @@ class _BaseReport(ReportHelpMixin):
         checks_ran = len(checked_codes - ignored)
         return self._build_results(filtered, checks_ran, ignored)
 
-    def _diagnostics_panel_html(self) -> str:
+    def _diagnostics_html_fragment(self) -> str:
+        """HTML fragment for the diagnostics panel, rendered via Jinja template."""
         diagnostics, checked_codes = self._get_diagnostics()
-        details = f"{len(diagnostics)} issue(s) across {len(checked_codes)} check(s)."
-        summary = f"{len(checked_codes)} check(s) ran in the latest run."
-        return (
-            '<div style="margin:10px 0;padding:10px;'
-            "border:1px solid #f97316;border-radius:4px;display:inline-block;"
-            'font-family:monospace;font-size:13px;line-height:1.5;">'
-            '<div style="font-weight:700;margin-bottom:6px;">Diagnostics</div>'
-            f"<div>{details}</div>"
-            f"<div>{summary}</div>"
-            "<div>Run <code>.diagnose()</code> for details and "
-            "<code>.diagnose(ignore=...)</code> to ignore specific diagnostics.</div>"
-            "</div>"
+        return render_template(
+            "diagnostics_panel.html.j2",
+            {
+                "n_issues": len(diagnostics),
+                "n_checks": len(checked_codes),
+            },
         )
-
-    def _repr_html_(self) -> str:
-        return f"{self._create_help_html()}{self._diagnostics_panel_html()}"
-
-    def _repr_mimebundle_(self, **kwargs: object) -> dict[str, str]:
-        return {"text/plain": repr(self), "text/html": self._repr_html_()}
 
     @cached_property
     def id(self) -> int:

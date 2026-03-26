@@ -547,7 +547,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "label": label,
                     "estimator_display": fragments["estimator_display"],
                     "table_report": fragments["table_report"],
-                    "diagnostics": report._diagnostics_panel_html(),
+                    "diagnostics": fragments["diagnostics"],
                 }
             )
 
