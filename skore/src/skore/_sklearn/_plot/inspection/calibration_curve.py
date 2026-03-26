@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Any, Literal
 
 import numpy as np
@@ -8,10 +9,12 @@ import seaborn as sns
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator
 from sklearn.calibration import calibration_curve
-from sklearn.utils._response import _get_response_values_binary
 
+from skore._sklearn._base import _get_cached_response_values
 from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn._plot.utils import _despine_matplotlib_axis
 from skore._sklearn.types import DataSource, ReportType
+from skore._utils._cache import Cache
 
 
 class CalibrationDisplay(DisplayMixin):
@@ -45,12 +48,11 @@ class CalibrationDisplay(DisplayMixin):
 
     Examples
     --------
-    >>> from sklearn.datasets import load_iris
     >>> from sklearn.linear_model import LogisticRegression
     >>> from skore import EstimatorReport, train_test_split
-    >>> iris = load_iris(as_frame=True)
-    >>> X, y = iris.data, iris.target
-    >>> y = iris.target_names[y]
+    >>> X, y = make_classification(
+    ...     n_samples=100_000, n_features=20, n_informative=2, n_redundant=10,
+    ...     random_state=42)
     >>> split_data = train_test_split(
     ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
     ... )
@@ -96,18 +98,31 @@ class CalibrationDisplay(DisplayMixin):
         y: ArrayLike,
         report_type: ReportType,
         n_bins: int = 5,
-        strategy: Literal["uniform", "quantile"] = "uniform",
-        response_method: Literal["auto", "predict_proba", "decision_function"] = "auto",
-        pos_label: int | str | None = None,
+        strategy: Literal["uniform", "quantile"] = "quantile",
+        pos_label: int | None = None,
     ) -> CalibrationDisplay:
         """Compute the data for the calibration curve display."""
+        cache = Cache()
+        # Randomly generate estimator hash
+        rng = np.random.default_rng(time.time_ns())
+        estimator_hash = rng.integers(
+            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
+        )
+
         # Get predicted probabilities
-        y_pred, pos_label = _get_response_values_binary(
-            estimator,
-            X,
-            response_method=response_method,
+        y_pred_cache = _get_cached_response_values(
+            cache=cache,
+            estimator_hash=int(estimator_hash),
+            estimator=estimator,
+            X=X,
+            response_method="predict_proba",
             pos_label=pos_label,
         )
+        # unpack actual predictions value
+        pred_vals = y_pred_cache[0][1]
+
+        # ensure ndarray-compatible
+        y_pred = pred_vals if isinstance(pred_vals, np.ndarray) else pred_vals.values
 
         # Compute the calibration curve
         fraction_of_positives, predicted_probability = calibration_curve(
@@ -123,7 +138,6 @@ class CalibrationDisplay(DisplayMixin):
         df["estimator"] = name
         df["data_source"] = data_source
         df["split"] = np.nan
-        df["label"] = pos_label
         return cls(calibration_report=df, report_type=report_type)
 
     @DisplayMixin.style_plot
@@ -132,17 +146,16 @@ class CalibrationDisplay(DisplayMixin):
 
         Examples
         --------
-        >>> from sklearn.datasets import load_iris
-        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import EstimatorReport, train_test_split
-        >>> iris = load_iris(as_frame=True)
-        >>> X, y = iris.data, iris.target
-        >>> y = iris.target_names[y]
+        >>> X, y = make_classification(
+        ...     n_samples=100_000, n_features=20, n_informative=2, n_redundant=10,
+        ...     random_state=42)
         >>> split_data = train_test_split(
         ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
         ... )
         >>> report = EstimatorReport(RandomForestClassifier(), **split_data)
-        >>> display = report.inspection.impurity_decrease()
+        >>> display = report.inspection.calibration_curve()
         >>> display.plot()
         """
         return self._plot()
@@ -157,30 +170,23 @@ class CalibrationDisplay(DisplayMixin):
         # Make copy of the dictionary since we are going to pop some keys later
         lineplot_kwargs = self._default_line_kwargs.copy()
 
-        return self._plot_calibration_curve(
+        return self._plot_calibration_curve_single_estimator(
             frame=self.frame(),
             estimator_name=self.calibration_report["estimator"][0],
-            report_type=self.report_type,
             ref_line=True,
             hue=None,
             lineplot_kwargs=lineplot_kwargs,
         )
 
-    def _plot_calibration_curve(
+    def _plot_calibration_curve_single_estimator(
         self,
         *,
         frame: pd.DataFrame,
         estimator_name: str,
-        report_type: ReportType,
         hue: str | None = None,
         ref_line: bool = True,
         lineplot_kwargs: dict[str, Any],
     ):
-        info_pos_label = (
-            f"(Positive class: {frame['label'].iloc[0]})"
-            if frame["label"].iloc[0] is not None
-            else ""
-        )
         self.plot_ = sns.lineplot(
             data=frame,
             x="predicted_probability",
@@ -197,20 +203,19 @@ class CalibrationDisplay(DisplayMixin):
 
         # We always have to show the legend for at least the reference line
         self.ax_.legend(loc="lower right")
-        add_background_features = hue is not None
 
-        self.ax_.set_xlabel(f"Mean predicted probability {info_pos_label}")
-        self.ax_.set_ylabel(f"Fraction of positives {info_pos_label}")
+        self.ax_.set_xlabel("Mean predicted probability")
+        self.ax_.set_ylabel("Fraction of positives")
         self.ax_.set_xlim(0, 1)
         self.ax_.set_ylim(0, 1)
 
-        if add_background_features:
-            self.ax_.axhspan(
-                0,
-                1,
-                color="lightgray",
-                alpha=0.4,
-                zorder=0,
-            )
+        _despine_matplotlib_axis(
+            self.ax_,
+            axis_to_despine=("top", "right"),
+            remove_ticks=True,
+            x_range=None,
+            y_range=None,
+        )
+        self.figure_.suptitle(f"Calibration Curve of {estimator_name}")
 
         return self
