@@ -6,7 +6,7 @@ import inspect
 from abc import ABC
 from collections.abc import Callable
 from functools import reduce
-from typing import ClassVar, Literal, cast
+from typing import Any, ClassVar, Literal, cast
 
 from skore_hub_project.artifact.media.media import Media, Report
 from skore_hub_project.json import dumps
@@ -43,9 +43,17 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "inspection.permutation_importance"
     name: Literal["permutation_importance"] = "permutation_importance"
 
-    def content_to_upload(self) -> bytes | None:  # noqa: D102
-        cache = getattr(self.report, "_cache", {})
+    def _get_display(self) -> Any:
+        if hasattr(self.report.inspection, "_get_cached_permutation_importances"):
+            kwargs_list = self.report.inspection._get_cached_permutation_importances(
+                self.data_source
+            )
+            for kwargs in reversed(kwargs_list):
+                if kwargs["at_step"] == 0 and kwargs.get("metric") is None:
+                    return self.report.inspection.permutation_importances(**kwargs)
 
+        # old skore (<= 0.14)
+        cache = getattr(self.report, "_cache", {})
         for key, display in reversed(list(cache.items())):
             if len(key) < 6:
                 continue
@@ -59,15 +67,19 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
                 and at_step == 0
                 and metric is None
             ):
-                frame = display.frame(aggregate=None)
-
-                return dumps(
-                    frame.astype(object)
-                    .where(frame.notna(), "NaN")
-                    .to_dict(orient="tight")
-                )
+                return display
 
         return None
+
+    def content_to_upload(self) -> bytes | None:  # noqa: D102
+        display = self._get_display()
+        if display is None:
+            return None
+
+        frame = display.frame(aggregate=None)
+        return dumps(
+            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+        )
 
 
 class PermutationImportanceTrain(PermutationImportance[Report]):  # noqa: D101

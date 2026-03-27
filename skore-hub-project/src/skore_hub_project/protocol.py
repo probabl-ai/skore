@@ -30,6 +30,7 @@ class EstimatorReport(Protocol):
     clear_cache: Any
     _cache: Any
     metrics: Any
+    inspection: Any
     data: Any
     ml_task: str
     estimator: Any
@@ -52,6 +53,7 @@ class CrossValidationReport(Protocol):
     cache_predictions: Any
     clear_cache: Any
     metrics: Any
+    inspection: Any
     data: Any
     estimator_reports_: Any
     ml_task: str
