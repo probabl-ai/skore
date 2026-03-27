@@ -123,3 +123,19 @@ def test_display_regression_switching_data_source(
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(data_source="train")
     assert display_first_call is not display_second_call
+
+
+def test_display_confusion_matrix_data_source_both_is_not_supported(
+    pyplot, forest_binary_classification_with_test
+):
+    """Check that confusion_matrix rejects data_source='both' explicitly."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(
+        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="data_source='both' is not supported for confusion_matrix.",
+    ):
+        report.metrics.confusion_matrix(data_source="both")
