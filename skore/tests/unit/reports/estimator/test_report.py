@@ -156,16 +156,15 @@ def test_check_support_plot(
     "fixture_name, pass_train_data, expected_n_keys",
     [
         # expected n keys:
-        # 2 (result, time)
-        # x 1-2 ('predict', predict_proba' or 'decision_function')
-        # x 2 (train, test)
-        ("forest_binary_classification_with_test", True, 8),
-        ("svc_binary_classification_with_test", True, 8),
-        ("forest_multiclass_classification_with_test", True, 8),
+        # (result + time for 'predict'
+        #  & result for 'predict_proba' or 'decision_function') x train, test
+        ("forest_binary_classification_with_test", True, 6),
+        ("svc_binary_classification_with_test", True, 6),
+        ("forest_multiclass_classification_with_test", True, 6),
         ("linear_regression_with_test", True, 4),
-        ("forest_binary_classification_with_test", False, 4),
-        ("svc_binary_classification_with_test", False, 4),
-        ("forest_multiclass_classification_with_test", False, 4),
+        ("forest_binary_classification_with_test", False, 3),
+        ("svc_binary_classification_with_test", False, 3),
+        ("forest_multiclass_classification_with_test", False, 3),
         ("linear_regression_with_test", False, 2),
     ],
 )

@@ -318,8 +318,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             strict=True,
         ):
             self._cache[make_cache_key(ds, response_method)] = preds
-            time_name = f"{response_method}_time"
-            self._cache[make_cache_key(ds, time_name)] = time
+            if response_method == "predict":
+                self._cache[make_cache_key(ds, "predict_time")] = time
 
     def get_predictions(
         self,
