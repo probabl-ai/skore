@@ -45,8 +45,10 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
 
     def _get_display(self) -> Any:
         if hasattr(self.report.inspection, "_get_cached_permutation_importances"):
-            kwargs_list = self.report.inspection._get_cached_permutation_importances(
-                self.data_source
+            kwargs_list = list(
+                self.report.inspection._get_cached_permutation_importances(
+                    self.data_source
+                )
             )
             for kwargs in reversed(kwargs_list):
                 if kwargs["at_step"] == 0 and kwargs.get("metric") is None:
