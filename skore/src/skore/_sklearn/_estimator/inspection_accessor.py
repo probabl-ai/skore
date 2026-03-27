@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
+from skore._sklearn._plot.inspection.calibration_curve import CalibrationDisplay
 from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
 from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDisplay
 from skore._sklearn._plot.inspection.permutation_importance import (
@@ -14,6 +17,7 @@ from skore._sklearn.types import DataSource, Metric
 from skore._utils._accessor import (
     _check_estimator_has_coef,
     _check_estimator_has_feature_importances,
+    _check_supported_ml_task,
 )
 from skore._utils._cache_key import make_cache_key
 
@@ -328,6 +332,61 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 self._parent._cache[cache_key] = display
 
         return display
+
+    @available_if(
+        _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+    )
+    def calibration_curve(
+        self,
+        *,
+        data_source: DataSource = "test",
+        n_bins: int = 5,
+        strategy: Literal["uniform", "quantile"] = "quantile",
+    ) -> CalibrationDisplay:
+        """Display the calibration curve.
+
+        This method is available for binary classification reports. It computes
+        the calibration curve data for each report and returns a display that
+        can be plotted with :meth:`CalibrationDisplay.plot`.
+
+        Parameters
+        ----------
+        data_source : DataSource | None, optional
+            The data source for the calibration curve. If None, the default data
+            source is used.
+        n_bins : int, default=5
+            The number of bins to use for the calibration curve. Default is 5.
+        strategy : str, optional
+            The strategy to use for binning. Default is "uniform".
+        response_method : str, optional
+            The method to use for obtaining prediction probabilities. Default is
+            "auto".
+        pos_label : int | str | None, optional
+            The label of the positive class. If None, the default positive label
+            is used.
+
+        Returns
+        -------
+        :class:`CalibrationDisplay`
+            The calibration curve display. :meth:`CalibrationDisplay.plot` for
+            more details.
+
+        Returns
+        -------
+        :class:`CalibrationDisplay`
+            The calibration curve display.
+        """
+        return CalibrationDisplay._compute_data_for_display(
+            estimator=self._parent.estimator_,
+            name=self._parent.estimator_name_,
+            report_type=self._parent._report_type,
+            data_source=data_source,
+            X=self._parent.X_test if data_source == "test" else self._parent.X_train,
+            y=self._parent.y_test if data_source == "test" else self._parent.y_train,
+            n_bins=n_bins,
+            strategy=strategy,
+            pos_label=self._parent.pos_label,
+        )
 
     ####################################################################################
     # Methods related to the help tree

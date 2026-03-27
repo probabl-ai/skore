@@ -28,6 +28,9 @@ from skore._sklearn import (
     train_test_split,
 )
 from skore._sklearn._plot.base import Display
+from skore._sklearn._plot.inspection.calibration_curve import (
+    CalibrationDisplay,
+)
 from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
 from skore._sklearn._plot.inspection.impurity_decrease import (
     ImpurityDecreaseDisplay,
@@ -69,6 +72,7 @@ __all__ = [
     "PredictionErrorDisplay",
     "Project",
     "RocCurveDisplay",
+    "CalibrationDisplay",
     "TableReportDisplay",
     "configuration",
     "login",
