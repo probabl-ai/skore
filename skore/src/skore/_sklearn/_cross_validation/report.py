@@ -36,25 +36,18 @@ if TYPE_CHECKING:
 def _generate_estimator_report(
     estimator: BaseEstimator,
     X: ArrayLike,
-    y: ArrayLike | None,
+    y: ArrayLike,
     pos_label: PositiveLabel | None,
     train_indices: ArrayLike,
     test_indices: ArrayLike,
 ) -> EstimatorReport:
-    if y is None:
-        # In the case of clustering, we do not have y
-        y_train = None
-        y_test = None
-    else:
-        y_train = _safe_indexing(y, train_indices)
-        y_test = _safe_indexing(y, test_indices)
     return EstimatorReport(
         estimator,
         fit=True,
         X_train=_safe_indexing(X, train_indices),
-        y_train=y_train,
+        y_train=_safe_indexing(y, train_indices),
         X_test=_safe_indexing(X, test_indices),
-        y_test=y_test,
+        y_test=_safe_indexing(y, test_indices),
         pos_label=pos_label,
     )
 
@@ -325,7 +318,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ]
 
     def create_estimator_report(
-        self, *, X_test: ArrayLike, y_test: ArrayLike | None = None
+        self, *, X_test: ArrayLike, y_test: ArrayLike
     ) -> EstimatorReport:
         """Create an estimator report from the cross-validation report.
 
@@ -339,7 +332,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
             Testing data. It should have the same structure as the training data.
 
-        y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
+        y_test : array-like of shape (n_samples,) or (n_samples, n_outputs)
             Testing target.
 
         Examples

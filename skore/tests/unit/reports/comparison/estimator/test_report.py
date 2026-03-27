@@ -143,7 +143,7 @@ def test_clustering():
     ):
         ComparisonReport(
             [
-                EstimatorReport(KMeans(), X_test=None),
-                EstimatorReport(KMeans(), X_test=None),
+                EstimatorReport(KMeans(), X_test=None, y_test=None),
+                EstimatorReport(KMeans(), X_test=None, y_test=None),
             ]
         )
