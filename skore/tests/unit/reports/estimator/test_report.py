@@ -168,10 +168,7 @@ def test_check_support_plot(
         ("linear_regression_with_test", False, 2),
     ],
 )
-@pytest.mark.parametrize("n_jobs", [1, 2])
-def test_cache_predictions(
-    request, fixture_name, pass_train_data, expected_n_keys, n_jobs
-):
+def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_keys):
     """Check that calling cache_predictions fills the cache."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     if pass_train_data:
@@ -182,11 +179,11 @@ def test_cache_predictions(
         report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     assert report._cache == {}
-    report.cache_predictions(n_jobs=n_jobs)
+    report.cache_predictions()
     assert len(report._cache) == expected_n_keys
     assert report._cache != {}
     stored_cache = deepcopy(report._cache)
-    report.cache_predictions(n_jobs=n_jobs)
+    report.cache_predictions()
     # check that the keys are exactly the same
     assert report._cache.keys() == stored_cache.keys()
 

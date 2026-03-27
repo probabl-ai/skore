@@ -225,8 +225,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def cache_predictions(
         self,
-        response_methods: list[str] | Literal["auto"] = "auto",
-        n_jobs: int | None = None,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
 
@@ -252,17 +250,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> report.estimator_reports_[0]._cache
         {...}
         """
-        if n_jobs is None:
-            n_jobs = self.n_jobs
-
         for estimator_report in track(
             self.estimator_reports_,
             description="Cross-validation predictions for split",
         ):
-            estimator_report.cache_predictions(
-                response_methods=response_methods,
-                n_jobs=n_jobs,
-            )
+            estimator_report.cache_predictions()
 
     def get_predictions(
         self,
