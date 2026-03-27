@@ -118,7 +118,7 @@ def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
     for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
 
-    report.cache_predictions(n_jobs=n_jobs)
+    report.cache_predictions()
 
     for estimator_report in report.estimator_reports_:
         assert len(estimator_report._cache) == expected_n_keys

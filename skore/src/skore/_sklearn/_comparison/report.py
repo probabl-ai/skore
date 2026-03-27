@@ -281,10 +281,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def cache_predictions(
         self,
-        response_methods: Literal[
-            "auto", "predict", "predict_proba", "decision_function"
-        ] = "auto",
-        n_jobs: int | None = None,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
 
@@ -313,15 +309,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         """
-        if n_jobs is None:
-            n_jobs = self.n_jobs
-
         for report in track(
             self.reports_.values(),
             description="Estimator predictions",
             total=len(self.reports_),
         ):
-            report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
+            report.cache_predictions()
 
     def get_predictions(
         self,
