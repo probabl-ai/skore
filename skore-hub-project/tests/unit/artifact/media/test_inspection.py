@@ -39,6 +39,13 @@ def monkeypatch_permutation_importance(monkeypatch):
             seed=42,
         ),
     )
+    monkeypatch.setattr(
+        "skore.CrossValidationReport.inspection.permutation_importance",
+        partialmethod(
+            skore.CrossValidationReport.inspection.permutation_importance,
+            seed=42,
+        ),
+    )
 
 
 @mark.filterwarnings(
