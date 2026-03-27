@@ -50,7 +50,7 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
             )
             for kwargs in reversed(list(kwargs_gen)):
                 if kwargs["at_step"] == 0 and kwargs.get("metric") is None:
-                    return self.report.inspection.permutation_importances(**kwargs)
+                    return self.report.inspection.permutation_importance(**kwargs)
 
         # old skore (<= 0.14)
         cache = getattr(self.report, "_cache", {})

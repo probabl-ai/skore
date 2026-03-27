@@ -94,12 +94,11 @@ def test_cache_parameter_in_cache(regression_data):
         seed=42, n_repeats=2, data_source="test", metric="r2"
     )
     assert len(list(report.inspection._get_cached_permutation_importances("test"))) == 1
-    metric = make_scorer(root_mean_squared_error)
     report.inspection.permutation_importance(
         seed=42,
         n_repeats=2,
         data_source="test",
-        metric=metric,
+        metric=make_scorer(root_mean_squared_error),
     )
     assert len(list(report.inspection._get_cached_permutation_importances("test"))) == 2
 
