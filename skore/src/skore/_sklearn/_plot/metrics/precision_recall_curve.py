@@ -159,7 +159,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - "estimator": one subplot per estimator (comparison only)
             - "data_source": one subplot per data source (EstimatorReport with both \
                 data sources only)
-            - None: no subplots (Not available for comparison in multiclass)
+            - None: no subplots (Not available for comparison in classification \
+                with no specified pos_label)
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.

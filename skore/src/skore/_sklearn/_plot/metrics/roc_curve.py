@@ -166,7 +166,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - "estimator": one subplot per estimator (comparison only)
             - "data_source": one subplot per data source \
               (:class:`~skore.EstimatorReport` with both data sources only)
-            - None: no subplots (not available for comparison in multiclass)
+            - None: no subplots (Not available for comparison in classification \
+                with no specified pos_label)
 
         plot_chance_level : bool, default=True
             Whether to plot the chance level.

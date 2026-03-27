@@ -1421,6 +1421,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
+        if data_source == "both":
+            raise ValueError(
+                "data_source='both' is not supported for confusion_matrix."
+            )
+
         response_method: str | list[str] | tuple[str, ...]
         pos_label = self._parent.pos_label
         pred_pos_label: PositiveLabel | None
