@@ -144,7 +144,7 @@ def test_get_cached_response_values(
     assert response_values.shape == y.shape
 
 
-def test_base_accessor_get_X_y_error():
+def test_base_accessor_get_data_and_y_true_error():
     """Check that we raise the proper error in `get_X_y_and_use_cache`."""
     X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
@@ -157,16 +157,11 @@ def test_base_accessor_get_X_y_error():
         "Invalid data source: unknown. Possible values are: test, train."
     )
     with pytest.raises(ValueError, match=err_msg):
-        accessor._get_X_y(data_source="unknown")
+        accessor._get_data_and_y_true(data_source="unknown")
 
-    for data_source in ("train", "test"):
-        err_msg = re.escape(
-            f"No {data_source} data (i.e. X_{data_source} and y_{data_source}) were "
-            f"provided when creating the report. Please provide the {data_source} "
-            "data when creating the report."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            accessor._get_X_y(data_source=data_source)
+    err_msg = re.escape("No train data were provided")
+    with pytest.raises(ValueError, match=err_msg):
+        accessor._get_data_and_y_true(data_source="train")
 
     report = MockReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
@@ -175,7 +170,7 @@ def test_base_accessor_get_X_y_error():
 
 
 @pytest.mark.parametrize("data_source", ("train", "test"))
-def test_base_accessor_get_X_y(data_source):
+def test_base_accessor_get_data_and_y_true(data_source):
     """Check the general behaviour of `get_X_y_and_use_cache`."""
     X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
@@ -185,12 +180,12 @@ def test_base_accessor_get_X_y(data_source):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     accessor = MockAccessor(parent=report)
-    X, y = accessor._get_X_y(data_source=data_source)
+    data, y = accessor._get_data_and_y_true(data_source=data_source)
 
     if data_source == "train":
-        assert X is X_train
+        assert data["_skrub_X"] is X_train
         assert y is y_train
     else:
         assert data_source == "test"
-        assert X is X_test
+        assert data["_skrub_X"] is X_test
         assert y is y_test

@@ -1,4 +1,3 @@
-import inspect
 from copy import deepcopy
 from io import BytesIO
 
@@ -23,7 +22,7 @@ def test_report_can_be_rebuilt_using_parameters(linear_regression_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     parameters = {}
 
-    for parameter in inspect.signature(EstimatorReport).parameters:
+    for parameter in ["estimator", "X_test", "y_test"]:
         assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
 
         parameters[parameter] = getattr(report, parameter)

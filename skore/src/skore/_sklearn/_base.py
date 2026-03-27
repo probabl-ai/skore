@@ -69,11 +69,11 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
         )
         return string_buffer.getvalue()
 
-    def _get_X_y(
+    def _get_data_and_y_true(
         self,
         *,
         data_source: Literal["test", "train"],
-    ) -> tuple[ArrayLike, ArrayLike]:
+    ) -> tuple[dict, ArrayLike]:
         """Get the requested dataset.
 
         Parameters
@@ -86,41 +86,31 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 
         Returns
         -------
-        X : array-like of shape (n_samples, n_features)
+        data : dict of input data
             The requested dataset.
 
         y : array-like of shape (n_samples,)
-            The requested dataset.
+            The target labels.
         """
-        if data_source == "test":
-            if self._parent._X_test is None or self._parent._y_test is None:
-                missing_data = "X_test and y_test"
-                raise ValueError(
-                    f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the report. Please provide the {data_source} "
-                    "data when creating the report."
-                )
-            return self._parent._X_test, self._parent._y_test
-        elif data_source == "train":
-            if self._parent._X_train is None or self._parent._y_train is None:
-                missing_data = "X_train and y_train"
-                raise ValueError(
-                    f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the report. Please provide the {data_source} "
-                    "data when creating the report."
-                )
-            return self._parent._X_train, self._parent._y_train
-        else:
+        if data_source not in ["train", "test"]:
             raise ValueError(
                 f"Invalid data source: {data_source}. Possible values are: test, train."
             )
+        if getattr(self._parent, f"{data_source}_data") is None:
+            raise ValueError(
+                f"No {data_source} data were provided when creating the report."
+            )
+        if data_source == "test":
+            return self._parent.test_data, self._parent.y_test
+        assert data_source == "train"
+        return self._parent.train_data, self._parent.y_train
 
 
 def _get_cached_response_values(
     *,
     cache: Cache,
     estimator: BaseEstimator,
-    X: ArrayLike | None,
+    X: ArrayLike | dict | None,
     response_method: str | list[str] | tuple[str, ...],
     pos_label: PositiveLabel | None = None,
     data_source: Literal["test", "train"] = "test",

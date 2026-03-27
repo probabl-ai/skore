@@ -1,5 +1,3 @@
-import inspect
-
 import joblib
 import numpy as np
 import pytest
@@ -28,7 +26,7 @@ def test_report_can_be_rebuilt_using_parameters(
 
     assert isinstance(report, CrossValidationReport)
 
-    for parameter in inspect.signature(CrossValidationReport).parameters:
+    for parameter in ["estimator", "X", "y", "splitter"]:
         assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
 
         parameters[parameter] = getattr(report, parameter)

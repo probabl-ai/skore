@@ -373,7 +373,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         data_source: DataSource = "test",
         **metric_kwargs: Any,
     ) -> float | dict[PositiveLabel, float] | list:
-        X, y_true = self._get_X_y(data_source=data_source)
+        data, y_true = self._get_data_and_y_true(data_source=data_source)
 
         pos_label = self._parent.pos_label
 
@@ -383,8 +383,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if score is None:
             results = _get_cached_response_values(
                 cache=self._parent._cache,
-                estimator=self._parent.estimator_,
-                X=X,
+                estimator=self._parent._estimator,
+                X=data,
                 response_method=response_method,
                 pos_label=pos_label,
                 data_source=data_source,
@@ -1180,12 +1180,12 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             return cache_value
 
         data_source = cast(DataSource, data_source)
-        X, y_true = self._get_X_y(data_source=data_source)
+        data, y_true = self._get_data_and_y_true(data_source=data_source)
 
         results = _get_cached_response_values(
             cache=self._parent._cache,
-            estimator=self._parent.estimator_,
-            X=X,
+            estimator=self._parent.learner_,
+            X=data,
             response_method=response_method,
             pos_label=display_kwargs.get("pos_label"),
             data_source=data_source,

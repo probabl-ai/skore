@@ -279,7 +279,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
-        X_, y_true = self._get_X_y(data_source=data_source)
+        data_, y_true = self._get_data_and_y_true(data_source=data_source)
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
         # permutation importance into the cache dictionary even when seed is None.
@@ -312,7 +312,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 data_source=data_source,
                 estimator=self._parent.estimator_,
                 name=self._parent.estimator_name_,
-                X=X_,
+                X=data_["_skrub_X"],
                 y=y_true,
                 at_step=at_step,
                 metric=metric,
