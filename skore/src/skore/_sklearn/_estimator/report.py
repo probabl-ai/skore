@@ -83,9 +83,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         Testing target.
 
     pos_label : int, float, bool or str, default=None
-        For binary classification, the positive class. If `None` and the target labels
-        are `{0, 1}` or `{-1, 1}`, the positive class is set to `1`. For other labels,
-        some metrics might raise an error if `pos_label` is not defined.
+        For binary classification, the positive class to use for metrics and displays
+        that need one. If `None`, skore does not infer a default positive class.
+        Binary metrics and displays that support it will expose all classes instead.
+        This parameter is rejected for non-binary tasks.
 
     Attributes
     ----------
@@ -247,6 +248,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             inferred from the ml task: for classification we compute the response of
             the `predict_proba`, `decision_function` and `predict` methods; for
             regression we compute the response of the `predict` method.
+
+        data_source : {"test", "train", "both"}, default="both"
+            The data source(s) for which to precompute predictions.
+
+            - "test" : cache predictions for the test set only.
+            - "train" : cache predictions for the train set only.
+            - "both" : cache predictions for both train and test sets when available.
 
         n_jobs : int or None, default=None
             The number of jobs to run in parallel. None means 1 unless in a
