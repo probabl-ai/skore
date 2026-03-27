@@ -46,7 +46,6 @@ case $1 in
         esac
 
         for PACKAGE in "${PACKAGES[@]}"; do
-            # Read jq lines without `mapfile` (requires bash 4+; macOS ships bash 3.2).
             while IFS= read -r combination || [[ -n "${combination}" ]]; do
                 [[ -z "${combination}" ]] && continue
                 python=$(jq -rc '.python' <<< "${combination}")
@@ -84,7 +83,6 @@ set -eu
     # Move to `TMPDIR` to avoid absolute paths in requirements file
     cd "${TMPDIR}"
 
-    # Index loop: `for ... in "${COMBINATIONS[@]}"` with `set -u` can error on empty arrays in bash 3.2.
     i=0
     while [ "${i}" -lt "${#COMBINATIONS[@]}" ]; do
         combination="${COMBINATIONS[i]}"
