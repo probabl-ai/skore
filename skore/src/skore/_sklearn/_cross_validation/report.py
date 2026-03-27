@@ -61,7 +61,12 @@ def _generate_estimator_report(
     )
 
 
-def _check_estimator_and_data(estimator, X, y, data):
+def _check_estimator_and_data(
+    estimator: BaseEstimator,
+    X: ArrayLike | None,
+    y: ArrayLike | None,
+    data: dict | None,
+) -> tuple[bool, BaseEstimator, dict]:
     if is_skrub_learner(estimator):
         initialized_with_data_op = True
         if X is not None or y is not None:
@@ -71,7 +76,7 @@ def _check_estimator_and_data(estimator, X, y, data):
             )
         if data is None:
             raise TypeError("data must be provided when estimator is a SkrubLearner")
-        data: dict = eval_X_y(estimator.data_op, data)
+        data = eval_X_y(estimator.data_op, data)
     else:
         initialized_with_data_op = False
         if data is not None:
@@ -389,7 +394,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
             Testing data. It should have the same structure as the training data.
 
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None

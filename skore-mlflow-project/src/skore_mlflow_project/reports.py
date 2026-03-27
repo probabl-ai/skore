@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from mlflow.data.dataset import Dataset as MlFlowDatasetType
 from numpy.typing import NDArray
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, clone
 
 from ._matplotlib import switch_mpl_backend
 from .protocol import CrossValidationReport, EstimatorReport
@@ -199,8 +199,7 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
     """Yield loggable objects for a cross-validation report."""
     yield from iter_cv_metrics(report)
 
-    estimator_report = report.create_estimator_report()
-    estimator = estimator_report.estimator_
+    estimator = clone(report.estimator).fit(report.X, report.y)
     yield Params(estimator.get_params())
     yield Model(estimator, _sample_input_example(report.X))
 

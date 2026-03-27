@@ -39,15 +39,6 @@ def test_different_test_data(
             ]
         )
 
-    # The estimators without testing data (i.e., no y_test) do not count
-    ComparisonReport(
-        [
-            EstimatorReport(estimator, X_test=X_test, y_test=y_test),
-            EstimatorReport(estimator, X_test=X_test, y_test=y_test),
-            EstimatorReport(estimator),
-        ]
-    )
-
     # If there is an X_test but no y_test, it should not raise an error
     ComparisonReport(
         [
@@ -150,4 +141,9 @@ def test_clustering():
         match="Clustering models are not supported yet. Please use a "
         "classification or regression model instead.",
     ):
-        ComparisonReport([EstimatorReport(KMeans()), EstimatorReport(KMeans())])
+        ComparisonReport(
+            [
+                EstimatorReport(KMeans(), X_test=None),
+                EstimatorReport(KMeans(), X_test=None),
+            ]
+        )

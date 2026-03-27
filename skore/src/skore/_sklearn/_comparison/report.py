@@ -390,7 +390,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self,
         *,
         report_key: str,
-        X_test: ArrayLike | None = None,
+        X_test: ArrayLike,
         y_test: ArrayLike | None = None,
     ) -> EstimatorReport:
         """Create an estimator report from one of the reports in the comparison.
@@ -407,7 +407,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             the :attr:`reports_` attribute of the :class:`~skore.ComparisonReport`.
             List the available keys with `reports_.keys()`.
 
-        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
             Testing data. It should have the same structure as the training data.
 
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
