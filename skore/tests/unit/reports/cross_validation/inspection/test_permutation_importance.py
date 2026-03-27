@@ -6,7 +6,6 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
 from skore import CrossValidationReport, PermutationImportanceDisplay
-from skore._utils._testing import check_cache_changed
 
 
 def _children_cache_size(report):
@@ -94,13 +93,15 @@ def test_cache_parameter_in_cache(regression_data):
     report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test", metric="r2"
     )
-    with check_cache_changed(report.estimator_reports_[0]._cache):
-        report.inspection.permutation_importance(
-            seed=42,
-            n_repeats=2,
-            data_source="test",
-            metric=make_scorer(root_mean_squared_error),
-        )
+    assert len(list(report.inspection._get_cached_permutation_importances("test"))) == 1
+    metric = make_scorer(root_mean_squared_error)
+    report.inspection.permutation_importance(
+        seed=42,
+        n_repeats=2,
+        data_source="test",
+        metric=metric,
+    )
+    assert len(list(report.inspection._get_cached_permutation_importances("test"))) == 2
 
 
 def test_split_column(regression_data):

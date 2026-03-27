@@ -161,10 +161,12 @@ def test_cache_seed_none(regression_train_test_split):
     )
     assert report._cache == {}
 
-    report.inspection.permutation_importance(data_source="train")
-    assert len(report._cache) == 1
+    display1 = report.inspection.permutation_importance(data_source="train")
+    (kwargs,) = report.inspection._get_cached_permutation_importances("train")
+    assert kwargs["seed"] is None
 
     display2 = report.inspection.permutation_importance(data_source="train")
+    assert display1 is not display2
     assert len(report._cache) == 1
     cached_display, _ = next(iter(report._cache.values()))
     assert cached_display is display2

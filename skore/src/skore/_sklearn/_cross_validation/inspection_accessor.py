@@ -270,7 +270,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     def _get_cached_permutation_importances(self, data_source):
         # NOTE: this a public developer API, breaking it might break `project.put`
         common_cache_keys = set.intersection(
-            *[report._cache.keys() for report in self._parent.estimator_reports_]
+            *[set(report._cache) for report in self._parent.estimator_reports_]
         )
         sub_report = self._parent.estimator_reports_[0]
         for key in common_cache_keys:
