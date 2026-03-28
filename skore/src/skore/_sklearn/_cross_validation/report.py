@@ -13,7 +13,7 @@ from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._externals._sklearn_compat import _safe_indexing
+from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
@@ -69,7 +69,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     X : {array-like, sparse matrix} of shape (n_samples, n_features)
         The data to fit. Can be for example a list, or an array.
 
-    y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
         The target variable to try to predict in the case of supervised learning.
 
     pos_label : int, float, bool or str, default=None
@@ -146,11 +146,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self,
         estimator: BaseEstimator,
         X: ArrayLike,
-        y: ArrayLike | None = None,
+        y: ArrayLike,
         pos_label: PositiveLabel | None = None,
         splitter: int | SKLearnCrossValidator | Generator | None = None,
         n_jobs: int | None = None,
     ) -> None:
+        if is_clusterer(estimator):
+            raise ValueError(
+                "Clustering models are not supported yet. Please use a"
+                " classification or regression model instead."
+            )
+
         self._estimator = clone(estimator)
 
         # private storage to ensure properties are read-only
