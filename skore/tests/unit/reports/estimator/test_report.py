@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 
 from skore import EstimatorReport
@@ -253,9 +254,7 @@ def test_get_predictions():
     predictions = report.get_predictions(
         data_source="test", response_method="predict_proba"
     )
-    np.testing.assert_allclose(
-        predictions, report.estimator_.predict_proba(X_test)[:, 1]
-    )
+    np.testing.assert_allclose(predictions, report.estimator_.predict_proba(X_test))
 
     # check the validity of the `decision_function` method
     predictions = report.get_predictions(
@@ -291,6 +290,24 @@ def test_get_predictions_error():
 
     with pytest.raises(ValueError, match="Invalid data source"):
         report.get_predictions(data_source="invalid")
+
+
+def test_get_predictions_error_with_multiclass_ovo_decision_function():
+    """Check that multiclass one-vs-one decision scores are rejected."""
+    X, y = make_classification(
+        n_classes=4,
+        n_clusters_per_class=1,
+        n_informative=6,
+        random_state=42,
+    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = SVC(decision_function_shape="ovo")
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    with pytest.raises(ValueError, match=r"Unexpected decision function shape\[1\]: 6"):
+        report.get_predictions(data_source="test", response_method="decision_function")
 
 
 def test_clustering():

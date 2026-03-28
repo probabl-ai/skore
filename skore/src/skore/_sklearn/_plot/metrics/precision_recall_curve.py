@@ -7,7 +7,6 @@ from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame, Series
 from sklearn.base import BaseEstimator
 from sklearn.metrics import average_precision_score, precision_recall_curve
-from sklearn.preprocessing import LabelBinarizer
 
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
@@ -16,6 +15,7 @@ from skore._sklearn._plot.utils import (
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
     _get_curve_plot_columns,
+    _one_hot_encode,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import (
@@ -155,11 +155,12 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
             - "auto": None for EstimatorReport and Cross-Validation Report, \
               "estimator" for ComparisonReport
-            - "label": one subplot per class (multiclass only)
+            - "label": one subplot per class when plotting one-vs-rest curves
             - "estimator": one subplot per estimator (comparison only)
             - "data_source": one subplot per data source (EstimatorReport with both \
                 data sources only)
-            - None: no subplots (Not available for comparison in multiclass)
+            - None: no subplots (Not available for comparison in classification \
+                with no specified pos_label)
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
@@ -203,7 +204,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         col, hue, style = _get_curve_plot_columns(
             plot_data=plot_data,
             report_type=self.report_type,
-            ml_task=self.ml_task,
+            pos_label=self.pos_label,
             data_source=self.data_source,
             subplot_by=subplot_by,
         )
@@ -352,16 +353,10 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         -------
         display : PrecisionRecallCurveDisplay
         """
-        pos_label_validated = cls._validate_from_prediction_params(
-            y_true, y_pred, ml_task=ml_task, pos_label=pos_label
-        )
-
-        if ml_task == "multiclass-classification":
+        if pos_label is None:
             classes = estimator.classes_
-            label_binarizer = LabelBinarizer().fit(classes)
-            y_true_onehot: NDArray = label_binarizer.transform(y_true)
+            y_true_onehot = _one_hot_encode(y_true, classes)
             y_pred_arr = cast(NDArray, y_pred)
-
             displays = [
                 cls._compute_data_for_display(
                     y_true=y_true_onehot[:, class_idx],
@@ -383,24 +378,24 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 column_data={"label": classes.tolist()},
             )
             display.ml_task = ml_task
-            display.pos_label = pos_label_validated
+            display.pos_label = None
             return display
+
+        # binary-classification with pos_label set:
 
         precision, recall, thresholds = precision_recall_curve(
             y_true,
             y_pred,
-            pos_label=pos_label_validated,
+            pos_label=pos_label,
             drop_intermediate=drop_intermediate,
         )
-        average_precision = average_precision_score(
-            y_true, y_pred, pos_label=pos_label_validated
-        )
+        average_precision = average_precision_score(y_true, y_pred, pos_label=pos_label)
 
         metadata = {
             "estimator": estimator_name,
             "data_source": data_source,
             "split": None,
-            "label": pos_label_validated,
+            "label": pos_label,
         }
 
         curve_data = {
@@ -423,7 +418,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         return cls(
             precision_recall=DataFrame(curve_data),
             average_precision=average_precision_df,
-            pos_label=pos_label_validated,
+            pos_label=pos_label,
             data_source=data_source,
             ml_task=ml_task,
             report_type=report_type,
@@ -445,7 +440,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
             - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
-            - `label`: Class label (for multiclass-classification)
+            - `label`: Class label (when plotting one-vs-rest curves)
             - `threshold`: Decision threshold
             - `precision`: Precision score at threshold
             - `recall`: Recall score at threshold
@@ -490,7 +485,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if self.data_source == "both":
             indexing_columns += ["data_source"]
 
-        if self.ml_task == "binary-classification":
+        if self.pos_label is not None:
             columns = indexing_columns + statistical_columns
         else:
             columns = indexing_columns + ["label"] + statistical_columns

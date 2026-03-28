@@ -246,8 +246,9 @@ def test_binary_classification_pos_label(pyplot, metric):
     report_1 = CrossValidationReport(LogisticRegression(C=1), X, y)
     report_2 = CrossValidationReport(LogisticRegression(C=2), X, y)
     report = ComparisonReport([report_1, report_2])
-    with pytest.raises(ValueError, match="pos_label is not specified"):
-        getattr(report.metrics, metric)()
+    display = getattr(report.metrics, metric)()
+    fig = display.plot()
+    assert "Positive label" not in fig.get_suptitle()
 
     report_1 = CrossValidationReport(LogisticRegression(C=1), X, y, pos_label="A")
     report_2 = CrossValidationReport(LogisticRegression(C=2), X, y, pos_label="A")

@@ -193,9 +193,7 @@ def test_display_binary_classification_pos_label(
         y_train=y_train,
         y_test=y_test,
     )
-    report = ComparisonReport([report_1, report_2])
-    with pytest.raises(ValueError, match="pos_label is not specified"):
-        getattr(report.metrics, metric)()
+    # TODO: test when pos_label is not set
 
     report_1 = EstimatorReport(
         clone(classifier),

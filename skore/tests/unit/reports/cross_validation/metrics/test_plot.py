@@ -49,8 +49,9 @@ def test_display_binary_classification_pos_label(
     labels = np.array(["A", "B"], dtype=object)
     y = labels[y]
     report = CrossValidationReport(classifier, X, y)
-    with pytest.raises(ValueError, match="pos_label is not specified"):
-        getattr(report.metrics, metric)()
+    display = getattr(report.metrics, metric)()
+    fig = display.plot()
+    assert "Positive label" not in fig.get_suptitle()
 
     report = CrossValidationReport(classifier, X, y, pos_label="A")
     display = getattr(report.metrics, metric)()
