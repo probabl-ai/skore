@@ -5,6 +5,8 @@ import numpy as np
 import pytest
 from sklearn.base import clone
 from sklearn.cluster import KMeans
+from sklearn.datasets import make_classification
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
@@ -112,16 +114,15 @@ def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
     """Check that calling cache_predictions fills the cache."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
+    for estimator_report in report.estimator_reports_:
+        assert estimator_report._cache == {}
+
     report.cache_predictions(n_jobs=n_jobs)
-    # no effect on the actual cache of the cross-validation report but only on the
-    # underlying estimator reports
-    assert report._cache == {}
 
     for estimator_report in report.estimator_reports_:
         assert len(estimator_report._cache) == expected_n_keys
 
     report.clear_cache()
-    assert report._cache == {}
     for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
 
@@ -221,24 +222,35 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
     cv_report = CrossValidationReport(estimator, X_experiment, y_experiment, splitter=2)
-    est_report = cv_report.create_estimator_report()
-
-    assert isinstance(est_report, EstimatorReport)
-    assert est_report._parent_hash == cv_report._hash
-    assert joblib.hash(est_report.X_train) == joblib.hash(X_experiment)
-    assert joblib.hash(est_report.y_train) == joblib.hash(y_experiment)
-    assert est_report.X_test is None
-    assert est_report.y_test is None
-    assert est_report.pos_label == cv_report.pos_label
 
     est_report_with_test = cv_report.create_estimator_report(
         X_test=X_heldout, y_test=y_heldout
     )
 
     assert isinstance(est_report_with_test, EstimatorReport)
-    assert est_report_with_test._parent_hash == cv_report._hash
     assert joblib.hash(est_report_with_test.X_train) == joblib.hash(X_experiment)
     assert joblib.hash(est_report_with_test.y_train) == joblib.hash(y_experiment)
     assert joblib.hash(est_report_with_test.X_test) == joblib.hash(X_heldout)
     assert joblib.hash(est_report_with_test.y_test) == joblib.hash(y_heldout)
     assert est_report_with_test.pos_label == cv_report.pos_label
+
+
+@pytest.mark.parametrize("splitter", [2, 3])
+@pytest.mark.parametrize("bad_estimator", [False, True])
+def test_report_repr_html(splitter, bad_estimator):
+    X, y = make_classification(n_classes=2, random_state=42)
+
+    class DummyClassifierBadRepr(DummyClassifier):
+        def _repr_html_(self):
+            raise TypeError("error")
+
+    estimator = DummyClassifierBadRepr() if bad_estimator else DummyClassifier()
+    report = CrossValidationReport(estimator, X, y, splitter=splitter)
+    html_out = report._repr_html_()
+    assert "skore-cross-validation-report-" in html_out
+    assert "DummyClassifier" in html_out
+    assert "skoreInitEstimatorReport" in html_out
+    assert "report-hint-note" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-disclosure-title" in html_out
+    assert "CrossValidationReport.metrics" in html_out

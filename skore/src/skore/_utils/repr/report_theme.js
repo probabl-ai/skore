@@ -1,9 +1,9 @@
 function detectTheme(refElementId) {
-    const body = document.querySelector('body');
+    const body = document.querySelector("body");
 
     // Check VSCode theme
-    const themeKindAttr = body.getAttribute('data-vscode-theme-kind');
-    const themeNameAttr = body.getAttribute('data-vscode-theme-name');
+    const themeKindAttr = body.getAttribute("data-vscode-theme-kind");
+    const themeNameAttr = body.getAttribute("data-vscode-theme-name");
 
     if (themeKindAttr && themeNameAttr) {
         const themeKind = themeKindAttr.toLowerCase();
@@ -18,17 +18,17 @@ function detectTheme(refElementId) {
     }
 
     // Check Jupyter theme
-    if (body.getAttribute('data-jp-theme-light') === 'false') {
-        return 'dark';
-    } else if (body.getAttribute('data-jp-theme-light') === 'true') {
-        return 'light';
+    if (body.getAttribute("data-jp-theme-light") === "false") {
+        return "dark";
+    } else if (body.getAttribute("data-jp-theme-light") === "true") {
+        return "light";
     }
 
     // Guess based on a reference element's color (luma)
     if (refElementId) {
         const refElement = document.getElementById(refElementId);
         if (refElement) {
-            const color = window.getComputedStyle(refElement, null).getPropertyValue('color');
+            const color = window.getComputedStyle(refElement, null).getPropertyValue("color");
             const match = color.match(/^rgb[a]?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
             if (match) {
                 const r = parseInt(match[1], 10);
@@ -38,26 +38,26 @@ function detectTheme(refElementId) {
                 const luma = 0.299 * r + 0.587 * g + 0.114 * b;
 
                 if (luma > 180) {
-                    return 'dark';
+                    return "dark";
                 }
                 if (luma < 75) {
-                    return 'light';
+                    return "light";
                 }
             }
         }
     }
 
     // Fallback to system preference
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function applyThemeToHelpContainer(container, refElementId) {
+function applyThemeToReportContainer(container, refElementId) {
     const theme = detectTheme(refElementId);
-    if (theme === 'dark') {
-        container.setAttribute('data-theme', 'dark');
-        container.classList.add('dark-theme');
+    if (theme === "dark") {
+        container.setAttribute("data-theme", "dark");
+        container.classList.add("dark-theme");
     } else {
-        container.removeAttribute('data-theme');
-        container.classList.remove('dark-theme');
+        container.removeAttribute("data-theme");
+        container.classList.remove("dark-theme");
     }
 }

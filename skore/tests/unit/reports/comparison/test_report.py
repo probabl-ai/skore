@@ -104,19 +104,11 @@ def test_create_estimator_report_from_estimator_reports(
         }
     )
 
-    est_report = comparison_report.create_estimator_report(report_key="estimator_1")
-
-    assert isinstance(est_report, EstimatorReport)
-    assert est_report._parent_hash == comparison_report._hash
-    assert joblib.hash(est_report.X_train) == joblib.hash(X_experiment)
-    assert joblib.hash(est_report.y_train) == joblib.hash(y_experiment)
-
     est_report_w_test = comparison_report.create_estimator_report(
         report_key="estimator_2", X_test=X_heldout, y_test=y_heldout
     )
 
     assert isinstance(est_report_w_test, EstimatorReport)
-    assert est_report_w_test._parent_hash == comparison_report._hash
     assert joblib.hash(est_report_w_test.X_train) == joblib.hash(X_experiment)
     assert joblib.hash(est_report_w_test.y_train) == joblib.hash(y_experiment)
     assert joblib.hash(est_report_w_test.X_test) == joblib.hash(X_heldout)
@@ -150,23 +142,11 @@ def test_create_estimator_report_from_cross_validation_reports(
 
     comparison_report = ComparisonReport(reports)
 
-    est_report = comparison_report.create_estimator_report(report_key="estimator_1")
-
-    assert isinstance(est_report, EstimatorReport)
-    cv_report = comparison_report.reports_["estimator_1"]
-    assert est_report._parent_hash == cv_report._hash
-    assert joblib.hash(est_report.X_train) == joblib.hash(X_experiment)
-    assert joblib.hash(est_report.y_train) == joblib.hash(y_experiment)
-    assert est_report.X_test is None
-    assert est_report.y_test is None
-
     est_report_w_test = comparison_report.create_estimator_report(
         report_key="estimator_2", X_test=X_heldout, y_test=y_heldout
     )
-    cv_report = comparison_report.reports_["estimator_2"]
 
     assert isinstance(est_report_w_test, EstimatorReport)
-    assert est_report_w_test._parent_hash == cv_report._hash
     assert joblib.hash(est_report_w_test.X_train) == joblib.hash(X_experiment)
     assert joblib.hash(est_report_w_test.y_train) == joblib.hash(y_experiment)
     assert joblib.hash(est_report_w_test.X_test) == joblib.hash(X_heldout)
@@ -181,4 +161,27 @@ def test_create_estimator_report_invalid_name(
 
     err_msg = "Estimator with key InvalidEstimator not found in the comparison report."
     with pytest.raises(ValueError, match=err_msg):
-        comparison_report.create_estimator_report(report_key="InvalidEstimator")
+        comparison_report.create_estimator_report(
+            report_key="InvalidEstimator", X_test=[0], y_test=None
+        )
+
+
+@pytest.mark.parametrize(
+    "comparison_fixture",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_cross_validation_reports_binary_classification",
+    ],
+)
+def test_report_repr_html(comparison_fixture, request):
+    report = request.getfixturevalue(comparison_fixture)
+    html_out = report._repr_html_()
+    assert "skore-comparison-report-" in html_out
+    assert "ComparisonReport" in html_out
+    assert "DummyClassifier" in html_out
+    assert "skoreInitComparisonReport" in html_out
+    assert "report-hint-note" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-disclosure-title" in html_out
+    assert "ComparisonReport.metrics" in html_out
+    assert "skore-comparison-report-select" in html_out

@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-import time
+import html
+import uuid
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal
 
-import numpy as np
+import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone, is_classifier
@@ -15,16 +16,17 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
-from skore._utils._cache import Cache
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
+from skore._utils.repr.data import get_documentation_url
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from skore._sklearn._cross_validation.data_accessor import _DataAccessor
     from skore._sklearn._cross_validation.inspection_accessor import (
         _InspectionAccessor,
     )
@@ -145,6 +147,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
+    data: _DataAccessor
 
     def __init__(
         self,
@@ -157,8 +160,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     ) -> None:
         self._estimator = clone(estimator)
 
-        # private storage to be able to invalidate the cache when the user alters
-        # those attributes
+        # private storage to ensure properties are read-only
         self._X = X
         self._y = y
         self._pos_label = pos_label
@@ -167,18 +169,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self.n_jobs = n_jobs
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
-        self._initialize_state()
-
-    def _initialize_state(self) -> None:
-        """Initialize/reset the random number generator, hash, and cache."""
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
-        self._cache = Cache()
-        self._ml_task = _find_ml_task(
-            self._y, estimator=self.estimator_reports_[0]._estimator
-        )
+        self._ml_task = self.estimator_reports_[0].ml_task
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
@@ -226,13 +217,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
         >>> report.clear_cache()
-        >>> report._cache
+        >>> report.estimator_reports_[0]._cache
         {}
         """
         for report in self.estimator_reports_:
             report.clear_cache()
-
-        self._cache = Cache()
 
     def cache_predictions(
         self,
@@ -260,7 +249,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
-        >>> report._cache
+        >>> report.estimator_reports_[0]._cache
         {...}
         """
         if n_jobs is None:
@@ -336,7 +325,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ]
 
     def create_estimator_report(
-        self, *, X_test: ArrayLike | None = None, y_test: ArrayLike | None = None
+        self, *, X_test: ArrayLike, y_test: ArrayLike | None = None
     ) -> EstimatorReport:
         """Create an estimator report from the cross-validation report.
 
@@ -347,7 +336,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
             Testing data. It should have the same structure as the training data.
 
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
@@ -390,7 +379,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             y_test=y_test,
             pos_label=self._pos_label,
         )
-        report._parent_hash = self._hash
         return report
 
     @property
@@ -448,3 +436,70 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+
+    def _html_repr_fragments(self) -> dict[str, str]:
+        """HTML snippets for the report body (metrics, estimator diagram, data table).
+
+        Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
+        one report's views in the comparison HTML repr.
+        """
+        metrics_html = (
+            self.metrics.summarize(data_source="test")
+            .frame(aggregate=("mean", "std"), favorability=False)
+            ._repr_html_()
+        )
+
+        df = self.data._prepare_dataframe_for_display(
+            with_y=self.ml_task != "clustering"
+        )
+        table_report = skrub.TableReport(
+            df,
+            max_plot_columns=0,
+            max_association_columns=0,
+            verbose=False,
+        )
+        table_report._set_minimal_mode()
+        table_report_html = table_report.html_snippet()
+
+        try:
+            estimator_html = self.estimator_._repr_html_()
+        except Exception:
+            estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
+
+        return {
+            "metrics_summary": metrics_html,
+            "estimator_display": estimator_html,
+            "table_report": table_report_html,
+        }
+
+    def _repr_html_(self) -> str:
+        """HTML representation of the cross-validation report."""
+        fragments = self._html_repr_fragments()
+        container_id = f"skore-cross-validation-report-{uuid.uuid4().hex[:8]}"
+        help_doc_url = get_documentation_url(obj=self, method_name="help")
+        report_class_name = self.__class__.__name__
+        metrics_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="metrics"
+        )
+        inspection_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="inspection"
+        )
+        data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
+        return render_template(
+            "cross_validation_report.html.j2",
+            {
+                "container_id": container_id,
+                "help_doc_url": help_doc_url,
+                "report_class_name": report_class_name,
+                "metrics_accessor_doc_url": metrics_accessor_doc_url,
+                "inspection_accessor_doc_url": inspection_accessor_doc_url,
+                "data_accessor_doc_url": data_accessor_doc_url,
+                **fragments,
+            },
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by Jupyter kernels to display the report."""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output

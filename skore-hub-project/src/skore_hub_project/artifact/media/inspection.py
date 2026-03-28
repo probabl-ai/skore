@@ -44,7 +44,9 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
     name: Literal["permutation_importance"] = "permutation_importance"
 
     def content_to_upload(self) -> bytes | None:  # noqa: D102
-        for key, display in reversed(list(self.report._cache.items())):
+        cache = getattr(self.report, "_cache", {})
+
+        for key, display in reversed(list(cache.items())):
             if len(key) < 6:
                 continue
 

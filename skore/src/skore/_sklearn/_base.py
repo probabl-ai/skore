@@ -1,5 +1,7 @@
+from functools import cached_property
 from io import StringIO
 from typing import Any, Generic, Literal, TypeVar, cast
+from uuid import uuid4
 
 from numpy.typing import ArrayLike, NDArray
 from rich.console import Console
@@ -9,6 +11,7 @@ from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
+from skore._utils._cache_key import make_cache_key
 from skore._utils._measure_time import MeasureTime
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
@@ -28,6 +31,15 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
+
+    @cached_property
+    def id(self) -> int:
+        return uuid4().int
+
+    @property
+    def _hash(self) -> int:
+        # FIXME: only for backward compatibility
+        return self.id
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
@@ -107,7 +119,6 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 def _get_cached_response_values(
     *,
     cache: Cache,
-    estimator_hash: int,
     estimator: BaseEstimator,
     X: ArrayLike | None,
     response_method: str | list[str] | tuple[str, ...],
@@ -125,10 +136,6 @@ def _get_cached_response_values(
     ----------
     cache : Cache
         The cache backend to use.
-
-    estimator_hash : int
-        A hash associated with the estimator such that we can retrieve the data from
-        the cache.
 
     estimator : estimator object
         The estimator used to generate the predictions.
@@ -170,12 +177,8 @@ def _get_cached_response_values(
         # and decision functions
         pos_label = None
 
-    cache_key: tuple[Any, ...] = (
-        estimator_hash,
-        pos_label,
-        prediction_method,
-        data_source,
-    )
+    kwargs = {"pos_label": pos_label}
+    cache_key = make_cache_key(data_source, prediction_method, kwargs)
 
     if cache_key in cache:
         cached_predictions = cast(NDArray, cache[cache_key])
@@ -190,11 +193,7 @@ def _get_cached_response_values(
             return_response_method_used=False,
         )
 
-    predict_time_cache_key: tuple[Any, ...] = (
-        estimator_hash,
-        data_source,
-        "predict_time",
-    )
+    predict_time_cache_key = make_cache_key(data_source, "predict_time")
 
     return [
         (cache_key, predictions, False),

@@ -2,12 +2,11 @@ from __future__ import annotations
 
 import copy
 import html
-import time
+import uuid
 import warnings
 from itertools import product
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, cast
 
-import numpy as np
 import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
@@ -26,6 +25,7 @@ from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
+from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
@@ -61,7 +61,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     y_train : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Training target.
 
-    X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+    X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
         Testing data. It should have the same structure as the training data.
 
     y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
@@ -154,7 +154,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         fit: Literal["auto"] | bool = "auto",
         X_train: ArrayLike | None = None,
         y_train: ArrayLike | None = None,
-        X_test: ArrayLike | None = None,
+        X_test: ArrayLike,
         y_test: ArrayLike | None = None,
         pos_label: PositiveLabel | None = None,
     ) -> None:
@@ -180,36 +180,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:  # fit is False
             self._estimator = self._copy_estimator(estimator)
 
-        # private storage to be able to invalidate the cache when the user alters
-        # those attributes
+        # private storage to ensure properties are read-only
         self._X_train = X_train
         self._y_train = y_train
         self._X_test = X_test
         self._y_test = y_test
         self._pos_label = pos_label
         self.fit_time_ = fit_time
-        self._parent_hash: np.int64 | None = None
 
-        self._initialize_state()
-
-    def _initialize_state(self) -> None:
-        """Initialize/reset the random number generator, hash, and cache."""
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
-        self._cache = Cache()
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
-
-    # NOTE:
-    # For the moment, we do not allow to alter the estimator and the training data.
-    # For the validation set, we allow it and we invalidate the cache.
+        self._cache = Cache()
+        # NOTE: Reports are immutable so we don't need cache invalidation
 
     def clear_cache(self) -> None:
         """Clear the cache.
-
-        Note that the cache might not be empty after this method is run as some
-        values need to be kept, such as the fit time.
 
         Examples
         --------
@@ -288,7 +272,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             parallel(
                 delayed(_get_cached_response_values)(
                     cache=self._cache,
-                    estimator_hash=self._hash,
                     estimator=self._estimator,
                     X=X,
                     response_method=response_method,
@@ -359,15 +342,14 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         (25,)
         """
         if data_source == "test":
-            X_ = self._X_test
+            X_ = cast(ArrayLike, self._X_test)
         elif data_source == "train":
-            X_ = self._X_train
+            X_ = cast(ArrayLike, self._X_train)
         else:
             raise ValueError(f"Invalid data source: {data_source}")
 
         results = _get_cached_response_values(
             cache=self._cache,
-            estimator_hash=int(self._hash),
             estimator=self._estimator,
             X=X_,
             response_method=response_method,
@@ -442,12 +424,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         {self.metrics.summarize().frame()}"""
 
-    def _repr_html_(self):
-        """HTML representation of estimator.
+    def _html_repr_fragments(self) -> dict[str, str]:
+        """HTML snippets for the report body (metrics, estimator diagram, data table).
 
-        This is redundant with the logic of `_repr_mimebundle_`. The latter
-        should be favored in the long term, `_repr_html_` is only
-        implemented for consumers who do not interpret `_repr_mimbundle_`.
+        Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
+        one report's views in the comparison HTML repr.
         """
         match self.X_train, self.X_test:
             case None, None:
@@ -487,12 +468,41 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             estimator_html = self.estimator_._repr_html_()
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
+
+        return {
+            "metrics_summary": metrics_html,
+            "estimator_display": estimator_html,
+            "table_report": table_report_html,
+        }
+
+    def _repr_html_(self) -> str:
+        """HTML representation of estimator.
+
+        This is redundant with the logic of `_repr_mimebundle_`. The latter
+        should be favored in the long term, `_repr_html_` is only
+        implemented for consumers who do not interpret `_repr_mimbundle_`.
+        """
+        fragments = self._html_repr_fragments()
+        container_id = f"skore-estimator-report-{uuid.uuid4().hex[:8]}"
+        help_doc_url = get_documentation_url(obj=self, method_name="help")
+        report_class_name = self.__class__.__name__
+        metrics_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="metrics"
+        )
+        inspection_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="inspection"
+        )
+        data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
         return render_template(
             "estimator_report.html.j2",
             {
-                "metrics_summary": metrics_html,
-                "estimator_display": estimator_html,
-                "table_report": table_report_html,
+                "container_id": container_id,
+                "help_doc_url": help_doc_url,
+                "report_class_name": report_class_name,
+                "metrics_accessor_doc_url": metrics_accessor_doc_url,
+                "inspection_accessor_doc_url": inspection_accessor_doc_url,
+                "data_accessor_doc_url": data_accessor_doc_url,
+                **fragments,
             },
         )
 
