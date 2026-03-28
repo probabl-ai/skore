@@ -54,6 +54,18 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         "custom_metric": {"name": "Custom metric", "icon": ""},
     }
 
+    _METRIC_ALIASES: dict[str, str] = {
+        "mean_squared_error": "neg_mean_squared_error",
+        "mean_absolute_error": "neg_mean_absolute_error",
+        "root_mean_squared_error": "neg_root_mean_squared_error",
+        "mean_absolute_percentage_error": "neg_mean_absolute_percentage_error",
+        "median_absolute_error": "neg_median_absolute_error",
+        "log_loss": "neg_log_loss",
+        "brier_score": "neg_brier_score",
+        "mean_poisson_deviance": "neg_mean_poisson_deviance",
+        "mean_gamma_deviance": "neg_mean_gamma_deviance",
+    }
+
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
 
@@ -208,7 +220,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         for metric_name, metric_ in zip(metric_names, metrics, strict=True):
             if isinstance(metric_, str) and metric_ not in self._score_or_loss_info:
                 try:
-                    metric_ = sklearn.metrics.get_scorer(metric_)
+                    resolved_metric = self._METRIC_ALIASES.get(metric_, metric_)
+                    metric_ = sklearn_metrics.get_scorer(resolved_metric)
                 except ValueError as err:
                     raise ValueError(
                         f"Invalid metric: {metric_!r}. "
