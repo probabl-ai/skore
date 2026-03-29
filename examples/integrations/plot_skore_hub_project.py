@@ -1,9 +1,9 @@
 """
 .. _example_skore_hub_project:
 
-=================
-Hub skore Project
-=================
+=======================================
+Store and retrieve reports on Skore Hub
+=======================================
 
 This example shows how to use :class:`~skore.Project` in **hub** mode: store
 reports remotely and inspect them. A key point is that

@@ -1,14 +1,23 @@
 """
 .. _example_skore_mlflow_project:
 
-====================
-MLflow skore Project
-====================
+==========================================
+Store and retrieve Skore reports in MLflow
+==========================================
 
-This example shows how to persist reports in MLflow using :class:`~skore.Project`
-in ``mode="mlflow"``: log reports as MLflow runs and inspect them. It uses a
-:class:`~skore.CrossValidationReport`, but the same approach applies to
-:class:`~skore.EstimatorReport`.
+The primilarly goal of `skore` is to create data science artifacts in the form of
+structured reports. Those reports can easily be used programmatically via the Python
+API. A subsequent aim is to store those reports that you create during your experiment
+cycle in a way that it is easy to retrieve them later on.
+
+Skore provides two natives ways to store reports: locally or on Skore Hub. Skore Hub
+provides additional interactivity features for you to explore, compare and share
+visual insights.
+
+In addition, Skore also provides an MLflow integration to store the content of
+reports directly as MLflow artifacts. This example shows how to persist reports in
+MLflow using :class:`~skore.Project` in ``mode="mlflow"``: log reports as MLflow runs
+and inspect them.
 
 To run this example against your own MLflow tracking server, use:
 
@@ -17,34 +26,47 @@ To run this example against your own MLflow tracking server, use:
     TRACKING_URI=<tracking_uri> PROJECT=<project> python plot_skore_mlflow_project.py
 
 To try it locally, start an MLflow server with ``uvx mlflow server`` and set
-``TRACKING_URI=http://127.0.0.1:5000``.
+``TRACKING_URI=http://127.0.0.1:5000``. For more setup details, see the
+`MLflow quickstart <https://mlflow.org/docs/latest/ml/getting-started/running-notebooks/>`_.
 """
 
 # %%
-# First, let us build one report to persist:
-
-# %%
+#
+# Create a Skore report
+# =====================
+#
+# First, we start by creating a Skore report by evaluating a logistic regression model
+# on the iris dataset using some cross-validation.
 from sklearn.datasets import load_iris
-from sklearn.ensemble import HistGradientBoostingClassifier
-from skore import Project, evaluate
+from sklearn.linear_model import LogisticRegression
+from skore import evaluate
 
 X, y = load_iris(return_X_y=True, as_frame=True)
 
-estimator = HistGradientBoostingClassifier()
+estimator = LogisticRegression()
 report = evaluate(estimator, X, y, splitter=5)
 
 # %%
-# Then, we can push the report to the MLflow backend:
+#
+# Store the Skore reports as MLflow artifacts
+# ===========================================
+#
+# Now, we will store the different items of the Skore report as MLflow artifacts.
+# For this matter, you need to create a :class:`~skore.Project` in ``mode="mlflow"``
+# and pass the information regarding the MLflow tracking server.
 
 import io
 
 # sphinx_gallery_start_ignore
 #
+# This part of the code is used for running the example on our continuous integration.
 # Configure the context variables and tmp dir:
 import os
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+from skore import Project
 
 tmp_dir = None
 
@@ -69,7 +91,11 @@ with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
         mode="mlflow",
         tracking_uri=TRACKING_URI,
     )
-project.put("hgb-baseline", report)
+
+# %%
+# Once the project created, the same API used to store a report locally or on Skore Hub
+# applies.
+project.put("logistic-regression", report)
 
 # sphinx_gallery_start_ignore
 if tmp_dir is not None:
@@ -77,15 +103,13 @@ if tmp_dir is not None:
 
 # sphinx_gallery_end_ignore
 
-
 # %%
-# Note that mlflow warns us about saving models with `pickle`. Future versions of skore
-# might rely on `skops <https://skops.readthedocs.io>`__ for model serialization,
-# which will make these warnings disappear.
-
-# %%
-# Like for other types of projects (local, hub), you can access the summary
-# and its DataFrame version:
+#
+# Retrieve the Skore report from MLflow tracking server
+# =====================================================
+#
+# Like for the other modes (local and Skore Hub), you can access what is stored in the
+# project via the :meth:`~skore.Project.summarize` method.
 import pandas as pd
 
 summary = project.summarize()
@@ -93,16 +117,15 @@ pandas_summary = pd.DataFrame(summary).reset_index()
 pandas_summary[["id", "key", "report_type", "learner", "ml_task", "dataset"]]
 
 # %%
-# The "id" column corresponds to the MLflow run ID, so you can access the MLflow
-# run this way:
-import mlflow
-
+# Then, you can retrieve a Skore report using the `"id"` column:
 (run_id,) = pandas_summary["id"]
+loaded_report = project.get(run_id)
+loaded_report.metrics.summarize().frame()
+
+# %%
+# You can directly use MLflow to access information stored in the MLflow tracking
+# server.
+import mlflow
 
 mlflow_run = mlflow.get_run(run_id)
 mlflow_run.data.metrics
-
-# %%
-# But most importantly, this ID lets you load saved reports:
-loaded_report = project.get(run_id)
-loaded_report.metrics.summarize().frame()
