@@ -129,6 +129,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Precision              0.98...         (↗︎)
         Recall                 0.92...         (↗︎)
         ROC AUC                0.99...         (↗︎)
+        Log loss               0.11...         (↘︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
@@ -146,6 +147,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Precision                       0.96...                     0.98...          (↗︎)
         Recall                          0.97...                     0.92...          (↗︎)
         ROC AUC                         0.99...                     0.99...          (↗︎)
+        Log loss                        0.08...                     0.11...          (↘︎)
         Brier score                     0.02...                     0.03...          (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
