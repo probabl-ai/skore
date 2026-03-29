@@ -6,6 +6,35 @@ from sklearn.model_selection import train_test_split
 from skore import EstimatorReport
 
 
+def test_summarize_classifier_without_predict_proba(
+    custom_classifier_no_predict_proba_with_test,
+):
+    """Default metrics skip roc_auc, log_loss, and brier_score without predict_proba."""
+    estimator, X_test, y_test = custom_classifier_no_predict_proba_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize()
+
+    assert set(display.data["metric"]) == {
+        "Accuracy",
+        "Precision",
+        "Recall",
+        "Fit time (s)",
+        "Predict time (s)",
+    }
+
+    result = display.frame(flat_index=True)
+    assert result.columns.to_list() == ["CustomClassifierWithoutPredictProba"]
+    assert result.index.to_list() == [
+        "accuracy",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "fit_time_s",
+        "predict_time_s",
+    ]
+
+
 def test_favorability_binary(forest_binary_classification_with_test):
     """
     Test that favorability column is correctly displayed for binary classification.
@@ -111,6 +140,7 @@ def test_flat_index_with_favorability(forest_binary_classification_with_test):
         "recall_0",
         "recall_1",
         "roc_auc",
+        "log_loss",
         "brier_score",
         "fit_time_s",
         "predict_time_s",
@@ -161,6 +191,7 @@ def test_data_source_both_flat_index(forest_binary_classification_data):
         "recall_0",
         "recall_1",
         "roc_auc",
+        "log_loss",
         "brier_score",
         "fit_time_s",
         "predict_time_s",
