@@ -188,17 +188,25 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         # Treat empty list same as None - use defaults
         if metric is None or (isinstance(metric, list) and len(metric) == 0):
-            # Equivalent to _get_scorers_to_add
-            if self._parent._ml_task == "binary-classification":
-                metrics = ["accuracy", "precision", "recall", "roc_auc"]
-                if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics.append("brier_score")
-            elif self._parent._ml_task == "multiclass-classification":
-                metrics = ["accuracy", "precision", "recall"]
-                if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics += ["roc_auc", "log_loss"]
-            else:
-                metrics = ["r2", "rmse"]
+            if "classification" in self._parent._ml_task:
+                metrics = [
+                    metric_name
+                    for metric_name in (
+                        "accuracy",
+                        "precision",
+                        "recall",
+                        "roc_auc",
+                        "log_loss",
+                        "brier_score",
+                    )
+                    if hasattr(self, metric_name)
+                ]
+            else:  # regression
+                metrics = [
+                    metric_name
+                    for metric_name in ("r2", "rmse")
+                    if hasattr(self, metric_name)
+                ]
             metrics += ["fit_time", "predict_time"]
 
         if metric_names is None:

@@ -82,6 +82,7 @@ def test_binary_classification_forest(forest_binary_classification_data):
             "Precision",
             "Recall",
             "ROC AUC",
+            "Log loss",
             "Brier score",
             "Fit time (s)",
             "Predict time (s)",

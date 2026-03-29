@@ -213,7 +213,7 @@ def test_flat_index(forest_binary_classification_with_test):
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.summarize().frame(flat_index=True)
-    assert result.shape == (9, 1)
+    assert result.shape == (10, 1)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
         "accuracy",
@@ -222,6 +222,7 @@ def test_flat_index(forest_binary_classification_with_test):
         "recall_0",
         "recall_1",
         "roc_auc",
+        "log_loss",
         "brier_score",
         "fit_time_s",
         "predict_time_s",
