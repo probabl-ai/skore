@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 from mlflow.data.dataset import Dataset as MlFlowDatasetType
 from numpy.typing import NDArray
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, clone
 
 from ._matplotlib import switch_mpl_backend
 from .protocol import CrossValidationReport, EstimatorReport
@@ -199,8 +199,7 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
     """Yield loggable objects for a cross-validation report."""
     yield from iter_cv_metrics(report)
 
-    estimator_report = report.create_estimator_report()
-    estimator = estimator_report.estimator_
+    estimator = clone(report.estimator).fit(report.X, report.y)
     yield Params(estimator.get_params())
     yield Model(estimator, _sample_input_example(report.X))
 
@@ -269,10 +268,25 @@ def _dataset_from_Xy(
     context: str | None = None,
 ) -> Dataset:
     if isinstance(X, np.ndarray):
+        if isinstance(y, pd.Series):
+            y = y.to_numpy()
+        elif isinstance(y, pd.DataFrame):
+            y = {column: y[column].to_numpy() for column in y.columns}
+
         return Dataset(
             dataset=mlflow.data.from_numpy(X, targets=y),  # type: ignore[attr-defined]
             context=context,
         )
+
+    if isinstance(y, np.ndarray):
+        if y.ndim == 1:
+            y = pd.Series(y, index=X.index, name="target")
+        else:
+            y = pd.DataFrame(
+                y,
+                index=X.index,
+                columns=[f"target_{idx}" for idx in range(y.shape[1])],
+            )
 
     assert isinstance(y, (pd.DataFrame, pd.Series))
 

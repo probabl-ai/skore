@@ -89,18 +89,13 @@ class Project:
     --------
     Construct reports.
 
-    >>> from sklearn.datasets import make_classification, make_regression
-    >>> from sklearn.linear_model import LinearRegression, LogisticRegression
+    >>> from sklearn.datasets import make_regression
+    >>> from sklearn.linear_model import LinearRegression
     >>> from skore import evaluate
-    >>>
-    >>> X, y = make_classification(random_state=42)
-    >>> classifier = LogisticRegression(max_iter=10)
-    >>> classifier_report = evaluate(classifier, X, y, splitter=0.2)
     >>>
     >>> X, y = make_regression(random_state=42)
     >>> regressor = LinearRegression()
     >>> regressor_report = evaluate(regressor, X, y, splitter=0.2)
-    >>> cv_regressor_report = evaluate(regressor, X, y, splitter=5)
 
     Construct the project in local mode, persisted in a temporary directory.
 
@@ -114,7 +109,6 @@ class Project:
     Put reports in the project.
 
     >>> local_project.put("my-simple-regression", regressor_report)
-    >>> local_project.put("my-simple-cv_regression", cv_regressor_report)
 
     Investigate metadata/metrics to filter the best reports.
 

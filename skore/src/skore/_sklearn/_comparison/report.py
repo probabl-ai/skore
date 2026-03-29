@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from collections import Counter
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Literal, cast
@@ -14,8 +15,9 @@ from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
-from skore._utils._cache import Cache
 from skore._utils._progress_bar import track
+from skore._utils.repr.data import get_documentation_url
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._comparison.inspection_accessor import (
@@ -253,7 +255,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         )
 
         self.n_jobs = n_jobs
-        self._cache = Cache()
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
 
     def clear_cache(self) -> None:
@@ -274,13 +275,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> report.clear_cache()
-        >>> report._cache
-        {}
         """
         for report in self.reports_.values():
             report.clear_cache()
-
-        self._cache = Cache()
 
     def cache_predictions(
         self,
@@ -315,8 +312,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
-        >>> report._cache
-        {...}
         """
         if n_jobs is None:
             n_jobs = self.n_jobs
@@ -395,7 +390,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self,
         *,
         report_key: str,
-        X_test: ArrayLike | None = None,
+        X_test: ArrayLike,
         y_test: ArrayLike | None = None,
     ) -> EstimatorReport:
         """Create an estimator report from one of the reports in the comparison.
@@ -412,7 +407,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             the :attr:`reports_` attribute of the :class:`~skore.ComparisonReport`.
             List the available keys with `reports_.keys()`.
 
-        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
             Testing data. It should have the same structure as the training data.
 
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
@@ -498,6 +493,49 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(...)"
+
+    def _repr_html_(self) -> str:
+        """HTML representation with a selector to inspect one compared report."""
+        metrics_html = self.metrics.summarize(data_source="test").frame()._repr_html_()
+
+        comparison_reports = []
+        for label, report in self.reports_.items():
+            fragments = report._html_repr_fragments()
+            comparison_reports.append(
+                {
+                    "label": label,
+                    "estimator_display": fragments["estimator_display"],
+                    "table_report": fragments["table_report"],
+                }
+            )
+
+        container_id = f"skore-comparison-report-{uuid.uuid4().hex[:8]}"
+        help_doc_url = get_documentation_url(obj=self, method_name="help")
+        report_class_name = self.__class__.__name__
+        metrics_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="metrics"
+        )
+        inspection_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="inspection"
+        )
+        return render_template(
+            "comparison_report.html.j2",
+            {
+                "container_id": container_id,
+                "metrics_summary": metrics_html,
+                "comparison_reports": comparison_reports,
+                "help_doc_url": help_doc_url,
+                "report_class_name": report_class_name,
+                "metrics_accessor_doc_url": metrics_accessor_doc_url,
+                "inspection_accessor_doc_url": inspection_accessor_doc_url,
+            },
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by Jupyter kernels to display the report."""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output
 
 
 def _deduplicate_report_names(report_names: list[str]) -> list[str]:

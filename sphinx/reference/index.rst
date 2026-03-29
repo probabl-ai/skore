@@ -22,6 +22,9 @@ Project Management
 
    * - :class:`Project`
      - Main class for managing a skore project and its reports
+   * - :func:`login`
+     - Login to remote backend (e.g. Skore Hub) to later use the project management
+       features.
 
 
 ML Assistance
