@@ -1,8 +1,8 @@
 .. _reporters:
 
-=================================
-Evaluation and structured reports
-=================================
+================================
+Evaluate your predictive models
+================================
 
 .. currentmodule:: skore
 
