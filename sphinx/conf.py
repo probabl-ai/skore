@@ -102,6 +102,7 @@ sphinx_gallery_conf = {
         "../examples/getting_started",
         "../examples/use_cases",
         "../examples/model_evaluation",
+        "../examples/integrations",
         "../examples/technical_details",
     ],
     "within_subsection_order": "ExampleTitleSortKey",  # See https://sphinx-gallery.github.io/stable/configuration.html#sorting-gallery-examples for alternatives
