@@ -139,20 +139,15 @@ custom_report
 # Conclusion
 # ==========
 #
-# This example demonstrates how skore can be used with scikit-learn compatible estimators.
-# This allows practitioners to use consistent reporting and visualization tools across different estimators.
-#
-# .. seealso::
-#
-#   For a practical example of using language models within scikit-learn pipelines,
-#   see :ref:`example_use_case_employee_salaries` which demonstrates how to use
-#   skrub's :class:`~skrub.TextEncoder` (a language model-based encoder) in a
-#   scikit-learn pipeline for feature engineering.
+# This example demonstrates how skore can be used with scikit-learn compatible
+# estimators. This allows practitioners to use consistent reporting and
+# visualization tools across different estimators.
 #
 # .. seealso::
 #
 #   For an example of wrapping Large Language Models (LLMs) to be compatible with
 #   scikit-learn APIs, see the tutorial on `Quantifying LLMs Uncertainty with Conformal
-#   Predictions <https://medium.com/capgemini-invent-lab/quantifying-llms-uncertainty-with-conformal-predictions-567870e63e00>`_.
+#   Predictions
+#   <https://medium.com/capgemini-invent-lab/quantifying-llms-uncertainty-with-conformal-predictions-567870e63e00>`_.
 #   The article demonstrates how to wrap models like Mistral-7B-Instruct in a
 #   scikit-learn-compatible interface.
