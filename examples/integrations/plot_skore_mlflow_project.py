@@ -97,6 +97,13 @@ with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
 # applies.
 project.put("logistic-regression", report)
 
+# %%
+# Once that you stored the report, the artifacts will be available on the MLflow
+# tracking server at the following URL:
+# http://<TRACKING_URI>/#/<PROJECT>/1/runs/<RUN_ID>/artifacts
+#
+# To find the run ID attributed by MLflow, you can check the section below.
+
 # sphinx_gallery_start_ignore
 if tmp_dir is not None:
     tmp_dir.cleanup()
@@ -129,3 +136,10 @@ import mlflow
 
 mlflow_run = mlflow.get_run(run_id)
 mlflow_run.data.metrics
+
+# %%
+# Conclusion
+# ==========
+#
+# Skore offers native integrations locally and with Skore Hub. However, if you are
+# already using MLflow,
