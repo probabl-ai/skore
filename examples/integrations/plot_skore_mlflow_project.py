@@ -142,4 +142,8 @@ mlflow_run.data.metrics
 # ==========
 #
 # Skore offers native integrations locally and with Skore Hub. However, if you are
-# already using MLflow,
+# already using MLflow, you can use the ``mode="mlflow"`` option to store reports as
+# MLflow artifacts directly inside the tracking server.
+#
+# However, you will not benefit from the interactive user interface provided by Skore
+# Hub.

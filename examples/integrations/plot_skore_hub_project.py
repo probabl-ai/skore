@@ -161,3 +161,10 @@ reports.metrics.summarize().frame()
 
 # %%
 reports.metrics.roc().plot(subplot_by=None)
+
+# %%
+# Conclusion
+# ==========
+#
+# Skore Hub provides a user-friendly interface for you to explore and compare models.
+# You can easily store reports created using Skore.
