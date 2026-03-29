@@ -100,8 +100,7 @@ xgb_report.inspection.permutation_importance().plot()
 # ============
 #
 # Now, we showcase how one could create a scikit-learn custom estimator that follows
-# the requirements as specified in the `scikit-learn documentation
-# <https://scikit-learn.org/dev/developers/develop.html#rolling-your-own-estimator>`_.
+# the requirements of scikit-learn.
 #
 # Here, we create a nearest neighbor classifier:
 
