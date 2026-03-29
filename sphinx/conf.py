@@ -50,6 +50,10 @@ extensions = [
 ]
 exclude_patterns = ["build", "Thumbs.db", ".DS_Store"]
 
+# When sphinx-gallery ignores an example (e.g. ``plot_getting_started`` without Hub
+# credentials), the generated ``.rst`` is still emitted and is not in any toctree.
+suppress_warnings = ["toc.not_included"]
+
 # Configuration for generate_accessor_tables extension
 accessor_summary_classes = [
     "skore.EstimatorReport",

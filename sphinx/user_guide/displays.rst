@@ -1,14 +1,47 @@
 .. _displays:
 
-=========================================
-Visualization via the `skore` display API
-=========================================
+======================================
+From evaluation results to clear views
+======================================
 
 .. currentmodule:: skore
 
-`skore` provides a family of objects that we call displays. All displays follow the
-common API defined by the :class:`Display` protocol. As a user, you get a display by
-interacting with a reporter. Let's provide an example:
+Once you have fitted a model and scored it, the next step is almost always the same in
+spirit and tedious in practice: you need **figures and tables**—curves, matrices,
+residual plots, summaries of the data—that explain **how well** the model behaves and
+**why** it looks that way. Doing that by hand means wiring predictions, labels, and
+metrics into matplotlib or seaborn over and over, with slightly different function
+signatures every time, recomputing expensive steps when you tweak a plot, and juggling
+notebook “magic” versus scripts that must call ``show()`` explicitly. When you finally
+need the **numbers** behind a chart—for a report, a dashboard, or a statistical
+test—you often end up duplicating logic or scraping axes objects.
+
+Skore’s **display** objects target that gap. A display is a small, dedicated object you
+obtain from a **report** (for example via accessors such as ``report.metrics`` or
+``report.data``). It already holds the computed quantities needed for a given diagnostic
+view. You are not meant to construct displays from scratch; they are the visualization
+layer that sits on top of the same evaluation you used to build the report, so the story
+from metrics to plot stays in one place.
+
+All displays share the same idea of a **stable API**, formalized by the :class:`Display`
+protocol, so learning one display teaches you the others:
+
+- ``plot`` builds a :class:`matplotlib.figure.Figure` from the display’s data and
+  **returns** it. Calling ``plot`` again does not mutate stored results or repeat heavy
+  work unnecessarily; in Jupyter, a bare ``display.plot()`` at the end of a cell can
+  show the figure, while in a script you typically assign the figure and call
+  ``fig.show()`` if needed.
+- ``set_style`` adjusts how subsequent ``plot`` calls render (for example line styles or
+  colors), which helps when you want publication-ready output without rewriting the
+  underlying computation.
+- ``frame`` exposes the underlying data as a :class:`pandas.DataFrame`, so the same view
+  you plotted is also available for filtering, exporting, or custom analysis.
+- ``help`` lists what that display offers in your environment (for example via rich in
+  the terminal or HTML in a notebook), which reduces guesswork when exploring a new
+  chart type.
+
+The example below follows that pattern: evaluate a model, ask the report for a ROC view,
+then plot it.
 
 .. plot::
     :context: close-figs
@@ -29,30 +62,19 @@ interacting with a reporter. Let's provide an example:
     display = report.metrics.roc()
     display.plot()
 
-The :meth:`EstimatorReport.metrics.roc` creates a :class:`RocCurveDisplay` object.
+Here :meth:`EstimatorReport.metrics.roc` returns a :class:`RocCurveDisplay`. Other
+report facets expose other display types (confusion matrices, prediction errors, data
+summaries, and so on); see the report sections in the reference and
+:ref:`example_skore_api` for breadth.
 
-The ``help`` method displays the available attributes and methods of the
-display object interactively:
+The ``help`` method shows the available attributes and methods for a given display:
 
 .. code-block:: python
 
     display.help()
 
-Another available method is ``plot``. It builds a :class:`matplotlib.figure.Figure`
-with the information contained in the display and **returns** that figure. In Jupyter,
-leaving ``display.plot()`` as the last expression shows the figure automatically via its
-representation; in a script, assign ``fig = display.plot(...)`` and call ``fig.show()``
-if needed. Call ``plot`` as many times as you want — it does not modify the display's
-underlying data nor require heavy computation.
-
-.. plot::
-    :context: close-figs
-    :align: center
-
-    display.plot()
-
-The ``plot`` method can be preceded by the ``set_style`` method which accepts parameters to
-tweak the rendering of the display. For instance, customize the appearance of the chance level:
+You can restyle before plotting—for example the chance level on a ROC curve—then every
+later ``plot`` uses those settings:
 
 .. plot::
     :context: close-figs
@@ -63,12 +85,11 @@ tweak the rendering of the display. For instance, customize the appearance of th
     )
     display.plot()
 
-Any subsequent call to ``plot`` uses the style settings set by ``set_style``.
-
-The ``frame`` method retrieves the underlying data used to generate the plot as a
-:class:`pandas.DataFrame`:
+Finally, ``frame`` returns the tabular data backing the figure:
 
 .. code-block:: python
 
     df = display.frame()
     df.head()
+
+For the full list of display classes and report accessors, see the API reference.
