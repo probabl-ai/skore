@@ -4,8 +4,6 @@ The test matrix covers every combination of:
   - metric input type: default (None), built-in strings, sklearn scorer strings,
     make_scorer instances, plain callables, and mixed lists
   - form: plain list / single value, with extra args (metric_kwargs), as dict
-
-Error cases are copied from the original test_summarize.py.
 """
 
 import re
@@ -96,6 +94,16 @@ def test_default_metrics_as_dict(linear_regression_with_test):
     _assert_display(display, expected_metric_names={"My R²", "My RMSE"}, n_rows=2)
 
 
+def test_invalid_metric_type(linear_regression_with_test):
+    """An integer in the metric list raises a clear ValueError."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.summarize(metric=[1])
+
+
 # ===========================================================================
 # 2. Metric strings
 # ===========================================================================
@@ -153,6 +161,30 @@ def test_metric_strings_as_dict(linear_regression_with_test):
         expected_metric_names={"Custom MAE", "Custom MSE"},
         n_rows=2,
     )
+
+
+@pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
+def test_error_metric_strings(linear_regression_with_test, metric):
+    """An unrecognised metric string raises a clear ValueError."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    err_msg = re.escape(f"Invalid metric: {metric!r}.")
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.summarize(metric=[metric])
+
+
+def test_sklearn_scorer_names_metric_kwargs(forest_binary_classification_with_test):
+    """metric_kwargs is not supported when metric is a sklearn scorer name string."""
+    classifier, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    err_msg = (
+        "The `metric_kwargs` parameter is not supported when `metric` is a "
+        "scikit-learn scorer name."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.summarize(metric=["f1"], metric_kwargs={"average": "macro"})
 
 
 # ===========================================================================
@@ -232,6 +264,22 @@ def test_metric_scorers_as_dict(linear_regression_with_test):
     )
 
 
+def test_pos_label_scorer_error(forest_binary_classification_with_test):
+    """pos_label specified both in the scorer and in the report raises ValueError."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=0)
+
+    f1_scorer = make_scorer(
+        f1_score, response_method="predict", average="macro", pos_label=1
+    )
+    err_msg = re.escape(
+        "The `pos_label` passed in the scorer and the one used when creating the "
+        "report must match; got 1 and 0."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.summarize(metric=[f1_scorer])
+
+
 # ===========================================================================
 # 4. Metric callables
 # ===========================================================================
@@ -301,6 +349,18 @@ def test_metric_callables_as_dict(linear_regression_with_test):
     assert score == pytest.approx(
         mean_absolute_error(y_test, estimator.predict(X_test))
     )
+
+
+def test_custom_metric_no_response_method(forest_binary_classification_with_test):
+    """A callable without response_method raises a descriptive ValueError."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def custom_metric(y_true, y_pred):
+        return 0.5
+
+    with pytest.raises(ValueError, match="response_method is required"):
+        report.metrics.summarize(metric=custom_metric)
 
 
 # ===========================================================================
@@ -383,81 +443,3 @@ def test_metric_mix_as_dict(linear_regression_with_test):
         expected_metric_names={"Skore RMSE", "Scorer R2", "Callable MAE"},
         n_rows=3,
     )
-
-
-# ===========================================================================
-# 6. Error cases  (copied from test_summarize.py)
-# ===========================================================================
-
-
-def test_invalid_metric_type(linear_regression_with_test):
-    """An integer in the metric list raises a clear ValueError."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[1])
-
-
-def test_empty_metric_list_uses_defaults(linear_regression_with_test):
-    """An empty metric list falls back to the same defaults as metric=None."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    assert_frame_equal(
-        report.metrics.summarize(metric=[]).data,
-        report.metrics.summarize(metric=None).data,
-    )
-
-
-@pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
-def test_error_metric_strings(linear_regression_with_test, metric):
-    """An unrecognised metric string raises a clear ValueError."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    err_msg = re.escape(f"Invalid metric: {metric!r}.")
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[metric])
-
-
-def test_custom_metric_no_response_method(forest_binary_classification_with_test):
-    """A callable without response_method raises a descriptive ValueError."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    def custom_metric(y_true, y_pred):
-        return 0.5
-
-    with pytest.raises(ValueError, match="response_method is required"):
-        report.metrics.summarize(metric=custom_metric)
-
-
-def test_sklearn_scorer_names_metric_kwargs(forest_binary_classification_with_test):
-    """metric_kwargs is not supported when metric is a sklearn scorer name string."""
-    classifier, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
-
-    err_msg = (
-        "The `metric_kwargs` parameter is not supported when `metric` is a "
-        "scikit-learn scorer name."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=["f1"], metric_kwargs={"average": "macro"})
-
-
-def test_pos_label_scorer_error(forest_binary_classification_with_test):
-    """pos_label specified both in the scorer and in the report raises ValueError."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=0)
-
-    f1_scorer = make_scorer(
-        f1_score, response_method="predict", average="macro", pos_label=1
-    )
-    err_msg = re.escape(
-        "The `pos_label` passed in the scorer and the one used when creating the "
-        "report must match; got 1 and 0."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[f1_scorer])
