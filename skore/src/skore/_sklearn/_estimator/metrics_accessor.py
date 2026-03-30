@@ -68,8 +68,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         if isinstance(metric, _BaseScorer):
             func_name = metric._score_func.__name__
-            if func_name.startswith("neg_"):
-                func_name = func_name[4:]
 
             # forward the additional parameters specific to the scorer
             kwargs = metric._kwargs.copy()
