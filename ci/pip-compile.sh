@@ -46,19 +46,17 @@ case $1 in
         esac
 
         for PACKAGE in "${PACKAGES[@]}"; do
-            mapfile -t combinations < <(
-                jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../${PACKAGE}/supported-versions.json" -c
-            )
-
-            for combination in "${combinations[@]}"; do
+            while IFS= read -r combination || [[ -n "${combination}" ]]; do
+                [[ -z "${combination}" ]] && continue
                 python=$(jq -rc '.python' <<< "${combination}")
                 dependencies=$(jq -rc '.dependencies' <<< "${combination}")
 
                 COMBINATIONS+=("${PACKAGE}|test|${python}|${dependencies}")
-            done
+            done < <(
+                jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../${PACKAGE}/supported-versions.json" -c
+            )
         done
 
-        unset combinations
         unset combination
         unset python
         unset dependencies
@@ -85,8 +83,9 @@ set -eu
     # Move to `TMPDIR` to avoid absolute paths in requirements file
     cd "${TMPDIR}"
 
-    for combination in "${COMBINATIONS[@]}"
-    do
+    i=0
+    while [ "${i}" -lt "${#COMBINATIONS[@]}" ]; do
+        combination="${COMBINATIONS[i]}"
         IFS="|" read -r PACKAGE EXTRA PYTHON DEPENDENCIES <<< "${combination}"
 
         # Escape dependencies to be used in filename, both in Linux and Windows:
@@ -129,5 +128,6 @@ set -eu
            "${@:1}"
 
         let counter++
+        i=$((i + 1))
     done
 )
