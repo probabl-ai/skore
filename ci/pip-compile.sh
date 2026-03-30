@@ -118,6 +118,7 @@ set -eu
         # Create the requirements file
         uv python install "${PYTHON}"
         uv pip compile \
+           --python-platform "linux" \
            --quiet \
            --no-strip-extras \
            --no-header \

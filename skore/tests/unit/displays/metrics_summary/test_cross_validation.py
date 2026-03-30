@@ -11,6 +11,36 @@ import pytest
 from skore import CrossValidationReport
 
 
+def test_summarize_classifier_without_predict_proba(
+    custom_classifier_no_predict_proba_data,
+):
+    """Default metrics skip roc_auc, log_loss, and brier_score without predict_proba."""
+    estimator, X, y = custom_classifier_no_predict_proba_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    display = report.metrics.summarize()
+
+    assert set(display.data["metric"]) == {
+        "Accuracy",
+        "Precision",
+        "Recall",
+        "Fit time (s)",
+        "Predict time (s)",
+    }
+
+    result = display.frame(aggregate="mean", flat_index=True)
+    assert result.shape == (7, 1)
+    assert result.index.tolist() == [
+        "accuracy",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "fit_time_s",
+        "predict_time_s",
+    ]
+    assert result.columns.tolist() == ["customclassifierwithoutpredictproba_mean"]
+
+
 def test_aggregate_mean(forest_binary_classification_data):
     """Test that aggregate='mean' returns only mean column."""
     estimator, X, y = forest_binary_classification_data
@@ -21,7 +51,7 @@ def test_aggregate_mean(forest_binary_classification_data):
 
     assert isinstance(result.columns, pd.MultiIndex)
     assert result.columns.tolist() == [("RandomForestClassifier", "mean")]
-    assert result.shape == (9, 1)
+    assert result.shape == (10, 1)
 
 
 def test_aggregate_mean_std(forest_binary_classification_data):
@@ -37,7 +67,7 @@ def test_aggregate_mean_std(forest_binary_classification_data):
         ("RandomForestClassifier", "mean"),
         ("RandomForestClassifier", "std"),
     ]
-    assert result.shape == (9, 2)
+    assert result.shape == (10, 2)
 
 
 def test_aggregate_none(forest_binary_classification_data):
@@ -53,7 +83,7 @@ def test_aggregate_none(forest_binary_classification_data):
         ("RandomForestClassifier", "Split #0"),
         ("RandomForestClassifier", "Split #1"),
     ]
-    assert result.shape == (9, 2)
+    assert result.shape == (10, 2)
 
 
 def test_favorability_with_aggregate_mean_std(forest_binary_classification_data):
@@ -119,6 +149,7 @@ def test_flat_index_binary_classification(forest_binary_classification_data):
         "recall_0",
         "recall_1",
         "roc_auc",
+        "log_loss",
         "brier_score",
         "fit_time_s",
         "predict_time_s",
@@ -189,6 +220,7 @@ def test_flat_index_with_favorability(forest_binary_classification_data):
         "recall_0",
         "recall_1",
         "roc_auc",
+        "log_loss",
         "brier_score",
         "fit_time_s",
         "predict_time_s",
