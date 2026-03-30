@@ -39,7 +39,7 @@ def test_estimator_not_fitted(fit):
     estimator = LinearRegression()
     err_msg = "The training data is required to fit the estimator. "
     with pytest.raises(ValueError, match=err_msg):
-        EstimatorReport(estimator, fit=fit, X_test=None)
+        EstimatorReport(estimator, fit=fit, X_test=None, y_test=None)
 
 
 @pytest.mark.parametrize("fit", [True, "auto"])
@@ -300,7 +300,7 @@ def test_clustering():
         match="Clustering models are not supported yet. Please use a "
         "classification or regression model instead.",
     ):
-        EstimatorReport(KMeans(), X_test=None)
+        EstimatorReport(KMeans(), X_test=None, y_test=None)
 
 
 def test_has_no_deep_copy():
