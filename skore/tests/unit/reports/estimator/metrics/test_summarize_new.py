@@ -42,12 +42,13 @@ def _assert_display(display, *, expected_metric_names, n_rows=None):
 # ===========================================================================
 
 
-def test_default_metrics_plain(forest_binary_classification_with_test):
+@pytest.mark.parametrize("metric", [None, [], {}])
+def test_default_metrics_plain(forest_binary_classification_with_test, metric):
     """metric=None selects the canonical defaults for the ML task."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    display = report.metrics.summarize()
+    display = report.metrics.summarize(metric=metric)
 
     _assert_display(
         display,

@@ -1,6 +1,7 @@
 import dataclasses
 import inspect
-from collections.abc import Callable
+import warnings
+from collections.abc import Callable, Sized
 from functools import partial
 from typing import Any, Literal, cast
 
@@ -171,7 +172,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         dict[str, Metric]
         """
         items: list[tuple[str | None, MetricLike]]
-        if metric is None or metric == []:
+        if metric is None or isinstance(metric, Sized) and len(metric) == 0:
             items = [(None, m) for m in self._registry]
         elif isinstance(metric, dict):
             items = list(metric.items())
