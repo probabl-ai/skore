@@ -54,6 +54,9 @@ Changed
 Added
 -----
 
+- Reports now expose a `report.diagnose()` method that automatically
+  detects common modeling issues such as overfitting and underfitting.
+
 Removed
 -------
 

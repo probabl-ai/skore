@@ -18,6 +18,8 @@ from sklearn.utils.validation import check_is_fitted
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
+from skore._sklearn._diagnostics.base import DiagnosticResult
+from skore._sklearn._estimator.diagnostics import run_estimator_diagnostics
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
@@ -409,6 +411,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
+    def _compute_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
+        return run_estimator_diagnostics(self)
+
     def _get_help_title(self) -> str:
         return f"Tools to diagnose estimator {self.estimator_name_}"
 
@@ -473,6 +478,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
+            "diagnostics": self._diagnostics_html_fragment(),
         }
 
     def _repr_html_(self) -> str:

@@ -13,6 +13,7 @@ from numpy.typing import ArrayLike
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
+from skore._sklearn._diagnostics.base import DiagnosticResult
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
@@ -482,6 +483,23 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
+    def _compute_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
+        diagnostics: list[DiagnosticResult] = []
+        all_checked: set[str] = set()
+        for report_name, report in self.reports_.items():
+            results, checked = report._get_diagnostics()
+            all_checked |= checked
+            diagnostics.extend(
+                DiagnosticResult(
+                    code=diagnostic.code,
+                    title=diagnostic.title,
+                    docs_anchor=diagnostic.docs_anchor,
+                    explanation=f"[{report_name}] {diagnostic.explanation}",
+                )
+                for diagnostic in results
+            )
+        return diagnostics, all_checked
+
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"
 
@@ -506,6 +524,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "label": label,
                     "estimator_display": fragments["estimator_display"],
                     "table_report": fragments["table_report"],
+                    "diagnostics": fragments["diagnostics"],
                 }
             )
 
