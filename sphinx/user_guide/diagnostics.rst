@@ -5,7 +5,9 @@ Diagnostics
 ===========
 
 `skore` diagnostics provide quick checks for common model quality pitfalls.
-Use :meth:`report.diagnose()` to get concise findings, each with:
+Use :meth:`~skore.EstimatorReport.diagnose` to get concise findings about your model's
+quality.
+Each finding has:
 
 - a short explanation,
 - a stable diagnostic code,
@@ -25,11 +27,12 @@ You can also set a global ignore list with `configuration.ignore_diagnostics = .
     configuration.ignore_diagnostics = ["SKD001"]
 
 For cross-validation reports, diagnostics are computed per split and then aggregated
-at report level; a diagnostic is reported as an issue only when it appears in a majority
-of evaluated splits.
+at report level, trough `~skore.CrossValidationReport.diagnose`. A diagnostic is
+reported as an issue only when it appears in a strict majority of evaluated splits.
 
-For comparison reports, diagnostics are built from each component report in the comparison.
-Diagnostics are grouped by component report and emitted as a single message.
+For comparison reports, `~skore.ComparisonReport.diagnose` builds a global diagnostic
+from each component report in the comparison. Diagnostics are grouped by component
+report and emitted as a single message.
 
 
 .. _skd001-overfitting:
