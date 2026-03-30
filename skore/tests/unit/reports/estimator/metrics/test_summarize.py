@@ -43,6 +43,8 @@ def check_display_structure(
     expected_metrics,
     expected_estimator_name=None,
     expected_data_source="test",
+    expected_favorability=None,
+    expected_average=None,
 ):
     """Check the full structure of a MetricsSummaryDisplay.data DataFrame."""
     assert isinstance(display.data, pd.DataFrame)
@@ -58,21 +60,24 @@ def check_display_structure(
         "score",
         "favorability",
     }
+    assert pd.api.types.is_numeric_dtype(data["score"])
     assert set(data["metric"]) == expected_metrics
     assert set(data["estimator_name"]) == {expected_estimator_name}
     assert set(data["data_source"]) == {expected_data_source}
-    assert data["average"].isna().all()
-    assert pd.api.types.is_numeric_dtype(data["score"])
-    assert set(data["favorability"]) == {"(↗︎)", "(↘︎)"}
+    if expected_average is None:
+        assert data["average"].isna().all()
+    else:
+        assert set(data["average"]) == expected_average
+    if expected_favorability is None:
+        expected_favorability = {"(↗︎)", "(↘︎)"}
+    assert set(data["favorability"]) == expected_favorability
 
 
-# ---------------------------------------------------------------------------
 # Default metrics
-# ---------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize("metric", [None, [], {}])
-def test_default_metrics_plain(forest_binary_classification_with_test, metric):
+def test_default_plain(forest_binary_classification_with_test, metric):
     """metric=None / [] / {} selects the canonical defaults for the ML task."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -95,7 +100,7 @@ def test_default_metrics_plain(forest_binary_classification_with_test, metric):
     )
 
 
-def test_default_metrics_with_extra_args(linear_regression_multioutput_with_test):
+def test_default_with_extra_args(linear_regression_multioutput_with_test):
     """metric=None with metric_kwargs alters how the default metrics are computed.
 
     For multioutput regression, multioutput='raw_values' produces one row per
@@ -113,7 +118,7 @@ def test_default_metrics_with_extra_args(linear_regression_multioutput_with_test
     assert len(rmse_rows) >= 2
 
 
-def test_default_metrics_as_dict(linear_regression_with_test):
+def test_default_as_dict(linear_regression_with_test):
     """Built-in metric names as a dict: dict keys become the display names."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -127,17 +132,7 @@ def test_default_metrics_as_dict(linear_regression_with_test):
     )
 
 
-def test_invalid_metric_type(linear_regression_with_test):
-    """An integer in the metric list raises a clear ValueError."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[1])
-
-
-def test_binary_classification_svc(svc_binary_classification_with_test):
+def test_default_binary_classification_svc(svc_binary_classification_with_test):
     """SVC (no predict_proba): no ROC AUC, Log loss, or Brier score."""
     estimator, X_test, y_test = svc_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
@@ -159,7 +154,9 @@ def test_binary_classification_svc(svc_binary_classification_with_test):
     )
 
 
-def test_multiclass_classification_forest(forest_multiclass_classification_with_test):
+def test_default_multiclass_classification_forest(
+    forest_multiclass_classification_with_test,
+):
     """Multiclass classification with RandomForestClassifier."""
     estimator, X_test, y_test = forest_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -186,7 +183,7 @@ def test_multiclass_classification_forest(forest_multiclass_classification_with_
     assert set(data.loc["Precision", "label"]) == {0, 1, 2}
 
 
-def test_multiclass_classification_svc(svc_multiclass_classification_with_test):
+def test_default_multiclass_classification_svc(svc_multiclass_classification_with_test):
     """Multiclass classification with SVC (no predict_proba)."""
     estimator, X_test, y_test = svc_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -211,7 +208,7 @@ def test_multiclass_classification_svc(svc_multiclass_classification_with_test):
     assert set(data.loc["Precision", "label"]) == {0, 1, 2}
 
 
-def test_regression(linear_regression_with_test):
+def test_default_regression(linear_regression_with_test):
     """Regression with LinearRegression."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -227,7 +224,7 @@ def test_regression(linear_regression_with_test):
     assert display.data["output"].isna().all()
 
 
-def test_multioutput_regression(linear_regression_multioutput_with_test):
+def test_default_multioutput_regression(linear_regression_multioutput_with_test):
     """Multioutput regression with LinearRegression."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -324,12 +321,20 @@ def test_unknown_ml_task(forest_binary_classification_with_test):
     assert display.data["output"].isna().all()
 
 
-# ---------------------------------------------------------------------------
-# Metric strings
-# ---------------------------------------------------------------------------
+def test_invalid_metric_type(linear_regression_with_test):
+    """An integer in the metric list raises a clear ValueError."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.summarize(metric=[1])
 
 
-def test_metric_strings_plain(linear_regression_with_test):
+# Metric string
+
+
+def test_string_plain(linear_regression_with_test):
     """A list of skore built-in metric strings resolves to correct display names."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -339,10 +344,11 @@ def test_metric_strings_plain(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={"R²", "RMSE"},
+        expected_estimator_name="LinearRegression",
     )
 
 
-def test_metric_strings_with_extra_args(forest_binary_classification_with_test):
+def test_string_with_extra_args(forest_binary_classification_with_test):
     """Built-in metric strings with metric_kwargs change how the metric is computed.
 
     Passing average='macro' collapses per-class precision/recall to a single row.
@@ -358,11 +364,13 @@ def test_metric_strings_with_extra_args(forest_binary_classification_with_test):
     check_display_structure(
         display,
         expected_metrics={"Precision", "Recall"},
+        expected_estimator_name="RandomForestClassifier",
+        expected_favorability={"(↗︎)"},
+        expected_average={"macro"},
     )
-    assert (display.data["average"] == "macro").all()
 
 
-def test_metric_strings_as_dict(linear_regression_with_test):
+def test_string_as_dict(linear_regression_with_test):
     """Metric strings in dict form: dict keys override display names."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -377,34 +385,12 @@ def test_metric_strings_as_dict(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={"Custom MAE", "Custom MSE"},
+        expected_estimator_name="LinearRegression",
+        expected_favorability={"(↘︎)"},
     )
 
 
-@pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
-def test_error_metric_strings(linear_regression_with_test, metric):
-    """An unrecognised metric string raises a clear ValueError."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    err_msg = re.escape(f"Invalid metric: {metric!r}.")
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[metric])
-
-
-def test_sklearn_scorer_names_metric_kwargs(forest_binary_classification_with_test):
-    """metric_kwargs is not supported when metric is a sklearn scorer name string."""
-    classifier, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
-
-    err_msg = (
-        "The `metric_kwargs` parameter is not supported when `metric` is a "
-        "scikit-learn scorer name."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=["f1"], metric_kwargs={"average": "macro"})
-
-
-def test_sklearn_metric_strings(forest_binary_classification_with_test):
+def test_sklearn_string(forest_binary_classification_with_test):
     """Multiple scikit-learn metric strings can be passed to summarize."""
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
@@ -413,7 +399,7 @@ def test_sklearn_metric_strings(forest_binary_classification_with_test):
     assert set(display.data["metric"]) == {"Rand Score", "V Measure Score"}
 
 
-def test_sklearn_metric_strings_regression(linear_regression_with_test):
+def test_sklearn_string_regression(linear_regression_with_test):
     """Scikit-learn regression metric strings in summarize()."""
     regressor, X_test, y_test = linear_regression_with_test
     reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
@@ -430,7 +416,7 @@ def test_sklearn_metric_strings_regression(linear_regression_with_test):
     }
 
 
-def test_neg_metric_strings(forest_binary_classification_with_test):
+def test_sklearn_string_neg(forest_binary_classification_with_test):
     """Scikit-learn metrics with 'neg_' prefix are handled correctly."""
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
@@ -444,12 +430,34 @@ def test_neg_metric_strings(forest_binary_classification_with_test):
     assert score == pytest.approx(report.metrics.log_loss())
 
 
-# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
+def test_string_unknown(linear_regression_with_test, metric):
+    """An unrecognised metric string raises a clear ValueError."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    err_msg = re.escape(f"Invalid metric: {metric!r}.")
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.summarize(metric=[metric])
+
+
+def test_sklearn_string_metric_kwargs(forest_binary_classification_with_test):
+    """metric_kwargs is not supported when metric is a sklearn scorer name string."""
+    classifier, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    err_msg = (
+        "The `metric_kwargs` parameter is not supported when `metric` is a "
+        "scikit-learn scorer name."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.summarize(metric=["f1"], metric_kwargs={"average": "macro"})
+
+
 # Metric scorers
-# ---------------------------------------------------------------------------
 
 
-def test_metric_scorers_plain(linear_regression_with_test):
+def test_scorer_plain(linear_regression_with_test):
     """A list of sklearn scorers produces the correct metric names and scores."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -462,7 +470,9 @@ def test_metric_scorers_plain(linear_regression_with_test):
     display = report.metrics.summarize(metric=[r2_scorer, mae_scorer])
 
     check_display_structure(
-        display, expected_metrics={"R2 Score", "Mean Absolute Error"}
+        display,
+        expected_metrics={"R2 Score", "Mean Absolute Error"},
+        expected_estimator_name="LinearRegression",
     )
     scores = display.data.set_index("metric")["score"]
     assert scores["R2 Score"] == pytest.approx(
@@ -473,7 +483,7 @@ def test_metric_scorers_plain(linear_regression_with_test):
     )
 
 
-def test_metric_scorers_with_extra_args(forest_binary_classification_with_test):
+def test_scorer_with_extra_args(forest_binary_classification_with_test):
     """Scorers created with make_scorer embed their own extra kwargs (e.g. average)."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -491,13 +501,16 @@ def test_metric_scorers_with_extra_args(forest_binary_classification_with_test):
     check_display_structure(
         display,
         expected_metrics={"F1 Score", "Precision Score"},
+        expected_estimator_name="RandomForestClassifier",
+        expected_favorability={"(↗︎)"},
+        expected_average={"macro", "weighted"},
     )
     averages = display.data.set_index("metric")["average"]
     assert averages["F1 Score"] == "macro"
     assert averages["Precision Score"] == "weighted"
 
 
-def test_metric_scorers_as_dict(linear_regression_with_test):
+def test_scorer_as_dict(linear_regression_with_test):
     """Scorers in dict form: dict keys become the display names."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -514,23 +527,9 @@ def test_metric_scorers_as_dict(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={"Custom R2", "Custom MAE"},
+        expected_estimator_name="LinearRegression",
+        expected_favorability={"(↗︎)", "(↘︎)"},
     )
-
-
-def test_pos_label_scorer_error(forest_binary_classification_with_test):
-    """pos_label specified both in the scorer and in the report raises ValueError."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=0)
-
-    f1_scorer = make_scorer(
-        f1_score, response_method="predict", average="macro", pos_label=1
-    )
-    err_msg = re.escape(
-        "The `pos_label` passed in the scorer and the one used when creating the "
-        "report must match; got 1 and 0."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[f1_scorer])
 
 
 @pytest.mark.parametrize(
@@ -573,9 +572,7 @@ def test_scorer_binary_classification(
     np.testing.assert_allclose(display.data["score"].values, expected_scores)
 
 
-def test_scorer_with_average(
-    forest_multiclass_classification_with_test,
-):
+def test_scorer_with_average(forest_multiclass_classification_with_test):
     """Multiclass classification with average parameter."""
     estimator, X_test, y_test = forest_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -610,12 +607,26 @@ def test_scorer_response_method_not_required_in_summarize(linear_regression_with
     assert display.data["score"].iloc[0] == pytest.approx(expected)
 
 
-# ---------------------------------------------------------------------------
+def test_scorer_pos_label_error(forest_binary_classification_with_test):
+    """pos_label specified both in the scorer and in the report raises ValueError."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=0)
+
+    f1_scorer = make_scorer(
+        f1_score, response_method="predict", average="macro", pos_label=1
+    )
+    err_msg = re.escape(
+        "The `pos_label` passed in the scorer and the one used when creating the "
+        "report must match; got 1 and 0."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report.metrics.summarize(metric=[f1_scorer])
+
+
 # Metric callables
-# ---------------------------------------------------------------------------
 
 
-def test_metric_callables_plain(linear_regression_with_test):
+def test_callable_plain(linear_regression_with_test):
     """A list of plain callables requires response_method in metric_kwargs."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -624,13 +635,14 @@ def test_metric_callables_plain(linear_regression_with_test):
         return mean_absolute_error(y_true, y_pred)
 
     display = report.metrics.summarize(
-        metric=[my_mae],
-        metric_kwargs={"response_method": "predict"},
+        metric=my_mae, metric_kwargs={"response_method": "predict"}
     )
 
     check_display_structure(
         display,
         expected_metrics={"My Mae"},
+        expected_estimator_name="LinearRegression",
+        expected_favorability={""},
     )
     assert set(display.data["favorability"]) == {""}
     score = display.data["score"].values[0]
@@ -639,8 +651,10 @@ def test_metric_callables_plain(linear_regression_with_test):
     )
 
 
-def test_metric_callables_with_extra_args(linear_regression_with_test):
-    """Callables that need extra keyword arguments receive them through metric_kwargs."""
+def test_callable_with_extra_args(linear_regression_with_test):
+    """
+    Callables that need extra keyword arguments receive them through metric_kwargs.
+    """
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
@@ -650,13 +664,15 @@ def test_metric_callables_with_extra_args(linear_regression_with_test):
         return float(np.average(np.abs(y_true - y_pred), weights=weights))
 
     display = report.metrics.summarize(
-        metric=[weighted_mae],
+        metric=weighted_mae,
         metric_kwargs={"response_method": "predict", "weights": weights},
     )
 
     check_display_structure(
         display,
         expected_metrics={"Weighted Mae"},
+        expected_estimator_name="LinearRegression",
+        expected_favorability={""},
     )
     score = display.data["score"].values[0]
     assert score == pytest.approx(
@@ -664,7 +680,7 @@ def test_metric_callables_with_extra_args(linear_regression_with_test):
     )
 
 
-def test_metric_callables_as_dict(linear_regression_with_test):
+def test_callable_as_dict(linear_regression_with_test):
     """Callables in dict form: dict keys become the display names."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -680,6 +696,8 @@ def test_metric_callables_as_dict(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={"My Custom Error"},
+        expected_estimator_name="LinearRegression",
+        expected_favorability={""},
     )
     score = display.data["score"].values[0]
     assert score == pytest.approx(
@@ -687,7 +705,7 @@ def test_metric_callables_as_dict(linear_regression_with_test):
     )
 
 
-def test_custom_metric_no_response_method(forest_binary_classification_with_test):
+def test_callable_no_response_method(forest_binary_classification_with_test):
     """A callable without response_method raises a descriptive ValueError."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -699,7 +717,7 @@ def test_custom_metric_no_response_method(forest_binary_classification_with_test
         report.metrics.summarize(metric=custom_metric)
 
 
-def test_custom_metric_average_none(forest_binary_classification_with_test):
+def test_callable_average_none(forest_binary_classification_with_test):
     """Passing arguments to a custom metric through metric_kwargs works correctly."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -716,9 +734,7 @@ def test_custom_metric_average_none(forest_binary_classification_with_test):
     assert set(display.data["label"]) == {0, 1}
 
 
-# ---------------------------------------------------------------------------
 # Mixed metric types
-# --------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
@@ -730,7 +746,7 @@ def test_custom_metric_average_none(forest_binary_classification_with_test):
         (get_scorer("accuracy"), None),
     ],
 )
-def test_metric_single_list_equivalence(
+def test_single_list_equivalence(
     forest_binary_classification_with_test, metric, metric_kwargs
 ):
     """Passing a single metric is equivalent to passing a list with one element."""
@@ -745,7 +761,7 @@ def test_metric_single_list_equivalence(
     pd.testing.assert_frame_equal(display_single.data, display_list.data)
 
 
-def test_metric_mix_plain(linear_regression_with_test):
+def test_mix_plain(linear_regression_with_test):
     """A list that mixes built-in string, scorer, and callable in one call."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -765,10 +781,12 @@ def test_metric_mix_plain(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={"RMSE", "Mean Absolute Error", "My R2"},
+        expected_estimator_name="LinearRegression",
+        expected_favorability={"", "(↘︎)"},
     )
 
 
-def test_metric_mix_with_extra_args(linear_regression_with_test):
+def test_mix_with_extra_args(linear_regression_with_test):
     """A mixed list where the callable needs extra kwargs from metric_kwargs."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -788,13 +806,15 @@ def test_metric_mix_with_extra_args(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={"R²", "Mean Absolute Error", "Scaled Mae"},
+        expected_estimator_name="LinearRegression",
+        expected_favorability={"(↗︎)", "(↘︎)", ""},
     )
     scores = display.data.set_index("metric")["score"]
     plain_mae = mean_absolute_error(y_test, estimator.predict(X_test))
     assert scores["Scaled Mae"] == pytest.approx(2.0 * plain_mae)
 
 
-def test_metric_mix_as_dict(linear_regression_with_test):
+def test_mix_as_dict(linear_regression_with_test):
     """A dict mixing built-in string, scorer, and callable with custom display names."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -816,12 +836,12 @@ def test_metric_mix_as_dict(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={"Skore RMSE", "Scorer R2", "Callable MAE"},
+        expected_estimator_name="LinearRegression",
+        expected_favorability={"(↗︎)", "(↘︎)", ""},
     )
 
 
-# ---------------------------------------------------------------------------
 # metric_kwargs
-# ---------------------------------------------------------------------------
 
 
 def test_metric_kwargs_average(forest_multiclass_classification_with_test):
@@ -861,7 +881,7 @@ def test_metric_kwargs_none(forest_binary_classification_with_test):
 
 
 def test_metric_kwargs_override_scorer(linear_regression_with_test):
-    """metric_kwargs overrides kwargs baked into the scorer.
+    """metric_kwargs overrides the kwargs baked into the scorer.
 
     Regression test for #2203 follow-up.
     """
@@ -888,9 +908,7 @@ def test_metric_kwargs_override_scorer(linear_regression_with_test):
     assert display.data["score"].iloc[0] == pytest.approx(expected)
 
 
-# ---------------------------------------------------------------------------
 # pos_label
-# ---------------------------------------------------------------------------
 
 
 def test_pos_label(forest_binary_classification_with_test):
@@ -1027,9 +1045,7 @@ def test_pos_label_overwrite(metric, metric_fn):
     assert score_A == pytest.approx(metric_fn(y, classifier.predict(X), pos_label="A"))
 
 
-# ---------------------------------------------------------------------------
 # Cache and data_source
-# ---------------------------------------------------------------------------
 
 
 def test_cache(forest_binary_classification_with_test):
