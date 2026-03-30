@@ -10,7 +10,6 @@ import re
 
 import numpy as np
 import pytest
-from pandas.testing import assert_frame_equal
 from sklearn.metrics import (
     f1_score,
     make_scorer,
@@ -20,10 +19,6 @@ from sklearn.metrics import (
 )
 
 from skore import EstimatorReport, MetricsSummaryDisplay
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 
 def _assert_display(display, *, expected_metric_names, n_rows=None):
@@ -35,9 +30,7 @@ def _assert_display(display, *, expected_metric_names, n_rows=None):
         assert len(display.data) == n_rows
 
 
-# ===========================================================================
-# 1. Default metrics  (metric=None)
-# ===========================================================================
+# Default metrics
 
 
 @pytest.mark.parametrize("metric", [None, [], {}])
@@ -104,9 +97,7 @@ def test_invalid_metric_type(linear_regression_with_test):
         report.metrics.summarize(metric=[1])
 
 
-# ===========================================================================
-# 2. Metric strings
-# ===========================================================================
+# Metric strings
 
 
 def test_metric_strings_plain(linear_regression_with_test):
@@ -187,9 +178,7 @@ def test_sklearn_scorer_names_metric_kwargs(forest_binary_classification_with_te
         report.metrics.summarize(metric=["f1"], metric_kwargs={"average": "macro"})
 
 
-# ===========================================================================
-# 3. Metric Scorers  (make_scorer / get_scorer instances)
-# ===========================================================================
+# Metric Scorers (make_scorer / get_scorer instances)
 
 
 def test_metric_scorers_plain(linear_regression_with_test):
@@ -280,9 +269,7 @@ def test_pos_label_scorer_error(forest_binary_classification_with_test):
         report.metrics.summarize(metric=[f1_scorer])
 
 
-# ===========================================================================
-# 4. Metric callables
-# ===========================================================================
+# Metric callables
 
 
 def test_metric_callables_plain(linear_regression_with_test):
@@ -363,9 +350,7 @@ def test_custom_metric_no_response_method(forest_binary_classification_with_test
         report.metrics.summarize(metric=custom_metric)
 
 
-# ===========================================================================
-# 5. Mix of metric types
-# ===========================================================================
+# Mix of metric types
 
 
 def test_metric_mix_plain(linear_regression_with_test):
