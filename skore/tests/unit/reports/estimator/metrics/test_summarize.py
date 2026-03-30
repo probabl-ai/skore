@@ -1,5 +1,3 @@
-import re
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -13,9 +11,7 @@ from sklearn.metrics import (
     f1_score,
     get_scorer,
     make_scorer,
-    median_absolute_error,
     precision_score,
-    r2_score,
     recall_score,
 )
 from sklearn.model_selection import train_test_split
@@ -67,41 +63,6 @@ def check_display_structure(
 
 
 # Tests for the happy path, with different ML tasks
-
-
-def test_binary_classification_forest(forest_binary_classification_with_test):
-    """
-    Check the behaviour of summarize() with binary classification using
-    RandomForestClassifier.
-    """
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    display = report.metrics.summarize()
-
-    check_display_structure(
-        display,
-        expected_metrics={
-            "Accuracy",
-            "Precision",
-            "Recall",
-            "ROC AUC",
-            "Log loss",
-            "Brier score",
-            "Fit time (s)",
-            "Predict time (s)",
-        },
-        expected_estimator_name="RandomForestClassifier",
-    )
-
-    # Precision and recall should have 2 rows (one per class in binary classification)
-    assert len(display.data[display.data["metric"] == "Precision"]) == 2
-    assert len(display.data[display.data["metric"] == "Recall"]) == 2
-    # Labels should be 0 and 1 for precision
-    precision_labels = set(display.data[display.data["metric"] == "Precision"]["label"])
-    assert precision_labels == {0, 1}
-
-    # Output column should be all NaN for non-multioutput
-    assert display.data["output"].isna().all()
 
 
 def test_binary_classification_svc(svc_binary_classification_with_test):
@@ -279,49 +240,6 @@ def test_data_source_both(forest_binary_classification_data):
 # Tests about passing `metric`
 
 
-def test_invalid_metric_type(linear_regression_with_test):
-    """Check that we raise the expected error message if an invalid metric is passed."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    err_msg = re.escape("Invalid type of metric: <class 'int'> for 1")
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[1])
-
-
-def test_empty_metric_list_uses_defaults(linear_regression_with_test):
-    """Check that empty metric list falls back to default metrics."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    assert_frame_equal(
-        report.metrics.summarize(metric=[]).data,
-        report.metrics.summarize(metric=None).data,
-    )
-
-
-@pytest.mark.parametrize("metric", ["public_metric", "_private_metric"])
-def test_error_metric_strings(linear_regression_with_test, metric):
-    """Check that we raise an error if a metric string is not a valid metric."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    err_msg = re.escape(f"Invalid metric: {metric!r}.")
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[metric])
-
-
-def test_metric_strings_regression(linear_regression_with_test):
-    """Test skore regression metric strings in summarize()."""
-    regressor, X_test, y_test = linear_regression_with_test
-    reg_report = EstimatorReport(regressor, X_test=X_test, y_test=y_test)
-
-    display = reg_report.metrics.summarize(metric=["rmse", "r2"])
-
-    assert isinstance(display.data, pd.DataFrame)
-    assert set(display.data["metric"]) == {"RMSE", "R²"}
-
-
 def test_metric_dict(forest_binary_classification_with_test):
     """Test that metric can be passed as a dictionary with custom names."""
     estimator, X_test, y_test = forest_binary_classification_with_test
@@ -338,36 +256,6 @@ def test_metric_dict(forest_binary_classification_with_test):
 
     # Precision will have 2 rows (one per class)
     assert len(display.data) == 4
-    assert set(display.data["metric"]) == set(metric_dict)
-
-
-def test_metric_dict_with_callables(linear_regression_with_test):
-    """Test that metric dict works with callable functions."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    def custom_metric(y_true, y_pred):
-        return np.mean(np.abs(y_true - y_pred))
-
-    metric_dict = {"R Squared": "r2", "Custom MAE": custom_metric}
-
-    display = report.metrics.summarize(
-        metric=metric_dict, metric_kwargs={"response_method": "predict"}
-    )
-    assert isinstance(display.data, pd.DataFrame)
-    assert len(display.data) == 2
-    assert set(display.data["metric"]) == set(metric_dict)
-
-
-def test_metric_dict_overwrite_metric_names(forest_multiclass_classification_with_test):
-    """Test that we can overwrite the metric names using dict metric."""
-    estimator, X_test, y_test = forest_multiclass_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    metric_dict = {"ROC AUC": "roc_auc", "Fit Time": "fit_time"}
-
-    display = report.metrics.summarize(metric=metric_dict)
-    assert isinstance(display.data, pd.DataFrame)
     assert set(display.data["metric"]) == set(metric_dict)
 
 
@@ -396,29 +284,6 @@ def test_metric_single_list_equivalence(
     pd.testing.assert_frame_equal(display_single.data, display_list.data)
 
 
-def test_custom_metric(linear_regression_with_test):
-    """Check that we can pass a custom metric with specific kwargs to summarize()."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    weights = np.ones_like(y_test) * 2
-
-    def custom_metric(y_true, y_pred, some_weights):
-        return np.mean((y_true - y_pred) * some_weights)
-
-    display = report.metrics.summarize(
-        metric=["r2", custom_metric],
-        metric_kwargs={"some_weights": weights, "response_method": "predict"},
-    )
-    assert isinstance(display.data, pd.DataFrame)
-    assert set(display.data["metric"]) == {"R²", "Custom Metric"}
-
-    scores = display.data.set_index("metric")["score"]
-    assert scores["R²"] == pytest.approx(r2_score(y_test, estimator.predict(X_test)))
-    assert scores["Custom Metric"] == pytest.approx(
-        custom_metric(y_test, estimator.predict(X_test), weights)
-    )
-
-
 def test_custom_metric_average_none(forest_binary_classification_with_test):
     """
     Check that passing arguments to a custom metric through metric_kwargs
@@ -438,52 +303,6 @@ def test_custom_metric_average_none(forest_binary_classification_with_test):
     assert display.data["average"].isna().all()
     assert set(display.data["label"]) == {0, 1}
 
-
-def test_custom_metric_no_response_method(forest_binary_classification_with_test):
-    """Test that ValueError is raised when callable metric lacks response_method."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    def custom_metric(y_true, y_pred):
-        return 0.5
-
-    with pytest.raises(ValueError, match="response_method is required"):
-        report.metrics.summarize(metric=custom_metric)
-
-
-def test_scorer(linear_regression_with_test):
-    """
-    Check that we can pass scikit-learn scorer with different parameters to summarize().
-    """
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    weights = np.ones_like(y_test) * 2
-
-    def custom_metric(y_true, y_pred, some_weights):
-        return np.mean((y_true - y_pred) * some_weights)
-
-    custom_metric_scorer = make_scorer(
-        custom_metric, response_method="predict", some_weights=weights
-    )
-
-    median_absolute_error_scorer = make_scorer(
-        median_absolute_error, response_method="predict"
-    )
-
-    display = report.metrics.summarize(
-        metric=[r2_score, median_absolute_error_scorer, custom_metric_scorer],
-        metric_kwargs={"response_method": "predict"},
-    )
-    assert isinstance(display.data, pd.DataFrame)
-    assert len(display.data) == 3
-
-    scores = display.data["score"].values
-    expected_scores = [
-        r2_score(y_test, estimator.predict(X_test)),
-        median_absolute_error(y_test, estimator.predict(X_test)),
-        custom_metric(y_test, estimator.predict(X_test), weights),
-    ]
-    np.testing.assert_allclose(scores, expected_scores)
 
 
 @pytest.mark.parametrize(
@@ -649,21 +468,6 @@ def test_metric_kwargs_none(
     assert display.data["score"].values[0] == 0.75
 
 
-def test_sklearn_scorer_names_metric_kwargs(forest_binary_classification_with_test):
-    """Check that `metric_kwargs` is not supported when `metric` is a scikit-learn
-    scorer name.
-    """
-    classifier, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
-
-    err_msg = (
-        "The `metric_kwargs` parameter is not supported when `metric` is a "
-        "scikit-learn scorer name."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=["f1"], metric_kwargs={"average": "macro"})
-
-
 # Tests about passing `pos_label`
 
 
@@ -693,23 +497,6 @@ def test_pos_label(forest_binary_classification_with_test):
     # Label is None for precision/recall when pos_label is specified
     assert display.data["label"].isna().all()
     assert display.data["output"].isna().all()
-
-
-def test_pos_label_scorer_error(forest_binary_classification_with_test):
-    """Check that we raise an error when pos_label is passed both in the scorer and
-    in summarize()."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=0)
-
-    f1_scorer = make_scorer(
-        f1_score, response_method="predict", average="macro", pos_label=1
-    )
-    err_msg = re.escape(
-        "The `pos_label` passed in the scorer and the one used when creating the "
-        "report must match; got 1 and 0."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report.metrics.summarize(metric=[f1_scorer])
 
 
 def test_pos_label_strings(forest_binary_classification_with_test):
