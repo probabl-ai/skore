@@ -19,9 +19,12 @@ def test_diagnose_detects_overfitting():
         flip_y=0.25,
         random_state=0,
     )
-    report = evaluate(DecisionTreeClassifier(random_state=0), X, y, splitter=0.5)
+    report = evaluate(
+        DecisionTreeClassifier(random_state=0), X, y, splitter=0.5, pos_label=1
+    )
     messages = report.diagnose()
     assert any("[SKD001]" in message for message in messages)
+    assert "5/5 default predictive metrics" in messages[0]
 
 
 def test_diagnose_detects_underfitting():
@@ -31,14 +34,16 @@ def test_diagnose_detects_underfitting():
         X, y, test_size=0.5, random_state=0
     )
     report = EstimatorReport(
-        DummyClassifier(strategy="uniform", random_state=0),
+        DummyClassifier(strategy="prior"),
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
         y_test=y_test,
+        pos_label=1,
     )
     messages = report.diagnose()
     assert any("[SKD002]" in message for message in messages)
+    assert "5/5 comparable metrics" in messages[0]
 
 
 def test_diagnose_ignore(monkeypatch, regression_train_test_split):
