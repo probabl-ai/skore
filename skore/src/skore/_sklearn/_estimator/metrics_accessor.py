@@ -25,7 +25,19 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.metrics import Metric, _get_default_metrics
+from skore._sklearn.metrics import (
+    R2,
+    Accuracy,
+    Brier,
+    FitTime,
+    LogLoss,
+    Metric,
+    Precision,
+    PredictTime,
+    Recall,
+    Rmse,
+    RocAuc,
+)
 from skore._sklearn.types import (
     DataSource,
     MetricLike,
@@ -49,13 +61,27 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __init__(self, parent: EstimatorReport) -> None:
         super().__init__(parent)
         if not self._parent._metrics_registry:
-            self._parent._metrics_registry = _get_default_metrics(
-                self._parent._ml_task, self._parent._estimator
-            )
+            self._parent._metrics_registry = self._get_default_metrics()
 
     @property
     def _registry(self) -> dict[str, Metric]:
         return self._parent._metrics_registry
+
+    def _get_default_metrics(self) -> dict[str, Metric]:
+        if "classification" in self._parent._ml_task:
+            default_metric_names = [
+                Accuracy,
+                Precision,
+                Recall,
+                RocAuc,
+                LogLoss,
+                Brier,
+            ]
+        else:  # regression
+            default_metric_names = [R2, Rmse]
+        metrics = [m for m in default_metric_names if hasattr(self, m.name)]
+        metrics += [FitTime, PredictTime]
+        return {m.name: m for m in metrics}
 
     def _parse_metric(
         self, metric: MetricLike, metric_kwargs: dict[str, Any]

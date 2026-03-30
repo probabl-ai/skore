@@ -2,10 +2,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from sklearn.base import BaseEstimator
-
-from skore._sklearn.types import MLTask
-
 
 @dataclass
 class Metric:
@@ -124,20 +120,3 @@ Rmse = Metric(
     greater_is_better=False,
     is_builtin=True,
 )
-
-
-def _get_default_metrics(
-    ml_task: MLTask, estimator: BaseEstimator
-) -> dict[str, Metric]:
-    if ml_task == "binary-classification":
-        metrics = [Accuracy, Precision, Recall, RocAuc]
-        if hasattr(estimator, "predict_proba"):
-            metrics += [Brier, LogLoss]
-    elif ml_task == "multiclass-classification":
-        metrics = [Accuracy, Precision, Recall]
-        if hasattr(estimator, "predict_proba"):
-            metrics += [RocAuc, LogLoss]
-    else:
-        metrics = [R2, Rmse]
-    metrics += [FitTime, PredictTime]
-    return {m.name: m for m in metrics}
