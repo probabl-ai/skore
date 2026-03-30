@@ -24,7 +24,7 @@ def test_diagnose_detects_overfitting():
     )
     messages = report.diagnose()
     assert any("[SKD001]" in message for message in messages)
-    assert "5/5 default predictive metrics" in messages[0]
+    assert "6/6 default predictive metrics" in messages[0]
 
 
 def test_diagnose_detects_underfitting():
@@ -43,7 +43,7 @@ def test_diagnose_detects_underfitting():
     )
     messages = report.diagnose()
     assert any("[SKD002]" in message for message in messages)
-    assert "5/5 comparable metrics" in messages[0]
+    assert "6/6 comparable metrics" in messages[0]
 
 
 def test_diagnose_ignore(monkeypatch, regression_train_test_split):
