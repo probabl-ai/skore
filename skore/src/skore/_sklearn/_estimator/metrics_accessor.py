@@ -79,12 +79,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     and self._parent.pos_label != kwargs["pos_label"]
                 ):
                     raise ValueError(
-                        "`pos_label` is passed both in the scorer: "
-                        f"{kwargs['pos_label']!r} and when creating "
-                        f"the report: {self._parent.pos_label!r}. "
-                        "Please provide a consistent "
-                        "`pos_label` or only pass it whether in the scorer or "
-                        "when creating the report."
+                        "The `pos_label` passed in the scorer "
+                        "and the one used when creating the report must match; "
+                        f"got {kwargs['pos_label']!r} and {self._parent.pos_label!r}."
                     )
                 kwargs["pos_label"] = self._parent.pos_label
 

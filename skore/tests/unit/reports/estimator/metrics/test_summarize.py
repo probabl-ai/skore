@@ -705,7 +705,8 @@ def test_pos_label_scorer_error(forest_binary_classification_with_test):
         f1_score, response_method="predict", average="macro", pos_label=1
     )
     err_msg = re.escape(
-        "`pos_label` is passed both in the scorer: 1 and when creating the report: 0"
+        "The `pos_label` passed in the scorer and the one used when creating the "
+        "report must match; got 1 and 0."
     )
     with pytest.raises(ValueError, match=err_msg):
         report.metrics.summarize(metric=[f1_scorer])
