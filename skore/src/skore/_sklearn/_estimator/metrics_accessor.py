@@ -95,12 +95,12 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 kwargs=kwargs,
             )
         elif m in self._registry:
-            metric_obj = self._registry[cast(str, m)]
+            parsed_metric = self._registry[cast(str, m)]
 
             # Forward parameters specific to the builtin method
-            data_source_func = getattr(self, metric_obj.name)
+            data_source_func = getattr(self, parsed_metric.name)
             return dataclasses.replace(
-                metric_obj,
+                parsed_metric,
                 kwargs={
                     param: metric_kwargs[param]
                     for param in inspect.signature(data_source_func).parameters
@@ -183,9 +183,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         result = {}
         for display_name, m in items:
-            metric_obj = self._parse_metric(m, metric_kwargs)
-            key = display_name if display_name else metric_obj.verbose_name
-            result[key] = metric_obj
+            parsed_metric = self._parse_metric(m, metric_kwargs)
+            key = display_name if display_name else parsed_metric.verbose_name
+            result[key] = parsed_metric
 
         return result
 
@@ -306,25 +306,25 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         )
 
         rows = []
-        for metric_name, metric_obj in parsed_metrics.items():
-            if metric_obj.is_builtin:
+        for metric_name, parsed_metric in parsed_metrics.items():
+            if parsed_metric.is_builtin:
                 # Built-in metric: dispatch via the accessor method by name
-                metric_fn = getattr(self, metric_obj.name)
+                metric_fn = getattr(self, parsed_metric.name)
             else:
                 # Callable metric
                 metric_fn = partial(
                     self.custom_metric,
-                    metric_function=cast(Callable, metric_obj.score_func),
-                    response_method=cast(str, metric_obj.response_method),
+                    metric_function=cast(Callable, parsed_metric.score_func),
+                    response_method=cast(str, parsed_metric.response_method),
                 )
 
-            score = metric_fn(data_source=data_source, **metric_obj.kwargs)
+            score = metric_fn(data_source=data_source, **parsed_metric.kwargs)
 
             row = {
                 "metric": metric_name,
                 "estimator_name": self._parent.estimator_name_,
                 "data_source": data_source,
-                "favorability": metric_obj.icon,
+                "favorability": parsed_metric.icon,
                 "label": None,
                 "average": None,
                 "output": None,
@@ -333,7 +333,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             if (
                 self._parent._ml_task == "binary-classification"
-                and metric_obj.kwargs.get("average") == "binary"
+                and parsed_metric.kwargs.get("average") == "binary"
             ):
                 rows.append({**row, "label": self._parent.pos_label})
             elif self._parent._ml_task in (
@@ -344,7 +344,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     for label in score:
                         rows.append({**row, "label": label, "score": score[label]})  # noqa: PERF401
                 else:
-                    rows.append({**row, "average": metric_obj.kwargs.get("average")})
+                    rows.append({**row, "average": parsed_metric.kwargs.get("average")})
             elif self._parent._ml_task == "multioutput-regression":
                 if isinstance(score, list):
                     for output_idx, output_score in enumerate(score):
@@ -353,7 +353,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                         )
                 else:
                     rows.append(
-                        {**row, "average": metric_obj.kwargs.get("multioutput")}
+                        {**row, "average": parsed_metric.kwargs.get("multioutput")}
                     )
             else:
                 rows.append(row)
