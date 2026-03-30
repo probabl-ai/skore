@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 
 from skore import CrossValidationReport, EstimatorReport, configuration
-from skore._sklearn._diagnostics import DiagnosticResults
+from skore._sklearn._diagnostics import DiagnosticsDisplay
 
 
 def test_diagnose_aggregates_overfitting_across_splits():
@@ -21,26 +21,26 @@ def test_diagnose_aggregates_overfitting_across_splits():
     report = CrossValidationReport(
         DecisionTreeClassifier(random_state=0), X, y, splitter=5
     )
-    messages = report.diagnose()
-    assert any("[SKD001]" in message for message in messages)
-    assert any("evaluated splits" in message for message in messages)
+    result = report.diagnose()
+    assert "SKD001" in result.diagnostics
+    assert "evaluated splits" in result.diagnostics["SKD001"]["explanation"]
 
 
 def test_diagnose_aggregates_underfitting_across_splits(binary_classification_data):
     """Check the underfitting diagnostics are aggregated across splits."""
     X, y = binary_classification_data
     report = CrossValidationReport(DummyClassifier(strategy="prior"), X, y, splitter=5)
-    results = report.diagnose()
-    assert any("[SKD002]" in message for message in results)
-    assert any("evaluated splits" in message for message in results)
+    result = report.diagnose()
+    assert "SKD002" in result.diagnostics
+    assert "evaluated splits" in result.diagnostics["SKD002"]["explanation"]
 
 
 def test_diagnose_ignore(binary_classification_data):
     """Check the diagnostics are ignored when ignore is passed."""
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
-    messages = report.diagnose(ignore=["SKD001"])
-    assert all("[SKD001]" not in message for message in messages)
+    result = report.diagnose(ignore=["SKD001"])
+    assert "SKD001" not in result.diagnostics
 
 
 def test_diagnose_result_has_repr(binary_classification_data):
@@ -48,7 +48,7 @@ def test_diagnose_result_has_repr(binary_classification_data):
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
     results = report.diagnose()
-    assert isinstance(results, DiagnosticResults)
+    assert isinstance(results, DiagnosticsDisplay)
     assert "Diagnostics:" in repr(results)
     bundle = results._repr_mimebundle_()
     assert "text/plain" in bundle
@@ -84,4 +84,4 @@ def test_diagnose_uses_global_ignore(binary_classification_data):
     _results, checked_codes = report._diagnostics_cache
     assert len(checked_codes) > 0
     with configuration(ignore_diagnostics=list(checked_codes)):
-        assert report.diagnose().diagnostics == []
+        assert report.diagnose().diagnostics == {}

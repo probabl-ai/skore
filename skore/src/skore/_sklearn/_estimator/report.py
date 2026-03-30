@@ -20,7 +20,6 @@ from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
 from skore._sklearn._diagnostics import (
     DiagnosticNotApplicable,
-    DiagnosticResult,
     check_overfitting_underfitting,
 )
 from skore._sklearn.find_ml_task import _find_ml_task
@@ -368,16 +367,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def _compute_diagnostics(
         self,
-    ) -> tuple[list[DiagnosticResult], set[str]]:
+    ) -> tuple[dict[str, dict], set[str]]:
         """Run all registered diagnostic checks against `report`.
 
         Returns a tuple of (detected issues, set of check codes that were evaluated).
         """
-        results: list[DiagnosticResult] = []
+        results: dict[str, dict] = {}
         checked_codes: set[str] = set()
         for codes, check_fn in [({"SKD001", "SKD002"}, check_overfitting_underfitting)]:
             try:
-                results.extend(check_fn(self))
+                results.update(check_fn(self))
                 checked_codes |= codes
             except DiagnosticNotApplicable:
                 pass

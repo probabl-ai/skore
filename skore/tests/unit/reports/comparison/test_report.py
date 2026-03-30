@@ -19,7 +19,7 @@ from skore import (
     EstimatorReport,
     configuration,
 )
-from skore._sklearn._diagnostics import DiagnosticResult, DiagnosticResults
+from skore._sklearn._diagnostics import DiagnosticsDisplay
 
 
 @pytest.fixture(
@@ -34,26 +34,27 @@ def report(request):
 
 def test_diagnose_collects_component_diagnostics(report, monkeypatch):
     """Check the diagnostics are collected from the component reports."""
-    diagnostic = DiagnosticResult(
-        code="SKD001",
-        title="Mock overfitting",
-        docs_anchor="skd001-overfitting",
-        explanation="Mock overfitting detected.",
-    )
+    mock_diagnostics = {
+        "SKD001": {
+            "title": "Mock overfitting",
+            "docs_anchor": "skd001-overfitting",
+            "explanation": "Mock overfitting detected.",
+        }
+    }
     for sub_report in report.reports_.values():
         monkeypatch.setattr(
             sub_report,
             "_compute_diagnostics",
-            lambda: ([diagnostic], {"SKD001"}),
+            lambda: (mock_diagnostics, {"SKD001"}),
         )
         if hasattr(sub_report, "_diagnostics_cache"):
             delattr(sub_report, "_diagnostics_cache")
     if hasattr(report, "_diagnostics_cache"):
         delattr(report, "_diagnostics_cache")
     results = report.diagnose()
-    assert isinstance(results, DiagnosticResults)
+    assert isinstance(results, DiagnosticsDisplay)
     for name in report.reports_:
-        assert any(f"[{name}]" in d.explanation for d in results.diagnostics)
+        assert f"[{name}]" in results.diagnostics["SKD001"]["explanation"]
 
 
 def test_diagnose_uses_component_cache(report, monkeypatch):
@@ -78,7 +79,7 @@ def test_diagnose_uses_component_cache(report, monkeypatch):
 def test_diagnose_result_has_repr(report):
     """Check the diagnostics result has a repr."""
     results = report.diagnose()
-    assert isinstance(results, DiagnosticResults)
+    assert isinstance(results, DiagnosticsDisplay)
     assert "Diagnostics:" in repr(results)
     bundle = results._repr_mimebundle_()
     assert "text/plain" in bundle
@@ -87,48 +88,49 @@ def test_diagnose_result_has_repr(report):
 
 def test_diagnose_ignore(report, monkeypatch):
     """Check the diagnostics are ignored when ignore is passed."""
-    diagnostic = DiagnosticResult(
-        code="SKD001",
-        title="Mock overfitting",
-        docs_anchor="skd001-overfitting",
-        explanation="Mock overfitting detected.",
-    )
+    mock_diagnostics = {
+        "SKD001": {
+            "title": "Mock overfitting",
+            "docs_anchor": "skd001-overfitting",
+            "explanation": "Mock overfitting detected.",
+        }
+    }
     for sub_report in report.reports_.values():
         monkeypatch.setattr(
             sub_report,
             "_compute_diagnostics",
-            lambda: ([diagnostic], {"SKD001", "SKD002"}),
+            lambda: (mock_diagnostics, {"SKD001", "SKD002"}),
         )
         if hasattr(sub_report, "_diagnostics_cache"):
             delattr(sub_report, "_diagnostics_cache")
     if hasattr(report, "_diagnostics_cache"):
         delattr(report, "_diagnostics_cache")
     results = report.diagnose(ignore=["SKD001"])
-    assert all("[SKD001]" not in message for message in results)
-    assert all(d.code != "SKD001" for d in results.diagnostics)
+    assert "SKD001" not in results.diagnostics
 
 
 def test_diagnose_uses_global_ignore(report, monkeypatch):
     """Check the diagnostics are ignored when global ignore is set."""
-    diagnostic = DiagnosticResult(
-        code="SKD001",
-        title="Mock overfitting",
-        docs_anchor="skd001-overfitting",
-        explanation="Mock overfitting detected.",
-    )
+    mock_diagnostics = {
+        "SKD001": {
+            "title": "Mock overfitting",
+            "docs_anchor": "skd001-overfitting",
+            "explanation": "Mock overfitting detected.",
+        }
+    }
     for sub_report in report.reports_.values():
         monkeypatch.setattr(
             sub_report,
             "_compute_diagnostics",
-            lambda: ([diagnostic], {"SKD001", "SKD002"}),
+            lambda: (mock_diagnostics, {"SKD001", "SKD002"}),
         )
         if hasattr(sub_report, "_diagnostics_cache"):
             delattr(sub_report, "_diagnostics_cache")
     if hasattr(report, "_diagnostics_cache"):
         delattr(report, "_diagnostics_cache")
-    assert any(d.code == "SKD001" for d in report.diagnose().diagnostics)
+    assert "SKD001" in report.diagnose().diagnostics
     with configuration(ignore_diagnostics=["SKD001"]):
-        assert all(d.code != "SKD001" for d in report.diagnose().diagnostics)
+        assert "SKD001" not in report.diagnose().diagnostics
 
 
 def test_pickle(tmp_path, report):

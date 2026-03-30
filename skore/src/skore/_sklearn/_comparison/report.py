@@ -13,7 +13,6 @@ from numpy.typing import ArrayLike
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
-from skore._sklearn._diagnostics import DiagnosticResult
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
@@ -483,21 +482,22 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _compute_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
-        diagnostics: list[DiagnosticResult] = []
+    def _compute_diagnostics(self) -> tuple[dict[str, dict], set[str]]:
+        diagnostics: dict[str, dict] = {}
         all_checked: set[str] = set()
         for report_name, report in self.reports_.items():
             results, checked = report._get_diagnostics()
             all_checked |= checked
-            diagnostics.extend(
-                DiagnosticResult(
-                    code=diagnostic.code,
-                    title=diagnostic.title,
-                    docs_anchor=diagnostic.docs_anchor,
-                    explanation=f"[{report_name}] {diagnostic.explanation}",
-                )
-                for diagnostic in results
-            )
+            for code, diagnostic in results.items():
+                entry = f"[{report_name}] {diagnostic['explanation']}"
+                if code in diagnostics:
+                    diagnostics[code]["explanation"] += f" {entry}"
+                else:
+                    diagnostics[code] = {
+                        "title": diagnostic["title"],
+                        "docs_anchor": diagnostic["docs_anchor"],
+                        "explanation": entry,
+                    }
         return diagnostics, all_checked
 
     def _get_help_title(self) -> str:

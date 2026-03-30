@@ -7,7 +7,6 @@ from numpy.typing import ArrayLike
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
-from skore._sklearn._diagnostics.base import DiagnosticResult
 from skore._sklearn._diagnostics.utils import (
     _TIMING_METRICS,
     DiagnosticNotApplicable,
@@ -21,7 +20,7 @@ if TYPE_CHECKING:
 
 def check_overfitting_underfitting(
     report: EstimatorReport,
-) -> list[DiagnosticResult]:
+) -> dict[str, dict]:
     """Check for overfitting (SKD001) and underfitting (SKD002).
 
     Both checks share the same pre-conditions and metric data, so they are
@@ -64,7 +63,7 @@ def check_overfitting_underfitting(
             data_source="test"
         ).data["score"]
 
-    results: list[DiagnosticResult] = []
+    results: dict[str, dict] = {}
     # SKD001 - Overfitting
     votes = [
         check_score_gap_to_baseline(
@@ -80,17 +79,14 @@ def check_overfitting_underfitting(
 
     majority, n_positive, total = majority_vote(votes)
     if majority:
-        results.append(
-            DiagnosticResult(
-                code="SKD001",
-                title="Potential overfitting",
-                docs_anchor="skd001-overfitting",
-                explanation=(
-                    "Significant train/test gaps were found for "
-                    f"{n_positive}/{total} default predictive metrics."
-                ),
-            )
-        )
+        results["SKD001"] = {
+            "title": "Potential overfitting",
+            "docs_anchor": "skd001-overfitting",
+            "explanation": (
+                "Significant train/test gaps were found for "
+                f"{n_positive}/{total} default predictive metrics."
+            ),
+        }
 
     # SKD002 - Underfitting
     # train and test scores are close to a dummy baseline.
@@ -114,17 +110,14 @@ def check_overfitting_underfitting(
     ]
     majority, n_positive, total = majority_vote(votes)
     if majority:
-        results.append(
-            DiagnosticResult(
-                code="SKD002",
-                title="Potential underfitting",
-                docs_anchor="skd002-underfitting",
-                explanation=(
-                    "Train/test scores are on par and not significantly better "
-                    f"than the dummy baseline for {n_positive}/{total} "
-                    "comparable metrics."
-                ),
-            )
-        )
+        results["SKD002"] = {
+            "title": "Potential underfitting",
+            "docs_anchor": "skd002-underfitting",
+            "explanation": (
+                "Train/test scores are on par and not significantly better "
+                f"than the dummy baseline for {n_positive}/{total} "
+                "comparable metrics."
+            ),
+        }
 
     return results

@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
 
-from skore._sklearn._diagnostics import DiagnosticResult
 from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.base import (
     AccessorHelpMixin,
@@ -257,16 +256,17 @@ def test_report_diagnostics_html_fragment_with_issues(
     monkeypatch, report_with_base_help
 ):
     """Fragment reflects the correct issue and check counts."""
-    diagnostic = DiagnosticResult(
-        code="SKD001",
-        title="Mock issue",
-        docs_anchor="skd001-overfitting",
-        explanation="Mock explanation.",
-    )
+    mock_diagnostics = {
+        "SKD001": {
+            "title": "Mock issue",
+            "docs_anchor": "skd001-overfitting",
+            "explanation": "Mock explanation.",
+        }
+    }
     monkeypatch.setattr(
         type(report_with_base_help),
         "_compute_diagnostics",
-        lambda self: ([diagnostic], {"SKD001", "SKD002"}),
+        lambda self: (mock_diagnostics, {"SKD001", "SKD002"}),
     )
     html = report_with_base_help._diagnostics_html_fragment()
     assert "1 issue(s) across 2 check(s)" in html

@@ -1,55 +1,27 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from html import escape
 from importlib.metadata import PackageNotFoundError, version
 
-from rich.console import Console, ConsoleOptions, RenderResult
-from rich.panel import Panel
+import pandas as pd
 
 from skore._externals._sklearn_compat import parse_version
+from skore._utils.repr.base import DisplayHelpMixin
 
 
-@dataclass(frozen=True, slots=True)
-class DiagnosticResult:
-    """A detected issue from a diagnostic check.
+class DiagnosticsDisplay(DisplayHelpMixin):
+    """Display for diagnostic results returned by :meth:`Report.diagnose`.
 
-    Each instance represents an issue that was found by a diagnostic check
-    (e.g. overfitting, underfitting).
-
-    Attributes
-    ----------
-    code : str
-        Unique identifier for the diagnostic, e.g. `"SKD001"`
-
-    title : str
-        Short human-readable name of the diagnostic
-
-    docs_anchor : str
-        Anchor slug used to build the URL to the documentation page
-
-    explanation : str
-        Detailed message describing what was found
-    """
-
-    code: str
-    title: str
-    docs_anchor: str
-    explanation: str
-
-
-class DiagnosticResults:
-    """Collection of diagnostic results returned by :meth:`Report.diagnose`.
-
-    This object is iterable and yields human-readable message strings for every
-    detected issue. When no issues are found, iterating yields a single
-    "No issues were detected" message. Access the underlying
-    :class:`DiagnosticResult` objects via the :attr:`diagnostics` property.
+    A display object with rich and HTML representations, with the full diagnostic
+    results accessible via the :meth:`~DiagnosticsDisplay.frame` method or the
+    :attr:`~DiagnosticsDisplay.diagnostics` property.
 
     Parameters
     ----------
-    diagnostics : list of DiagnosticResult
-        Detected issues produced by the report.
+    diagnostics : dict of str to dict
+        Detected issues produced by the report, keyed by diagnostic code
+        (e.g. ``"SKD001"``). Each value is a dict with keys ``"title"``,
+        ``"docs_anchor"``, and ``"explanation"``.
 
     checks_ran : int
         Total number of diagnostic checks that were executed.
@@ -59,12 +31,14 @@ class DiagnosticResults:
     """
 
     def __init__(
-        self, diagnostics: list[DiagnosticResult], checks_ran: int, n_ignored: int
+        self, diagnostics: dict[str, dict], checks_ran: int, n_ignored: int
     ) -> None:
         self._diagnostics = diagnostics
         self._checks_ran = checks_ran
         if diagnostics:
-            self._messages = [format_diagnostic_message(d) for d in diagnostics]
+            self._messages = [
+                format_diagnostic_message(code, d) for code, d in diagnostics.items()
+            ]
         else:
             self._messages = ["No issues were detected in your report!"]
         self.header = (
@@ -73,40 +47,40 @@ class DiagnosticResults:
         )
 
     @property
-    def diagnostics(self) -> list[DiagnosticResult]:
-        """All detected diagnostic issues."""
+    def diagnostics(self) -> dict[str, dict]:
+        """All detected diagnostic issues, keyed by diagnostic code."""
         return self._diagnostics
 
-    def __iter__(self):
-        return iter(self._messages)
+    def frame(self) -> pd.DataFrame:
+        """Return diagnostic results as a DataFrame.
 
-    def __len__(self):
-        return len(self._messages)
-
-    def __getitem__(self, index):
-        return self._messages[index]
-
-    def __contains__(self, item):
-        return item in self._messages
-
-    def __eq__(self, other):
-        if isinstance(other, DiagnosticResults):
-            return self._messages == other._messages
-        if isinstance(other, (list, tuple)):
-            return list(self._messages) == list(other)
-        return NotImplemented
-
-    def __bool__(self):
-        return bool(self._messages)
-
-    def _to_plain_text(self) -> str:
-        return "\n".join([self.header, *[f"- {message}" for message in self._messages]])
+        Returns
+        -------
+        pandas.DataFrame
+            A DataFrame with one row per detected issue and columns
+            ``"code"``, ``"title"``, ``"explanation"``, and
+            ``"documentation_url"``.
+        """
+        records = [
+            {
+                "code": code,
+                "title": diagnostic["title"],
+                "explanation": diagnostic["explanation"],
+                "documentation_url": get_diagnostics_documentation_url(
+                    docs_anchor=diagnostic["docs_anchor"]
+                ),
+            }
+            for code, diagnostic in self._diagnostics.items()
+        ]
+        return pd.DataFrame(
+            records, columns=["code", "title", "explanation", "documentation_url"]
+        )
 
     def _repr_html_(self) -> str:
         if self._diagnostics:
             items_html = "".join(
-                f"<li>{format_diagnostic_message_html(d)}</li>"
-                for d in self._diagnostics
+                f"<li>{format_diagnostic_message_html(code, diagnostic)}</li>"
+                for code, diagnostic in self._diagnostics.items()
             )
         else:
             items_html = f"<li>{escape(self._messages[0])}</li>"
@@ -121,23 +95,10 @@ class DiagnosticResults:
         )
 
     def _repr_mimebundle_(self, **kwargs: object) -> dict[str, str]:
-        return {"text/plain": self._to_plain_text(), "text/html": self._repr_html_()}
-
-    def __str__(self) -> str:
-        return self._to_plain_text()
+        return {"text/plain": self.__repr__(), "text/html": self._repr_html_()}
 
     def __repr__(self) -> str:
-        return self._to_plain_text()
-
-    def __rich_console__(
-        self, console: Console, options: ConsoleOptions
-    ) -> RenderResult:
-        yield Panel(
-            "\n".join(f"- {message}" for message in self._messages),
-            title=f"Diagnostics ({self.header})",
-            border_style="orange1",
-            expand=False,
-        )
+        return "\n".join([self.header, *[f"- {message}" for message in self._messages]])
 
 
 def get_diagnostics_documentation_url(*, docs_anchor: str) -> str:
@@ -153,26 +114,26 @@ def get_diagnostics_documentation_url(*, docs_anchor: str) -> str:
     return f"https://docs.skore.probabl.ai/{url_version}/user_guide/diagnostics.html#{docs_anchor}"
 
 
-def format_diagnostic_message(diagnostic: DiagnosticResult) -> str:
+def format_diagnostic_message(code: str, diagnostic: dict) -> str:
     return (
-        f"[{diagnostic.code}] {diagnostic.title}. {diagnostic.explanation} "
+        f"[{code}] {diagnostic['title']}. {diagnostic['explanation']} "
         "Read our documentation for more details: "
-        f"{get_diagnostics_documentation_url(docs_anchor=diagnostic.docs_anchor)}. "
-        f"Mute with `ignore=['{diagnostic.code}']`."
+        f"{get_diagnostics_documentation_url(docs_anchor=diagnostic['docs_anchor'])}. "
+        f"Mute with `ignore=['{code}']`."
     )
 
 
-def format_diagnostic_message_html(diagnostic: DiagnosticResult) -> str:
-    code = escape(diagnostic.code)
-    title = escape(diagnostic.title)
-    explanation = escape(diagnostic.explanation)
+def format_diagnostic_message_html(code: str, diagnostic: dict) -> str:
+    escaped_code = escape(code)
+    title = escape(diagnostic["title"])
+    explanation = escape(diagnostic["explanation"])
     docs_url = escape(
-        get_diagnostics_documentation_url(docs_anchor=diagnostic.docs_anchor),
+        get_diagnostics_documentation_url(docs_anchor=diagnostic["docs_anchor"]),
         quote=True,
     )
     return (
-        f"[{code}] {title}. {explanation} "
+        f"[{escaped_code}] {title}. {explanation} "
         f'Read <a href="{docs_url}" target="_blank" rel="noopener noreferrer">'
         "our documentation</a> for more details. "
-        f"Mute with <code>ignore=['{code}']</code>."
+        f"Mute with <code>ignore=['{escaped_code}']</code>."
     )

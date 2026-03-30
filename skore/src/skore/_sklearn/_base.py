@@ -11,10 +11,7 @@ from sklearn.base import BaseEstimator
 from sklearn.utils._response import _check_response_method, _get_response_values
 
 from skore._config import configuration
-from skore._sklearn._diagnostics.base import (
-    DiagnosticResult,
-    DiagnosticResults,
-)
+from skore._sklearn._diagnostics.base import DiagnosticsDisplay
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._cache_key import make_cache_key
@@ -38,13 +35,13 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
-    _diagnostics_cache: tuple[list[DiagnosticResult], set[str]]
+    _diagnostics_cache: tuple[dict[str, dict], set[str]]
 
     @abstractmethod
-    def _compute_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
+    def _compute_diagnostics(self) -> tuple[dict[str, dict], set[str]]:
         """Return detected issues and the set of diagnostic codes that were checked."""
 
-    def _get_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
+    def _get_diagnostics(self) -> tuple[dict[str, dict], set[str]]:
         """Get the diagnostics from the cache or compute them."""
         if not hasattr(self, "_diagnostics_cache"):
             self._diagnostics_cache = self._compute_diagnostics()
@@ -54,7 +51,7 @@ class _BaseReport(ReportHelpMixin):
         self,
         *,
         ignore: list[str] | tuple[str, ...] | None = None,
-    ) -> DiagnosticResults:
+    ) -> DiagnosticsDisplay:
         """Run diagnostics and return a summary of detected issues.
 
         Diagnostics check for common modeling problems such as overfitting and
@@ -69,10 +66,10 @@ class _BaseReport(ReportHelpMixin):
 
         Returns
         -------
-        DiagnosticResults
-            an iterable of human-readable messages for every detected issue,
-            with the full :class:`~skore.DiagnosticResult` objects accessible
-            via the :attr:`~DiagnosticResults.diagnostics` property
+        DiagnosticsDisplay
+            A display object with rich and HTML representations, with the full
+            diagnostic result objects accessible via the
+            :meth:`~DiagnosticsDisplay.frame` method.
 
         Examples
         --------
@@ -83,9 +80,9 @@ class _BaseReport(ReportHelpMixin):
         >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
         >>> report.diagnose()
         Diagnostics: 1 issue(s) detected, 2 check(s) ran, 0 ignored.
-        - [SKD002] Potential underfitting. Train/test scores are on par
-        and not significantly better than the dummy baseline for 8/8 comparable metrics.
-        Read our documentation for more details:
+        - [SKD002] Potential underfitting. Train/test scores are on par and not
+        significantly better than the dummy baseline for 8/8 comparable metrics. Read
+        our documentation for more details:
         https://docs.skore.probabl.ai/dev/user_guide/diagnostics.html#skd002-underfitting.
         Mute with `ignore=['SKD002']`.
         >>> report.diagnose(ignore=["SKD002"])
@@ -102,9 +99,9 @@ class _BaseReport(ReportHelpMixin):
                 if code.strip()
             )
         diagnostics, checked_codes = self._get_diagnostics()
-        filtered = [d for d in diagnostics if d.code not in ignored]
+        filtered = {code: d for code, d in diagnostics.items() if code not in ignored}
         checks_ran = len(checked_codes - ignored)
-        return DiagnosticResults(filtered, checks_ran, n_ignored=len(ignored))
+        return DiagnosticsDisplay(filtered, checks_ran, n_ignored=len(ignored))
 
     def _diagnostics_html_fragment(self) -> str:
         """HTML fragment for the diagnostics panel, rendered via Jinja template."""
