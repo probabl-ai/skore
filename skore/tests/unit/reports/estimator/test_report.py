@@ -4,7 +4,6 @@ from io import BytesIO
 
 import joblib
 import numpy as np
-import pandas as pd
 import pytest
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression

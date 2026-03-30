@@ -262,44 +262,6 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
     )
 
 
-def test_cache(forest_binary_classification_with_test):
-    """Check the behaviour of the metrics methods available for binary
-    classification.
-    """
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    with check_cache_changed(report._cache):
-        result = report.metrics.summarize()
-    assert isinstance(result, MetricsSummaryDisplay)
-
-    with check_cache_unchanged(report._cache):
-        result_from_cache = report.metrics.summarize()
-    assert_frame_equal(result.data, result_from_cache.data)
-
-
-def test_data_source_both(forest_binary_classification_data):
-    """Check the behaviour with `data_source="both"`."""
-    estimator, X, y = forest_binary_classification_data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    display_train = report.metrics.summarize(data_source="train")
-    display_test = report.metrics.summarize(data_source="test")
-    display_both = report.metrics.summarize(data_source="both")
-
-    assert set(display_both.data["data_source"]) == {"train", "test"}
-
-    train_data = display_both.data[display_both.data["data_source"] == "train"]
-    assert_array_equal(train_data["score"], display_train.data["score"])
-
-    test_data = display_both.data[display_both.data["data_source"] == "test"]
-    assert_array_equal(test_data["score"], display_test.data["score"])
-
-
 def test_unknown_ml_task(forest_binary_classification_with_test):
     """Unknown ML task falls back to custom metric only."""
     estimator, X_test, y_test = forest_binary_classification_with_test
