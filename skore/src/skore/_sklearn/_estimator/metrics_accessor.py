@@ -458,8 +458,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """Get all measured processing times related to the estimator.
 
         When an estimator is fitted inside the :class:`~skore.EstimatorReport`, the time
-        to fit is recorded. Similarly, when predictions are computed on some data, the
-        time to predict is recorded. This function returns all the recorded times.
+        to fit is recorded. Prediction time is recorded when the estimator's
+        `predict` method is computed and cached for a given data source. This function
+        returns all the recorded times.
 
         Returns
         -------
@@ -1421,6 +1422,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
+        if data_source == "both":
+            raise ValueError(
+                "data_source='both' is not supported for confusion_matrix."
+            )
+
         response_method: str | list[str] | tuple[str, ...]
         pos_label = self._parent.pos_label
         pred_pos_label: PositiveLabel | None

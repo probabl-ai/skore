@@ -55,8 +55,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `average_precision`.
 
     pos_label : int, float, bool, str or None
-        The class considered as the positive class. If None, the class will not
-        be shown in the legend.
+        The class considered as the positive class. If `None`, the display is built
+        in one-vs-rest mode and includes one curve per class.
 
     data_source : {"train", "test", "both"}
         The data source used to compute the precision recall curve.
@@ -159,7 +159,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - "estimator": one subplot per estimator (comparison only)
             - "data_source": one subplot per data source (EstimatorReport with both \
                 data sources only)
-            - None: no subplots (Not available for comparison in multiclass)
+            - None: no subplots (Not available for comparison in classification \
+                with no specified pos_label)
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
