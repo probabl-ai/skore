@@ -57,21 +57,23 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def _registry(self) -> dict[str, Metric]:
         return self._parent._metrics_registry
 
-    def _parse_metric(self, m: MetricLike, metric_kwargs: dict[str, Any]) -> Metric:
+    def _parse_metric(
+        self, metric: MetricLike, metric_kwargs: dict[str, Any]
+    ) -> Metric:
         """
         Convert a single "metric-like" to a Metric.
 
         `metric_kwargs` will be stripped down to only the kwargs that the metric
         will actually accept.
         """
-        if isinstance(m, _BaseScorer):
-            func_name = m._score_func.__name__
+        if isinstance(metric, _BaseScorer):
+            func_name = metric._score_func.__name__
             if func_name.startswith("neg_"):
                 func_name = func_name[4:]
 
             # forward the additional parameters specific to the scorer
-            kwargs = m._kwargs.copy()
-            if "pos_label" in inspect.signature(m._score_func).parameters:
+            kwargs = metric._kwargs.copy()
+            if "pos_label" in inspect.signature(metric._score_func).parameters:
                 if (
                     "pos_label" in kwargs
                     and self._parent.pos_label != kwargs["pos_label"]
@@ -89,13 +91,13 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             return Metric(
                 name=func_name,
                 verbose_name=func_name.replace("_", " ").title(),
-                greater_is_better=m._sign == 1,
-                score_func=m._score_func,
-                response_method=m._response_method,
+                greater_is_better=metric._sign == 1,
+                score_func=metric._score_func,
+                response_method=metric._response_method,
                 kwargs=kwargs,
             )
-        elif m in self._registry:
-            parsed_metric = self._registry[cast(str, m)]
+        elif metric in self._registry:
+            parsed_metric = self._registry[cast(str, metric)]
 
             # Forward parameters specific to the builtin method
             data_source_func = getattr(self, parsed_metric.name)
@@ -107,7 +109,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     if param in metric_kwargs
                 },
             )
-        elif isinstance(m, str):
+        elif isinstance(metric, str):
             if len(metric_kwargs) != 0:
                 raise ValueError(
                     "The `metric_kwargs` parameter is not supported when "
@@ -117,39 +119,39 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 )
 
             try:
-                scorer = sklearn.metrics.get_scorer(m)
+                scorer = sklearn.metrics.get_scorer(metric)
             except ValueError as err:
                 raise ValueError(
-                    f"Invalid metric: {m!r}. "
+                    f"Invalid metric: {metric!r}. "
                     "Please use a valid metric from the list of supported "
                     f"metrics: {list(self._registry.keys())} "
                     "or a valid scikit-learn metric string."
                 ) from err
 
             return self._parse_metric(scorer, metric_kwargs)
-        elif callable(m):
+        elif callable(metric):
             if "response_method" not in metric_kwargs:
                 raise ValueError(
                     "response_method is required when the metric is a "
                     "callable. Pass it directly or through `metric_kwargs`."
                 )
 
-            func_name = m.__name__
+            func_name = metric.__name__
             kwargs = {
                 param: metric_kwargs[param]
-                for param in inspect.signature(m).parameters
+                for param in inspect.signature(metric).parameters
                 if param in metric_kwargs
             }
             return Metric(
                 name=func_name,
                 verbose_name=func_name.replace("_", " ").title(),
                 greater_is_better=metric_kwargs.get("greater_is_better"),
-                score_func=m,
+                score_func=metric,
                 response_method=metric_kwargs["response_method"],
                 kwargs=kwargs,
             )
         else:
-            raise ValueError(f"Invalid type of metric: {type(m)} for {m!r}")
+            raise ValueError(f"Invalid type of metric: {type(metric)} for {metric!r}")
 
     def _parse_metrics(
         self,
