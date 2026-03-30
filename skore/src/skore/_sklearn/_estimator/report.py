@@ -19,7 +19,8 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
 from skore._sklearn._diagnostics.base import DiagnosticResult
-from skore._sklearn._estimator.diagnostics import run_estimator_diagnostics
+from skore._sklearn._diagnostics.model_checks import check_overfitting_underfitting
+from skore._sklearn._diagnostics.utils import DiagnosticNotApplicable
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache
@@ -363,6 +364,23 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 self._cache[key] = value
         return results[0][1]  # return the predictions only
 
+    def _compute_diagnostics(
+        self,
+    ) -> tuple[list[DiagnosticResult], set[str]]:
+        """Run all registered diagnostic checks against `report`.
+
+        Returns a tuple of (detected issues, set of check codes that were evaluated).
+        """
+        results: list[DiagnosticResult] = []
+        checked_codes: set[str] = set()
+        for codes, check_fn in [({"SKD001", "SKD002"}, check_overfitting_underfitting)]:
+            try:
+                results.extend(check_fn(self))
+                checked_codes |= codes
+            except DiagnosticNotApplicable:
+                pass
+        return results, checked_codes
+
     @property
     def ml_task(self):
         return self._ml_task
@@ -410,9 +428,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     ####################################################################################
     # Methods related to the help and repr
     ####################################################################################
-
-    def _compute_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
-        return run_estimator_diagnostics(self)
 
     def _get_help_title(self) -> str:
         return f"Tools to diagnose estimator {self.estimator_name_}"

@@ -15,9 +15,6 @@ from sklearn.pipeline import Pipeline
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._cross_validation.diagnostics import (
-    run_cross_validation_diagnostics,
-)
 from skore._sklearn._diagnostics.base import DiagnosticResult
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
@@ -385,6 +382,37 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
         return report
 
+    def _compute_diagnostics(
+        self,
+    ) -> tuple[list[DiagnosticResult], set[str]]:
+        total_splits = len(self.estimator_reports_)
+        all_checked_codes: set[str] = set()
+        positives_by_code: dict[str, list[DiagnosticResult]] = {}
+
+        for estimator_report in self.estimator_reports_:
+            results, checked_codes = estimator_report._get_diagnostics()
+            all_checked_codes |= checked_codes
+            for result in results:
+                positives_by_code.setdefault(result.code, []).append(result)
+
+        aggregated: list[DiagnosticResult] = []
+        for code in all_checked_codes:
+            positives = positives_by_code.get(code, [])
+            if len(positives) > total_splits / 2:
+                ref = positives[0]
+                aggregated.append(
+                    DiagnosticResult(
+                        code=ref.code,
+                        title=ref.title,
+                        docs_anchor=ref.docs_anchor,
+                        explanation=(
+                            f"Detected in {len(positives)}/{total_splits} "
+                            "evaluated splits."
+                        ),
+                    )
+                )
+        return aggregated, all_checked_codes
+
     @property
     def ml_task(self) -> str:
         return self._ml_task
@@ -428,9 +456,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     ####################################################################################
     # Methods related to the help and repr
     ####################################################################################
-
-    def _compute_diagnostics(self) -> tuple[list[DiagnosticResult], set[str]]:
-        return run_cross_validation_diagnostics(self)
 
     def _get_help_title(self) -> str:
         return f"Tools to diagnose estimator {self.estimator_name_}"
