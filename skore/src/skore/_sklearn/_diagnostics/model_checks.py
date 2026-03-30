@@ -11,8 +11,8 @@ from skore._sklearn._diagnostics.base import DiagnosticResult
 from skore._sklearn._diagnostics.utils import (
     _TIMING_METRICS,
     DiagnosticNotApplicable,
-    _majority_vote,
     check_score_gap_to_baseline,
+    majority_vote,
 )
 
 if TYPE_CHECKING:
@@ -78,7 +78,7 @@ def check_overfitting_underfitting(
         if report_data.loc[idx, "metric"] not in _TIMING_METRICS
     ]
 
-    majority, n_positive, total = _majority_vote(votes)
+    majority, n_positive, total = majority_vote(votes)
     if majority:
         results.append(
             DiagnosticResult(
@@ -112,7 +112,7 @@ def check_overfitting_underfitting(
         for idx in range(len(report_data))
         if report_data.loc[idx, "metric"] not in _TIMING_METRICS
     ]
-    majority, n_positive, total = _majority_vote(votes)
+    majority, n_positive, total = majority_vote(votes)
     if majority:
         results.append(
             DiagnosticResult(

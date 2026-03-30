@@ -18,9 +18,11 @@ from sklearn.utils.validation import check_is_fitted
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport, _get_cached_response_values
-from skore._sklearn._diagnostics.base import DiagnosticResult
-from skore._sklearn._diagnostics.model_checks import check_overfitting_underfitting
-from skore._sklearn._diagnostics.utils import DiagnosticNotApplicable
+from skore._sklearn._diagnostics import (
+    DiagnosticNotApplicable,
+    DiagnosticResult,
+    check_overfitting_underfitting,
+)
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import PositiveLabel
 from skore._utils._cache import Cache

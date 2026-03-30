@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 
 from skore import CrossValidationReport, EstimatorReport, configuration
-from skore._sklearn._diagnostics.base import DiagnosticResults
+from skore._sklearn._diagnostics import DiagnosticResults
 
 
 def test_diagnose_aggregates_overfitting_across_splits():

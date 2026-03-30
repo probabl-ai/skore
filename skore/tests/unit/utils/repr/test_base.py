@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
 
+from skore._sklearn._diagnostics import DiagnosticResult
 from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.base import (
     AccessorHelpMixin,
@@ -256,8 +257,6 @@ def test_report_diagnostics_html_fragment_with_issues(
     monkeypatch, report_with_base_help
 ):
     """Fragment reflects the correct issue and check counts."""
-    from skore._sklearn._diagnostics.base import DiagnosticResult
-
     diagnostic = DiagnosticResult(
         code="SKD001",
         title="Mock issue",

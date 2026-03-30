@@ -6,7 +6,7 @@ _TIMING_METRICS = {
 }
 
 
-def _adaptive_threshold(
+def adaptive_threshold(
     *, floor: float, fraction: float, references: tuple[float, ...]
 ) -> float:
     """Compute a scale-aware threshold.
@@ -31,17 +31,17 @@ def check_score_gap_to_baseline(
     to prevent the threshold from vanishing on near-zero scores.
     """
     if favorability == "(↗︎)":
-        return score - baseline >= _adaptive_threshold(
+        return score - baseline >= adaptive_threshold(
             floor=floor, fraction=fraction, references=(baseline,)
         )
     if favorability == "(↘︎)":
-        return baseline - score >= _adaptive_threshold(
+        return baseline - score >= adaptive_threshold(
             floor=floor, fraction=fraction, references=(baseline,)
         )
     return False
 
 
-def _majority_vote(votes: list[bool]) -> tuple[bool, int, int]:
+def majority_vote(votes: list[bool]) -> tuple[bool, int, int]:
     """Apply a strict-majority rule to `votes`.
 
     Returns ``(majority, n_positive, n_total)``.

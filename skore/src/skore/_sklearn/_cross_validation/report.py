@@ -15,7 +15,7 @@ from sklearn.pipeline import Pipeline
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._diagnostics.base import DiagnosticResult
+from skore._sklearn._diagnostics import DiagnosticResult
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params

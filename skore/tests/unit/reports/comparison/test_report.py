@@ -19,7 +19,7 @@ from skore import (
     EstimatorReport,
     configuration,
 )
-from skore._sklearn._diagnostics.base import DiagnosticResult, DiagnosticResults
+from skore._sklearn._diagnostics import DiagnosticResult, DiagnosticResults
 
 
 @pytest.fixture(

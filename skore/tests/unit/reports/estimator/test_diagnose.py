@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 
 from skore import EstimatorReport, configuration, evaluate
-from skore._sklearn._diagnostics.base import DiagnosticResult, DiagnosticResults
+from skore._sklearn._diagnostics import DiagnosticResult, DiagnosticResults
 
 
 def test_diagnose_detects_overfitting():
