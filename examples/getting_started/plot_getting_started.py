@@ -126,9 +126,14 @@ from skore import evaluate
 simple_cv_report = evaluate(
     simple_model, X_experiment, y_experiment, pos_label="good", splitter=5
 )
+simple_cv_report
 
 # %%
-# Skore reports allow us to structure the statistical information
+# A report will quickly show important information regarding the performance of the
+# model, the dataset used and the architecture of the model. This information is only
+# a quick overview and one can dig deeper into the report to get more information.
+#
+# Indeed, Skore reports allow to structure the statistical information
 # we look for when experimenting with predictive models. First, the
 # :meth:`~skore.CrossValidationReport.help` method shows us all its available methods
 # and attributes, with the knowledge that our model was trained for classification:
@@ -220,6 +225,7 @@ advanced_model
 advanced_cv_report = evaluate(
     advanced_model, X_experiment, y_experiment, pos_label="good", splitter=5
 )
+advanced_cv_report
 
 # %%
 # We will now compare this new model with the previous one.
@@ -241,6 +247,7 @@ comparison = compare(
         "Advanced Pipeline": advanced_cv_report,
     },
 )
+comparison
 
 # %%
 # This report follows the same API as :class:`~skore.CrossValidationReport`:
@@ -276,6 +283,7 @@ comparison.metrics.precision_recall().plot()
 final_report = comparison.create_estimator_report(
     report_key="Simple Linear Model", X_test=X_holdout, y_test=y_holdout
 )
+final_report
 
 # %%
 # This returns a :class:`~skore.EstimatorReport` which has a similar API to the other

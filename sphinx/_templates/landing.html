@@ -47,7 +47,11 @@
       </div>
       <div class="container-fluid" style="max-width: 58rem;">
         <div class="sd-card card-landing">
-          {{ help_html }}
+          <div class="card-body">
+            <div class="output_subarea output_html rendered_html output_result">
+              {% include "generated_landing_report_ridge.html" %}
+            </div>
+          </div>
         </div>
       </div>
     </div>

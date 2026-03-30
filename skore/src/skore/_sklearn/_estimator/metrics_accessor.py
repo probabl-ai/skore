@@ -129,6 +129,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Precision              0.98...         (↗︎)
         Recall                 0.92...         (↗︎)
         ROC AUC                0.99...         (↗︎)
+        Log loss               0.11...         (↘︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
@@ -146,6 +147,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Precision                       0.96...                     0.98...          (↗︎)
         Recall                          0.97...                     0.92...          (↗︎)
         ROC AUC                         0.99...                     0.99...          (↗︎)
+        Log loss                        0.08...                     0.11...          (↘︎)
         Brier score                     0.02...                     0.03...          (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
@@ -188,17 +190,18 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         # Treat empty list same as None - use defaults
         if metric is None or (isinstance(metric, list) and len(metric) == 0):
-            # Equivalent to _get_scorers_to_add
-            if self._parent._ml_task == "binary-classification":
-                metrics = ["accuracy", "precision", "recall", "roc_auc"]
-                if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics.append("brier_score")
-            elif self._parent._ml_task == "multiclass-classification":
-                metrics = ["accuracy", "precision", "recall"]
-                if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics += ["roc_auc", "log_loss"]
-            else:
-                metrics = ["r2", "rmse"]
+            if "classification" in self._parent._ml_task:
+                default_metric_names: tuple[str, ...] = (
+                    "accuracy",
+                    "precision",
+                    "recall",
+                    "roc_auc",
+                    "log_loss",
+                    "brier_score",
+                )
+            else:  # regression
+                default_metric_names = ("r2", "rmse")
+            metrics = [m for m in default_metric_names if hasattr(self, m)]
             metrics += ["fit_time", "predict_time"]
 
         if metric_names is None:
@@ -259,9 +262,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 if isinstance(metric_, str):
                     metric_fn = getattr(
                         self,
-                        f"_{metric_}"
-                        if metric_ in ["fit_time", "predict_time"]
-                        else metric_,
+                        (
+                            f"_{metric_}"
+                            if metric_ in ["fit_time", "predict_time"]
+                            else metric_
+                        ),
                     )
                     metrics_kwargs = {}
                     if metric_name is None:
