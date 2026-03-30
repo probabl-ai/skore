@@ -309,16 +309,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         for metric_name, parsed_metric in parsed_metrics.items():
             if parsed_metric.is_builtin:
                 # Built-in metric: dispatch via the accessor method by name
-                metric_fn = getattr(self, parsed_metric.name)
+                metric_function = getattr(self, parsed_metric.name)
             else:
                 # Callable metric
-                metric_fn = partial(
+                metric_function = partial(
                     self.custom_metric,
                     metric_function=cast(Callable, parsed_metric.score_func),
                     response_method=cast(str, parsed_metric.response_method),
                 )
 
-            score = metric_fn(data_source=data_source, **parsed_metric.kwargs)
+            score = metric_function(data_source=data_source, **parsed_metric.kwargs)
 
             row = {
                 "metric": metric_name,
@@ -374,7 +374,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def _compute_metric_scores(
         self,
-        metric_fn: Callable,
+        metric_function: Callable,
         *,
         response_method: str | list[str] | tuple[str, ...],
         data_source: DataSource = "test",
@@ -384,7 +384,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         pos_label = self._parent.pos_label
 
-        cache_key = make_cache_key(data_source, metric_fn.__name__, metric_kwargs)
+        cache_key = make_cache_key(data_source, metric_function.__name__, metric_kwargs)
 
         score = self._parent._cache.get(cache_key)
         if score is None:
@@ -402,11 +402,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 if key_tuple[1] != "predict_time":
                     y_pred = value
 
-            metric_params = inspect.signature(metric_fn).parameters
+            metric_params = inspect.signature(metric_function).parameters
             kwargs = {**metric_kwargs}
             if "pos_label" in metric_params and "pos_label" not in kwargs:
                 kwargs.update(pos_label=pos_label)
-            score = metric_fn(y_true, y_pred, **kwargs)
+            score = metric_function(y_true, y_pred, **kwargs)
 
             if isinstance(score, np.ndarray):
                 score = score.tolist()
