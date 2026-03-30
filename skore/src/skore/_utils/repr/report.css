@@ -186,28 +186,6 @@
     background-color: var(--color-blue-hover);
 }
 
-.report-diagnostics {
-    font-size: 13px;
-    line-height: 1.5;
-    color: var(--color-text);
-    padding: 0.5em 0;
-}
-
-.report-diagnostics-details {
-    margin: 0;
-}
-
-.report-diagnostics-hint {
-    font-size: 11px;
-    font-style: italic;
-    opacity: 0.88;
-    margin-top: 0.5em;
-}
-
-.report-diagnostics-hint code {
-    font-style: normal;
-}
-
 .report-estimator {
     padding-top: 0.5em;
 }

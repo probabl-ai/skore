@@ -492,11 +492,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
+        diagnostics, checked_codes = self._get_diagnostics()
+        diagnostics_html = (
+            f"<div class='report-diagnostics-details'>{len(diagnostics)} "
+            f"issue(s) across {len(checked_codes)} check(s).</div>"
+        )
+
         return {
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
-            "diagnostics": self._diagnostics_html_fragment(),
+            "diagnostics": diagnostics_html,
         }
 
     def _repr_html_(self) -> str:
@@ -512,6 +518,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
+        diagnostics_documentation_url = get_documentation_url(
+            obj=self, method_name="diagnose"
+        )
         return render_template(
             "cross_validation_report.html.j2",
             {
@@ -521,6 +530,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
+                "diagnostics_documentation_url": diagnostics_documentation_url,
                 **fragments,
             },
         )

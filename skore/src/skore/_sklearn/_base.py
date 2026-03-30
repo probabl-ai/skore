@@ -17,7 +17,6 @@ from skore._utils._cache import Cache
 from skore._utils._cache_key import make_cache_key
 from skore._utils._measure_time import MeasureTime
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
-from skore._utils.repr.html_repr import render_template
 
 
 class _BaseReport(ReportHelpMixin):
@@ -102,17 +101,6 @@ class _BaseReport(ReportHelpMixin):
         filtered = {code: d for code, d in diagnostics.items() if code not in ignored}
         checks_ran = len(checked_codes - ignored)
         return DiagnosticsDisplay(filtered, checks_ran, n_ignored=len(ignored))
-
-    def _diagnostics_html_fragment(self) -> str:
-        """HTML fragment for the diagnostics panel, rendered via Jinja template."""
-        diagnostics, checked_codes = self._get_diagnostics()
-        return render_template(
-            "diagnostics_panel.html.j2",
-            {
-                "n_issues": len(diagnostics),
-                "n_checks": len(checked_codes),
-            },
-        )
 
     @cached_property
     def id(self) -> int:
