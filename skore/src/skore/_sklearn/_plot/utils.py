@@ -7,13 +7,9 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import NDArray
 from pandas import CategoricalDtype, DataFrame
 from sklearn.preprocessing import LabelBinarizer
-from sklearn.utils.validation import (
-    _check_pos_label_consistency,
-    check_consistent_length,
-)
 
 from skore._sklearn.types import (
     DataSource,
@@ -50,22 +46,6 @@ class _ClassifierDisplayMixin:
     estimator_name: str
     ml_task: MLTask
     pos_label: PositiveLabel | None
-
-    @classmethod
-    def _validate_from_prediction_params(
-        cls,
-        y_true: ArrayLike,
-        y_pred: ArrayLike,
-        *,
-        ml_task: str,
-        pos_label: PositiveLabel | None = None,
-    ) -> PositiveLabel | None:
-        check_consistent_length(y_true, y_pred)
-
-        if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true)
-
-        return pos_label
 
 
 def _rotate_ticklabels(
