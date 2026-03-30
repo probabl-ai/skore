@@ -125,19 +125,6 @@ Rmse = Metric(
     is_builtin=True,
 )
 
-BUILTIN_METRICS = [
-    FitTime,
-    PredictTime,
-    Accuracy,
-    Precision,
-    Recall,
-    Brier,
-    RocAuc,
-    LogLoss,
-    R2,
-    Rmse,
-]
-
 
 def _get_default_metrics(
     ml_task: MLTask, estimator: BaseEstimator
