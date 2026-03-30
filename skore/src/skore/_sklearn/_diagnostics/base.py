@@ -12,9 +12,8 @@ from skore._utils.repr.base import DisplayHelpMixin
 class DiagnosticsDisplay(DisplayHelpMixin):
     """Display for diagnostic results returned by :meth:`Report.diagnose`.
 
-    A display object with rich and HTML representations, with the full diagnostic
-    results accessible via the :meth:`~DiagnosticsDisplay.frame` method or the
-    :attr:`~DiagnosticsDisplay.diagnostics` property.
+    A display object with an HTML representation, with the full diagnostic
+    results accessible via the :meth:`~DiagnosticsDisplay.frame` method.
 
     Parameters
     ----------

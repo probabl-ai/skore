@@ -60,15 +60,13 @@ class _BaseReport(ReportHelpMixin):
         Parameters
         ----------
         ignore : list of str or tuple of str or None, default=None
-            diagnostic codes to exclude from the results, e.g.
-            `["SKD001"]`
+            Diagnostic codes to exclude from the results, e.g. `["SKD001"]`.
 
         Returns
         -------
         DiagnosticsDisplay
-            A display object with rich and HTML representations, with the full
-            diagnostic result objects accessible via the
-            :meth:`~DiagnosticsDisplay.frame` method.
+            A display object with an HTML representation, with the full diagnostic
+            results accessible via the :meth:`~DiagnosticsDisplay.frame` method.
 
         Examples
         --------
