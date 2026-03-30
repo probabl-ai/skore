@@ -12,11 +12,11 @@ residual plots, summaries of the data—that explain **how well** the model beha
 **why** it looks that way. Doing that by hand means wiring predictions, labels, and
 metrics into matplotlib or seaborn over and over, with slightly different function
 signatures every time, recomputing expensive steps when you tweak a plot, and juggling
-notebook “magic” versus scripts that must call ``show()`` explicitly. When you finally
+notebook "magic" versus scripts that must call ``show()`` explicitly. When you finally
 need the **numbers** behind a chart—for a report, a dashboard, or a statistical
 test—you often end up duplicating logic or scraping axes objects.
 
-Skore’s **display** objects target that gap. A display is a small, dedicated object you
+Skore’s :class:`Display` objects target that gap. A display is a small, dedicated object you
 obtain from a **report** (for example via accessors such as ``report.metrics`` or
 ``report.data``). It already holds the computed quantities needed for a given diagnostic
 view. You are not meant to construct displays from scratch; they are the visualization
@@ -74,7 +74,7 @@ The ``help`` method shows the available attributes and methods for a given displ
     display.help()
 
 You can restyle before plotting—for example the chance level on a ROC curve—then every
-later ``plot`` uses those settings:
+later ``plot`` call will use those settings:
 
 .. plot::
     :context: close-figs

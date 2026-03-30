@@ -11,7 +11,7 @@ capture metrics, diagnostics, and context. A :class:`Project` is where those rep
 **live** between sessions: a named collection you can grow over time, compare, and load
 back into Python.
 
-You pick the storage back end with the ``mode`` argument when you construct the project
+You pick the storage backend with the ``mode`` argument when you construct the project
 (for example ``mode="local"``, ``mode="hub"``, or ``mode="mlflow"``). The sections below
 first cover **storing** (where data goes and how :meth:`Project.put` behaves), then
 **retrieving** (overview with :meth:`Project.summarize` and single-report access with
@@ -51,7 +51,7 @@ Hub mode: shared, remote projects
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Hub** mode targets teams that want a **central** place for reports: access control, a
-shared namespace, and storage on **Skore Hub** instead of only on each laptop. Use it
+shared namespace, and storage on **Skore Hub** instead of only on users' laptops. Use it
 when others must see the same projects or when hosting and governance matter.
 
 You authenticate (for example via the client login flow) and name the project with a
@@ -92,15 +92,15 @@ After filtering if you wish, call ``.reports()`` on that summary to load the mat
 full :class:`EstimatorReport` or :class:`CrossValidationReport` instances—typical when
 you want to compare several candidates or open a short list of finalists.
 
-Single report by id
+Single report by ID
 ^^^^^^^^^^^^^^^^^^^
 
 When you already know which stored report you need, :meth:`Project.get` loads it by
-**id**. Ids show up in the summary index (and in the MLflow UI for MLflow-backed
+**ID**. IDs show up in the summary index (and in the MLflow UI for MLflow-backed
 projects). They depend on ``mode``:
 
-- **Local** and **hub**: Skore’s report id for that stored object.
-- **MLflow**: the **MLflow run id** of the run created by ``put``.
+- **Local** and **hub**: Skore’s report ID for that stored object.
+- **MLflow**: the **MLflow run ID** of the run created by ``put``.
 
 If nothing matches, ``get`` raises ``KeyError``. For full signatures and edge cases, see
 :class:`Project` and the `getting started example <example-getting-started_>`_.

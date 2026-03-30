@@ -1,8 +1,8 @@
 .. _reporters:
 
-================================
+===============================
 Evaluate your predictive models
-================================
+===============================
 
 .. currentmodule:: skore
 
@@ -76,7 +76,7 @@ Data insights (``report.data``)
 
 The **data** accessor summarizes the dataset tied to the evaluation: useful views of
 distributions, relationships between features, column types, missing values, and
-similar exploratory signals. On a single train–test report you can often focus on
+similar exploratory signals. On a single train-test report you can often focus on
 train, test, or both; on a cross-validation report, the analysis refers to the full
 ``X`` and ``y`` passed to :func:`~skore.evaluate`.
 
@@ -125,6 +125,6 @@ For a **walkthrough of the unified API** (the three report types, ``data`` /
 ``metrics`` / ``inspection``, and displays), see :ref:`example_skore_api`.
 
 To use **scikit-learn–compatible estimators** from other libraries (e.g. gradient
-boosting packages) or custom classes with a familiar ``fit`` / ``predict`` interface,
+boosting packages, tabular foundational models) or custom classes with the scikit-learn ``fit`` / ``predict`` interface,
 see :ref:`example_sklearn_api`. For ROC-based metrics, the estimator typically needs
 ``predict_proba`` when applicable, as noted in that example.
