@@ -306,28 +306,37 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # to trigger the computation in this case. We only have the permutation
         # stored as a workaround for the serialization for skore-hub as explained
         # earlier.
-        display = None if seed is None else self._parent._cache.get(cache_key)
-        if display is None:
-            display = PermutationImportanceDisplay._compute_data_for_display(
-                data_source=data_source,
-                estimator=self._parent.estimator_,
-                name=self._parent.estimator_name_,
-                X=X_,
-                y=y_true,
-                at_step=at_step,
-                metric=metric,
-                n_repeats=n_repeats,
-                max_samples=max_samples,
-                n_jobs=n_jobs,
-                seed=seed,
-                report_type=self._parent._report_type,
-            )
+        if seed is not None and cache_key in self._parent._cache:
+            display, _ = self._parent._cache[cache_key]
+            return display
 
-            if cache_key is not None:
-                # NOTE: for the moment, we will always store the permutation importance
-                self._parent._cache[cache_key] = display
+        display = PermutationImportanceDisplay._compute_data_for_display(
+            data_source=data_source,
+            estimator=self._parent.estimator_,
+            name=self._parent.estimator_name_,
+            X=X_,
+            y=y_true,
+            at_step=at_step,
+            metric=metric,
+            n_repeats=n_repeats,
+            max_samples=max_samples,
+            n_jobs=n_jobs,
+            seed=seed,
+            report_type=self._parent._report_type,
+        )
+
+        # NOTE: for the moment, we will always store the permutation importance
+        self._parent._cache[cache_key] = (display, kwargs)
 
         return display
+
+    def _get_cached_permutation_importances(self, data_source):
+        # NOTE: this a public developer API, breaking it might break `project.put`
+        for (ds, name, _), val in self._parent._cache.items():
+            if ds != data_source or name != "permutation_importance":
+                continue
+            _, kwargs = val
+            yield kwargs
 
     ####################################################################################
     # Methods related to the help tree

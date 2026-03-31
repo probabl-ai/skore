@@ -267,6 +267,19 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             report_type=self._parent._report_type,
         )
 
+    def _get_cached_permutation_importances(self, data_source):
+        # NOTE: this a public developer API, breaking it might break `project.put`
+        common_cache_keys = set.intersection(
+            *[set(report._cache) for report in self._parent.estimator_reports_]
+        )
+        sub_report = self._parent.estimator_reports_[0]
+        for key in common_cache_keys:
+            ds, name, _ = key
+            if ds != data_source or name != "permutation_importance":
+                continue
+            _, kwargs = sub_report._cache[key]
+            yield kwargs
+
     @available_if(_check_cross_validation_sub_estimator_has_feature_importances())
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
         """Retrieve the Mean Decrease in Impurity (MDI) for each split.
