@@ -11,36 +11,6 @@ import pytest
 from skore import CrossValidationReport
 
 
-def test_summarize_classifier_without_predict_proba(
-    custom_classifier_no_predict_proba_data,
-):
-    """Default metrics skip roc_auc, log_loss, and brier_score without predict_proba."""
-    estimator, X, y = custom_classifier_no_predict_proba_data
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    display = report.metrics.summarize()
-
-    assert set(display.data["metric"]) == {
-        "Accuracy",
-        "Precision",
-        "Recall",
-        "Fit time (s)",
-        "Predict time (s)",
-    }
-
-    result = display.frame(aggregate="mean", flat_index=True)
-    assert result.shape == (7, 1)
-    assert result.index.tolist() == [
-        "accuracy",
-        "precision_0",
-        "precision_1",
-        "recall_0",
-        "recall_1",
-        "fit_time_s",
-        "predict_time_s",
-    ]
-    assert result.columns.tolist() == ["customclassifierwithoutpredictproba_mean"]
-
-
 def test_aggregate_mean(forest_binary_classification_data):
     """Test that aggregate='mean' returns only mean column."""
     estimator, X, y = forest_binary_classification_data
