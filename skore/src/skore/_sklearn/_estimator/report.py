@@ -36,14 +36,6 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
-def _compute_predictions(estimator, X, response_method):
-    prediction_method = _check_response_method(estimator, response_method)
-    with MeasureTime() as predict_time:
-        predictions = prediction_method(X)
-
-    return predictions, predict_time()
-
-
 class EstimatorReport(_BaseReport, DirNamesMixin):
     """Report for a fitted estimator.
 
