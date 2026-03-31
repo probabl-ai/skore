@@ -384,7 +384,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         *,
         report_key: str,
         X_test: ArrayLike,
-        y_test: ArrayLike | None = None,
+        y_test: ArrayLike,
     ) -> EstimatorReport:
         """Create an estimator report from one of the reports in the comparison.
 

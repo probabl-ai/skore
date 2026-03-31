@@ -82,6 +82,7 @@ def test_binary_classification_forest(forest_binary_classification_data):
             "Precision",
             "Recall",
             "ROC AUC",
+            "Log loss",
             "Brier score",
             "Fit time (s)",
             "Predict time (s)",
@@ -214,6 +215,25 @@ def test_multioutput_regression(linear_regression_multioutput_data):
     data = display.data.set_index(["split", "metric"]).sort_index()
     assert len(data.loc[(0, "R²")]) == 2
     assert set(data.loc[(0, "R²"), "output"]) == {0, 1}
+
+
+def test_without_predict_proba(custom_classifier_no_predict_proba_data):
+    """Default metrics skip roc_auc, log_loss, and brier_score without predict_proba."""
+    estimator, X, y = custom_classifier_no_predict_proba_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    display = report.metrics.summarize()
+
+    check_display_structure(
+        display,
+        expected_metrics={
+            "Precision",
+            "Accuracy",
+            "Recall",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
+        expected_estimator_name="CustomClassifierPredictOnly",
+    )
 
 
 # Tests about passing `metric`

@@ -40,7 +40,7 @@ def test_estimator_not_fitted(fit):
     estimator = LinearRegression()
     err_msg = "The training data is required to fit the estimator. "
     with pytest.raises(ValueError, match=err_msg):
-        EstimatorReport(estimator, fit=fit, X_test=None)
+        EstimatorReport(estimator, fit=fit, X_test=None, y_test=None)
 
 
 @pytest.mark.parametrize("fit", [True, "auto"])
@@ -211,7 +211,7 @@ def test_flat_index(forest_binary_classification_with_test):
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.summarize().frame(flat_index=True)
-    assert result.shape == (9, 1)
+    assert result.shape == (10, 1)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
         "accuracy",
@@ -220,6 +220,7 @@ def test_flat_index(forest_binary_classification_with_test):
         "recall_0",
         "recall_1",
         "roc_auc",
+        "log_loss",
         "brier_score",
         "fit_time_s",
         "predict_time_s",
@@ -314,7 +315,7 @@ def test_clustering():
         match="Clustering models are not supported yet. Please use a "
         "classification or regression model instead.",
     ):
-        EstimatorReport(KMeans(), X_test=None)
+        EstimatorReport(KMeans(), X_test=None, y_test=None)
 
 
 def test_has_no_deep_copy():
