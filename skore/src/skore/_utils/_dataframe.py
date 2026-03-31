@@ -42,9 +42,9 @@ def _normalize_y_as_dataframe(y: ArrayLike) -> pd.DataFrame:
             "Please use dense data."
         )
 
-    if sbd.is_polars(y):
-        if sbd.is_column(y):
-            return sbd.make_dataframe_like(y, [y])
+    if sbd.is_column(y) and sbd.is_polars(y):
+        return sbd.make_dataframe_like(y, [y])
+    elif sbd.is_dataframe(y) and sbd.is_polars(y):
         return y
 
     if isinstance(y, pd.Series):
