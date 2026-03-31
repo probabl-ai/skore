@@ -419,11 +419,12 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             )
         data_source = cast(DataSource, data_source)
 
-        # FIXME? Usually, TP is the top-left cell
         classes = estimator.classes_
 
         if ml_task == "binary-classification":
-            # When provided, the positive label is set in second position:
+            # When provided, the positive label is set in second position (which
+            # means true-positive counts is the bottom-right cell in the matrix).
+            # Usually, TP is the top-left cell, but we align with sklearn.
             if pos_label == classes[0]:
                 classes = (classes[1], classes[0])
             tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
