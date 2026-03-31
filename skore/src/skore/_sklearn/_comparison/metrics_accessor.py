@@ -17,10 +17,7 @@ from skore._sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.types import (
-    Aggregate,
-    Metric,
-)
+from skore._sklearn.types import Aggregate, MetricLike
 from skore._utils._accessor import (
     _check_any_sub_report_has_metric,
     _check_supported_ml_task,
@@ -44,7 +41,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:

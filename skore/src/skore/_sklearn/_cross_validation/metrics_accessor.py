@@ -17,10 +17,7 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.types import (
-    Aggregate,
-    Metric,
-)
+from skore._sklearn.types import Aggregate, MetricLike
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
@@ -42,7 +39,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:

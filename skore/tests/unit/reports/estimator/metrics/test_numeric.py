@@ -214,6 +214,30 @@ def test_custom_metric_compatible_estimator(
     assert result == pytest.approx(1)
 
 
+def test_custom_metric_with_scorer_no_attribute_error(linear_regression_with_test):
+    """
+    Passing a make_scorer object to custom_metric()
+    used to raise AttributeError because the code accessed ._score_func.__name__
+    instead of scorer.__name__.
+
+    Regression test for #2204.
+    """
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def business_loss(y_true, y_pred):
+        return np.mean(np.abs(y_true - y_pred))
+
+    scorer = make_scorer(
+        business_loss, greater_is_better=False, response_method="predict"
+    )
+
+    result = report.metrics.custom_metric(
+        metric_function=scorer, response_method="predict"
+    )
+    assert result == pytest.approx(business_loss(y_test, estimator.predict(X_test)))
+
+
 @pytest.mark.parametrize("prefit_estimator", [True, False])
 def test_has_side_effects(prefit_estimator):
     """Re-fitting the estimator outside the EstimatorReport
