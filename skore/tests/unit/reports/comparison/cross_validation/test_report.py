@@ -71,7 +71,7 @@ def test_clustering():
     ):
         ComparisonReport(
             [
-                CrossValidationReport(KMeans(), X=np.random.rand(10, 5)),
-                CrossValidationReport(KMeans(), X=np.random.rand(10, 5)),
+                CrossValidationReport(KMeans(), X=np.random.rand(10, 5), y=None),
+                CrossValidationReport(KMeans(), X=np.random.rand(10, 5), y=None),
             ]
         )

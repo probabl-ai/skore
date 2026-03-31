@@ -79,7 +79,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
         Testing data. It should have the same structure as the training data.
 
-    y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
+    y_test : array-like of shape (n_samples,) or (n_samples, n_outputs)
         Testing target.
 
     pos_label : int, float, bool or str, default=None
@@ -171,7 +171,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         X_train: ArrayLike | None = None,
         y_train: ArrayLike | None = None,
         X_test: ArrayLike,
-        y_test: ArrayLike | None = None,
+        y_test: ArrayLike,
         pos_label: PositiveLabel | None = None,
     ) -> None:
         self._fit = fit
