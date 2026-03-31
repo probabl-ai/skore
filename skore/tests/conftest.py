@@ -564,7 +564,7 @@ def linear_regression_comparison_report(linear_regression_with_train_test):
     return report
 
 
-class CustomClassifierWithoutPredictProba(ClassifierMixin, BaseEstimator):
+class CustomClassifierPredictOnly(ClassifierMixin, BaseEstimator):
     """Binary classifier with only `predict` (no `predict_proba`), mirroring the
     sklearn-api integration example.
     """
@@ -588,11 +588,11 @@ def custom_classifier_no_predict_proba_with_test(
     binary_classification_train_test_split,
 ):
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
-    estimator = CustomClassifierWithoutPredictProba().fit(X_train, y_train)
+    estimator = CustomClassifierPredictOnly().fit(X_train, y_train)
     return estimator, X_test, y_test
 
 
 @pytest.fixture
 def custom_classifier_no_predict_proba_data(binary_classification_data):
     X, y = binary_classification_data
-    return CustomClassifierWithoutPredictProba(), X, y
+    return CustomClassifierPredictOnly(), X, y

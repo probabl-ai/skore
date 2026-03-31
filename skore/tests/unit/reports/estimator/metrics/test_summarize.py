@@ -234,7 +234,7 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="CustomClassifierWithoutPredictProba",
+        expected_estimator_name="CustomClassifierPredictOnly",
     )
 
 
