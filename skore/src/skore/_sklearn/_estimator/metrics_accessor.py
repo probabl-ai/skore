@@ -20,17 +20,14 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.types import (
-    DataSource,
     Metric,
-    PositiveLabel,
-)
 from skore._utils._accessor import (
     _check_all_checks,
     _check_estimator_has_method,
     _check_roc_auc,
     _check_supported_ml_task,
 )
+from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
 from skore._utils._cache_key import make_cache_key
 
 
@@ -61,7 +58,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
         metric_kwargs: dict[str, Any] | None = None,
         response_method: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
@@ -132,9 +129,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Log loss               0.11...         (↘︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics.summarize(
-        ...     metric=["f1"],
-        ... ).frame(favorability=True)
+        >>> report.metrics.summarize(metric="f1").frame(favorability=True)
                                   LogisticRegression Favorability
         Metric   Label / Average
         F1 Score               1             0.95...          (↗︎)
