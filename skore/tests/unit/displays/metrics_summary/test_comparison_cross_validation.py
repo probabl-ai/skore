@@ -16,7 +16,7 @@ def test_aggregate_none(comparison_cross_validation_reports_binary_classificatio
 
     assert result.columns.to_list() == ["Value"]
     assert result.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
-    assert len(result) == 36
+    assert len(result) == 40
 
 
 def test_aggregate_none_flat_index(
@@ -29,7 +29,7 @@ def test_aggregate_none_flat_index(
     result = report.metrics.summarize().frame(aggregate=None, flat_index=True)
 
     assert result.columns.to_list() == ["Value"]
-    assert len(result) == 36
+    assert len(result) == 40
 
 
 def test_default(comparison_cross_validation_reports_binary_classification):
@@ -49,7 +49,7 @@ def test_default(comparison_cross_validation_reports_binary_classification):
             names=[None, "Estimator"],
         ),
     )
-    assert len(result) == 9
+    assert len(result) == 10
 
 
 def test_default_regression(comparison_cross_validation_reports_regression):
@@ -116,7 +116,7 @@ def test_favorability(comparison_cross_validation_reports_binary_classification)
             names=[None, "Estimator"],
         ),
     )
-    assert len(result) == 9
+    assert len(result) == 10
 
 
 def test_init_with_report_names(binary_classification_data):

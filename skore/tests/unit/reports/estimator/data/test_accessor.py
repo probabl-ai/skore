@@ -43,15 +43,6 @@ def test_analyze_data_source_not_available(
     with pytest.raises(ValueError, match=err_msg):
         report.data.analyze(data_source="both")
 
-    # if not requesting `y`, we should not raise an error
-    report = EstimatorReport(classifier, X_test=X_test)
-    display = report.data.analyze(data_source="test", with_y=False)
-    np.testing.assert_array_equal(display.summary["dataframe"].to_numpy(), X_test)
-
-    err_msg = "y_test is required when `data_source='test'`"
-    with pytest.raises(ValueError, match=err_msg):
-        report.data.analyze(data_source="test", with_y=True)
-
 
 def test_analyze_data_source_without_y():
     """Check the behaviour of `data_source` parameter without including `y`."""

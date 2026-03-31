@@ -9,6 +9,12 @@ Skore project
 These functions and classes are meant for managing a `Project` and its reports.
 
 .. autosummary::
+    :toctree: api/
+    :template: base.rst
+
+    login
+
+.. autosummary::
    :toctree: api/
    :template: class_with_accessors.rst
 

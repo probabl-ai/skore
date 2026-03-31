@@ -10,13 +10,13 @@ annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anyio==4.12.1
+anyio==4.13.0
     # via
     #   httpx
     #   starlette
 asttokens==3.0.1
     # via stack-data
-attrs==25.4.0
+attrs==26.1.0
     # via
     #   jsonschema
     #   referencing
@@ -41,7 +41,7 @@ certifi==2026.2.25
     #   requests
 cffi==2.0.0
     # via cryptography
-charset-normalizer==3.4.5
+charset-normalizer==3.4.6
     # via requests
 choreographer==1.2.1
     # via kaleido
@@ -56,13 +56,13 @@ comm==0.2.3
     # via ipywidgets
 contourpy==1.3.3
     # via matplotlib
-cryptography==46.0.5
+cryptography==46.0.6
     # via
     #   google-auth
     #   mlflow
 cycler==0.12.1
     # via matplotlib
-databricks-sdk==0.98.0
+databricks-sdk==0.102.0
     # via
     #   mlflow-skinny
     #   mlflow-tracing
@@ -79,7 +79,7 @@ docutils==0.21.2
     #   sphinx-tabs
 executing==2.2.1
     # via stack-data
-fastapi==0.135.1
+fastapi==0.135.2
     # via mlflow-skinny
 flask==3.1.3
     # via
@@ -87,13 +87,13 @@ flask==3.1.3
     #   mlflow
 flask-cors==6.0.2
     # via mlflow
-fonttools==4.62.0
+fonttools==4.62.1
     # via matplotlib
 gitdb==4.0.12
     # via gitpython
 gitpython==3.1.46
     # via mlflow-skinny
-google-auth==2.49.0
+google-auth==2.49.1
     # via databricks-sdk
 graphene==3.4.3
     # via mlflow
@@ -105,7 +105,7 @@ graphql-relay==3.2.0
     # via graphene
 greenlet==3.3.2
     # via sqlalchemy
-gunicorn==25.1.0
+gunicorn==25.3.0
     # via mlflow
 h11==0.16.0
     # via
@@ -130,7 +130,7 @@ importlib-metadata==8.7.1
     #   opentelemetry-api
 iniconfig==2.3.0
     # via pytest
-ipython==9.11.0
+ipython==9.12.0
     # via ipywidgets
 ipython-pygments-lexers==1.1.1
     # via ipython
@@ -198,7 +198,7 @@ mlflow-skinny==3.10.1
     # via mlflow
 mlflow-tracing==3.10.1
     # via mlflow
-narwhals==2.18.0
+narwhals==2.18.1
     # via
     #   altair
     #   plotly
@@ -273,15 +273,15 @@ plotly==6.6.0
     # via skore (skore/pyproject.toml)
 pluggy==1.6.0
     # via pytest
-polars==1.38.1
+polars==1.39.3
     # via skore (skore/pyproject.toml)
-polars-runtime-32==1.38.1
+polars-runtime-32==1.39.3
     # via polars
 prettytable==3.17.0
     # via skops
 prompt-toolkit==3.0.52
     # via ipython
-protobuf==6.33.5
+protobuf==6.33.6
     # via
     #   databricks-sdk
     #   mlflow-skinny
@@ -294,9 +294,7 @@ pure-eval==0.2.3
 pyarrow==23.0.1
     # via mlflow
 pyasn1==0.6.3
-    # via
-    #   pyasn1-modules
-    #   rsa
+    # via pyasn1-modules
 pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0
@@ -363,8 +361,6 @@ rpds-py==0.30.0
     # via
     #   jsonschema
     #   referencing
-rsa==4.9.1
-    # via google-auth
 scikit-learn==1.8.0
     # via
     #   --override skore/overrides.txt
@@ -390,11 +386,11 @@ six==1.17.0
     # via python-dateutil
 skops==0.13.0
     # via mlflow
-skore-hub-project==0.0.19
+skore-hub-project==0.0.20
     # via skore (skore/pyproject.toml)
 skore-local-project==0.0.5
     # via skore (skore/pyproject.toml)
-skore-mlflow-project==0.0.2
+skore-mlflow-project==0.0.3
     # via skore (skore/pyproject.toml)
 skrub==0.8.0
     # via skore (skore/pyproject.toml)
@@ -423,7 +419,7 @@ sphinx-design==0.7.0
     # via skore (skore/pyproject.toml)
 sphinx-gallery==0.20.0
     # via skore (skore/pyproject.toml)
-sphinx-issues==5.0.1
+sphinx-issues==6.0.0
     # via skore (skore/pyproject.toml)
 sphinx-tabs==3.5.0
     # via skore (skore/pyproject.toml)
@@ -447,7 +443,7 @@ sqlparse==0.5.5
     # via mlflow-skinny
 stack-data==0.6.3
     # via ipython
-starlette==0.52.1
+starlette==1.0.0
     # via fastapi
 threadpoolctl==3.6.0
     # via scikit-learn
@@ -482,13 +478,13 @@ urllib3==2.6.3
     # via
     #   docker
     #   requests
-uvicorn==0.41.0
+uvicorn==0.42.0
     # via mlflow-skinny
 wcwidth==0.6.0
     # via
     #   prettytable
     #   prompt-toolkit
-werkzeug==3.1.6
+werkzeug==3.1.7
     # via
     #   flask
     #   flask-cors

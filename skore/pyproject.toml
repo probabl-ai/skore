@@ -74,7 +74,8 @@ sphinx-base = [
   "sphinx-tabs",
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
-  "xgboost-cpu",
+  "xgboost-cpu ; platform_system != 'Darwin'",
+  "xgboost ; platform_system == 'Darwin'",
 ]
 sphinx = ["skore[sphinx-base, hub, mlflow]", "mlflow", "polars"]
 sphinx-lts-cpu = ["skore[sphinx-base, hub, mlflow]", "mlflow", "polars-lts-cpu"]

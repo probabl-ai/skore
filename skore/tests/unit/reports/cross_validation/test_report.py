@@ -205,7 +205,7 @@ def test_clustering():
         match="Clustering models are not supported yet. "
         "Please use a classification or regression model instead.",
     ):
-        CrossValidationReport(KMeans(), X=np.random.rand(10, 5))
+        CrossValidationReport(KMeans(), X=np.random.rand(10, 5), y=None)
 
 
 @pytest.mark.parametrize(
