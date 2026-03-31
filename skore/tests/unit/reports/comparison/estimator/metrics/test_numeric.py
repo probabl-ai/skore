@@ -172,7 +172,7 @@ def test_timings(comparison_estimator_reports_binary_classification):
 def test_display_binary_classification_pos_label(
     pyplot, metric, logistic_binary_classification_with_train_test
 ):
-    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    """Check the behaviour of the display methods when `pos_label` is not set."""
     classifier, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -193,7 +193,10 @@ def test_display_binary_classification_pos_label(
         y_train=y_train,
         y_test=y_test,
     )
-    # TODO: test when pos_label is not set
+    report = ComparisonReport([report_1, report_2])
+    display = getattr(report.metrics, metric)()
+    fig = display.plot()
+    assert "Positive label" not in fig.get_suptitle()
 
     report_1 = EstimatorReport(
         clone(classifier),
