@@ -757,13 +757,3 @@ class ModelExplorerWidget:
         self._ipython_display.display(self._layout)
         self._update_plot()
         self.update_selection()
-
-    def _repr_mimebundle_(self, include=None, exclude=None):
-        """Return the widget mimebundle for notebook display."""
-        if self.dataframe.empty:
-            return {"text/plain": "No report found in the project."}
-
-        self._update_plot()
-        self.update_selection()
-
-        return self._layout._repr_mimebundle_(include=include, exclude=exclude)
