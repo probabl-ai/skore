@@ -5,8 +5,9 @@ import html
 import uuid
 import warnings
 from itertools import product
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
+import joblib
 import numpy as np
 import skrub
 from joblib import Parallel
@@ -27,7 +28,6 @@ from skore._sklearn._base import _BaseReport
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache import Cache
-from skore._utils._cache_key import make_cache_key
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import delayed
@@ -203,7 +203,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_test = y_test
         self._pos_label = pos_label
         self.fit_time_ = fit_time
+        # TODO? Rename class "Cache" to "ThreadSafeDict"?
         self._cache = Cache()
+        self._predictions = Cache()
+        # NOTE: Reports are immutable so we don't need cache invalidation
 
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
         if pos_label is None:
@@ -218,8 +221,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 f"pos_label={pos_label!r} is not a valid label. "
                 f"It should be one of: {labels!r}."
             )
-
-        # NOTE: Reports are immutable so we don't need cache invalidation
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -240,6 +241,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         {}
         """
         self._cache = Cache()
+        self._predictions = Cache()
 
     def cache_predictions(
         self,
@@ -310,7 +312,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         keys_and_to_compute = [
             (key, data)
             for key, data in keys_and_to_compute
-            if make_cache_key(*key) not in self._cache
+            if key not in self._predictions
         ]
 
         if not keys_and_to_compute:
@@ -320,10 +322,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             **_validate_joblib_parallel_params(n_jobs=n_jobs, return_as="generator")
         )
 
-        # trigger the computation
-        # do not mutate directly `self._cache` during the execution of Parallel
         keys, to_compute = zip(*keys_and_to_compute, strict=True)
-
+        # trigger the computation
         for (ds, response_method), (preds, time) in zip(
             keys,
             track(
@@ -333,9 +333,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             ),
             strict=True,
         ):
-            self._cache[make_cache_key(ds, response_method)] = preds
+            self._predictions[(ds, response_method)] = preds
             if response_method == "predict":
-                self._cache[make_cache_key(ds, "predict_time")] = time
+                self._predictions[(ds, "predict_time")] = time
 
     def get_predictions(
         self,
@@ -427,8 +427,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         method_name = _check_response_method(self.estimator_, response_method).__name__
         self.cache_predictions(response_methods=[method_name], data_source=data_source)
-        cache_key = make_cache_key(data_source, method_name)
-        predictions = self._cache[cache_key]
+        predictions = self._predictions[(data_source, method_name)]
 
         if method_name == "predict":
             return predictions
@@ -615,3 +614,107 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         output = {"text/plain": repr(self)}
         output["text/html"] = self._repr_html_()
         return output
+
+    ####################################################################################
+    # Methods related to the cache
+    ####################################################################################
+
+    def _read_cache(
+        self,
+        accessor_name: str,
+        method_name: str,
+        data_source: DataSource | None,
+        kwargs: dict[str, Any] | None,
+        *,
+        result_only: bool = True,
+    ) -> Any:
+        if kwargs is not None and kwargs.get("seed", 0) is None:
+            return None
+        key = joblib.hash((accessor_name, method_name, data_source, kwargs or {}))
+        value = self._cache.get(key)
+        if value is None:
+            return None
+        if result_only:
+            *_, result = value
+            return result
+        return value
+
+    def _write_cache(
+        self,
+        accessor_name: str,
+        method_name: str,
+        data_source: DataSource | None,
+        kwargs: dict[str, Any],
+        result: Any,
+    ) -> None:
+        key = joblib.hash((accessor_name, method_name, data_source, kwargs))
+        value = (
+            accessor_name,
+            method_name,
+            data_source,
+            kwargs,
+            result,
+        )
+        self._cache[key] = value
+
+    def _get_cached_results(
+        self,
+        accessor_name: str,
+        method_name: str | None = None,
+        data_source: DataSource | None = None,
+    ) -> list[tuple[str, str, DataSource | None, dict[str, Any], Any]]:
+        """Return accessor-level cached results stored in ``self._cache``.
+
+        This helper exposes the inspectable part of the estimator cache used by
+        accessors such as ``metrics`` and ``inspection``. Prediction arrays and
+        prediction timings are stored separately in ``self._predictions`` and are not
+        returned by this method.
+
+        Notes
+        -----
+        ``self._cache`` is a mapping from a hashed cache key to a tuple with the
+        following structure::
+
+            (
+                accessor_name: str,
+                method_name: str,
+                data_source: {"train", "test"} | None,
+                kwargs: dict[str, Any],
+                result: Any,
+            )
+
+        The dictionary key is an implementation detail. Callers that need to inspect
+        cached results should rely on this method instead of reading ``self._cache``
+        directly.
+
+        Parameters
+        ----------
+        accessor_name : str
+            Name of the accessor that produced the cached result, for example
+            ``"metrics"`` or ``"inspection"``.
+
+        method_name : str or None, default=None
+            Restrict results to a single accessor method. If ``None``, return cached
+            results for all methods of the accessor.
+
+        data_source : {"train", "test"} or None, default=None
+            Restrict results to a single data source. If ``None``, do not filter on
+            the data source.
+
+        Returns
+        -------
+        cached_results : list of tuple
+            Cached entries matching the requested filters, each represented as
+            ``(accessor_name, method_name, data_source, kwargs, result)``.
+        """
+        # This API is used by projects to inspect computed results
+        # changing it might break `skore-*-project`s
+
+        def value_match(cached_value):
+            return (
+                cached_value[0] == accessor_name
+                and (method_name is None or cached_value[1] == method_name)
+                and (data_source is None or cached_value[2] == data_source)
+            )
+
+        return list(filter(value_match, self._cache.values()))

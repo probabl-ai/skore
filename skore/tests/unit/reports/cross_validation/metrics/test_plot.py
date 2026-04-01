@@ -70,9 +70,7 @@ def test_seed_none(linear_regression_data):
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
     report.metrics.prediction_error(seed=None)
-    # skore stores the predictions of the internal estimators, but not the
-    # concatenated cross-validation display.
+    # skore should not store per-split displays when `seed=None`.
     assert all(
-        len(estimator_report._cache) == 2
-        for estimator_report in report.estimator_reports_
+        estimator_report._cache == {} for estimator_report in report.estimator_reports_
     )

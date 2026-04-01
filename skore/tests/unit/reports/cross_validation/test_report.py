@@ -111,20 +111,21 @@ def test_attributes(fixture_name, request, cv, n_jobs):
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
-    """Check that calling cache_predictions fills the cache."""
+    """Check that calling cache_predictions fills estimator prediction caches."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
     for estimator_report in report.estimator_reports_:
-        assert estimator_report._cache == {}
+        assert estimator_report._predictions == {}
 
     report.cache_predictions(n_jobs=n_jobs)
 
     for estimator_report in report.estimator_reports_:
-        assert len(estimator_report._cache) == expected_n_keys
+        assert len(estimator_report._predictions) == expected_n_keys
 
     report.clear_cache()
     for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
+        assert estimator_report._predictions == {}
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
