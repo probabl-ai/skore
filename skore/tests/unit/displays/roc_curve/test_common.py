@@ -1,8 +1,11 @@
 """Common tests for RocCurveDisplay."""
 
+import numpy as np
 import pytest
 import seaborn as sns
+from sklearn.linear_model import LogisticRegression
 
+from skore import EstimatorReport
 from skore._sklearn._plot import RocCurveDisplay
 from skore._utils._testing import check_frame_structure
 
@@ -55,7 +58,7 @@ class TestRocCurveDisplay:
             expected_index.append("split")
         if "comparison" in fixture_prefix:
             expected_index.append("estimator")
-        if task == "multiclass":
+        if task == "multiclass" or display.pos_label is None:
             expected_index.append("label")
 
         check_frame_structure(frame, expected_index, expected_columns)
@@ -96,16 +99,14 @@ class TestRocCurveDisplay:
         )
         ax = ax[0]
         assert ax.get_lines()[0].get_color() == sns.color_palette()[0]
-        relplot_kwargs = (
-            {"palette": ["red", "green", "blue"]}
-            if task == "multiclass"
-            else {"color": "red"}
-        )
+        palette = ["red", "green", "blue"] if task == "multiclass" else ["red", "green"]
+        relplot_kwargs = {"palette": palette}
 
         display.set_style(relplot_kwargs=relplot_kwargs)
         fig = display.plot()
         ax = fig.axes[0]
-        assert ax.get_lines()[0].get_color() == "red"
+        actual_colors = {line.get_color() for line in ax.get_lines()[:-1]}
+        assert actual_colors == set(palette)
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_plot_structure(self, pyplot, fixture_prefix, task, request):
@@ -118,7 +119,7 @@ class TestRocCurveDisplay:
         ax = ax[0]
 
         n_splits = 2 if "cross_validation" in fixture_prefix else 1
-        n_labels = 3 if task == "multiclass" else 1
+        n_labels = 3 if task == "multiclass" else 2
         n_lines = n_splits * n_labels + 1
         assert len(ax.get_lines()) == n_lines
 
@@ -151,3 +152,25 @@ class TestRocCurveDisplay:
             assert "Positive label" in title
         else:
             assert "Positive label" not in title
+
+
+def test_pos_label(binary_classification_train_test_split):
+    """Check that an explicit `pos_label` is reflected by the display."""
+    X_train, X_test, y_train, y_test = binary_classification_train_test_split
+    labels = np.array(["A", "B"], dtype=object)
+    y_train = labels[y_train]
+    y_test = labels[y_test]
+    estimator = LogisticRegression().fit(X_train, y_train)
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        pos_label="A",
+    )
+
+    display = report.metrics.roc()
+    fig = display.plot()
+
+    assert "Positive label: A" in fig.get_suptitle()

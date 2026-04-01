@@ -1,0 +1,48 @@
+/* Light theme (default) */
+.container,
+:host {
+    --color-blue: #3043f0;
+    --color-orange: #f97316;
+    --color-text: #000;
+    --color-background: #fff;
+    --color-orange-hover: rgba(249, 115, 22, 0.1);
+    --color-blue-hover: rgba(48, 67, 240, 0.1);
+    --color-row-stripe: rgba(0, 0, 0, 0.06);
+}
+
+/* Dark theme */
+.container.dark-theme,
+.container[data-theme="dark"],
+:host(.dark-theme),
+:host([data-theme="dark"]) {
+    --color-blue: #6b42f6;
+    --color-orange: #f97316;
+    --color-text: #fff;
+    --color-background: #000;
+    --color-orange-hover: rgba(249, 115, 22, 0.2);
+    --color-blue-hover: rgba(107, 66, 246, 0.2);
+    --color-row-stripe: rgba(255, 255, 255, 0.08);
+}
+
+.container {
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px;
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    background-color: var(--color-background);
+    margin: 10px 0;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 800px;
+    min-width: 0;
+}
+
+.title {
+    font-weight: bold;
+    color: var(--color-text);
+    margin-bottom: 10px;
+    font-size: 14px;
+    text-align: center;
+}

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import html
+import uuid
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal
 
+import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone, is_classifier
@@ -10,17 +13,20 @@ from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._externals._sklearn_compat import _safe_indexing
+from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
+from skore._utils.repr.data import get_documentation_url
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from skore._sklearn._cross_validation.data_accessor import _DataAccessor
     from skore._sklearn._cross_validation.inspection_accessor import (
         _InspectionAccessor,
     )
@@ -30,25 +36,18 @@ if TYPE_CHECKING:
 def _generate_estimator_report(
     estimator: BaseEstimator,
     X: ArrayLike,
-    y: ArrayLike | None,
+    y: ArrayLike,
     pos_label: PositiveLabel | None,
     train_indices: ArrayLike,
     test_indices: ArrayLike,
 ) -> EstimatorReport:
-    if y is None:
-        # In the case of clustering, we do not have y
-        y_train = None
-        y_test = None
-    else:
-        y_train = _safe_indexing(y, train_indices)
-        y_test = _safe_indexing(y, test_indices)
     return EstimatorReport(
         estimator,
         fit=True,
         X_train=_safe_indexing(X, train_indices),
-        y_train=y_train,
+        y_train=_safe_indexing(y, train_indices),
         X_test=_safe_indexing(X, test_indices),
-        y_test=y_test,
+        y_test=_safe_indexing(y, test_indices),
         pos_label=pos_label,
     )
 
@@ -70,13 +69,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     X : {array-like, sparse matrix} of shape (n_samples, n_features)
         The data to fit. Can be for example a list, or an array.
 
-    y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
         The target variable to try to predict in the case of supervised learning.
 
     pos_label : int, float, bool or str, default=None
-        For binary classification, the positive class. If `None` and the target labels
-        are `{0, 1}` or `{-1, 1}`, the positive class is set to `1`. For other labels,
-        some metrics might raise an error if `pos_label` is not defined.
+        For binary classification, the positive class to use for metrics and displays
+        that need one. If `None`, skore does not infer a default positive class.
+        Binary metrics and displays that support it will expose all classes instead.
+        This parameter is rejected for non-binary tasks.
 
     splitter : int, cross-validation generator or an iterable, default=5
         Determines the cross-validation splitting strategy.
@@ -141,16 +141,23 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
+    data: _DataAccessor
 
     def __init__(
         self,
         estimator: BaseEstimator,
         X: ArrayLike,
-        y: ArrayLike | None = None,
+        y: ArrayLike,
         pos_label: PositiveLabel | None = None,
         splitter: int | SKLearnCrossValidator | Generator | None = None,
         n_jobs: int | None = None,
     ) -> None:
+        if is_clusterer(estimator):
+            raise ValueError(
+                "Clustering models are not supported yet. Please use a"
+                " classification or regression model instead."
+            )
+
         self._estimator = clone(estimator)
 
         # private storage to ensure properties are read-only
@@ -318,7 +325,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ]
 
     def create_estimator_report(
-        self, *, X_test: ArrayLike | None = None, y_test: ArrayLike | None = None
+        self, *, X_test: ArrayLike, y_test: ArrayLike
     ) -> EstimatorReport:
         """Create an estimator report from the cross-validation report.
 
@@ -329,10 +336,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
             Testing data. It should have the same structure as the training data.
 
-        y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
+        y_test : array-like of shape (n_samples,) or (n_samples, n_outputs)
             Testing target.
 
         Examples
@@ -429,3 +436,70 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+
+    def _html_repr_fragments(self) -> dict[str, str]:
+        """HTML snippets for the report body (metrics, estimator diagram, data table).
+
+        Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
+        one report's views in the comparison HTML repr.
+        """
+        metrics_html = (
+            self.metrics.summarize(data_source="test")
+            .frame(aggregate=("mean", "std"), favorability=False)
+            ._repr_html_()
+        )
+
+        df = self.data._prepare_dataframe_for_display(
+            with_y=self.ml_task != "clustering"
+        )
+        table_report = skrub.TableReport(
+            df,
+            max_plot_columns=0,
+            max_association_columns=0,
+            verbose=False,
+        )
+        table_report._set_minimal_mode()
+        table_report_html = table_report.html_snippet()
+
+        try:
+            estimator_html = self.estimator_._repr_html_()
+        except Exception:
+            estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
+
+        return {
+            "metrics_summary": metrics_html,
+            "estimator_display": estimator_html,
+            "table_report": table_report_html,
+        }
+
+    def _repr_html_(self) -> str:
+        """HTML representation of the cross-validation report."""
+        fragments = self._html_repr_fragments()
+        container_id = f"skore-cross-validation-report-{uuid.uuid4().hex[:8]}"
+        help_doc_url = get_documentation_url(obj=self, method_name="help")
+        report_class_name = self.__class__.__name__
+        metrics_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="metrics"
+        )
+        inspection_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="inspection"
+        )
+        data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
+        return render_template(
+            "cross_validation_report.html.j2",
+            {
+                "container_id": container_id,
+                "help_doc_url": help_doc_url,
+                "report_class_name": report_class_name,
+                "metrics_accessor_doc_url": metrics_accessor_doc_url,
+                "inspection_accessor_doc_url": inspection_accessor_doc_url,
+                "data_accessor_doc_url": data_accessor_doc_url,
+                **fragments,
+            },
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by Jupyter kernels to display the report."""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output

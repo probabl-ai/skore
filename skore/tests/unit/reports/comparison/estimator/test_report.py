@@ -34,19 +34,10 @@ def test_different_test_data(
     ):
         ComparisonReport(
             [
-                EstimatorReport(estimator, y_test=y_test),
-                EstimatorReport(estimator, y_test=y_test[1:]),
+                EstimatorReport(estimator, X_test=X_test, y_test=y_test),
+                EstimatorReport(estimator, X_test=X_test, y_test=y_test[1:]),
             ]
         )
-
-    # The estimators without testing data (i.e., no y_test) do not count
-    ComparisonReport(
-        [
-            EstimatorReport(estimator, X_test=X_test, y_test=y_test),
-            EstimatorReport(estimator, X_test=X_test, y_test=y_test),
-            EstimatorReport(estimator),
-        ]
-    )
 
     # If there is an X_test but no y_test, it should not raise an error
     ComparisonReport(
@@ -128,10 +119,13 @@ def test_get_predictions(
     sub_reports = list(report.reports_.values())
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = sub_reports[split_idx].y_train.shape
+            expected_len = len(sub_reports[split_idx].y_train)
         else:
-            expected_shape = sub_reports[split_idx].y_test.shape
-        assert split_predictions.shape == expected_shape
+            expected_len = len(sub_reports[split_idx].y_test)
+        if response_method == "predict_proba":
+            assert split_predictions.shape == (expected_len, 2)
+        else:
+            assert split_predictions.shape == (expected_len,)
 
 
 def test_get_predictions_error(
@@ -150,4 +144,9 @@ def test_clustering():
         match="Clustering models are not supported yet. Please use a "
         "classification or regression model instead.",
     ):
-        ComparisonReport([EstimatorReport(KMeans()), EstimatorReport(KMeans())])
+        ComparisonReport(
+            [
+                EstimatorReport(KMeans(), X_test=None, y_test=None),
+                EstimatorReport(KMeans(), X_test=None, y_test=None),
+            ]
+        )

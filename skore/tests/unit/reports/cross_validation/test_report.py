@@ -5,6 +5,8 @@ import numpy as np
 import pytest
 from sklearn.base import clone
 from sklearn.cluster import KMeans
+from sklearn.datasets import make_classification
+from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
@@ -150,11 +152,14 @@ def test_get_predictions(
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+            expected_len = len(report.estimator_reports_[split_idx].y_train)
         else:
             assert data_source == "test"
-            expected_shape = report.estimator_reports_[split_idx].y_test.shape
-        assert split_predictions.shape == expected_shape
+            expected_len = len(report.estimator_reports_[split_idx].y_test)
+        if response_method == "predict_proba" and pos_label is None:
+            assert split_predictions.shape == (expected_len, 2)
+        else:
+            assert split_predictions.shape == (expected_len,)
 
 
 def test_get_predictions_error(
@@ -205,7 +210,7 @@ def test_clustering():
         match="Clustering models are not supported yet. "
         "Please use a classification or regression model instead.",
     ):
-        CrossValidationReport(KMeans(), X=np.random.rand(10, 5))
+        CrossValidationReport(KMeans(), X=np.random.rand(10, 5), y=None)
 
 
 @pytest.mark.parametrize(
@@ -220,14 +225,6 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
     cv_report = CrossValidationReport(estimator, X_experiment, y_experiment, splitter=2)
-    est_report = cv_report.create_estimator_report()
-
-    assert isinstance(est_report, EstimatorReport)
-    assert joblib.hash(est_report.X_train) == joblib.hash(X_experiment)
-    assert joblib.hash(est_report.y_train) == joblib.hash(y_experiment)
-    assert est_report.X_test is None
-    assert est_report.y_test is None
-    assert est_report.pos_label == cv_report.pos_label
 
     est_report_with_test = cv_report.create_estimator_report(
         X_test=X_heldout, y_test=y_heldout
@@ -239,3 +236,24 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
     assert joblib.hash(est_report_with_test.X_test) == joblib.hash(X_heldout)
     assert joblib.hash(est_report_with_test.y_test) == joblib.hash(y_heldout)
     assert est_report_with_test.pos_label == cv_report.pos_label
+
+
+@pytest.mark.parametrize("splitter", [2, 3])
+@pytest.mark.parametrize("bad_estimator", [False, True])
+def test_report_repr_html(splitter, bad_estimator):
+    X, y = make_classification(n_classes=2, random_state=42)
+
+    class DummyClassifierBadRepr(DummyClassifier):
+        def _repr_html_(self):
+            raise TypeError("error")
+
+    estimator = DummyClassifierBadRepr() if bad_estimator else DummyClassifier()
+    report = CrossValidationReport(estimator, X, y, splitter=splitter)
+    html_out = report._repr_html_()
+    assert "skore-cross-validation-report-" in html_out
+    assert "DummyClassifier" in html_out
+    assert "skoreInitEstimatorReport" in html_out
+    assert "report-hint-note" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-disclosure-title" in html_out
+    assert "CrossValidationReport.metrics" in html_out

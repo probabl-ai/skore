@@ -19,12 +19,14 @@ def test_legend_binary_classification(
         assert legend is not None
         legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        plot_data = display.frame(with_average_precision=True)
-        average_precision = plot_data.query(f"estimator == '{estimator}'")[
-            "average_precision"
-        ].iloc[0]
-        assert legend_texts[0] == f"AP={average_precision:.2f}"
-        assert len(legend_texts) == 1
+        labels = display.precision_recall["label"].cat.categories
+        for label_idx, label in enumerate(labels):
+            plot_data = display.frame(with_average_precision=True)
+            average_precision = plot_data.query(
+                f"label == {label} & estimator == '{estimator}'"
+            )["average_precision"].iloc[0]
+            assert legend_texts[label_idx] == f"{label} (AP={average_precision:.2f})"
+        assert len(legend_texts) == len(labels)
 
 
 def test_legend_multiclass_classification(
@@ -60,7 +62,7 @@ def test_legend_multiclass_classification(
     [
         (
             "comparison_estimator_reports_binary_classification",
-            ["None", "auto", "estimator"],
+            ["auto", "estimator", "label"],
         ),
         (
             "comparison_estimator_reports_multiclass_classification",
@@ -86,7 +88,7 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     [
         (
             "comparison_estimator_reports_binary_classification",
-            [(None, 0), ("estimator", 2)],
+            [("label", 2), ("estimator", 2)],
         ),
         (
             "comparison_estimator_reports_multiclass_classification",
@@ -119,17 +121,11 @@ def test_subplot_by_data_source(fixture_name, request):
     """Check the behaviour when `subplot_by` is `data_source`."""
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.precision_recall(data_source="both")
-    if "multiclass" in fixture_name:
-        err_msg = (
-            "subplot_by must be one of auto, estimator, label. "
-            "Got 'data_source' instead."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            display.plot(subplot_by="data_source")
-    else:
-        fig = display.plot(subplot_by="data_source")
-        axes = fig.axes
-        assert len(axes) == 2
+    err_msg = (
+        "subplot_by must be one of auto, estimator, label. Got 'data_source' instead."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="data_source")
 
 
 @pytest.mark.parametrize(
@@ -148,14 +144,10 @@ def test_source_both(pyplot, fixture_name, request):
     plot_data = display.frame(with_average_precision=True)
     assert "data_source" in plot_data.columns
     assert set(plot_data["data_source"]) == {"train", "test"}
-    labels = (
-        display.precision_recall["label"].cat.categories
-        if display.ml_task == "multiclass-classification"
-        else [None]
-    )
+    labels = display.precision_recall["label"].cat.categories
     for ax, estimator in zip(axes, report.reports_, strict=True):
         assert isinstance(ax, mpl.axes.Axes)
-        assert len(ax.get_lines()) == 2 if "binary" in fixture_name else 6
+        assert len(ax.get_lines()) == 4 if "binary" in fixture_name else 6
         legend = ax.get_legend()
         assert legend is not None
         legend_texts = [text.get_text() for text in legend.get_texts()]
@@ -163,16 +155,9 @@ def test_source_both(pyplot, fixture_name, request):
         expected = []
         for label in labels:
             for data_src in ("train", "test"):
-                row = (
-                    subplot_data.query(f"data_source == '{data_src}'")
-                    if label is None
-                    else subplot_data.query(
-                        f"label == {label} & data_source == '{data_src}'"
-                    )
+                row = subplot_data.query(
+                    f"label == {label} & data_source == '{data_src}'"
                 )
                 ap = row["average_precision"].iloc[0]
-                if label is None:
-                    expected.append(f"{data_src.title()} set (AP={ap:.2f})")
-                else:
-                    expected.append(f"{label} - {data_src.title()} set (AP={ap:.2f})")
+                expected.append(f"{label} - {data_src.title()} set (AP={ap:.2f})")
         assert legend_texts == expected

@@ -11,7 +11,7 @@ from sklearn.metrics._scorer import _BaseScorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor, _get_cached_response_values
+from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -129,6 +129,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Precision              0.98...         (↗︎)
         Recall                 0.92...         (↗︎)
         ROC AUC                0.99...         (↗︎)
+        Log loss               0.11...         (↘︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
@@ -146,6 +147,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Precision                       0.96...                     0.98...          (↗︎)
         Recall                          0.97...                     0.92...          (↗︎)
         ROC AUC                         0.99...                     0.99...          (↗︎)
+        Log loss                        0.08...                     0.11...          (↘︎)
         Brier score                     0.02...                     0.03...          (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(
@@ -188,17 +190,18 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         # Treat empty list same as None - use defaults
         if metric is None or (isinstance(metric, list) and len(metric) == 0):
-            # Equivalent to _get_scorers_to_add
-            if self._parent._ml_task == "binary-classification":
-                metrics = ["accuracy", "precision", "recall", "roc_auc"]
-                if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics.append("brier_score")
-            elif self._parent._ml_task == "multiclass-classification":
-                metrics = ["accuracy", "precision", "recall"]
-                if hasattr(self._parent._estimator, "predict_proba"):
-                    metrics += ["roc_auc", "log_loss"]
-            else:
-                metrics = ["r2", "rmse"]
+            if "classification" in self._parent._ml_task:
+                default_metric_names: tuple[str, ...] = (
+                    "accuracy",
+                    "precision",
+                    "recall",
+                    "roc_auc",
+                    "log_loss",
+                    "brier_score",
+                )
+            else:  # regression
+                default_metric_names = ("r2", "rmse")
+            metrics = [m for m in default_metric_names if hasattr(self, m)]
             metrics += ["fit_time", "predict_time"]
 
         if metric_names is None:
@@ -259,9 +262,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 if isinstance(metric_, str):
                     metric_fn = getattr(
                         self,
-                        f"_{metric_}"
-                        if metric_ in ["fit_time", "predict_time"]
-                        else metric_,
+                        (
+                            f"_{metric_}"
+                            if metric_ in ["fit_time", "predict_time"]
+                            else metric_
+                        ),
                     )
                     metrics_kwargs = {}
                     if metric_name is None:
@@ -371,29 +376,24 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         *,
         response_method: str | list[str] | tuple[str, ...],
         data_source: DataSource = "test",
+        prediction_pos_label: PositiveLabel | None = None,
         **metric_kwargs: Any,
     ) -> float | dict[PositiveLabel, float] | list:
         X, y_true = self._get_X_y(data_source=data_source)
 
         pos_label = self._parent.pos_label
+        if prediction_pos_label is None:
+            prediction_pos_label = pos_label
 
         cache_key = make_cache_key(data_source, metric_fn.__name__, metric_kwargs)
 
         score = self._parent._cache.get(cache_key)
         if score is None:
-            results = _get_cached_response_values(
-                cache=self._parent._cache,
-                estimator=self._parent.estimator_,
-                X=X,
-                response_method=response_method,
-                pos_label=pos_label,
+            y_pred = self._parent._get_predictions(
                 data_source=data_source,
+                response_method=response_method,
+                pos_label=prediction_pos_label,
             )
-            for key_tuple, value, is_cached in results:
-                if not is_cached:
-                    self._parent._cache[key_tuple] = value
-                if key_tuple[1] != "predict_time":
-                    y_pred = value
 
             metric_params = inspect.signature(metric_fn).parameters
             kwargs = {**metric_kwargs}
@@ -463,8 +463,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """Get all measured processing times related to the estimator.
 
         When an estimator is fitted inside the :class:`~skore.EstimatorReport`, the time
-        to fit is recorded. Similarly, when predictions are computed on some data, the
-        time to predict is recorded. This function returns all the recorded times.
+        to fit is recorded. Prediction time is recorded when the estimator's
+        `predict` method is computed and cached for a given data source. This function
+        returns all the recorded times.
 
         Returns
         -------
@@ -751,13 +752,15 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         # The Brier score in scikit-learn request `pos_label` to ensure that the
         # integral encoding of `y_true` corresponds to the probabilities of the
-        # `pos_label`. Since we get the predictions with `get_response_method`, we
-        # can pass any `pos_label`, they will lead to the same result.
+        # `pos_label`. We make sure to pass the same `pos_label` to `_get_predictions`
+        # than to the metric.
+        pos_label = self._parent.estimator_.classes_[-1]
         result = self._compute_metric_scores(
             sklearn.metrics.brier_score_loss,
             data_source=data_source,
             response_method="predict_proba",
-            pos_label=self._parent._estimator.classes_[-1],
+            pos_label=pos_label,
+            prediction_pos_label=pos_label,
         )
         return cast(float, result)
 
@@ -835,14 +838,17 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.roc_auc()
         0.99...
         """
+        is_multiclass = self._parent._ml_task == "multiclass-classification"
+        pred_pos_label = None if is_multiclass else self._parent.estimator_.classes_[-1]
         result = self._compute_metric_scores(
             sklearn.metrics.roc_auc_score,
             data_source=data_source,
             response_method=["predict_proba", "decision_function"],
+            prediction_pos_label=pred_pos_label,
             average=average,
             multi_class=multi_class,
         )
-        if self._parent._ml_task == "multiclass-classification" and average is None:
+        if is_multiclass and average is None:
             return cast(dict[PositiveLabel, float], result)
         return cast(float, result)
 
@@ -1120,6 +1126,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
+        prediction_pos_label=None,
     ) -> (
         RocCurveDisplay
         | PrecisionRecallCurveDisplay
@@ -1181,20 +1188,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         data_source = cast(DataSource, data_source)
         X, y_true = self._get_X_y(data_source=data_source)
+        if prediction_pos_label is None:
+            prediction_pos_label = self._parent.pos_label
 
-        results = _get_cached_response_values(
-            cache=self._parent._cache,
-            estimator=self._parent.estimator_,
-            X=X,
-            response_method=response_method,
-            pos_label=display_kwargs.get("pos_label"),
+        y_pred = self._parent._get_predictions(
             data_source=data_source,
+            response_method=response_method,
+            pos_label=prediction_pos_label,
         )
-        for key, value, is_cached in results:
-            if not is_cached:
-                self._parent._cache[key] = value
-            if key[1] != "predict_time":
-                y_pred = value
 
         display = display_class._compute_data_for_display(
             y_true=y_true,
@@ -1426,14 +1427,24 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
+        if data_source == "both":
+            raise ValueError(
+                "data_source='both' is not supported for confusion_matrix."
+            )
+
         response_method: str | list[str] | tuple[str, ...]
+        pos_label = self._parent.pos_label
+        pred_pos_label: PositiveLabel | None
         if self._parent._ml_task == "binary-classification":
             response_method = ("predict_proba", "decision_function")
+            pred_pos_label = (
+                self._parent.estimator_.classes_[-1] if pos_label is None else pos_label
+            )
         else:
             response_method = "predict"
+            pred_pos_label = None
 
         display_kwargs = {
-            "display_labels": tuple(self._parent.estimator_.classes_),
             "pos_label": self._parent.pos_label,
             "response_method": response_method,
         }
@@ -1444,6 +1455,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 response_method=response_method,
                 display_class=ConfusionMatrixDisplay,
                 display_kwargs=display_kwargs,
+                prediction_pos_label=pred_pos_label,
             ),
         )
         return display

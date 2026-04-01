@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 
 from skore import EstimatorReport
@@ -39,7 +40,7 @@ def test_estimator_not_fitted(fit):
     estimator = LinearRegression()
     err_msg = "The training data is required to fit the estimator. "
     with pytest.raises(ValueError, match=err_msg):
-        EstimatorReport(estimator, fit=fit)
+        EstimatorReport(estimator, fit=fit, X_test=None, y_test=None)
 
 
 @pytest.mark.parametrize("fit", [True, "auto"])
@@ -213,7 +214,7 @@ def test_flat_index(forest_binary_classification_with_test):
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     result = report.metrics.summarize().frame(flat_index=True)
-    assert result.shape == (9, 1)
+    assert result.shape == (10, 1)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
         "accuracy",
@@ -222,6 +223,7 @@ def test_flat_index(forest_binary_classification_with_test):
         "recall_0",
         "recall_1",
         "roc_auc",
+        "log_loss",
         "brier_score",
         "fit_time_s",
         "predict_time_s",
@@ -253,9 +255,7 @@ def test_get_predictions():
     predictions = report.get_predictions(
         data_source="test", response_method="predict_proba"
     )
-    np.testing.assert_allclose(
-        predictions, report.estimator_.predict_proba(X_test)[:, 1]
-    )
+    np.testing.assert_allclose(predictions, report.estimator_.predict_proba(X_test))
 
     # check the validity of the `decision_function` method
     predictions = report.get_predictions(
@@ -293,6 +293,41 @@ def test_get_predictions_error():
         report.get_predictions(data_source="invalid")
 
 
+def test_invalid_pos_label():
+    """Check that an invalid `pos_label` raises a helpful error."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    err_msg = r"pos_label='a' is not a valid label\. It should be one of: \[0, 1\]"
+    with pytest.raises(ValueError, match=err_msg):
+        EstimatorReport(
+            LogisticRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+            pos_label="a",
+        )
+
+
+def test_get_predictions_error_with_multiclass_ovo_decision_function():
+    """Check that multiclass one-vs-one decision scores are rejected."""
+    X, y = make_classification(
+        n_classes=4,
+        n_clusters_per_class=1,
+        n_informative=6,
+        random_state=42,
+    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = SVC(decision_function_shape="ovo")
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    with pytest.raises(ValueError, match=r"Unexpected decision function shape\[1\]: 6"):
+        report.get_predictions(data_source="test", response_method="decision_function")
+
+
 def test_clustering():
     """Check that we cannot create a report with a clustering model."""
     with pytest.raises(
@@ -300,7 +335,7 @@ def test_clustering():
         match="Clustering models are not supported yet. Please use a "
         "classification or regression model instead.",
     ):
-        EstimatorReport(KMeans())
+        EstimatorReport(KMeans(), X_test=None, y_test=None)
 
 
 def test_has_no_deep_copy():
@@ -326,9 +361,8 @@ def test_has_no_deep_copy():
 
 
 @pytest.mark.parametrize("with_train", [False, True])
-@pytest.mark.parametrize("with_test", [False, True])
 @pytest.mark.parametrize("bad_estimator", [False, True])
-def test_report_repr_html(with_train, with_test, bad_estimator):
+def test_report_repr_html(with_train, bad_estimator):
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
@@ -341,7 +375,13 @@ def test_report_repr_html(with_train, with_test, bad_estimator):
     kwargs = {}
     if with_train:
         kwargs.update(X_train=X_train, y_train=y_train)
-    if with_test:
-        kwargs.update(X_test=X_test, y_test=y_test)
+    kwargs.update(X_test=X_test, y_test=y_test)
     report = EstimatorReport(estimator, fit=False, **kwargs)
-    assert "DummyClassifier" in report._repr_html_()
+    html_out = report._repr_html_()
+    assert "skore-estimator-report-" in html_out
+    assert "DummyClassifier" in html_out
+    assert "skoreInitEstimatorReport" in html_out
+    assert "report-hint-note" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-disclosure-title" in html_out
+    assert "EstimatorReport.metrics" in html_out
