@@ -252,8 +252,12 @@ class Project:
     @ensure_project_is_not_deleted
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its id."""
-        if id in self.__artifacts_storage:
-            with io.BytesIO(self.__artifacts_storage[id]) as stream:
+        artifact_id = id
+        if id in self.__metadata_storage:
+            artifact_id = self.__metadata_storage[id]["artifact_id"]
+
+        if artifact_id in self.__artifacts_storage:
+            with io.BytesIO(self.__artifacts_storage[artifact_id]) as stream:
                 return cast(
                     "EstimatorReport | CrossValidationReport", joblib.load(stream)
                 )
@@ -265,7 +269,7 @@ class Project:
         """Obtain metadata/metrics for all persisted reports in insertion order."""
         return [
             {
-                "id": value["artifact_id"],
+                "id": key,
                 "key": value["key"],
                 "date": value["date"],
                 "learner": value["learner"],
@@ -283,7 +287,7 @@ class Project:
                 "fit_time_mean": value.get("fit_time_mean"),
                 "predict_time_mean": value.get("predict_time_mean"),
             }
-            for value in self.__metadata_storage.values()
+            for key, value in self.__metadata_storage.items()
             if value["project_name"] == self.name
         ]
 
