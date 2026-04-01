@@ -455,3 +455,48 @@ class TestSummary:
         assert "<table" in result["text/html"]
         # Widget was not created
         assert not hasattr(summary, "_plot_widget")
+
+    def test_repr_mimebundle_uses_widget_bundle(
+        self,
+        monkeypatch,
+        estimator_report_regression,
+        estimator_report_binary_classification,
+    ):
+        class FakeWidget:
+            def __init__(self, dataframe):
+                self.dataframe = dataframe
+
+            def _repr_mimebundle_(self, include=None, exclude=None):
+                return {"text/html": "<div>widget</div>", "text/plain": "widget"}
+
+        monkeypatch.setattr(
+            "skore._project._summary._jupyter_dependencies_available",
+            lambda: True,
+        )
+        monkeypatch.setattr("skore._project._widget.ModelExplorerWidget", FakeWidget)
+
+        project = FakeProject(
+            estimator_report_regression,
+            estimator_report_binary_classification,
+        )
+        summary = Summary.factory(project)
+
+        result = summary._repr_mimebundle_()
+
+        assert result == {"text/html": "<div>widget</div>", "text/plain": "widget"}
+        assert isinstance(summary._plot_widget, FakeWidget)
+
+    def test_repr_html_falls_back_to_dataframe_table(
+        self,
+        estimator_report_regression,
+        estimator_report_binary_classification,
+    ):
+        project = FakeProject(
+            estimator_report_regression,
+            estimator_report_binary_classification,
+        )
+        summary = Summary.factory(project)
+
+        html = summary._repr_html_()
+
+        assert "<table" in html

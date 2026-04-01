@@ -118,7 +118,7 @@ class Summary(DataFrame):
 
     # Override pandas DataFrame's _repr_html_ to only show the widget
     def _repr_html_(self):
-        return ""
+        return DataFrame._repr_html_(self)
 
     def _repr_mimebundle_(self, include=None, exclude=None):
         """Display the interactive plot and controls."""
@@ -135,7 +135,10 @@ class Summary(DataFrame):
         from skore._project._widget import ModelExplorerWidget
 
         self._plot_widget = ModelExplorerWidget(dataframe=self)
-        return {"text/html": self._plot_widget.display()}
+        return self._plot_widget._repr_mimebundle_(
+            include=include,
+            exclude=exclude,
+        )
 
     def _query_string_selection(self) -> str | None:
         """
