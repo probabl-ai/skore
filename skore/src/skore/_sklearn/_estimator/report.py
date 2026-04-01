@@ -292,16 +292,14 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         has_proba = hasattr(self._estimator, "predict_proba")
         has_decision = hasattr(self._estimator, "decision_function")
         preds_only = not (has_proba or has_decision)
+
         # if this is True, we call .predict(...)
-        # otherwise we derive predictions from predict_proba/decision_function
+        # otherwise we derive predictions from predict_proba/decision_function:
         compute_preds = (
             # FixedThresholdClassifier or TunedThresholdClassifierCV:
             "ThresholdClassifier" in self._estimator.__class__.__name__
             or "Dummy" in self._estimator.__class__.__name__
             or getattr(self._estimator, "decision_function_shape", None) == "ovo"
-            or not self._estimator.__module__.startswith("sklearn.")
-            # alternatively:
-            or not isinstance(self._estimator, BaseEstimator)
         )
 
         if compute_preds or preds_only:
@@ -335,6 +333,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 predicted_proba = self._estimator.predict_proba(X)
             proba_key = make_cache_key(data_source, "predict_proba")
             self._cache[proba_key] = predicted_proba
+            log_key = make_cache_key(data_source, "predict_log_proba")
+            # Most sklearn's estimator derive predict_log_proba this way
+            # except for *NB models (naive bayes) that derive predict_proba
+            # from predict_log_proba using exp:
+            self._cache[log_key] = np.log(predicted_proba)
             if has_decision or compute_preds:
                 return
             self._cache[time_key] = pred_time()
