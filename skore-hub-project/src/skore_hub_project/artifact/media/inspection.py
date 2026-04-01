@@ -112,14 +112,14 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
                 if len(key) != 3:
                     continue
 
-                data_source, name, kwargs = key
-                kwargs = str(kwargs)
+                key_data_source, key_name, key_kwargs = key
+                key_kwargs = str(key_kwargs)
 
                 if (
-                    data_source == data_source
-                    and name == "permutation_importance"
-                    and "('at_step', 0)" in kwargs
-                    and "('metric', None)" in kwargs
+                    key_data_source == data_source
+                    and key_name == "permutation_importance"
+                    and "('at_step', 0)" in key_kwargs
+                    and "('metric', None)" in key_kwargs
                 ):
                     return cast(Display, display)
 
