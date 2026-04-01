@@ -5,22 +5,29 @@ import html
 import uuid
 import warnings
 from itertools import product
-from typing import TYPE_CHECKING, Any, Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
+import numpy as np
 import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
+from sklearn.utils._response import (
+    _check_response_method,
+    _process_decision_function,
+    _process_predict_proba,
+)
 from sklearn.utils.validation import check_is_fitted
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
-from skore._sklearn._base import _BaseReport, _get_cached_response_values
+from skore._sklearn._base import _BaseReport
 from skore._sklearn.find_ml_task import _find_ml_task
-from skore._sklearn.types import PositiveLabel
+from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache import Cache
+from skore._utils._cache_key import make_cache_key
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._measure_time import MeasureTime
 from skore._utils._parallel import delayed
@@ -34,6 +41,14 @@ if TYPE_CHECKING:
         _InspectionAccessor,
     )
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
+
+
+def _compute_predictions(estimator, X, response_method):
+    prediction_method = _check_response_method(estimator, response_method)
+    with MeasureTime() as predict_time:
+        predictions = prediction_method(X)
+
+    return predictions, predict_time()
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -68,9 +83,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         Testing target.
 
     pos_label : int, float, bool or str, default=None
-        For binary classification, the positive class. If `None` and the target labels
-        are `{0, 1}` or `{-1, 1}`, the positive class is set to `1`. For other labels,
-        some metrics might raise an error if `pos_label` is not defined.
+        For binary classification, the positive class to use for metrics and displays
+        that need one. If `None`, skore does not infer a default positive class.
+        Binary metrics and displays that support it will expose all classes instead.
+        This parameter is rejected for non-binary tasks.
 
     Attributes
     ----------
@@ -187,9 +203,22 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_test = y_test
         self._pos_label = pos_label
         self.fit_time_ = fit_time
+        self._cache = Cache()
 
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
-        self._cache = Cache()
+        if pos_label is None:
+            return
+        if self._ml_task != "binary-classification":
+            raise ValueError(
+                "pos_label is only accepted/used for binary classification"
+            )
+        labels = self.estimator_.classes_.tolist()
+        if pos_label not in labels:
+            raise ValueError(
+                f"pos_label={pos_label!r} is not a valid label. "
+                f"It should be one of: {labels!r}."
+            )
+
         # NOTE: Reports are immutable so we don't need cache invalidation
 
     def clear_cache(self) -> None:
@@ -215,6 +244,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def cache_predictions(
         self,
         response_methods: Literal["auto"] | str | list[str] = "auto",
+        data_source: DataSource | Literal["both"] = "both",
         n_jobs: int | None = None,
     ) -> None:
         """Cache estimator's predictions.
@@ -226,6 +256,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             inferred from the ml task: for classification we compute the response of
             the `predict_proba`, `decision_function` and `predict` methods; for
             regression we compute the response of the `predict` method.
+
+        data_source : {"test", "train", "both"}, default="both"
+            The data source(s) for which to precompute predictions.
+
+            - "test" : cache predictions for the test set only.
+            - "train" : cache predictions for the train set only.
+            - "both" : cache predictions for both train and test sets when available.
 
         n_jobs : int or None, default=None
             The number of jobs to run in parallel. None means 1 unless in a
@@ -256,9 +293,28 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             if response_methods == "auto":
                 response_methods = ["predict"]
 
-        data_sources = [("test", self._X_test)]
-        if self._X_train is not None:
+        data_sources = []
+        if data_source in ("test", "both"):
+            data_sources += [("test", self._X_test)]
+        if data_source in ("train", "both") and self._X_train is not None:
             data_sources += [("train", self._X_train)]
+
+        keys_and_to_compute = [
+            (
+                (cast(DataSource, ds), response_method),
+                (self._estimator, X, response_method),
+            )
+            for response_method, (ds, X) in product(response_methods, data_sources)
+        ]
+
+        keys_and_to_compute = [
+            (key, data)
+            for key, data in keys_and_to_compute
+            if make_cache_key(*key) not in self._cache
+        ]
+
+        if not keys_and_to_compute:
+            return
 
         parallel = Parallel(
             **_validate_joblib_parallel_params(n_jobs=n_jobs, return_as="generator")
@@ -266,31 +322,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         # trigger the computation
         # do not mutate directly `self._cache` during the execution of Parallel
-        results_to_cache: dict[tuple[Any, ...], Any] = {}
+        keys, to_compute = zip(*keys_and_to_compute, strict=True)
 
-        for results in track(
-            parallel(
-                delayed(_get_cached_response_values)(
-                    cache=self._cache,
-                    estimator=self._estimator,
-                    X=X,
-                    response_method=response_method,
-                    pos_label=self._pos_label,
-                    data_source=data_source,
-                )
-                for response_method, (data_source, X) in product(
-                    response_methods, data_sources
-                )
+        for (ds, response_method), (preds, time) in zip(
+            keys,
+            track(
+                parallel(delayed(_compute_predictions)(*args) for args in to_compute),
+                description="Caching predictions",
+                total=(len(response_methods) * len(data_sources)),
             ),
-            description="Caching predictions",
-            total=(len(response_methods) * len(data_sources)),
+            strict=True,
         ):
-            results_to_cache.update(
-                (key, value) for key, value, is_cached in results if not is_cached
-            )
-
-        if results_to_cache:
-            self._cache.update(results_to_cache)
+            self._cache[make_cache_key(ds, response_method)] = preds
+            if response_method == "predict":
+                self._cache[make_cache_key(ds, "predict_time")] = time
 
     def get_predictions(
         self,
@@ -341,25 +386,84 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> predictions.shape
         (25,)
         """
-        if data_source == "test":
-            X_ = cast(ArrayLike, self._X_test)
-        elif data_source == "train":
-            X_ = cast(ArrayLike, self._X_train)
-        else:
-            raise ValueError(f"Invalid data source: {data_source}")
-
-        results = _get_cached_response_values(
-            cache=self._cache,
-            estimator=self._estimator,
-            X=X_,
-            response_method=response_method,
-            pos_label=self._pos_label,
+        pos_label = self.pos_label
+        if (
+            pos_label is None
+            and self.ml_task == "binary-classification"
+            and response_method == "decision_function"
+        ):
+            # we do this to follow scikit-learn convention:
+            pos_label = self.estimator_.classes_[-1]
+        return self._get_predictions(
             data_source=data_source,
+            response_method=response_method,
+            pos_label=pos_label,
         )
-        for key, value, is_cached in results:
-            if not is_cached:
-                self._cache[key] = value
-        return results[0][1]  # return the predictions only
+
+    def _get_predictions(
+        self,
+        *,
+        data_source: Literal["train", "test"],
+        response_method: str | list[str] | tuple[str, ...],
+        pos_label: PositiveLabel | None = None,
+    ) -> ArrayLike:
+        """Get estimator's predictions, and adapt them to `pos_label` if needed.
+
+        Internal helpers used by the metrics.
+
+        Returns
+        -------
+        np.ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predictions.
+            The shape is (n_samples,) if:
+                - response_method is "predict"
+                - OR if pos_label is specified (binary-classification only)
+            Otherwise it's (n_samples, n_classes)
+        """
+        if data_source not in ("train", "test"):
+            raise ValueError(f"Invalid data source: {data_source}")
+        if pos_label is not None and self.ml_task != "binary-classification":
+            raise ValueError(f"Cannot specify a `pos_label` for task {self.ml_task}")
+
+        method_name = _check_response_method(self.estimator_, response_method).__name__
+        self.cache_predictions(response_methods=[method_name], data_source=data_source)
+        cache_key = make_cache_key(data_source, method_name)
+        predictions = self._cache[cache_key]
+
+        if method_name == "predict":
+            return predictions
+        # Adapt to pos_label / check shape if needed:
+        if method_name in ("predict_proba", "predict_log_proba"):
+            if pos_label is None:
+                return predictions
+            # Adapt to pos_label:
+            return _process_predict_proba(
+                y_pred=predictions,
+                target_type="binary",
+                classes=self.estimator_.classes_,
+                pos_label=pos_label,
+            )
+        elif method_name == "decision_function":
+            if pos_label is not None:
+                # Adapt to pos_label:
+                return _process_decision_function(
+                    y_pred=predictions,
+                    target_type="binary",
+                    classes=self.estimator_.classes_,
+                    pos_label=pos_label,
+                )
+
+            if self.ml_task == "multiclass-classification":
+                _, d = predictions.shape
+                if d != len(self.estimator_.classes_):
+                    raise ValueError(f"Unexpected decision function shape[1]: {d}")
+                return predictions
+            # scikit-learn returns a (n_samples,) array that corresponds to classes[-1]
+            # we normalize to a (n_samples, 2) shape with similar semantic than
+            # predict_proba
+            return np.vstack((-predictions, predictions)).T
+        else:
+            raise ValueError(f"Unexpected response_method: {method_name}")
 
     @property
     def ml_task(self):

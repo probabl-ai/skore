@@ -7,12 +7,9 @@ from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
-from numpy.typing import ArrayLike
+from numpy.typing import NDArray
 from pandas import CategoricalDtype, DataFrame
-from sklearn.utils.validation import (
-    _check_pos_label_consistency,
-    check_consistent_length,
-)
+from sklearn.preprocessing import LabelBinarizer
 
 from skore._sklearn.types import (
     DataSource,
@@ -49,22 +46,6 @@ class _ClassifierDisplayMixin:
     estimator_name: str
     ml_task: MLTask
     pos_label: PositiveLabel | None
-
-    @classmethod
-    def _validate_from_prediction_params(
-        cls,
-        y_true: ArrayLike,
-        y_pred: ArrayLike,
-        *,
-        ml_task: str,
-        pos_label: PositiveLabel | None = None,
-    ) -> PositiveLabel | None:
-        check_consistent_length(y_true, y_pred)
-
-        if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true)
-
-        return pos_label
 
 
 def _rotate_ticklabels(
@@ -277,7 +258,7 @@ def sample_mpl_colormap(
 def _get_curve_plot_columns(
     plot_data: DataFrame,
     report_type: ReportType,
-    ml_task: MLTask,
+    pos_label,
     data_source: DataSource | Literal["both"],
     subplot_by: Literal["auto", "label", "estimator", "data_source"] | None = "auto",
 ) -> tuple[str | None, str | None, str | None]:
@@ -286,9 +267,9 @@ def _get_curve_plot_columns(
     Rules:
     - Default ("auto"): None for EstimatorReport and Cross-Validation Report,
         "estimator" for ComparisonReport
-    - subplot_by=None disallowed for comparison in multiclass
+    - subplot_by=None disallowed for comparison when plotting one-vs-rest curves
     - subplot_by="estimator" only allowed for comparison reports
-    - subplot_by="label" only allowed for multiclass classification
+    - subplot_by="label" only allowed when plotting one-vs-rest curves
     - subplot_by="data_source" only allowed for EstimatorReport with both data \
         sources
     - hue priority: estimator > label > data_source (excluding col)
@@ -299,11 +280,11 @@ def _get_curve_plot_columns(
         "estimator" in plot_data.columns and plot_data["estimator"].nunique() > 1
     )
     is_comparison = "comparison" in report_type
-    is_multiclass = ml_task == "multiclass-classification"
+    is_one_vs_rest = pos_label is None
     has_both_data_sources = data_source == "both"
 
     allowed_values: set[str | None] = {"auto"}
-    if is_multiclass:
+    if is_one_vs_rest:
         allowed_values.add("label")
         if not is_comparison:
             allowed_values.add(None)
@@ -311,9 +292,9 @@ def _get_curve_plot_columns(
         allowed_values.add(None)
     if is_comparison and has_multiple_estimators:
         allowed_values.add("estimator")
-    if has_both_data_sources and (not is_comparison or not is_multiclass):
+    if has_both_data_sources and (not is_comparison or not is_one_vs_rest):
         allowed_values.add("data_source")
-    # Disallow for comparison reports in multiclass classification
+    # Disallow for comparison reports when plotting one-vs-rest curves.
 
     if subplot_by not in allowed_values:
         allowed_str = ", ".join(sorted([str(s) for s in allowed_values]))
@@ -487,3 +468,11 @@ def _concat_frames_with_column_data(
         frame = frame.astype(dict.fromkeys(categorical_columns, "category"))
 
     return frame
+
+
+def _one_hot_encode(y_true, classes) -> NDArray:
+    label_binarizer = LabelBinarizer().fit(classes)
+    y_true_onehot: NDArray = label_binarizer.transform(y_true)
+    if len(classes) == 2:
+        y_true_onehot = np.hstack(((1 - y_true_onehot), y_true_onehot))
+    return y_true_onehot

@@ -23,15 +23,17 @@ def test_legend_binary_classification(
         assert legend is not None
         legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        plot_data = display.frame(with_average_precision=True)
-        average_precision = plot_data.query(f"estimator == '{estimator}'")[
-            "average_precision"
-        ]
-        assert (
-            legend_texts[0] == f"AP={average_precision.mean():.2f}"
-            f"±{average_precision.std():.2f}"
-        )
-        assert len(legend_texts) == 1
+        labels = display.precision_recall["label"].cat.categories
+        for label_idx, label in enumerate(labels):
+            plot_data = display.frame(with_average_precision=True)
+            average_precision = plot_data.query(
+                f"label == {label} & estimator == '{estimator}'"
+            )["average_precision"]
+            assert (
+                legend_texts[label_idx] == f"{label} (AP={average_precision.mean():.2f}"
+                f"±{average_precision.std():.2f})"
+            )
+        assert len(legend_texts) == len(labels)
 
 
 def test_legend_multiclass_classification(
@@ -86,7 +88,7 @@ def test_multiclass_str_labels_precision_recall_plot(pyplot):
     [
         (
             "comparison_cross_validation_reports_binary_classification",
-            ["None", "auto", "estimator"],
+            ["auto", "estimator", "label"],
         ),
         (
             "comparison_cross_validation_reports_multiclass_classification",
@@ -112,7 +114,7 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     [
         (
             "comparison_cross_validation_reports_binary_classification",
-            [(None, 0), ("estimator", 2)],
+            [("label", 2), ("estimator", 2)],
         ),
         (
             "comparison_cross_validation_reports_multiclass_classification",

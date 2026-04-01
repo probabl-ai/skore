@@ -73,9 +73,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         The target variable to try to predict in the case of supervised learning.
 
     pos_label : int, float, bool or str, default=None
-        For binary classification, the positive class. If `None` and the target labels
-        are `{0, 1}` or `{-1, 1}`, the positive class is set to `1`. For other labels,
-        some metrics might raise an error if `pos_label` is not defined.
+        For binary classification, the positive class to use for metrics and displays
+        that need one. If `None`, skore does not infer a default positive class.
+        Binary metrics and displays that support it will expose all classes instead.
+        This parameter is rejected for non-binary tasks.
 
     splitter : int, cross-validation generator or an iterable, default=5
         Determines the cross-validation splitting strategy.
