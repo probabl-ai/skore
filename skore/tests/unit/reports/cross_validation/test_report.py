@@ -102,10 +102,11 @@ def test_attributes(fixture_name, request, cv, n_jobs):
     [
         # expected n keys:
         # (result + time for 'predict'
-        #  & result for 'predict_proba' or 'decision_function') x train, test
-        ("forest_binary_classification_data", 6),
+        #  & result for 'predict_proba'/'predict_log_proba' or 'decision_function')
+        # x train, test
+        ("forest_binary_classification_data", 8),
         ("svc_binary_classification_data", 6),
-        ("forest_multiclass_classification_data", 6),
+        ("forest_multiclass_classification_data", 8),
         ("linear_regression_data", 4),
     ],
 )

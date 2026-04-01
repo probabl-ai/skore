@@ -242,22 +242,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        response_methods : "auto" or list of str, default="auto"
-            The response methods to precompute. If "auto", the response methods are
-            inferred from the ml task: for classification we compute the response of
-            the `predict_proba`, `decision_function` and `predict` methods; for
-            regression we compute the response of the `predict` method.
-
         data_source : {"test", "train", "both"}, default="both"
             The data source(s) for which to precompute predictions.
 
             - "test" : cache predictions for the test set only.
             - "train" : cache predictions for the train set only.
             - "both" : cache predictions for both train and test sets when available.
-
-        n_jobs : int or None, default=None
-            The number of jobs to run in parallel. None means 1 unless in a
-            joblib.parallel_backend context. -1 means using all processors.
 
         Examples
         --------
@@ -294,12 +284,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         preds_only = not (has_proba or has_decision)
 
         # if this is True, we call .predict(...)
-        # otherwise we derive predictions from predict_proba/decision_function:
+        # otherwise we derive predictions from predict_proba/decision_function
+        # (which is a big optimization for models with an expansive predict function).
         compute_preds = (
             # FixedThresholdClassifier or TunedThresholdClassifierCV:
             "ThresholdClassifier" in self._estimator.__class__.__name__
             or "Dummy" in self._estimator.__class__.__name__
-            or getattr(self._estimator, "decision_function_shape", None) == "ovo"
         )
 
         if compute_preds or preds_only:
@@ -324,7 +314,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
             decision_key = make_cache_key(data_source, "decision_function")
             self._cache[decision_key] = decision_func
-            if not compute_preds:
+            if decision_func.shape[1] != len(self.estimator_.classes_):
+                # non-OVR decision function shape:
+                with MeasureTime() as pred_time:
+                    self._cache[pred_key] = self._estimator.predict(X)
+                self._cache[time_key] = pred_time()
+            elif not compute_preds:
                 self._cache[time_key] = pred_time()
                 self._cache[pred_key] = classes[np.argmax(decision_func, axis=1)]
 
@@ -337,7 +332,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             # Most sklearn's estimator derive predict_log_proba this way
             # except for *NB models (naive bayes) that derive predict_proba
             # from predict_log_proba using exp:
-            self._cache[log_key] = np.log(predicted_proba)
+            with np.errstate(divide="ignore"):
+                self._cache[log_key] = np.log(predicted_proba)
             if has_decision or compute_preds:
                 return
             self._cache[time_key] = pred_time()

@@ -284,16 +284,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ) -> None:
         """Cache the predictions for sub-estimators reports.
 
-        Parameters
-        ----------
-        response_methods : {"auto", "predict", "predict_proba", "decision_function"},\
-                default="auto"
-            The methods to use to compute the predictions.
-
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. If `None`, we use the `n_jobs`
-            parameter when initializing the report.
-
         Examples
         --------
         >>> from sklearn.datasets import make_classification
