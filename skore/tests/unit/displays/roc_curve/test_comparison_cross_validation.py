@@ -25,10 +25,17 @@ def test_legend_binary_classification(
         assert legend is not None
         legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        plot_data = display.frame(with_roc_auc=True)
-        roc_auc = plot_data.query(f"estimator == '{estimator}'")["roc_auc"]
-        assert legend_texts[0] == f"AUC={roc_auc.mean():.2f}±{roc_auc.std():.2f}"
-        assert len(legend_texts) == 2
+        labels = display.roc_curve["label"].cat.categories
+        for label_idx, label in enumerate(labels):
+            plot_data = display.frame(with_roc_auc=True)
+            roc_auc = plot_data.query(f"label == {label} & estimator == '{estimator}'")[
+                "roc_auc"
+            ]
+            assert (
+                legend_texts[label_idx] == f"{label} (AUC={roc_auc.mean():.2f}"
+                f"±{roc_auc.std():.2f})"
+            )
+        assert len(legend_texts) == len(labels) + 1
         assert legend_texts[-1] == "Chance level (AUC = 0.5)"
 
 
@@ -86,7 +93,7 @@ def test_multiclass_str_labels_roc_plot(pyplot):
     [
         (
             "comparison_cross_validation_reports_binary_classification",
-            ["None", "auto", "estimator"],
+            ["auto", "estimator", "label"],
         ),
         (
             "comparison_cross_validation_reports_multiclass_classification",
@@ -112,7 +119,7 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     [
         (
             "comparison_cross_validation_reports_binary_classification",
-            [(None, 0), ("estimator", 2)],
+            [("label", 2), ("estimator", 2)],
         ),
         (
             "comparison_cross_validation_reports_multiclass_classification",

@@ -46,19 +46,16 @@ case $1 in
         esac
 
         for PACKAGE in "${PACKAGES[@]}"; do
-            mapfile -t combinations < <(
-                jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../${PACKAGE}/supported-versions.json" -c
-            )
-
-            for combination in "${combinations[@]}"; do
+            while IFS= read -r combination; do
                 python=$(jq -rc '.python' <<< "${combination}")
                 dependencies=$(jq -rc '.dependencies' <<< "${combination}")
 
                 COMBINATIONS+=("${PACKAGE}|test|${python}|${dependencies}")
-            done
+            done < <(
+                jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../${PACKAGE}/supported-versions.json" -c
+            )
         done
 
-        unset combinations
         unset combination
         unset python
         unset dependencies

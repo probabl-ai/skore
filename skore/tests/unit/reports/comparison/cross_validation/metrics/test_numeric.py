@@ -237,7 +237,7 @@ def test_metrics_aggregate(case):
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_binary_classification_pos_label(pyplot, metric):
-    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    """Check the behaviour of the display methods when `pos_label` is not set."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )
@@ -246,8 +246,9 @@ def test_binary_classification_pos_label(pyplot, metric):
     report_1 = CrossValidationReport(LogisticRegression(C=1), X, y)
     report_2 = CrossValidationReport(LogisticRegression(C=2), X, y)
     report = ComparisonReport([report_1, report_2])
-    with pytest.raises(ValueError, match="pos_label is not specified"):
-        getattr(report.metrics, metric)()
+    display = getattr(report.metrics, metric)()
+    fig = display.plot()
+    assert "Positive label" not in fig.get_suptitle()
 
     report_1 = CrossValidationReport(LogisticRegression(C=1), X, y, pos_label="A")
     report_2 = CrossValidationReport(LogisticRegression(C=2), X, y, pos_label="A")

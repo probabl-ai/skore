@@ -141,7 +141,7 @@ pyarrow==23.0.1
     # via skore (skore/pyproject.toml)
 pydot==4.0.1
     # via skrub
-pygments==2.19.2
+pygments==2.20.0
     # via
     #   ipython
     #   pytest

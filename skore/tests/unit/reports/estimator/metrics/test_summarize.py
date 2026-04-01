@@ -219,6 +219,25 @@ def test_multioutput_regression(linear_regression_multioutput_with_test):
     assert set(data.loc["R²", "output"]) == {0, 1}
 
 
+def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_test):
+    """Default metrics skip roc_auc, log_loss, and brier_score without predict_proba."""
+    estimator, X_test, y_test = custom_classifier_no_predict_proba_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize()
+
+    check_display_structure(
+        display,
+        expected_metrics={
+            "Accuracy",
+            "Precision",
+            "Recall",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
+        expected_estimator_name="CustomClassifierPredictOnly",
+    )
+
+
 def test_cache(forest_binary_classification_with_test):
     """Check the behaviour of the metrics methods available for binary
     classification.
