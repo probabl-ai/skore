@@ -51,6 +51,11 @@ Changed
 - **Breaking change:** :class:`~skore.EstimatorReport` now requires ``X_test``. If
   ``X_test`` is omitted (``None``), construction raises ``ValueError``.
 
+- **Breaking change:** binary classification metrics and curve displays no longer
+  require ``pos_label`` to be set, and skore no longer infers it implicitly. When
+  ``pos_label`` is left unset, ``precision`` and ``recall`` metrics, as well as
+  ROC and precision-recall curves, now expose both classes instead of failing.
+
 Added
 -----
 

@@ -188,14 +188,22 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._y_test = y_test
         self._pos_label = pos_label
         self.fit_time_ = fit_time
+        self._cache = Cache()
 
         self._ml_task = _find_ml_task(self._y_test, estimator=self._estimator)
-        if self._ml_task != "binary-classification" and pos_label is not None:
+        if pos_label is None:
+            return
+        if self._ml_task != "binary-classification":
             raise ValueError(
                 "pos_label is only accepted/used for binary classification"
             )
+        labels = self.estimator_.classes_.tolist()
+        if pos_label not in labels:
+            raise ValueError(
+                f"pos_label={pos_label!r} is not a valid label. "
+                f"It should be one of: {labels!r}."
+            )
 
-        self._cache = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
 
     def clear_cache(self) -> None:

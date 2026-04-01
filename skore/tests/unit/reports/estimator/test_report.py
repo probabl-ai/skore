@@ -290,6 +290,23 @@ def test_get_predictions_error():
         report.get_predictions(data_source="invalid")
 
 
+def test_invalid_pos_label():
+    """Check that an invalid `pos_label` raises a helpful error."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    err_msg = r"pos_label='a' is not a valid label\. It should be one of: \[0, 1\]"
+    with pytest.raises(ValueError, match=err_msg):
+        EstimatorReport(
+            LogisticRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+            pos_label="a",
+        )
+
+
 def test_get_predictions_error_with_multiclass_ovo_decision_function():
     """Check that multiclass one-vs-one decision scores are rejected."""
     X, y = make_classification(

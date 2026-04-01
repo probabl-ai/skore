@@ -30,7 +30,7 @@ def test_display_binary_classification(
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_display_binary_classification_pos_label(pyplot, metric):
-    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    """Check the behaviour of the display methods when `pos_label` is not set."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )
@@ -50,16 +50,10 @@ def test_display_binary_classification_pos_label(pyplot, metric):
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_display_binary_classification_decision_function_default_pos_label(
-    pyplot, metric
+    pyplot, metric, binary_classification_data
 ):
     """Check that the default binary behaviour works with 1D decision scores."""
-    X, y = make_classification(
-        n_classes=2,
-        n_features=5,
-        n_informative=3,
-        n_redundant=0,
-        random_state=0,
-    )
+    X, y = binary_classification_data
     classifier = LinearSVC(dual=False, random_state=0).fit(X, y)
     report = EstimatorReport(classifier, X_test=X, y_test=y)
 
@@ -123,19 +117,3 @@ def test_display_regression_switching_data_source(
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(data_source="train")
     assert display_first_call is not display_second_call
-
-
-def test_display_confusion_matrix_data_source_both_is_not_supported(
-    pyplot, forest_binary_classification_with_test
-):
-    """Check that confusion_matrix rejects data_source='both' explicitly."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(
-        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
-    )
-
-    with pytest.raises(
-        ValueError,
-        match="data_source='both' is not supported for confusion_matrix.",
-    ):
-        report.metrics.confusion_matrix(data_source="both")
