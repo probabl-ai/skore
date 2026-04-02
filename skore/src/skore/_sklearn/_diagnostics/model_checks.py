@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING, cast
 
+import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
@@ -11,16 +12,16 @@ from skore._sklearn._diagnostics.utils import (
     _TIMING_METRICS,
     DiagnosticNotApplicable,
     check_score_gap_to_baseline,
+    detect_outliers_mad,
     majority_vote,
 )
 
 if TYPE_CHECKING:
+    from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
 
 
-def check_overfitting_underfitting(
-    report: EstimatorReport,
-) -> dict[str, dict]:
+def check_overfitting_underfitting(report: EstimatorReport) -> dict[str, dict]:
     """Check for overfitting (SKD001) and underfitting (SKD002).
 
     Both checks share the same pre-conditions and metric data, so they are
@@ -118,6 +119,38 @@ def check_overfitting_underfitting(
                 f"than the dummy baseline for {n_positive}/{total} "
                 "comparable metrics."
             ),
+        }
+
+    return results
+
+
+def check_metrics_consistency_across_folds(
+    report: CrossValidationReport,
+) -> dict[str, dict]:
+    """Check the consistency of metrics across folds (SDK003)."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+        report_data = report.metrics.summarize(data_source="test").frame(
+            aggregate=None, flat_index=True
+        )
+    votes = np.array(
+        [
+            detect_outliers_mad(report_data.loc[idx])
+            for idx in report_data.index
+            if idx not in _TIMING_METRICS
+        ]
+    )
+    results: dict[str, dict] = {}
+    explanation = []
+    for cv in range(report_data.shape[1]):
+        majority, n_positive, total = majority_vote(votes[:, cv].tolist())
+        if majority:
+            explanation.append(f" split #{cv} for {n_positive}/{total} metrics")
+    if explanation:
+        results["SDK003"] = {
+            "title": "Inconsistent performance across folds",
+            "docs_anchor": "skd003-inconsistent_performance",
+            "explanation": "Performance is abnormal in" + ",".join(explanation),
         }
 
     return results

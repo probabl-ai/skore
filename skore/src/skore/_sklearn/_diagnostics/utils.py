@@ -1,8 +1,12 @@
+import numpy as np
+
 _TIMING_METRICS = {
     "Fit time (s)",
     "Predict time (s)",
     "fit time (s)",
     "predict time (s)",
+    "fit_time_s",
+    "predict_time_s",
 }
 
 
@@ -49,6 +53,15 @@ def majority_vote(votes: list[bool]) -> tuple[bool, int, int]:
     n_positive = sum(votes)
     total = len(votes)
     return n_positive > total / 2, n_positive, total
+
+
+def detect_outliers_mad(scores, threshold=3.5):
+    median = np.median(scores)
+    mad = np.median(np.abs(scores - median))
+    modified_z_scores = 0.6745 * (scores - median) / mad
+
+    outliers = np.abs(modified_z_scores) > threshold
+    return outliers
 
 
 class DiagnosticNotApplicable(Exception):
