@@ -174,6 +174,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         y_test: ArrayLike,
         pos_label: PositiveLabel | None = None,
     ) -> None:
+        super().__init__()
         self._fit = fit
 
         if is_clusterer(estimator):

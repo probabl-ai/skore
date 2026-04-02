@@ -29,7 +29,7 @@ def login(*, timeout: int = 600) -> None:
     global credentials
 
     if credentials is not None:
-        logger.debug(f"Already logged in {URI} with {credentials.__module__}.")
+        logger.debug(f"Already logged in {URI()} with {credentials.__module__}.")
         console.print(
             Panel(
                 Align.center("Already logged in."),
