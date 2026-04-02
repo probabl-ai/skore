@@ -5,7 +5,7 @@ import html
 import uuid
 import warnings
 from functools import cached_property
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import skrub
@@ -240,6 +240,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self.fit_time_ = self._fit_time
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
         self._cache = Cache()
+        self._predictions = Cache()
         self._metric_registry = MetricRegistry(self)
 
         if pos_label is None:
@@ -256,6 +257,46 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
 
         # NOTE: Reports are immutable so we don't need cache invalidation
+
+    def get_state(self) -> dict[str, Any]:
+        return {
+            # -------- CORE STATE ---------
+            "metadata": self._metadata,
+            "initialized_with_data_op": self._initialized_with_data_op,
+            "raw_estimator": self._raw_estimator,
+            "ml_task": self._ml_task,
+            "fit_time": self.fit_time_,
+            "pos_label": self._pos_label,
+            "estimator": self._estimator,
+            "data": {
+                "train_data": self._train_data,
+                "test_data": self._test_data,
+            },
+            "predictions": dict(self._predictions),
+            "cache": dict(self._cache),
+        }
+
+    @classmethod
+    def from_state(cls, state: dict[str, Any]) -> EstimatorReport:
+        report = cls.__new__(cls)
+
+        report._metadata = state["metadata"]
+        report._initialized_with_data_op = state["initialized_with_data_op"]
+        report._ml_task = state["ml_task"]
+        report.fit_time_ = state["fit_time"]
+        report._pos_label = state["pos_label"]
+        report._estimator = state["estimator"]
+        report._raw_estimator = state["raw_estimator"]
+        data = state["data"]
+        report._train_data = data["train_data"]
+        report._test_data = data["test_data"]
+        report._cache = Cache()
+        report._cache.update(state["cache"])
+        report._predictions = Cache()
+        report._predictions.update(state["predictions"])
+        report._metric_registry = MetricRegistry(report)
+
+        return report
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -276,6 +317,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         {}
         """
         self._cache = Cache()
+        self._predictions = Cache()
 
     def cache_predictions(
         self,
@@ -323,15 +365,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         pred_key = make_cache_key(data_source, "predict")
         time_key = make_cache_key(data_source, "predict_time")
 
-        if pred_key in self._cache:
+        if pred_key in self._predictions:
             return
 
         # This is for cases where `predict` cannot be inferred reliably
         # from decision_function/predict_proba:
         if not self._can_skip_predict:
             with MeasureTime() as pred_time:
-                self._cache[pred_key] = self._estimator.predict(data)
-            self._cache[time_key] = pred_time()
+                self._predictions[pred_key] = self._estimator.predict(data)
+            self._predictions[time_key] = pred_time()
 
         has_proba = hasattr(self._estimator, "predict_proba")
         has_decision = hasattr(self._estimator, "decision_function")
@@ -346,10 +388,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 )
             )
             decision_key = make_cache_key(data_source, "decision_function")
-            self._cache[decision_key] = response
+            self._predictions[decision_key] = response
             if self._can_skip_predict:
-                self._cache[time_key] = pred_time
-                self._cache[pred_key] = predictions
+                self._predictions[time_key] = pred_time
+                self._predictions[pred_key] = predictions
 
         if has_proba:
             response, predictions, pred_time = (
@@ -358,16 +400,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 )
             )
             proba_key = make_cache_key(data_source, "predict_proba")
-            self._cache[proba_key] = response
+            self._predictions[proba_key] = response
             log_key = make_cache_key(data_source, "predict_log_proba")
             # Most sklearn's estimator derive predict_log_proba this way
             # except for *NB models (naive bayes) that derive predict_proba
             # from predict_log_proba using exp:
             with np.errstate(divide="ignore"):
-                self._cache[log_key] = np.log(response)
+                self._predictions[log_key] = np.log(response)
             if self._can_skip_predict:
-                self._cache[time_key] = pred_time
-                self._cache[pred_key] = predictions
+                self._predictions[time_key] = pred_time
+                self._predictions[pred_key] = predictions
 
     def _get_response_and_derived_predictions(self, data, response_method):
         """Compute a response array and derive class predictions.
@@ -568,7 +610,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         method_name = _check_response_method(self.estimator_, response_method).__name__
         self.cache_predictions(data_source=data_source)
         cache_key = make_cache_key(data_source, method_name)
-        predictions = self._cache[cache_key]
+        predictions = self._predictions[cache_key]
 
         if method_name == "predict":
             return predictions
@@ -659,10 +701,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             name = self._raw_estimator.__class__.__name__
         return name
-
-    @property
-    def fit(self) -> str | bool:
-        return self._fit
 
     ####################################################################################
     # Methods related to the help and repr

@@ -336,7 +336,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # (data_source, "predict_time", None)
         predict_times = {
             f"predict_time_{data_source}": v
-            for (data_source, name, _), v in self._parent._cache.items()
+            for (data_source, name, _), v in self._parent._predictions.items()
             if name == "predict_time"
         }
 
