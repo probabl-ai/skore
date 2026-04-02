@@ -188,7 +188,7 @@ class Project:
         The report is pickled without its cache, to avoid salting the hash.
         """
         reports = [report] + getattr(report, "estimator_reports_", [])
-        reports_with_cache = [
+        reports_with_cache: list[tuple[Any, Any]] = [
             (cast(Any, report), report._cache)
             for report in reports
             if hasattr(report, "_cache")
