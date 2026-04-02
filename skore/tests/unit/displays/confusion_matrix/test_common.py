@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from skore import EstimatorReport
 from skore._sklearn._plot import ConfusionMatrixDisplay
 
 
@@ -157,8 +158,8 @@ class TestConfusionMatrixDisplay:
         xticklabels = [label.get_text() for label in ax.get_xticklabels()]
         yticklabels = [label.get_text() for label in ax.get_yticklabels()]
         if task == "binary":
-            assert xticklabels == ["0", "1*"]
-            assert yticklabels == ["0", "1*"]
+            assert xticklabels == ["0", "1"]
+            assert yticklabels == ["0", "1"]
         else:
             assert xticklabels == ["0", "1", "2"]
             assert yticklabels == ["0", "1", "2"]
@@ -307,3 +308,17 @@ class TestConfusionMatrixDisplay:
                     assert np.all(valid), f"col sums should be 0 or 1, got {col_sums}"
                 else:
                     np.testing.assert_allclose(pivoted.sum().sum(), 1.0)
+
+
+def test_data_source_both_is_not_supported(forest_binary_classification_with_test):
+    """Check that confusion_matrix rejects data_source='both' explicitly."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(
+        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="data_source='both' is not supported for confusion_matrix.",
+    ):
+        report.metrics.confusion_matrix(data_source="both")

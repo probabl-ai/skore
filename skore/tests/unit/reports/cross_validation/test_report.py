@@ -150,11 +150,14 @@ def test_get_predictions(
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+            expected_len = len(report.estimator_reports_[split_idx].y_train)
         else:
             assert data_source == "test"
-            expected_shape = report.estimator_reports_[split_idx].y_test.shape
-        assert split_predictions.shape == expected_shape
+            expected_len = len(report.estimator_reports_[split_idx].y_test)
+        if response_method == "predict_proba" and pos_label is None:
+            assert split_predictions.shape == (expected_len, 2)
+        else:
+            assert split_predictions.shape == (expected_len,)
 
 
 def test_get_predictions_error(

@@ -27,7 +27,7 @@ TOKEN_URL = "identity/oauth/device/token"
 @mark.parametrize("success_uri", [None, "toto"])
 @mark.respx()
 def test_get_oauth_device_login(respx_mock, success_uri):
-    respx_mock.get(urljoin(URI, LOGIN_URL)).mock(
+    respx_mock.get(urljoin(URI(), LOGIN_URL)).mock(
         Response(
             200,
             json={
@@ -51,7 +51,7 @@ def test_get_oauth_device_login(respx_mock, success_uri):
 
 @mark.respx()
 def test_post_oauth_device_callback(respx_mock):
-    route = respx_mock.post(urljoin(URI, CALLBACK_URL)).mock(Response(201, json={}))
+    route = respx_mock.post(urljoin(URI(), CALLBACK_URL)).mock(Response(201, json={}))
 
     post_oauth_device_callback("my_state", "my_user_code")
 
@@ -61,7 +61,7 @@ def test_post_oauth_device_callback(respx_mock):
 
 @mark.respx()
 def test_get_oauth_device_token(respx_mock):
-    respx_mock.get(urljoin(URI, TOKEN_URL)).mock(
+    respx_mock.get(urljoin(URI(), TOKEN_URL)).mock(
         Response(
             200,
             json={
@@ -87,7 +87,7 @@ def test_get_oauth_device_token(respx_mock):
 @mark.respx()
 def test_get_oauth_device_code_probe(monkeypatch, respx_mock):
     monkeypatch.setattr("skore_hub_project.authentication.token.sleep", lambda _: None)
-    respx_mock.get(urljoin(URI, PROBE_URL)).mock(
+    respx_mock.get(urljoin(URI(), PROBE_URL)).mock(
         side_effect=[
             Response(400),
             Response(400),
@@ -105,7 +105,7 @@ def test_get_oauth_device_code_probe(monkeypatch, respx_mock):
 
 @mark.respx()
 def test_get_oauth_device_code_probe_exception(respx_mock):
-    respx_mock.get(urljoin(URI, PROBE_URL)).mock(
+    respx_mock.get(urljoin(URI(), PROBE_URL)).mock(
         side_effect=[
             Response(404),
             Response(400),
@@ -125,7 +125,7 @@ def test_get_oauth_device_code_probe_exception(respx_mock):
 
 @mark.respx()
 def test_get_oauth_device_code_probe_timeout(respx_mock):
-    respx_mock.get(urljoin(URI, PROBE_URL)).mock(
+    respx_mock.get(urljoin(URI(), PROBE_URL)).mock(
         side_effect=[
             Response(400),
             Response(400),
@@ -144,7 +144,7 @@ def test_get_oauth_device_code_probe_timeout(respx_mock):
 
 @mark.respx()
 def test_post_oauth_refresh_token(respx_mock):
-    route = respx_mock.post(urljoin(URI, REFRESH_URL)).mock(
+    route = respx_mock.post(urljoin(URI(), REFRESH_URL)).mock(
         Response(
             200,
             json={"access_token": "A", "refresh_token": "B", "expires_at": "C"},

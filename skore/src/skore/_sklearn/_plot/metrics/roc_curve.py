@@ -7,7 +7,6 @@ from numpy.typing import ArrayLike, NDArray
 from pandas import DataFrame, Series
 from sklearn.base import BaseEstimator
 from sklearn.metrics import auc, roc_curve
-from sklearn.preprocessing import LabelBinarizer
 
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
@@ -16,6 +15,7 @@ from skore._sklearn._plot.utils import (
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
     _get_curve_plot_columns,
+    _one_hot_encode,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import (
@@ -162,11 +162,12 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - "auto": None for :class:`~skore.EstimatorReport` and \
               :class:`~skore.CrossValidationReport`, "estimator" for \
               :class:`~skore.ComparisonReport`
-            - "label": one subplot per class (multiclass only)
+            - "label": one subplot per class when plotting one-vs-rest curves
             - "estimator": one subplot per estimator (comparison only)
             - "data_source": one subplot per data source \
               (:class:`~skore.EstimatorReport` with both data sources only)
-            - None: no subplots (not available for comparison in multiclass)
+            - None: no subplots (Not available for comparison in classification \
+                with no specified pos_label)
 
         plot_chance_level : bool, default=True
             Whether to plot the chance level.
@@ -212,7 +213,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         col, hue, style = _get_curve_plot_columns(
             plot_data=plot_data,
             report_type=self.report_type,
-            ml_task=self.ml_task,
+            pos_label=self.pos_label,
             data_source=self.data_source,
             subplot_by=subplot_by,
         )
@@ -366,15 +367,10 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         display : RocCurveDisplay
             Object that stores computed values.
         """
-        pos_label_validated = cls._validate_from_prediction_params(
-            y_true, y_pred, ml_task=ml_task, pos_label=pos_label
-        )
-
-        if ml_task == "multiclass-classification":
+        if pos_label is None:
             classes = estimator.classes_
             # OvR fashion to collect fpr, tpr, and roc_auc
-            label_binarizer = LabelBinarizer().fit(classes)
-            y_true_onehot: NDArray = label_binarizer.transform(y_true)
+            y_true_onehot = _one_hot_encode(y_true, classes)
             y_pred_arr = cast(NDArray, y_pred)
 
             displays = [
@@ -398,10 +394,11 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 column_data={"label": classes.tolist()},
             )
             display.ml_task = ml_task
-            display.pos_label = pos_label_validated
+            display.pos_label = None
             return display
 
-        # binary-classification
+        # binary-classification with pos_label set:
+
         fpr, tpr, thresholds = roc_curve(
             y_true,
             y_pred,
@@ -414,7 +411,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             "estimator": estimator_name,
             "data_source": data_source,
             "split": None,
-            "label": pos_label_validated,
+            "label": pos_label,
         }
 
         curve_data = {
@@ -433,7 +430,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         return cls(
             roc_curve=DataFrame(curve_data),
             roc_auc=auc_df,
-            pos_label=pos_label_validated,
+            pos_label=pos_label,
             data_source=data_source,
             ml_task=ml_task,
             report_type=report_type,
@@ -456,7 +453,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - `estimator`: Name of the estimator (when comparing estimators)
             - `split`: Cross-validation split ID (when doing cross-validation)
             - `data_source`: Data source used (when `data_source="both"`)
-            - `label`: Class label (for multiclass-classification)
+            - `label`: Class label (when plotting one-vs-rest curves)
             - `threshold`: Decision threshold
             - `fpr`: False Positive Rate
             - `tpr`: True Positive Rate
@@ -499,7 +496,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if self.data_source == "both":
             indexing_columns += ["data_source"]
 
-        if self.ml_task == "binary-classification":
+        if self.pos_label is not None:
             columns = indexing_columns + statistical_columns
         else:
             columns = indexing_columns + ["label"] + statistical_columns
