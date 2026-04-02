@@ -38,5 +38,6 @@ Table of contents
    :maxdepth: 2
 
    reporters
+   diagnostics
    displays
    project

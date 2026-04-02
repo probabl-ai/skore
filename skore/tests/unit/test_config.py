@@ -27,9 +27,18 @@ def test_configuration_plot_backend():
     assert configuration.plot_backend == "plotly"
 
 
+def test_configuration_ignore_diagnostics():
+    assert configuration.ignore_diagnostics is None
+
+    configuration.ignore_diagnostics = ["SKD001", "SKD002"]
+
+    assert configuration.ignore_diagnostics == ["SKD001", "SKD002"]
+
+
 def test_configuration_call():
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
+    assert configuration.ignore_diagnostics is None
 
     with configuration():
         assert configuration.show_progress is True
@@ -37,6 +46,7 @@ def test_configuration_call():
 
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
+    assert configuration.ignore_diagnostics is None
 
     with configuration(show_progress=False):
         assert configuration.show_progress is False
@@ -71,6 +81,12 @@ def test_configuration_call():
 
     assert configuration.show_progress is True
     assert configuration.plot_backend == "matplotlib"
+    assert configuration.ignore_diagnostics is None
+
+    with configuration(ignore_diagnostics=["SKD001"]):
+        assert configuration.ignore_diagnostics == ["SKD001"]
+
+    assert configuration.ignore_diagnostics is None
 
 
 @mark.parametrize("backend", ["loky", "multiprocessing", "threading"])

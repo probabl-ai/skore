@@ -56,6 +56,14 @@ function skoreInitComparisonReport(containerId) {
                 el.removeAttribute("slot");
             }
         });
+
+        host.querySelectorAll(".skore-cmp-diagnostics-slot").forEach((el) => {
+            if (el.dataset.comparisonIndex === idx) {
+                el.setAttribute("slot", "diagnostics");
+            } else {
+                el.removeAttribute("slot");
+            }
+        });
     }
 
     selects.forEach((sel) => {
