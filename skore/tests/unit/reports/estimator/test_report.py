@@ -401,11 +401,7 @@ def test_report_get_data_and_y_true_error():
     with pytest.raises(ValueError, match=err_msg):
         report._get_data_and_y_true(data_source="unknown")
 
-    err_msg = re.escape(
-        "No train data (i.e. X_train and y_train) were provided "
-        "when creating the report. Please provide the train "
-        "data when creating the report."
-    )
+    err_msg = re.escape("No train data were provided when creating the report.")
     with pytest.raises(ValueError, match=err_msg):
         report._get_data_and_y_true(data_source="train")
 
@@ -427,5 +423,5 @@ def test_report_get_data_and_y_true(data_source):
         np.testing.assert_array_equal(y_result, y_train)
     else:
         assert data_source == "test"
-        np.testing.assert_array_equal(data["_skrub_y"], X_test)
+        np.testing.assert_array_equal(data["_skrub_X"], X_test)
         np.testing.assert_array_equal(y_result, y_test)
