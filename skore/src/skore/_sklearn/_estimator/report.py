@@ -274,9 +274,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 self.cache_predictions(data_source="train")
             return
 
-        X = self._X_test if data_source == "test" else self._X_train
-        if X is None:
-            raise ValueError(f"Missing X_{data_source}")
+        X, _ = self._get_X_y(data_source=data_source)
 
         pred_key = make_cache_key(data_source, "predict")
         time_key = make_cache_key(data_source, "predict_time")
