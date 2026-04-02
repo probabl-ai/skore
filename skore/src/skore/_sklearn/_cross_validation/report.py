@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 import uuid
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import skrub
 from joblib import Parallel
@@ -204,6 +204,58 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 total=len(self.split_indices),
             )
         )
+
+    def get_state(self) -> dict[str, Any]:
+        sub_states = [report.get_state() for report in self.estimator_reports_]
+        for state in sub_states:
+            # data can be reconstructed from X, y and split_indices
+            state.pop("data")
+
+        return {
+            "metadata": self._metadata,
+            "ml_task": self.ml_task,
+            "pos_label": self.pos_label,
+            "estimator": self._estimator,
+            "data": {
+                "X": self.X,
+                "y": self.y,
+                "split_indices": self._split_indices,
+            },
+            "estimator_reports": sub_states,
+        }
+
+    @classmethod
+    def from_state(cls, state: dict[str, Any]) -> CrossValidationReport:
+        report = cls.__new__(cls)
+
+        report._metadata = state["metadata"]
+        report._ml_task = state["ml_task"]
+        report._pos_label = state["pos_label"]
+        report._estimator = state["estimator"]
+        data = state["data"]
+        report._X = data["X"]
+        report._y = data["y"]
+        report._split_indices = data["split_indices"]
+        # TODO? Include splitter in state?
+        report._splitter = None
+        report.n_jobs = None
+
+        report.estimator_reports_ = []
+        for sub_state, (train_indices, test_indices) in zip(
+            state["estimator_reports"], report._split_indices, strict=True
+        ):
+            sub_state_with_data = sub_state | {
+                "data": {
+                    "X_train": _safe_indexing(report._X, train_indices),
+                    "y_train": _safe_indexing(report._y, train_indices),
+                    "X_test": _safe_indexing(report._X, test_indices),
+                    "y_test": _safe_indexing(report._y, test_indices),
+                }
+            }
+            sub_report = EstimatorReport.from_state(sub_state_with_data)
+            report.estimator_reports_.append(sub_report)
+
+        return report
 
     def clear_cache(self) -> None:
         """Clear the cache.

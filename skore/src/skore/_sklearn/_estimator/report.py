@@ -175,7 +175,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         pos_label: PositiveLabel | None = None,
     ) -> None:
         super().__init__()
-        self._fit = fit
 
         if is_clusterer(estimator):
             raise ValueError(
@@ -222,6 +221,61 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 f"pos_label={pos_label!r} is not a valid label. "
                 f"It should be one of: {labels!r}."
             )
+
+    def get_state(self) -> dict[str, Any]:
+        return {
+            # -------- CORE STATE ---------
+            "metadata": self._metadata,
+            "ml_task": self._ml_task,
+            "fit_time": self.fit_time_,
+            "pos_label": self._pos_label,
+            "estimator": self._estimator,
+            "data": {
+                "X_train": self._X_train,
+                "y_train": self._y_train,
+                "X_test": self._X_test,
+                "y_test": self._y_test,
+            },
+            "predictions": dict(self._predictions),
+            # ---------- RESULTS ------------
+            # this part is less structured and not crucial for reconstructing a report
+            # so we won't try ensuring backward compatibility.
+            "metrics": self._get_cached_results("metrics"),
+            "inspection": self._get_cached_results("inspection"),
+        }
+
+    @classmethod
+    def from_state(cls, state: dict[str, Any]) -> EstimatorReport:
+        report = cls.__new__(cls)
+
+        report._metadata = state["metadata"]
+        report._ml_task = state["ml_task"]
+        report.fit_time_ = state["fit_time"]
+        report._pos_label = state["pos_label"]
+        report._estimator = state["estimator"]
+        data = state["data"]
+        report._X_train = data["X_train"]
+        report._y_train = data["y_train"]
+        report._X_test = data["X_test"]
+        report._y_test = data["y_test"]
+        report._predictions = Cache()
+        report._predictions.update(state["predictions"])
+
+        report._cache = Cache()
+        # TODO? don't restore the cache if state version != current version
+        for accessor_name in ("metrics", "inspection"):
+            for _, method_name, data_source, kwargs, result in state.get(
+                accessor_name, []
+            ):
+                report._write_cache(
+                    accessor_name=accessor_name,
+                    method_name=method_name,
+                    data_source=data_source,
+                    kwargs=kwargs,
+                    result=result,
+                )
+
+        return report
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -504,10 +558,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             name = self._estimator.__class__.__name__
         return name
-
-    @property
-    def fit(self) -> str | bool:
-        return self._fit
 
     ####################################################################################
     # Methods related to the help and repr

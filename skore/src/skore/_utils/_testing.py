@@ -93,6 +93,7 @@ class MockReport(_BaseReport):
         X_test=None,
         y_test=None,
     ):
+        super().__init__()
         self._estimator = estimator
         self._X_train = X_train
         self._y_train = y_train
