@@ -1,11 +1,13 @@
+from abc import abstractmethod
 from io import StringIO
 from typing import Generic, Literal, TypeVar
 from uuid import uuid4
 
-from numpy.typing import ArrayLike
 from rich.console import Console
 from rich.panel import Panel
 
+from skore._config import configuration
+from skore._sklearn._diagnostics.base import DiagnosticsDisplay
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
@@ -24,6 +26,71 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
+    _diagnostics_cache: tuple[dict[str, dict], set[str]]
+
+    @abstractmethod
+    def _compute_diagnostics(self) -> tuple[dict[str, dict], set[str]]:
+        """Return detected issues and the set of diagnostic codes that were checked."""
+
+    def _get_diagnostics(self) -> tuple[dict[str, dict], set[str]]:
+        """Get the diagnostics from the cache or compute them."""
+        if not hasattr(self, "_diagnostics_cache"):
+            self._diagnostics_cache = self._compute_diagnostics()
+        return self._diagnostics_cache
+
+    def diagnose(
+        self,
+        *,
+        ignore: list[str] | tuple[str, ...] | None = None,
+    ) -> DiagnosticsDisplay:
+        """Run diagnostics and return a summary of detected issues.
+
+        Diagnostics check for common modeling problems such as overfitting and
+        underfitting. Codes can be muted per-call via `ignore` or globally via
+        :func:`~skore.configuration(ignore_diagnostics=...)` .
+
+        Parameters
+        ----------
+        ignore : list of str or tuple of str or None, default=None
+            Diagnostic codes to exclude from the results, e.g. `["SKD001"]`.
+
+        Returns
+        -------
+        DiagnosticsDisplay
+            A display object with an HTML representation, with the full diagnostic
+            results accessible via the :meth:`~DiagnosticsDisplay.frame` method.
+
+        Examples
+        --------
+        >>> from skore import evaluate
+        >>> from sklearn.dummy import DummyClassifier
+        >>> from sklearn.datasets import make_classification
+        >>> X, y = make_classification(random_state=42)
+        >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
+        >>> report.diagnose()
+        Diagnostics: 1 issue(s) detected, 2 check(s) ran, 0 ignored.
+        - [SKD002] Potential underfitting. Train/test scores are on par and not
+        significantly better than the dummy baseline for 8/8 comparable metrics. Read
+        our documentation for more details:
+        https://docs.skore.probabl.ai/dev/user_guide/diagnostics.html#skd002-underfitting.
+        Mute with `ignore=['SKD002']`.
+        >>> report.diagnose(ignore=["SKD002"])
+        Diagnostics: 0 issue(s) detected, 1 check(s) ran, 1 ignored.
+        - No issues were detected in your report!
+        """
+        ignored: set[str] = set()
+        if ignore:
+            ignored.update(code.strip().upper() for code in ignore if code.strip())
+        if configuration.ignore_diagnostics:
+            ignored.update(
+                code.strip().upper()
+                for code in configuration.ignore_diagnostics
+                if code.strip()
+            )
+        diagnostics, checked_codes = self._get_diagnostics()
+        filtered = {code: d for code, d in diagnostics.items() if code not in ignored}
+        checks_ran = len(checked_codes - ignored)
+        return DiagnosticsDisplay(filtered, checks_ran, n_ignored=len(ignored))
 
     def __init__(self) -> None:
         self.id = uuid4().int
@@ -60,49 +127,3 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
             )
         )
         return string_buffer.getvalue()
-
-    def _get_X_y(
-        self,
-        *,
-        data_source: Literal["test", "train"],
-    ) -> tuple[ArrayLike, ArrayLike]:
-        """Get the requested dataset.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        Returns
-        -------
-        X : array-like of shape (n_samples, n_features)
-            The requested dataset.
-
-        y : array-like of shape (n_samples,)
-            The requested dataset.
-        """
-        if data_source == "test":
-            if self._parent._X_test is None or self._parent._y_test is None:
-                missing_data = "X_test and y_test"
-                raise ValueError(
-                    f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the report. Please provide the {data_source} "
-                    "data when creating the report."
-                )
-            return self._parent._X_test, self._parent._y_test
-        elif data_source == "train":
-            if self._parent._X_train is None or self._parent._y_train is None:
-                missing_data = "X_train and y_train"
-                raise ValueError(
-                    f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the report. Please provide the {data_source} "
-                    "data when creating the report."
-                )
-            return self._parent._X_train, self._parent._y_train
-        else:
-            raise ValueError(
-                f"Invalid data source: {data_source}. Possible values are: test, train."
-            )

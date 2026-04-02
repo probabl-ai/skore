@@ -204,7 +204,7 @@ class Project:
                 pickle_hash = joblib.hash(pickle_bytes)
         finally:
             for report, cache in reports_with_cache:
-                report._cache = cache
+                report._cache = cache  # type: ignore[union-attr]
 
         return pickle_hash, pickle_bytes
 
