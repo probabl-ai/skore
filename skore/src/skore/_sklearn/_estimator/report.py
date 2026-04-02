@@ -25,6 +25,10 @@ from sklearn.utils.validation import check_is_fitted
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._diagnostics import (
+    DiagnosticNotApplicable,
+    check_overfitting_underfitting,
+)
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache import Cache
@@ -338,6 +342,48 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             if response_method == "predict":
                 self._predictions[(ds, "predict_time")] = time
 
+    def _get_X_y(self, *, data_source: DataSource) -> tuple[ArrayLike, ArrayLike]:
+        """Get the requested dataset.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        Returns
+        -------
+        X : array-like of shape (n_samples, n_features)
+            The requested dataset.
+
+        y : array-like of shape (n_samples,)
+            The requested dataset.
+        """
+        if data_source == "test":
+            if self._X_test is None or self._y_test is None:
+                missing_data = "X_test and y_test"
+                raise ValueError(
+                    f"No {data_source} data (i.e. {missing_data}) were provided "
+                    f"when creating the report. Please provide the {data_source} "
+                    "data when creating the report."
+                )
+            return self._X_test, self._y_test
+        elif data_source == "train":
+            if self._X_train is None or self._y_train is None:
+                missing_data = "X_train and y_train"
+                raise ValueError(
+                    f"No {data_source} data (i.e. {missing_data}) were provided "
+                    f"when creating the report. Please provide the {data_source} "
+                    "data when creating the report."
+                )
+            return self._X_train, self._y_train
+        else:
+            raise ValueError(
+                f"Invalid data source: {data_source}. Possible values are: test, train."
+            )
+
     def get_predictions(
         self,
         *,
@@ -465,6 +511,23 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             raise ValueError(f"Unexpected response_method: {method_name}")
 
+    def _compute_diagnostics(
+        self,
+    ) -> tuple[dict[str, dict], set[str]]:
+        """Run all registered diagnostic checks against `report`.
+
+        Returns a tuple of (detected issues, set of check codes that were evaluated).
+        """
+        results: dict[str, dict] = {}
+        checked_codes: set[str] = set()
+        for codes, check_fn in [({"SKD001", "SKD002"}, check_overfitting_underfitting)]:
+            try:
+                results.update(check_fn(self))
+                checked_codes |= codes
+            except DiagnosticNotApplicable:
+                pass
+        return results, checked_codes
+
     @property
     def ml_task(self):
         return self._ml_task
@@ -573,10 +636,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
+        diagnostics, checked_codes = self._get_diagnostics()
+        diagnostics_html = (
+            f"<div class='report-diagnostics-details'>{len(diagnostics)} "
+            f"issue(s) across {len(checked_codes)} check(s).</div>"
+        )
+
         return {
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
+            "diagnostics": diagnostics_html,
         }
 
     def _repr_html_(self) -> str:
@@ -597,6 +667,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
+        diagnostics_documentation_url = get_documentation_url(
+            obj=self, method_name="diagnose"
+        )
         return render_template(
             "estimator_report.html.j2",
             {
@@ -606,6 +679,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
+                "diagnostics_documentation_url": diagnostics_documentation_url,
                 **fragments,
             },
         )

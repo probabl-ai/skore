@@ -85,6 +85,9 @@ class MockReport(_BaseReport):
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {}
 
+    def _compute_diagnostics(self):
+        return [], set()
+
     def __init__(
         self,
         estimator,
