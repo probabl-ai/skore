@@ -382,7 +382,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
         return report
 
-    def _compute_diagnostics(
+    def _run_checks(
         self,
     ) -> tuple[dict[str, dict], set[str]]:
         total_splits = len(self.estimator_reports_)
@@ -390,24 +390,25 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         positives_by_code: dict[str, list[dict]] = {}
 
         for estimator_report in self.estimator_reports_:
-            results, checked_codes = estimator_report._get_diagnostics()
+            results, checked_codes = estimator_report._get_issues()
             all_checked_codes |= checked_codes
             for code, diagnostic in results.items():
                 positives_by_code.setdefault(code, []).append(diagnostic)
 
-        aggregated: dict[str, dict] = {}
+        issues: dict[str, dict] = {}
         for code in all_checked_codes:
             positives = positives_by_code.get(code, [])
             if len(positives) > total_splits / 2:
                 ref = positives[0]
-                aggregated[code] = {
+                issues[code] = {
                     "title": ref["title"],
                     "docs_anchor": ref["docs_anchor"],
                     "explanation": (
                         f"Detected in {len(positives)}/{total_splits} evaluated splits."
                     ),
                 }
-        return aggregated, all_checked_codes
+
+        return issues, all_checked_codes
 
     @property
     def ml_task(self) -> str:
@@ -494,17 +495,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostics, checked_codes = self._get_diagnostics()
-        diagnostics_html = (
-            f"<div class='report-diagnostics-details'>{len(diagnostics)} "
-            f"issue(s) across {len(checked_codes)} check(s).</div>"
+        issues, checked_codes = self._get_issues()
+        diagnostic_html = (
+            f"<div class='report-diagnostic-details'>{len(issues)} "
+            f"issue(s) detected, {len(checked_codes)} check(s) ran.</div>"
         )
 
         return {
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
-            "diagnostics": diagnostics_html,
+            "diagnostic": diagnostic_html,
         }
 
     def _repr_html_(self) -> str:
@@ -520,7 +521,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
-        diagnostics_documentation_url = get_documentation_url(
+        diagnose_documentation_url = get_documentation_url(
             obj=self, method_name="diagnose"
         )
         return render_template(
@@ -532,7 +533,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "diagnostics_documentation_url": diagnostics_documentation_url,
+                "diagnose_documentation_url": diagnose_documentation_url,
                 **fragments,
             },
         )
