@@ -1,9 +1,9 @@
 """
 .. _example_diagnostics_api:
 
-===================
-The diagnostics API
-===================
+=======================================
+Automatic detection of modelling issues
+=======================================
 
 `skore` can automatically detect common modeling pitfalls such as overfitting
 and underfitting. This example walks through the diagnostics API: how to
