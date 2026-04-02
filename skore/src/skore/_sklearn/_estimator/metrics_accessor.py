@@ -379,7 +379,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         prediction_pos_label: PositiveLabel | None = None,
         **metric_kwargs: Any,
     ) -> float | dict[PositiveLabel, float] | list:
-        data, y_true = self._get_data_and_y_true(data_source=data_source)
+        data, y_true = self._parent._get_data_and_y_true(data_source=data_source)
 
         pos_label = self._parent.pos_label
         if prediction_pos_label is None:
@@ -1187,8 +1187,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             return cache_value
 
         data_source = cast(DataSource, data_source)
-
-        data, y_true = self._get_data_and_y_true(data_source=data_source)
+        data, y_true = self._parent._get_data_and_y_true(data_source=data_source)
         if prediction_pos_label is None:
             prediction_pos_label = self._parent.pos_label
 

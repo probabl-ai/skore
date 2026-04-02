@@ -24,6 +24,10 @@ from sklearn.utils.validation import check_is_fitted
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._diagnostics import (
+    DiagnosticNotApplicable,
+    check_overfitting_underfitting,
+)
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache import Cache
@@ -388,6 +392,46 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             if response_method == "predict":
                 self._cache[make_cache_key(ds, "predict_time")] = time
 
+    def _get_data_and_y_true(
+        self,
+        *,
+        data_source: Literal["test", "train"],
+    ) -> tuple[dict, ArrayLike]:
+        """Get the requested dataset.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        Returns
+        -------
+        data : dict of input data
+            The requested dataset.
+
+        y : array-like of shape (n_samples,)
+            The target labels.
+        """
+        if data_source not in ["train", "test"]:
+            raise ValueError(
+                f"Invalid data source: {data_source}. Possible values are: test, train."
+            )
+        if getattr(self, f"{data_source}_data") is None:
+            raise ValueError(
+                f"No {data_source} data were provided when creating the report."
+            )
+        if data_source == "test":
+            assert self.test_data is not None
+            assert self.y_test is not None
+            return self.test_data, self.y_test
+        assert data_source == "train"
+        assert self.train_data is not None
+        assert self.y_train is not None
+        return self.train_data, self.y_train
+
     def get_predictions(
         self,
         *,
@@ -516,6 +560,23 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             raise ValueError(f"Unexpected response_method: {method_name}")
 
+    def _compute_diagnostics(
+        self,
+    ) -> tuple[dict[str, dict], set[str]]:
+        """Run all registered diagnostic checks against `report`.
+
+        Returns a tuple of (detected issues, set of check codes that were evaluated).
+        """
+        results: dict[str, dict] = {}
+        checked_codes: set[str] = set()
+        for codes, check_fn in [({"SKD001", "SKD002"}, check_overfitting_underfitting)]:
+            try:
+                results.update(check_fn(self))
+                checked_codes |= codes
+            except DiagnosticNotApplicable:
+                pass
+        return results, checked_codes
+
     @property
     def ml_task(self):
         return self._ml_task
@@ -641,10 +702,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
+        diagnostics, checked_codes = self._get_diagnostics()
+        diagnostics_html = (
+            f"<div class='report-diagnostics-details'>{len(diagnostics)} "
+            f"issue(s) across {len(checked_codes)} check(s).</div>"
+        )
+
         return {
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
+            "diagnostics": diagnostics_html,
         }
 
     def _repr_html_(self) -> str:
@@ -665,6 +733,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
+        diagnostics_documentation_url = get_documentation_url(
+            obj=self, method_name="diagnose"
+        )
         return render_template(
             "estimator_report.html.j2",
             {
@@ -674,6 +745,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
+                "diagnostics_documentation_url": diagnostics_documentation_url,
                 **fragments,
             },
         )
