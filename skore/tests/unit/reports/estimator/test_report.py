@@ -4,6 +4,7 @@ from io import BytesIO
 
 import joblib
 import numpy as np
+import pandas as pd
 import pytest
 import skrub
 from sklearn.cluster import KMeans
@@ -171,7 +172,7 @@ def test_check_support_plot(
     ],
 )
 def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_keys):
-    """Check that calling cache_predictions fills the cache."""
+    """Check that calling cache_predictions fills the predictions cache."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     if pass_train_data:
         report = EstimatorReport(
@@ -180,14 +181,14 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
     else:
         report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    assert report._cache == {}
+    assert report._predictions == {}
     report.cache_predictions()
-    assert len(report._cache) == expected_n_keys
-    assert report._cache != {}
-    stored_cache = deepcopy(report._cache)
+    assert len(report._predictions) == expected_n_keys
+    assert report._predictions != {}
+    stored_cache = deepcopy(report._predictions)
     report.cache_predictions()
     # check that the keys are exactly the same
-    assert report._cache.keys() == stored_cache.keys()
+    assert report._predictions.keys() == stored_cache.keys()
 
 
 @pytest.mark.parametrize(
@@ -225,6 +226,65 @@ def test_pickle(forest_binary_classification_with_test):
 
     with BytesIO() as stream:
         joblib.dump(report, stream)
+
+
+def test_from_state_bypasses_init_and_restores_cached_state(
+    monkeypatch, logistic_binary_classification_data
+):
+    estimator, X, y = logistic_binary_classification_data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    expected_accuracy = report.metrics.accuracy()
+    report.cache_predictions()
+    state = report.get_state()
+
+    def _unexpected_init(self, *args, **kwargs):
+        raise AssertionError("__init__ should not be called by from_state")
+
+    monkeypatch.setattr(EstimatorReport, "__init__", _unexpected_init)
+
+    restored = EstimatorReport.from_state(state)
+
+    assert restored.id == report.id
+    assert restored.fit_time_ == report.fit_time_
+    assert restored.ml_task == report.ml_task
+    assert restored.pos_label == report.pos_label
+    assert restored._cache == report._cache
+    assert restored._predictions.keys() == report._predictions.keys()
+    assert restored.metrics.accuracy() == expected_accuracy
+
+
+def test_flat_index(forest_binary_classification_with_test):
+    """Check that the index is flattened when `flat_index` is True.
+
+    Since `pos_label` is None, then by default a MultiIndex would be returned.
+    Here, we force to have a single-index by passing `flat_index=True`.
+    """
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result = report.metrics.summarize().frame(flat_index=True)
+    assert result.shape == (10, 1)
+    assert isinstance(result.index, pd.Index)
+    assert result.index.tolist() == [
+        "accuracy",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "log_loss",
+        "brier_score",
+        "fit_time_s",
+        "predict_time_s",
+    ]
+
+    assert result.columns.tolist() == ["RandomForestClassifier"]
 
 
 def test_get_predictions():
