@@ -1,4 +1,3 @@
-from functools import cached_property
 from io import StringIO
 from typing import Generic, Literal, TypeVar
 from uuid import uuid4
@@ -26,9 +25,8 @@ class _BaseReport(ReportHelpMixin):
         "comparison-cross-validation",
     ]
 
-    @cached_property
-    def id(self) -> int:
-        return uuid4().int
+    def __init__(self) -> None:
+        self.id = uuid4().int
 
     @property
     def _hash(self) -> int:
