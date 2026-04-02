@@ -183,6 +183,6 @@ class HUBClient(Client):
             headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_SEMVER}"})
 
         # Prefix the request by the hub URI when ``url`` is not absolute
-        url = urljoin(URI, str(url))
+        url = urljoin(URI(), str(url))
 
         return super().request(method=method, url=url, headers=headers, **kwargs)

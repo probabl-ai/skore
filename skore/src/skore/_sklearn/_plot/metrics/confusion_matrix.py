@@ -589,13 +589,15 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         frames = []
         if self.report_type == "comparison-cross-validation":
-            for _, group in self.confusion_matrix.groupby(["split", "estimator"]):
+            for _, group in self.confusion_matrix.groupby(
+                ["split", "estimator"], observed=True
+            ):
                 frames.append(select_threshold_and_format(group))
         elif self.report_type == "cross-validation":
-            for _, group in self.confusion_matrix.groupby(["split"]):
+            for _, group in self.confusion_matrix.groupby(["split"], observed=True):
                 frames.append(select_threshold_and_format(group))
         elif self.report_type == "comparison-estimator":
-            for _, group in self.confusion_matrix.groupby(["estimator"]):
+            for _, group in self.confusion_matrix.groupby(["estimator"], observed=True):
                 frames.append(select_threshold_and_format(group))
         else:
             frames.append(select_threshold_and_format(self.confusion_matrix))

@@ -136,7 +136,7 @@ class TestHUBClient:
     @mark.respx()
     def test_request_with_api_key(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
         login()
 
         with HUBClient() as client:
@@ -175,7 +175,7 @@ class TestHUBClient:
                 },
             )
         )
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
         login()
 
         with HUBClient() as client:
@@ -192,7 +192,7 @@ class TestHUBClient:
     @mark.respx()
     def test_request_raises(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(404))
+        respx_mock.get(urljoin(URI(), "foo")).mock(Response(404))
         login()
 
         with raises(HTTPStatusError), HUBClient() as client:
@@ -208,7 +208,7 @@ class TestHUBClient:
         assert PACKAGE_SEMVER is None
 
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
         login()
 
         with HUBClient() as client:
@@ -220,7 +220,7 @@ class TestHUBClient:
     def test_request_with_package_semver(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
         monkeypatch.setattr("skore_hub_project.client.client.PACKAGE_SEMVER", "1.0.0")
-        respx_mock.get(urljoin(URI, "foo")).mock(Response(200))
+        respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
         login()
 
         with HUBClient() as client:
