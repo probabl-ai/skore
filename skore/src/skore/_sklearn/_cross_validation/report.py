@@ -152,6 +152,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         splitter: int | SKLearnCrossValidator | Generator | None = None,
         n_jobs: int | None = None,
     ) -> None:
+        super().__init__()
         if is_clusterer(estimator):
             raise ValueError(
                 "Clustering models are not supported yet. Please use a"

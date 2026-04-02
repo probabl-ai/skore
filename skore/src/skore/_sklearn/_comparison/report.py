@@ -250,6 +250,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
+        super().__init__()
         self.reports_, self._report_type, self._pos_label = (
             ComparisonReport._validate_reports(reports)
         )
