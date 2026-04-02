@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from collections import Counter
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
@@ -145,12 +146,39 @@ def check_metrics_consistency_across_folds(
     for cv in range(report_data.shape[1]):
         majority, n_positive, total = majority_vote(votes[:, cv].tolist())
         if majority:
-            explanation.append(f" split #{cv} for {n_positive}/{total} metrics")
+            explanation.append(f"in split #{cv} for {n_positive}/{total} metrics")
     if explanation:
         issues["SKD003"] = {
             "title": "Inconsistent performance across folds",
             "docs_anchor": "skd003-inconsistent_performance",
-            "explanation": "Performance is abnormal in" + ",".join(explanation) + ".",
+            "explanation": "Performance is abnormal " + " and ".join(explanation) + ".",
         }
 
+    return issues
+
+
+def check_high_class_imbalance(report: EstimatorReport) -> dict[str, dict]:
+    if (
+        "classification" not in report.ml_task
+        or report.y_train is None
+        or report.y_test is None
+    ):
+        raise DiagnosticNotApplicable()
+
+    issues: dict[str, dict] = {}
+    y_train = np.asarray(report.y_train)
+    y_test = np.asarray(report.y_test)
+    counter = Counter(y_train.tolist())
+    counter.update(y_test.tolist())
+    counts = sorted(counter.values())
+    if counts[-1] / len(y_train) > 0.8:
+        issues["SKD004"] = {
+            "title": "High class imbalance",
+            "docs_anchor": "skd004-high_class_imbalance",
+            "explanation": (
+                "One class represents more than 80% of the dataset samples. "
+                "Accuracy should not be used alone to assess model performance as it "
+                "may be misleading."
+            ),
+        }
     return issues

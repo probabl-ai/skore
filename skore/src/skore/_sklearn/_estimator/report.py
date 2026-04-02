@@ -26,6 +26,7 @@ from skore._externals._sklearn_compat import is_clusterer
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._diagnostic import (
     DiagnosticNotApplicable,
+    check_high_class_imbalance,
     check_overfitting_underfitting,
 )
 from skore._sklearn.find_ml_task import _find_ml_task
@@ -479,7 +480,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         issues: dict[str, dict] = {}
         checked_codes: set[str] = set()
-        for codes, check_fn in [({"SKD001", "SKD002"}, check_overfitting_underfitting)]:
+        for codes, check_fn in [
+            ({"SKD001", "SKD002"}, check_overfitting_underfitting),
+            ({"SKD004"}, check_high_class_imbalance),
+        ]:
             try:
                 issues.update(check_fn(self))
                 checked_codes |= codes
