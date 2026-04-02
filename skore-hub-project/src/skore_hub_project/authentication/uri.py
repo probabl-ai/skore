@@ -5,4 +5,8 @@ from typing import Final
 
 DEFAULT: Final[str] = "https://api.skore.probabl.ai"
 ENV_VAR_NAME: Final[str] = "SKORE_HUB_URI"
-URI: Final[str] = environ.get(ENV_VAR_NAME, DEFAULT)
+
+
+def URI() -> str:
+    """URI used for ``skore hub`` authentication."""
+    return environ.get(ENV_VAR_NAME, DEFAULT)

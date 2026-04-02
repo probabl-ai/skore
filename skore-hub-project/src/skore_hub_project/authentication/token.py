@@ -47,7 +47,7 @@ def get_oauth_device_login(success_uri: str | None = None) -> tuple[str, str, st
     params = {"success_uri": success_uri} if success_uri is not None else {}
 
     with Client() as client:
-        response = client.get(urljoin(URI, url), params=params).json()
+        response = client.get(urljoin(URI(), url), params=params).json()
 
         return (
             response["authorization_url"],
@@ -78,7 +78,7 @@ def get_oauth_device_code_probe(device_code: str, *, timeout: int = 600) -> None
 
         while True:
             try:
-                client.get(urljoin(URI, url), params=params)
+                client.get(urljoin(URI(), url), params=params)
             except HTTPStatusError as exc:
                 if exc.response.status_code != 400:
                     raise
@@ -110,7 +110,7 @@ def post_oauth_device_callback(state: str, user_code: str) -> None:
     data = {"state": state, "user_code": user_code}
 
     with Client() as client:
-        client.post(urljoin(URI, url), data=data)
+        client.post(urljoin(URI(), url), data=data)
 
 
 def get_oauth_device_token(device_code: str) -> tuple[str, str, str]:
@@ -142,7 +142,7 @@ def get_oauth_device_token(device_code: str) -> tuple[str, str, str]:
     params = {"device_code": device_code}
 
     with Client() as client:
-        response = client.get(urljoin(URI, url), params=params).json()
+        response = client.get(urljoin(URI(), url), params=params).json()
         tokens = response["token"]
 
         return (
@@ -181,7 +181,7 @@ def post_oauth_refresh_token(refresh_token: str) -> tuple[str, str, str]:
     json = {"refresh_token": refresh_token}
 
     with Client() as client:
-        response = client.post(urljoin(URI, url), json=json).json()
+        response = client.post(urljoin(URI(), url), json=json).json()
 
         return (
             response["access_token"],
