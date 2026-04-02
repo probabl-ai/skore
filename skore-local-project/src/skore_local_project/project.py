@@ -6,7 +6,15 @@ import io
 import os
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, ParamSpec, Protocol, TypeVar, cast, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    cast,
+    runtime_checkable,
+)
 from uuid import uuid4
 
 import joblib
@@ -181,7 +189,9 @@ class Project:
         """
         reports = [report] + getattr(report, "estimator_reports_", [])
         reports_with_cache = [
-            (report, report._cache) for report in reports if hasattr(report, "_cache")
+            (cast(Any, report), report._cache)
+            for report in reports
+            if hasattr(report, "_cache")
         ]
 
         report.clear_cache()
