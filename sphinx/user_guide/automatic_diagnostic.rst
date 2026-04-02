@@ -1,12 +1,12 @@
-.. _diagnostics:
+.. _automatic_diagnostic:
 
-===========
-Diagnostics
-===========
+====================
+Automatic diagnostic
+====================
 
 `skore` provides automated checks for common model quality pitfalls.
-Use :meth:`~skore.EstimatorReport.diagnose` to run checks and get a summary of
-detected issues.
+Use :meth:`~skore.EstimatorReport.diagnose` to run checks and get a diagnostic that
+summarizes detected issues.
 Each issue has:
 
 - a short explanation,
