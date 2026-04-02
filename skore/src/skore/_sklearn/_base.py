@@ -2,7 +2,6 @@ from io import StringIO
 from typing import Generic, Literal, TypeVar
 from uuid import uuid4
 
-from numpy.typing import ArrayLike
 from rich.console import Console
 from rich.panel import Panel
 
@@ -60,49 +59,3 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
             )
         )
         return string_buffer.getvalue()
-
-    def _get_X_y(
-        self,
-        *,
-        data_source: Literal["test", "train"],
-    ) -> tuple[ArrayLike, ArrayLike]:
-        """Get the requested dataset.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        Returns
-        -------
-        X : array-like of shape (n_samples, n_features)
-            The requested dataset.
-
-        y : array-like of shape (n_samples,)
-            The requested dataset.
-        """
-        if data_source == "test":
-            if self._parent._X_test is None or self._parent._y_test is None:
-                missing_data = "X_test and y_test"
-                raise ValueError(
-                    f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the report. Please provide the {data_source} "
-                    "data when creating the report."
-                )
-            return self._parent._X_test, self._parent._y_test
-        elif data_source == "train":
-            if self._parent._X_train is None or self._parent._y_train is None:
-                missing_data = "X_train and y_train"
-                raise ValueError(
-                    f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the report. Please provide the {data_source} "
-                    "data when creating the report."
-                )
-            return self._parent._X_train, self._parent._y_train
-        else:
-            raise ValueError(
-                f"Invalid data source: {data_source}. Possible values are: test, train."
-            )
