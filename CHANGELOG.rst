@@ -66,7 +66,7 @@ Changed
   figure's rich representation in notebooks. :pr:`2660` by :user:`glemaitre`.
 
 - **Breaking change:** :class:`~skore.EstimatorReport` now requires ``X_test``. If
-  ``X_test`` is omitted (``None``), construction raises ``ValueError``. pr:`2673` by
+  ``X_test`` is omitted (``None``), construction raises ``ValueError``. :pr:`2673` by
   :user:`glemaitre`.
 
 - **Breaking change:** binary classification metrics and curve displays no longer
