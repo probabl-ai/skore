@@ -30,7 +30,7 @@ jobs:
       - name: Download HTML artifacts
         id: download-html-artifacts
         continue-on-error: True
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: sphinx-html-artifact
           path: html/
@@ -54,7 +54,7 @@ jobs:
 
       - name: Comment with documentation preview link
         if: ${{ steps.download-html-artifacts.outcome == 'success' }}
-        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
+        uses: marocchino/sticky-pull-request-comment@70d2764d1a7d5d9560b100cbea0077fc8f633987 # v3.0.2
         with:
           number: ${{ steps.acquire-pr-context.outputs.pr-number }}
           header: documentation-preview
