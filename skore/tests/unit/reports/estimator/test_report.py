@@ -205,6 +205,37 @@ def test_pickle(forest_binary_classification_with_test):
         joblib.dump(report, stream)
 
 
+def test_from_state_bypasses_init_and_restores_cached_state(
+    monkeypatch, logistic_binary_classification_data
+):
+    estimator, X, y = logistic_binary_classification_data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    expected_accuracy = report.metrics.accuracy()
+    report.cache_predictions()
+    state = report.get_state()
+
+    def _unexpected_init(self, *args, **kwargs):
+        raise AssertionError("__init__ should not be called by from_state")
+
+    monkeypatch.setattr(EstimatorReport, "__init__", _unexpected_init)
+
+    restored = EstimatorReport.from_state(state)
+
+    assert restored.id == report.id
+    assert restored.fit_time_ == report.fit_time_
+    assert restored.ml_task == report.ml_task
+    assert restored.pos_label == report.pos_label
+    assert restored._predictions.keys() == report._predictions.keys()
+    assert restored.metrics.accuracy() == expected_accuracy
+
+
 def test_flat_index(forest_binary_classification_with_test):
     """Check that the index is flattened when `flat_index` is True.
 
