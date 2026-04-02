@@ -177,3 +177,36 @@ def test_diagnose_reuses_cached_results(monkeypatch, regression_data):
     calls_after_first = calls
     report.diagnose()
     assert calls == calls_after_first
+
+
+def test_diagnose_detects_high_class_imbalance():
+    """Check that the high class imbalance issue is detected."""
+    X, y = make_classification(
+        n_samples=400, n_features=4, weights=[0.5, 0.5], random_state=0
+    )
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    result = report.diagnose()
+    assert "SKD004" not in result.issues
+
+    X, y = make_classification(
+        n_samples=400, n_features=5, weights=[0.9, 0.1], random_state=0
+    )
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    result = report.diagnose()
+    assert "SKD004" in result.issues
+    assert "80%" in result.issues["SKD004"]["explanation"]
+
+
+def test_diagnose_skd004_not_applicable_for_regression(regression_train_test_split):
+    """Check that SKD004 is not raised for regression tasks."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    report.diagnose()
+    _, checked_codes = report._issues_cache[1]
+    assert "SKD004" not in checked_codes

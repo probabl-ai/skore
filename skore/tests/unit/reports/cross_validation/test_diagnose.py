@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
@@ -83,3 +84,33 @@ def test_diagnose_uses_global_ignore(binary_classification_data):
     assert len(checked_codes) > 0
     with configuration(ignore_checks=list(checked_codes)):
         assert report.diagnose().issues == {}
+
+
+def test_diagnose_detects_inconsistent_folds(binary_classification_data):
+    """Check that the inconsistent performance across folds issue is detected."""
+    X, y = make_classification(n_samples=400, n_features=5, random_state=0)
+    report = CrossValidationReport(LogisticRegression(random_state=0), X, y, splitter=5)
+    result = report.diagnose()
+    _, checked_codes = report._issues_cache
+    assert "SKD003" in checked_codes
+    assert "SKD003" not in result.issues
+
+    # Corrupt the first fold
+    y[0 : len(y) // 5] = np.random.RandomState(0).randint(
+        0, 2, len(y) // 5, dtype=np.int8
+    )
+    report = CrossValidationReport(LogisticRegression(random_state=0), X, y, splitter=5)
+    result = report.diagnose()
+    assert "SKD003" in result.issues
+    assert "split #0" in result.issues["SKD003"]["explanation"]
+
+
+def test_diagnose_aggregates_high_class_imbalance_across_splits():
+    """Check that the high class imbalance issue is aggregated across splits."""
+    X, y = make_classification(
+        n_samples=400, n_features=5, weights=[0.9, 0.1], random_state=0
+    )
+    report = CrossValidationReport(LogisticRegression(), X, y, splitter=5)
+    result = report.diagnose()
+    assert "SKD004" in result.issues
+    assert "evaluated splits" in result.issues["SKD004"]["explanation"]
