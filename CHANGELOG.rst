@@ -34,7 +34,27 @@ Changelog
 `Unreleased`_
 =============
 
-.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.14.0...HEAD
+.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.15.0...HEAD
+
+Release highlights
+------------------
+
+Changed
+-------
+
+Added
+-----
+
+Removed
+-------
+
+Fixed
+-----
+
+`0.15.0`_ (2026-04-02)
+======================
+
+.. _0.15.0: https://github.com/probabl-ai/skore/compare/skore/0.14.0...skore/0.15.0
 
 Release highlights
 ------------------
