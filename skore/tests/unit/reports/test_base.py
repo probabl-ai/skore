@@ -7,7 +7,7 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 
-from skore._utils._testing import MockAccessor, MockReport
+from skore import EstimatorReport
 
 
 class MockClassifier(ClassifierMixin, BaseEstimator):
@@ -56,53 +56,45 @@ class MockRegressor(RegressorMixin, BaseEstimator):
 # TODO: replace those with tests on ._get_predictions(...)?
 
 
-def test_base_accessor_get_X_y_error():
-    """Check that we raise the proper error in `get_X_y_and_use_cache`."""
+def test_report_get_X_y_error():
+    """Check that we raise the proper error in `_get_X_y`."""
     X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
     estimator = LogisticRegression().fit(X_train, y_train)
-    report = MockReport(estimator, X_train=None, y_train=None, X_test=None, y_test=None)
-    accessor = MockAccessor(parent=report)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     err_msg = re.escape(
         "Invalid data source: unknown. Possible values are: test, train."
     )
     with pytest.raises(ValueError, match=err_msg):
-        accessor._get_X_y(data_source="unknown")
+        report._get_X_y(data_source="unknown")
 
-    for data_source in ("train", "test"):
-        err_msg = re.escape(
-            f"No {data_source} data (i.e. X_{data_source} and y_{data_source}) were "
-            f"provided when creating the report. Please provide the {data_source} "
-            "data when creating the report."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            accessor._get_X_y(data_source=data_source)
-
-    report = MockReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    err_msg = re.escape(
+        "No train data (i.e. X_train and y_train) were provided "
+        "when creating the report. Please provide the train "
+        "data when creating the report."
     )
-    accessor = MockAccessor(parent=report)
+    with pytest.raises(ValueError, match=err_msg):
+        report._get_X_y(data_source="train")
 
 
 @pytest.mark.parametrize("data_source", ("train", "test"))
-def test_base_accessor_get_X_y(data_source):
-    """Check the general behaviour of `get_X_y_and_use_cache`."""
+def test_report_get_X_y(data_source):
+    """Check the general behaviour of `_get_X_y`."""
     X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
     estimator = LogisticRegression().fit(X_train, y_train)
-    report = MockReport(
+    report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    accessor = MockAccessor(parent=report)
-    X, y = accessor._get_X_y(data_source=data_source)
+    X_result, y_result = report._get_X_y(data_source=data_source)
 
     if data_source == "train":
-        assert X is X_train
-        assert y is y_train
+        np.testing.assert_array_equal(X_result, X_train)
+        np.testing.assert_array_equal(y_result, y_train)
     else:
         assert data_source == "test"
-        assert X is X_test
-        assert y is y_test
+        np.testing.assert_array_equal(X_result, X_test)
+        np.testing.assert_array_equal(y_result, y_test)
