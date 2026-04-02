@@ -179,6 +179,7 @@ class Project:
         -----
         The report is pickled without its cache, to avoid salting the hash.
         """
+        # test
         reports = [report] + getattr(report, "estimator_reports_", [])
         reports_with_cache = [
             (report, report._cache) for report in reports if hasattr(report, "_cache")
