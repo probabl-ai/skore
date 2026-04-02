@@ -65,4 +65,4 @@ def detect_outliers_mad(scores, threshold=3.5):
 
 
 class DiagnosticNotApplicable(Exception):
-    """Raised when a diagnostic check cannot run on the given report."""
+    """Raised when a check cannot run on the given report."""

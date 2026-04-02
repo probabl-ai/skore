@@ -17,18 +17,18 @@
     </details>
     <details class="report-disclosure">
         <summary>
-            <span class="report-disclosure-title">Diagnostics</span>
+            <span class="report-disclosure-title">Diagnostic</span>
         </summary>
         <p class="report-inline-note" role="note">
             Investigate more with
             <a
-                href="{{ get_diagnostics_documentation_url }}"
+                href="{{ diagnose_documentation_url }}"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="report-hint-note-link"
             >{{ report_class_name }}.diagnose</a>.
         </p>
-        <div class="report-section report-diagnostics"><slot name="diagnostics"></slot></div>
+        <div class="report-section report-diagnostic"><slot name="diagnostic"></slot></div>
     </details>
     <details class="report-disclosure">
         <summary>

@@ -1,13 +1,13 @@
 """
-.. _example_diagnostics_api:
+.. _example_diagnostic_api:
 
 =======================================
 Automatic detection of modelling issues
 =======================================
 
 `skore` can automatically detect common modeling pitfalls such as overfitting
-and underfitting. This example walks through the diagnostics API: how to
-trigger diagnostics, how to read the results, and how to mute specific checks.
+and underfitting. This example walks through the ``.diagnose`` method: how to
+run checks, how to read the detected issues, and how to mute specific checks.
 
 We use a purely non-linear regression target and deliberately pick models that
 fail in known ways:
@@ -44,7 +44,7 @@ deep_tree = DecisionTreeRegressor(random_state=42)
 # ==========================================================
 #
 # Every report exposes a :meth:`~skore.EstimatorReport.diagnose` method.
-# Diagnostics are computed lazily and cached, so calling
+# Checks are computed lazily and cached, so calling
 # :meth:`~skore.EstimatorReport.diagnose` is always cheap after the first call.
 
 from skore import evaluate
@@ -76,7 +76,7 @@ tree_report.metrics.summarize(data_source="both").frame()
 # Ignoring specific checks
 # ========================
 #
-# Each diagnostic has a stable code (e.g. ``SKD001``, ``SKD002``). You can
+# Each check has a stable code (e.g. ``SKD001``, ``SKD002``). You can
 # mute individual checks per call:
 
 tree_report.diagnose(ignore=["SKD001"])
@@ -87,7 +87,7 @@ tree_report.diagnose(ignore=["SKD001"])
 
 import skore
 
-with skore.configuration(ignore_diagnostics=["SKD001"]):
+with skore.configuration(ignore_checks=["SKD001"]):
     diagnosis = tree_report.diagnose()
 diagnosis
 
@@ -96,7 +96,7 @@ diagnosis
 # ======================================================
 #
 # When ``splitter`` is an integer, :func:`~skore.evaluate` returns a
-# :class:`~skore.CrossValidationReport`. Diagnostics aggregate across folds.
+# :class:`~skore.CrossValidationReport`. Checks aggregate issues across folds.
 
 cv_report = evaluate(deep_tree, X, y, splitter=5)
 cv_report.diagnose()
@@ -106,7 +106,7 @@ cv_report.diagnose()
 # =================================================
 #
 # Passing a list of estimators returns a :class:`~skore.ComparisonReport`.
-# Diagnostics are grouped by sub-report.
+# Issues are grouped by sub-report.
 
 comparison_report = evaluate([linear, deep_tree], X, y)
 comparison_report.diagnose()

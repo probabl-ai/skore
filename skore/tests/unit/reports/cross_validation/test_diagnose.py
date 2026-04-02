@@ -4,11 +4,11 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 
 from skore import CrossValidationReport, EstimatorReport, configuration
-from skore._sklearn._diagnostics import DiagnosticsDisplay
+from skore._sklearn._diagnostic import DiagnosticDisplay
 
 
 def test_diagnose_aggregates_overfitting_across_splits():
-    """Check the overfitting diagnostics are aggregated across splits."""
+    """Check that the overfitting issue is aggregated across splits."""
     X, y = make_classification(
         n_samples=500,
         n_features=20,
@@ -22,52 +22,50 @@ def test_diagnose_aggregates_overfitting_across_splits():
         DecisionTreeClassifier(random_state=0), X, y, splitter=5
     )
     result = report.diagnose()
-    assert "SKD001" in result.diagnostics
-    assert "evaluated splits" in result.diagnostics["SKD001"]["explanation"]
+    assert "SKD001" in result.issues
+    assert "evaluated splits" in result.issues["SKD001"]["explanation"]
 
 
 def test_diagnose_aggregates_underfitting_across_splits(binary_classification_data):
-    """Check the underfitting diagnostics are aggregated across splits."""
+    """Check that the underfitting issue is aggregated across splits."""
     X, y = binary_classification_data
     report = CrossValidationReport(DummyClassifier(strategy="prior"), X, y, splitter=5)
     result = report.diagnose()
-    assert "SKD002" in result.diagnostics
-    assert "evaluated splits" in result.diagnostics["SKD002"]["explanation"]
+    assert "SKD002" in result.issues
+    assert "evaluated splits" in result.issues["SKD002"]["explanation"]
 
 
 def test_diagnose_ignore(binary_classification_data):
-    """Check the diagnostics are ignored when ignore is passed."""
+    """Check that checks are ignored when ignore is passed."""
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
     result = report.diagnose(ignore=["SKD001"])
-    assert "SKD001" not in result.diagnostics
+    assert "SKD001" not in result.issues
 
 
 def test_diagnose_result_has_repr(binary_classification_data):
-    """Check the diagnostics result has a repr."""
+    """Check that the diagnostic result has a repr."""
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
     results = report.diagnose()
-    assert isinstance(results, DiagnosticsDisplay)
-    assert "Diagnostics:" in repr(results)
+    assert isinstance(results, DiagnosticDisplay)
+    assert "Diagnostic:" in repr(results)
     bundle = results._repr_mimebundle_()
     assert "text/plain" in bundle
     assert "text/html" in bundle
 
 
-def test_diagnose_reuses_split_cached_diagnostics(
-    monkeypatch, binary_classification_data
-):
-    """Check the diagnostics are reused across splits."""
+def test_diagnose_reuses_split_cached_results(monkeypatch, binary_classification_data):
+    """Check that check results are cached and reused across splits."""
     calls = 0
-    original = EstimatorReport._compute_diagnostics
+    original = EstimatorReport._run_checks
 
-    def _compute_diagnostics(self):
+    def _run_checks_wrapper(self):
         nonlocal calls
         calls += 1
         return original(self)
 
-    monkeypatch.setattr(EstimatorReport, "_compute_diagnostics", _compute_diagnostics)
+    monkeypatch.setattr(EstimatorReport, "_run_checks", _run_checks_wrapper)
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
     report.diagnose()
@@ -77,11 +75,11 @@ def test_diagnose_reuses_split_cached_diagnostics(
 
 
 def test_diagnose_uses_global_ignore(binary_classification_data):
-    """Check the diagnostics are ignored when global ignore is set."""
+    """Check that checks are ignored when global ignore is set."""
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
     report.diagnose()
-    _results, checked_codes = report._diagnostics_cache
+    _results, checked_codes = report._issues_cache
     assert len(checked_codes) > 0
-    with configuration(ignore_diagnostics=list(checked_codes)):
-        assert report.diagnose().diagnostics == {}
+    with configuration(ignore_checks=list(checked_codes)):
+        assert report.diagnose().issues == {}
