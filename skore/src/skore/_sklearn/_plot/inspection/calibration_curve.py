@@ -59,7 +59,7 @@ class CalibrationDisplay(DisplayMixin):
     >>> report = EstimatorReport(LogisticRegression(), **split_data)
     >>> display = report.inspection.calibration_curve(n_bins=5, strategy="uniform")
     >>> display.frame()
-                predicted_probability	fraction_of_positives	data_source	label
+                predicted_probability	fraction_of_positives	data_source	pos_label
         0	        0.049821	            0.067349	            test	   1
         1	        0.293844	            0.346451	            test	   1
         2	        0.501131	            0.553564	            test	   1
@@ -137,6 +137,7 @@ class CalibrationDisplay(DisplayMixin):
         )
         df["estimator"] = name
         df["data_source"] = data_source
+        df["pos_label"] = pos_label
         df["split"] = np.nan
         return cls(calibration_report=df, report_type=report_type)
 
