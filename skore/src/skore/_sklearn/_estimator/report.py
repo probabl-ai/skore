@@ -42,21 +42,6 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
-def _sample_data(data, *, min_fraction=0.0, min_samples=1):
-    X = data["_skrub_X"]
-    n_samples = _num_samples(X)
-    sample_size = min(
-        n_samples, max(min_samples, int(np.ceil(min_fraction * n_samples)))
-    )
-    if sample_size == n_samples:
-        return data
-
-    rng = np.random.default_rng(0)
-    indices = rng.choice(n_samples, size=sample_size, replace=False)
-    X_sample = _safe_indexing(X, indices, axis=0)
-    return data | {"_skrub_X": X_sample}
-
-
 def _check_estimator_and_data(
     estimator, X_train, y_train, X_test, y_test, train_data, test_data
 ):
@@ -427,7 +412,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             return False
         data = self.train_data if self.test_data is None else self.test_data
         assert data is not None
-        sampled_data = _sample_data(data, min_fraction=0.01, min_samples=100)
+
+        # sample data for the probing:
+        X = data["_skrub_X"]
+        n_samples = _num_samples(X)
+        sample_size = 100
+        if n_samples <= sample_size:
+            sampled_data = data
+        else:
+            rng = np.random.default_rng(0)
+            indices = rng.choice(n_samples, size=sample_size, replace=False)
+            X_sample = _safe_indexing(X, indices, axis=0)
+            sampled_data = data | {"_skrub_X": X_sample}
+
+        # probe:
         predictions = self._estimator.predict(sampled_data)
         _, deduced_predictions, _ = self._get_response_and_derived_predictions(
             sampled_data,
