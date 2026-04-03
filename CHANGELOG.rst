@@ -34,10 +34,30 @@ Changelog
 `Unreleased`_
 =============
 
-.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.14.0...HEAD
+.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.15.0...HEAD
 
 Release highlights
 ------------------
+
+Changed
+-------
+
+Added
+-----
+
+- Reports now expose a `report.diagnose()` method that automatically
+  detects common modeling issues such as overfitting and underfitting.
+
+Removed
+-------
+
+Fixed
+-----
+
+`0.15.0`_ (2026-04-02)
+======================
+
+.. _0.15.0: https://github.com/probabl-ai/skore/compare/skore/0.14.0...skore/0.15.0
 
 Changed
 -------
@@ -46,10 +66,17 @@ Changed
   :class:`matplotlib.figure.Figure` instead of storing plotting artifacts on the display.
   The attributes ``figure_``, ``ax_``, and ``facet_`` are no longer set. Use
   ``fig = display.plot(...)`` and then ``fig.axes``, ``fig.show()``, or rely on the
-  figure's rich representation in notebooks.
+  figure's rich representation in notebooks. :pr:`2660` by :user:`glemaitre`.
 
 - **Breaking change:** :class:`~skore.EstimatorReport` now requires ``X_test``. If
-  ``X_test`` is omitted (``None``), construction raises ``ValueError``.
+  ``X_test`` is omitted (``None``), construction raises ``ValueError``. :pr:`2673` by
+  :user:`glemaitre`.
+
+- **Breaking change:** binary classification metrics and curve displays no longer
+  require ``pos_label`` to be set, and skore no longer infers it implicitly. When
+  ``pos_label`` is left unset, ``precision`` and ``recall`` metrics, as well as
+  ROC and precision-recall curves, now expose both classes instead of failing.
+  :pr:`2663` by :user:`cakedev0`.
 
 - **Breaking change:** binary classification metrics and curve displays no longer
   require ``pos_label`` to be set, and skore no longer infers it implicitly. When
@@ -59,11 +86,10 @@ Changed
 Added
 -----
 
-Removed
--------
+- Add rich HTML representation for the different reports. See :pr:`2632`, :pr:`2651`,
+  :pr:`2658`, and :pr:`2659` by :user:`glemaitre`, :user:`jeromedockes` and
+  :user:`GaelVaroquaux`.
 
-Fixed
------
 
 `0.14.0`_ (2026-03-19)
 ======================

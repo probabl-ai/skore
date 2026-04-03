@@ -194,7 +194,7 @@ jobs:
           cache: pip
 
       - name: Restore python-venv
-        uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         id: cache-python-venv
         with:
           path: skore/venv
@@ -224,11 +224,15 @@ jobs:
           python -m pip install --requirement "${LOCKFILE}"
 
       - name: Save python-venv
-        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         with:
           path: skore/venv
           key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
+
+      - name: Install graphviz
+        run: |
+          sudo apt-get install -y graphviz
 
       - name: Install all packages from local branch
         run: |
@@ -250,7 +254,7 @@ jobs:
           SPHINX_EXAMPLE_BASE_URL: ${{ vars.DOCUMENTATION_EXAMPLE_BASE_URL }}
 
       - name: Upload documentation
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: sphinx-html-artifact
           path: sphinx/build/html/
@@ -270,7 +274,7 @@ jobs:
           sparse-checkout: .github
 
       - name: Download HTML artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: sphinx-html-artifact
           path: html/
@@ -404,7 +408,7 @@ jobs:
 
       - name: Download HTML artifacts
         if: steps.version.outputs.preferred == 'true'
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: sphinx-html-artifact
           path: html/

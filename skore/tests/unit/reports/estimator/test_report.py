@@ -1,4 +1,4 @@
-import inspect
+import re
 from copy import deepcopy
 from io import BytesIO
 
@@ -6,6 +6,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
+import skrub
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier
@@ -24,7 +25,7 @@ def test_report_can_be_rebuilt_using_parameters(linear_regression_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     parameters = {}
 
-    for parameter in inspect.signature(EstimatorReport).parameters:
+    for parameter in ["estimator", "X_test", "y_test"]:
         assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
 
         parameters[parameter] = getattr(report, parameter)
@@ -385,3 +386,58 @@ def test_report_repr_html(with_train, bad_estimator):
     assert "docs.skore.probabl.ai" in html_out
     assert "report-disclosure-title" in html_out
     assert "EstimatorReport.metrics" in html_out
+
+
+def test_report_get_data_and_y_true_error():
+    """Check that we raise the proper error in `_get_data_and_y_true`."""
+    X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression().fit(X_train, y_train)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    err_msg = re.escape(
+        "Invalid data source: unknown. Possible values are: test, train."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report._get_data_and_y_true(data_source="unknown")
+
+    err_msg = re.escape("No train data were provided when creating the report.")
+    with pytest.raises(ValueError, match=err_msg):
+        report._get_data_and_y_true(data_source="train")
+
+
+@pytest.mark.parametrize("data_source", ("train", "test"))
+def test_report_get_data_and_y_true(data_source):
+    """Check the general behaviour of `_get_data_and_y_true`."""
+    X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression().fit(X_train, y_train)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    data, y_result = report._get_data_and_y_true(data_source=data_source)
+
+    if data_source == "train":
+        np.testing.assert_array_equal(data["_skrub_X"], X_train)
+        np.testing.assert_array_equal(y_result, y_train)
+    else:
+        assert data_source == "test"
+        np.testing.assert_array_equal(data["_skrub_X"], X_test)
+        np.testing.assert_array_equal(y_result, y_test)
+
+
+def test_report_with_data_op():
+    X_a, y_a = make_classification(n_samples=10)
+    data_op = skrub.X(X_a).skb.apply(LogisticRegression(), y=skrub.y(y_a))
+    learner = data_op.skb.make_learner()
+    split = data_op.skb.train_test_split()
+
+    report = EstimatorReport(
+        learner, train_data=split["train"], test_data=split["test"]
+    )
+    assert isinstance(report.metrics.accuracy(), float)
+
+    report = EstimatorReport(data_op)
+    assert isinstance(report.metrics.accuracy(), float)
