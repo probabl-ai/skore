@@ -343,7 +343,10 @@ def test_get_predictions_with_multiclass_ovo_decision_function():
         report.estimator_.predict(report.X_test),
     )
 
-    with pytest.raises(ValueError, match=r"Unexpected decision function shape\[1\]: 6"):
+    with pytest.raises(
+        ValueError,
+        match=r"Decision function output.*classes; expected 4 but got 6\.",
+    ):
         report.get_predictions(data_source="test", response_method="decision_function")
 
 

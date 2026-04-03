@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 import skrub
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator, clone
+from sklearn.base import BaseEstimator, MetaEstimatorMixin, clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import (
@@ -42,16 +42,19 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
-def _sample(X, *, min_fraction=0.0, min_samples=1):
+def _sample_data(data, *, min_fraction=0.0, min_samples=1):
+    X = data["_skrub_X"]
     n_samples = _num_samples(X)
     sample_size = min(
         n_samples, max(min_samples, int(np.ceil(min_fraction * n_samples)))
     )
     if sample_size == n_samples:
-        return X
+        return data
+
     rng = np.random.default_rng(0)
     indices = rng.choice(n_samples, size=sample_size, replace=False)
-    return _safe_indexing(X, indices, axis=0)
+    X_sample = _safe_indexing(X, indices, axis=0)
+    return data | {"_skrub_X": X_sample}
 
 
 def _check_estimator_and_data(
@@ -329,8 +332,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 self.cache_predictions(data_source="train")
             return
 
-        X = self.X_test if data_source == "test" else self.X_train
-        if X is None:
+        data = self._test_data if data_source == "test" else self._train_data
+        if data is None:
             raise ValueError(
                 f"No {data_source} features (i.e. X_{data_source}) were provided "
                 f"when creating the report. Please provide the {data_source} "
@@ -347,7 +350,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         # from decision_function/predict_proba:
         if not self._can_deduce_predictions:
             with MeasureTime() as pred_time:
-                self._cache[pred_key] = self._estimator.predict(X)
+                self._cache[pred_key] = self._estimator.predict(data)
             self._cache[time_key] = pred_time()
 
         has_proba = hasattr(self._estimator, "predict_proba")
@@ -359,7 +362,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if has_decision:
             response, predictions, pred_time = (
                 self._get_response_and_derived_predictions(
-                    X, response_method="decision_function"
+                    data, response_method="decision_function"
                 )
             )
             decision_key = make_cache_key(data_source, "decision_function")
@@ -371,7 +374,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if has_proba:
             response, predictions, pred_time = (
                 self._get_response_and_derived_predictions(
-                    X, response_method="predict_proba"
+                    data, response_method="predict_proba"
                 )
             )
             proba_key = make_cache_key(data_source, "predict_proba")
@@ -386,10 +389,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 self._cache[time_key] = pred_time
                 self._cache[pred_key] = predictions
 
-    def _get_response_and_derived_predictions(self, X, response_method):
+    def _get_response_and_derived_predictions(self, data, response_method):
+        estimator = to_estimator(self._estimator)
         with MeasureTime() as pred_time:
-            response = getattr(self._estimator, response_method)(X)
-        classes = self._estimator.classes_
+            response = getattr(self._estimator, response_method)(data)
+        classes = estimator.classes_
         if response_method == "decision_function":
             if self.ml_task == "binary-classification":
                 response = np.vstack((-response, response)).T
@@ -401,18 +405,25 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     @cached_property
     def _can_deduce_predictions(self) -> bool:
         """Whether `predict` can be inferred reliably."""
+        estimator = to_estimator(self._estimator)
+        if isinstance(estimator, MetaEstimatorMixin | Pipeline):
+            return False
+
         response_methods = ["decision_function", "predict_proba"]
         try:
-            method = _check_response_method(self._estimator, response_methods)
+            method = _check_response_method(estimator, response_methods)
         except AttributeError:
             return False
-        X = self.X_train if self.X_test is None else self.X_test
-        X_sample = _sample(X, min_fraction=0.01, min_samples=100)
-        predictions = self._estimator.predict(X_sample)
+        data = self.train_data if self.test_data is None else self.test_data
+        assert data is not None
+        sampled_data = _sample_data(data, min_fraction=0.01, min_samples=100)
+        predictions = self._estimator.predict(sampled_data)
         _, deduced_predictions, _ = self._get_response_and_derived_predictions(
-            X_sample,
+            sampled_data,
             response_method=method.__name__,
         )
+        if deduced_predictions is None:
+            return False
         return np.array_equal(predictions, deduced_predictions)
 
     def _get_data_and_y_true(
