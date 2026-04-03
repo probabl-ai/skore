@@ -348,7 +348,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         # This is for cases where `predict` cannot be inferred reliably
         # from decision_function/predict_proba:
-        if not self._can_deduce_predictions:
+        if not self._can_skip_predict:
             with MeasureTime() as pred_time:
                 self._cache[pred_key] = self._estimator.predict(data)
             self._cache[time_key] = pred_time()
@@ -367,7 +367,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
             decision_key = make_cache_key(data_source, "decision_function")
             self._cache[decision_key] = response
-            if self._can_deduce_predictions:
+            if self._can_skip_predict:
                 self._cache[time_key] = pred_time
                 self._cache[pred_key] = predictions
 
@@ -385,26 +385,43 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             # from predict_log_proba using exp:
             with np.errstate(divide="ignore"):
                 self._cache[log_key] = np.log(response)
-            if self._can_deduce_predictions:
+            if self._can_skip_predict:
                 self._cache[time_key] = pred_time
                 self._cache[pred_key] = predictions
 
     def _get_response_and_derived_predictions(self, data, response_method):
-        estimator = to_estimator(self._estimator)
+        """Compute a response array and derive class predictions.
+
+        Returns
+        -------
+        response : ndarray of shape (n_samples, n_classes)
+            For binary decision_function, the returned array is reshaped to
+            (n_samples, 2) so it can be aligned with classes_.
+        predictions : ndarray of shape (n_samples,)
+            Predicted labels derived from response
+        pred_time : float
+            Time spent computing ``response_method(data)`` in seconds.
+        """
         with MeasureTime() as pred_time:
             response = getattr(self._estimator, response_method)(data)
-        classes = estimator.classes_
-        if response_method == "decision_function":
-            if self.ml_task == "binary-classification":
-                response = np.vstack((-response, response)).T
-            if response.shape[1] != len(classes):
-                return response, None, pred_time()
+        if (
+            response_method == "decision_function"
+            and self.ml_task == "binary-classification"
+        ):
+            response = np.vstack((-response, response)).T
+        classes = to_estimator(self._estimator).classes_
         predictions = classes[np.argmax(response, axis=1)]
         return response, predictions, pred_time()
 
     @cached_property
-    def _can_deduce_predictions(self) -> bool:
-        """Whether `predict` can be inferred reliably."""
+    def _can_skip_predict(self) -> bool:
+        """Return whether `predict` can be inferred reliably.
+
+        This probes a small sample of the available data and checks whether
+        `predict(X)` matches the labels derived from `predict_proba(X)` or
+        `decision_function(X)`. The result is cached because running the probe
+        requires extra predictions.
+        """
         estimator = to_estimator(self._estimator)
         if isinstance(estimator, MetaEstimatorMixin | Pipeline):
             return False
