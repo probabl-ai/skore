@@ -304,9 +304,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         title = "ROC Curve"
         if "comparison" not in self.report_type:
             title += f" for {self.roc_curve['estimator'].cat.categories.item()}"
-        figure.suptitle(
-            "\n".join(filter(None, [title, info_label, info_data_source]))
-        )
+        figure.suptitle("\n".join(filter(None, [title, info_label, info_data_source])))
 
         for ax in axes:
             ax.set(

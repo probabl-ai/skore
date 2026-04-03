@@ -20,7 +20,6 @@ from skore._sklearn._plot.utils import (
 from skore._sklearn.types import (
     DataSource,
     MLTask,
-    PositiveLabel,
     ReportType,
 )
 

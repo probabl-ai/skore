@@ -615,7 +615,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             data_source=data_source,
             response_method="predict",
             average=average,
-            pos_label=pos_label
+            pos_label=pos_label,
         )
         if self._parent._ml_task == "binary-classification" and (
             pos_label is not None or average is not None
@@ -1186,8 +1186,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         _, y_true = self._parent._get_data_and_y_true(data_source=data_source)
 
         y_pred = self._parent._get_predictions(
-            data_source=data_source,
-            response_method=response_method
+            data_source=data_source, response_method=response_method
         )
 
         display = display_class._compute_data_for_display(

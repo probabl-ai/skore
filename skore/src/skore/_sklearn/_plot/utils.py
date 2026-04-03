@@ -14,7 +14,6 @@ from sklearn.preprocessing import LabelBinarizer
 from skore._sklearn.types import (
     DataSource,
     MLTask,
-    PositiveLabel,
     ReportType,
 )
 

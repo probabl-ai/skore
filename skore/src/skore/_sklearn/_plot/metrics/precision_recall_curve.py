@@ -188,11 +188,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display.set_style(relplot_kwargs={"palette": "Set2", "alpha": 0.8})
         >>> display.plot()
         """
-        return self._plot(
-            subplot_by=subplot_by,
-            despine=despine,
-            label=label
-        )
+        return self._plot(subplot_by=subplot_by, despine=despine, label=label)
 
     def _plot_matplotlib(
         self,
@@ -292,9 +288,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         title = "Precision-Recall Curve"
         if "comparison" not in self.report_type:
             title += f" for {self.precision_recall['estimator'].cat.categories.item()}"
-        figure.suptitle(
-            "\n".join(filter(None, [title, info_label, info_data_source]))
-        )
+        figure.suptitle("\n".join(filter(None, [title, info_label, info_data_source])))
 
         if despine:
             for ax in axes:
