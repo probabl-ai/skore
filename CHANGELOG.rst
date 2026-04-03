@@ -42,6 +42,11 @@ Release highlights
 Changed
 -------
 
+- **Breaking change:** ``cache_predictions`` no longer accepts ``n_jobs`` or
+  ``response_methods`` on estimator, cross-validation, and comparison reports.
+  It now infers and caches the relevant prediction outputs automatically. See
+  :pr:`2677` by :user:`cakedev0`.
+
 Added
 -----
 

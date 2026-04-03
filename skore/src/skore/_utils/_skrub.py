@@ -71,4 +71,7 @@ def to_learner(estimator: BaseEstimator):
 def to_estimator(learner: skrub.SkrubLearner):
     if isinstance(learner, _LearnerAdapter):
         return learner.estimator
+    estimator = getattr(learner.data_op._skrub_impl, "estimator_", None)
+    if estimator is not None:
+        return estimator
     return learner.find_fitted_estimator("estimator")
