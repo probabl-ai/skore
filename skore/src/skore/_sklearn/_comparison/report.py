@@ -483,23 +483,23 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _compute_diagnostics(self) -> tuple[dict[str, dict], set[str]]:
-        diagnostics: dict[str, dict] = {}
-        all_checked: set[str] = set()
+    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
+        issues: dict[str, dict] = {}
+        all_checked_codes: set[str] = set()
         for report_name, report in self.reports_.items():
-            results, checked = report._get_diagnostics()
-            all_checked |= checked
-            for code, diagnostic in results.items():
-                entry = f"[{report_name}] {diagnostic['explanation']}"
-                if code in diagnostics:
-                    diagnostics[code]["explanation"] += f" {entry}"
+            issues, checked_codes = report._get_issues()
+            all_checked_codes |= checked_codes
+            for code, issue in issues.items():
+                entry = f"[{report_name}] {issue['explanation']}"
+                if code in issues:
+                    issues[code]["explanation"] += f" {entry}"
                 else:
-                    diagnostics[code] = {
-                        "title": diagnostic["title"],
-                        "docs_anchor": diagnostic["docs_anchor"],
+                    issues[code] = {
+                        "title": issue["title"],
+                        "docs_anchor": issue["docs_anchor"],
                         "explanation": entry,
                     }
-        return diagnostics, all_checked
+        return issues, all_checked_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"
@@ -525,7 +525,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "label": label,
                     "estimator_display": fragments["estimator_display"],
                     "table_report": fragments["table_report"],
-                    "diagnostics": fragments["diagnostics"],
+                    "diagnostic": fragments["diagnostic"],
                 }
             )
 
@@ -538,7 +538,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         inspection_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="inspection"
         )
-        diagnostics_documentation_url = get_documentation_url(
+        diagnose_documentation_url = get_documentation_url(
             obj=self, method_name="diagnose"
         )
         return render_template(
@@ -551,7 +551,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 "report_class_name": report_class_name,
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
-                "diagnostics_documentation_url": diagnostics_documentation_url,
+                "diagnose_documentation_url": diagnose_documentation_url,
             },
         )
 

@@ -1,26 +1,28 @@
 from __future__ import annotations
 
 import warnings
+from collections import Counter
 from typing import TYPE_CHECKING, cast
 
+import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
-from skore._sklearn._diagnostics.utils import (
+from skore._sklearn._diagnostic.utils import (
     _TIMING_METRICS,
     DiagnosticNotApplicable,
     check_score_gap_to_baseline,
+    detect_outliers_mad,
     majority_vote,
 )
 
 if TYPE_CHECKING:
+    from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
 
 
-def check_overfitting_underfitting(
-    report: EstimatorReport,
-) -> dict[str, dict]:
+def check_overfitting_underfitting(report: EstimatorReport) -> dict[str, dict]:
     """Check for overfitting (SKD001) and underfitting (SKD002).
 
     Both checks share the same pre-conditions and metric data, so they are
@@ -63,7 +65,7 @@ def check_overfitting_underfitting(
             data_source="test"
         ).data["score"]
 
-    results: dict[str, dict] = {}
+    issues: dict[str, dict] = {}
     # SKD001 - Overfitting
     votes = [
         check_score_gap_to_baseline(
@@ -79,7 +81,7 @@ def check_overfitting_underfitting(
 
     majority, n_positive, total = majority_vote(votes)
     if majority:
-        results["SKD001"] = {
+        issues["SKD001"] = {
             "title": "Potential overfitting",
             "docs_anchor": "skd001-overfitting",
             "explanation": (
@@ -110,7 +112,7 @@ def check_overfitting_underfitting(
     ]
     majority, n_positive, total = majority_vote(votes)
     if majority:
-        results["SKD002"] = {
+        issues["SKD002"] = {
             "title": "Potential underfitting",
             "docs_anchor": "skd002-underfitting",
             "explanation": (
@@ -120,4 +122,63 @@ def check_overfitting_underfitting(
             ),
         }
 
-    return results
+    return issues
+
+
+def check_metrics_consistency_across_folds(
+    report: CrossValidationReport,
+) -> dict[str, dict]:
+    """Check the consistency of metrics across folds (SDK003)."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+        report_data = report.metrics.summarize(data_source="test").frame(
+            aggregate=None, flat_index=True
+        )
+    votes = np.array(
+        [
+            detect_outliers_mad(report_data.loc[idx])
+            for idx in report_data.index
+            if idx not in _TIMING_METRICS
+        ]
+    )
+    issues: dict[str, dict] = {}
+    explanation = []
+    for cv in range(report_data.shape[1]):
+        majority, n_positive, total = majority_vote(votes[:, cv].tolist())
+        if majority:
+            explanation.append(f"in split #{cv} for {n_positive}/{total} metrics")
+    if explanation:
+        issues["SKD003"] = {
+            "title": "Inconsistent performance across folds",
+            "docs_anchor": "skd003-inconsistent_performance",
+            "explanation": "Performance is abnormal " + " and ".join(explanation) + ".",
+        }
+
+    return issues
+
+
+def check_high_class_imbalance(report: EstimatorReport) -> dict[str, dict]:
+    if (
+        "classification" not in report.ml_task
+        or report.y_train is None
+        or report.y_test is None
+    ):
+        raise DiagnosticNotApplicable()
+
+    issues: dict[str, dict] = {}
+    y_train = np.asarray(report.y_train)
+    y_test = np.asarray(report.y_test)
+    counter = Counter(y_train.tolist())
+    counter.update(y_test.tolist())
+    counts = sorted(counter.values())
+    if counts[-1] / len(y_train) > 0.8:
+        issues["SKD004"] = {
+            "title": "High class imbalance",
+            "docs_anchor": "skd004-high_class_imbalance",
+            "explanation": (
+                "One class represents more than 80% of the dataset samples. "
+                "Accuracy should not be used alone to assess model performance as it "
+                "may be misleading."
+            ),
+        }
+    return issues
