@@ -222,6 +222,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
         splitter = self.report.splitter
         target = self.report.y
+        rng_size = min(len(target), SPLITTING_STRATEGY_REPR_SAMPLE_COUNT)
         is_classifier = "classification" in self.ml_task
 
         n_repeats = getattr(splitter, "n_repeats", None)
@@ -245,7 +246,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             probs = target.value_counts(normalize=True)
             target_repr = rng.choice(
                 probs.index.to_numpy(),  # classes
-                size=SPLITTING_STRATEGY_REPR_SAMPLE_COUNT,
+                size=rng_size,
                 p=probs.to_numpy(),  # probabilities
                 replace=True,
             )
@@ -253,11 +254,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         else:  # regression
             # uniformly sample the target because it will have no impact on the
             # representation
-            target_repr = rng.choice(
-                target,
-                size=SPLITTING_STRATEGY_REPR_SAMPLE_COUNT,
-                replace=False,
-            )
+            target_repr = rng.choice(target, size=rng_size, replace=False)
 
         # create a simplified splitter without shuffling and repetitions
         simplified_cls = SPLITTERS.get(splitter.__class__.__name__, splitter.__class__)
