@@ -379,7 +379,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         prediction_pos_label: PositiveLabel | None = None,
         **metric_kwargs: Any,
     ) -> float | dict[PositiveLabel, float] | list:
-        X, y_true = self._parent._get_X_y(data_source=data_source)
+        data, y_true = self._parent._get_data_and_y_true(data_source=data_source)
 
         pos_label = self._parent.pos_label
         if prediction_pos_label is None:
@@ -487,7 +487,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report = evaluate(estimator, X, y, splitter=0.2)
         >>> report.metrics.timings()
         {'fit_time': ...}
-        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.cache_predictions()
         >>> report.metrics.timings()
         {'fit_time': ..., 'predict_time_test': ...}
         """
@@ -1187,7 +1187,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             return cache_value
 
         data_source = cast(DataSource, data_source)
-        X, y_true = self._parent._get_X_y(data_source=data_source)
+        data, y_true = self._parent._get_data_and_y_true(data_source=data_source)
         if prediction_pos_label is None:
             prediction_pos_label = self._parent.pos_label
 

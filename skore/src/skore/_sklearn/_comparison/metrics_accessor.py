@@ -179,7 +179,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> report.metrics.timings()
                         LogisticRegression_1    LogisticRegression_2
         Fit time (s)                     ...                     ...
-        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.cache_predictions()
         >>> report.metrics.timings()
                                 LogisticRegression_1    LogisticRegression_2
         Fit time (s)                             ...                     ...

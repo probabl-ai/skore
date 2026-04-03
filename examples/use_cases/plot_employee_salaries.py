@@ -114,7 +114,7 @@ hgbt_model_report.help()
 # Let's cache the predictions of the cross-validated models once and for all.
 
 # %%
-hgbt_model_report.cache_predictions(n_jobs=4)
+hgbt_model_report.cache_predictions()
 
 # %%
 # Now that the predictions are cached, any request to compute a metric will be
@@ -263,7 +263,7 @@ import warnings
 
 with warnings.catch_warnings():
     warnings.simplefilter(action="ignore", category=FutureWarning)
-    linear_model_report.cache_predictions(n_jobs=4)
+    linear_model_report.cache_predictions()
 
 # %%
 # We can now have a look at the performance of the model with some standard metrics.
