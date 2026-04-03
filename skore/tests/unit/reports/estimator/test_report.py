@@ -184,10 +184,10 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
     report.cache_predictions()
     assert len(report._predictions) == expected_n_keys
     assert report._predictions != {}
-    stored_keys = list(report._predictions.keys())
+    stored_keys = set(report._predictions.keys())
     report.cache_predictions()
     # check that the keys are exactly the same
-    assert report._predictions.keys() == stored_keys
+    assert set(report._predictions.keys()) == stored_keys
 
 
 @pytest.mark.parametrize(
