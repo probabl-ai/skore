@@ -1,9 +1,9 @@
 """
 .. _example_sklearn_api:
 
-=====================================================================================
+===================================================
 Using skore with scikit-learn compatible estimators
-=====================================================================================
+===================================================
 
 This example shows how to use skore with scikit-learn compatible estimators.
 
@@ -39,25 +39,33 @@ be used with skore:
 """
 
 # %%
-# Loading a binary classification dataset
-# =======================================
+# Generate a classification dataset
+# =================================
 #
-# We generate a synthetic binary classification dataset with only 1,000 samples to keep
-# the computation time reasonable:
+# To illustrate the compatibility with scikit-learn estimators, we first generate a
+# synthetic binary classification dataset with only 1,000 samples.
 
 # %%
+import pandas as pd
+import skrub
 from sklearn.datasets import make_classification
 
 X, y = make_classification(n_samples=1_000, random_state=42)
-print(f"{X.shape = }")
+X = pd.DataFrame(X, columns=[f"Feature_{i}" for i in range(X.shape[1])])
+skrub.TableReport(X)
 
 # %%
 # Gradient-boosted decision trees with XGBoost
 # ============================================
 #
-# For this binary classification task, we consider a gradient-boosted decision trees
-# model from a library external to scikit-learn.
-# One of the most popular is `XGBoost <https://github.com/dmlc/xgboost>`_.
+# While `skore` is designed to be fully compatible with classifiers and regressors from
+# the scikit-learn library, it is also compatible with any classifier or regressor that
+# follows the scikit-learn API as defined in the `scikit-learn documentation
+# <https://scikit-learn.org/dev/developers/develop.html#rolling-your-own-estimatorl>`_.
+#
+# Here, we showcase a gradient-boosted decision trees model from the
+# `XGBoost <https://github.com/dmlc/xgboost>`_ library that follows exactly this
+# paradigm.
 
 # %%
 from skore import evaluate
@@ -66,6 +74,13 @@ from xgboost import XGBClassifier
 xgb = XGBClassifier(n_estimators=50, max_depth=3, learning_rate=0.1, random_state=42)
 
 xgb_report = evaluate(xgb, X, y, splitter=0.2, pos_label=1)
+xgb_report
+
+# %%
+# We see that we get the same report as when using a scikit-learn classifier and we
+# can access the different elements.
+
+# %%
 xgb_report.metrics.summarize().frame()
 
 # %%
@@ -78,16 +93,16 @@ xgb_report.metrics.roc().plot()
 # We can also inspect our model:
 
 # %%
-xgb_report.inspection.permutation_importance().frame()
+xgb_report.inspection.permutation_importance().plot()
 
 # %%
 # Custom model
-# ------------
-
-# %%
-# Let us use a custom estimator inspired from the
-# `scikit-learn documentation <https://scikit-learn.org/dev/developers/develop.html#rolling-your-own-estimator>`_,
-# a nearest neighbor classifier:
+# ============
+#
+# Now, we showcase how one could create a scikit-learn custom estimator that follows
+# the requirements of scikit-learn.
+#
+# Here, we create a nearest neighbor classifier:
 
 # %%
 import numpy as np
@@ -116,36 +131,22 @@ class CustomClassifier(ClassifierMixin, BaseEstimator):
 
 
 # %%
-# .. note::
-#
-#   The estimator above does not have a `predict_proba` method, therefore
-#   we cannot display its ROC curve as done previously.
-
-# %%
-# We can now use this model with skore:
-
-# %%
-custom_report = evaluate(CustomClassifier(), X, y, splitter=0.2, pos_label=1)
-custom_report.metrics.precision()
+custom_report = evaluate(CustomClassifier(), X, y, splitter=0.2)
+custom_report
 
 # %%
 # Conclusion
 # ==========
 #
-# This example demonstrates how skore can be used with scikit-learn compatible estimators.
-# This allows practitioners to use consistent reporting and visualization tools across different estimators.
-#
-# .. seealso::
-#
-#   For a practical example of using language models within scikit-learn pipelines,
-#   see :ref:`example_use_case_employee_salaries` which demonstrates how to use
-#   skrub's :class:`~skrub.TextEncoder` (a language model-based encoder) in a
-#   scikit-learn pipeline for feature engineering.
+# This example demonstrates how skore can be used with scikit-learn compatible
+# estimators. This allows practitioners to use consistent reporting and
+# visualization tools across different estimators.
 #
 # .. seealso::
 #
 #   For an example of wrapping Large Language Models (LLMs) to be compatible with
 #   scikit-learn APIs, see the tutorial on `Quantifying LLMs Uncertainty with Conformal
-#   Predictions <https://medium.com/capgemini-invent-lab/quantifying-llms-uncertainty-with-conformal-predictions-567870e63e00>`_.
+#   Predictions
+#   <https://medium.com/capgemini-invent-lab/quantifying-llms-uncertainty-with-conformal-predictions-567870e63e00>`_.
 #   The article demonstrates how to wrap models like Mistral-7B-Instruct in a
 #   scikit-learn-compatible interface.
