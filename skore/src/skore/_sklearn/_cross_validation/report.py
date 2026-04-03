@@ -9,7 +9,6 @@ import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, clone, is_classifier
-from sklearn.exceptions import NotFittedError
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 
@@ -485,10 +484,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def estimator_(self) -> BaseEstimator:
         if self._initialized_with_data_op:
             return self._estimator
-        try:
-            return to_estimator(self._estimator)
-        except NotFittedError:
-            return self._raw_estimator
+        return to_estimator(self._estimator)
 
     @property
     def learner_(self) -> BaseEstimator:

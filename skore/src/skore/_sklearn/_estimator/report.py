@@ -208,7 +208,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        estimator: BaseEstimator | skrub.SkrubLearner | skrub.DataOp,
+        estimator: BaseEstimator | skrub.DataOp,
         *,
         fit: Literal["auto"] | bool = "auto",
         X_train: ArrayLike | None = None,
@@ -395,13 +395,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def _get_data_and_y_true(
         self,
         *,
-        data_source: Literal["test", "train"],
+        data_source: DataSource,
     ) -> tuple[dict, ArrayLike]:
         """Get the requested dataset.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train"}
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
@@ -583,16 +583,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     @property
     def estimator(self) -> BaseEstimator:
-        return self.estimator_
+        return self._raw_estimator
 
     @property
     def estimator_(self) -> BaseEstimator:
         if self._initialized_with_data_op:
             return self._estimator
-        try:
-            return to_estimator(self._estimator)
-        except NotFittedError:
-            return self._raw_estimator
+        return to_estimator(self._estimator)
 
     @property
     def learner_(self) -> BaseEstimator:

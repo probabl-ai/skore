@@ -279,6 +279,10 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
+        if self._parent._initialized_with_data_op:
+            raise TypeError(
+                "Permutation importance is not yet supported for skrub dataops."
+            )
         data_, y_true = self._parent._get_data_and_y_true(data_source=data_source)
 
         # NOTE: to temporary improve the `project.put` UX, we always store the
