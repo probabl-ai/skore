@@ -12,12 +12,12 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import FixedThresholdClassifier, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 
-from skore import EstimatorReport
+from skore import EstimatorReport, evaluate
 
 
 def test_report_can_be_rebuilt_using_parameters(linear_regression_with_test):
@@ -190,6 +190,22 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
     assert report._cache.keys() == stored_cache.keys()
 
 
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        DummyClassifier(strategy="uniform", random_state=0),
+        FixedThresholdClassifier(LogisticRegression(), threshold=0.8),
+    ],
+)
+def test_get_predictions_is_correct_for_special_classifiers(estimator):
+    X, y = make_classification(n_samples=100, random_state=42)
+    report = evaluate(estimator, X, y, splitter=0.2)
+    np.testing.assert_array_equal(
+        report.get_predictions(data_source="test"),
+        estimator.predict(report.X_test),
+    )
+
+
 def test_pickle(forest_binary_classification_with_test):
     """Check that we can pickle an estimator report.
 
@@ -309,18 +325,15 @@ def test_invalid_pos_label():
         )
 
 
-def test_get_predictions_error_with_multiclass_ovo_decision_function():
-    """Check that multiclass one-vs-one decision scores are rejected."""
-    X, y = make_classification(
-        n_classes=4,
-        n_clusters_per_class=1,
-        n_informative=6,
-        random_state=42,
-    )
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+def test_get_predictions_with_multiclass_ovo_decision_function():
+    """Check that multiclass one-vs-one estimators keep correct predictions."""
+    X, y = make_classification(n_classes=4, n_informative=6, random_state=42)
     estimator = SVC(decision_function_shape="ovo")
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    report = evaluate(estimator, X, y, splitter=0.2)
+
+    np.testing.assert_array_equal(
+        report.get_predictions(data_source="test"),
+        report.estimator_.predict(report.X_test),
     )
 
     with pytest.raises(ValueError, match=r"Unexpected decision function shape\[1\]: 6"):
