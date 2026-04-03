@@ -266,13 +266,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         return {
             "metadata": self._metadata,
+            "initialized_with_data_op": self._initialized_with_data_op,
+            "raw_estimator": self._raw_estimator,
             "ml_task": self.ml_task,
             "pos_label": self.pos_label,
             "estimator": self._estimator,
-            "data": {
-                "data": self._data,
-                "split_indices": self._split_indices,
-            },
+            "data": self._data,
+            "split_indices": self._split_indices,
             "estimator_reports": sub_states,
         }
 
@@ -281,28 +281,55 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         report = cls.__new__(cls)
 
         report._metadata = state["metadata"]
+        report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
         report._pos_label = state["pos_label"]
         report._estimator = state["estimator"]
-        data = state["data"]
-        report._data = data["X"]
-        report._split_indices = data["split_indices"]
+        report._raw_estimator = state["raw_estimator"]
+        report._data = state["data"]
+        report._split_indices = state["split_indices"]
         # TODO? Include splitter in state?
         report._splitter = None
         report.n_jobs = None
 
         report.estimator_reports_ = []
-        for sub_state, (train_indices, test_indices) in zip(
-            state["estimator_reports"], report._split_indices, strict=True
+        if report._initialized_with_data_op:
+            split_data_iterator = report._estimator.data_op.skb.iter_cv_splits(
+                environment=report._data,
+                cv=report._split_indices,
+            )
+        else:
+            split_data_iterator = (
+                {
+                    "train": {
+                        "_skrub_X": _safe_indexing(report.X, train_indices),
+                        "_skrub_y": (
+                            None
+                            if report.y is None
+                            else _safe_indexing(report.y, train_indices)
+                        ),
+                    },
+                    "test": {
+                        "_skrub_X": _safe_indexing(report.X, test_indices),
+                        "_skrub_y": (
+                            None
+                            if report.y is None
+                            else _safe_indexing(report.y, test_indices)
+                        ),
+                    },
+                }
+                for train_indices, test_indices in report._split_indices
+            )
+
+        for sub_state, split_data in zip(
+            state["estimator_reports"], split_data_iterator, strict=True
         ):
             sub_state_with_data = sub_state | {
-                # TODO: fix (probably using self._estimator.data_op.skb.iter_cv_splits for data-ops)
+                "initialized_with_data_op": report._initialized_with_data_op,
                 "data": {
-                    "X_train": _safe_indexing(report._X, train_indices),
-                    "y_train": _safe_indexing(report._y, train_indices),
-                    "X_test": _safe_indexing(report._X, test_indices),
-                    "y_test": _safe_indexing(report._y, test_indices),
-                }
+                    "train_data": split_data["train"],
+                    "test_data": split_data["test"],
+                },
             }
             sub_report = EstimatorReport.from_state(sub_state_with_data)
             report.estimator_reports_.append(sub_report)

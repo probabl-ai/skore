@@ -276,6 +276,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return {
             # -------- CORE STATE ---------
             "metadata": self._metadata,
+            "initialized_with_data_op": self._initialized_with_data_op,
+            "raw_estimator": self._raw_estimator,
             "ml_task": self._ml_task,
             "fit_time": self.fit_time_,
             "pos_label": self._pos_label,
@@ -297,10 +299,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report = cls.__new__(cls)
 
         report._metadata = state["metadata"]
+        report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
         report.fit_time_ = state["fit_time"]
         report._pos_label = state["pos_label"]
         report._estimator = state["estimator"]
+        report._raw_estimator = state["raw_estimator"]
         data = state["data"]
         report._train_data = data["train_data"]
         report._test_data = data["test_data"]
