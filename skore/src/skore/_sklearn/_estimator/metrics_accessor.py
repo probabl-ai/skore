@@ -31,7 +31,6 @@ from skore._utils._accessor import (
     _check_roc_auc,
     _check_supported_ml_task,
 )
-from skore._utils._cache_key import make_cache_key
 
 
 class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -385,9 +384,12 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if prediction_pos_label is None:
             prediction_pos_label = pos_label
 
-        cache_key = make_cache_key(data_source, metric_fn.__name__, metric_kwargs)
-
-        score = self._parent._cache.get(cache_key)
+        score = self._parent._read_cache(
+            "metrics",
+            metric_fn.__name__,
+            data_source,
+            metric_kwargs,
+        )
         if score is None:
             y_pred = self._parent._get_predictions(
                 data_source=data_source,
@@ -418,7 +420,13 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                         )
                     )
 
-            self._parent._cache[cache_key] = score
+            self._parent._write_cache(
+                "metrics",
+                metric_fn.__name__,
+                data_source,
+                metric_kwargs,
+                result=score,
+            )
 
         return score
 
@@ -453,10 +461,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             Whether to cast the numbers to floats. If `False`, the return value
             is `None` when the predictions have never been computed.
         """
-        predict_time_cache_key = make_cache_key(data_source, "predict_time")
-
-        return self._parent._cache.get(
-            predict_time_cache_key, (float("nan") if cast else None)
+        return self._parent._predictions.get(
+            (data_source, "predict_time"),
+            (float("nan") if cast else None),
         )
 
     def timings(self) -> dict:
@@ -494,11 +501,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         fit_time_ = self._fit_time(cast=False)
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
-        # predict_time cache keys are of the form
-        # (data_source, "predict_time", None)
         predict_times = {
             f"predict_time_{data_source}": v
-            for (data_source, name, _), v in self._parent._cache.items()
+            for (data_source, name), v in self._parent._predictions.items()
             if name == "predict_time"
         }
 
@@ -1174,20 +1179,18 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 data_source=data_source,
             )
 
-        # Compute cache key
-        if "seed" in display_kwargs and display_kwargs["seed"] is None:
-            cache_key = None
-        else:
-            cache_key = make_cache_key(
-                data_source, display_class.__name__, display_kwargs
-            )
+        data_source = cast(DataSource, data_source)
 
-        cache_value = self._parent._cache.get(cache_key)
+        cache_value = self._parent._read_cache(
+            "metrics",
+            display_class.__name__,
+            data_source,
+            display_kwargs,
+        )
         if cache_value is not None:
             return cache_value
 
-        data_source = cast(DataSource, data_source)
-        data, y_true = self._parent._get_data_and_y_true(data_source=data_source)
+        _, y_true = self._parent._get_data_and_y_true(data_source=data_source)
         if prediction_pos_label is None:
             prediction_pos_label = self._parent.pos_label
 
@@ -1208,10 +1211,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             **display_kwargs,
         )
 
-        if cache_key is not None:
+        if not ("seed" in display_kwargs and display_kwargs["seed"] is None):
             # Unless seed is an int (i.e. the call is deterministic),
             # we do not cache
-            self._parent._cache[cache_key] = display
+            self._parent._write_cache(
+                "metrics",
+                display_class.__name__,
+                data_source,
+                display_kwargs,
+                result=display,
+            )
 
         return display
 
