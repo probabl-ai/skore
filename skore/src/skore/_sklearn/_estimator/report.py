@@ -50,7 +50,7 @@ def _sample(X, *, min_fraction=0.0, min_samples=1):
         return X
 
     rng = np.random.default_rng(0)
-    indices = np.sort(rng.choice(n_samples, size=sample_size, replace=False))
+    indices = rng.choice(n_samples, size=sample_size, replace=False)
     return _safe_indexing(X, indices, axis=0)
 
 
@@ -350,9 +350,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return response, predictions, pred_time()
 
     @cached_property
-    def _can_deduce_predictions(self):
-        # Check if `predict` can be inferred reliably from response_method
-        # (predict_proba or decision_function)
+    def _can_deduce_predictions(self) -> bool:
+        """
+        Whether `predict` can be inferred reliably from
+        `predict_proba` or `decision_function`.
+        """
         response_methods = ["decision_function", "predict_proba"]
         try:
             method = _check_response_method(self._estimator, response_methods)
@@ -506,11 +508,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             return predictions
 
         # check shape if needed:
-        is_multiclass = self.ml_task == "multiclass-classification"
-        if is_multiclass and method_name == "decision_function":
-            _, d = predictions.shape
-            if d != len(self.estimator_.classes_):
-                raise ValueError(f"Unexpected decision function shape[1]: {d}")
+        if self.ml_task == "multiclass-classification" and method_name == "decision_function":
+            if predictions.shape[1] != len(self.estimator_.classes_):
+                raise ValueError(
+					"Decision function output should have as many columns as there are classes; "
+					f"expected {len(self.estimator_.classes_)} but got {predictions.shape[1]}."
+				)
 
         if pos_label is None:
             return predictions
