@@ -365,8 +365,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             X_sample,
             response_method=method.__name__,
         )
-        if deduced_predictions is None:
-            return False
         return np.array_equal(predictions, deduced_predictions)
 
     def _get_X_y(self, *, data_source: DataSource) -> tuple[ArrayLike, ArrayLike]:

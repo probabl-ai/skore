@@ -211,6 +211,7 @@ def test_get_predictions_is_correct_for_special_classifiers(estimator):
         report.get_predictions(data_source="test"),
         report.estimator_.predict(report.X_test),
     )
+    assert not report._can_deduce_predictions
 
 
 def test_pickle(forest_binary_classification_with_test):
