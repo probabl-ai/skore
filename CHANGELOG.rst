@@ -42,6 +42,11 @@ Release highlights
 Changed
 -------
 
+- **Breaking change:** ``cache_predictions`` no longer accepts ``n_jobs`` or
+  ``response_methods`` on estimator, cross-validation, and comparison reports.
+  It now infers and caches the relevant prediction outputs automatically. See
+  :pr:`2677` by :user:`cakedev0`.
+
 Added
 -----
 
@@ -77,11 +82,6 @@ Changed
   ``pos_label`` is left unset, ``precision`` and ``recall`` metrics, as well as
   ROC and precision-recall curves, now expose both classes instead of failing.
   :pr:`2663` by :user:`cakedev0`.
-
-- **Breaking change:** ``cache_predictions`` no longer accepts ``n_jobs`` or
-  ``response_methods`` on estimator, cross-validation, and comparison reports.
-  It now infers and caches the relevant prediction outputs automatically. See
-  :pr:`2677` by :user:`cakedev0`.
 
 Added
 -----
