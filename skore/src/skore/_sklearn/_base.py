@@ -93,7 +93,15 @@ class _BaseReport(ReportHelpMixin):
         return DiagnosticsDisplay(filtered, checks_ran, n_ignored=len(ignored))
 
     def __init__(self) -> None:
-        self.id = uuid4().int
+        self._metadata = {
+            "id": uuid4().int,
+            "skore-version": None,  # TODO
+            "creation-date": None,  # TODO
+        }
+
+    @property
+    def id(self):
+        return self._metadata["id"]
 
     @property
     def _hash(self) -> int:

@@ -101,6 +101,7 @@ class MockReport(_BaseReport):
         X_test=None,
         y_test=None,
     ):
+        super().__init__()
         self._raw_estimator = estimator
         self._estimator = to_learner(estimator)
         if X_train is not None:
