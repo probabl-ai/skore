@@ -6,7 +6,15 @@ import io
 import os
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, ParamSpec, Protocol, TypeVar, cast, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    cast,
+    runtime_checkable,
+)
 from uuid import uuid4
 
 import joblib
@@ -180,8 +188,10 @@ class Project:
         The report is pickled without its cache, to avoid salting the hash.
         """
         reports = [report] + getattr(report, "estimator_reports_", [])
-        reports_with_cache = [
-            (report, report._cache) for report in reports if hasattr(report, "_cache")
+        reports_with_cache: list[tuple[Any, Any]] = [
+            (cast(Any, report), report._cache)
+            for report in reports
+            if hasattr(report, "_cache")
         ]
 
         report.clear_cache()
@@ -252,6 +262,9 @@ class Project:
     @ensure_project_is_not_deleted
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its id."""
+        if id in self.__metadata_storage:
+            id = self.__metadata_storage[id]["artifact_id"]
+
         if id in self.__artifacts_storage:
             with io.BytesIO(self.__artifacts_storage[id]) as stream:
                 return cast(
@@ -265,7 +278,7 @@ class Project:
         """Obtain metadata/metrics for all persisted reports in insertion order."""
         return [
             {
-                "id": value["artifact_id"],
+                "id": key,
                 "key": value["key"],
                 "date": value["date"],
                 "learner": value["learner"],
@@ -283,7 +296,7 @@ class Project:
                 "fit_time_mean": value.get("fit_time_mean"),
                 "predict_time_mean": value.get("predict_time_mean"),
             }
-            for value in self.__metadata_storage.values()
+            for key, value in self.__metadata_storage.items()
             if value["project_name"] == self.name
         ]
 

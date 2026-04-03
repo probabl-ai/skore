@@ -301,13 +301,22 @@ class TestProject:
         project.put("<key>", regression)
         project.put("<key>", regression)
 
-        report = project.get(next(project._Project__artifacts_storage.keys()))
+        metadata_ids = list(project._Project__metadata_storage.keys())
+        artifact_id = next(project._Project__artifacts_storage.keys())
+
+        report = project.get(metadata_ids[0])
+        duplicate_report = project.get(metadata_ids[1])
+        artifact_report = project.get(artifact_id)
 
         assert len(project._Project__artifacts_storage) == 1
         assert len(project._Project__metadata_storage) == 2
         assert isinstance(report, EstimatorReport)
         assert report.estimator_name_ == regression.estimator_name_
         assert report._ml_task == regression._ml_task
+        assert isinstance(duplicate_report, EstimatorReport)
+        assert duplicate_report.estimator_name_ == regression.estimator_name_
+        assert isinstance(artifact_report, EstimatorReport)
+        assert artifact_report.estimator_name_ == regression.estimator_name_
 
     def test_get_exception(self, tmp_path, regression):
         import re
@@ -332,13 +341,14 @@ class TestProject:
         project.put("<key1>", regression)
         project.put("<key2>", cv_regression)
 
-        artifact_ids = list(project._Project__artifacts_storage.keys())
+        metadata_ids = list(project._Project__metadata_storage.keys())
 
         assert len(project._Project__artifacts_storage) == 2
         assert len(project._Project__metadata_storage) == 3
+        assert len(set(metadata_ids)) == 3
         assert project.summarize() == [
             {
-                "id": artifact_ids[0],
+                "id": metadata_ids[0],
                 "key": "<key1>",
                 "date": Datetime.nows_isoformat[0],
                 "learner": "Ridge",
@@ -357,7 +367,7 @@ class TestProject:
                 "predict_time_mean": None,
             },
             {
-                "id": artifact_ids[0],
+                "id": metadata_ids[1],
                 "key": "<key1>",
                 "date": Datetime.nows_isoformat[1],
                 "learner": "Ridge",
@@ -376,7 +386,7 @@ class TestProject:
                 "predict_time_mean": None,
             },
             {
-                "id": artifact_ids[1],
+                "id": metadata_ids[2],
                 "key": "<key2>",
                 "date": Datetime.nows_isoformat[2],
                 "learner": "Ridge",
