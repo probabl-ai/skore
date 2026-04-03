@@ -6,6 +6,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import pytest
+import skrub
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier
@@ -425,3 +426,18 @@ def test_report_get_data_and_y_true(data_source):
         assert data_source == "test"
         np.testing.assert_array_equal(data["_skrub_X"], X_test)
         np.testing.assert_array_equal(y_result, y_test)
+
+
+def test_report_with_data_op():
+    X_a, y_a = make_classification(n_samples=10)
+    data_op = skrub.X(X_a).skb.apply(LogisticRegression(), y=skrub.y(y_a))
+    learner = data_op.skb.make_learner()
+    split = data_op.skb.train_test_split()
+
+    report = EstimatorReport(
+        learner, train_data=split["train"], test_data=split["test"]
+    )
+    assert isinstance(report.metrics.accuracy(), float)
+
+    report = EstimatorReport(data_op)
+    assert isinstance(report.metrics.accuracy(), float)

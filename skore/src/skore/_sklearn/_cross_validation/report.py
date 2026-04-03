@@ -185,6 +185,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         super().__init__()
         self._raw_estimator = estimator
         if isinstance(estimator, skrub.DataOp):
+            if data is None:
+                data = estimator.skb.get_data()
             estimator = estimator.skb.make_learner()
         if is_clusterer(estimator):
             raise ValueError(
