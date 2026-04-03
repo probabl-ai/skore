@@ -419,12 +419,12 @@ def test_report_build_help_data_output(report_with_methods):
     assert data.root_node == "_ReportWithExplicitMethods"
     assert data.class_name == "_ReportWithExplicitMethods"
     assert data.accessors == []
-    assert len(data.base_methods) == 1
-    m = data.base_methods[0]
-    assert m.name == "public_action"
-    assert m.parameters == "()"
-    assert "public" in m.description.lower()
-    assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
+    assert len(data.base_methods) == 2
+    method_names = {m.name for m in data.base_methods}
+    assert method_names == {"diagnose", "public_action"}
+    for m in data.base_methods:
+        assert m.parameters != ""
+        assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
     assert data.methods_section is not None
     assert isinstance(data.methods_section, HelpSection)
     assert data.attributes is not None

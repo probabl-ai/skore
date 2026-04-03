@@ -33,9 +33,10 @@
     border-radius: 4px;
     background-color: var(--color-background);
     margin: 10px 0;
-    width: fit-content;
-    min-width: 500px;
+    box-sizing: border-box;
+    width: 100%;
     max-width: 800px;
+    min-width: 0;
 }
 
 .title {

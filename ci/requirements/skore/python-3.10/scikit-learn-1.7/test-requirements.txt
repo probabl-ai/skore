@@ -141,7 +141,7 @@ pyarrow==23.0.1
     # via skore (skore/pyproject.toml)
 pydot==4.0.1
     # via skrub
-pygments==2.19.2
+pygments==2.20.0
     # via
     #   ipython
     #   pytest
@@ -198,7 +198,7 @@ six==1.17.0
     # via python-dateutil
 skore-local-project==0.0.5
     # via skore (skore/pyproject.toml)
-skrub==0.7.2
+skrub==0.8.0
     # via skore (skore/pyproject.toml)
 stack-data==0.6.3
     # via ipython

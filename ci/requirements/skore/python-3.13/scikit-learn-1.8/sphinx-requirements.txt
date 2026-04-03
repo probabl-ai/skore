@@ -103,6 +103,8 @@ graphql-core==3.2.8
     #   graphql-relay
 graphql-relay==3.2.0
     # via graphene
+greenlet==3.3.2
+    # via sqlalchemy
 gunicorn==25.3.0
     # via mlflow
 h11==0.16.0
@@ -214,7 +216,7 @@ numpy==2.4.3
     #   skore-hub-project
     #   skore-mlflow-project
     #   skrub
-    #   xgboost
+    #   xgboost-cpu
 numpydoc==1.10.0
     # via skore (skore/pyproject.toml)
 opentelemetry-api==1.40.0
@@ -375,7 +377,7 @@ scipy==1.17.1
     #   skops
     #   skore-hub-project
     #   skrub
-    #   xgboost
+    #   xgboost-cpu
 seaborn==0.13.2
     # via skore (skore/pyproject.toml)
 simplejson==3.20.2
@@ -488,7 +490,7 @@ werkzeug==3.1.7
     #   flask-cors
 widgetsnbextension==4.0.15
     # via ipywidgets
-xgboost==3.2.0
+xgboost-cpu==3.2.0
     # via skore (skore/pyproject.toml)
 zipp==3.23.0
     # via importlib-metadata

@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 
 from skore import EstimatorReport, RocCurveDisplay
 
@@ -29,7 +30,7 @@ def test_display_binary_classification(
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_display_binary_classification_pos_label(pyplot, metric):
-    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    """Check the behaviour of the display methods when `pos_label` is not set."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )
@@ -37,13 +38,40 @@ def test_display_binary_classification_pos_label(pyplot, metric):
     y = labels[y]
     classifier = LogisticRegression().fit(X, y)
     report = EstimatorReport(classifier, X_test=X, y_test=y)
-    with pytest.raises(ValueError, match="pos_label is not specified"):
-        getattr(report.metrics, metric)()
+    display = getattr(report.metrics, metric)()
+    fig = display.plot()
+    assert "Positive label" not in fig.get_suptitle()
 
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")
     display = getattr(report.metrics, metric)()
     fig = display.plot()
     assert "Positive label: A" in fig.get_suptitle()
+
+
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
+def test_display_binary_classification_decision_function_default_pos_label(
+    pyplot, metric, binary_classification_data
+):
+    """Check that the default binary behaviour works with 1D decision scores."""
+    X, y = binary_classification_data
+    classifier = LinearSVC(dual=False, random_state=0).fit(X, y)
+    report = EstimatorReport(classifier, X_test=X, y_test=y)
+
+    display = getattr(report.metrics, metric)()
+    frame = (
+        display.frame(with_roc_auc=True)
+        if metric == "roc"
+        else display.frame(with_average_precision=True)
+    )
+
+    assert "label" in frame.columns
+    np.testing.assert_array_equal(frame["label"].cat.categories, classifier.classes_)
+
+    fig = display.plot()
+    legend = fig.axes[0].get_legend()
+    assert legend is not None
+    expected_n_entries = len(classifier.classes_) + (1 if metric == "roc" else 0)
+    assert len(legend.get_texts()) == expected_n_entries
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])

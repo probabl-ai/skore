@@ -57,7 +57,7 @@ def test_init_different_ml_usecases(
 
     # Simulate that the regression and classification reports share the same testing
     # targets which is not unlikely.
-    regression_report._y_test = classification_report._y_test
+    regression_report._test_data["_skrub_y"] = classification_report.y_test
     with pytest.raises(
         ValueError, match="Expected all estimators to have the same ML usecase"
     ):
@@ -119,10 +119,13 @@ def test_get_predictions(
     sub_reports = list(report.reports_.values())
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = sub_reports[split_idx].y_train.shape
+            expected_len = len(sub_reports[split_idx].y_train)
         else:
-            expected_shape = sub_reports[split_idx].y_test.shape
-        assert split_predictions.shape == expected_shape
+            expected_len = len(sub_reports[split_idx].y_test)
+        if response_method == "predict_proba":
+            assert split_predictions.shape == (expected_len, 2)
+        else:
+            assert split_predictions.shape == (expected_len,)
 
 
 def test_get_predictions_error(
@@ -143,7 +146,7 @@ def test_clustering():
     ):
         ComparisonReport(
             [
-                EstimatorReport(KMeans(), X_test=None),
-                EstimatorReport(KMeans(), X_test=None),
+                EstimatorReport(KMeans(), X_test=None, y_test=None),
+                EstimatorReport(KMeans(), X_test=None, y_test=None),
             ]
         )

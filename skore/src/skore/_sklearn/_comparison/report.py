@@ -250,6 +250,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
+        super().__init__()
         self.reports_, self._report_type, self._pos_label = (
             ComparisonReport._validate_reports(reports)
         )
@@ -281,22 +282,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def cache_predictions(
         self,
-        response_methods: Literal[
-            "auto", "predict", "predict_proba", "decision_function"
-        ] = "auto",
-        n_jobs: int | None = None,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
-
-        Parameters
-        ----------
-        response_methods : {"auto", "predict", "predict_proba", "decision_function"},\
-                default="auto"
-            The methods to use to compute the predictions.
-
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. If `None`, we use the `n_jobs`
-            parameter when initializing the report.
 
         Examples
         --------
@@ -313,15 +300,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         """
-        if n_jobs is None:
-            n_jobs = self.n_jobs
-
         for report in track(
             self.reports_.values(),
             description="Estimator predictions",
             total=len(self.reports_),
         ):
-            report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
+            report.cache_predictions()
 
     def get_predictions(
         self,
@@ -391,7 +375,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         *,
         report_key: str,
         X_test: ArrayLike,
-        y_test: ArrayLike | None = None,
+        y_test: ArrayLike,
     ) -> EstimatorReport:
         """Create an estimator report from one of the reports in the comparison.
 
@@ -455,14 +439,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         estimator_report = cast(EstimatorReport, self.reports_[report_key])
         X_concat = (
-            pd.concat([estimator_report._X_train, estimator_report._X_test])
-            if isinstance(estimator_report._X_train, pd.DataFrame)
-            else np.concatenate([estimator_report._X_train, estimator_report._X_test])
+            pd.concat([estimator_report.X_train, estimator_report.X_test])
+            if isinstance(estimator_report.X_train, pd.DataFrame)
+            else np.concatenate([estimator_report.X_train, estimator_report.X_test])
         )
         y_concat = (
-            pd.concat([estimator_report._y_train, estimator_report._y_test])
-            if isinstance(estimator_report._y_train, (pd.DataFrame, pd.Series))
-            else np.concatenate([estimator_report._y_train, estimator_report._y_test])
+            pd.concat([estimator_report.y_train, estimator_report.y_test])
+            if isinstance(estimator_report.y_train, (pd.DataFrame, pd.Series))
+            else np.concatenate([estimator_report.y_train, estimator_report.y_test])
         )
         report = EstimatorReport(
             estimator_report.estimator,
@@ -481,6 +465,24 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ####################################################################################
     # Methods related to the help and repr
     ####################################################################################
+
+    def _compute_diagnostics(self) -> tuple[dict[str, dict], set[str]]:
+        diagnostics: dict[str, dict] = {}
+        all_checked: set[str] = set()
+        for report_name, report in self.reports_.items():
+            results, checked = report._get_diagnostics()
+            all_checked |= checked
+            for code, diagnostic in results.items():
+                entry = f"[{report_name}] {diagnostic['explanation']}"
+                if code in diagnostics:
+                    diagnostics[code]["explanation"] += f" {entry}"
+                else:
+                    diagnostics[code] = {
+                        "title": diagnostic["title"],
+                        "docs_anchor": diagnostic["docs_anchor"],
+                        "explanation": entry,
+                    }
+        return diagnostics, all_checked
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"
@@ -506,6 +508,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "label": label,
                     "estimator_display": fragments["estimator_display"],
                     "table_report": fragments["table_report"],
+                    "diagnostics": fragments["diagnostics"],
                 }
             )
 
@@ -518,6 +521,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         inspection_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="inspection"
         )
+        diagnostics_documentation_url = get_documentation_url(
+            obj=self, method_name="diagnose"
+        )
         return render_template(
             "comparison_report.html.j2",
             {
@@ -528,6 +534,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 "report_class_name": report_class_name,
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
+                "diagnostics_documentation_url": diagnostics_documentation_url,
             },
         )
 

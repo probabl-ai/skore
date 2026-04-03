@@ -2,17 +2,21 @@ from datetime import datetime, timezone
 
 import numpy as np
 import pytest
-from sklearn.base import clone
+from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+from sklearn.utils.multiclass import unique_labels
+from sklearn.utils.validation import check_is_fitted
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+from skore._externals._sklearn_compat import validate_data
 
 
 def pytest_configure(config):
@@ -558,3 +562,37 @@ def linear_regression_comparison_report(linear_regression_with_train_test):
         }
     )
     return report
+
+
+class CustomClassifierPredictOnly(ClassifierMixin, BaseEstimator):
+    """Binary classifier with only `predict` (no `predict_proba`), mirroring the
+    sklearn-api integration example.
+    """
+
+    def fit(self, X, y):
+        X, y = validate_data(self, X, y)
+        self.classes_ = unique_labels(y)
+        self.X_ = X
+        self.y_ = y
+        return self
+
+    def predict(self, X):
+        check_is_fitted(self)
+        X = validate_data(self, X, reset=False)
+        closest = np.argmin(euclidean_distances(X, self.X_), axis=1)
+        return self.y_[closest]
+
+
+@pytest.fixture
+def custom_classifier_no_predict_proba_with_test(
+    binary_classification_train_test_split,
+):
+    X_train, X_test, y_train, y_test = binary_classification_train_test_split
+    estimator = CustomClassifierPredictOnly().fit(X_train, y_train)
+    return estimator, X_test, y_test
+
+
+@pytest.fixture
+def custom_classifier_no_predict_proba_data(binary_classification_data):
+    X, y = binary_classification_data
+    return CustomClassifierPredictOnly(), X, y
