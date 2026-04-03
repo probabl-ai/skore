@@ -1,15 +1,14 @@
-import inspect
-
 import joblib
 import numpy as np
 import pytest
+import skrub
 from sklearn.base import clone
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils._testing import _convert_container
@@ -28,7 +27,7 @@ def test_report_can_be_rebuilt_using_parameters(
 
     assert isinstance(report, CrossValidationReport)
 
-    for parameter in inspect.signature(CrossValidationReport).parameters:
+    for parameter in ["estimator", "X", "y", "splitter"]:
         assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
 
         parameters[parameter] = getattr(report, parameter)
@@ -258,3 +257,19 @@ def test_report_repr_html(splitter, bad_estimator):
     assert "docs.skore.probabl.ai" in html_out
     assert "report-disclosure-title" in html_out
     assert "CrossValidationReport.metrics" in html_out
+
+
+def test_report_with_data_op():
+    X_a, y_a = make_classification(n_samples=10)
+    data_op = skrub.X(X_a).skb.apply(LogisticRegression(), y=skrub.y(y_a))
+    learner = data_op.skb.make_learner()
+
+    report = CrossValidationReport(learner, data=data_op.skb.get_data())
+    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
+        ("SkrubLearner", "mean")
+    ]
+
+    report = CrossValidationReport(data_op)
+    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
+        ("SkrubLearner", "mean")
+    ]

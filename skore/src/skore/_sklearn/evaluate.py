@@ -21,8 +21,9 @@ if TYPE_CHECKING:
 
 def evaluate(
     estimator: BaseEstimator | list[BaseEstimator],
-    X: ArrayLike | list[ArrayLike],
-    y: ArrayLike,
+    X: ArrayLike | list[ArrayLike | None] | None = None,
+    y: ArrayLike | None = None,
+    data: dict | None = None,
     *,
     splitter: float | int | str | SKLearnCrossValidator | Generator = 0.2,
     pos_label: int | float | bool | str | None = None,
@@ -115,6 +116,7 @@ def evaluate(
                 est,
                 x,
                 y,
+                data=data,
                 splitter=splitter,
                 pos_label=pos_label,
                 n_jobs=n_jobs,
@@ -138,14 +140,22 @@ def evaluate(
                 f"Invalid string value for splitter: {splitter!r}. "
                 "The only supported string value is 'prefit'."
             )
-        return EstimatorReport(estimator, X_test=X, y_test=y, pos_label=pos_label)
+        return EstimatorReport(
+            estimator, X_test=X, y_test=y, test_data=data, pos_label=pos_label
+        )
 
     if isinstance(splitter, float):
         splitter = TrainTestSplit(test_size=splitter)
 
     report = CrossValidationReport(
-        estimator, X, y, pos_label=pos_label, splitter=splitter, n_jobs=n_jobs
+        estimator,
+        X,
+        y,
+        data=data,
+        pos_label=pos_label,
+        splitter=splitter,
+        n_jobs=n_jobs,
     )
-    if hasattr(splitter, "get_n_splits") and splitter.get_n_splits() == 1:
+    if len(report.estimator_reports_) == 1:
         return report.estimator_reports_[0]
     return report

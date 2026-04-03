@@ -439,14 +439,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         estimator_report = cast(EstimatorReport, self.reports_[report_key])
         X_concat = (
-            pd.concat([estimator_report._X_train, estimator_report._X_test])
-            if isinstance(estimator_report._X_train, pd.DataFrame)
-            else np.concatenate([estimator_report._X_train, estimator_report._X_test])
+            pd.concat([estimator_report.X_train, estimator_report.X_test])
+            if isinstance(estimator_report.X_train, pd.DataFrame)
+            else np.concatenate([estimator_report.X_train, estimator_report.X_test])
         )
         y_concat = (
-            pd.concat([estimator_report._y_train, estimator_report._y_test])
-            if isinstance(estimator_report._y_train, (pd.DataFrame, pd.Series))
-            else np.concatenate([estimator_report._y_train, estimator_report._y_test])
+            pd.concat([estimator_report.y_train, estimator_report.y_test])
+            if isinstance(estimator_report.y_train, (pd.DataFrame, pd.Series))
+            else np.concatenate([estimator_report.y_train, estimator_report.y_test])
         )
         report = EstimatorReport(
             estimator_report.estimator,
