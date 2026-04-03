@@ -115,7 +115,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.data.analyze().frame()
         """
         df = self._prepare_dataframe_for_display(
