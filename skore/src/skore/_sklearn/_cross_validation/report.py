@@ -77,7 +77,7 @@ def _check_estimator_and_data(
                 "is a SkrubLearner. Provide X and y instead."
             )
         estimator = to_learner(estimator)
-        data = {"X": X, "_skrub_X": X, "y": y, "_skrub_y": y}
+        data = {"_skrub_X": X, "_skrub_y": y}
     return initialized_with_data_op, estimator, data
 
 
