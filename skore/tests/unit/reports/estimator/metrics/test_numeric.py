@@ -204,7 +204,7 @@ def test_custom_metric_compatible_estimator(
         def predict(self, X):
             return np.ones(X.shape[0])
 
-    estimator = CompatibleEstimator()
+    estimator = CompatibleEstimator().fit(None, None)
     report = EstimatorReport(estimator, fit=False, X_test=X_test, y_test=y_test)
     result = report.metrics.custom_metric(
         metric_function=lambda y_true, y_pred: 1,

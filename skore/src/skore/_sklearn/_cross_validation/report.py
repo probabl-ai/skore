@@ -20,6 +20,7 @@ from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
+from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 
@@ -50,6 +51,34 @@ def _generate_estimator_report(
         y_test=_safe_indexing(y, test_indices),
         pos_label=pos_label,
     )
+
+
+def _check_estimator_and_data(
+    estimator: BaseEstimator,
+    X: ArrayLike | None,
+    y: ArrayLike | None,
+    data: dict | None,
+) -> tuple[bool, BaseEstimator, dict]:
+    if is_skrub_learner(estimator):
+        initialized_with_data_op = True
+        if X is not None or y is not None:
+            raise TypeError(
+                "X and y cannot be provided when estimator is a SkrubLearner. "
+                "Provide `data` instead."
+            )
+        if data is None:
+            raise TypeError("data must be provided when estimator is a SkrubLearner")
+        data = eval_X_y(estimator.data_op, data)
+    else:
+        initialized_with_data_op = False
+        if data is not None:
+            raise TypeError(
+                "`data` can only be provided when estimator "
+                "is a SkrubLearner. Provide X and y instead."
+            )
+        estimator = to_learner(estimator)
+        data = {"X": X, "_skrub_X": X, "y": y, "_skrub_y": y}
+    return initialized_with_data_op, estimator, data
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
@@ -146,27 +175,30 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     def __init__(
         self,
         estimator: BaseEstimator,
-        X: ArrayLike,
-        y: ArrayLike,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        data: dict | None = None,
         pos_label: PositiveLabel | None = None,
         splitter: int | SKLearnCrossValidator | Generator | None = None,
         n_jobs: int | None = None,
     ) -> None:
         super().__init__()
+        self._raw_estimator = estimator
+        if isinstance(estimator, skrub.DataOp):
+            if data is None:
+                data = estimator.skb.get_data()
+            estimator = estimator.skb.make_learner()
         if is_clusterer(estimator):
             raise ValueError(
                 "Clustering models are not supported yet. Please use a"
                 " classification or regression model instead."
             )
-
-        self._estimator = clone(estimator)
-
-        # private storage to ensure properties are read-only
-        self._X = X
-        self._y = y
+        self._initialized_with_data_op, self._estimator, self._data = (
+            _check_estimator_and_data(clone(estimator), X, y, data)
+        )
         self._pos_label = pos_label
         self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
-        self._split_indices = tuple(self._splitter.split(self._X, self._y))
+        self._split_indices = tuple(self._splitter.split(self.X, self.y))
         self.n_jobs = n_jobs
 
         self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
@@ -186,24 +218,45 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
         )
 
-        # do not split the data to take advantage of the memory mapping
-        return list(
-            track(
-                parallel(
-                    delayed(_generate_estimator_report)(
-                        clone(self._estimator),
-                        self._X,
-                        self._y,
-                        self._pos_label,
-                        train_indices,
-                        test_indices,
-                    )
-                    for (train_indices, test_indices) in self.split_indices
-                ),
-                description=f"Processing cross-validation\nfor {self.estimator_name_}",
-                total=len(self.split_indices),
+        if self._initialized_with_data_op:
+            return list(
+                track(
+                    parallel(
+                        delayed(EstimatorReport)(
+                            clone(self._estimator),
+                            train_data=split["train"],
+                            test_data=split["test"],
+                            pos_label=self._pos_label,
+                        )
+                        for split in self._estimator.data_op.skb.iter_cv_splits(
+                            environment=self._data, cv=self.split_indices
+                        )
+                    ),
+                    description="Processing cross-validation\n"
+                    f"for {self.estimator_name_}",
+                    total=len(self.split_indices),
+                )
             )
-        )
+        else:
+            # do not split the data to take advantage of the memory mapping
+            return list(
+                track(
+                    parallel(
+                        delayed(_generate_estimator_report)(
+                            clone(self._raw_estimator),
+                            self.X,
+                            self.y,
+                            self.pos_label,
+                            train_indices,
+                            test_indices,
+                        )
+                        for (train_indices, test_indices) in self.split_indices
+                    ),
+                    description="Processing cross-validation\n"
+                    f"for {self.estimator_name_}",
+                    total=len(self.split_indices),
+                )
+            )
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -326,7 +379,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ]
 
     def create_estimator_report(
-        self, *, X_test: ArrayLike, y_test: ArrayLike
+        self,
+        *,
+        X_test: ArrayLike | None = None,
+        y_test: ArrayLike | None = None,
+        test_data: dict | None = None,
     ) -> EstimatorReport:
         """Create an estimator report from the cross-validation report.
 
@@ -372,14 +429,22 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         report : :class:`~skore.EstimatorReport`
             The estimator report.
         """
-        report = EstimatorReport(
-            self._estimator,
-            X_train=self._X,
-            y_train=self._y,
-            X_test=X_test,
-            y_test=y_test,
-            pos_label=self._pos_label,
-        )
+        if self._initialized_with_data_op:
+            report = EstimatorReport(
+                self._estimator,
+                train_data=self._data,
+                test_data=test_data,
+                pos_label=self._pos_label,
+            )
+        else:
+            report = EstimatorReport(
+                self._raw_estimator,
+                X_train=self.X,
+                y_train=self.y,
+                X_test=X_test,
+                y_test=y_test,
+                pos_label=self._pos_label,
+            )
         return report
 
     def _compute_diagnostics(
@@ -415,27 +480,34 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     @property
     def estimator(self) -> BaseEstimator:
-        return self._estimator
+        return self.estimator_
 
     @property
     def estimator_(self) -> BaseEstimator:
-        return self._estimator
+        if self._initialized_with_data_op:
+            return self._estimator
+        return to_estimator(self._estimator)
 
     @property
     def estimator_name_(self) -> str:
-        if isinstance(self._estimator, Pipeline):
-            name = self._estimator[-1].__class__.__name__
+        if isinstance(self._raw_estimator, Pipeline):
+            name = self._raw_estimator[-1].__class__.__name__
         else:
-            name = self._estimator.__class__.__name__
+            name = self._raw_estimator.__class__.__name__
         return name
 
     @property
     def X(self) -> ArrayLike:
-        return self._X
+        return self._data["_skrub_X"]
 
     @property
     def y(self) -> ArrayLike | None:
-        return self._y
+        return self._data.get("_skrub_y")
+
+    @property
+    def input_data(self) -> dict:
+        # TODO name
+        return self._data.copy()
 
     @property
     def splitter(self) -> SKLearnCrossValidator:
