@@ -4,6 +4,7 @@ import copy
 import html
 import uuid
 import warnings
+from functools import cached_property
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
@@ -15,10 +16,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils._response import (
     _check_response_method,
 )
-from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import _num_samples, check_is_fitted
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._externals._sklearn_compat import is_clusterer
+from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._diagnostics import (
     DiagnosticNotApplicable,
@@ -40,12 +41,17 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
-def _compute_predictions(estimator, X, response_method):
-    prediction_method = _check_response_method(estimator, response_method)
-    with MeasureTime() as predict_time:
-        predictions = prediction_method(X)
+def _sample(X, *, min_fraction=0.0, min_samples=1):
+    n_samples = _num_samples(X)
+    sample_size = min(
+        n_samples, max(min_samples, int(np.ceil(min_fraction * n_samples)))
+    )
+    if sample_size == n_samples:
+        return X
 
-    return predictions, predict_time()
+    rng = np.random.default_rng(0)
+    indices = np.sort(rng.choice(n_samples, size=sample_size, replace=False))
+    return _safe_indexing(X, indices, axis=0)
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -274,7 +280,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 self.cache_predictions(data_source="train")
             return
 
-        X, _ = self._get_X_y(data_source=data_source)
+        X = self._X_test if data_source == "test" else self._X_train
+        if X is None:
+            raise ValueError(
+                f"No {data_source} features (i.e. X_{data_source}) were provided "
+                f"when creating the report. Please provide the {data_source} "
+                "features when creating the report."
+            )
 
         pred_key = make_cache_key(data_source, "predict")
         time_key = make_cache_key(data_source, "predict_time")
@@ -282,65 +294,80 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if pred_key in self._cache:
             return
 
-        has_proba = hasattr(self._estimator, "predict_proba")
-        has_decision = hasattr(self._estimator, "decision_function")
-        preds_only = not (has_proba or has_decision)
-
-        # if this is True, we call .predict(...)
-        # otherwise we derive predictions from predict_proba/decision_function
-        # (which is a big optimization for models with an expansive predict function).
-        compute_preds = (
-            # FixedThresholdClassifier or TunedThresholdClassifierCV:
-            "ThresholdClassifier" in self._estimator.__class__.__name__
-            or "Dummy" in self._estimator.__class__.__name__
-        )
-
-        if compute_preds or preds_only:
+        # This is for cases where `predict` cannot be inferred reliably
+        # from decision_function/predict_proba:
+        if not self._can_deduce_predictions:
             with MeasureTime() as pred_time:
                 self._cache[pred_key] = self._estimator.predict(X)
             self._cache[time_key] = pred_time()
 
-        if preds_only:
+        has_proba = hasattr(self._estimator, "predict_proba")
+        has_decision = hasattr(self._estimator, "decision_function")
+
+        if not (has_proba or has_decision):
             return
 
-        classes = self._estimator.classes_
-
         if has_decision:
-            with MeasureTime() as pred_time:
-                decision_func = self._estimator.decision_function(X)
-
-            if self.ml_task == "binary-classification":
-                # scikit-learn returns a (n_samples,) array that corresponds to
-                # classes[-1] we normalize to a (n_samples, 2) shape with similar
-                # semantic than predict_proba
-                decision_func = np.vstack((-decision_func, decision_func)).T
-
+            response, predictions, pred_time = (
+                self._get_response_and_derived_predictions(
+                    X, response_method="decision_function"
+                )
+            )
             decision_key = make_cache_key(data_source, "decision_function")
-            self._cache[decision_key] = decision_func
-            if decision_func.shape[1] != len(self.estimator_.classes_):
-                # non-OVR decision function shape:
-                with MeasureTime() as pred_time:
-                    self._cache[pred_key] = self._estimator.predict(X)
-                self._cache[time_key] = pred_time()
-            elif not compute_preds:
-                self._cache[time_key] = pred_time()
-                self._cache[pred_key] = classes[np.argmax(decision_func, axis=1)]
+            self._cache[decision_key] = response
+            if self._can_deduce_predictions:
+                self._cache[time_key] = pred_time
+                self._cache[pred_key] = predictions
 
         if has_proba:
-            with MeasureTime() as pred_time:
-                predicted_proba = self._estimator.predict_proba(X)
+            response, predictions, pred_time = (
+                self._get_response_and_derived_predictions(
+                    X, response_method="predict_proba"
+                )
+            )
             proba_key = make_cache_key(data_source, "predict_proba")
-            self._cache[proba_key] = predicted_proba
+            self._cache[proba_key] = response
             log_key = make_cache_key(data_source, "predict_log_proba")
             # Most sklearn's estimator derive predict_log_proba this way
             # except for *NB models (naive bayes) that derive predict_proba
             # from predict_log_proba using exp:
             with np.errstate(divide="ignore"):
-                self._cache[log_key] = np.log(predicted_proba)
-            if has_decision or compute_preds:
-                return
-            self._cache[time_key] = pred_time()
-            self._cache[pred_key] = classes[np.argmax(predicted_proba, axis=1)]
+                self._cache[log_key] = np.log(response)
+            if self._can_deduce_predictions:
+                self._cache[time_key] = pred_time
+                self._cache[pred_key] = predictions
+
+    def _get_response_and_derived_predictions(self, X, response_method):
+        with MeasureTime() as pred_time:
+            response = getattr(self._estimator, response_method)(X)
+        classes = self._estimator.classes_
+        if response_method == "decision_function":
+            if self.ml_task == "binary-classification":
+                response = np.vstack((-response, response)).T
+            if response.shape[1] != len(classes):
+                return response, None, pred_time()
+        predictions = classes[np.argmax(response, axis=1)]
+        return response, predictions, pred_time()
+
+    @cached_property
+    def _can_deduce_predictions(self):
+        # Check if `predict` can be inferred reliably from response_method
+        # (predict_proba or decision_function)
+        response_methods = ["decision_function", "predict_proba"]
+        try:
+            method = _check_response_method(self._estimator, response_methods)
+        except AttributeError:
+            return False
+        X = self._X_train if self._X_test is None else self._X_test
+        X_sample = _sample(X, min_fraction=0.01, min_samples=100)
+        predictions = self._estimator.predict(X_sample)
+        _, deduced_predictions, _ = self._get_response_and_derived_predictions(
+            X_sample,
+            response_method=method.__name__,
+        )
+        if deduced_predictions is None:
+            return False
+        return np.array_equal(predictions, deduced_predictions)
 
     def _get_X_y(self, *, data_source: DataSource) -> tuple[ArrayLike, ArrayLike]:
         """Get the requested dataset.
