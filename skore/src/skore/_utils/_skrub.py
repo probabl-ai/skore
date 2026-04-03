@@ -48,7 +48,7 @@ class _LearnerAdapter(BaseEstimator):
         def learner_method(data):
             kwargs = {"X": data["_skrub_X"]}
             if name in ["fit", "score"]:
-                kwargs["y"] = data.get("_skrub_y")
+                kwargs["y"] = data["_skrub_y"]
             return estimator_method(**kwargs)
 
         return learner_method
