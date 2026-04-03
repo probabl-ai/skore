@@ -487,10 +487,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return to_estimator(self._estimator)
 
     @property
-    def learner_(self) -> BaseEstimator:
-        return self._estimator
-
-    @property
     def estimator_name_(self) -> str:
         if isinstance(self._raw_estimator, Pipeline):
             name = self._raw_estimator[-1].__class__.__name__

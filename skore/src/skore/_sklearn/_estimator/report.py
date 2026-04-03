@@ -583,17 +583,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     @property
     def estimator(self) -> BaseEstimator:
-        return self._raw_estimator
+        return self.estimator_
 
     @property
     def estimator_(self) -> BaseEstimator:
         if self._initialized_with_data_op:
             return self._estimator
         return to_estimator(self._estimator)
-
-    @property
-    def learner_(self) -> BaseEstimator:
-        return self._estimator
 
     @property
     def X_train(self) -> ArrayLike | None:
