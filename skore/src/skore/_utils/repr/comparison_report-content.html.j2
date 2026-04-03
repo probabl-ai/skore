@@ -17,6 +17,35 @@
     </details>
     <details class="report-disclosure">
         <summary>
+            <span class="report-disclosure-title">Diagnostics</span>
+        </summary>
+        <p class="report-inline-note" role="note">
+            Investigate more with
+            <a
+                href="{{ get_diagnostics_documentation_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="report-hint-note-link"
+            >{{ report_class_name }}.diagnose</a>.
+        </p>
+        <div class="report-section report-diagnostics">
+            <div class="comparison-report-select-row">
+                <label for="{{ container_id }}-report-select-diagnostics">Selected report</label>
+                <select
+                    id="{{ container_id }}-report-select-diagnostics"
+                    class="skore-comparison-report-select"
+                    aria-label="Select which report's diagnostics to show"
+                >
+                    {% for row in comparison_reports %}
+                    <option value="{{ loop.index0 }}">{{ row.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <slot name="diagnostics"></slot>
+        </div>
+    </details>
+    <details class="report-disclosure">
+        <summary>
             <span class="report-disclosure-title">Estimator</span>
         </summary>
         <p class="report-inline-note" role="note">
