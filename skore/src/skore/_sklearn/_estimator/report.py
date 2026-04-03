@@ -376,19 +376,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         response : ndarray of shape (n_samples, n_classes)
             For binary decision_function, the returned array is reshaped to
             (n_samples, 2) so it can be aligned with classes_.
-        predictions : ndarray of shape (n_samples,)
+        predictions : ndarray of shape (n_samples,) or None
             Predicted labels derived from response
+            or None for ill-shaped decision function (OVO)
         pred_time : float
             Time spent computing ``response_method(data)`` in seconds.
         """
         with MeasureTime() as pred_time:
             response = getattr(self._estimator, response_method)(data)
-        if (
-            response_method == "decision_function"
-            and self.ml_task == "binary-classification"
-        ):
-            response = np.vstack((-response, response)).T
         classes = to_estimator(self._estimator).classes_
+        if response_method == "decision_function":
+            if self.ml_task == "binary-classification":
+                response = np.vstack((-response, response)).T
+            if response.shape[1] != len(classes):
+                return response, None, pred_time()
         predictions = classes[np.argmax(response, axis=1)]
         return response, predictions, pred_time()
 
