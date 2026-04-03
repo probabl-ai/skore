@@ -14,6 +14,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import FixedThresholdClassifier, train_test_split
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 
@@ -195,6 +196,12 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
     [
         DummyClassifier(strategy="uniform", random_state=0),
         FixedThresholdClassifier(LogisticRegression(), threshold=0.8),
+        Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("logisticregression", LogisticRegression()),
+            ]
+        ),
     ],
 )
 def test_get_predictions_is_correct_for_special_classifiers(estimator):
@@ -202,7 +209,7 @@ def test_get_predictions_is_correct_for_special_classifiers(estimator):
     report = evaluate(estimator, X, y, splitter=0.2)
     np.testing.assert_array_equal(
         report.get_predictions(data_source="test"),
-        estimator.predict(report.X_test),
+        report.estimator_.predict(report.X_test),
     )
 
 
@@ -328,8 +335,7 @@ def test_invalid_pos_label():
 def test_get_predictions_with_multiclass_ovo_decision_function():
     """Check that multiclass one-vs-one estimators keep correct predictions."""
     X, y = make_classification(n_classes=4, n_informative=6, random_state=42)
-    estimator = SVC(decision_function_shape="ovo")
-    report = evaluate(estimator, X, y, splitter=0.2)
+    report = evaluate(SVC(decision_function_shape="ovo"), X, y, splitter=0.2)
 
     np.testing.assert_array_equal(
         report.get_predictions(data_source="test"),
