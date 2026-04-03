@@ -388,29 +388,6 @@ def test_report_repr_html(with_train, bad_estimator):
     assert "EstimatorReport.metrics" in html_out
 
 
-def test_report_get_X_y_error():
-    """Check that we raise the proper error in `_get_X_y`."""
-    X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-    estimator = LogisticRegression().fit(X_train, y_train)
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    err_msg = re.escape(
-        "Invalid data source: unknown. Possible values are: test, train."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report._get_X_y(data_source="unknown")
-
-    err_msg = re.escape(
-        "No train data (i.e. X_train and y_train) were provided "
-        "when creating the report. Please provide the train "
-        "data when creating the report."
-    )
-    with pytest.raises(ValueError, match=err_msg):
-        report._get_X_y(data_source="train")
-
-
 @pytest.mark.parametrize("data_source", ("train", "test"))
 def test_report_get_X_y(data_source):
     """Check the general behaviour of `_get_X_y`."""
@@ -430,3 +407,25 @@ def test_report_get_X_y(data_source):
         assert data_source == "test"
         np.testing.assert_array_equal(X_result, X_test)
         np.testing.assert_array_equal(y_result, y_test)
+
+
+def test_report_get_X_y_error():
+    """Check that we raise the proper error in `_get_X_y`."""
+    X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression().fit(X_train, y_train)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    err_msg = re.escape(
+        "Invalid data source: 'unknown'. Possible values are: 'test', 'train'."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report._get_X_y(data_source="unknown")
+
+    err_msg = re.escape(
+        "No train data (i.e. X_train or y_train) were provided "
+        "when creating the report."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report._get_X_y(data_source="train")

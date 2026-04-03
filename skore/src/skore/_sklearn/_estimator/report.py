@@ -362,26 +362,18 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             The requested dataset.
         """
         if data_source == "test":
-            if self._X_test is None or self._y_test is None:
-                missing_data = "X_test and y_test"
-                raise ValueError(
-                    f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the report. Please provide the {data_source} "
-                    "data when creating the report."
-                )
             return self._X_test, self._y_test
         elif data_source == "train":
             if self._X_train is None or self._y_train is None:
-                missing_data = "X_train and y_train"
                 raise ValueError(
-                    f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the report. Please provide the {data_source} "
-                    "data when creating the report."
+                    "No train data (i.e. X_train or y_train) were provided "
+                    "when creating the report."
                 )
             return self._X_train, self._y_train
         else:
             raise ValueError(
-                f"Invalid data source: {data_source}. Possible values are: test, train."
+                f"Invalid data source: {data_source!r}. "
+                "Possible values are: 'test', 'train'."
             )
 
     def get_predictions(
