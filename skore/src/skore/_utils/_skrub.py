@@ -46,9 +46,9 @@ class _LearnerAdapter(BaseEstimator):
 
         @functools.wraps(estimator_method)
         def learner_method(data):
-            kwargs = {"X": data.get("_skrub_X", data["X"])}
+            kwargs = {"X": data["_skrub_X"]}
             if name in ["fit", "score"]:
-                kwargs["y"] = data.get("_skrub_y", data["y"])
+                kwargs["y"] = data["_skrub_y"]
             return estimator_method(**kwargs)
 
         return learner_method

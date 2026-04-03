@@ -83,15 +83,9 @@ def _check_estimator_and_data(
                 "Provide X_train, y_train, X_test, y_test instead."
             )
         estimator = to_learner(estimator)
-        test_data = (
-            None
-            if X_test is None
-            else {"_skrub_X": X_test, "X": X_test, "_skrub_y": y_test, "y": y_test}
-        )
+        test_data = None if X_test is None else {"_skrub_X": X_test, "_skrub_y": y_test}
         train_data = (
-            None
-            if X_train is None
-            else {"_skrub_X": X_train, "X": X_train, "_skrub_y": y_train, "y": y_train}
+            None if X_train is None else {"_skrub_X": X_train, "_skrub_y": y_train}
         )
     return initialized_with_data_op, estimator, train_data, test_data
 
