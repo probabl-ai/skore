@@ -151,8 +151,8 @@ print(f"Time taken: {end - start:.2f} seconds")
 # Caching all the possible predictions at once
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# We can pre-compute all predictions at once using parallel processing:
-report.cache_predictions(n_jobs=4)
+# We can pre-compute all predictions at once:
+report.cache_predictions()
 
 # %%
 #
