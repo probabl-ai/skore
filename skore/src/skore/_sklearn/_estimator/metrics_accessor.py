@@ -379,7 +379,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        pos_label: PositiveLabel | None = None,
         average: (
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
@@ -400,6 +399,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             If `None`, the metrics for each class are returned. Otherwise, this
             determines the type of averaging performed on the data:
 
+            - "binary": Only report results for the class specified by the report's
+              `pos_label`. This is applicable only if targets (`y_{true,pred}`) are
+              binary.
             - "micro": Calculate metrics globally by counting the total true positives,
               false negatives and false positives.
             - "macro": Calculate metrics for each label, and find their unweighted
