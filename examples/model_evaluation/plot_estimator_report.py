@@ -219,11 +219,15 @@ report.metrics.accuracy()
 
 # %%
 #
-# We can now compute the cost of our operational decision.
-start = time.time()
-cost = report.metrics.custom_metric(
-    metric_function=operational_decision_cost, response_method="predict", amount=amount
+# We can now compute the cost of our operational decision, by registering it in the report:
+report.metrics.add(
+    metric=operational_decision_cost,
+    response_method="predict",
+    amount=amount,
 )
+
+start = time.time()
+cost = report.metrics.summarize(metric="operational_decision_cost")
 end = time.time()
 cost
 
@@ -252,12 +256,7 @@ print(f"Time taken to compute the cost: {end - start:.2f} seconds")
 # that we can compute some additional metrics without having to recompute the
 # the predictions.
 report.metrics.summarize(
-    metric={
-        "Precision": "precision",
-        "Recall": "recall",
-        "Operational Decision Cost": operational_decision_cost,
-    },
-    metric_kwargs={"amount": amount, "response_method": "predict"},
+    metric=["precision", "recall", "operational_decision_cost"],
 ).frame()
 
 # %%
@@ -268,16 +267,12 @@ report.metrics.summarize(
 # function.
 from sklearn.metrics import f1_score, make_scorer
 
-f1_scorer = make_scorer(f1_score, response_method="predict")
-operational_decision_cost_scorer = make_scorer(
-    operational_decision_cost, response_method="predict", amount=amount
+report.metrics.add(make_scorer(f1_score, response_method="predict"))
+report.metrics.add(
+    make_scorer(operational_decision_cost, response_method="predict", amount=amount)
 )
-report.metrics.summarize(
-    metric={
-        "F1 Score": f1_scorer,
-        "Operational Decision Cost": operational_decision_cost_scorer,
-    },
-).frame()
+
+report.metrics.summarize(metric=["f1_score", "operational_decision_cost"]).frame()
 
 # %%
 #
