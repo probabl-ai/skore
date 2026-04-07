@@ -11,6 +11,7 @@ name: sphinx
 # For instance, with the following timeline:
 #
 #        dev/ dev/ dev/ dev/ dev/
+#        stable/             stable/
 #        0.1/                0.2/
 # main -- x -- x -- x -- x -- x -- >
 #         |                   |
@@ -21,6 +22,7 @@ name: sphinx
 #     ├── 0.1/
 #     ├── 0.2/
 #     ├── dev/
+#     ├── stable/
 #     ├── index.html
 #     └── versions.json
 #
@@ -296,6 +298,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    outputs:
+      preferred: ${{ steps.write-root-files.outputs.preferred }}
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -304,6 +308,7 @@ jobs:
 
       - name: Write `versions.json` and `index.html`
         shell: python
+        id: write-root-files
         run: |
             import os
             import requests
@@ -332,12 +337,12 @@ jobs:
             # Rewrite the history with "dev" and the 10 latest versions
             new = [
                 {
-                    "name": version,
-                    "version": release,
-                    "url": f"{url}/{version}/",
+                    "name": name,
+                    "version": version,
+                    "url": f"{url}/{name}/",
                     "preferred": i == 1,
                 }
-                for i, (version, release) in enumerate(history[:11])
+                for i, (name, version) in enumerate(history[:11])
             ]
 
             os.mkdir("artifacts")
@@ -353,6 +358,9 @@ jobs:
                   </head>
                   """
               )
+
+            with open(os.environ["GITHUB_OUTPUT"], mode="a") as file:
+              file.write(f"preferred={json.dumps(new[1]["version"] == release)}\n")
         env:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
@@ -369,7 +377,7 @@ jobs:
           DESTINATION:
 
   sphinx-deploy-stable:
-    if: ${{ (github.event_name == 'push') && (github.ref_type == 'tag') }}
+    if: ${{ (github.event_name == 'push') && (github.ref_type == 'tag') && (needs.sphinx-deploy-root-files.outputs.preferred == 'true')}}
     runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build, sphinx-deploy-html, sphinx-deploy-root-files]
     environment: prod
@@ -382,39 +390,13 @@ jobs:
         with:
           sparse-checkout: .github
 
-      - name: Check if the current version is preferred
-        id: version
-        shell: python
-        run: |
-            import json
-            import os
-            import requests
-
-            release = os.environ["SPHINX_RELEASE"]
-            url = os.environ["SPHINX_URL"]
-
-            # Retrieve history
-            response = requests.get(f"{url}/versions.json")
-            response.raise_for_status()
-
-            for entry in response.json():
-                if entry["version"] == release:
-                    with open(os.environ["GITHUB_OUTPUT"], mode="a") as file:
-                        file.write(f"preferred={json.dumps(entry["preferred"])}\n")
-                        break
-        env:
-          SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
-          SPHINX_URL: ${{ vars.DOCUMENTATION_URL }}
-
       - name: Download HTML artifacts
-        if: steps.version.outputs.preferred == 'true'
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: sphinx-html-artifact
           path: html/
 
       - name: Deploy HTML artifacts
-        if: steps.version.outputs.preferred == 'true'
         uses: ./.github/actions/sphinx/deploy-aws
         with:
           BUCKET: ${{ vars.DOCUMENTATION_BUCKET }}
