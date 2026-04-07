@@ -1134,6 +1134,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def _get_display(
         self,
         *,
+        cache_method_name: str,
+        cache_kwargs: dict[str, Any],
         data_source: DataSource | Literal["both"],
         response_method: str | list[str] | tuple[str, ...],
         display_class: type[
@@ -1179,6 +1181,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             displays = [
                 self._get_display(
                     data_source=cast(DataSource, ds),
+                    cache_method_name=cache_method_name,
+                    cache_kwargs=cache_kwargs,
                     response_method=response_method,
                     display_class=display_class,
                     display_kwargs=display_kwargs,
@@ -1195,9 +1199,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         cache_value = self._parent._read_cache(
             accessor_name="metrics",
-            method_name=display_class.__name__,
+            method_name=cache_method_name,
             data_source=data_source,
-            kwargs=display_kwargs,
+            kwargs=cache_kwargs,
         )
         if cache_value is not None:
             return cache_value
@@ -1228,9 +1232,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             # we do not cache
             self._parent._write_cache(
                 accessor_name="metrics",
-                method_name=display_class.__name__,
+                method_name=cache_method_name,
                 data_source=data_source,
-                kwargs=display_kwargs,
+                kwargs=cache_kwargs,
                 result=display,
             )
 
@@ -1280,6 +1284,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         display = cast(
             RocCurveDisplay,
             self._get_display(
+                cache_method_name="roc",
+                cache_kwargs={},
                 data_source=data_source,
                 response_method=response_method,
                 display_class=RocCurveDisplay,
@@ -1330,6 +1336,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         display = cast(
             PrecisionRecallCurveDisplay,
             self._get_display(
+                cache_method_name="precision_recall",
+                cache_kwargs={},
                 data_source=data_source,
                 response_method=response_method,
                 display_class=PrecisionRecallCurveDisplay,
@@ -1396,6 +1404,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         display = cast(
             PredictionErrorDisplay,
             self._get_display(
+                cache_method_name="prediction_error",
+                cache_kwargs=display_kwargs,
                 data_source=data_source,
                 response_method="predict",
                 display_class=PredictionErrorDisplay,
@@ -1472,6 +1482,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
+                cache_method_name="confusion_matrix",
+                cache_kwargs={},
                 data_source=data_source,
                 response_method=response_method,
                 display_class=ConfusionMatrixDisplay,
