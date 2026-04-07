@@ -77,20 +77,21 @@ three methods:
 3. `frame` that returns a `pandas.DataFrame` with the information contained in the
    display.
 
-We provide the :class:`EstimatorReport.metrics.summarize` method that aggregates metrics
+We provide the :meth:`EstimatorReport.metrics.summarize` method that aggregates metrics
 in a single dataframe, available through a :class:`~skore.Display`. By default, a set of
 metrics is computed based on the type of target variable (e.g. classification or
-regression). Nevertheless, you can specify the metrics you want to compute thanks to the
-`metric` parameter. We accept different types:
+regression). Non-default metrics can be computed by registering them with
+:meth:`add` followed by :meth:`summarize`. We accept different metric types:
 
 1. A string that corresponds to a scikit-learn scorer name or a built-in `skore`
    metric name. Scikit-learn metrics that require a ``neg_`` prefix (e.g.
    ``neg_mean_squared_error``) can also be passed without it (e.g.
    ``mean_squared_error``); the alias is resolved automatically.
 
-2. A callable,
+2. A scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`,
 
-3. A scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`.
+3. A metric callable, that takes `y_true` and `y_pred` as its first two arguments
+   and returns a numeric score.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
 API. Refer to the :ref:`estimator_metrics` section for more details on all the
