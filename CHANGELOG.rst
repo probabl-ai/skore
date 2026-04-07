@@ -83,11 +83,6 @@ Changed
   ROC and precision-recall curves, now expose both classes instead of failing.
   :pr:`2663` by :user:`cakedev0`.
 
-- **Breaking change:** binary classification metrics and curve displays no longer
-  require ``pos_label`` to be set, and skore no longer infers it implicitly. When
-  ``pos_label`` is left unset, ``precision`` and ``recall`` metrics, as well as
-  ROC and precision-recall curves, now expose both classes instead of failing.
-
 Added
 -----
 
