@@ -26,6 +26,7 @@ from skore._sklearn._diagnostics import (
     check_overfitting_underfitting,
 )
 from skore._sklearn.find_ml_task import _find_ml_task
+from skore._sklearn.metrics import MetricRegistry
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._cache_key import make_cache_key
@@ -36,9 +37,7 @@ from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
-    from skore._sklearn._estimator.inspection_accessor import (
-        _InspectionAccessor,
-    )
+    from skore._sklearn._estimator.inspection_accessor import _InspectionAccessor
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
@@ -242,6 +241,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
         self._cache = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
+
+        self._metric_registry = MetricRegistry(self)
 
         if pos_label is None:
             return

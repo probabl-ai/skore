@@ -22,7 +22,7 @@ from skore._sklearn._plot.inspection.utils import (
     sort_features,
 )
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import Aggregate, DataSource, Metric, ReportType
+from skore._sklearn.types import Aggregate, DataSource, MetricLike, ReportType
 from skore._utils._index import flatten_multi_index
 
 
@@ -72,7 +72,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         X: ArrayLike,
         y: ArrayLike,
         at_step: int | str,
-        metric: Metric | list[Metric] | dict[str, Metric] | None,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None,
         n_repeats: int,
         max_samples: float,
         n_jobs: int | None,
