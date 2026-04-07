@@ -190,7 +190,7 @@ class TestCrossValidationReportPayload:
             10,
         )
 
-        X, y = make_regression(random_state=42, n_samples=10)
+        X, y = make_regression(random_state=42, n_samples=8)
         estimator = LinearRegression()
 
         report = CrossValidationReport(estimator, X, y, splitter=splitter)
