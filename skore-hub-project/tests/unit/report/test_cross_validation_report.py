@@ -280,8 +280,8 @@ class TestCrossValidationReportPayload:
                     "random_state": 0,
                 },
                 [
-                    [0, 0, 0, 0, 1, 0, 1, 0],
-                    [0, 0, 0, 0, 1, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 1, 0],
                 ],
                 id="StratifiedShuffleSplit",
             ),
@@ -295,7 +295,7 @@ class TestCrossValidationReportPayload:
         expected_splits,
         monkeypatch,
     ):
-        X, y = make_classification(random_state=42, n_samples=10, n_classes=2)
+        X, y = make_classification(random_state=42, n_samples=8, n_classes=2)
         estimator = LogisticRegression(random_state=42)
 
         report = CrossValidationReport(estimator, X, y, splitter=splitter)

@@ -249,7 +249,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             probs = target.value_counts(normalize=True)
             target_repr = rng.choice(
                 probs.index.to_numpy(),  # classes
-                size=SPLITTING_STRATEGY_REPR_SAMPLE_COUNT,
+                size=rng_size,
                 p=probs.to_numpy(),  # probabilities
                 replace=True,
             )
@@ -257,9 +257,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         else:  # regression
             # uniformly sample the target because it will have no impact on the
             # representation
-            target_repr = rng.choice(
-                target, size=SPLITTING_STRATEGY_REPR_SAMPLE_COUNT, replace=False
-            )
+            target_repr = rng.choice(target, size=rng_size, replace=False)
 
         # create a simplified splitter without shuffling and repetitions
         simplified_cls = SPLITTERS.get(splitter.__class__.__name__, splitter.__class__)
@@ -283,7 +281,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         X = rng.normal(size=(rng_size, 1))
 
         for train_idx, test_idx in simplified_splitter.split(X, target_repr):
-            split_flags = np.full(SPLITTING_STRATEGY_REPR_SAMPLE_COUNT, -1, dtype=int)
+            split_flags = np.full(rng_size, -1, dtype=int)
             split_flags[train_idx] = 0
             split_flags[test_idx] = 1
 
