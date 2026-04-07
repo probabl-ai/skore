@@ -5,11 +5,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 
 from skore import EstimatorReport, configuration, evaluate
-from skore._sklearn._diagnostics import DiagnosticsDisplay
+from skore._sklearn._diagnostic import DiagnosticDisplay
 
 
 def test_diagnose_detects_overfitting():
-    """Check the overfitting diagnostics are detected."""
+    """Check that the overfitting issue is detected."""
     X, y = make_classification(
         n_samples=500,
         n_features=20,
@@ -23,14 +23,12 @@ def test_diagnose_detects_overfitting():
         DecisionTreeClassifier(random_state=0), X, y, splitter=0.5, pos_label=1
     )
     result = report.diagnose()
-    assert "SKD001" in result.diagnostics
-    assert (
-        "6/6 default predictive metrics" in result.diagnostics["SKD001"]["explanation"]
-    )
+    assert "SKD001" in result.issues
+    assert "6/6 default predictive metrics" in result.issues["SKD001"]["explanation"]
 
 
 def test_diagnose_detects_underfitting():
-    """Check the underfitting diagnostics are detected."""
+    """Check that the underfitting issue is detected."""
     X, y = make_classification(n_samples=400, n_features=8, random_state=0)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.5, random_state=0
@@ -44,15 +42,15 @@ def test_diagnose_detects_underfitting():
         pos_label=1,
     )
     result = report.diagnose()
-    assert "SKD002" in result.diagnostics
-    assert "6/6 comparable metrics" in result.diagnostics["SKD002"]["explanation"]
+    assert "SKD002" in result.issues
+    assert "6/6 comparable metrics" in result.issues["SKD002"]["explanation"]
 
 
 def test_diagnose_ignore(monkeypatch, regression_train_test_split):
-    """Check the diagnostics are ignored when ignore is passed."""
+    """Check that checks are ignored when ignore is passed."""
     monkeypatch.setattr(
         EstimatorReport,
-        "_compute_diagnostics",
+        "_run_checks",
         lambda self: (
             {
                 "SKD001": {
@@ -73,24 +71,24 @@ def test_diagnose_ignore(monkeypatch, regression_train_test_split):
         y_test=y_test,
     )
     result = report.diagnose(ignore=["SKD001"])
-    assert "SKD001" not in result.diagnostics
-    assert result.diagnostics == {}
+    assert "SKD001" not in result.issues
+    assert result.issues == {}
 
 
 def test_diagnose_empty_when_train_data_missing(regression_data):
-    """Check the diagnostics are empty when the train data is missing."""
+    """Check that no issues are detected when the train data is missing."""
     X, y = regression_data
     estimator = LogisticRegression(max_iter=1_000).fit(X, y > y.mean())
     report = EstimatorReport(estimator, X_test=X, y_test=y > y.mean())
     result = report.diagnose()
-    assert result.diagnostics == {}
+    assert result.issues == {}
 
 
 def test_diagnose_no_issues(monkeypatch, regression_train_test_split):
-    """Check the diagnostics are empty when no issues are detected."""
+    """Check that no issues are detected when checks pass."""
     monkeypatch.setattr(
         EstimatorReport,
-        "_compute_diagnostics",
+        "_run_checks",
         lambda self: ({}, {"SKD001", "SKD002"}),
     )
     X_train, X_test, y_train, y_test = regression_train_test_split
@@ -102,14 +100,14 @@ def test_diagnose_no_issues(monkeypatch, regression_train_test_split):
         y_test=y_test,
     )
     result = report.diagnose()
-    assert result.diagnostics == {}
+    assert result.issues == {}
 
 
 def test_diagnose_result_has_repr(monkeypatch, regression_train_test_split):
-    """Check the diagnostics result has a repr."""
+    """Check that the diagnostic result has a repr."""
     monkeypatch.setattr(
         EstimatorReport,
-        "_compute_diagnostics",
+        "_run_checks",
         lambda self: (
             {
                 "SKD999": {
@@ -130,20 +128,20 @@ def test_diagnose_result_has_repr(monkeypatch, regression_train_test_split):
         y_test=y_test,
     )
     results = report.diagnose()
-    assert isinstance(results, DiagnosticsDisplay)
-    assert "Diagnostics:" in repr(results)
+    assert isinstance(results, DiagnosticDisplay)
+    assert "Diagnostic:" in repr(results)
     bundle = results._repr_mimebundle_()
     assert "text/plain" in bundle
     assert "text/html" in bundle
     assert 'href="' in bundle["text/html"]
-    assert "user_guide/diagnostics.html#" in bundle["text/html"]
+    assert "user_guide/diagnostic.html#" in bundle["text/html"]
 
 
 def test_diagnose_uses_global_ignore(monkeypatch, regression_data):
-    """Check the diagnostics are ignored when global ignore is set."""
+    """Check that checks are ignored when global ignore is set."""
     monkeypatch.setattr(
         EstimatorReport,
-        "_compute_diagnostics",
+        "_run_checks",
         lambda self: (
             {
                 "SKD001": {
@@ -157,22 +155,22 @@ def test_diagnose_uses_global_ignore(monkeypatch, regression_data):
     )
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=0.2)
-    assert "SKD001" in report.diagnose().diagnostics
-    with configuration(ignore_diagnostics=["SKD001"]):
-        assert "SKD001" not in report.diagnose().diagnostics
+    assert "SKD001" in report.diagnose().issues
+    with configuration(ignore_checks=["SKD001"]):
+        assert "SKD001" not in report.diagnose().issues
 
 
-def test_diagnose_reuses_cached_diagnostics(monkeypatch, regression_data):
-    """Check the diagnostics are reused across splits."""
+def test_diagnose_reuses_cached_results(monkeypatch, regression_data):
+    """Check that check results are cached and reused."""
     calls = 0
-    original = EstimatorReport._compute_diagnostics
+    original = EstimatorReport._run_checks
 
-    def _compute_diagnostics(self):
+    def _run_checks_wrapper(self):
         nonlocal calls
         calls += 1
         return original(self)
 
-    monkeypatch.setattr(EstimatorReport, "_compute_diagnostics", _compute_diagnostics)
+    monkeypatch.setattr(EstimatorReport, "_run_checks", _run_checks_wrapper)
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=0.2)
     report.diagnose()

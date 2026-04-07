@@ -13,11 +13,11 @@ class LocalConfiguration(Local):
         *,
         show_progress=True,
         plot_backend="matplotlib",
-        ignore_diagnostics: list[str] | tuple[str, ...] | None = None,
+        ignore_checks: list[str] | tuple[str, ...] | None = None,
     ):
         self.show_progress = show_progress
         self.plot_backend = plot_backend
-        self.ignore_diagnostics = ignore_diagnostics
+        self.ignore_checks = ignore_checks
 
 
 class Configuration:
@@ -38,7 +38,7 @@ class Configuration:
         Backend used for rendering plots (e.g. ``"matplotlib"``).
         Default is ``"matplotlib"``.
 
-    ignore_diagnostics : list of str or tuple of str or None
+    ignore_checks : list of str or tuple of str or None
         Global diagnostic codes ignored by ``report.diagnose(...)``.
         Default is ``None``.
 
@@ -50,7 +50,7 @@ class Configuration:
     >>> from skore import configuration
     >>> configuration.show_progress = False
     >>> configuration.plot_backend = "matplotlib"
-    >>> configuration.ignore_diagnostics = ["SKD001"]
+    >>> configuration.ignore_checks = ["SKD001"]
 
     **Temporary overrides** using the context manager (previous values are
     restored on exit):
@@ -60,7 +60,7 @@ class Configuration:
     ...     report.fit(X, y)
     >>> with configuration(plot_backend="plotly"):
     ...     report.plot()
-    >>> with configuration(ignore_diagnostics=["SKD002"]):
+    >>> with configuration(ignore_checks=["SKD002"]):
     ...     report.diagnose()
     """
 
@@ -72,7 +72,7 @@ class Configuration:
             f"Configuration("
             f"show_progress={self.local.show_progress}, "
             f"plot_backend={self.local.plot_backend!r}, "
-            f"ignore_diagnostics={self.local.ignore_diagnostics}"
+            f"ignore_checks={self.local.ignore_checks}"
             ")"
         )
 
@@ -89,7 +89,7 @@ class Configuration:
         self.local = LocalConfiguration(
             show_progress=value,
             plot_backend=self.local.plot_backend,
-            ignore_diagnostics=self.local.ignore_diagnostics,
+            ignore_checks=self.local.ignore_checks,
         )
 
     @property
@@ -105,23 +105,23 @@ class Configuration:
         self.local = LocalConfiguration(
             show_progress=self.local.show_progress,
             plot_backend=value,
-            ignore_diagnostics=self.local.ignore_diagnostics,
+            ignore_checks=self.local.ignore_checks,
         )
 
     @property
-    def ignore_diagnostics(self):
-        return self.local.ignore_diagnostics
+    def ignore_checks(self):
+        return self.local.ignore_checks
 
-    @ignore_diagnostics.setter
-    def ignore_diagnostics(self, value):
+    @ignore_checks.setter
+    def ignore_checks(self, value):
         if current_thread().ident != main_thread().ident:
-            self.local.ignore_diagnostics = value
+            self.local.ignore_checks = value
             return
 
         self.local = LocalConfiguration(
             show_progress=self.local.show_progress,
             plot_backend=self.local.plot_backend,
-            ignore_diagnostics=value,
+            ignore_checks=value,
         )
 
     @contextmanager
@@ -130,11 +130,11 @@ class Configuration:
         *,
         show_progress=...,
         plot_backend=...,
-        ignore_diagnostics=...,
+        ignore_checks=...,
     ):
         show_progress_copy = self.show_progress
         plot_backend_copy = self.plot_backend
-        ignore_diagnostics_copy = self.ignore_diagnostics
+        ignore_checks_copy = self.ignore_checks
 
         if show_progress is not ...:
             self.show_progress = show_progress
@@ -142,15 +142,15 @@ class Configuration:
         if plot_backend is not ...:
             self.plot_backend = plot_backend
 
-        if ignore_diagnostics is not ...:
-            self.ignore_diagnostics = ignore_diagnostics
+        if ignore_checks is not ...:
+            self.ignore_checks = ignore_checks
 
         try:
             yield
         finally:
             self.show_progress = show_progress_copy
             self.plot_backend = plot_backend_copy
-            self.ignore_diagnostics = ignore_diagnostics_copy
+            self.ignore_checks = ignore_checks_copy
 
 
 configuration = Configuration()
