@@ -1,4 +1,5 @@
 import warnings
+from functools import partial
 from numbers import Real
 
 import joblib
@@ -237,6 +238,24 @@ def test_custom_metric_with_scorer_no_attribute_error(linear_regression_with_tes
         metric_function=scorer, response_method="predict"
     )
     assert result == pytest.approx(business_loss(y_test, estimator.predict(X_test)))
+
+
+def test_custom_metric_with_partial_no_attribute_error(linear_regression_with_test):
+    """Passing a functools.partial to custom_metric() should not raise
+    AttributeError due to missing __name__."""
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def _weighted_mae(y_true, y_pred, weight=1.0):
+        return weight * np.mean(np.abs(y_true - y_pred))
+
+    metric_fn = partial(_weighted_mae, weight=2.0)
+
+    result = report.metrics.custom_metric(
+        metric_function=metric_fn, response_method="predict"
+    )
+    expected = _weighted_mae(y_test, estimator.predict(X_test), weight=2.0)
+    assert result == pytest.approx(expected)
 
 
 @pytest.mark.parametrize("prefit_estimator", [True, False])
