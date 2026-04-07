@@ -186,10 +186,6 @@ class TestCrossValidationReportPayload:
         self, project, splitter, metadata, expected_splits, monkeypatch
     ):
         monkeypatch.setattr(
-            "skore_hub_project.report.cross_validation_report.SPLITTING_STRATEGY_REPR_SAMPLE_COUNT",
-            8,
-        )
-        monkeypatch.setattr(
             "skore_hub_project.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
             10,
         )
@@ -299,10 +295,6 @@ class TestCrossValidationReportPayload:
         expected_splits,
         monkeypatch,
     ):
-        monkeypatch.setattr(
-            "skore_hub_project.report.cross_validation_report.SPLITTING_STRATEGY_REPR_SAMPLE_COUNT",
-            8,
-        )
         X, y = make_classification(random_state=42, n_samples=10, n_classes=2)
         estimator = LogisticRegression(random_state=42)
 
