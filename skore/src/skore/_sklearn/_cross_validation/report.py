@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 import uuid
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import joblib
 import skrub
@@ -16,7 +16,7 @@ from sklearn.pipeline import Pipeline
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._estimator.report import EstimatorReport
+from skore._sklearn._estimator.report import CacheEntry, EstimatorReport
 from skore._sklearn.types import DataSource, PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
@@ -603,7 +603,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         accessor_name: str,
         method_name: str | None = None,
         data_source: DataSource | None = None,
-    ) -> Generator[tuple[str, str, DataSource | None, dict[str, Any], Any], None, None]:
+    ) -> Generator[CacheEntry, None, None]:
         """Return cross-validation cached results available on every split.
 
         This helper inspects the child :class:`~skore.EstimatorReport` caches and
@@ -627,7 +627,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Yields
         ------
-        tuple
+        CacheEntry
             Cached entries matching the requested filters, each represented as
             ``(accessor_name, method_name, data_source, kwargs, result)``.
         """
@@ -651,4 +651,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             result = getattr(getattr(self, accessor_name), method_name)(
                 data_source=data_source, **kwargs
             )
-            yield (accessor_name, method_name, data_source, kwargs, result)
+            yield CacheEntry(
+                accessor_name=accessor_name,
+                method_name=method_name,
+                data_source=data_source,
+                kwargs=kwargs,
+                result=result,
+            )

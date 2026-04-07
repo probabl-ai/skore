@@ -6,7 +6,7 @@ import uuid
 import warnings
 from collections.abc import Generator
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
 import joblib
 import numpy as np
@@ -72,6 +72,16 @@ def _check_estimator_and_data(
             None if X_train is None else {"_skrub_X": X_train, "_skrub_y": y_train}
         )
     return initialized_with_data_op, estimator, train_data, test_data
+
+
+class CacheEntry(NamedTuple):
+    """Accessor-level cache entry stored on estimator reports."""
+
+    accessor_name: str
+    method_name: str
+    data_source: DataSource | None
+    kwargs: dict[str, Any]
+    result: Any
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -816,12 +826,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         result: Any,
     ) -> None:
         key = joblib.hash((accessor_name, method_name, data_source, kwargs))
-        value = (
-            accessor_name,
-            method_name,
-            data_source,
-            kwargs,
-            result,
+        value = CacheEntry(
+            accessor_name=accessor_name,
+            method_name=method_name,
+            data_source=data_source,
+            kwargs=kwargs,
+            result=result,
         )
         self._cache[key] = value
 
@@ -830,7 +840,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         accessor_name: str,
         method_name: str | None = None,
         data_source: DataSource | None = None,
-    ) -> Generator[tuple[str, str, DataSource | None, dict[str, Any], Any], None, None]:
+    ) -> Generator[CacheEntry, None, None]:
         """Return accessor-level cached results stored in ``self._cache``.
 
         This helper exposes the inspectable part of the estimator cache used by
@@ -871,18 +881,18 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Returns
         -------
-        cached_results : generator of tuple
+        cached_results : generator of CacheEntry
             Cached entries matching the requested filters, each represented as
             ``(accessor_name, method_name, data_source, kwargs, result)``.
         """
         # This API is used by projects to inspect computed results
         # changing it might break `skore-*-project`s
 
-        def value_match(cached_value):
+        def entry_match(cache_entry: CacheEntry):
             return (
-                cached_value[0] == accessor_name
-                and (method_name is None or cached_value[1] == method_name)
-                and (data_source is None or cached_value[2] == data_source)
+                cache_entry.accessor_name == accessor_name
+                and (method_name is None or cache_entry.method_name == method_name)
+                and (data_source is None or cache_entry.data_source == data_source)
             )
 
-        yield from filter(value_match, self._cache.values())
+        yield from filter(entry_match, self._cache.values())
