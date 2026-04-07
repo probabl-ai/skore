@@ -14,6 +14,7 @@ from sklearn.metrics._scorer import _BaseScorer
 
 from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
 from skore._utils._cache_key import make_cache_key
+from skore._utils._callable_name import _callable_name
 
 if TYPE_CHECKING:
     from skore import EstimatorReport
