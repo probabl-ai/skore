@@ -203,6 +203,24 @@ def test_get_cached_results_metrics_uses_public_method_names(linear_regression_d
     pd.testing.assert_frame_equal(result, expected)
 
 
+def test_get_cached_results_metrics_keep_public_kwargs(
+    logistic_binary_classification_data,
+):
+    """Check that replayable cache kwargs match the public metric call."""
+    estimator, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2, pos_label=1)
+
+    expected = report.metrics.precision()
+    cached_results = list(report._get_cached_results("metrics"))
+
+    assert len(cached_results) == 1
+    _, method_name, data_source, kwargs, result = cached_results[0]
+    assert method_name == "precision"
+    assert data_source == "test"
+    assert kwargs == {"average": None}
+    pd.testing.assert_frame_equal(result, expected)
+
+
 @pytest.mark.parametrize(
     "error",
     [

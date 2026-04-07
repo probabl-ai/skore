@@ -214,6 +214,29 @@ def test_custom_metric_compatible_estimator(
     assert result == pytest.approx(1)
 
 
+def test_custom_metric_uses_cached_result(linear_regression_with_test):
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    call_count = 0
+
+    def custom_metric(y_true, y_pred):
+        nonlocal call_count
+        call_count += 1
+        return np.mean(y_true - y_pred)
+
+    first = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+    )
+    second = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+    )
+
+    assert first == pytest.approx(second)
+    assert call_count == 1
+
+
 def test_custom_metric_with_scorer_no_attribute_error(linear_regression_with_test):
     """
     Passing a make_scorer object to custom_metric()
