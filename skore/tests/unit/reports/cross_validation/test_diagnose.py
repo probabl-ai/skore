@@ -1,3 +1,4 @@
+import pytest
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
@@ -83,3 +84,54 @@ def test_diagnose_uses_global_ignore(binary_classification_data):
     assert len(checked_codes) > 0
     with configuration(ignore_checks=list(checked_codes)):
         assert report.diagnose().issues == {}
+
+
+def test_add_checks_cv_level(binary_classification_data):
+    """Check that add_checks registers a CV-level check."""
+    X, y = binary_classification_data
+    report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
+
+    def cv_check(report):
+        n_splits = len(report.estimator_reports_)
+        return {
+            "CVCUSTOM": {
+                "title": "CV-level check",
+                "explanation": f"Ran on {n_splits} splits.",
+            }
+        }
+
+    result = report.add_checks([("CVCUSTOM", cv_check)])
+    assert "CVCUSTOM" in result.issues
+    assert "3 splits" in result.issues["CVCUSTOM"]["explanation"]
+
+
+def test_add_checks_estimator_level(binary_classification_data):
+    """Check that add_checks with level='estimator' propagates and aggregates."""
+    X, y = binary_classification_data
+    report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
+
+    def estimator_check(report):
+        if report.X_test is not None:
+            return {
+                "ESTCUSTOM": {
+                    "title": "Estimator-level check",
+                    "explanation": "Detected on a single split.",
+                }
+            }
+        return {}
+
+    result = report.add_checks([("ESTCUSTOM", estimator_check)], level="estimator")
+    assert "ESTCUSTOM" in result.issues
+    assert "evaluated splits" in result.issues["ESTCUSTOM"]["explanation"]
+
+
+def test_add_checks_invalid_level(binary_classification_data):
+    """Check that add_checks raises ValueError for unsupported level."""
+    X, y = binary_classification_data
+    report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
+
+    def my_check(report):
+        return {}
+
+    with pytest.raises(ValueError, match="level="):
+        report.add_checks([("X", my_check)], level="comparison")

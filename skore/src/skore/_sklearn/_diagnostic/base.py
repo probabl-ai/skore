@@ -20,7 +20,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
     issues : dict of str to dict
         Detected issues produced by the report, keyed by check code
         (e.g. ``"SKD001"``). Each value is a dict with keys ``"title"``,
-        ``"docs_anchor"``, and ``"explanation"``.
+        ``"explanation"``, and optionally ``"docs_url"``.
 
     checks_ran : int
         Total number of checks that were executed.
@@ -65,9 +65,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
                 "code": code,
                 "title": issue["title"],
                 "explanation": issue["explanation"],
-                "documentation_url": get_issue_documentation_url(
-                    docs_anchor=issue["docs_anchor"]
-                ),
+                "documentation_url": _resolve_docs_url(issue),
             }
             for code, issue in self._issues.items()
         ]
@@ -100,6 +98,21 @@ class DiagnosticDisplay(DisplayHelpMixin):
         return "\n".join([self.header, *[f"- {message}" for message in self._messages]])
 
 
+def _resolve_docs_url(issue: dict) -> str | None:
+    """Resolve the documentation URL for an issue.
+
+    Returns ``None`` if the issue has no ``"docs_url"`` key, the raw URL if it
+    starts with ``"https"``, or a full documentation URL built from the anchor
+    otherwise.
+    """
+    docs_url = issue.get("docs_url")
+    if docs_url is None:
+        return None
+    if docs_url.startswith("https"):
+        return docs_url
+    return get_issue_documentation_url(docs_anchor=docs_url)
+
+
 def get_issue_documentation_url(*, docs_anchor: str) -> str:
     try:
         skore_version = parse_version(version("skore"))
@@ -113,26 +126,40 @@ def get_issue_documentation_url(*, docs_anchor: str) -> str:
     return f"https://docs.skore.probabl.ai/{url_version}/user_guide/diagnostic.html#{docs_anchor}"
 
 
+def _is_external_url(issue: dict) -> bool:
+    return issue.get("docs_url", "").startswith("https")
+
+
 def format_issue_message(code: str, issue: dict) -> str:
-    return (
-        f"[{code}] {issue['title']}. {issue['explanation']} "
-        "Read our documentation for more details: "
-        f"{get_issue_documentation_url(docs_anchor=issue['docs_anchor'])}. "
-        f"Mute with `ignore=['{code}']`."
-    )
+    msg = f"[{code}] {issue['title']}. {issue['explanation']}"
+    docs_url = _resolve_docs_url(issue)
+    if docs_url is not None:
+        if _is_external_url(issue):
+            msg += f" Read more about this here: {docs_url}."
+        else:
+            msg += f" Read our documentation for more details: {docs_url}."
+    msg += f" Mute with `ignore=['{code}']`."
+    return msg
 
 
 def format_issue_message_html(code: str, issue: dict) -> str:
     escaped_code = escape(code)
     title = escape(issue["title"])
     explanation = escape(issue["explanation"])
-    docs_url = escape(
-        get_issue_documentation_url(docs_anchor=issue["docs_anchor"]),
-        quote=True,
-    )
-    return (
-        f"[{escaped_code}] {title}. {explanation} "
-        f'Read <a href="{docs_url}" target="_blank" rel="noopener noreferrer">'
-        "our documentation</a> for more details. "
-        f"Mute with <code>ignore=['{escaped_code}']</code>."
-    )
+    msg = f"[{escaped_code}] {title}. {explanation}"
+    docs_url = _resolve_docs_url(issue)
+    if docs_url is not None:
+        escaped_url = escape(docs_url, quote=True)
+        if _is_external_url(issue):
+            msg += (
+                f' Read more about this <a href="{escaped_url}" target="_blank"'
+                ' rel="noopener noreferrer">here</a>.'
+            )
+        else:
+            msg += (
+                f' Read <a href="{escaped_url}" target="_blank"'
+                ' rel="noopener noreferrer">our documentation</a>'
+                " for more details."
+            )
+    msg += f" Mute with <code>ignore=['{escaped_code}']</code>."
+    return msg

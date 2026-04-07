@@ -18,15 +18,19 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
 
 
-def check_overfitting_underfitting(
-    report: EstimatorReport,
-) -> dict[str, dict]:
-    """Check for overfitting (SKD001) and underfitting (SKD002).
+def _get_metrics_data(report: EstimatorReport) -> tuple:
+    """Compute and cache report/baseline metrics data for checks.
 
-    Both checks share the same pre-conditions and metric data, so they are
-    grouped in a single function.  Raises :class:`DiagnosticNotApplicable`
-    when train+test data is unavailable.
+    Both :func:`check_overfitting` and :func:`check_underfitting` share the
+    same expensive setup (fitting a dummy baseline and summarising metrics).
+    This helper runs the computation once and caches the result on the report.
+
+    Raises :class:`DiagnosticNotApplicable` when train+test data is
+    unavailable.
     """
+    if hasattr(report, "_diagnostic_metrics_cache"):
+        return report._diagnostic_metrics_cache  # type: ignore[attr-defined]
+
     if (
         report.X_train is None
         or report.y_train is None
@@ -34,6 +38,7 @@ def check_overfitting_underfitting(
         or report.y_test is None
     ):
         raise DiagnosticNotApplicable()
+
     # Avoid circular import
     from skore._sklearn._estimator.report import EstimatorReport
 
@@ -63,8 +68,21 @@ def check_overfitting_underfitting(
             data_source="test"
         ).data["score"]
 
-    issues: dict[str, dict] = {}
-    # SKD001 - Overfitting
+    report._diagnostic_metrics_cache = (report_data, baseline_data)  # type: ignore[attr-defined]
+    return report_data, baseline_data
+
+
+def check_overfitting(
+    report: EstimatorReport,
+) -> dict[str, dict]:
+    """Check for overfitting (SKD001).
+
+    Detects significant gaps between train and test scores.
+    Raises :class:`DiagnosticNotApplicable` when train+test data is
+    unavailable.
+    """
+    report_data, _baseline_data = _get_metrics_data(report)
+
     votes = [
         check_score_gap_to_baseline(
             score=report_data.loc[idx, "score_train"],
@@ -79,17 +97,30 @@ def check_overfitting_underfitting(
 
     majority, n_positive, total = majority_vote(votes)
     if majority:
-        issues["SKD001"] = {
-            "title": "Potential overfitting",
-            "docs_anchor": "skd001-overfitting",
-            "explanation": (
-                "Significant train/test gaps were found for "
-                f"{n_positive}/{total} default predictive metrics."
-            ),
+        return {
+            "SKD001": {
+                "title": "Potential overfitting",
+                "docs_url": "skd001-overfitting",
+                "explanation": (
+                    "Significant train/test gaps were found for "
+                    f"{n_positive}/{total} default predictive metrics."
+                ),
+            }
         }
+    return {}
 
-    # SKD002 - Underfitting
-    # train and test scores are close to a dummy baseline.
+
+def check_underfitting(
+    report: EstimatorReport,
+) -> dict[str, dict]:
+    """Check for underfitting (SKD002).
+
+    Detects train and test scores close to a dummy baseline.
+    Raises :class:`DiagnosticNotApplicable` when train+test data is
+    unavailable.
+    """
+    report_data, baseline_data = _get_metrics_data(report)
+
     votes = [
         not check_score_gap_to_baseline(
             score=report_data.loc[idx, "score_train"],
@@ -110,14 +141,15 @@ def check_overfitting_underfitting(
     ]
     majority, n_positive, total = majority_vote(votes)
     if majority:
-        issues["SKD002"] = {
-            "title": "Potential underfitting",
-            "docs_anchor": "skd002-underfitting",
-            "explanation": (
-                "Train/test scores are on par and not significantly better "
-                f"than the dummy baseline for {n_positive}/{total} "
-                "comparable metrics."
-            ),
+        return {
+            "SKD002": {
+                "title": "Potential underfitting",
+                "docs_url": "skd002-underfitting",
+                "explanation": (
+                    "Train/test scores are on par and not significantly better "
+                    f"than the dummy baseline for {n_positive}/{total} "
+                    "comparable metrics."
+                ),
+            }
         }
-
-    return issues
+    return {}

@@ -21,9 +21,9 @@ from sklearn.utils.validation import _num_samples, check_is_fitted
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._diagnostic import (
-    DiagnosticNotApplicable,
-    check_overfitting_underfitting,
+from skore._sklearn._diagnostic.model_checks import (
+    check_overfitting,
+    check_underfitting,
 )
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.metrics import MetricRegistry
@@ -150,6 +150,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     }
 
     _report_type: Literal["estimator"] = "estimator"
+    _BUILTIN_CHECKS = [
+        ("SKD001", check_overfitting),
+        ("SKD002", check_underfitting),
+    ]
 
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
@@ -593,22 +597,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         col_idx = np.flatnonzero(self.estimator_.classes_ == pos_label)[0]
         return predictions[:, col_idx]
 
-    def _run_checks(
-        self,
-    ) -> tuple[dict[str, dict], set[str]]:
-        """Run all registered checks against the report.
-
-        Returns a tuple of (detected issues, set of check codes that were evaluated).
-        """
-        issues: dict[str, dict] = {}
-        checked_codes: set[str] = set()
-        for codes, check_fn in [({"SKD001", "SKD002"}, check_overfitting_underfitting)]:
-            try:
-                issues.update(check_fn(self))
-                checked_codes |= codes
-            except DiagnosticNotApplicable:
-                pass
-        return issues, checked_codes
+    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
+        """Run all registered checks against the report."""
+        return self._run_own_checks()
 
     @property
     def ml_task(self):

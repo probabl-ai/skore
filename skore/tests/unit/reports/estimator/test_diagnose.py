@@ -1,3 +1,4 @@
+import pytest
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -6,6 +7,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 from skore import EstimatorReport, configuration, evaluate
 from skore._sklearn._diagnostic import DiagnosticDisplay
+from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
 
 
 def test_diagnose_detects_overfitting():
@@ -55,7 +57,7 @@ def test_diagnose_ignore(monkeypatch, regression_train_test_split):
             {
                 "SKD001": {
                     "title": "Mock overfitting",
-                    "docs_anchor": "skd001-overfitting",
+                    "docs_url": "skd001-overfitting",
                     "explanation": "Mock overfitting detected.",
                 }
             },
@@ -112,7 +114,7 @@ def test_diagnose_result_has_repr(monkeypatch, regression_train_test_split):
             {
                 "SKD999": {
                     "title": "Mock issue",
-                    "docs_anchor": "skd001-overfitting",
+                    "docs_url": "skd001-overfitting",
                     "explanation": "Mock issue for repr rendering.",
                 }
             },
@@ -146,7 +148,7 @@ def test_diagnose_uses_global_ignore(monkeypatch, regression_data):
             {
                 "SKD001": {
                     "title": "Mock overfitting",
-                    "docs_anchor": "skd001-overfitting",
+                    "docs_url": "skd001-overfitting",
                     "explanation": "Mock overfitting detected.",
                 }
             },
@@ -177,3 +179,141 @@ def test_diagnose_reuses_cached_results(monkeypatch, regression_data):
     calls_after_first = calls
     report.diagnose()
     assert calls == calls_after_first
+
+
+# ---- Custom check tests ----
+
+
+def _make_report(regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    return EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+
+def test_add_checks_runs_custom_check(regression_train_test_split):
+    """Check that add_checks runs the custom check and includes its issue."""
+    report = _make_report(regression_train_test_split)
+
+    def my_check(report):
+        return {
+            "CUSTOM001": {
+                "title": "Custom issue",
+                "explanation": "Something was found.",
+            }
+        }
+
+    result = report.add_checks([("CUSTOM001", my_check)])
+    assert "CUSTOM001" in result.issues
+    assert result.issues["CUSTOM001"]["title"] == "Custom issue"
+
+
+def test_add_checks_reuses_builtin_cache(regression_train_test_split):
+    """Check that add_checks does not re-run already cached built-in checks."""
+    report = _make_report(regression_train_test_split)
+
+    report.diagnose()
+    cached_before = dict(report._check_results_cache)
+
+    def my_check(report):
+        return {
+            "CUSTOM002": {
+                "title": "Another issue",
+                "explanation": "Details.",
+            }
+        }
+
+    report.add_checks([("CUSTOM002", my_check)])
+
+    for code in ("SKD001", "SKD002"):
+        if code in cached_before:
+            assert report._check_results_cache[code] is cached_before[code]
+
+
+def test_add_checks_validates_entry(regression_train_test_split):
+    """Check that add_checks raises TypeError for malformed entries."""
+    report = _make_report(regression_train_test_split)
+
+    with pytest.raises(TypeError, match="\\(code, callable\\) tuple"):
+        report.add_checks(["not_a_tuple"])
+
+    with pytest.raises(TypeError, match="\\(code, callable\\) tuple"):
+        report.add_checks([(123, lambda r: {})])
+
+    with pytest.raises(TypeError, match="\\(code, callable\\) tuple"):
+        report.add_checks([("CODE", "not_callable")])
+
+
+def test_add_checks_validates_return_value(regression_train_test_split):
+    """Check that add_checks raises TypeError for bad return value."""
+    report = _make_report(regression_train_test_split)
+
+    def bad_check(report):
+        return "not a dict"
+
+    with pytest.raises(TypeError, match="dict"):
+        report.add_checks([("BAD", bad_check)])
+
+
+def test_add_checks_not_applicable(regression_train_test_split):
+    """Check that DiagnosticNotApplicable is silently skipped."""
+    report = _make_report(regression_train_test_split)
+
+    def inapplicable_check(report):
+        raise DiagnosticNotApplicable()
+
+    result = report.add_checks([("NA001", inapplicable_check)])
+    assert isinstance(result, DiagnosticDisplay)
+
+
+def test_add_checks_docs_url_full(regression_train_test_split):
+    """Check that a full https docs_url is preserved as-is in frame()."""
+    report = _make_report(regression_train_test_split)
+
+    def check_with_url(report):
+        return {
+            "URL001": {
+                "title": "URL test",
+                "explanation": "Has a URL.",
+                "docs_url": "https://example.com/my-doc",
+            }
+        }
+
+    result = report.add_checks([("URL001", check_with_url)])
+    frame = result.frame()
+    row = frame[frame["code"] == "URL001"]
+    assert row["documentation_url"].iloc[0] == "https://example.com/my-doc"
+    assert "Read more about this here" in repr(result)
+
+
+def test_add_checks_docs_url_absent(regression_train_test_split):
+    """Check that missing docs_url results in None in the frame."""
+    report = _make_report(regression_train_test_split)
+
+    def check_no_url(report):
+        return {
+            "NOURL001": {
+                "title": "No URL",
+                "explanation": "No docs_url provided.",
+            }
+        }
+
+    result = report.add_checks([("NOURL001", check_no_url)])
+    frame = result.frame()
+    row = frame[frame["code"] == "NOURL001"]
+    assert row["documentation_url"].iloc[0] is None
+
+
+def test_add_checks_invalid_level(regression_train_test_split):
+    """Check that add_checks raises ValueError for unsupported level."""
+    report = _make_report(regression_train_test_split)
+
+    def my_check(report):
+        return {}
+
+    with pytest.raises(ValueError, match="level="):
+        report.add_checks([("X", my_check)], level="cross-validation")

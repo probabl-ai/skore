@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 import uuid
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 import skrub
 from joblib import Parallel
@@ -167,6 +167,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     }
 
     _report_type: Literal["cross-validation"] = "cross-validation"
+    _BUILTIN_CHECKS: ClassVar[list] = []
 
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
@@ -429,9 +430,18 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
         return report
 
-    def _run_checks(
-        self,
-    ) -> tuple[dict[str, dict], set[str]]:
+    def _resolve_check_targets(self, level):
+        if level is None or level == "cross-validation":
+            return [self]
+        if level == "estimator":
+            return list(self.estimator_reports_)
+        raise ValueError(
+            f"level={level!r} is not valid for CrossValidationReport; "
+            "use 'cross-validation' or 'estimator'."
+        )
+
+    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
+        # Aggregate issues from sub-reports via majority voting.
         total_splits = len(self.estimator_reports_)
         all_checked_codes: set[str] = set()
         positives_by_code: dict[str, list[dict]] = {}
@@ -449,11 +459,16 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 ref = positives[0]
                 issues[code] = {
                     "title": ref["title"],
-                    "docs_anchor": ref["docs_anchor"],
+                    "docs_url": ref.get("docs_url"),
                     "explanation": (
                         f"Detected in {len(positives)}/{total_splits} evaluated splits."
                     ),
                 }
+
+        # Run CV-level checks.
+        own_issues, own_codes = self._run_own_checks()
+        issues.update(own_issues)
+        all_checked_codes |= own_codes
 
         return issues, all_checked_codes
 
