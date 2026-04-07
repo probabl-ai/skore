@@ -373,20 +373,23 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         self,
         metric_fn: Callable,
         *,
+        cache_method_name: str | None = None,
         response_method: str | list[str] | tuple[str, ...],
         data_source: DataSource = "test",
         prediction_pos_label: PositiveLabel | None = None,
         **metric_kwargs: Any,
     ) -> float | dict[PositiveLabel, float] | list:
-        data, y_true = self._parent._get_data_and_y_true(data_source=data_source)
+        _, y_true = self._parent._get_data_and_y_true(data_source=data_source)
 
         pos_label = self._parent.pos_label
         if prediction_pos_label is None:
             prediction_pos_label = pos_label
 
+        cache_method_name = cache_method_name or metric_fn.__name__
+
         score = self._parent._read_cache(
             "metrics",
-            metric_fn.__name__,
+            cache_method_name,
             data_source,
             metric_kwargs,
         )
@@ -422,7 +425,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             self._parent._write_cache(
                 "metrics",
-                metric_fn.__name__,
+                cache_method_name,
                 data_source,
                 metric_kwargs,
                 result=score,
@@ -547,6 +550,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         score = self._compute_metric_scores(
             sklearn.metrics.accuracy_score,
+            cache_method_name="accuracy",
             data_source=data_source,
             response_method="predict",
         )
@@ -621,6 +625,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         result = self._compute_metric_scores(
             sklearn.metrics.precision_score,
+            cache_method_name="precision",
             data_source=data_source,
             response_method="predict",
             average=average,
@@ -706,6 +711,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         result = self._compute_metric_scores(
             sklearn.metrics.recall_score,
+            cache_method_name="recall",
             data_source=data_source,
             response_method="predict",
             average=average,
@@ -762,6 +768,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         pos_label = self._parent.estimator_.classes_[-1]
         result = self._compute_metric_scores(
             sklearn.metrics.brier_score_loss,
+            cache_method_name="brier_score",
             data_source=data_source,
             response_method="predict_proba",
             pos_label=pos_label,
@@ -847,6 +854,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         pred_pos_label = None if is_multiclass else self._parent.estimator_.classes_[-1]
         result = self._compute_metric_scores(
             sklearn.metrics.roc_auc_score,
+            cache_method_name="roc_auc",
             data_source=data_source,
             response_method=["predict_proba", "decision_function"],
             prediction_pos_label=pred_pos_label,
@@ -903,6 +911,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         result = self._compute_metric_scores(
             sklearn.metrics.log_loss,
+            cache_method_name="log_loss",
             data_source=data_source,
             response_method="predict_proba",
         )
@@ -959,6 +968,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         result = self._compute_metric_scores(
             sklearn.metrics.r2_score,
+            cache_method_name="r2",
             data_source=data_source,
             response_method="predict",
             multioutput=multioutput,
@@ -1021,6 +1031,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         result = self._compute_metric_scores(
             sklearn.metrics.root_mean_squared_error,
+            cache_method_name="rmse",
             data_source=data_source,
             response_method="predict",
             multioutput=multioutput,
@@ -1102,6 +1113,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         return self._compute_metric_scores(
             metric_function,
+            cache_method_name="custom_metric",
             data_source=data_source,
             response_method=response_method,
             **kwargs,

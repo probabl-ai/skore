@@ -117,6 +117,7 @@ def test_cache_display_stored(regression_train_test_split):
         "permutation_importance",
         "train",
     )
+    cached_results = list(cached_results)
     assert len(cached_results) == 1
     _, _, cached_data_source, _, cached_display = cached_results[0]
     assert cached_data_source == "train"
@@ -172,11 +173,14 @@ def test_cache_seed_none(regression_train_test_split):
 
     display2 = report.inspection.permutation_importance(data_source="train")
     assert len(report._cache) == 1
-    _, _, cached_data_source, _, cached_display = report._get_cached_results(
-        "inspection",
-        "permutation_importance",
-        "train",
-    )[0]
+    cached_results = list(
+        report._get_cached_results(
+            "inspection",
+            "permutation_importance",
+            "train",
+        )
+    )
+    _, _, cached_data_source, _, cached_display = cached_results[0]
     assert cached_data_source == "train"
     assert cached_display is display2
 

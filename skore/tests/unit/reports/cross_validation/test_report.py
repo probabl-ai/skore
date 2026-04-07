@@ -1,5 +1,6 @@
 import joblib
 import numpy as np
+import pandas as pd
 import pytest
 import skrub
 from sklearn.base import clone
@@ -184,6 +185,22 @@ def test_pickle(tmp_path, logistic_binary_classification_data):
     report = CrossValidationReport(estimator, X, y, splitter=2)
     report.cache_predictions()
     joblib.dump(report, tmp_path / "report.joblib")
+
+
+def test_get_cached_results_metrics_uses_public_method_names(linear_regression_data):
+    """Check that cross-validation cached metric entries can be replayed."""
+    estimator, X, y = linear_regression_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    expected = report.metrics.r2()
+    cached_results = list(report._get_cached_results("metrics"))
+
+    assert len(cached_results) == 1
+    _, method_name, data_source, kwargs, result = cached_results[0]
+    assert method_name == "r2"
+    assert data_source == "test"
+    assert kwargs == {"multioutput": "raw_values"}
+    pd.testing.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(

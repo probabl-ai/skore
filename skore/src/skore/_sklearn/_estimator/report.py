@@ -4,6 +4,7 @@ import copy
 import html
 import uuid
 import warnings
+from collections.abc import Generator
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -829,7 +830,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         accessor_name: str,
         method_name: str | None = None,
         data_source: DataSource | None = None,
-    ) -> list[tuple[str, str, DataSource | None, dict[str, Any], Any]]:
+    ) -> Generator[tuple[str, str, DataSource | None, dict[str, Any], Any], None, None]:
         """Return accessor-level cached results stored in ``self._cache``.
 
         This helper exposes the inspectable part of the estimator cache used by
@@ -870,7 +871,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Returns
         -------
-        cached_results : list of tuple
+        cached_results : generator of tuple
             Cached entries matching the requested filters, each represented as
             ``(accessor_name, method_name, data_source, kwargs, result)``.
         """
@@ -884,4 +885,4 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 and (data_source is None or cached_value[2] == data_source)
             )
 
-        return list(filter(value_match, self._cache.values()))
+        yield from filter(value_match, self._cache.values())
