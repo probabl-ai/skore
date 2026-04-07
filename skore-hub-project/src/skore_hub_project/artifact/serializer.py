@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from functools import cached_property
+from hashlib import file_digest
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any
-
-from blake3 import blake3 as Blake3
 
 
 class Serializer:
@@ -33,24 +32,11 @@ class Serializer:
 
     @cached_property
     def checksum(self) -> str:
-        """
-        The checksum of the serialized content.
+        """The checksum of the serialized content using `BLAKE2b`."""
+        with open(self.filepath, "rb") as file:
+            digest = file_digest(file, "blake2b")
 
-        Notes
-        -----
-        Depending on the size of the serialized content, the checksum can be computed on
-        one or more threads:
-
-            Note that this can be slower for inputs shorter than ~1 MB
-
-        https://github.com/oconnor663/blake3-py
-        """
-        from skore_hub_project import bytes_to_b64_str
-
-        hasher = Blake3(max_threads=(1 if self.size < 1e6 else Blake3.AUTO))
-        checksum = hasher.update_mmap(self.filepath).digest()
-
-        return f"blake3-{bytes_to_b64_str(checksum)}"
+        return f"blake2b-{digest.hexdigest()}"
 
     @cached_property
     def size(self) -> int:
