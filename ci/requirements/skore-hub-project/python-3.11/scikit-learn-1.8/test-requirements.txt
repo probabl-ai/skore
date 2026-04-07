@@ -4,8 +4,6 @@ anyio==4.12.1
     # via httpx
 asttokens==3.0.1
     # via stack-data
-blake3==1.0.8
-    # via skore-hub-project (skore-hub-project/pyproject.toml)
 certifi==2026.2.25
     # via
     #   httpcore
@@ -231,7 +229,6 @@ traitlets==5.14.3
 typing-extensions==4.15.0
     # via
     #   anyio
-    #   blake3
     #   ipython
     #   pydantic
     #   pydantic-core

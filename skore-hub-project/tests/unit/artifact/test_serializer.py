@@ -1,8 +1,6 @@
+from hashlib import blake2b
 from pathlib import Path
 
-from blake3 import blake3 as Blake3
-
-from skore_hub_project import bytes_to_b64_str
 from skore_hub_project.artifact.serializer import Serializer
 
 
@@ -27,8 +25,7 @@ class TestSerializer:
             assert serializer.filepath.parent == tmp_path
 
     def test_checksum(self):
-        checksum = Blake3(b"1").digest()
-        checksum = f"blake3-{bytes_to_b64_str(checksum)}"
+        checksum = f"blake2b-{blake2b(b'1').hexdigest()}"
 
         with Serializer(b"1") as serializer:
             assert serializer.checksum == checksum
