@@ -25,6 +25,14 @@ In this gallery, we are going to push the different reports into a public
 workspace.
 """
 
+# %%
+#
+# `skore` can communicate with Skore Hub which serves two main purposes: storing and
+# retrieving any reports that you created and a user-friendly interface for you to
+# explore and compare models.
+#
+# First, we need to login to Skore Hub such that later we can push our reports to it.
+
 # sphinx_gallery_start_ignore
 #
 # Configure the context variables and ensure that the example is run with sufficient
@@ -47,14 +55,6 @@ else:
     assert (WORKSPACE := os.environ.get("WORKSPACE")), "`WORKSPACE` must be defined."
     assert (PROJECT := os.environ.get("PROJECT")), "`PROJECT` must be defined."
 # sphinx_gallery_end_ignore
-
-# %%
-#
-# `skore` can communicate with Skore Hub which serves two main purposes: storing and
-# retrieving any reports that you created and a user-friendly interface for you to
-# explore and compare models.
-#
-# First, we need to login to Skore Hub such that later we can push our reports to it.
 
 from skore import login
 

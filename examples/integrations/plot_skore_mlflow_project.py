@@ -103,6 +103,12 @@ project.put("logistic-regression", report)
 # http://<TRACKING_URI>/#/<PROJECT>/1/runs/<RUN_ID>/artifacts
 #
 # To find the run ID attributed by MLflow, you can check the section below.
+#
+# Retrieve the Skore report from MLflow tracking server
+# =====================================================
+#
+# Like for the other modes (local and Skore Hub), you can access what is stored in the
+# project via the :meth:`~skore.Project.summarize` method.
 
 # sphinx_gallery_start_ignore
 if tmp_dir is not None:
@@ -110,13 +116,6 @@ if tmp_dir is not None:
 
 # sphinx_gallery_end_ignore
 
-# %%
-#
-# Retrieve the Skore report from MLflow tracking server
-# =====================================================
-#
-# Like for the other modes (local and Skore Hub), you can access what is stored in the
-# project via the :meth:`~skore.Project.summarize` method.
 import pandas as pd
 
 summary = project.summarize()
