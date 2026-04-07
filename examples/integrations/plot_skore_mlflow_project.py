@@ -100,7 +100,7 @@ project.put("logistic-regression", report)
 # %%
 # Once that you stored the report, the artifacts will be available on the MLflow
 # tracking server at the following URL:
-# http://<TRACKING_URI>/#/<PROJECT>/1/runs/<RUN_ID>/artifacts
+# ``http://<TRACKING_URI>/#/<PROJECT>/1/runs/<RUN_ID>/artifacts``
 #
 # To find the run ID attributed by MLflow, you can check the section below.
 #
