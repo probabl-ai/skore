@@ -17,7 +17,7 @@ def make_cache_key(
 ) -> tuple[Any, ...]:
     """Build a cache key.
 
-    Enforce structure (data_source, name, sanitized_kwargs).
+    Enforce structure (data_source, "predict_time", sanitized_kwargs).
     """
     if data_source not in {"train", "test"}:
         raise ValueError(f"data_source must be 'train' or 'test'; got {data_source!r}")
