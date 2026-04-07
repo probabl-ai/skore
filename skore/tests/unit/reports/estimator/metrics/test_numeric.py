@@ -238,6 +238,33 @@ def test_custom_metric_with_scorer_no_attribute_error(linear_regression_with_tes
     assert result == pytest.approx(business_loss(y_test, estimator.predict(X_test)))
 
 
+def test_custom_metric_cache_invalidated_on_redefinition(linear_regression_with_test):
+    """Redefining a function with the same name should invalidate the cache.
+
+    Non-regression test for https://github.com/probabl-ai/skore/issues/2060.
+    """
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    def metric_function(y_true, y_pred):
+        return 999.0
+
+    result1 = report.metrics.custom_metric(
+        metric_function=metric_function,
+        response_method="predict",
+    )
+    assert result1 == pytest.approx(999.0)
+
+    def metric_function(y_true, y_pred):
+        return 0.2
+
+    result2 = report.metrics.custom_metric(
+        metric_function=metric_function,
+        response_method="predict",
+    )
+    assert result2 == pytest.approx(0.2)
+
+
 @pytest.mark.parametrize("prefit_estimator", [True, False])
 def test_has_side_effects(prefit_estimator):
     """Re-fitting the estimator outside the EstimatorReport

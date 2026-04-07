@@ -13,15 +13,18 @@ def make_cache_key(
     data_source: DataSource,
     name: str,
     kwargs: Mapping[str, Any] | None = None,
+    func_id: str | None = None,
 ) -> tuple[Any, ...]:
     """Build a cache key.
 
-    Enforce structure (data_source, "predict_time", sanitized_kwargs).
+    Enforce structure (data_source, name, sanitized_kwargs).
     """
     if data_source not in {"train", "test"}:
         raise ValueError(f"data_source must be 'train' or 'test'; got {data_source!r}")
     if not isinstance(name, str):
         raise TypeError(f"name must be a string; got {type(name)}")
+    if func_id is not None:
+        name = f"{name}:{joblib.hash(func_id)}"
     return (data_source, name, deep_key_sanitize(kwargs))
 
 

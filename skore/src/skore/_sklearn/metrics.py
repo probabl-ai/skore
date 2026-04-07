@@ -179,7 +179,12 @@ class Metric:
         # Merge default kwargs with call-time kwargs
         merged_kwargs = self.kwargs | kwargs
 
-        cache_key = make_cache_key(data_source, self.name, merged_kwargs)
+        cache_key = make_cache_key(
+            data_source,
+            self.name,
+            merged_kwargs,
+            func_id=getattr(self, "source_code", None),
+        )
         score = report._cache.get(cache_key)
         if score is not None:
             return score
@@ -565,12 +570,17 @@ class MetricRegistry(UserDict):
                     "callable. Pass it directly or through `metric_kwargs`."
                 )
 
+            try:
+                source_code = inspect.getsource(metric)
+            except (OSError, TypeError):
+                source_code = None
             return Metric(
                 name=metric.__name__,
                 greater_is_better=metric_kwargs.get("greater_is_better"),
                 score_func=metric,
                 response_method=metric_kwargs["response_method"],
                 kwargs=_select_kwargs(metric, metric_kwargs),
+                source_code=source_code,
             )
         else:
             raise ValueError(f"Invalid type of metric: {type(metric)} for {metric!r}")
