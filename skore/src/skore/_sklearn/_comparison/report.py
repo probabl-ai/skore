@@ -282,22 +282,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def cache_predictions(
         self,
-        response_methods: Literal[
-            "auto", "predict", "predict_proba", "decision_function"
-        ] = "auto",
-        n_jobs: int | None = None,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
-
-        Parameters
-        ----------
-        response_methods : {"auto", "predict", "predict_proba", "decision_function"},\
-                default="auto"
-            The methods to use to compute the predictions.
-
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. If `None`, we use the `n_jobs`
-            parameter when initializing the report.
 
         Examples
         --------
@@ -314,15 +300,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         """
-        if n_jobs is None:
-            n_jobs = self.n_jobs
-
         for report in track(
             self.reports_.values(),
             description="Estimator predictions",
             total=len(self.reports_),
         ):
-            report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
+            report.cache_predictions()
 
     def get_predictions(
         self,
@@ -456,14 +439,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         estimator_report = cast(EstimatorReport, self.reports_[report_key])
         X_concat = (
-            pd.concat([estimator_report._X_train, estimator_report._X_test])
-            if isinstance(estimator_report._X_train, pd.DataFrame)
-            else np.concatenate([estimator_report._X_train, estimator_report._X_test])
+            pd.concat([estimator_report.X_train, estimator_report.X_test])
+            if isinstance(estimator_report.X_train, pd.DataFrame)
+            else np.concatenate([estimator_report.X_train, estimator_report.X_test])
         )
         y_concat = (
-            pd.concat([estimator_report._y_train, estimator_report._y_test])
-            if isinstance(estimator_report._y_train, (pd.DataFrame, pd.Series))
-            else np.concatenate([estimator_report._y_train, estimator_report._y_test])
+            pd.concat([estimator_report.y_train, estimator_report.y_test])
+            if isinstance(estimator_report.y_train, (pd.DataFrame, pd.Series))
+            else np.concatenate([estimator_report.y_train, estimator_report.y_test])
         )
         report = EstimatorReport(
             estimator_report.estimator,
