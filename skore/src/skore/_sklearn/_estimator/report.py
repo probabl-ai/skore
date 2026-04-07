@@ -799,11 +799,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def _read_cache(
         self,
+        *,
         accessor_name: str,
         method_name: str,
         data_source: DataSource | None,
         kwargs: dict[str, Any] | None,
-        *,
         result_only: bool = True,
     ) -> Any:
         if kwargs is not None and kwargs.get("seed", 0) is None:
@@ -819,6 +819,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def _write_cache(
         self,
+        *,
         accessor_name: str,
         method_name: str,
         data_source: DataSource | None,

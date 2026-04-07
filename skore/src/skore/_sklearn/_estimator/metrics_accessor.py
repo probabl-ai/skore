@@ -388,10 +388,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         cache_method_name = cache_method_name or metric_fn.__name__
 
         score = self._parent._read_cache(
-            "metrics",
-            cache_method_name,
-            data_source,
-            metric_kwargs,
+            accessor_name="metrics",
+            method_name=cache_method_name,
+            data_source=data_source,
+            kwargs=metric_kwargs,
         )
         if score is None:
             y_pred = self._parent._get_predictions(
@@ -424,10 +424,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     )
 
             self._parent._write_cache(
-                "metrics",
-                cache_method_name,
-                data_source,
-                metric_kwargs,
+                accessor_name="metrics",
+                method_name=cache_method_name,
+                data_source=data_source,
+                kwargs=metric_kwargs,
                 result=score,
             )
 
@@ -1194,10 +1194,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         data_source = cast(DataSource, data_source)
 
         cache_value = self._parent._read_cache(
-            "metrics",
-            display_class.__name__,
-            data_source,
-            display_kwargs,
+            accessor_name="metrics",
+            method_name=display_class.__name__,
+            data_source=data_source,
+            kwargs=display_kwargs,
         )
         if cache_value is not None:
             return cache_value
@@ -1227,10 +1227,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             # Unless seed is an int (i.e. the call is deterministic),
             # we do not cache
             self._parent._write_cache(
-                "metrics",
-                display_class.__name__,
-                data_source,
-                display_kwargs,
+                accessor_name="metrics",
+                method_name=display_class.__name__,
+                data_source=data_source,
+                kwargs=display_kwargs,
                 result=display,
             )
 

@@ -308,10 +308,10 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # stored as a workaround for the serialization for skore-hub as explained
         # earlier.
         display = self._parent._read_cache(
-            "inspection",
-            "permutation_importance",
-            data_source,
-            kwargs,
+            accessor_name="inspection",
+            method_name="permutation_importance",
+            data_source=data_source,
+            kwargs=kwargs,
         )
         if display is None:
             display = PermutationImportanceDisplay._compute_data_for_display(
@@ -331,10 +331,10 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
             # NOTE: for the moment, we will always store the permutation importance
             self._parent._write_cache(
-                "inspection",
-                "permutation_importance",
-                data_source,
-                kwargs,
+                accessor_name="inspection",
+                method_name="permutation_importance",
+                data_source=data_source,
+                kwargs=kwargs,
                 result=display,
             )
 
