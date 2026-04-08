@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
-import pandas as pd
 import seaborn as sns
 from matplotlib.figure import Figure
 from numpy.typing import ArrayLike, NDArray
@@ -385,8 +384,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             auc_dfs.append(auc_df)
 
         return cls(
-            roc_curve=pd.concat(curve_dfs),
-            roc_auc=pd.concat(auc_dfs),
+            roc_curve=_concat_frames_with_column_data(curve_dfs),
+            roc_auc=_concat_frames_with_column_data(auc_dfs),
             data_source=data_source,
             ml_task=ml_task,
             report_type=report_type,

@@ -1,7 +1,6 @@
 from collections.abc import Sequence
 from typing import Any, Literal, cast
 
-import pandas as pd
 import seaborn as sns
 from matplotlib.figure import Figure
 from numpy.typing import ArrayLike, NDArray
@@ -366,8 +365,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             ap_dfs.append(ap_df)
 
         return cls(
-            precision_recall=pd.concat(curve_dfs),
-            average_precision=pd.concat(ap_dfs),
+            precision_recall=_concat_frames_with_column_data(curve_dfs),
+            average_precision=_concat_frames_with_column_data(ap_dfs),
             data_source=data_source,
             ml_task=ml_task,
             report_type=report_type,
@@ -475,7 +474,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             rows = df["label"] == label
             columns = indexing_columns + statistical_columns
         else:
-            rows = slice()
+            rows = slice(None)
             columns = indexing_columns + ["label"] + statistical_columns
 
         return df.loc[rows, columns]
