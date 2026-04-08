@@ -26,7 +26,7 @@ class DirNamesMixin:
         return sorted(rv)
 
 
-class CachedAccessor:
+class Accessor:
     def __init__(self, name: str, accessor) -> None:
         self._name = name
         self._accessor = accessor
@@ -35,9 +35,7 @@ class CachedAccessor:
         if obj is None:
             # we're accessing the attribute of the class, i.e., Dataset.geo
             return self._accessor
-        accessor_obj = self._accessor(obj)
-        setattr(obj, self._name, accessor_obj)
-        return accessor_obj
+        return self._accessor(obj)
 
 
 def _register_accessor(name, cls):
@@ -48,7 +46,7 @@ def _register_accessor(name, cls):
                 f"{name!r} for type {cls!r} is overriding a preexisting "
                 f"attribute with the same name."
             )
-        setattr(cls, name, CachedAccessor(name, accessor))
+        setattr(cls, name, Accessor(name, accessor))
         accessor._accessor_name = name
         cls._accessors.add(name)
         return accessor

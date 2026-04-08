@@ -139,36 +139,41 @@ class record_calls:
     def __init__(self, func):
         self.func = func
         self.sig = inspect.signature(func)
-        self.attr_name = f"__calls_{func.__name__}"
+        self.attr_name = f"__calls_{id(func)}"
         update_wrapper(self, func)
 
     def __get__(self, instance, owner):
         if instance is None:
             return self
+        return _BoundRecordedMethod(self, instance)
 
-        def bound(*args, **kwargs):
-            bound_args = self.sig.bind(instance, *args, **kwargs)
-            bound_args.apply_defaults()
 
-            args_dict = dict(bound_args.arguments)
-            args_dict.pop("self")
+class _BoundRecordedMethod:
+    def __init__(self, decorator, instance):
+        self._decorator = decorator
+        self._instance = instance
+        update_wrapper(self, decorator.func)
 
-            h = joblib.hash(args_dict)
+    def __call__(self, *args, **kwargs):
+        dec = self._decorator
+        instance = self._instance
+        storage_owner = instance._parent
 
-            if not hasattr(instance, self.attr_name):
-                setattr(instance, self.attr_name, {})
+        bound_args = dec.sig.bind(instance, *args, **kwargs)
+        bound_args.apply_defaults()
 
-            calls = getattr(instance, self.attr_name)
-            calls[h] = args_dict
+        args_dict = dict(bound_args.arguments)
+        args_dict.pop("self", None)
 
-            return self.func(instance, *args, **kwargs)
+        h = joblib.hash(args_dict)
 
-        update_wrapper(bound, self.func)
+        calls = storage_owner.__dict__.setdefault(dec.attr_name, {})
+        calls[h] = args_dict
 
-        # attach calls property dynamically
-        def get_calls():
-            calls = getattr(instance, self.attr_name, {})
-            return list(calls.values())
+        return dec.func(instance, *args, **kwargs)
 
-        bound.calls = get_calls
-        return bound
+    @property
+    def calls(self):
+        storage_owner = self._instance._parent
+        calls = storage_owner.__dict__.get(self._decorator.attr_name, {})
+        return list(calls.values())
