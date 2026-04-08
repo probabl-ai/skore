@@ -19,6 +19,7 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
 )
 from skore._sklearn.types import (
+    _DEFAULT,
     DataSource,
     MLTask,
     PositiveLabel,
@@ -99,12 +100,14 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         roc_curve: DataFrame,
         roc_auc: DataFrame,
+        default_pos_label: PositiveLabel | None,
         data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
         self.roc_curve = roc_curve
         self.roc_auc = roc_auc
+        self.default_pos_label = default_pos_label
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
@@ -129,6 +132,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 [display.roc_auc for display in child_displays],
                 column_data,
             ),
+            default_pos_label=first_display.default_pos_label,
             data_source=data_source or first_display.data_source,
             ml_task=first_display.ml_task,
             report_type=report_type,
@@ -142,7 +146,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         | None = "auto",
         plot_chance_level: bool = True,
         despine: bool = True,
-        label: PositiveLabel | None = None,
+        label: PositiveLabel = _DEFAULT,
     ) -> Figure:
         """Plot visualization.
 
@@ -170,9 +174,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
-        label : int, float, bool, str or None, default=None
+        label : int, float, bool, str or None, default=report pos_label
             The class considered as the positive class when plotting a single curve.
-            If `None`, one-vs-rest curves for all classes are plotted.
+            Pass `None` explicitly to plot one-vs-rest curves for all classes.
 
 
         Returns
@@ -192,6 +196,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
         >>> display.plot()
         """
+        if label is _DEFAULT:
+            label = self.default_pos_label
         return self._plot(
             subplot_by=subplot_by,
             plot_chance_level=plot_chance_level,
@@ -327,6 +333,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource,
+        default_pos_label: PositiveLabel = None,
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":
         """Private method to create a RocCurveDisplay from predictions.
@@ -371,10 +378,11 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         curve_dfs = []
         auc_dfs = []
         for class_idx, label in enumerate(classes):
-            curve_df, auc_df = cls._compute_ovr(
+            curve_df, auc_df = cls._compute_data_ovr(
                 y_true=y_true_onehot[:, class_idx],
                 y_pred=y_pred_arr[:, class_idx],
                 drop_intermediate=drop_intermediate,
+                # metadata:
                 estimator=estimator_name,
                 data_source=data_source,
                 split=None,
@@ -386,13 +394,14 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         return cls(
             roc_curve=_concat_frames_with_column_data(curve_dfs),
             roc_auc=_concat_frames_with_column_data(auc_dfs),
+            default_pos_label=default_pos_label,
             data_source=data_source,
             ml_task=ml_task,
             report_type=report_type,
         )
 
     @staticmethod
-    def _compute_ovr(y_true, y_pred, drop_intermediate, **metadata):
+    def _compute_data_ovr(y_true, y_pred, drop_intermediate, **metadata):
         fpr, tpr, thresholds = roc_curve(
             y_true,
             y_pred,
@@ -419,7 +428,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     def frame(
         self,
         with_roc_auc: bool = False,
-        label: PositiveLabel | None = None,
+        label: PositiveLabel = _DEFAULT,
     ) -> DataFrame:
         """Get the data used to create the ROC curve plot.
 
@@ -428,9 +437,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         with_roc_auc : bool, default=False
             Whether to include ROC AUC scores in the output DataFrame.
 
-        label : int, float, bool, str or None, default=None
+        label : int, float, bool, str or None, default=report pos_label
             The class considered as the positive class when returning a single curve.
-            If `None`, one-vs-rest curves for all classes are returned.
+            Pass `None` explicitly to return one-vs-rest curves for all classes.
 
         Returns
         -------
@@ -458,6 +467,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display = report.metrics.roc()
         >>> df = display.frame()
         """
+        if label is _DEFAULT:
+            label = self.default_pos_label
+
         if with_roc_auc:  # noqa: SIM108
             # The merge between the ROC curve and the ROC AUC is done without
             # specifying the columns to merge on, hence done on all columns that are
