@@ -75,6 +75,39 @@ def test_cache_seed_int(regression_data):
     assert _children_cache_size(report) == 1
 
 
+def test_calls_on_permutation_importance(regression_data):
+    X, y = regression_data
+    report = CrossValidationReport(Ridge(), X, y, splitter=2)
+    method = report.inspection.permutation_importance
+
+    method()
+    assert len(method.calls) == 1
+    assert method.calls == [
+        {
+            "data_source": "test",
+            "at_step": 0,
+            "metric": None,
+            "n_repeats": 5,
+            "max_samples": 1.0,
+            "n_jobs": None,
+            "seed": None,
+        }
+    ]
+
+    # same calls should be deduplicated:
+    method()
+    assert len(method.calls) == 1
+    # "test" is the default, so this is not a different call:
+    method(data_source="test")
+    assert len(method.calls) == 1
+
+    method(data_source="train")
+    assert len(method.calls) == 2
+
+    # check that re-accessing from the accessor returns the same calls:
+    assert method.calls == report.inspection.permutation_importance.calls
+
+
 def test_cache_seed_none(regression_data):
     X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
