@@ -107,6 +107,11 @@ def test_calls_on_permutation_importance(regression_data):
     # check that re-accessing from the accessor returns the same calls:
     assert method.calls == report.inspection.permutation_importance.calls
 
+    # check an error is not recorded:
+    with pytest.raises(ValueError):
+        method(data_source="invalid")
+    assert len(method.calls) == 2
+
 
 def test_cache_seed_none(regression_data):
     X, y = regression_data

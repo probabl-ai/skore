@@ -175,10 +175,12 @@ class _BoundRecordedMethod:
         # parameter combinations rather than every invocation.
         h = joblib.hash(args_dict)
 
+        result = dec.func(instance, *args, **kwargs)
+
         calls = storage_owner.__dict__.setdefault(dec.attr_name, {})
         calls[h] = args_dict
 
-        return dec.func(instance, *args, **kwargs)
+        return result
 
     @property
     def calls(self):

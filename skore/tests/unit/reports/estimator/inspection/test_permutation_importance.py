@@ -156,6 +156,11 @@ def test_calls_on_permutation_importance(regression_train_test_split):
     # check that re-accessing from the accessor returns the same calls:
     assert method.calls == report.inspection.permutation_importance.calls
 
+    # check an error is not recorded:
+    with pytest.raises(ValueError):
+        method(data_source="invalid")
+    assert len(method.calls) == 2
+
 
 @pytest.mark.parametrize(
     "param_name, first_value, second_value, use_pipeline",
