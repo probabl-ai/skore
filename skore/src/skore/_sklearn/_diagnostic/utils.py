@@ -52,4 +52,4 @@ def majority_vote(votes: list[bool]) -> tuple[bool, int, int]:
 
 
 class DiagnosticNotApplicable(Exception):
-    """Raised when a diagnostic check cannot run on the given report."""
+    """Raised when a check cannot run on the given report."""

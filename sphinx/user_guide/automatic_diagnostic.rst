@@ -1,37 +1,37 @@
-.. _diagnostics:
+.. _automatic_diagnostic:
 
-===========
-Diagnostics
-===========
+====================
+Automatic diagnostic
+====================
 
-`skore` diagnostics provide quick checks for common model quality pitfalls.
-Use :meth:`~skore.EstimatorReport.diagnose` to get concise findings about your model's
-quality.
-Each finding has:
+`skore` provides automated checks for common model quality pitfalls.
+Use :meth:`~skore.EstimatorReport.diagnose` to run checks and get a diagnostic that
+summarizes detected issues.
+Each issue has:
 
 - a short explanation,
-- a stable diagnostic code,
+- a stable check code,
 - and a link to this page.
 
-Diagnostics can be muted per call with `ignore=...`:
+Checks can be muted per call with `ignore=...`:
 
 .. code-block:: python
 
     report.diagnose(ignore=["SKD001"])
 
-You can also set a global ignore list with `configuration.ignore_diagnostics = ...`:
+You can also set a global ignore list with `configuration.ignore_checks = ...`:
 
 .. code-block:: python
 
     from skore import configuration
-    configuration.ignore_diagnostics = ["SKD001"]
+    configuration.ignore_checks = ["SKD001"]
 
-For cross-validation reports, diagnostics are computed per split and then aggregated
-at report level, trough `~skore.CrossValidationReport.diagnose`. A diagnostic is
-reported as an issue only when it appears in a strict majority of evaluated splits.
+For cross-validation reports, checks are run per split and then aggregated
+at report level through `~skore.CrossValidationReport.diagnose`. An issue is
+reported only when it appears in a strict majority of evaluated splits.
 
 For comparison reports, `~skore.ComparisonReport.diagnose` builds a global diagnostic
-from each component report in the comparison. Diagnostics are grouped by component
+from each component report in the comparison. Issues are grouped by component
 report and emitted as a single message.
 
 
@@ -55,7 +55,7 @@ The threshold adapts to the scale of the scores:
 higher-is-better metrics and the test score for lower-is-better metrics.
 The floor of 0.03 prevents the threshold from vanishing on near-zero scores.
 
-The diagnostic is raised when a **strict majority** of metrics vote for overfitting.
+The check detects an issue when a **strict majority** of metrics vote for overfitting.
 
 Why it matters
 ^^^^^^^^^^^^^^
@@ -90,8 +90,8 @@ A metric votes for underfitting when **both** hold:
    ``max(0.01, 0.03 * |baseline|)``. The baseline is a ``DummyClassifier(strategy="prior")``
    for classification and a ``DummyRegressor(strategy="mean")`` for regression.
 
-The diagnostic is raised when a **strict majority** of comparable metrics (those present
-in both the estimator and dummy reports) vote for underfitting.
+The check detects an issue when a **strict majority** of comparable metrics (those
+present in both the estimator and dummy reports) vote for underfitting.
 
 Why it matters
 ^^^^^^^^^^^^^^
