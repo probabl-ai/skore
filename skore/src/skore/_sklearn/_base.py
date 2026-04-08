@@ -136,19 +136,23 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 
 
 class record_calls:
+    """Descriptor that records normalized method calls on the parent report."""
+
     def __init__(self, func):
         self.func = func
         self.sig = inspect.signature(func)
         self.attr_name = f"__calls_{id(func)}"
         update_wrapper(self, func)
 
-    def __get__(self, instance, owner):
+    def __get__(self, instance, cls):
         if instance is None:
             return self
         return _BoundRecordedMethod(self, instance)
 
 
 class _BoundRecordedMethod:
+    """Callable wrapper returned by ``record_calls``."""
+
     def __init__(self, decorator, instance):
         self._decorator = decorator
         self._instance = instance
@@ -157,6 +161,8 @@ class _BoundRecordedMethod:
     def __call__(self, *args, **kwargs):
         dec = self._decorator
         instance = self._instance
+        # Accessors are re-instantiated on each lookup, so the bound wrapper stores
+        # call history on the shared parent report rather than on the accessor.
         storage_owner = instance._parent
 
         bound_args = dec.sig.bind(instance, *args, **kwargs)
@@ -165,6 +171,8 @@ class _BoundRecordedMethod:
         args_dict = dict(bound_args.arguments)
         args_dict.pop("self", None)
 
+        # Identical calls overwrite the same entry so ``.calls`` reports unique
+        # parameter combinations rather than every invocation.
         h = joblib.hash(args_dict)
 
         calls = storage_owner.__dict__.setdefault(dec.attr_name, {})

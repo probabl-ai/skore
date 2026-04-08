@@ -196,6 +196,8 @@ def get_public_methods(obj: Any) -> list[tuple[str, Any]]:
         Pairs of (method name, method) sorted by name.
     """
     filtered_methods = []
+    # ``inspect.ismethod`` misses custom descriptors such as ``record_calls``.
+    # Walking the class attributes keeps those public methods visible in help.
     for attr in inspect.classify_class_attrs(type(obj)):
         name = attr.name
         is_private_method = name.startswith("_")
@@ -203,8 +205,9 @@ def get_public_methods(obj: Any) -> list[tuple[str, Any]]:
         is_instance_method = attr.kind == "method"
         if is_private_method or is_help_method or not is_instance_method:
             continue
-
         try:
+            # Some descriptors (e.g. ``available_if``) intentionally raise
+            # ``AttributeError`` when a method is not available for this instance.
             method = getattr(obj, name)
         except AttributeError:
             continue
