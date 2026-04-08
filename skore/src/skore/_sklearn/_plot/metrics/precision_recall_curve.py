@@ -55,6 +55,9 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `label`
         - `average_precision`.
 
+    default_pos_label : int, float, bool, str or None
+        Default positive label used when `plot(label=...)` is not specified.
+
     data_source : {"train", "test", "both"}
         The data source used to compute the precision recall curve.
 
@@ -164,8 +167,10 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             Whether to remove the top and right spines from the plot.
 
         label : int, float, bool, str or None, default=report pos_label
-            The class considered as the positive class when plotting a single curve.
-            Pass `None` explicitly to plot one-vs-rest curves for all classes.
+            The class whose curve to select. We always compute one curve per class,
+            in a one-vs-rest fashion in multiclass classification and by alternating
+            the positive class in binary classification. This lets you display only
+            the curve of the desired class. Use `None` to show them all.
 
         Returns
         -------
@@ -422,8 +427,10 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             Whether to include the average precision column in the returned DataFrame.
 
         label : int, float, bool, str or None, default=report pos_label
-            The class considered as the positive class when returning a single curve.
-            Pass `None` explicitly to return one-vs-rest curves for all classes.
+            The class whose curve to select. We always compute one curve per class,
+            in a one-vs-rest fashion in multiclass classification and by alternating
+            the positive class in binary classification. This lets you display only
+            the curve of the desired class. Use `None` to show them all.
 
         Returns
         -------
