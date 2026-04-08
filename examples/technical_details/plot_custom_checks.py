@@ -24,7 +24,7 @@ When the check finds no issue, it should return an empty dictionary.
 # report.
 
 import numpy as np
-from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
+from skore import Check, DiagnosticNotApplicable
 
 
 def check_high_feature_count(report):
@@ -34,30 +34,27 @@ def check_high_feature_count(report):
 
     n_features = np.asarray(report.X_test).shape[1]
     if n_features > 50:
-        return {
-            "CSTM001": {
-                "title": "High feature count",
-                "explanation": (
-                    f"The dataset has {n_features} features which may hurt model performance. "
-                    "Consider feature selection or dimensionality reduction."
-                ),
-                "docs_url": (
-                    "https://scikit-learn.org/stable/modules/"
-                    "feature_selection.html#feature-selection"
-                ),
-            }
-        }
-    return {}
+        return (
+            f"The dataset has {n_features} features which may hurt model performance. "
+            "Consider feature selection or dimensionality reduction."
+        )
 
+    return None
+
+
+custom_check_1 = Check(
+    check_high_feature_count,
+    "CSTM001",
+    "High feature count",
+    "https://scikit-learn.org/stable/modules/feature_selection.html#feature-selection",
+    "estimator",
+)
 
 # %%
 # Registering the check
 # =====================
 #
-# ``add_checks`` accepts a list of ``(code, callable)`` tuples, registers
-# them, runs all checks, and returns a
-# :class:`~skore.DiagnosticDisplay`.
-
+# ``add_checks`` accepts a list of ``Check`` instances, and registers them.
 from sklearn.linear_model import LinearRegression
 from skore import evaluate
 
@@ -66,7 +63,8 @@ X = rng.normal(size=(200, 80))
 y = X[:, 0] + rng.normal(size=200)
 
 report = evaluate(LinearRegression(), X, y)
-report.add_checks([("CSTM001", check_high_feature_count)])
+report.add_checks([custom_check_1])
+report.diagnose()
 
 # %%
 # The ``docs_url`` key is optional. When provided as a full URL (starting
@@ -111,29 +109,18 @@ def check_cv_score_variance(report):
     ]
 
     if high_var_metrics:
-        return {
-            "CSTM002": {
-                "title": "High score variance across folds",
-                "explanation": (
-                    f"Metrics with high variance: {', '.join(high_var_metrics)}."
-                ),
-            }
-        }
-    return {}
+        return f"Metrics with high variance: {', '.join(high_var_metrics)}."
+    return None
 
 
-cv_report.add_checks([("CSTM002", check_cv_score_variance)])
+custom_check_2 = Check(
+    check_cv_score_variance,
+    "CSTM002",
+    "High score variance across folds",
+    "",
+    "cross-validation",
+)
 
-# %%
-# Propagating estimator-level checks to sub-reports
-# ==================================================
-#
-# The ``check_high_feature_count`` check we wrote earlier targets a single
-# estimator report. We can reuse it on a cross-validation report by passing
-# ``level="estimator"``: skore propagates the check to each sub-estimator report
-# and aggregates the results across splits via majority voting, exactly like
-# the built-in checks.
 
-cv_report.add_checks([("CSTM001", check_high_feature_count)], level="estimator")
-
-# %%
+cv_report.add_checks([custom_check_2, custom_check_1])
+cv_report.diagnose()

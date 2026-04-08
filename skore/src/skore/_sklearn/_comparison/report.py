@@ -467,23 +467,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _resolve_check_targets(self, level):
-        if level is None:
-            return [self]
-        if level == "estimator" and self._report_type == "comparison-estimator":
-            return list(self.reports_.values())
-        if (
-            level == "cross-validation"
-            and self._report_type == "comparison-cross-validation"
-        ):
-            return list(self.reports_.values())
-        if level == "estimator" and self._report_type == "comparison-cross-validation":
-            return [
-                er for cvr in self.reports_.values() for er in cvr.estimator_reports_
-            ]
-        raise ValueError(f"level={level!r} is not valid for this ComparisonReport.")
-
-    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
+    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
         # Aggregate issues from sub-reports grouped by report name.
         issues: dict[str, dict] = {}
         all_checked_codes: set[str] = set()
@@ -500,12 +484,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                         "docs_url": issue.get("docs_url"),
                         "explanation": entry,
                     }
-
-        # Run comparison-level checks.
-        own_issues, own_codes = self._run_own_checks()
-        issues.update(own_issues)
-        all_checked_codes |= own_codes
-
         return issues, all_checked_codes
 
     def _get_help_title(self) -> str:

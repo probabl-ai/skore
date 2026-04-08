@@ -430,17 +430,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
         return report
 
-    def _resolve_check_targets(self, level):
-        if level is None or level == "cross-validation":
-            return [self]
-        if level == "estimator":
-            return list(self.estimator_reports_)
-        raise ValueError(
-            f"level={level!r} is not valid for CrossValidationReport; "
-            "use 'cross-validation' or 'estimator'."
-        )
-
-    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
+    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
         # Aggregate issues from sub-reports via majority voting.
         total_splits = len(self.estimator_reports_)
         all_checked_codes: set[str] = set()
@@ -464,12 +454,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                         f"Detected in {len(positives)}/{total_splits} evaluated splits."
                     ),
                 }
-
-        # Run CV-level checks.
-        own_issues, own_codes = self._run_own_checks()
-        issues.update(own_issues)
-        all_checked_codes |= own_codes
-
         return issues, all_checked_codes
 
     @property

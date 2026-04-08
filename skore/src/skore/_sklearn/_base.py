@@ -1,20 +1,16 @@
 from __future__ import annotations
 
-from abc import abstractmethod
-from collections.abc import Callable
 from io import StringIO
-from typing import ClassVar, Generic, Literal, TypeVar
+from typing import Generic, Literal, TypeVar
 from uuid import uuid4
 
 from rich.console import Console
 from rich.panel import Panel
 
 from skore._config import configuration
-from skore._sklearn._diagnostic.base import DiagnosticDisplay
-from skore._sklearn._diagnostic.utils import (
-    DiagnosticNotApplicable,
-    validate_check_result,
-)
+from skore._sklearn._diagnostic.base import Check, DiagnosticDisplay
+from skore._sklearn._diagnostic.model_checks import create_model_checks
+from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
@@ -27,52 +23,34 @@ class _BaseReport(ReportHelpMixin):
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]]
-    _BUILTIN_CHECKS: ClassVar[list[tuple[str, Callable]]] = []
     _report_type: Literal[
         "estimator",
         "cross-validation",
         "comparison-estimator",
         "comparison-cross-validation",
     ]
-    _issues_cache: tuple[dict[str, dict], set[str]]
-
-    @abstractmethod
-    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
-        """Return detected issues and the set of check codes that were evaluated."""
 
     def _get_issues(self) -> tuple[dict[str, dict], set[str]]:
         """Get the issues from the cache or compute them."""
-        if not hasattr(self, "_issues_cache"):
-            self._issues_cache = self._run_checks()
+        for check in self._checks_registry:
+            if (
+                check.code not in self._issues_cache[1]
+                and check.report_type == self._report_type
+            ):
+                try:
+                    self._issues_cache[0].update(check.run(self))
+                    self._issues_cache[1].add(check.code)
+                except DiagnosticNotApplicable:
+                    self._issues_cache[1] |= check.code
+
+        if "cross-validation" in self._report_type or "comparison" in self._report_type:
+            aggregated = self._aggregate_checks()
+            return (
+                self._issues_cache[0] | aggregated[0],
+                self._issues_cache[1] | aggregated[1],
+            )
+
         return self._issues_cache
-
-    def _run_own_checks(self) -> tuple[dict[str, dict], set[str]]:
-        """Run checks registered on this report, using per-check caching.
-
-        Returns a tuple of (detected issues, set of check codes that were evaluated).
-        """
-        issues: dict[str, dict] = {}
-        checked_codes: set[str] = set()
-
-        for code, check_fn in self._checks:
-            if code in self._check_results_cache:
-                cached_issues, cached_codes = self._check_results_cache[code]
-                issues.update(cached_issues)
-                checked_codes |= cached_codes
-                continue
-
-            try:
-                result = check_fn(self)
-                validate_check_result(result)
-                issues.update(result)
-                result_codes = {code} | set(result.keys())
-                checked_codes |= result_codes
-                self._check_results_cache[code] = (result, result_codes)
-            except DiagnosticNotApplicable:
-                checked_codes.add(code)
-                self._check_results_cache[code] = ({}, {code})
-
-        return issues, checked_codes
 
     def diagnose(
         self,
@@ -131,82 +109,31 @@ class _BaseReport(ReportHelpMixin):
         checks_ran = len(checked_codes - ignored)
         return DiagnosticDisplay(filtered, checks_ran, n_ignored=len(ignored))
 
-    def _resolve_check_targets(self, level: str | None) -> list[_BaseReport]:
-        """Return the report instances a check should be registered on.
-
-        Subclasses override this to support propagating checks to sub-reports.
-        """
-        if level is not None:
-            raise ValueError(
-                f"level={level!r} is not supported for {type(self).__name__}."
-            )
-        return [self]
-
     def add_checks(
         self,
-        checks: list[tuple[str, Callable]],
-        *,
-        level: str | None = None,
-    ) -> DiagnosticDisplay:
+        checks: list[Check],
+    ) -> None:
         """Add custom diagnostic checks and re-run diagnostics.
 
-        Each entry is a ``(code, check_fn)`` pair where *code* is the
-        diagnostic code string (e.g. ``"CUSTOM001"``) and *check_fn* is a
-        callable accepting a single report argument and returning a dict
-        mapping that code to an issue dict with keys ``"title"`` (str),
-        ``"explanation"`` (str), and optionally ``"docs_url"`` (str).
-
-        When the check does not detect an issue, it should return an empty dict.
-
-        Raise :class:`~skore._sklearn._diagnostic.utils.DiagnosticNotApplicable`
-        inside a check to signal it cannot run on this report.
-
-        Parameters
-        ----------
-        checks : list of (str, callable)
-            Check entries to register. Each tuple pairs a diagnostic code with
-            its check callable.
-
-        level : str or None, default=None
-            The report level to register checks on. When ``None`` (default),
-            checks run on this report directly. For
-            :class:`~skore.CrossValidationReport`, pass ``"estimator"`` to
-            register on each sub-estimator report (results are aggregated
-            across splits). For :class:`~skore.ComparisonReport`, pass
-            ``"estimator"`` or ``"cross-validation"`` to propagate to the
-            underlying sub-reports.
+        # TODO: write docstring
 
         Returns
         -------
         DiagnosticDisplay
             The diagnostic display with all issues (built-in + custom).
         """
-        targets = self._resolve_check_targets(level)
-        for entry in checks:
-            if (
-                not isinstance(entry, tuple)
-                or len(entry) != 2
-                or not isinstance(entry[0], str)
-                or not callable(entry[1])
-            ):
-                raise TypeError(
-                    f"Each check must be a (code, callable) tuple, got {entry!r}."
-                )
-            for target in targets:
-                target._checks.append(entry)
-
-        for target in targets:
-            if hasattr(target, "_issues_cache"):
-                del target._issues_cache
-        if hasattr(self, "_issues_cache"):
-            del self._issues_cache
-
-        return self.diagnose()
+        self._checks_registry.extend(checks)
+        if self._report_type == "cross-validation":
+            for report in self.estimator_reports_:
+                report.add_checks(checks)
+        elif "comparison" in self._report_type:
+            for report in self.reports_.values():
+                report.add_checks(checks)
 
     def __init__(self) -> None:
         self.id = uuid4().int
-        self._checks: list[tuple[str, Callable]] = list(self._BUILTIN_CHECKS)
-        self._check_results_cache: dict[str, tuple[dict[str, dict], set[str]]] = {}
+        self._issues_cache: list[dict[str, dict], set[str]] = [{}, set()]
+        self._checks_registry: list[Check] = create_model_checks()
 
     @property
     def _hash(self) -> int:

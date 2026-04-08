@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from html import escape
 from importlib.metadata import PackageNotFoundError, version
+from typing import Literal
 
 import pandas as pd
 
@@ -96,6 +97,39 @@ class DiagnosticDisplay(DisplayHelpMixin):
 
     def __repr__(self) -> str:
         return "\n".join([self.header, *[f"- {message}" for message in self._messages]])
+
+
+class Check:
+    def __init__(
+        self,
+        function: callable,
+        code: str,
+        title: str,
+        docs_url: str,
+        report_type: Literal[
+            "estimator",
+            "cross-validation",
+            "comparison-estimator",
+            "comparison-cross-validation",
+        ],
+    ):
+        self.function = function
+        self.code = code
+        self.title = title
+        self.docs_url = docs_url
+        self.report_type = report_type
+
+    def run(self, report):
+        explanation = self.function(report)
+        if explanation:
+            return {
+                self.code: {
+                    "title": self.title,
+                    "docs_url": self.docs_url,
+                    "explanation": explanation,
+                }
+            }
+        return {}
 
 
 def _resolve_docs_url(issue: dict) -> str | None:

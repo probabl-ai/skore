@@ -7,6 +7,7 @@ from numpy.typing import ArrayLike
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
+from skore._sklearn._diagnostic.base import Check
 from skore._sklearn._diagnostic.utils import (
     _TIMING_METRICS,
     DiagnosticNotApplicable,
@@ -97,17 +98,11 @@ def check_overfitting(
 
     majority, n_positive, total = majority_vote(votes)
     if majority:
-        return {
-            "SKD001": {
-                "title": "Potential overfitting",
-                "docs_url": "skd001-overfitting",
-                "explanation": (
-                    "Significant train/test gaps were found for "
-                    f"{n_positive}/{total} default predictive metrics."
-                ),
-            }
-        }
-    return {}
+        return (
+            "Significant train/test gaps were found for "
+            f"{n_positive}/{total} default predictive metrics."
+        )
+    return None
 
 
 def check_underfitting(
@@ -141,15 +136,28 @@ def check_underfitting(
     ]
     majority, n_positive, total = majority_vote(votes)
     if majority:
-        return {
-            "SKD002": {
-                "title": "Potential underfitting",
-                "docs_url": "skd002-underfitting",
-                "explanation": (
-                    "Train/test scores are on par and not significantly better "
-                    f"than the dummy baseline for {n_positive}/{total} "
-                    "comparable metrics."
-                ),
-            }
-        }
-    return {}
+        return (
+            "Train/test scores are on par and not significantly better "
+            f"than the dummy baseline for {n_positive}/{total} "
+            "comparable metrics."
+        )
+    return None
+
+
+def create_model_checks():
+    return [
+        Check(
+            check_overfitting,
+            "SKD001",
+            "Potential overfitting",
+            "skd001-overfitting",
+            "estimator",
+        ),
+        Check(
+            check_underfitting,
+            "SKD002",
+            "Potential underfitting",
+            "skd002-underfitting",
+            "estimator",
+        ),
+    ]

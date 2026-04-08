@@ -597,10 +597,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         col_idx = np.flatnonzero(self.estimator_.classes_ == pos_label)[0]
         return predictions[:, col_idx]
 
-    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
-        """Run all registered checks against the report."""
-        return self._run_own_checks()
-
     @property
     def ml_task(self):
         return self._ml_task

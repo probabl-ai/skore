@@ -1,4 +1,5 @@
 from skore._sklearn._diagnostic.base import (
+    Check,
     DiagnosticDisplay,
     format_issue_message,
     get_issue_documentation_url,
@@ -13,6 +14,7 @@ from skore._sklearn._diagnostic.utils import (
 )
 
 __all__ = [
+    "Check",
     "DiagnosticDisplay",
     "DiagnosticNotApplicable",
     "check_overfitting",
