@@ -169,7 +169,7 @@ def test_diagnose_documentation_url_points_to_existing_rst():
     # url.path is e.g. "/dev/user_guide/automatic_diagnostic.html"
     # strip version prefix and convert .html -> .rst
     rst_rel_path = "/".join(url.path.split("/")[2:]).replace(".html", ".rst")
-    rst_path = Path("sphinx") / rst_rel_path
+    rst_path = Path(__file__).parents[5] / "sphinx" / rst_rel_path
     assert rst_path.is_file()
 
 
