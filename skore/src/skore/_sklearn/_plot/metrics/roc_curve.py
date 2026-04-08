@@ -497,13 +497,12 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             indexing_columns += ["data_source"]
 
         if label is not None:
-            rows = df["label"] == label
+            df = df.loc[df["label"] == label].reset_index(drop=True)
             columns = indexing_columns + statistical_columns
         else:
-            rows = slice(None)
             columns = indexing_columns + ["label"] + statistical_columns
 
-        return df.loc[rows, columns]
+        return df[columns]
 
     # ignore the type signature because we override kwargs by specifying the name of
     # the parameters for the user.
