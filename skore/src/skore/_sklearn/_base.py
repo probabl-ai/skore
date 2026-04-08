@@ -1,8 +1,11 @@
+import inspect
 from abc import abstractmethod
+from functools import update_wrapper
 from io import StringIO
 from typing import Generic, Literal, TypeVar
 from uuid import uuid4
 
+import joblib
 from rich.console import Console
 from rich.panel import Panel
 
@@ -130,3 +133,42 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
             )
         )
         return string_buffer.getvalue()
+
+
+class record_calls:
+    def __init__(self, func):
+        self.func = func
+        self.sig = inspect.signature(func)
+        self.attr_name = f"__calls_{func.__name__}"
+        update_wrapper(self, func)
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+
+        def bound(*args, **kwargs):
+            bound_args = self.sig.bind(instance, *args, **kwargs)
+            bound_args.apply_defaults()
+
+            args_dict = dict(bound_args.arguments)
+            args_dict.pop("self")
+
+            h = joblib.hash(args_dict)
+
+            if not hasattr(instance, self.attr_name):
+                setattr(instance, self.attr_name, {})
+
+            calls = getattr(instance, self.attr_name)
+            calls[h] = args_dict
+
+            return self.func(instance, *args, **kwargs)
+
+        update_wrapper(bound, self.func)
+
+        # attach calls property dynamically
+        def get_calls():
+            calls = getattr(instance, self.attr_name, {})
+            return list(calls.values())
+
+        bound.calls = get_calls
+        return bound
