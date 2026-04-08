@@ -1,3 +1,6 @@
+from pathlib import Path
+from urllib.parse import urlparse
+
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -5,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 
 from skore import EstimatorReport, configuration, evaluate
-from skore._sklearn._diagnostic import DiagnosticDisplay
+from skore._sklearn._diagnostic import DiagnosticDisplay, get_issue_documentation_url
 
 
 def test_diagnose_detects_overfitting():
@@ -134,7 +137,7 @@ def test_diagnose_result_has_repr(monkeypatch, regression_train_test_split):
     assert "text/plain" in bundle
     assert "text/html" in bundle
     assert 'href="' in bundle["text/html"]
-    assert "user_guide/diagnostic.html#" in bundle["text/html"]
+    assert "user_guide/automatic_diagnostic.html#" in bundle["text/html"]
 
 
 def test_diagnose_uses_global_ignore(monkeypatch, regression_data):
@@ -158,6 +161,16 @@ def test_diagnose_uses_global_ignore(monkeypatch, regression_data):
     assert "SKD001" in report.diagnose().issues
     with configuration(ignore_checks=["SKD001"]):
         assert "SKD001" not in report.diagnose().issues
+
+
+def test_diagnose_documentation_url_points_to_existing_rst():
+    """Check that the URL in get_issue_documentation_url maps to a real RST file."""
+    url = urlparse(get_issue_documentation_url(docs_anchor="placeholder"))
+    # url.path is e.g. "/dev/user_guide/automatic_diagnostic.html"
+    # strip version prefix and convert .html -> .rst
+    rst_rel_path = "/".join(url.path.split("/")[2:]).replace(".html", ".rst")
+    rst_path = Path("sphinx") / rst_rel_path
+    assert rst_path.is_file()
 
 
 def test_diagnose_reuses_cached_results(monkeypatch, regression_data):

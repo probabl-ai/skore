@@ -33,28 +33,37 @@ def report(request):
 
 
 def test_diagnose_collects_component_issues(report, monkeypatch):
-    """Check that issues are collected from the component reports."""
-    mock_issues = {
-        "SKD001": {
-            "title": "Mock overfitting",
-            "docs_anchor": "skd001-overfitting",
-            "explanation": "Mock overfitting detected.",
+    """Check that issues from all component reports are collected."""
+    report_names = list(report.reports_)
+    per_report_issues = [
+        {
+            f"SKD{i:03d}": {
+                "title": f"Mock issue {i}",
+                "docs_anchor": f"skd{i:03d}-mock",
+                "explanation": f"Issue {i} detected.",
+            }
         }
-    }
-    for sub_report in report.reports_.values():
+        for i, _ in enumerate(report_names, start=1)
+    ]
+    for sub_report, issues in zip(
+        report.reports_.values(), per_report_issues, strict=True
+    ):
         monkeypatch.setattr(
             sub_report,
             "_run_checks",
-            lambda: (mock_issues, {"SKD001"}),
+            lambda iss=issues: (iss, set(iss)),
         )
         if hasattr(sub_report, "_issues_cache"):
             delattr(sub_report, "_issues_cache")
     if hasattr(report, "_issues_cache"):
         delattr(report, "_issues_cache")
+
     results = report.diagnose()
     assert isinstance(results, DiagnosticDisplay)
-    for name in report.reports_:
-        assert f"[{name}]" in results.issues["SKD001"]["explanation"]
+    for name, issues in zip(report_names, per_report_issues, strict=True):
+        for code in issues:
+            assert code in results.issues
+            assert f"[{name}]" in results.issues[code]["explanation"]
 
 
 def test_diagnose_uses_component_cache(report, monkeypatch):
