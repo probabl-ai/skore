@@ -20,6 +20,7 @@ from skore._sklearn._plot.utils import (
 from skore._sklearn.types import (
     DataSource,
     MLTask,
+    PositiveLabel,
     ReportType,
 )
 
@@ -49,6 +50,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     data_source : {"test", "train"}
         The data source to use.
+
+    pos_label : int, float, bool, str or None
+        The class considered as the positive class when displaying the confusion
+        matrix.
 
     response_method : str
         The estimator's method that was used to get the predictions. The possible
@@ -82,6 +87,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         ml_task: MLTask,
         thresholds: NDArray,
         data_source: DataSource,
+        pos_label: PositiveLabel,
         response_method: str,
     ):
         self.confusion_matrix = confusion_matrix
@@ -90,6 +96,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.thresholds = thresholds
         self.ml_task = ml_task
         self.data_source = data_source
+        self.pos_label = pos_label
         self.response_method = response_method
 
     @classmethod
@@ -115,6 +122,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 np.concatenate([display.thresholds for display in child_displays])
             ),
             data_source=first_display.data_source,
+            pos_label=first_display.pos_label,
             response_method=first_display.response_method,
         )
 
@@ -270,10 +278,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 xlabel="Predicted label",
                 ylabel="True label",
             )
-            pos_label = None
-            if pos_label is not None:
+            if self.ml_task == "binary-classification" and self.pos_label is not None:
                 ticklabels = [
-                    f"{label}*" if label == str(pos_label) else label
+                    f"{label}*" if label == str(self.pos_label) else label
                     for label in self.display_labels
                 ]
 
@@ -357,6 +364,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource | Literal["both"],
+        pos_label: PositiveLabel | None,
         response_method: str | list[str] | tuple[str, ...],
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
@@ -387,6 +395,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         data_source : {"test", "train"}
             The data source to use.
 
+        pos_label : int, float, bool, str or None
+            The class considered as the positive class when displaying the confusion
+            matrix.
+
         response_method : str or list of str or tuple of str
             The estimator's method to be invoked to get the predictions. The possible
             values are: `predict`, `predict_proba`, `predict_log_proba`, and
@@ -410,13 +422,17 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         classes = estimator.classes_
 
         if ml_task == "binary-classification":
-            # For now, binary confusion matrices always use estimator.classes_[1] as
-            # the positive class (using sklearn's convention that TP is the bottom-right cell).
-            # Support for selecting a different positive class at display time
-            # is intentionally left for a later refactor.
+            # When provided, the positive label is set in second position (which
+            # means true-positive counts is the bottom-right cell in the matrix).
+            # Usually, TP is the top-left cell, but we align with sklearn.
+            if pos_label == classes[0]:
+                classes = (classes[1], classes[0])
+                y_score = y_pred[:, 0]
+            else:
+                y_score = y_pred[:, 1]
             tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
                 y_true=y_true,
-                y_score=y_pred[:, 1],
+                y_score=y_score,
                 pos_label=classes[1],
             )
             cms = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
@@ -475,6 +491,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             report_type=report_type,
             ml_task=ml_task,
             data_source=data_source,
+            pos_label=pos_label,
             response_method=_check_response_method(estimator, response_method).__name__,
             thresholds=np.unique(confusion_matrix["threshold"]),
         )

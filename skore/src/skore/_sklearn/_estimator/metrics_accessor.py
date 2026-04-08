@@ -1134,6 +1134,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         display_kwargs = {
             "response_method": response_method,
+            "pos_label": self._parent.pos_label,
         }
         display = cast(
             ConfusionMatrixDisplay,
