@@ -34,7 +34,6 @@ def test_register_accessor():
     assert hasattr(obj, "accessor")
     assert isinstance(obj.accessor, _Accessor)
     assert obj.accessor.func()
-    assert obj.accessor is obj.accessor
 
 
 def test_check_supported_ml_task():

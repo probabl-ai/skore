@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
 
+from skore._sklearn._base import record_calls
 from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.data import (
     AccessorHelpData,
@@ -108,6 +109,18 @@ class _AccessorWithExplicitMethods(MockAccessor, _AccessorHelpDataMixin):
     @classmethod
     def class_factory(cls):
         """A class method; must be excluded from get_public_methods."""
+        pass
+
+    def _get_help_title(self) -> str:
+        return "Mock accessor"
+
+
+class _AccessorWithRecordedMethod(MockAccessor, _AccessorHelpDataMixin):
+    """Accessor with a wrapped method; used to cover descriptor-tolerant help."""
+
+    @record_calls
+    def fetch(self):
+        """Fetch data."""
         pass
 
     def _get_help_title(self) -> str:
@@ -249,6 +262,16 @@ def test_get_public_methods_accessor_excludes_help(accessor_with_methods):
     for excluded in ("help", "_internal", "class_factory"):
         assert excluded not in names
     assert "fetch" in names
+
+
+def test_get_public_methods_accessor_includes_recorded_methods(report_with_methods):
+    """get_public_methods includes methods wrapped by custom descriptors."""
+    accessor = _AccessorWithRecordedMethod(parent=report_with_methods)
+
+    methods = get_public_methods(accessor)
+    names = [n for n, _ in methods]
+    assert len(names) == 1
+    assert names[0] == "fetch"
 
 
 @pytest.mark.parametrize(
