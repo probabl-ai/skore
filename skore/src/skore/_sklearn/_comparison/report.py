@@ -467,22 +467,23 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ####################################################################################
 
     def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
-        issues: dict[str, dict] = {}
+        comparison_issues: dict[str, dict] = {}
         all_checked_codes: set[str] = set()
         for report_name, report in self.reports_.items():
-            issues, checked_codes = report._get_issues()
+            report_issues, checked_codes = report._get_issues()
             all_checked_codes |= checked_codes
-            for code, issue in issues.items():
-                entry = f"[{report_name}] {issue['explanation']}"
-                if code in issues:
-                    issues[code]["explanation"] += f" {entry}"
+            for code, issue in report_issues.items():
+                if code in comparison_issues:
+                    comparison_issues[code]["explanation"] = (
+                        f"[{report_name}] " + comparison_issues[code]["explanation"]
+                    )
                 else:
-                    issues[code] = {
+                    comparison_issues[code] = {
                         "title": issue["title"],
                         "docs_anchor": issue["docs_anchor"],
-                        "explanation": entry,
+                        "explanation": f"[{report_name}] {issue['explanation']}",
                     }
-        return issues, all_checked_codes
+        return comparison_issues, all_checked_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

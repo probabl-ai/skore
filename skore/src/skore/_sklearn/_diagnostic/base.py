@@ -110,7 +110,7 @@ def get_issue_documentation_url(*, docs_anchor: str) -> str:
         )
     except PackageNotFoundError:
         url_version = "dev"
-    return f"https://docs.skore.probabl.ai/{url_version}/user_guide/diagnostic.html#{docs_anchor}"
+    return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automatic_diagnostic.html#{docs_anchor}"
 
 
 def format_issue_message(code: str, issue: dict) -> str:
