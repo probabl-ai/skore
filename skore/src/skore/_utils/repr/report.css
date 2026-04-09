@@ -12,7 +12,6 @@
 
 .report-hint-note::before {
     content: "Note";
-    display: block;
     font-style: normal;
     font-weight: 600;
     font-size: 9px;
@@ -21,6 +20,7 @@
     color: var(--color-orange);
     opacity: 0.9;
     margin-bottom: 0.35em;
+    margin-right: 1em;
 }
 
 .report-hint-note-link {
@@ -46,6 +46,11 @@
     line-height: 1.4;
     opacity: 0.88;
     white-space: nowrap;
+}
+
+.report-inline-right {
+    text-align: right;
+    margin-top: -1.6em;
 }
 
 .report-disclosure {

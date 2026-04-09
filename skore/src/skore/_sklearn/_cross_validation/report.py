@@ -526,11 +526,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
         one report's views in the comparison HTML repr.
         """
-        metrics_html = (
-            self.metrics.summarize(data_source="test")
-            .frame(aggregate=("mean", "std"), favorability=False)
-            ._repr_html_()
+        metrics = self.metrics.summarize(data_source="test").frame(
+            aggregate=("mean", "std"), favorability=False
         )
+        # Transform a bit the dataframe to make it more compact
+        columns = [col for _, col in metrics.columns.tolist()]
+        metrics.columns = columns
+        metrics.reset_index(inplace=True)
+        metrics_html = metrics.to_html(None, index=False)
 
         df = self.data._prepare_dataframe_for_display(
             with_y=self.ml_task != "clustering"
@@ -582,6 +585,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "cross_validation_report.html.j2",
             {
                 "container_id": container_id,
+                "estimator_name": self.estimator_name_,
                 "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
