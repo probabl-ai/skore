@@ -29,7 +29,6 @@ from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.metrics import MetricRegistry
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache import Cache
-from skore._utils._cache_key import make_cache_key
 from skore._utils._measure_time import MeasureTime
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
@@ -273,6 +272,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "test_data": self._test_data,
             },
             "predictions": dict(self._predictions),
+            # ---------- RESULTS ------------
+            # this part is less structured and not crucial for reconstructing a report
+            # so we won't try ensuring backward compatibility.
             "cache": dict(self._cache),
         }
 
@@ -362,8 +364,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "features when creating the report."
             )
 
-        pred_key = make_cache_key(data_source, "predict")
-        time_key = make_cache_key(data_source, "predict_time")
+        pred_key = (data_source, "predict")
+        time_key = (data_source, "predict_time")
 
         if pred_key in self._predictions:
             return
@@ -387,7 +389,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     data, response_method="decision_function"
                 )
             )
-            decision_key = make_cache_key(data_source, "decision_function")
+            decision_key = (data_source, "decision_function")
             self._predictions[decision_key] = response
             if self._can_skip_predict:
                 self._predictions[time_key] = pred_time
@@ -399,9 +401,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     data, response_method="predict_proba"
                 )
             )
-            proba_key = make_cache_key(data_source, "predict_proba")
+            proba_key = (data_source, "predict_proba")
             self._predictions[proba_key] = response
-            log_key = make_cache_key(data_source, "predict_log_proba")
+            log_key = (data_source, "predict_log_proba")
             # Most sklearn's estimator derive predict_log_proba this way
             # except for *NB models (naive bayes) that derive predict_proba
             # from predict_log_proba using exp:
@@ -609,8 +611,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         method_name = _check_response_method(self.estimator_, response_method).__name__
         self.cache_predictions(data_source=data_source)
-        cache_key = make_cache_key(data_source, method_name)
-        predictions = self._predictions[cache_key]
+        predictions = self._predictions[(data_source, method_name)]
 
         if method_name == "predict":
             return predictions
