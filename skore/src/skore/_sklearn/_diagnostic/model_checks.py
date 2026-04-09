@@ -138,14 +138,14 @@ def _create_model_checks():
             _check_overfitting,
             "SKD001",
             "Potential overfitting",
-            "skd001-overfitting",
             "estimator",
+            "skd001-overfitting",
         ),
         Check(
             _check_underfitting,
             "SKD002",
             "Potential underfitting",
-            "skd002-underfitting",
             "estimator",
+            "skd002-underfitting",
         ),
     ]

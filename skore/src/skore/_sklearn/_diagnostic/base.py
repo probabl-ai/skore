@@ -106,8 +106,8 @@ class Check:
         function: Callable,
         code: str,
         title: str,
-        docs_url: str,
         report_type: ReportType,
+        docs_url: str | None = None,
     ):
         self.function = function
         self.code = code

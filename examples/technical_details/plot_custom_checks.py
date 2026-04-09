@@ -46,8 +46,8 @@ custom_check_1 = Check(
     check_high_feature_count,
     "CSTM001",
     "High feature count",
+    "estimator",
     "https://scikit-learn.org/stable/modules/feature_selection.html#feature-selection",
-    "estimatore",
 )
 
 # %%
@@ -117,8 +117,8 @@ custom_check_2 = Check(
     check_cv_score_variance,
     "CSTM002",
     "High score variance across folds",
-    "",
     "cross-validation",
+    "",
 )
 
 
