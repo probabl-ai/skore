@@ -76,11 +76,11 @@ def test_display_binary_classification_decision_function_default_pos_label(
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_display_binary_classification_label_overrides_default_pos_label(metric):
+def test_display_binary_classification_label_overrides_default_pos_label(
+    metric, binary_classification_data
+):
     """Check that `label` overrides the report positive label for plots and frames."""
-    X, y = make_classification(
-        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
-    )
+    X, y = binary_classification_data
     labels = np.array(["A", "B"], dtype=object)
     y = labels[y]
     classifier = LogisticRegression().fit(X, y)
@@ -92,7 +92,7 @@ def test_display_binary_classification_label_overrides_default_pos_label(metric)
     )
     all_curves = display.frame(label=None, **frame_kwargs)
     selected = display.frame(label="B", **frame_kwargs)
-    expected = all_curves.loc[all_curves["label"] == "B"].drop(columns="label")
+    expected = all_curves.query("label == 'B'").drop(columns="label")
     expected = expected.reset_index(drop=True)
 
     assert_frame_equal(
@@ -103,15 +103,11 @@ def test_display_binary_classification_label_overrides_default_pos_label(metric)
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_display_multiclass_label_selects_curve_and_validates(metric):
+def test_display_multiclass_label_selects_curve_and_validates(
+    metric, multiclass_classification_data
+):
     """Check multiclass label selection and validation for plots and frames."""
-    X, y = make_classification(
-        n_classes=3,
-        n_clusters_per_class=1,
-        n_informative=5,
-        n_redundant=0,
-        random_state=0,
-    )
+    X, y = multiclass_classification_data
     classifier = LogisticRegression().fit(X, y)
     report = EstimatorReport(classifier, X_test=X, y_test=y)
     display = getattr(report.metrics, metric)()
@@ -121,11 +117,12 @@ def test_display_multiclass_label_selects_curve_and_validates(metric):
     )
     all_curves = display.frame(label=None, **frame_kwargs)
     selected = display.frame(label=1, **frame_kwargs)
-    expected = all_curves.loc[all_curves["label"] == 1].drop(columns="label")
+    expected = all_curves.query("label == 1").drop(columns="label")
     expected = expected.reset_index(drop=True)
-
     assert_frame_equal(selected, expected)
+
     assert "Label: 1" in display.plot(label=1).get_suptitle()
+    # check label normalization:
     assert "Label: 1" in display.plot(label=True).get_suptitle()
 
     err_msg = "label='invalid' is not a valid label"
