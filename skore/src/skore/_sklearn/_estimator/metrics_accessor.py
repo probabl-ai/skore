@@ -40,20 +40,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     You can access this accessor using the `metrics` attribute.
     """
 
-    _METRIC_ALIASES: dict[str, str] = {
-        "mean_squared_error": "neg_mean_squared_error",
-        "mean_absolute_error": "neg_mean_absolute_error",
-        "mean_absolute_percentage_error": "neg_mean_absolute_percentage_error",
-        "median_absolute_error": "neg_median_absolute_error",
-        "mean_squared_log_error": "neg_mean_squared_log_error",
-        "root_mean_squared_error": "neg_root_mean_squared_error",
-        "root_mean_squared_log_error": "neg_root_mean_squared_log_error",
-        "mean_poisson_deviance": "neg_mean_poisson_deviance",
-        "mean_gamma_deviance": "neg_mean_gamma_deviance",
-        "max_error": "neg_max_error",
-        "negative_likelihood_ratio": "neg_negative_likelihood_ratio",
-    }
-
     def __getattribute__(self, name):
         """Hide some metric methods conditionally.
 
@@ -69,18 +55,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 f"'{self.__class__.__name__}' object has no attribute '{name}'"
             )
         return super().__getattribute__(name)
-
-    @staticmethod
-    def _resolve_metric_alias(metric):
-        """Resolve a user-friendly metric name to its sklearn scorer name.
-
-        If ``metric`` is a string present in ``_METRIC_ALIASES``, return the
-        corresponding ``neg_``-prefixed scorer name.  Otherwise return
-        ``metric`` unchanged.
-        """
-        if isinstance(metric, str):
-            return _MetricsAccessor._METRIC_ALIASES.get(metric, metric)
-        return metric
 
     def _parse_metrics(
         self,
@@ -100,13 +74,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if metric is None or (isinstance(metric, Sized) and len(metric) == 0):
             items = [(None, m) for m in self._parent._metric_registry]
         elif isinstance(metric, dict):
-            items = [
-                (name, self._resolve_metric_alias(m)) for name, m in metric.items()
-            ]
+            items = [(name, m) for name, m in metric.items()]
         elif isinstance(metric, list):
-            items = [(None, self._resolve_metric_alias(m)) for m in metric]
+            items = [(None, m) for m in metric]
         else:
-            items = [(None, self._resolve_metric_alias(metric))]
+            items = [(None, metric)]
 
         result = {}
         for display_name, m in items:
