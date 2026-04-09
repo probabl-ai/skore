@@ -437,6 +437,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         positives_by_code: dict[str, list[dict]] = {}
 
         for estimator_report in self.estimator_reports_:
+            estimator_report.add_checks(self._checks_registry)
             results, checked_codes = estimator_report._get_issues()
             all_checked_codes |= checked_codes
             for code, diagnostic in results.items():

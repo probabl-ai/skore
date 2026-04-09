@@ -65,9 +65,7 @@ def _get_metrics_data(report: EstimatorReport) -> tuple:
     return report_data, baseline_data
 
 
-def _check_overfitting(
-    report: EstimatorReport,
-) -> dict[str, dict]:
+def _check_overfitting(report: EstimatorReport) -> str | None:
     """Check for overfitting (SKD001).
 
     Detects significant gaps between train and test scores.
@@ -97,9 +95,7 @@ def _check_overfitting(
     return None
 
 
-def _check_underfitting(
-    report: EstimatorReport,
-) -> dict[str, dict]:
+def _check_underfitting(report: EstimatorReport) -> str | None:
     """Check for underfitting (SKD002).
 
     Detects train and test scores close to a dummy baseline.

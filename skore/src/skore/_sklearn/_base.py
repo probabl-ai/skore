@@ -30,27 +30,39 @@ class _BaseReport(ReportHelpMixin):
         "comparison-cross-validation",
     ]
 
+    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
+        """Aggregate EstimatorReport checks.
+
+        Overwritten in CrossValidation and Comparison reports.
+        """
+        return ({}, set())
+
     def _get_issues(self) -> tuple[dict[str, dict], set[str]]:
         """Get the issues from the cache or compute them."""
+        if not hasattr(self, "_issues_cache"):
+            self._issues_cache: dict[str, dict] = {}
+        if not hasattr(self, "_checked_codes"):
+            self._checked_codes: set[str] = set()
+
         for check in self._checks_registry:
             if (
-                check.code not in self._issues_cache[1]
+                check.code not in self._checked_codes
                 and check.report_type == self._report_type
             ):
                 try:
-                    self._issues_cache[0].update(check.run(self))
-                    self._issues_cache[1].add(check.code)
+                    self._issues_cache.update(check.run(self))
+                    self._checked_codes.add(check.code)
                 except DiagnosticNotApplicable:
-                    self._issues_cache[1] |= check.code
+                    self._checked_codes |= {check.code}
 
         if "cross-validation" in self._report_type or "comparison" in self._report_type:
             aggregated = self._aggregate_checks()
             return (
-                self._issues_cache[0] | aggregated[0],
-                self._issues_cache[1] | aggregated[1],
+                self._issues_cache | aggregated[0],
+                self._checked_codes | aggregated[1],
             )
 
-        return self._issues_cache
+        return self._issues_cache, self._checked_codes
 
     def diagnose(
         self,
@@ -123,16 +135,9 @@ class _BaseReport(ReportHelpMixin):
             The diagnostic display with all issues (built-in + custom).
         """
         self._checks_registry.extend(checks)
-        if self._report_type == "cross-validation":
-            for report in self.estimator_reports_:
-                report.add_checks(checks)
-        elif "comparison" in self._report_type:
-            for report in self.reports_.values():
-                report.add_checks(checks)
 
     def __init__(self) -> None:
         self.id = uuid4().int
-        self._issues_cache: list[dict[str, dict], set[str]] = [{}, set()]
         self._checks_registry: list[Check] = _create_model_checks()
 
     @property

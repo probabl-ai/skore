@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from html import escape
 from importlib.metadata import PackageNotFoundError, version
-from typing import Literal
 
 import pandas as pd
 
 from skore._externals._sklearn_compat import parse_version
+from skore._sklearn.types import ReportType
 from skore._utils.repr.base import DisplayHelpMixin
 
 
@@ -102,21 +103,27 @@ class DiagnosticDisplay(DisplayHelpMixin):
 class Check:
     def __init__(
         self,
-        function: callable,
+        function: Callable,
         code: str,
         title: str,
         docs_url: str,
-        report_type: Literal[
-            "estimator",
-            "cross-validation",
-            "comparison-estimator",
-            "comparison-cross-validation",
-        ],
+        report_type: ReportType,
     ):
         self.function = function
         self.code = code
         self.title = title
         self.docs_url = docs_url
+        report_types = [
+            "cross-validation",
+            "estimator",
+            "comparison-estimator",
+            "comparison-cross-validation",
+        ]
+        if report_type not in report_types:
+            raise ValueError(
+                f"report_type should be one of: {', '.join(report_types)}. "
+                f"Got {report_type} instead."
+            )
         self.report_type = report_type
 
     def run(self, report):

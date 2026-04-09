@@ -47,7 +47,7 @@ custom_check_1 = Check(
     "CSTM001",
     "High feature count",
     "https://scikit-learn.org/stable/modules/feature_selection.html#feature-selection",
-    "estimator",
+    "estimatore",
 )
 
 # %%
