@@ -11,6 +11,7 @@ from sklearn.metrics import average_precision_score, precision_recall_curve
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _build_custom_legend_with_stats,
+    _check_label,
     _ClassifierDisplayMixin,
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
@@ -111,6 +112,10 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.ml_task = ml_task
         self.report_type = report_type
 
+    @property
+    def labels(self):
+        return self.precision_recall["label"].cat.categories.to_list()
+
     @classmethod
     def _concatenate(
         cls,
@@ -196,8 +201,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display.set_style(relplot_kwargs={"palette": "Set2", "alpha": 0.8})
         >>> display.plot()
         """
-        if label is _DEFAULT:
-            label = self.default_pos_label
+        label = _check_label(self.labels, label, self.default_pos_label)
         return self._plot(subplot_by=subplot_by, despine=despine, label=label)
 
     def _plot_matplotlib(
@@ -459,8 +463,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display = report.metrics.precision_recall()
         >>> df = display.frame()
         """
-        if label is _DEFAULT:
-            label = self.default_pos_label
+        label = _check_label(self.labels, label, self.default_pos_label)
 
         if with_average_precision:
             # The merge between the precision-recall curve and the average precision is

@@ -11,6 +11,7 @@ from sklearn.metrics import auc, roc_curve
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _build_custom_legend_with_stats,
+    _check_label,
     _ClassifierDisplayMixin,
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
@@ -25,6 +26,8 @@ from skore._sklearn.types import (
     PositiveLabel,
     ReportType,
 )
+
+Label = int | float | bool | str
 
 
 class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
@@ -103,7 +106,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         roc_curve: DataFrame,
         roc_auc: DataFrame,
-        default_pos_label: PositiveLabel | None,
+        default_pos_label: PositiveLabel,
         data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
@@ -114,6 +117,10 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
+
+    @property
+    def labels(self):
+        return self.roc_curve["label"].cat.categories.to_list()
 
     @classmethod
     def _concatenate(
@@ -200,8 +207,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
         >>> display.plot()
         """
-        if label is _DEFAULT:
-            label = self.default_pos_label
+        label = _check_label(self.labels, label, self.default_pos_label)
         return self._plot(
             subplot_by=subplot_by,
             plot_chance_level=plot_chance_level,
@@ -375,7 +381,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         display : RocCurveDisplay
             Object that stores computed values.
         """
-        classes = estimator.classes_
+        classes = estimator.classes_.tolist()
         y_true_onehot = _one_hot_encode(y_true, classes)
         y_pred_arr = cast(NDArray, y_pred)
 
@@ -473,8 +479,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display = report.metrics.roc()
         >>> df = display.frame()
         """
-        if label is _DEFAULT:
-            label = self.default_pos_label
+        label = _check_label(self.labels, label, self.default_pos_label)
 
         if with_roc_auc:  # noqa: SIM108
             # The merge between the ROC curve and the ROC AUC is done without

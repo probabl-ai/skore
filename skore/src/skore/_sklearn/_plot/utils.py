@@ -12,6 +12,7 @@ from pandas import CategoricalDtype, DataFrame
 from sklearn.preprocessing import LabelBinarizer
 
 from skore._sklearn.types import (
+    _DEFAULT,
     DataSource,
     MLTask,
     ReportType,
@@ -474,3 +475,19 @@ def _one_hot_encode(y_true, classes) -> NDArray:
     if len(classes) == 2:
         y_true_onehot = np.hstack(((1 - y_true_onehot), y_true_onehot))
     return y_true_onehot
+
+
+def _check_label(labels: list, label, default_label):
+    if label is _DEFAULT:
+        return default_label
+    elif label is None:
+        return None
+    elif label not in labels:
+        raise ValueError(
+            f"label={label!r} is not a valid label. It should be one of: {labels!r}."
+        )
+    else:
+        # necessary clean-up for `df['label'] == label` to work in some cases
+        # Ex: with `labels=[0, 1]` and `label=True`:
+        # `label in labels` is true but `df.loc[df['label'] == label]` is empty.
+        return labels[labels.index(label)]
