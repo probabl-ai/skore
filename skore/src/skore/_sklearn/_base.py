@@ -139,8 +139,8 @@ class record_calls:
     """Descriptor that records normalized method calls on the parent report."""
 
     def __init__(self, func):
-        self.func = func
-        self.sig = inspect.signature(func)
+        self.function = func
+        self.signature = inspect.signature(func)
         self.attr_name = f"__calls_{id(func)}"
         update_wrapper(self, func)
 
@@ -156,16 +156,16 @@ class _BoundRecordedMethod:
     def __init__(self, decorator, instance):
         self._decorator = decorator
         self._instance = instance
-        update_wrapper(self, decorator.func)
+        update_wrapper(self, decorator.function)
 
     def __call__(self, *args, **kwargs):
-        dec = self._decorator
+        decorator = self._decorator
         instance = self._instance
         # Accessors are re-instantiated on each lookup, so the bound wrapper stores
         # call history on the shared parent report rather than on the accessor.
         storage_owner = instance._parent
 
-        bound_args = dec.sig.bind(instance, *args, **kwargs)
+        bound_args = decorator.signature.bind(instance, *args, **kwargs)
         bound_args.apply_defaults()
 
         args_dict = dict(bound_args.arguments)
@@ -175,9 +175,9 @@ class _BoundRecordedMethod:
         # parameter combinations rather than every invocation.
         h = joblib.hash(args_dict)
 
-        result = dec.func(instance, *args, **kwargs)
+        result = decorator.function(instance, *args, **kwargs)
 
-        calls = storage_owner.__dict__.setdefault(dec.attr_name, {})
+        calls = storage_owner.__dict__.setdefault(decorator.attr_name, {})
         calls[h] = args_dict
 
         return result
