@@ -8,7 +8,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 
-from skore import EstimatorReport, configuration, evaluate
+from skore import Check, EstimatorReport, configuration, evaluate
 from skore._sklearn._diagnostic import DiagnosticDisplay, get_issue_documentation_url
 from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
 
@@ -55,7 +55,7 @@ def test_diagnose_ignore(monkeypatch, regression_train_test_split):
     """Check that checks are ignored when ignore is passed."""
     monkeypatch.setattr(
         EstimatorReport,
-        "_run_checks",
+        "_get_issues",
         lambda self: (
             {
                 "SKD001": {
@@ -93,7 +93,7 @@ def test_diagnose_no_issues(monkeypatch, regression_train_test_split):
     """Check that no issues are detected when checks pass."""
     monkeypatch.setattr(
         EstimatorReport,
-        "_run_checks",
+        "_get_issues",
         lambda self: ({}, {"SKD001", "SKD002"}),
     )
     X_train, X_test, y_train, y_test = regression_train_test_split
@@ -112,7 +112,7 @@ def test_diagnose_result_has_repr(monkeypatch, regression_train_test_split):
     """Check that the diagnostic result has a repr."""
     monkeypatch.setattr(
         EstimatorReport,
-        "_run_checks",
+        "_get_issues",
         lambda self: (
             {
                 "SKD999": {
@@ -146,7 +146,7 @@ def test_diagnose_uses_global_ignore(monkeypatch, regression_data):
     """Check that checks are ignored when global ignore is set."""
     monkeypatch.setattr(
         EstimatorReport,
-        "_run_checks",
+        "_get_issues",
         lambda self: (
             {
                 "SKD001": {
@@ -178,23 +178,20 @@ def test_diagnose_documentation_url_points_to_existing_rst():
 def test_diagnose_reuses_cached_results(monkeypatch, regression_data):
     """Check that check results are cached and reused."""
     calls = 0
-    original = EstimatorReport._run_checks
+    original_run = Check.run
 
-    def _run_checks_wrapper(self):
+    def counting_run(self, report):
         nonlocal calls
         calls += 1
-        return original(self)
+        return original_run(self, report)
 
-    monkeypatch.setattr(EstimatorReport, "_run_checks", _run_checks_wrapper)
+    monkeypatch.setattr(Check, "run", counting_run)
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=0.2)
     report.diagnose()
     calls_after_first = calls
     report.diagnose()
     assert calls == calls_after_first
-
-
-# ---- Custom check tests ----
 
 
 def _make_report(regression_train_test_split):
@@ -213,63 +210,41 @@ def test_add_checks_runs_custom_check(regression_train_test_split):
     report = _make_report(regression_train_test_split)
 
     def my_check(report):
-        return {
-            "CUSTOM001": {
-                "title": "Custom issue",
-                "explanation": "Something was found.",
-            }
-        }
+        return "Something was found."
 
-    result = report.add_checks([("CUSTOM001", my_check)])
+    check = Check(my_check, "CUSTOM001", "Custom issue", "custom001", "estimator")
+    report.add_checks([check])
+    result = report.diagnose()
     assert "CUSTOM001" in result.issues
     assert result.issues["CUSTOM001"]["title"] == "Custom issue"
 
 
-def test_add_checks_reuses_builtin_cache(regression_train_test_split):
+def test_add_checks_reuses_builtin_cache(monkeypatch, regression_train_test_split):
     """Check that add_checks does not re-run already cached built-in checks."""
     report = _make_report(regression_train_test_split)
 
+    calls = 0
+    original_run = Check.run
+
+    def counting_run(self, rpt):
+        nonlocal calls
+        calls += 1
+        return original_run(self, rpt)
+
+    monkeypatch.setattr(Check, "run", counting_run)
+
     report.diagnose()
-    cached_before = dict(report._check_results_cache)
+    calls_after_first = calls
 
     def my_check(report):
-        return {
-            "CUSTOM002": {
-                "title": "Another issue",
-                "explanation": "Details.",
-            }
-        }
+        return "Details."
 
-    report.add_checks([("CUSTOM002", my_check)])
+    custom = Check(my_check, "CUSTOM002", "Another issue", "custom002", "estimator")
+    report.add_checks([custom])
+    report.diagnose()
 
-    for code in ("SKD001", "SKD002"):
-        if code in cached_before:
-            assert report._check_results_cache[code] is cached_before[code]
-
-
-def test_add_checks_validates_entry(regression_train_test_split):
-    """Check that add_checks raises TypeError for malformed entries."""
-    report = _make_report(regression_train_test_split)
-
-    with pytest.raises(TypeError, match="\\(code, callable\\) tuple"):
-        report.add_checks(["not_a_tuple"])
-
-    with pytest.raises(TypeError, match="\\(code, callable\\) tuple"):
-        report.add_checks([(123, lambda r: {})])
-
-    with pytest.raises(TypeError, match="\\(code, callable\\) tuple"):
-        report.add_checks([("CODE", "not_callable")])
-
-
-def test_add_checks_validates_return_value(regression_train_test_split):
-    """Check that add_checks raises TypeError for bad return value."""
-    report = _make_report(regression_train_test_split)
-
-    def bad_check(report):
-        return "not a dict"
-
-    with pytest.raises(TypeError, match="dict"):
-        report.add_checks([("BAD", bad_check)])
+    # Only the new custom check should have run, not the built-in ones again
+    assert calls == calls_after_first + 1
 
 
 def test_add_checks_not_applicable(regression_train_test_split):
@@ -279,7 +254,9 @@ def test_add_checks_not_applicable(regression_train_test_split):
     def inapplicable_check(report):
         raise DiagnosticNotApplicable()
 
-    result = report.add_checks([("NA001", inapplicable_check)])
+    check = Check(inapplicable_check, "NA001", "N/A check", "na001", "estimator")
+    report.add_checks([check])
+    result = report.diagnose()
     assert isinstance(result, DiagnosticDisplay)
 
 
@@ -288,15 +265,13 @@ def test_add_checks_docs_url_full(regression_train_test_split):
     report = _make_report(regression_train_test_split)
 
     def check_with_url(report):
-        return {
-            "URL001": {
-                "title": "URL test",
-                "explanation": "Has a URL.",
-                "docs_url": "https://example.com/my-doc",
-            }
-        }
+        return "Has a URL."
 
-    result = report.add_checks([("URL001", check_with_url)])
+    check = Check(
+        check_with_url, "URL001", "URL test", "https://example.com/my-doc", "estimator"
+    )
+    report.add_checks([check])
+    result = report.diagnose()
     frame = result.frame()
     row = frame[frame["code"] == "URL001"]
     assert row["documentation_url"].iloc[0] == "https://example.com/my-doc"
@@ -308,25 +283,21 @@ def test_add_checks_docs_url_absent(regression_train_test_split):
     report = _make_report(regression_train_test_split)
 
     def check_no_url(report):
-        return {
-            "NOURL001": {
-                "title": "No URL",
-                "explanation": "No docs_url provided.",
-            }
-        }
+        return "No docs_url provided."
 
-    result = report.add_checks([("NOURL001", check_no_url)])
+    check = Check(check_no_url, "NOURL001", "No URL", None, "estimator")
+    report.add_checks([check])
+    result = report.diagnose()
     frame = result.frame()
     row = frame[frame["code"] == "NOURL001"]
     assert row["documentation_url"].iloc[0] is None
 
 
-def test_add_checks_invalid_level(regression_train_test_split):
-    """Check that add_checks raises ValueError for unsupported level."""
-    report = _make_report(regression_train_test_split)
+def test_check_invalid_report_type():
+    """Check that Check raises ValueError for unsupported report_type."""
 
     def my_check(report):
-        return {}
+        return None
 
-    with pytest.raises(ValueError, match="level="):
-        report.add_checks([("X", my_check)], level="cross-validation")
+    with pytest.raises(ValueError, match="report_type should be one of"):
+        Check(my_check, "X", "Title", "url", "invalid")

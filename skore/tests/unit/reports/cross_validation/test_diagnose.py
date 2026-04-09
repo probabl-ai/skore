@@ -4,7 +4,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 
-from skore import CrossValidationReport, EstimatorReport, configuration
+from skore import Check, CrossValidationReport, configuration
 from skore._sklearn._diagnostic import DiagnosticDisplay
 
 
@@ -59,14 +59,14 @@ def test_diagnose_result_has_repr(binary_classification_data):
 def test_diagnose_reuses_split_cached_results(monkeypatch, binary_classification_data):
     """Check that check results are cached and reused across splits."""
     calls = 0
-    original = EstimatorReport._run_checks
+    original_run = Check.run
 
-    def _run_checks_wrapper(self):
+    def counting_run(self, report):
         nonlocal calls
         calls += 1
-        return original(self)
+        return original_run(self, report)
 
-    monkeypatch.setattr(EstimatorReport, "_run_checks", _run_checks_wrapper)
+    monkeypatch.setattr(Check, "run", counting_run)
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
     report.diagnose()
@@ -80,7 +80,7 @@ def test_diagnose_uses_global_ignore(binary_classification_data):
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
     report.diagnose()
-    _results, checked_codes = report._issues_cache
+    _, checked_codes = report._get_issues()
     assert len(checked_codes) > 0
     with configuration(ignore_checks=list(checked_codes)):
         assert report.diagnose().issues == {}
@@ -93,45 +93,45 @@ def test_add_checks_cv_level(binary_classification_data):
 
     def cv_check(report):
         n_splits = len(report.estimator_reports_)
-        return {
-            "CVCUSTOM": {
-                "title": "CV-level check",
-                "explanation": f"Ran on {n_splits} splits.",
-            }
-        }
+        return f"Ran on {n_splits} splits."
 
-    result = report.add_checks([("CVCUSTOM", cv_check)])
+    check = Check(
+        cv_check, "CVCUSTOM", "CV-level check", "cvcustom", "cross-validation"
+    )
+    report.add_checks([check])
+    result = report.diagnose()
     assert "CVCUSTOM" in result.issues
     assert "3 splits" in result.issues["CVCUSTOM"]["explanation"]
 
 
 def test_add_checks_estimator_level(binary_classification_data):
-    """Check that add_checks with level='estimator' propagates and aggregates."""
+    """Check that add_checks with estimator report_type propagates and aggregates."""
     X, y = binary_classification_data
     report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
 
     def estimator_check(report):
         if report.X_test is not None:
-            return {
-                "ESTCUSTOM": {
-                    "title": "Estimator-level check",
-                    "explanation": "Detected on a single split.",
-                }
-            }
-        return {}
+            return "Detected on a single split."
+        return None
 
-    result = report.add_checks([("ESTCUSTOM", estimator_check)], level="estimator")
+    check = Check(
+        estimator_check,
+        "ESTCUSTOM",
+        "Estimator-level check",
+        "estcustom",
+        "estimator",
+    )
+    report.add_checks([check])
+    result = report.diagnose()
     assert "ESTCUSTOM" in result.issues
     assert "evaluated splits" in result.issues["ESTCUSTOM"]["explanation"]
 
 
-def test_add_checks_invalid_level(binary_classification_data):
-    """Check that add_checks raises ValueError for unsupported level."""
-    X, y = binary_classification_data
-    report = CrossValidationReport(LogisticRegression(), X, y, splitter=3)
+def test_check_invalid_report_type():
+    """Check that Check raises ValueError for unsupported report_type."""
 
     def my_check(report):
-        return {}
+        return None
 
-    with pytest.raises(ValueError, match="level="):
-        report.add_checks([("X", my_check)], level="comparison")
+    with pytest.raises(ValueError, match="report_type should be one of"):
+        Check(my_check, "X", "Title", "url", "comparison")

@@ -20,6 +20,7 @@ from skore import (
     configuration,
 )
 from skore._sklearn._diagnostic import DiagnosticDisplay
+from skore._sklearn._diagnostic.base import Check
 
 
 @pytest.fixture(
@@ -50,13 +51,12 @@ def test_diagnose_collects_component_issues(report, monkeypatch):
     ):
         monkeypatch.setattr(
             sub_report,
-            "_run_checks",
+            "_get_issues",
             lambda iss=issues: (iss, set(iss)),
         )
-        if hasattr(sub_report, "_issues_cache"):
-            delattr(sub_report, "_issues_cache")
-    if hasattr(report, "_issues_cache"):
-        delattr(report, "_issues_cache")
+    for attr in ("_issues_cache", "_checked_codes"):
+        if hasattr(report, attr):
+            delattr(report, attr)
 
     results = report.diagnose()
     assert isinstance(results, DiagnosticDisplay)
@@ -68,21 +68,21 @@ def test_diagnose_collects_component_issues(report, monkeypatch):
 
 def test_diagnose_uses_component_cache(report, monkeypatch):
     """Check that check results are cached and reused."""
-    sub_report = next(iter(report.reports_.values()))
     calls = 0
-    original = sub_report._run_checks
+    original_run = Check.run
 
-    def wrapped():
+    def counting_run(self, rpt):
         nonlocal calls
         calls += 1
-        return original()
+        return original_run(self, rpt)
 
-    monkeypatch.setattr(sub_report, "_run_checks", wrapped)
+    monkeypatch.setattr(Check, "run", counting_run)
 
     report.diagnose()
+    calls_after_first = calls
     report.diagnose()
 
-    assert calls == 1
+    assert calls == calls_after_first
 
 
 def test_diagnose_result_has_repr(report):
@@ -107,13 +107,12 @@ def test_diagnose_ignore(report, monkeypatch):
     for sub_report in report.reports_.values():
         monkeypatch.setattr(
             sub_report,
-            "_run_checks",
+            "_get_issues",
             lambda: (mock_issues, {"SKD001", "SKD002"}),
         )
-        if hasattr(sub_report, "_issues_cache"):
-            delattr(sub_report, "_issues_cache")
-    if hasattr(report, "_issues_cache"):
-        delattr(report, "_issues_cache")
+    for attr in ("_issues_cache", "_checked_codes"):
+        if hasattr(report, attr):
+            delattr(report, attr)
     results = report.diagnose(ignore=["SKD001"])
     assert "SKD001" not in results.issues
 
@@ -130,13 +129,12 @@ def test_diagnose_uses_global_ignore(report, monkeypatch):
     for sub_report in report.reports_.values():
         monkeypatch.setattr(
             sub_report,
-            "_run_checks",
+            "_get_issues",
             lambda: (mock_issues, {"SKD001", "SKD002"}),
         )
-        if hasattr(sub_report, "_issues_cache"):
-            delattr(sub_report, "_issues_cache")
-    if hasattr(report, "_issues_cache"):
-        delattr(report, "_issues_cache")
+    for attr in ("_issues_cache", "_checked_codes"):
+        if hasattr(report, attr):
+            delattr(report, attr)
     assert "SKD001" in report.diagnose().issues
     with configuration(ignore_checks=["SKD001"]):
         assert "SKD001" not in report.diagnose().issues
