@@ -12,7 +12,7 @@ with a report via :meth:`~skore.EstimatorReport.add_checks`.
 
 # %%
 # Writing a custom check for a single estimator
-# ==============================================
+# =============================================
 #
 # We start by defining a simple check that flags models with a very large
 # number of features. The check inspects the test data attached to the
@@ -73,7 +73,7 @@ report.diagnose()
 
 # %%
 # Cross-validation level checks
-# ==============================
+# =============================
 #
 # :class:`~skore.CrossValidationReport` and :class:`~skore.ComparisonReport` can also
 # receive custom checks, either ran on the full report or on the component estimator
