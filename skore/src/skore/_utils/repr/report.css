@@ -49,7 +49,7 @@
 }
 
 .report-inline-right {
-    text-align: right;
+    float: left;
     margin-top: -1.6em;
 }
 
