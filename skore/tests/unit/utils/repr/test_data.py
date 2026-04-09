@@ -268,10 +268,8 @@ def test_get_public_methods_accessor_includes_recorded_methods(report_with_metho
     """get_public_methods includes methods wrapped by custom descriptors."""
     accessor = _AccessorWithRecordedMethod(parent=report_with_methods)
 
-    methods = get_public_methods(accessor)
-    names = [n for n, _ in methods]
-    assert len(names) == 1
-    assert names[0] == "fetch"
+    names = [n for n, _ in get_public_methods(accessor)]
+    assert names == ["fetch"]
 
 
 @pytest.mark.parametrize(
