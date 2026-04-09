@@ -28,6 +28,34 @@ def _select_kwargs(func: Callable, kwargs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+# Mapping from user-friendly metric names to their neg_-prefixed sklearn scorer
+# equivalents. This lets users omit the ``neg_`` prefix when passing these
+# metric strings to skore (e.g. ``"mean_squared_error"`` instead of
+# ``"neg_mean_squared_error"``).
+_METRIC_ALIASES: dict[str, str] = {
+    "mean_squared_error": "neg_mean_squared_error",
+    "mean_absolute_error": "neg_mean_absolute_error",
+    "mean_absolute_percentage_error": "neg_mean_absolute_percentage_error",
+    "median_absolute_error": "neg_median_absolute_error",
+    "mean_squared_log_error": "neg_mean_squared_log_error",
+    "root_mean_squared_error": "neg_root_mean_squared_error",
+    "root_mean_squared_log_error": "neg_root_mean_squared_log_error",
+    "mean_poisson_deviance": "neg_mean_poisson_deviance",
+    "mean_gamma_deviance": "neg_mean_gamma_deviance",
+    "max_error": "neg_max_error",
+    "negative_likelihood_ratio": "neg_negative_likelihood_ratio",
+}
+
+
+def _resolve_metric_alias(metric: str) -> str:
+    """Resolve a user-friendly metric name to its sklearn scorer equivalent.
+
+    If ``metric`` is present in ``_METRIC_ALIASES``, return the corresponding
+    ``neg_``-prefixed scorer name.  Otherwise return ``metric`` unchanged.
+    """
+    return _METRIC_ALIASES.get(metric, metric)
+
+
 class Metric:
     """A metric that can compute a score from a report.
 
@@ -545,6 +573,8 @@ class MetricRegistry(UserDict):
                     "`sklearn.metrics.make_scorer` to create a scorer with "
                     "additional parameters."
                 )
+
+            metric = _resolve_metric_alias(metric)
 
             try:
                 scorer = sklearn.metrics.get_scorer(metric)
