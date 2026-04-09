@@ -7,7 +7,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import Check, EstimatorReport, configuration, evaluate
-from skore._sklearn._diagnostic import DiagnosticDisplay, get_issue_documentation_url
+from skore._sklearn._diagnostic import DiagnosticDisplay
+from skore._sklearn._diagnostic.base import _get_issue_documentation_url
 from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
 
 
@@ -60,7 +61,7 @@ def test_exception_when_train_data_missing(regression_train_test_split):
     for check in report._checks_registry:
         if check.code in ["SKD001", "SKD002"]:
             with pytest.raises(DiagnosticNotApplicable):
-                check.run(report)
+                check._run(report)
 
 
 def test_diagnose_no_issues(monkeypatch, regression_data):
@@ -109,8 +110,8 @@ def test_diagnose_uses_global_ignore(monkeypatch, regression_data):
 
 
 def test_diagnose_documentation_url_points_to_existing_rst():
-    """Check that the URL in get_issue_documentation_url maps to a real RST file."""
-    url = urlparse(get_issue_documentation_url(docs_anchor="placeholder"))
+    """Check that the URL in _get_issue_documentation_url maps to a real RST file."""
+    url = urlparse(_get_issue_documentation_url(docs_anchor="placeholder"))
     # url.path is e.g. "/dev/user_guide/automatic_diagnostic.html"
     # strip version prefix and convert .html -> .rst
     rst_rel_path = "/".join(url.path.split("/")[2:]).replace(".html", ".rst")
@@ -121,7 +122,7 @@ def test_diagnose_documentation_url_points_to_existing_rst():
 def test_diagnose_reuses_cached_results(monkeypatch, regression_data):
     """Check that check results are cached and reused."""
     calls = 0
-    original_run = Check.run
+    original_run = Check._run
 
     def counting_run(self, report):
         nonlocal calls
@@ -162,7 +163,7 @@ def test_add_checks_reuses_builtin_cache(monkeypatch, regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
     calls = 0
-    original_run = Check.run
+    original_run = Check._run
 
     def counting_run(self, rpt):
         nonlocal calls

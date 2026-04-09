@@ -38,7 +38,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
         self._checks_ran = checks_ran
         if issues:
             self._messages = [
-                format_issue_message(code, d) for code, d in issues.items()
+                _format_issue_message(code, d) for code, d in issues.items()
             ]
         else:
             self._messages = ["No issues were detected in your report!"]
@@ -67,7 +67,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
                 "code": code,
                 "title": issue["title"],
                 "explanation": issue["explanation"],
-                "documentation_url": _resolve_docs_url(issue),
+                "documentation_url": _get_issue_documentation_url(issue),
             }
             for code, issue in self._issues.items()
         ]
@@ -78,7 +78,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
     def _repr_html_(self) -> str:
         if self._issues:
             items_html = "".join(
-                f"<li>{format_issue_message_html(code, issue)}</li>"
+                f"<li>{_format_issue_message_html(code, issue)}</li>"
                 for code, issue in self._issues.items()
             )
         else:
@@ -101,6 +101,37 @@ class DiagnosticDisplay(DisplayHelpMixin):
 
 
 class Check:
+    """Single diagnostic check.
+
+    Each check wraps a callable that inspects a report. If the callable returns a
+    non-empty string, that text is recorded as an issue under :attr:`code` with the
+    given :attr:`title`. Checks are scoped to a single report kind via
+    :attr:`report_type` so they only run on matching reports.
+
+    Parameters
+    ----------
+    function : callable
+        callable taking the report instance and returning an explanation string
+        when the check detects a problem, or a false value (e.g. `None` or
+        `""`) when there is nothing to report.
+
+    code : str
+        unique identifier for this check , used in
+        :meth:`~skore.EstimatorReport.diagnose` and `ignore` lists.
+
+    title : str
+        short label shown for the issue when one is reported.
+
+    report_type : str
+        must be one of `"cross-validation"`, `"estimator"`,
+        `"comparison-estimator"`, or `"comparison-cross-validation"`.
+
+    docs_url : str or None, default=None
+        optional link or documentation anchor: a string starting with `"https"`
+        is shown as-is; otherwise it is treated as an HTML anchor fragment under
+        the automatic diagnostic user guide.
+    """
+
     def __init__(
         self,
         function: Callable,
@@ -126,7 +157,7 @@ class Check:
             )
         self.report_type = report_type
 
-    def run(self, report):
+    def _run(self, report) -> dict[str, dict]:
         explanation = self.function(report)
         if explanation:
             return {
@@ -139,22 +170,13 @@ class Check:
         return {}
 
 
-def _resolve_docs_url(issue: dict) -> str | None:
-    """Resolve the documentation URL for an issue.
-
-    Returns ``None`` if the issue has no ``"docs_url"`` key, the raw URL if it
-    starts with ``"https"``, or a full documentation URL built from the anchor
-    otherwise.
-    """
+def _get_issue_documentation_url(issue: dict) -> str | None:
     docs_url = issue.get("docs_url")
     if docs_url is None:
         return None
     if docs_url.startswith("https"):
         return docs_url
-    return get_issue_documentation_url(docs_anchor=docs_url)
 
-
-def get_issue_documentation_url(*, docs_anchor: str) -> str:
     try:
         skore_version = parse_version(version("skore"))
         url_version = (
@@ -164,16 +186,16 @@ def get_issue_documentation_url(*, docs_anchor: str) -> str:
         )
     except PackageNotFoundError:
         url_version = "dev"
-    return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automatic_diagnostic.html#{docs_anchor}"
+    return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automatic_diagnostic.html#{docs_url}"
 
 
 def _is_external_url(issue: dict) -> bool:
     return issue.get("docs_url", "").startswith("https")
 
 
-def format_issue_message(code: str, issue: dict) -> str:
+def _format_issue_message(code: str, issue: dict) -> str:
     msg = f"[{code}] {issue['title']}. {issue['explanation']}"
-    docs_url = _resolve_docs_url(issue)
+    docs_url = _get_issue_documentation_url(issue)
     if docs_url is not None:
         if _is_external_url(issue):
             msg += f" Read more about this here: {docs_url}."
@@ -183,12 +205,12 @@ def format_issue_message(code: str, issue: dict) -> str:
     return msg
 
 
-def format_issue_message_html(code: str, issue: dict) -> str:
+def _format_issue_message_html(code: str, issue: dict) -> str:
     escaped_code = escape(code)
     title = escape(issue["title"])
     explanation = escape(issue["explanation"])
     msg = f"[{escaped_code}] {title}. {explanation}"
-    docs_url = _resolve_docs_url(issue)
+    docs_url = _get_issue_documentation_url(issue)
     if docs_url is not None:
         escaped_url = escape(docs_url, quote=True)
         if _is_external_url(issue):

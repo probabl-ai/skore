@@ -26,7 +26,7 @@ def test_diagnose_aggregates_underfitting_across_splits(regression_data):
 def test_diagnose_reuses_split_cached_results(monkeypatch, regression_data):
     """Check that check results are cached and reused across splits."""
     calls = 0
-    original_run = Check.run
+    original_run = Check._run
 
     def counting_run(self, report):
         nonlocal calls

@@ -50,7 +50,7 @@ class _BaseReport(ReportHelpMixin):
                 and check.report_type == self._report_type
             ):
                 try:
-                    self._issues_cache.update(check.run(self))
+                    self._issues_cache.update(check._run(self))
                     self._checked_codes.add(check.code)
                 except DiagnosticNotApplicable:
                     self._checked_codes |= {check.code}
@@ -125,14 +125,18 @@ class _BaseReport(ReportHelpMixin):
         self,
         checks: list[Check],
     ) -> None:
-        """Add custom diagnostic checks and re-run diagnostics.
+        """Register additional diagnostic checks for this report.
 
-        # TODO: write docstring
+        Appends the given checks to the registry used by
+        :meth:`diagnose`. The next call to :meth:`diagnose` runs any newly added
+        checks (along with checks that have not yet been cached). Already-run
+        built-in checks are not re-executed.
 
-        Returns
-        -------
-        DiagnosticDisplay
-            The diagnostic display with all issues (built-in + custom).
+        Parameters
+        ----------
+        checks : list of Check
+            additional :class:`~skore.Check` instances to register
+
         """
         self._checks_registry.extend(checks)
 

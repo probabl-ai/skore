@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 import uuid
 from collections.abc import Generator
-from typing import TYPE_CHECKING, ClassVar, Literal
+from typing import TYPE_CHECKING, Literal
 
 import skrub
 from joblib import Parallel
@@ -167,7 +167,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     }
 
     _report_type: Literal["cross-validation"] = "cross-validation"
-    _BUILTIN_CHECKS: ClassVar[list] = []
 
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
@@ -431,7 +430,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return report
 
     def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
-        # Aggregate issues from sub-reports via majority voting.
         total_splits = len(self.estimator_reports_)
         all_checked_codes: set[str] = set()
         positives_by_code: dict[str, list[dict]] = {}

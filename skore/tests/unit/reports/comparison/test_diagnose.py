@@ -38,7 +38,7 @@ def test_diagnose_collects_component_issues(report, monkeypatch):
 def test_diagnose_reuses_component_cached_results(report, monkeypatch):
     """Check that check results are cached and reused."""
     calls = 0
-    original_run = Check.run
+    original_run = Check._run
 
     def counting_run(self, report):
         nonlocal calls

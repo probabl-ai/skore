@@ -8,11 +8,6 @@ Adding custom diagnostic checks
 `skore` lets you extend the built-in diagnostic checks with your own.
 This example shows how to write a custom check function and register it
 with a report via :meth:`~skore.EstimatorReport.add_checks`.
-
-A check is any callable that accepts a single report argument and returns a
-dictionary, mapping a check code to an issue dictionary with keys ``"title"``,
-``"explanation"``, and optionally ``"docs_url"``.
-When the check finds no issue, it should return an empty dictionary.
 """
 
 # %%
@@ -21,7 +16,15 @@ When the check finds no issue, it should return an empty dictionary.
 #
 # We start by defining a simple check that flags models with a very large
 # number of features. The check inspects the test data attached to the
-# report.
+# report. We throw an exception when the test data is not available to avoid
+# running the check when it is not applicable. The check function is wrapped in a
+# :class:`~skore.Check` instance and registered with the report via
+# :meth:`~skore.EstimatorReport.add_checks`.
+#
+# The `docs_url` argument is optional. When provided as a full URL (starting
+# with ``"https"``), it is used as-is. When it is a plain anchor string
+# it points to the skore diagnostic user guide. When omitted entirely,
+# no documentation link is shown.
 
 import numpy as np
 from skore import Check, DiagnosticNotApplicable
@@ -43,18 +46,20 @@ def check_high_feature_count(report):
 
 
 custom_check_1 = Check(
-    check_high_feature_count,
-    "CSTM001",
-    "High feature count",
-    "estimator",
-    "https://scikit-learn.org/stable/modules/feature_selection.html#feature-selection",
+    function=check_high_feature_count,
+    code="CSTM001",
+    title="High feature count",
+    report_type="estimator",
+    docs_url="https://scikit-learn.org/stable/modules/feature_selection.html#feature-selection",
 )
 
 # %%
 # Registering the check
 # =====================
 #
-# ``add_checks`` accepts a list of ``Check`` instances, and registers them.
+# :meth:`~skore.EstimatorReport.add_checks` accepts a list of ``Check`` instances,
+# and registers them. The next call to :meth:`~skore.EstimatorReport.diagnose` runs
+# any newly added checks on top of the built-in checks.
 from sklearn.linear_model import LinearRegression
 from skore import evaluate
 
@@ -67,12 +72,6 @@ report.add_checks([custom_check_1])
 report.diagnose()
 
 # %%
-# The ``docs_url`` key is optional. When provided as a full URL (starting
-# with ``"https"``), it is used as-is. When it is a plain anchor string
-# it points to the skore diagnostic user guide. When omitted entirely,
-# no documentation link is shown.
-
-# %%
 # Cross-validation level checks
 # ==============================
 #
@@ -80,13 +79,11 @@ report.diagnose()
 # receive custom checks, either ran on the full report or on the component estimator
 # reports.
 #
-# By default, checks are run on the full report. To run checks on the component
-# estimator reports and aggregate the results across splits, pass ``level="estimator"``
-# to the ``add_checks`` method.
+# The `report_type` argument of :class:`~skore.Check` controls the scope of the check.
+# Let's write a check that is specific to cross-validation reports: it flags metrics
+# with high variance across splits.
 #
-# In this example, we will corrupt the first fold of the target in a cross validation
-# scheme to create high score variance across splits, then write a check that detects it.
-
+# We will corrupt the first fold of the target to illustrate the check.
 import pandas as pd
 
 y_noisy = y.copy()
@@ -114,13 +111,33 @@ def check_cv_score_variance(report):
 
 
 custom_check_2 = Check(
-    check_cv_score_variance,
-    "CSTM002",
-    "High score variance across folds",
-    "cross-validation",
-    "",
+    function=check_cv_score_variance,
+    code="CSTM002",
+    title="High score variance across folds",
+    report_type="cross-validation",
 )
 
 
-cv_report.add_checks([custom_check_2, custom_check_1])
+cv_report.add_checks([custom_check_2])
 cv_report.diagnose()
+
+# %%
+# Aggregating checks across estimator reports
+# ===========================================
+#
+# We can also reuse our first check to run it on the component estimator reports
+# and aggregate the results across splits.
+
+cv_report.add_checks([custom_check_1])
+cv_report.diagnose()
+
+# %%
+# Similarly, :class:`~skore.ComparisonReport` aggregates checks across its
+# component reports.
+from sklearn.ensemble import RandomForestRegressor
+
+comparison_report = evaluate(
+    [LinearRegression(), RandomForestRegressor()], X, y, splitter=5
+)
+comparison_report.add_checks([custom_check_1, custom_check_2])
+comparison_report.diagnose()
