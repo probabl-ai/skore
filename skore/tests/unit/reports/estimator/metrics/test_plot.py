@@ -81,7 +81,7 @@ def test_display_binary_classification_label_overrides_default_pos_label(
 ):
     """Check that `label` overrides the report positive label for plots and frames."""
     X, y = binary_classification_data
-    labels = np.array(["A", "B"], dtype=object)
+    labels = np.array(["A", "B"])
     y = labels[y]
     classifier = LogisticRegression().fit(X, y)
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")

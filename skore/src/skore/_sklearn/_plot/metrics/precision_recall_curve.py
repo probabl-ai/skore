@@ -492,7 +492,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             indexing_columns += ["data_source"]
 
         if label is not None:
-            df = df.loc[df["label"] == label].reset_index(drop=True)
+            df = df.query("label == @label").reset_index(drop=True)
             columns = indexing_columns + statistical_columns
         else:
             columns = indexing_columns + ["label"] + statistical_columns
