@@ -57,6 +57,16 @@
     color: var(--color-text);
 }
 
+details.report-disclosure {
+    display: inline-flex;
+    padding-right: 1.5em;
+}
+
+details.report-disclosure:open {
+    display: block;
+    padding-right: 0ex;
+}
+
 .report-disclosure > summary {
     cursor: pointer;
     user-select: none;
