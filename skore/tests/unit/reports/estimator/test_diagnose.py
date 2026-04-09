@@ -111,7 +111,7 @@ def test_diagnose_uses_global_ignore(monkeypatch, regression_data):
 
 def test_diagnose_documentation_url_points_to_existing_rst():
     """Check that the URL in _get_issue_documentation_url maps to a real RST file."""
-    url = urlparse(_get_issue_documentation_url(docs_anchor="placeholder"))
+    url = urlparse(_get_issue_documentation_url(mock_issue(None)[0]["SKD001"]))
     # url.path is e.g. "/dev/user_guide/automatic_diagnostic.html"
     # strip version prefix and convert .html -> .rst
     rst_rel_path = "/".join(url.path.split("/")[2:]).replace(".html", ".rst")
@@ -129,7 +129,7 @@ def test_diagnose_reuses_cached_results(monkeypatch, regression_data):
         calls += 1
         return original_run(self, report)
 
-    monkeypatch.setattr(Check, "run", counting_run)
+    monkeypatch.setattr(Check, "_run", counting_run)
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=0.2)
     report.diagnose()
@@ -170,7 +170,7 @@ def test_add_checks_reuses_builtin_cache(monkeypatch, regression_data):
         calls += 1
         return original_run(self, rpt)
 
-    monkeypatch.setattr(Check, "run", counting_run)
+    monkeypatch.setattr(Check, "_run", counting_run)
 
     report.diagnose()
     calls_after_first = calls

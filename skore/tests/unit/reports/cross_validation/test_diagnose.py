@@ -33,7 +33,7 @@ def test_diagnose_reuses_split_cached_results(monkeypatch, regression_data):
         calls += 1
         return original_run(self, report)
 
-    monkeypatch.setattr(Check, "run", counting_run)
+    monkeypatch.setattr(Check, "_run", counting_run)
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=3)
     report.diagnose()

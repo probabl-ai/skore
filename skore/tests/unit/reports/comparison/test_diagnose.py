@@ -45,7 +45,7 @@ def test_diagnose_reuses_component_cached_results(report, monkeypatch):
         calls += 1
         return original_run(self, report)
 
-    monkeypatch.setattr(Check, "run", counting_run)
+    monkeypatch.setattr(Check, "_run", counting_run)
 
     report.diagnose()
     calls_after_first = calls
