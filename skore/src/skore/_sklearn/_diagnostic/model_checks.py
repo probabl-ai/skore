@@ -61,7 +61,6 @@ def _get_metrics_data(report: EstimatorReport) -> tuple:
             data_source="test"
         ).data["score"]
 
-    report._diagnostic_metrics_cache = (report_data, baseline_data)  # type: ignore[attr-defined]
     return report_data, baseline_data
 
 
