@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from collections import Counter
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, ClassVar, Literal, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import joblib
 import numpy as np
@@ -115,7 +115,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     inspection: _InspectionAccessor
 
     _report_type: ComparisonReportType
-    _BUILTIN_CHECKS: ClassVar[list] = []
 
     @staticmethod
     def _validate_reports(
@@ -468,23 +467,23 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ####################################################################################
 
     def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
-        # Aggregate issues from sub-reports grouped by report name.
-        issues: dict[str, dict] = {}
+        comparison_issues: dict[str, dict] = {}
         all_checked_codes: set[str] = set()
         for report_name, report in self.reports_.items():
-            sub_issues, checked_codes = report._get_issues()
+            report_issues, checked_codes = report._get_issues()
             all_checked_codes |= checked_codes
-            for code, issue in sub_issues.items():
-                entry = f"[{report_name}] {issue['explanation']}"
-                if code in issues:
-                    issues[code]["explanation"] += f" {entry}"
+            for code, issue in report_issues.items():
+                if code in comparison_issues:
+                    comparison_issues[code]["explanation"] = (
+                        f"[{report_name}] " + comparison_issues[code]["explanation"]
+                    )
                 else:
-                    issues[code] = {
+                    comparison_issues[code] = {
                         "title": issue["title"],
                         "docs_url": issue.get("docs_url"),
-                        "explanation": entry,
+                        "explanation": f"[{report_name}] {issue['explanation']}",
                     }
-        return issues, all_checked_codes
+        return comparison_issues, all_checked_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"
