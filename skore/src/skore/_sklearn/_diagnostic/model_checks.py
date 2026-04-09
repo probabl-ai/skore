@@ -20,18 +20,11 @@ if TYPE_CHECKING:
 
 
 def _get_metrics_data(report: EstimatorReport) -> tuple:
-    """Compute and cache report/baseline metrics data for checks.
-
-    Both :func:`check_overfitting` and :func:`check_underfitting` share the
-    same expensive setup (fitting a dummy baseline and summarising metrics).
-    This helper runs the computation once and caches the result on the report.
+    """Compute report/baseline metrics data for SKD001 and SKD002.
 
     Raises :class:`DiagnosticNotApplicable` when train+test data is
     unavailable.
     """
-    if hasattr(report, "_diagnostic_metrics_cache"):
-        return report._diagnostic_metrics_cache  # type: ignore[attr-defined]
-
     if (
         report.X_train is None
         or report.y_train is None
@@ -39,7 +32,6 @@ def _get_metrics_data(report: EstimatorReport) -> tuple:
         or report.y_test is None
     ):
         raise DiagnosticNotApplicable()
-
     # Avoid circular import
     from skore._sklearn._estimator.report import EstimatorReport
 
@@ -73,7 +65,7 @@ def _get_metrics_data(report: EstimatorReport) -> tuple:
     return report_data, baseline_data
 
 
-def check_overfitting(
+def _check_overfitting(
     report: EstimatorReport,
 ) -> dict[str, dict]:
     """Check for overfitting (SKD001).
@@ -105,7 +97,7 @@ def check_overfitting(
     return None
 
 
-def check_underfitting(
+def _check_underfitting(
     report: EstimatorReport,
 ) -> dict[str, dict]:
     """Check for underfitting (SKD002).
@@ -144,17 +136,17 @@ def check_underfitting(
     return None
 
 
-def create_model_checks():
+def _create_model_checks():
     return [
         Check(
-            check_overfitting,
+            _check_overfitting,
             "SKD001",
             "Potential overfitting",
             "skd001-overfitting",
             "estimator",
         ),
         Check(
-            check_underfitting,
+            _check_underfitting,
             "SKD002",
             "Potential underfitting",
             "skd002-underfitting",

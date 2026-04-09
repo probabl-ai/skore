@@ -21,10 +21,6 @@ from sklearn.utils.validation import _num_samples, check_is_fitted
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._diagnostic.model_checks import (
-    check_overfitting,
-    check_underfitting,
-)
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.metrics import MetricRegistry
 from skore._sklearn.types import DataSource, PositiveLabel
@@ -150,10 +146,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     }
 
     _report_type: Literal["estimator"] = "estimator"
-    _BUILTIN_CHECKS = [
-        ("SKD001", check_overfitting),
-        ("SKD002", check_underfitting),
-    ]
 
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor

@@ -9,7 +9,7 @@ from rich.panel import Panel
 
 from skore._config import configuration
 from skore._sklearn._diagnostic.base import Check, DiagnosticDisplay
-from skore._sklearn._diagnostic.model_checks import create_model_checks
+from skore._sklearn._diagnostic.model_checks import _create_model_checks
 from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
@@ -133,7 +133,7 @@ class _BaseReport(ReportHelpMixin):
     def __init__(self) -> None:
         self.id = uuid4().int
         self._issues_cache: list[dict[str, dict], set[str]] = [{}, set()]
-        self._checks_registry: list[Check] = create_model_checks()
+        self._checks_registry: list[Check] = _create_model_checks()
 
     @property
     def _hash(self) -> int:

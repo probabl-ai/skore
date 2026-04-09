@@ -53,36 +53,3 @@ def majority_vote(votes: list[bool]) -> tuple[bool, int, int]:
 
 class DiagnosticNotApplicable(Exception):
     """Raised when a check cannot run on the given report."""
-
-
-def validate_check_result(result: object) -> None:
-    """Validate the return value of a diagnostic check function.
-
-    Parameters
-    ----------
-    result : object
-        the value returned by a check callable
-
-    Raises
-    ------
-    TypeError
-        If the result is not a ``dict[str, dict]`` with required keys.
-    """
-    if not isinstance(result, dict):
-        raise TypeError(
-            f"Check function must return a dict, got {type(result).__name__!r}."
-        )
-    for code, issue in result.items():
-        if not isinstance(code, str):
-            raise TypeError(
-                f"Check code must be a string, got {type(code).__name__!r}."
-            )
-        if not isinstance(issue, dict):
-            raise TypeError(
-                f"Issue for code {code!r} must be a dict, got {type(issue).__name__!r}."
-            )
-        for required in ("title", "explanation"):
-            if required not in issue:
-                raise TypeError(
-                    f"Issue for code {code!r} is missing required key {required!r}."
-                )
