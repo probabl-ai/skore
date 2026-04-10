@@ -1,102 +1,119 @@
 <div class="container">
-    <header class="title">ComparisonReport</header>
-    <details open class="report-disclosure">
-        <summary>
-            <span class="report-disclosure-title">Results</span>
-        </summary>
-        <p class="report-inline-note" role="note">
-            Investigate more with
-            <a
-                href="{{ metrics_accessor_doc_url }}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="report-hint-note-link"
-            >{{ report_class_name }}.metrics</a>.
-        </p>
-        <div class="report-section report-metrics">{{ metrics_summary | safe }}</div>
-    </details>
-    <details class="report-disclosure">
-        <summary>
-            <span class="report-disclosure-title">Diagnostic</span>
-        </summary>
-        <p class="report-inline-note" role="note">
-            Investigate more with
-            <a
-                href="{{ diagnose_documentation_url }}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="report-hint-note-link"
-            >{{ report_class_name }}.diagnose</a>.
-        </p>
-        <div class="report-section report-diagnostic">
-            <div class="comparison-report-select-row">
-                <label for="{{ container_id }}-report-select-diagnostic">Selected report</label>
-                <select
-                    id="{{ container_id }}-report-select-diagnostic"
-                    class="skore-comparison-report-select"
-                    aria-label="Select which report's diagnostic to show"
-                >
-                    {% for row in comparison_reports %}
-                    <option value="{{ loop.index0 }}">{{ row.label }}</option>
-                    {% endfor %}
-                </select>
+    <header class="title">{{ report_title | e }}</header>
+    <div class="report-tabset">
+        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-0" class="report-tab-input" checked>
+        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-1" class="report-tab-input">
+        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-2" class="report-tab-input">
+        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-3" class="report-tab-input">
+        <div class="report-tablist-row">
+            <div class="report-tablist" role="tablist">
+                <div class="report-tab-item">
+                    <label class="report-tab-label" for="{{ container_id }}-report-tab-0" role="presentation">Results</label>
+                </div>
+                <div class="report-tab-item">
+                    <label class="report-tab-label" for="{{ container_id }}-report-tab-1" role="presentation">Diagnostic</label>
+                </div>
+                <div class="report-tab-item">
+                    <label class="report-tab-label" for="{{ container_id }}-report-tab-2" role="presentation">Estimator</label>
+                </div>
+                <div class="report-tab-item">
+                    <label class="report-tab-label" for="{{ container_id }}-report-tab-3" role="presentation">Data</label>
+                </div>
             </div>
-            <slot name="diagnostic"></slot>
-        </div>
-    </details>
-    <details class="report-disclosure">
-        <summary>
-            <span class="report-disclosure-title">Estimator</span>
-        </summary>
-        <p class="report-inline-note" role="note">
-            Investigate more with
-            <a
-                href="{{ inspection_accessor_doc_url }}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="report-hint-note-link"
-            >{{ report_class_name }}.inspection</a>.
-        </p>
-        <div class="report-section report-estimator">
-            <div class="comparison-report-select-row">
-                <label for="{{ container_id }}-report-select-estimator">Selected report</label>
-                <select
-                    id="{{ container_id }}-report-select-estimator"
-                    class="skore-comparison-report-select"
-                    aria-label="Select which report's estimator to show"
-                >
-                    {% for row in comparison_reports %}
-                    <option value="{{ loop.index0 }}">{{ row.label }}</option>
-                    {% endfor %}
-                </select>
+            <div class="report-tablist-help">
+                <button type="button" class="report-tab-help report-tab-help-global" aria-label="Help for the selected tab">
+                    ?
+                    <span class="tooltip-text report-tab-help-tip report-tab-help-tip-0">
+                        Investigate more with
+                        <a
+                            href="{{ metrics_accessor_doc_url }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="report-hint-note-link"
+                        >{{ report_class_name }}.metrics</a>.
+                    </span>
+                    <span class="tooltip-text report-tab-help-tip report-tab-help-tip-1">
+                        Investigate more with
+                        <a
+                            href="{{ diagnose_documentation_url }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="report-hint-note-link"
+                        >{{ report_class_name }}.diagnose</a>.
+                    </span>
+                    <span class="tooltip-text report-tab-help-tip report-tab-help-tip-2">
+                        Investigate more with
+                        <a
+                            href="{{ inspection_accessor_doc_url }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="report-hint-note-link"
+                        >{{ report_class_name }}.inspection</a>.
+                    </span>
+                    <span class="tooltip-text report-tab-help-tip report-tab-help-tip-3">
+                        Explore the data for each compared report via that report's
+                        <code>.data</code> accessor.
+                    </span>
+                </button>
             </div>
-            <slot name="estimator-display"></slot>
         </div>
-    </details>
-    <details class="report-disclosure">
-        <summary>
-            <span class="report-disclosure-title">Data</span>
-        </summary>
-        <p class="report-inline-note" role="note">
-            Explore the data for each compared report via that report's
-            <code>.data</code> accessor.
-        </p>
-        <div class="report-section report-data">
-            <div class="comparison-report-select-row">
-                <label for="{{ container_id }}-report-select-data">Selected report</label>
-                <select
-                    id="{{ container_id }}-report-select-data"
-                    class="skore-comparison-report-select"
-                    aria-label="Select which report's data view to show"
-                >
-                    {% for row in comparison_reports %}
-                    <option value="{{ loop.index0 }}">{{ row.label }}</option>
-                    {% endfor %}
-                </select>
+        <div class="report-tab-panels">
+            <div class="report-tab-panel">
+                <div class="report-section report-metrics">{{ metrics_summary | safe }}</div>
             </div>
-            <slot name="table-report"></slot>
+            <div class="report-tab-panel">
+                <div class="report-section report-diagnostic">
+                    <div class="comparison-report-select-row">
+                        <label for="{{ container_id }}-report-select-diagnostic">Selected report</label>
+                        <select
+                            id="{{ container_id }}-report-select-diagnostic"
+                            class="skore-comparison-report-select"
+                            aria-label="Select which report's diagnostic to show"
+                        >
+                            {% for row in comparison_reports %}
+                            <option value="{{ loop.index0 }}">{{ row.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <slot name="diagnostic"></slot>
+                </div>
+            </div>
+            <div class="report-tab-panel">
+                <div class="report-section report-estimator">
+                    <div class="comparison-report-select-row">
+                        <label for="{{ container_id }}-report-select-estimator">Selected report</label>
+                        <select
+                            id="{{ container_id }}-report-select-estimator"
+                            class="skore-comparison-report-select"
+                            aria-label="Select which report's estimator to show"
+                        >
+                            {% for row in comparison_reports %}
+                            <option value="{{ loop.index0 }}">{{ row.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <slot name="estimator-display"></slot>
+                </div>
+            </div>
+            <div class="report-tab-panel">
+                <div class="report-section report-data">
+                    <div class="comparison-report-select-row">
+                        <label for="{{ container_id }}-report-select-data">Selected report</label>
+                        <select
+                            id="{{ container_id }}-report-select-data"
+                            class="skore-comparison-report-select"
+                            aria-label="Select which report's data view to show"
+                        >
+                            {% for row in comparison_reports %}
+                            <option value="{{ loop.index0 }}">{{ row.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <slot name="table-report"></slot>
+                </div>
+            </div>
         </div>
-    </details>
+    </div>
     <p class="report-hint-note" role="note">
         Use
         <a

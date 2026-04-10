@@ -255,7 +255,8 @@ def test_report_repr_html(splitter, bad_estimator):
     assert "skoreInitEstimatorReport" in html_out
     assert "report-hint-note" in html_out
     assert "docs.skore.probabl.ai" in html_out
-    assert "report-disclosure-title" in html_out
+    assert "report-tabset" in html_out
+    assert "Report for" in html_out
     assert "CrossValidationReport.metrics" in html_out
 
 

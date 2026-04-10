@@ -499,7 +499,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def _repr_html_(self) -> str:
         """HTML representation with a selector to inspect one compared report."""
-        metrics_html = self.metrics.summarize(data_source="test").frame()._repr_html_()
+        metrics_html = (
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .rename_axis([None, None], axis="columns")
+            .swaplevel(axis="columns")
+            .reset_index()
+            .to_html(index=False)
+        )
 
         comparison_reports = []
         for label, report in self.reports_.items():
@@ -533,6 +540,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 "comparison_reports": comparison_reports,
                 "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
+                "report_title": "Model comparison",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "diagnose_documentation_url": diagnose_documentation_url,
