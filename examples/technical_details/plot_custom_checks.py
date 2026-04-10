@@ -1,9 +1,9 @@
 """
 .. _example_custom_checks:
 
-============================
+===============================
 Adding custom diagnostic checks
-============================
+===============================
 
 `skore` lets you extend the built-in diagnostic checks with your own.
 This example shows how to write a custom check function and register it
