@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import html
+import inspect
 import uuid
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal
@@ -649,13 +650,23 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         common_keys = set.intersection(*(set(d) for d in reports_kwargs_dicts))
         cached_kwargs = [reports_kwargs_dicts[0][k] for k in common_keys]
         for accessor_name, method_name, data_source, kwargs in cached_kwargs:
-            result = getattr(getattr(self, accessor_name), method_name)(
-                data_source=data_source, **kwargs
-            )
-            yield CacheEntry(
-                accessor_name=accessor_name,
-                method_name=method_name,
-                data_source=data_source,
-                kwargs=kwargs,
-                result=result,
-            )
+            method = getattr(getattr(self, accessor_name), method_name)
+            method_params = inspect.signature(method).parameters
+
+            if "aggregate" in method_params and "aggregate" not in kwargs:
+                kwargs_list = [
+                    kwargs,  # default to aggregate=("mean", "std")
+                    kwargs | {"aggregate": None},
+                ]
+            else:
+                kwargs_list = [kwargs]
+
+            for kwargs in kwargs_list:
+                result = method(data_source=data_source, **kwargs)
+                yield CacheEntry(
+                    accessor_name=accessor_name,
+                    method_name=method_name,
+                    data_source=data_source,
+                    kwargs=kwargs,
+                    result=result,
+                )
