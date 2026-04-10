@@ -28,10 +28,6 @@ def _select_kwargs(func: Callable, kwargs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-# Mapping from user-friendly metric names to their neg_-prefixed sklearn scorer
-# equivalents. This lets users omit the ``neg_`` prefix when passing these
-# metric strings to skore (e.g. ``"mean_squared_error"`` instead of
-# ``"neg_mean_squared_error"``).
 _METRIC_ALIASES: dict[str, str] = {
     "mean_squared_error": "neg_mean_squared_error",
     "mean_absolute_error": "neg_mean_absolute_error",
