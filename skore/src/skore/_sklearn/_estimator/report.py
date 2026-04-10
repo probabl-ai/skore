@@ -200,6 +200,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         super().__init__()
         estimator = self._copy_estimator(estimator)
         self._raw_estimator = estimator
+        self._fit = fit
 
         if isinstance(estimator, skrub.DataOp):
             if test_data is None and train_data is None:
@@ -269,6 +270,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "initialized_with_data_op": self._initialized_with_data_op,
             "raw_estimator": self._raw_estimator,
             "ml_task": self._ml_task,
+            "fit": self._fit,
             "fit_time": self.fit_time_,
             "pos_label": self._pos_label,
             "estimator": self._estimator,
@@ -291,6 +293,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report._metadata = state["metadata"]
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
+        report._fit = state["fit"]
         report.fit_time_ = state["fit_time"]
         report._pos_label = state["pos_label"]
         report._estimator = state["estimator"]
@@ -700,6 +703,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     @property
     def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
+
+    @property
+    def fit(self) -> str | bool:
+        return self._fit
 
     @property
     def estimator_name_(self) -> str:
