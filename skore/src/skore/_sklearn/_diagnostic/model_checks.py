@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from collections import Counter
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
@@ -158,27 +157,62 @@ def check_metrics_consistency_across_folds(
 
 
 def check_high_class_imbalance(report: EstimatorReport) -> dict[str, dict]:
+    """Check for high class imbalance (SKD004) in binary classification.
+
+    Detects an issue when the most frequent class represents more than 80% of the
+    dataset.
+    """
     if (
-        "classification" not in report.ml_task
+        report.ml_task != "binary-classification"
         or report.y_train is None
         or report.y_test is None
     ):
         raise DiagnosticNotApplicable()
 
     issues: dict[str, dict] = {}
-    y_train = np.asarray(report.y_train)
-    y_test = np.asarray(report.y_test)
-    counter = Counter(y_train.tolist())
-    counter.update(y_test.tolist())
-    counts = sorted(counter.values())
-    if counts[-1] / len(y_train) > 0.8:
+    values, counts = np.unique_counts(np.concatenate([report.y_train, report.y_test]))
+
+    overrepresented_class = values[counts >= 0.8 * counts.sum()]
+
+    if overrepresented_class.size > 0:
         issues["SKD004"] = {
             "title": "High class imbalance",
             "docs_anchor": "skd004-high_class_imbalance",
             "explanation": (
-                "One class represents more than 80% of the dataset samples. "
-                "Accuracy should not be used alone to assess model performance as it "
-                "may be misleading."
+                f"Class {overrepresented_class} represents more than 80% of the "
+                "dataset samples. Accuracy should not be used alone to assess model "
+                "performance as it may be misleading by ignoring poor performance on "
+                "the underrepresented class."
+            ),
+        }
+    return issues
+
+
+def check_underrepresented_classes(report: EstimatorReport) -> dict[str, dict]:
+    """Check for underrepresented classes (SKD005) in multiclass classification.
+
+    Detects an issue when some classes represent less than 10% of the dataset.
+    """
+    if (
+        report.ml_task != "multiclass-classification"
+        or report.y_train is None
+        or report.y_test is None
+    ):
+        raise DiagnosticNotApplicable()
+
+    issues: dict[str, dict] = {}
+    values, counts = np.unique_counts(np.concatenate([report.y_train, report.y_test]))
+
+    underrepresented_classes = values[counts <= 0.1 * counts.sum()]
+    if underrepresented_classes.size > 0:
+        issues["SKD005"] = {
+            "title": "Underrepresented classes",
+            "docs_anchor": "skd005-underrepresented_classes",
+            "explanation": (
+                f"Classes {underrepresented_classes} each represent less than 10% of "
+                "the dataset samples. Accuracy should not be used alone to assess "
+                "model performance as it may be misleading by ignoring poor "
+                "performance on underrepresented classes."
             ),
         }
     return issues
