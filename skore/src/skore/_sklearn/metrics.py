@@ -249,8 +249,8 @@ class PredictTime(Metric):
     def __call__(
         self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs
     ):
-        predict_time_cache_key = (data_source, "predict_time")
-        return report._predictions.get(
+        predict_time_cache_key = make_cache_key(data_source, "predict_time")
+        return report._cache.get(
             predict_time_cache_key, (float("nan") if cast else None)
         )
 

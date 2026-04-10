@@ -172,7 +172,7 @@ def test_check_support_plot(
     ],
 )
 def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_keys):
-    """Check that calling cache_predictions fills the predictions cache."""
+    """Check that calling cache_predictions fills the cache."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     if pass_train_data:
         report = EstimatorReport(
@@ -181,14 +181,14 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
     else:
         report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    assert report._predictions == {}
+    assert report._cache == {}
     report.cache_predictions()
-    assert len(report._predictions) == expected_n_keys
-    assert report._predictions != {}
-    stored_cache = deepcopy(report._predictions)
+    assert len(report._cache) == expected_n_keys
+    assert report._cache != {}
+    stored_cache = deepcopy(report._cache)
     report.cache_predictions()
     # check that the keys are exactly the same
-    assert report._predictions.keys() == stored_cache.keys()
+    assert report._cache.keys() == stored_cache.keys()
 
 
 @pytest.mark.parametrize(
@@ -490,7 +490,7 @@ def test_from_state_bypasses_init_and_restores_state(
     assert restored.X_test is report.X_test
     assert restored.ml_task == report.ml_task
     assert restored.pos_label == report.pos_label
-    assert restored._predictions.keys() == report._predictions.keys()
+    assert restored._cache == report._cache
     assert restored.metrics.accuracy() == expected_accuracy
 
     # check new metrics can be computed:

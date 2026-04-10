@@ -160,4 +160,4 @@ def test_random_state(linear_regression_with_train_test):
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     report.metrics.prediction_error()
-    assert len(report._cache) == 0
+    assert len(report._cache) == 2

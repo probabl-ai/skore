@@ -111,21 +111,20 @@ def test_attributes(fixture_name, request, cv, n_jobs):
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
-    """Check that calling cache_predictions fills estimator prediction caches."""
+    """Check that calling cache_predictions fills the cache."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
     for estimator_report in report.estimator_reports_:
-        assert estimator_report._predictions == {}
+        assert estimator_report._cache == {}
 
     report.cache_predictions()
 
     for estimator_report in report.estimator_reports_:
-        assert len(estimator_report._predictions) == expected_n_keys
+        assert len(estimator_report._cache) == expected_n_keys
 
     report.clear_cache()
     for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
-        assert estimator_report._predictions == {}
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -282,6 +281,7 @@ def test_from_state_bypasses_init_and_restores_state(
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_accuracy = report.metrics.accuracy()
+    report.cache_predictions()
     state = report.get_state()
 
     def _unexpected_init(self, *args, **kwargs):
@@ -298,9 +298,9 @@ def test_from_state_bypasses_init_and_restores_state(
     assert restored.pos_label == report.pos_label
     assert restored._split_indices == report._split_indices
     assert len(restored.estimator_reports_) == len(report.estimator_reports_)
-    assert restored.estimator_reports_[0]._predictions.keys() == (
-        report.estimator_reports_[0]._predictions.keys()
-    )
+    assert restored.estimator_reports_[0]._cache == report.estimator_reports_[0]._cache
+    assert state["estimator_reports"][0]["predictions"]
+    assert state["estimator_reports"][0]["cache"]
     assert restored.metrics.accuracy().equals(expected_accuracy)
 
     # check new metrics/predictions can be computed:
