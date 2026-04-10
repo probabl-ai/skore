@@ -12,7 +12,7 @@ from skore._sklearn._diagnostic.utils import (
     _TIMING_METRICS,
     DiagnosticNotApplicable,
     check_score_gap_to_baseline,
-    detect_outliers_mad,
+    detect_outliers_modified_zscore,
     majority_vote,
 )
 
@@ -135,7 +135,7 @@ def check_metrics_consistency_across_folds(
         )
     votes = np.array(
         [
-            detect_outliers_mad(report_data.loc[idx])
+            detect_outliers_modified_zscore(report_data.loc[idx])
             for idx in report_data.index
             if idx not in _TIMING_METRICS
         ]

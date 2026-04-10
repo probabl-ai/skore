@@ -55,13 +55,14 @@ def majority_vote(votes: list[bool]) -> tuple[bool, int, int]:
     return n_positive > total / 2, n_positive, total
 
 
-def detect_outliers_mad(scores, threshold=3.5):
+def detect_outliers_modified_zscore(scores, threshold=3.5):
     median = np.median(scores)
     mad = np.median(np.abs(scores - median))
+    if mad == 0:
+        return np.zeros_like(scores)
     modified_z_scores = 0.6745 * (scores - median) / mad
 
-    outliers = np.abs(modified_z_scores) > threshold
-    return outliers
+    return np.abs(modified_z_scores) > threshold
 
 
 class DiagnosticNotApplicable(Exception):
