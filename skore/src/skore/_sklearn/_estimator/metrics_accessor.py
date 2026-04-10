@@ -31,7 +31,6 @@ from skore._sklearn.metrics import (
 )
 from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
 from skore._utils._accessor import _check_supported_ml_task
-from skore._utils._cache_key import make_cache_key
 
 
 class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -332,11 +331,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         fit_time_ = self.fit_time(cast=False)
         fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
 
-        # predict_time cache keys are of the form
-        # (data_source, "predict_time", None)
         predict_times = {
             f"predict_time_{data_source}": v
-            for (data_source, name, _), v in self._parent._cache.items()
+            for (data_source, name), v in self._parent._predictions.items()
             if name == "predict_time"
         }
 
@@ -818,6 +815,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def _get_display(
         self,
         *,
+        cache_method_name: str,
+        cache_kwargs: dict[str, Any],
         data_source: DataSource | Literal["both"],
         response_method: str | list[str] | tuple[str, ...],
         display_class: type[
@@ -863,6 +862,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             displays = [
                 self._get_display(
                     data_source=cast(DataSource, ds),
+                    cache_method_name=cache_method_name,
+                    cache_kwargs=cache_kwargs,
                     response_method=response_method,
                     display_class=display_class,
                     display_kwargs=display_kwargs,
@@ -875,20 +876,18 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 data_source=data_source,
             )
 
-        # Compute cache key
-        if "seed" in display_kwargs and display_kwargs["seed"] is None:
-            cache_key = None
-        else:
-            cache_key = make_cache_key(
-                data_source, display_class.__name__, display_kwargs
-            )
+        data_source = cast(DataSource, data_source)
 
-        cache_value = self._parent._cache.get(cache_key)
+        cache_value = self._parent._read_cache(
+            accessor_name="metrics",
+            method_name=cache_method_name,
+            data_source=data_source,
+            kwargs=cache_kwargs,
+        )
         if cache_value is not None:
             return cache_value
 
-        data_source = cast(DataSource, data_source)
-        data, y_true = self._parent._get_data_and_y_true(data_source=data_source)
+        _, y_true = self._parent._get_data_and_y_true(data_source=data_source)
         if prediction_pos_label is None:
             prediction_pos_label = self._parent.pos_label
 
@@ -909,10 +908,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             **display_kwargs,
         )
 
-        if cache_key is not None:
+        if not ("seed" in display_kwargs and display_kwargs["seed"] is None):
             # Unless seed is an int (i.e. the call is deterministic),
             # we do not cache
-            self._parent._cache[cache_key] = display
+            self._parent._write_cache(
+                accessor_name="metrics",
+                method_name=cache_method_name,
+                data_source=data_source,
+                kwargs=cache_kwargs,
+                result=display,
+            )
 
         return display
 
@@ -960,6 +965,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         display = cast(
             RocCurveDisplay,
             self._get_display(
+                cache_method_name="roc",
+                cache_kwargs={},
                 data_source=data_source,
                 response_method=response_method,
                 display_class=RocCurveDisplay,
@@ -1010,6 +1017,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         display = cast(
             PrecisionRecallCurveDisplay,
             self._get_display(
+                cache_method_name="precision_recall",
+                cache_kwargs={},
                 data_source=data_source,
                 response_method=response_method,
                 display_class=PrecisionRecallCurveDisplay,
@@ -1076,6 +1085,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         display = cast(
             PredictionErrorDisplay,
             self._get_display(
+                cache_method_name="prediction_error",
+                cache_kwargs=display_kwargs,
                 data_source=data_source,
                 response_method="predict",
                 display_class=PredictionErrorDisplay,
@@ -1152,6 +1163,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
+                cache_method_name="confusion_matrix",
+                cache_kwargs={},
                 data_source=data_source,
                 response_method=response_method,
                 display_class=ConfusionMatrixDisplay,

@@ -1,5 +1,6 @@
 import joblib
 import numpy as np
+import pandas as pd
 import pytest
 import skrub
 from sklearn.base import clone
@@ -111,20 +112,21 @@ def test_attributes(fixture_name, request, cv, n_jobs):
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
-    """Check that calling cache_predictions fills the cache."""
+    """Check that calling cache_predictions fills estimator prediction caches."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
     for estimator_report in report.estimator_reports_:
-        assert estimator_report._cache == {}
+        assert estimator_report._predictions == {}
 
     report.cache_predictions()
 
     for estimator_report in report.estimator_reports_:
-        assert len(estimator_report._cache) == expected_n_keys
+        assert len(estimator_report._predictions) == expected_n_keys
 
     report.clear_cache()
     for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
+        assert estimator_report._predictions == {}
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -183,6 +185,40 @@ def test_pickle(tmp_path, logistic_binary_classification_data):
     report = CrossValidationReport(estimator, X, y, splitter=2)
     report.cache_predictions()
     joblib.dump(report, tmp_path / "report.joblib")
+
+
+def test_get_cached_results_metrics_uses_public_method_names(linear_regression_data):
+    """Check that cross-validation cached metric entries can be replayed."""
+    estimator, X, y = linear_regression_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    expected = report.metrics.r2()
+    cached_results = list(report._get_cached_results("metrics"))
+
+    assert len(cached_results) == 1
+    _, method_name, data_source, kwargs, result = cached_results[0]
+    assert method_name == "r2"
+    assert data_source == "test"
+    assert kwargs == {"multioutput": "raw_values"}
+    pd.testing.assert_frame_equal(result, expected)
+
+
+def test_get_cached_results_metrics_keep_public_kwargs(
+    logistic_binary_classification_data,
+):
+    """Check that replayable cache kwargs match the public metric call."""
+    estimator, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2, pos_label=1)
+
+    expected = report.metrics.precision()
+    cached_results = list(report._get_cached_results("metrics"))
+
+    assert len(cached_results) == 1
+    _, method_name, data_source, kwargs, result = cached_results[0]
+    assert method_name == "precision"
+    assert data_source == "test"
+    assert kwargs == {"average": None}
+    pd.testing.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(

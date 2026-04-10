@@ -4,18 +4,18 @@ import copy
 import html
 import uuid
 import warnings
+from collections.abc import Generator
 from functools import cached_property
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple
 
+import joblib
 import numpy as np
 import skrub
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, MetaEstimatorMixin, clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
-from sklearn.utils._response import (
-    _check_response_method,
-)
+from sklearn.utils._response import _check_response_method
 from sklearn.utils.validation import _num_samples, check_is_fitted
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -29,7 +29,6 @@ from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.metrics import MetricRegistry
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache import Cache
-from skore._utils._cache_key import make_cache_key
 from skore._utils._measure_time import MeasureTime
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
@@ -72,6 +71,16 @@ def _check_estimator_and_data(
             None if X_train is None else {"_skrub_X": X_train, "_skrub_y": y_train}
         )
     return initialized_with_data_op, estimator, train_data, test_data
+
+
+class CacheEntry(NamedTuple):
+    """Accessor-level cache entry stored on estimator reports."""
+
+    accessor_name: str
+    method_name: str
+    data_source: DataSource | None
+    kwargs: dict[str, Any]
+    result: Any
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
@@ -238,8 +247,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         self._pos_label = pos_label
         self.fit_time_ = self._fit_time
-        self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
+        # TODO? Rename class "Cache" to "ThreadSafeDict"?
         self._cache = Cache()
+        self._predictions = Cache()
+        # NOTE: Reports are immutable so we don't need cache invalidation
+
+        self._ml_task = _find_ml_task(self.y_test, estimator=self._estimator)
         self._metric_registry = MetricRegistry(self)
 
         if pos_label is None:
@@ -254,8 +267,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 f"pos_label={pos_label!r} is not a valid label. "
                 f"It should be one of: {labels!r}."
             )
-
-        # NOTE: Reports are immutable so we don't need cache invalidation
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -276,6 +287,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         {}
         """
         self._cache = Cache()
+        self._predictions = Cache()
 
     def cache_predictions(
         self,
@@ -303,7 +315,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
         >>> report.cache_predictions()
-        >>> report._cache
+        >>> report._predictions
         {...}
         """
         if data_source == "both":
@@ -320,18 +332,18 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "features when creating the report."
             )
 
-        pred_key = make_cache_key(data_source, "predict")
-        time_key = make_cache_key(data_source, "predict_time")
+        pred_key = (data_source, "predict")
+        time_key = (data_source, "predict_time")
 
-        if pred_key in self._cache:
+        if pred_key in self._predictions:
             return
 
         # This is for cases where `predict` cannot be inferred reliably
         # from decision_function/predict_proba:
         if not self._can_skip_predict:
             with MeasureTime() as pred_time:
-                self._cache[pred_key] = self._estimator.predict(data)
-            self._cache[time_key] = pred_time()
+                self._predictions[pred_key] = self._estimator.predict(data)
+            self._predictions[time_key] = pred_time()
 
         has_proba = hasattr(self._estimator, "predict_proba")
         has_decision = hasattr(self._estimator, "decision_function")
@@ -345,11 +357,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     data, response_method="decision_function"
                 )
             )
-            decision_key = make_cache_key(data_source, "decision_function")
-            self._cache[decision_key] = response
+            decision_key = (data_source, "decision_function")
+            self._predictions[decision_key] = response
             if self._can_skip_predict:
-                self._cache[time_key] = pred_time
-                self._cache[pred_key] = predictions
+                self._predictions[time_key] = pred_time
+                self._predictions[pred_key] = predictions
 
         if has_proba:
             response, predictions, pred_time = (
@@ -357,17 +369,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     data, response_method="predict_proba"
                 )
             )
-            proba_key = make_cache_key(data_source, "predict_proba")
-            self._cache[proba_key] = response
-            log_key = make_cache_key(data_source, "predict_log_proba")
+            proba_key = (data_source, "predict_proba")
+            self._predictions[proba_key] = response
+            log_key = (data_source, "predict_log_proba")
             # Most sklearn's estimator derive predict_log_proba this way
             # except for *NB models (naive bayes) that derive predict_proba
             # from predict_log_proba using exp:
             with np.errstate(divide="ignore"):
-                self._cache[log_key] = np.log(response)
+                self._predictions[log_key] = np.log(response)
             if self._can_skip_predict:
-                self._cache[time_key] = pred_time
-                self._cache[pred_key] = predictions
+                self._predictions[time_key] = pred_time
+                self._predictions[pred_key] = predictions
 
     def _get_response_and_derived_predictions(self, data, response_method):
         """Compute a response array and derive class predictions.
@@ -567,8 +579,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         method_name = _check_response_method(self.estimator_, response_method).__name__
         self.cache_predictions(data_source=data_source)
-        cache_key = make_cache_key(data_source, method_name)
-        predictions = self._cache[cache_key]
+        predictions = self._predictions[(data_source, method_name)]
 
         if method_name == "predict":
             return predictions
@@ -781,3 +792,108 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         output = {"text/plain": repr(self)}
         output["text/html"] = self._repr_html_()
         return output
+
+    ####################################################################################
+    # Methods related to the cache
+    ####################################################################################
+
+    def _read_cache(
+        self,
+        *,
+        accessor_name: str,
+        method_name: str,
+        data_source: DataSource | None,
+        kwargs: dict[str, Any] | None,
+        result_only: bool = True,
+    ) -> Any:
+        if kwargs is not None and kwargs.get("seed", 0) is None:
+            return None
+        key = joblib.hash((accessor_name, method_name, data_source, kwargs or {}))
+        value = self._cache.get(key)
+        if value is None:
+            return None
+        if result_only:
+            *_, result = value
+            return result
+        return value
+
+    def _write_cache(
+        self,
+        *,
+        accessor_name: str,
+        method_name: str,
+        data_source: DataSource | None,
+        kwargs: dict[str, Any],
+        result: Any,
+    ) -> None:
+        key = joblib.hash((accessor_name, method_name, data_source, kwargs))
+        value = CacheEntry(
+            accessor_name=accessor_name,
+            method_name=method_name,
+            data_source=data_source,
+            kwargs=kwargs,
+            result=result,
+        )
+        self._cache[key] = value
+
+    def _get_cached_results(
+        self,
+        accessor_name: str,
+        method_name: str | None = None,
+        data_source: DataSource | None = None,
+    ) -> Generator[CacheEntry, None, None]:
+        """Return accessor-level cached results stored in ``self._cache``.
+
+        This helper exposes the inspectable part of the estimator cache used by
+        accessors such as ``metrics`` and ``inspection``. Prediction arrays and
+        prediction timings are stored separately in ``self._predictions`` and are not
+        returned by this method.
+
+        Notes
+        -----
+        ``self._cache`` is a mapping from a hashed cache key to a tuple with the
+        following structure::
+
+            (
+                accessor_name: str,
+                method_name: str,
+                data_source: {"train", "test"} | None,
+                kwargs: dict[str, Any],
+                result: Any,
+            )
+
+        The dictionary key is an implementation detail. Callers that need to inspect
+        cached results should rely on this method instead of reading ``self._cache``
+        directly.
+
+        Parameters
+        ----------
+        accessor_name : str
+            Name of the accessor that produced the cached result, for example
+            ``"metrics"`` or ``"inspection"``.
+
+        method_name : str or None, default=None
+            Restrict results to a single accessor method. If ``None``, return cached
+            results for all methods of the accessor.
+
+        data_source : {"train", "test"} or None, default=None
+            Restrict results to a single data source. If ``None``, do not filter on
+            the data source.
+
+        Returns
+        -------
+        cached_results : generator of CacheEntry
+            Cached entries matching the requested filters, each represented as
+            ``(accessor_name, method_name, data_source, kwargs, result)``.
+        """
+        # This API is used by projects to inspect computed results
+        # changing it might break `skore-*-project`s
+
+        def entry_match(cache_entry: CacheEntry):
+            return (
+                cache_entry.accessor_name == accessor_name
+                and (method_name is None or cache_entry.method_name == method_name)
+                and (data_source is None or cache_entry.data_source == data_source)
+            )
+
+        yield from filter(entry_match, self._cache.values())

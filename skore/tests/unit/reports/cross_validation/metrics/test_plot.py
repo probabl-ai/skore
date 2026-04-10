@@ -70,9 +70,29 @@ def test_seed_none(linear_regression_data):
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
     report.metrics.prediction_error(seed=None)
-    # skore stores the predictions of the internal estimators, but not the
-    # concatenated cross-validation display.
+    # skore should not store per-split displays when `seed=None`.
     assert all(
-        len(estimator_report._cache) == 2
-        for estimator_report in report.estimator_reports_
+        estimator_report._cache == {} for estimator_report in report.estimator_reports_
     )
+
+
+@pytest.mark.parametrize(
+    "display, fixture_name, kwargs",
+    [
+        ("roc", "forest_binary_classification_data", {}),
+        ("precision_recall", "forest_binary_classification_data", {}),
+        ("confusion_matrix", "forest_binary_classification_data", {}),
+        ("prediction_error", "linear_regression_data", {"seed": 0}),
+    ],
+)
+def test_get_cached_results_uses_public_display_method_names(
+    request, display, fixture_name, kwargs
+):
+    estimator, X, y = request.getfixturevalue(fixture_name)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    getattr(report.metrics, display)(**kwargs)
+    cached_results = list(report._get_cached_results("metrics", display))
+
+    assert len(cached_results) == 1
+    assert cached_results[0].method_name == display

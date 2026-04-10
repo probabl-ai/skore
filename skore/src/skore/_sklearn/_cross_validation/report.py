@@ -5,6 +5,7 @@ import uuid
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Literal
 
+import joblib
 import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
@@ -15,8 +16,8 @@ from sklearn.pipeline import Pipeline
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
+from skore._sklearn._estimator.report import CacheEntry, EstimatorReport
+from skore._sklearn.types import DataSource, PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
@@ -597,3 +598,64 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         output = {"text/plain": repr(self)}
         output["text/html"] = self._repr_html_()
         return output
+
+    def _get_cached_results(
+        self,
+        accessor_name: str,
+        method_name: str | None = None,
+        data_source: DataSource | None = None,
+    ) -> Generator[CacheEntry, None, None]:
+        """Return cross-validation cached results available on every split.
+
+        This helper inspects the child :class:`~skore.EstimatorReport` caches and
+        exposes the accessor-level results that are cached for all split reports. The
+        returned result is the cross-validation-level object rebuilt from those common
+        cached entries.
+
+        Parameters
+        ----------
+        accessor_name : str
+            Name of the accessor that produced the cached result, for example
+            ``"metrics"`` or ``"inspection"``.
+
+        method_name : str or None, default=None
+            Restrict results to a single accessor method. If ``None``, return cached
+            results for all methods of the accessor.
+
+        data_source : {"train", "test"} or None, default=None
+            Restrict results to a single data source. If ``None``, do not filter on
+            the data source.
+
+        Yields
+        ------
+        CacheEntry
+            Cached entries matching the requested filters, each represented as
+            ``(accessor_name, method_name, data_source, kwargs, result)``.
+        """
+        reports_kwargs = [
+            [
+                result[:-1]
+                for result in report._get_cached_results(
+                    accessor_name, method_name, data_source
+                )
+            ]
+            for report in self.estimator_reports_
+        ]
+        reports_kwargs_dicts = [
+            {joblib.hash(key): key for key in report_kwargs}
+            for report_kwargs in reports_kwargs
+        ]
+
+        common_keys = set.intersection(*(set(d) for d in reports_kwargs_dicts))
+        cached_kwargs = [reports_kwargs_dicts[0][k] for k in common_keys]
+        for accessor_name, method_name, data_source, kwargs in cached_kwargs:
+            result = getattr(getattr(self, accessor_name), method_name)(
+                data_source=data_source, **kwargs
+            )
+            yield CacheEntry(
+                accessor_name=accessor_name,
+                method_name=method_name,
+                data_source=data_source,
+                kwargs=kwargs,
+                result=result,
+            )

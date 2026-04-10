@@ -15,7 +15,6 @@ from skore._utils._accessor import (
     _check_estimator_has_coef,
     _check_estimator_has_feature_importances,
 )
-from skore._utils._cache_key import make_cache_key
 
 
 class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -304,13 +303,16 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             "max_samples": max_samples,
             "seed": seed,
         }
-        cache_key = make_cache_key(data_source, "permutation_importance", kwargs)
-
         # NOTE: avoid to fetch from the cache if the seed is None because we want
         # to trigger the computation in this case. We only have the permutation
         # stored as a workaround for the serialization for skore-hub as explained
         # earlier.
-        display = None if seed is None else self._parent._cache.get(cache_key)
+        display = self._parent._read_cache(
+            accessor_name="inspection",
+            method_name="permutation_importance",
+            data_source=data_source,
+            kwargs=kwargs,
+        )
         if display is None:
             display = PermutationImportanceDisplay._compute_data_for_display(
                 data_source=data_source,
@@ -327,9 +329,14 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 report_type=self._parent._report_type,
             )
 
-            if cache_key is not None:
-                # NOTE: for the moment, we will always store the permutation importance
-                self._parent._cache[cache_key] = display
+            # NOTE: for the moment, we will always store the permutation importance
+            self._parent._write_cache(
+                accessor_name="inspection",
+                method_name="permutation_importance",
+                data_source=data_source,
+                kwargs=kwargs,
+                result=display,
+            )
 
         return display
 

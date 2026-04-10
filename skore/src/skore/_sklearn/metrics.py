@@ -5,6 +5,7 @@ import inspect
 import warnings
 from collections import UserDict
 from collections.abc import Callable
+from functools import wraps
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -13,7 +14,6 @@ import sklearn.metrics
 from sklearn.metrics._scorer import _BaseScorer
 
 from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
-from skore._utils._cache_key import make_cache_key
 
 if TYPE_CHECKING:
     from skore import EstimatorReport
@@ -26,6 +26,51 @@ def _select_kwargs(func: Callable, kwargs: dict[str, Any]) -> dict[str, Any]:
         for param in inspect.signature(func).parameters
         if param in kwargs
     }
+
+
+class CacheMixin:
+    """Mixin adding estimator-report caching around ``__call__``."""
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+        original_call = cls.__call__
+        if getattr(original_call, "_skore_cache_wrapped", False):
+            return
+
+        @wraps(original_call)
+        def cached_call(
+            self,
+            *,
+            report: EstimatorReport,
+            data_source: DataSource = "test",
+            **kwargs: Any,
+        ) -> float | dict[PositiveLabel, float] | list:
+            cached_result = report._read_cache(
+                accessor_name="metrics",
+                method_name=self.name,
+                data_source=data_source,
+                kwargs=kwargs,
+            )
+            if cached_result is not None:
+                return cached_result
+
+            score = original_call(
+                self, report=report, data_source=data_source, **kwargs
+            )
+
+            report._write_cache(
+                accessor_name="metrics",
+                method_name=self.name,
+                data_source=data_source,
+                kwargs=kwargs,
+                result=score,
+            )
+
+            return score
+
+        cached_call._skore_cache_wrapped = True
+        cls.__call__ = cached_call
 
 
 class Metric:
@@ -179,11 +224,6 @@ class Metric:
         # Merge default kwargs with call-time kwargs
         merged_kwargs = self.kwargs | kwargs
 
-        cache_key = make_cache_key(data_source, self.name, merged_kwargs)
-        score = report._cache.get(cache_key)
-        if score is not None:
-            return score
-
         assert self.response_method is not None
 
         y_pred = report._get_predictions(
@@ -212,8 +252,11 @@ class Metric:
                     zip(report._estimator.classes_.tolist(), score, strict=False)
                 )
 
-        report._cache[cache_key] = score
         return score
+
+
+class CachedMetric(CacheMixin, Metric):
+    """Metric implementation that opts into report-level result caching."""
 
 
 class FitTime(Metric):
@@ -249,13 +292,13 @@ class PredictTime(Metric):
     def __call__(
         self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs
     ):
-        predict_time_cache_key = make_cache_key(data_source, "predict_time")
-        return report._cache.get(
+        predict_time_cache_key = (data_source, "predict_time")
+        return report._predictions.get(
             predict_time_cache_key, (float("nan") if cast else None)
         )
 
 
-class Accuracy(Metric):
+class Accuracy(CacheMixin, Metric):
     name = "accuracy"
     verbose_name = "Accuracy"
     score_func = staticmethod(sklearn.metrics.accuracy_score)
@@ -267,7 +310,7 @@ class Accuracy(Metric):
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
 
-class Precision(Metric):
+class Precision(CacheMixin, Metric):
     name = "precision"
     verbose_name = "Precision"
     score_func = staticmethod(sklearn.metrics.precision_score)
@@ -293,7 +336,7 @@ class Precision(Metric):
         )
 
 
-class Recall(Metric):
+class Recall(CacheMixin, Metric):
     name = "recall"
     verbose_name = "Recall"
     score_func = staticmethod(sklearn.metrics.recall_score)
@@ -319,7 +362,7 @@ class Recall(Metric):
         )
 
 
-class Brier(Metric):
+class Brier(CacheMixin, Metric):
     name = "brier_score"
     verbose_name = "Brier score"
     score_func = staticmethod(sklearn.metrics.brier_score_loss)
@@ -348,7 +391,7 @@ class Brier(Metric):
         )
 
 
-class RocAuc(Metric):
+class RocAuc(CacheMixin, Metric):
     name = "roc_auc"
     verbose_name = "ROC AUC"
     score_func = staticmethod(sklearn.metrics.roc_auc_score)
@@ -390,7 +433,7 @@ class RocAuc(Metric):
         )
 
 
-class LogLoss(Metric):
+class LogLoss(CacheMixin, Metric):
     name = "log_loss"
     verbose_name = "Log loss"
     score_func = staticmethod(sklearn.metrics.log_loss)
@@ -405,7 +448,7 @@ class LogLoss(Metric):
         ) and hasattr(report._estimator, "predict_proba")
 
 
-class R2(Metric):
+class R2(CacheMixin, Metric):
     name = "r2"
     verbose_name = "R²"
     score_func = staticmethod(sklearn.metrics.r2_score)
@@ -429,7 +472,7 @@ class R2(Metric):
         )
 
 
-class Rmse(Metric):
+class Rmse(CacheMixin, Metric):
     name = "rmse"
     verbose_name = "RMSE"
     score_func = staticmethod(sklearn.metrics.root_mean_squared_error)
@@ -522,7 +565,7 @@ class MetricRegistry(UserDict):
                     )
                 kwargs["pos_label"] = self._report.pos_label
 
-            return Metric(
+            return CachedMetric(
                 name=func_name,
                 greater_is_better=metric._sign == 1,
                 score_func=metric._score_func,
@@ -565,7 +608,7 @@ class MetricRegistry(UserDict):
                     "callable. Pass it directly or through `metric_kwargs`."
                 )
 
-            return Metric(
+            return CachedMetric(
                 name=metric.__name__,
                 greater_is_better=metric_kwargs.get("greater_is_better"),
                 score_func=metric,

@@ -1,6 +1,5 @@
 from numbers import Real
 
-import joblib
 import numpy as np
 import pytest
 from sklearn.base import BaseEstimator
@@ -17,13 +16,8 @@ from sklearn.svm import SVC
 from skore import EstimatorReport
 
 
-def deep_contain(value, test_value):
-    if value == test_value:
-        return True
-    elif isinstance(value, tuple):
-        return any(deep_contain(item, test_value) for item in value)
-    else:
-        return False
+def get_cached_metric_kwargs(report):
+    return [kwargs for _, _, _, kwargs, _ in report._get_cached_results("metrics")]
 
 
 def test_interaction_cache_metrics(
@@ -38,21 +32,23 @@ def test_interaction_cache_metrics(
     # part of the cache.
     multioutput = "raw_values"
     result_r2_raw_values = report.metrics.r2(multioutput=multioutput)
-    multioutput_in_cache_key = any(
-        deep_contain(cached_key, multioutput) for cached_key in report._cache
+    multioutput_in_cache_kwargs = any(
+        kwargs.get("multioutput") == multioutput
+        for kwargs in get_cached_metric_kwargs(report)
     )
-    assert multioutput_in_cache_key, (
-        f"The value {multioutput} should be stored in one of the cache keys"
+    assert multioutput_in_cache_kwargs, (
+        f"The value {multioutput} should be stored in cached kwargs"
     )
     assert len(result_r2_raw_values) == 2
 
     multioutput = "uniform_average"
     result_r2_uniform_average = report.metrics.r2(multioutput=multioutput)
-    multioutput_in_cache_key = any(
-        deep_contain(cached_key, multioutput) for cached_key in report._cache
+    multioutput_in_cache_kwargs = any(
+        kwargs.get("multioutput") == multioutput
+        for kwargs in get_cached_metric_kwargs(report)
     )
-    assert multioutput_in_cache_key, (
-        f"The value {multioutput} should be stored in one of the cache keys"
+    assert multioutput_in_cache_kwargs, (
+        f"The value {multioutput} should be stored in cached kwargs"
     )
     assert isinstance(result_r2_uniform_average, float)
 
@@ -72,11 +68,12 @@ def test_custom_metric(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    threshold_in_cache_key = any(
-        deep_contain(cached_key, threshold) for cached_key in report._cache
+    threshold_in_cache_kwargs = any(
+        kwargs.get("threshold") == threshold
+        for kwargs in get_cached_metric_kwargs(report)
     )
-    assert threshold_in_cache_key, (
-        f"The value {threshold} should be stored in one of the cache keys"
+    assert threshold_in_cache_kwargs, (
+        f"The value {threshold} should be stored in cached kwargs"
     )
 
     assert isinstance(result, float)
@@ -90,11 +87,12 @@ def test_custom_metric(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    threshold_in_cache_key = any(
-        deep_contain(cached_key, threshold) for cached_key in report._cache
+    threshold_in_cache_kwargs = any(
+        kwargs.get("threshold") == threshold
+        for kwargs in get_cached_metric_kwargs(report)
     )
-    assert threshold_in_cache_key, (
-        f"The value {threshold} should be stored in one of the cache keys"
+    assert threshold_in_cache_kwargs, (
+        f"The value {threshold} should be stored in cached kwargs"
     )
 
     assert isinstance(result, float)
@@ -121,11 +119,12 @@ def test_custom_metric_scorer(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    threshold_in_cache_key = any(
-        deep_contain(cached_key, threshold) for cached_key in report._cache
+    threshold_in_cache_kwargs = any(
+        kwargs.get("threshold") == threshold
+        for kwargs in get_cached_metric_kwargs(report)
     )
-    assert threshold_in_cache_key, (
-        f"The value {threshold} should be stored in one of the cache keys"
+    assert threshold_in_cache_kwargs, (
+        f"The value {threshold} should be stored in cached kwargs"
     )
 
     assert isinstance(result, float)
@@ -139,11 +138,12 @@ def test_custom_metric_scorer(linear_regression_with_test):
         response_method="predict",
         threshold=threshold,
     )
-    threshold_in_cache_key = any(
-        deep_contain(cached_key, threshold) for cached_key in report._cache
+    threshold_in_cache_kwargs = any(
+        kwargs.get("threshold") == threshold
+        for kwargs in get_cached_metric_kwargs(report)
     )
-    assert threshold_in_cache_key, (
-        f"The value {threshold} should be stored in one of the cache keys"
+    assert threshold_in_cache_kwargs, (
+        f"The value {threshold} should be stored in cached kwargs"
     )
 
     assert isinstance(result, float)
@@ -161,7 +161,6 @@ def test_custom_function_kwargs_numpy_array(
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     weights = np.ones_like(y_test) * 2
-    hash_weights = joblib.hash(weights)
 
     def custom_metric(y_true, y_pred, some_weights):
         return np.mean((y_true - y_pred) * some_weights)
@@ -171,11 +170,12 @@ def test_custom_function_kwargs_numpy_array(
         response_method="predict",
         some_weights=weights,
     )
-    hash_weights_in_cache_key = any(
-        deep_contain(cached_key, hash_weights) for cached_key in report._cache
+    weights_in_cached_kwargs = any(
+        np.array_equal(kwargs.get("some_weights"), weights)
+        for kwargs in get_cached_metric_kwargs(report)
     )
-    assert hash_weights_in_cache_key, (
-        "The hash of the weights should be stored in one of the cache keys"
+    assert weights_in_cached_kwargs, (
+        "The weights array should be stored in cached kwargs"
     )
 
     assert isinstance(result, float)
@@ -212,6 +212,29 @@ def test_custom_metric_compatible_estimator(
     )
     assert isinstance(result, Real)
     assert result == pytest.approx(1)
+
+
+def test_custom_metric_uses_cached_result(linear_regression_with_test):
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    call_count = 0
+
+    def custom_metric(y_true, y_pred):
+        nonlocal call_count
+        call_count += 1
+        return np.mean(y_true - y_pred)
+
+    first = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+    )
+    second = report.metrics.custom_metric(
+        metric_function=custom_metric,
+        response_method="predict",
+    )
+
+    assert first == pytest.approx(second)
+    assert call_count == 1
 
 
 def test_custom_metric_with_scorer_no_attribute_error(linear_regression_with_test):
