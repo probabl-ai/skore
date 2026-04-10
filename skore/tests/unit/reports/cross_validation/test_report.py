@@ -1,5 +1,6 @@
 import joblib
 import numpy as np
+import pandas as pd
 import pytest
 import skrub
 from sklearn.base import clone
@@ -307,3 +308,44 @@ def test_from_state_bypasses_init_and_restores_state(
     restored.metrics.roc_auc()
     _ = report.get_predictions(data_source="test")
     report.cache_predictions()
+
+
+def test_get_from_state_with_complex_data_op():
+    X, y = make_classification(random_state=0)
+    left = pd.DataFrame(
+        {
+            "row_id": np.arange(len(y)),
+            "x0": X[:, 0],
+            "x1": X[:, 1],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "row_id": np.arange(len(y)),
+            "x2": X[:, 2],
+            "x3": X[:, 3],
+        }
+    )
+
+    def _join_features(left, right):
+        return left.merge(right, on="row_id").drop(columns="row_id")
+
+    data_op = (
+        skrub.var("left", left)
+        .skb.apply_func(_join_features, skrub.var("right", right))
+        .skb.mark_as_X()
+        .skb.apply(LogisticRegression(), y=skrub.y(y))
+    )
+    report = CrossValidationReport(data_op, splitter=2)
+    expected_accuracy = report.metrics.accuracy()
+    expected_preds = report.get_predictions(data_source="test")
+    state = report.get_state()
+
+    restored = CrossValidationReport.from_state(state)
+
+    # check fresh computations still work after restoring from state:
+    restored.clear_cache()
+    assert restored.metrics.accuracy().equals(expected_accuracy)
+    preds = restored.get_predictions(data_source="test")
+    for pred, expected_pred in zip(preds, expected_preds, strict=True):
+        np.testing.assert_array_equal(pred, expected_pred)
