@@ -39,7 +39,6 @@ class EstimatorReport(Protocol):
     y_train: Any
     X_test: Any
     y_test: Any
-    fit: Any
     fit_time_: Any
     pos_label: Any
 
