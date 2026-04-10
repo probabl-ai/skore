@@ -15,6 +15,7 @@ from skore._sklearn.types import (
     _DEFAULT,
     DataSource,
     MLTask,
+    PositiveLabel,
     ReportType,
 )
 
@@ -477,7 +478,7 @@ def _one_hot_encode(y_true, classes) -> NDArray:
     return y_true_onehot
 
 
-def _check_label(labels: list, label, default_label):
+def _check_label(labels: list, label: PositiveLabel, default_label: PositiveLabel):
     if label is _DEFAULT:
         return default_label
     elif label is None:

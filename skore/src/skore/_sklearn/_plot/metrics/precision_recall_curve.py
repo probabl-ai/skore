@@ -207,10 +207,9 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: Literal["auto", "label", "estimator", "data_source"]
-        | None = "auto",
-        despine: bool = True,
-        label=None,
+        subplot_by: Literal["auto", "label", "estimator", "data_source"] | None,
+        despine: bool,
+        label: PositiveLabel,
     ) -> Figure:
         """Matplotlib implementation of the `plot` method."""
         plot_data = self.frame(label=label, with_average_precision=True)

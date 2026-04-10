@@ -218,11 +218,10 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: Literal["auto", "label", "estimator", "data_source"]
-        | None = "auto",
-        plot_chance_level: bool = True,
-        despine: bool = True,
-        label: PositiveLabel | None = None,
+        subplot_by: Literal["auto", "label", "estimator", "data_source"] | None,
+        plot_chance_level: bool,
+        despine: bool,
+        label: PositiveLabel,
     ) -> Figure:
         """Matplotlib implementation of the `plot` method."""
         plot_data = self.frame(with_roc_auc=True, label=label)
