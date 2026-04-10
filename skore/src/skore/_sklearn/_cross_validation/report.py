@@ -259,6 +259,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
 
     def get_state(self) -> dict[str, Any]:
+        """Return a serializable representation of the report state.
+
+        This state is meant to ease serialization/deserialization of
+        reports while preserving some backward compatibility across skore
+        versions. In particular, this is more stable than pickling a report
+        object directly, which can break when internal implementations change.
+        """
         sub_states = [report.get_state() for report in self.estimator_reports_]
         for state in sub_states:
             # data can be reconstructed from X, y and split_indices
@@ -278,6 +285,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     @classmethod
     def from_state(cls, state: dict[str, Any]) -> CrossValidationReport:
+        """Rebuild a report from :meth:`get_state` output."""
         report = cls.__new__(cls)
 
         report._metadata = state["metadata"]
