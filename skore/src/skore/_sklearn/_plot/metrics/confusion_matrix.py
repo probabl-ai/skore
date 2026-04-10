@@ -425,11 +425,15 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             # When provided, the positive label is set in second position (which
             # means true-positive counts is the bottom-right cell in the matrix).
             # Usually, TP is the top-left cell, but we align with sklearn.
+            y_pred = cast(NDArray, y_pred)
             if pos_label == classes[0]:
                 classes = (classes[1], classes[0])
+                y_score = y_pred[:, 0]
+            else:
+                y_score = y_pred[:, 1]
             tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
                 y_true=y_true,
-                y_score=y_pred,
+                y_score=y_score,
                 pos_label=classes[1],
             )
             cms = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
