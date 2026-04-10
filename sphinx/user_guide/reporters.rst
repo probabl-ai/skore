@@ -81,7 +81,7 @@ We provide the :class:`EstimatorReport.metrics.summarize` method that aggregates
 in a single dataframe, available through a :class:`~skore.Display`. By default, a set of
 metrics is computed based on the type of target variable (e.g. classification or
 regression). Nevertheless, you can specify the metrics you want to compute thanks to the
-`scoring` parameter. We accept different types:
+`metric` parameter. We accept different types:
 
 1. A string that corresponds to a scikit-learn scorer name or a built-in `skore`
    metric name. Scikit-learn metrics that require a ``neg_`` prefix (e.g.
