@@ -173,30 +173,19 @@ class Project:
     @staticmethod
     def pickle(report: EstimatorReport | CrossValidationReport) -> tuple[str, bytes]:
         """
-        Pickle ``report``, return the bytes and the corresponding hash.
+        Pickle ``report``, return the bytes and the corresponding artifact id.
 
         Notes
         -----
-        The report is pickled without its cache, to avoid salting the hash.
+        Artifact identity is derived from the report id, not from the serialized bytes.
         """
-        reports = [report] + getattr(report, "estimator_reports_", [])
-        reports_with_cache = [
-            (report, report._cache) for report in reports if hasattr(report, "_cache")
-        ]
+        artifact_id = str(report.id)
 
-        report.clear_cache()
+        with io.BytesIO() as stream:
+            joblib.dump(report, stream)
+            pickle_bytes = stream.getvalue()
 
-        try:
-            with io.BytesIO() as stream:
-                joblib.dump(report, stream)
-
-                pickle_bytes = stream.getvalue()
-                pickle_hash = joblib.hash(pickle_bytes)
-        finally:
-            for report, cache in reports_with_cache:
-                report._cache = cache  # type: ignore[union-attr]
-
-        return pickle_hash, pickle_bytes
+        return artifact_id, pickle_bytes
 
     @ensure_project_is_not_deleted
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
@@ -235,15 +224,15 @@ class Project:
                 f"ort` (found '{type(report)}')"
             )
 
-        pickle_hash, pickle_bytes = Project.pickle(report)
+        artifact_id, pickle_bytes = Project.pickle(report)
 
-        if pickle_hash not in self.__artifacts_storage:
-            self.__artifacts_storage[pickle_hash] = pickle_bytes
+        if artifact_id not in self.__artifacts_storage:
+            self.__artifacts_storage[artifact_id] = pickle_bytes
 
         self.__metadata_storage[uuid4().hex] = dict(
             Metadata(
                 report=report,
-                artifact_id=pickle_hash,
+                artifact_id=artifact_id,
                 project_name=self.name,
                 key=key,
             )

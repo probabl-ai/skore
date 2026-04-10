@@ -123,20 +123,26 @@ class TestProject:
         assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
     def test_pickle_estimator_report(self, regression):
+        regression.clear_cache()
+
         # Pickle the report once, without any value in the cache
         assert not regression._cache
-        hash1, pickle1 = Project.pickle(regression)
+        artifact_id1, pickle1 = Project.pickle(regression)
         assert not regression._cache
 
         # Pickle the same report, but with values in the cache
         regression.cache_predictions()
 
         assert regression._cache
-        hash2, pickle2 = Project.pickle(regression)
+        stored_predictions = getattr(regression, "_predictions", None)
+        if stored_predictions is not None:
+            stored_predictions = stored_predictions.copy()
+        artifact_id2, pickle2 = Project.pickle(regression)
         assert regression._cache
+        assert getattr(regression, "_predictions", None) == stored_predictions
 
-        # Make sure that the two pickles on the report are not affected by the cache
-        assert (hash1, pickle1) == (hash2, pickle2)
+        assert artifact_id1 == artifact_id2 == str(regression.id)
+        assert pickle1 != pickle2
 
         # Make sure that pickles are not broken
         with BytesIO(pickle1) as stream:
@@ -149,22 +155,32 @@ class TestProject:
         report2.cache_predictions()
 
     def test_pickle_cross_validation_report(self, cv_regression):
+        cv_regression.clear_cache()
         reports = cv_regression.estimator_reports_
 
         # Pickle the report once, without any value in the cache
         assert not any(report._cache for report in reports)
-        hash1, pickle1 = Project.pickle(cv_regression)
+        artifact_id1, pickle1 = Project.pickle(cv_regression)
         assert not any(report._cache for report in reports)
 
         # Pickle the same report, but with values in the cache
         cv_regression.cache_predictions()
 
         assert any(report._cache for report in reports)
-        hash2, pickle2 = Project.pickle(cv_regression)
+        stored_predictions = []
+        for report in reports:
+            predictions = getattr(report, "_predictions", None)
+            stored_predictions.append(
+                None if predictions is None else predictions.copy()
+            )
+        artifact_id2, pickle2 = Project.pickle(cv_regression)
         assert any(report._cache for report in reports)
+        assert [
+            getattr(report, "_predictions", None) for report in reports
+        ] == stored_predictions
 
-        # Make sure that the two pickles on the report are not affected by the cache
-        assert (hash1, pickle1) == (hash2, pickle2)
+        assert artifact_id1 == artifact_id2 == str(cv_regression.id)
+        assert pickle1 != pickle2
 
         # Make sure that pickles are not broken
         with BytesIO(pickle1) as stream:
@@ -236,7 +252,7 @@ class TestProject:
             {
                 "project_name": "<project>",
                 "key": "<key>",
-                "artifact_id": next(project._Project__artifacts_storage.keys()),
+                "artifact_id": str(regression.id),
                 "date": nowstr,
                 "learner": "Ridge",
                 "dataset": joblib.hash(regression.y_test),
@@ -276,7 +292,7 @@ class TestProject:
             {
                 "project_name": "<project>",
                 "key": "<key>",
-                "artifact_id": next(project._Project__artifacts_storage.keys()),
+                "artifact_id": str(cv_regression.id),
                 "date": nowstr,
                 "learner": "Ridge",
                 "dataset": joblib.hash(cv_regression.y),
@@ -301,13 +317,27 @@ class TestProject:
         project.put("<key>", regression)
         project.put("<key>", regression)
 
-        report = project.get(next(project._Project__artifacts_storage.keys()))
+        report = project.get(str(regression.id))
 
         assert len(project._Project__artifacts_storage) == 1
         assert len(project._Project__metadata_storage) == 2
         assert isinstance(report, EstimatorReport)
         assert report.estimator_name_ == regression.estimator_name_
         assert report._ml_task == regression._ml_task
+
+    def test_put_binary_classification_reuses_report_id(
+        self, tmp_path, binary_classification
+    ):
+        project = Project("<project>", workspace=tmp_path)
+        project.put("<key>", binary_classification)
+
+        binary_classification.cache_predictions()
+        project.put("<key>", binary_classification)
+
+        assert list(project._Project__artifacts_storage.keys()) == [
+            str(binary_classification.id)
+        ]
+        assert len(project._Project__metadata_storage) == 2
 
     def test_get_exception(self, tmp_path, regression):
         import re
@@ -332,13 +362,11 @@ class TestProject:
         project.put("<key1>", regression)
         project.put("<key2>", cv_regression)
 
-        artifact_ids = list(project._Project__artifacts_storage.keys())
-
         assert len(project._Project__artifacts_storage) == 2
         assert len(project._Project__metadata_storage) == 3
         assert project.summarize() == [
             {
-                "id": artifact_ids[0],
+                "id": str(regression.id),
                 "key": "<key1>",
                 "date": Datetime.nows_isoformat[0],
                 "learner": "Ridge",
@@ -357,7 +385,7 @@ class TestProject:
                 "predict_time_mean": None,
             },
             {
-                "id": artifact_ids[0],
+                "id": str(regression.id),
                 "key": "<key1>",
                 "date": Datetime.nows_isoformat[1],
                 "learner": "Ridge",
@@ -376,7 +404,7 @@ class TestProject:
                 "predict_time_mean": None,
             },
             {
-                "id": artifact_ids[1],
+                "id": str(cv_regression.id),
                 "key": "<key2>",
                 "date": Datetime.nows_isoformat[2],
                 "learner": "Ridge",
