@@ -47,15 +47,6 @@ _METRIC_ALIASES: dict[str, str] = {
 }
 
 
-def _resolve_metric_alias(metric: str) -> str:
-    """Resolve a user-friendly metric name to its sklearn scorer equivalent.
-
-    If ``metric`` is present in ``_METRIC_ALIASES``, return the corresponding
-    ``neg_``-prefixed scorer name.  Otherwise return ``metric`` unchanged.
-    """
-    return _METRIC_ALIASES.get(metric, metric)
-
-
 class Metric:
     """A metric that can compute a score from a report.
 
@@ -574,7 +565,7 @@ class MetricRegistry(UserDict):
                     "additional parameters."
                 )
 
-            metric = _resolve_metric_alias(metric)
+            metric = _METRIC_ALIASES.get(metric, metric)
 
             try:
                 scorer = sklearn.metrics.get_scorer(metric)
