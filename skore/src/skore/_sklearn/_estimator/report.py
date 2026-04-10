@@ -240,6 +240,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self.fit_time_ = self._fit_time
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
         self._cache = Cache()
+        # NOTE: Reports are immutable so we don't need cache invalidation
+
         self._metric_registry = MetricRegistry(self)
 
         if pos_label is None:
@@ -254,8 +256,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 f"pos_label={pos_label!r} is not a valid label. "
                 f"It should be one of: {labels!r}."
             )
-
-        # NOTE: Reports are immutable so we don't need cache invalidation
 
     def clear_cache(self) -> None:
         """Clear the cache.
