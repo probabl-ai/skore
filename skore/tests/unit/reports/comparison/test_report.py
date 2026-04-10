@@ -287,14 +287,22 @@ def test_create_estimator_report_invalid_name(
     [
         "comparison_estimator_reports_binary_classification",
         "comparison_cross_validation_reports_binary_classification",
+        "comparison_estimator_reports_multiclass_classification",
+        "comparison_cross_validation_reports_multiclass_classification",
+        "comparison_estimator_reports_regression",
+        "comparison_cross_validation_reports_regression",
+        "comparison_estimator_reports_multioutput_regression",
+        "comparison_cross_validation_reports_multioutput_regression",
     ],
 )
 def test_report_repr_html(comparison_fixture, request):
     report = request.getfixturevalue(comparison_fixture)
+    sub_report = next(iter(report.reports_.values()))
+    expected_estimator_name = sub_report.estimator_.__class__.__name__
     html_out = report._repr_html_()
     assert "skore-comparison-report-" in html_out
     assert "Model comparison" in html_out
-    assert "DummyClassifier" in html_out
+    assert expected_estimator_name in html_out
     assert "skoreInitComparisonReport" in html_out
     assert "report-hint-note" in html_out
     assert "docs.skore.probabl.ai" in html_out

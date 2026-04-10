@@ -499,14 +499,17 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def _repr_html_(self) -> str:
         """HTML representation with a selector to inspect one compared report."""
-        metrics_html = (
+        metrics_frame = (
             self.metrics.summarize(data_source="test")
             .frame()
-            .rename_axis([None, None], axis="columns")
-            .swaplevel(axis="columns")
-            .reset_index()
-            .to_html(index=False)
+            .rename_axis(
+                None if self._report_type == "comparison-estimator" else [None, None],
+                axis="columns",
+            )
         )
+        if self._report_type == "comparison-cross-validation":
+            metrics_frame = metrics_frame.swaplevel(axis="columns")
+        metrics_html = metrics_frame.reset_index().to_html(index=False)
 
         comparison_reports = []
         for label, report in self.reports_.items():
