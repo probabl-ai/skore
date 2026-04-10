@@ -487,7 +487,7 @@ def _check_label(labels: list, label, default_label):
             f"label={label!r} is not a valid label. It should be one of: {labels!r}."
         )
     else:
-        # necessary clean-up for `df['label'] == label` to work in some cases
+        # necessary clean-up for `df.query("label == @label")` to work in some cases
         # Ex: with `labels=[0, 1]` and `label=True`:
-        # `label in labels` is true but `df.loc[df['label'] == label]` is empty.
+        # `label in labels` is true but `df.query("label == @label")` is empty.
         return labels[labels.index(label)]
