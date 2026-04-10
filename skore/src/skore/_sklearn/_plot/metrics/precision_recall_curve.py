@@ -56,7 +56,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `label`
         - `average_precision`.
 
-    default_pos_label : int, float, bool, str or None
+    report_pos_label : int, float, bool, str or None
         Default positive label used when `plot(label=...)` is not specified.
 
     data_source : {"train", "test", "both"}
@@ -100,14 +100,14 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         precision_recall: DataFrame,
         average_precision: DataFrame,
-        default_pos_label: PositiveLabel | None,
+        report_pos_label: PositiveLabel | None,
         data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
         self.precision_recall = precision_recall
         self.average_precision = average_precision
-        self.default_pos_label = default_pos_label
+        self.report_pos_label = report_pos_label
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
@@ -136,7 +136,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 [display.average_precision for display in child_displays],
                 column_data,
             ),
-            default_pos_label=first_display.default_pos_label,
+            report_pos_label=first_display.report_pos_label,
             data_source=data_source or first_display.data_source,
             ml_task=first_display.ml_task,
             report_type=report_type,
@@ -201,7 +201,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display.set_style(relplot_kwargs={"palette": "Set2", "alpha": 0.8})
         >>> display.plot()
         """
-        label = _check_label(self.labels, label, self.default_pos_label)
+        label = _check_label(self.labels, label, self.report_pos_label)
         return self._plot(subplot_by=subplot_by, despine=despine, label=label)
 
     def _plot_matplotlib(
@@ -321,7 +321,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource,
-        default_pos_label: PositiveLabel = None,
+        report_pos_label: PositiveLabel = None,
         drop_intermediate: bool = True,
     ) -> "PrecisionRecallCurveDisplay":
         """Plot precision-recall curve given binary class predictions.
@@ -383,7 +383,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         return cls(
             precision_recall=_concat_frames_with_column_data(curve_dfs),
             average_precision=_concat_frames_with_column_data(ap_dfs),
-            default_pos_label=default_pos_label,
+            report_pos_label=report_pos_label,
             data_source=data_source,
             ml_task=ml_task,
             report_type=report_type,
@@ -463,7 +463,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display = report.metrics.precision_recall()
         >>> df = display.frame()
         """
-        label = _check_label(self.labels, label, self.default_pos_label)
+        label = _check_label(self.labels, label, self.report_pos_label)
 
         if with_average_precision:
             # The merge between the precision-recall curve and the average precision is

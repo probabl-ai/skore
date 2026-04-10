@@ -32,7 +32,7 @@ class TestPrecisionRecallCurveDisplay:
         assert hasattr(display, "report_type")
         assert hasattr(display, "ml_task")
         assert hasattr(display, "data_source")
-        assert hasattr(display, "default_pos_label")
+        assert hasattr(display, "report_pos_label")
 
         fig = display.plot()
         assert fig is not None
@@ -59,7 +59,7 @@ class TestPrecisionRecallCurveDisplay:
             expected_index.append("split")
         if "comparison" in fixture_prefix:
             expected_index.append("estimator")
-        if task == "multiclass" or display.default_pos_label is None:
+        if task == "multiclass" or display.report_pos_label is None:
             expected_index.append("label")
 
         check_frame_structure(frame, expected_index, expected_columns)
@@ -152,7 +152,7 @@ class TestPrecisionRecallCurveDisplay:
             assert "Data source" in title
         else:
             assert "Data source" not in title
-        if task == "binary" and display.default_pos_label is not None:
+        if task == "binary" and display.report_pos_label is not None:
             assert "Positive label" in title
         else:
             assert "Positive label" not in title

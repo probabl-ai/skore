@@ -50,7 +50,7 @@ def test_display_binary_classification_pos_label(pyplot, metric):
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_display_binary_classification_decision_function_default_pos_label(
+def test_display_binary_classification_decision_function_report_pos_label(
     pyplot, metric, binary_classification_data
 ):
     """Check that the default binary behaviour works with 1D decision scores."""
@@ -76,7 +76,7 @@ def test_display_binary_classification_decision_function_default_pos_label(
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_display_binary_classification_label_overrides_default_pos_label(
+def test_display_binary_classification_label_overrides_report_pos_label(
     metric, binary_classification_data
 ):
     """Check that `label` overrides the report positive label for plots and frames."""

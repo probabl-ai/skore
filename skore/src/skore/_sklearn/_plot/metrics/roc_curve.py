@@ -58,7 +58,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `label`
         - `roc_auc`.
 
-    default_pos_label : int, float, bool, str or None
+    report_pos_label : int, float, bool, str or None
         Default positive label used when `plot(label=...)` is not specified.
 
     data_source : {"train", "test", "both"}
@@ -106,14 +106,14 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         roc_curve: DataFrame,
         roc_auc: DataFrame,
-        default_pos_label: PositiveLabel,
+        report_pos_label: PositiveLabel,
         data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
         self.roc_curve = roc_curve
         self.roc_auc = roc_auc
-        self.default_pos_label = default_pos_label
+        self.report_pos_label = report_pos_label
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
@@ -142,7 +142,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 [display.roc_auc for display in child_displays],
                 column_data,
             ),
-            default_pos_label=first_display.default_pos_label,
+            report_pos_label=first_display.report_pos_label,
             data_source=data_source or first_display.data_source,
             ml_task=first_display.ml_task,
             report_type=report_type,
@@ -207,7 +207,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
         >>> display.plot()
         """
-        label = _check_label(self.labels, label, self.default_pos_label)
+        label = _check_label(self.labels, label, self.report_pos_label)
         return self._plot(
             subplot_by=subplot_by,
             plot_chance_level=plot_chance_level,
@@ -343,7 +343,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource,
-        default_pos_label: PositiveLabel = None,
+        report_pos_label: PositiveLabel = None,
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":
         """Private method to create a RocCurveDisplay from predictions.
@@ -404,7 +404,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         return cls(
             roc_curve=_concat_frames_with_column_data(curve_dfs),
             roc_auc=_concat_frames_with_column_data(auc_dfs),
-            default_pos_label=default_pos_label,
+            report_pos_label=report_pos_label,
             data_source=data_source,
             ml_task=ml_task,
             report_type=report_type,
@@ -479,7 +479,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display = report.metrics.roc()
         >>> df = display.frame()
         """
-        label = _check_label(self.labels, label, self.default_pos_label)
+        label = _check_label(self.labels, label, self.report_pos_label)
 
         if with_roc_auc:  # noqa: SIM108
             # The merge between the ROC curve and the ROC AUC is done without

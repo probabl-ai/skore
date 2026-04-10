@@ -951,7 +951,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"default_pos_label": self._parent.pos_label}
+        display_kwargs = {"report_pos_label": self._parent.pos_label}
         display = cast(
             RocCurveDisplay,
             self._get_display(
@@ -1001,7 +1001,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"default_pos_label": self._parent.pos_label}
+        display_kwargs = {"report_pos_label": self._parent.pos_label}
         display = cast(
             PrecisionRecallCurveDisplay,
             self._get_display(
