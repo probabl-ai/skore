@@ -92,12 +92,6 @@ Changed
 Added
 -----
 
-- :meth:`~EstimatorReport.metrics.summarize` (and equivalent methods on
-  :class:`~skore.CrossValidationReport` and :class:`~skore.ComparisonReport`) now
-  accept scikit-learn metric names without the `neg_` prefix. For example,
-  ``"mean_squared_error"`` can be passed instead of ``"neg_mean_squared_error"``
-  and is resolved automatically.
-
 - Add rich HTML representation for the different reports. See :pr:`2632`, :pr:`2651`,
   :pr:`2658`, and :pr:`2659` by :user:`glemaitre`, :user:`jeromedockes` and
   :user:`GaelVaroquaux`.
@@ -124,12 +118,6 @@ Changed
 
 Added
 -----
-
-- :meth:`~EstimatorReport.metrics.summarize` (and equivalent methods on
-  :class:`~skore.CrossValidationReport` and :class:`~skore.ComparisonReport`) now
-  accept scikit-learn metric names without the `neg_` prefix. For example,
-  ``"mean_squared_error"`` can be passed instead of ``"neg_mean_squared_error"``
-  and is resolved automatically.
 
 - :class:`PermutationImportanceDisplay` now supports a ``level`` parameter to select which level of a multi-index DataFrame to use for feature names. See :pr:`2565` by :user:`GaetandeCast`.
 - :class:`CoefficientsDisplay` now supports aggregation via an ``aggregate`` parameter in :meth:`~CoefficientsDisplay.frame`, following the same pattern as :class:`ImpurityDecreaseDisplay`. See :pr:`2552` by :user:`MuditAtrey`.
@@ -182,12 +170,6 @@ Changed
 
 Added
 -----
-
-- :meth:`~EstimatorReport.metrics.summarize` (and equivalent methods on
-  :class:`~skore.CrossValidationReport` and :class:`~skore.ComparisonReport`) now
-  accept scikit-learn metric names without the `neg_` prefix. For example,
-  ``"mean_squared_error"`` can be passed instead of ``"neg_mean_squared_error"``
-  and is resolved automatically.
 
 - The documentation now includes a short example illustrating local usage of :class:`skore.Project`. See :pr:`2481` by :user:`glemaitre`.
 - The documentation now includes a short example explaining the design philosophy of the skore API. See :pr:`2480` by :user:`glemaitre`.
