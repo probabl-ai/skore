@@ -186,30 +186,6 @@ def test_pickle(tmp_path, logistic_binary_classification_data):
     joblib.dump(report, tmp_path / "report.joblib")
 
 
-def test_from_state_bypasses_init_and_restores_cached_state(
-    monkeypatch, logistic_binary_classification_data
-):
-    estimator, X, y = logistic_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
-    expected_accuracy = report.metrics.accuracy()
-    report.cache_predictions()
-    state = report.get_state()
-
-    def _unexpected_init(self, *args, **kwargs):
-        raise AssertionError("__init__ should not be called by from_state")
-
-    monkeypatch.setattr(CrossValidationReport, "__init__", _unexpected_init)
-
-    restored = CrossValidationReport.from_state(state)
-
-    assert restored.id == report.id
-    assert restored.ml_task == report.ml_task
-    assert restored.pos_label == report.pos_label
-    assert restored.split_indices == report.split_indices
-    assert len(restored.estimator_reports_) == len(report.estimator_reports_)
-    assert restored.metrics.accuracy().equals(expected_accuracy)
-
-
 @pytest.mark.parametrize(
     "error",
     [
@@ -298,3 +274,36 @@ def test_report_with_data_op():
     assert list(report.metrics.accuracy(aggregate="mean").columns) == [
         ("SkrubLearner", "mean")
     ]
+
+
+def test_from_state_bypasses_init_and_restores_state(
+    monkeypatch, logistic_binary_classification_data
+):
+    estimator, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    expected_accuracy = report.metrics.accuracy()
+    state = report.get_state()
+
+    def _unexpected_init(self, *args, **kwargs):
+        raise AssertionError("__init__ should not be called by from_state")
+
+    monkeypatch.setattr(CrossValidationReport, "__init__", _unexpected_init)
+
+    restored = CrossValidationReport.from_state(state)
+
+    assert restored.id == report.id
+    assert restored.X is report.X
+    assert restored.y is report.y
+    assert restored.ml_task == report.ml_task
+    assert restored.pos_label == report.pos_label
+    assert restored._split_indices == report._split_indices
+    assert len(restored.estimator_reports_) == len(report.estimator_reports_)
+    assert restored.estimator_reports_[0]._predictions.keys() == (
+        report.estimator_reports_[0]._predictions.keys()
+    )
+    assert restored.metrics.accuracy().equals(expected_accuracy)
+
+    # check new metrics/predictions can be computed:
+    restored.metrics.roc_auc()
+    _ = report.get_predictions(data_source="test")
+    report.cache_predictions()

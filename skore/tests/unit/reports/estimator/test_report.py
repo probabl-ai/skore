@@ -494,3 +494,35 @@ def test_report_with_data_op():
 
     report = EstimatorReport(data_op)
     assert isinstance(report.metrics.accuracy(), float)
+
+
+def test_from_state_bypasses_init_and_restores_state(
+    monkeypatch, logistic_binary_classification_with_test
+):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(
+        estimator,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    expected_accuracy = report.metrics.accuracy()
+    report.cache_predictions()
+    state = report.get_state()
+
+    def _unexpected_init(self, *args, **kwargs):
+        raise AssertionError("__init__ should not be called by from_state")
+
+    monkeypatch.setattr(EstimatorReport, "__init__", _unexpected_init)
+
+    restored = EstimatorReport.from_state(state)
+
+    assert restored.id == report.id
+    assert restored.fit_time_ == report.fit_time_
+    assert restored.X_test is report.X_test
+    assert restored.ml_task == report.ml_task
+    assert restored.pos_label == report.pos_label
+    assert restored._predictions.keys() == report._predictions.keys()
+    assert restored.metrics.accuracy() == expected_accuracy
+
+    # check new metrics can be computed:
+    report.metrics.roc_auc()

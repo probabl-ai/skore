@@ -200,7 +200,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         super().__init__()
         estimator = self._copy_estimator(estimator)
         self._raw_estimator = estimator
-        self._fit = fit
 
         if isinstance(estimator, skrub.DataOp):
             if test_data is None and train_data is None:
