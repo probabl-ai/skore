@@ -74,7 +74,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if metric is None or (isinstance(metric, Sized) and len(metric) == 0):
             items = [(None, m) for m in self._parent._metric_registry]
         elif isinstance(metric, dict):
-            items = [(name, m) for name, m in metric.items()]
+            items = list(metric.items())
         elif isinstance(metric, list):
             items = [(None, m) for m in metric]
         else:
