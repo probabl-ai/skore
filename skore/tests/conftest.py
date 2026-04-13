@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+import matplotlib
 import numpy as np
 import pytest
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
@@ -15,15 +16,26 @@ from sklearn.svm import SVC
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted
 
-from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+from skore import (
+    ComparisonReport,
+    CrossValidationReport,
+    EstimatorReport,
+    configuration,
+)
+from skore._config import LocalConfiguration
 from skore._externals._sklearn_compat import validate_data
 
 
 def pytest_configure(config):
-    # Use matplotlib agg backend during the tests including doctests
-    import matplotlib
+    """Set up global test configuration.
 
+    Some of these could be set in fixtures, but doctests do not run fixtures.
+    """
     matplotlib.use("agg")
+
+    # Disable progress bars during tests to avoid rich interfering with
+    # doctest stdout capture.
+    configuration.show_progress = False
 
 
 @pytest.fixture(autouse=True)
@@ -46,13 +58,9 @@ def monkeypatch_tmpdir(monkeypatch, tmp_path):
 
 @pytest.fixture(autouse=True)
 def monkeypatch_configuration(monkeypatch):
-    from skore import configuration
-    from skore._config import LocalConfiguration
-
-    monkeypatch.setattr(
-        "skore._config.configuration.local",
-        LocalConfiguration(**configuration.local.__dict__),
-    )
+    """Ensure that the test gets the default configuration,
+    independently of the others."""
+    monkeypatch.setattr("skore._config.configuration.local", LocalConfiguration())
 
 
 @pytest.fixture

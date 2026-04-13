@@ -1,10 +1,8 @@
 import numbers
-from collections.abc import Callable
 from typing import Any, Literal
 
 import pandas as pd
 from joblib import Parallel
-from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -39,9 +37,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
-        metric_kwargs: dict[str, Any] | None = None,
-        response_method: str | list[str] | None = None,
+        metric: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -53,35 +49,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        metric : str, callable, scorer, or list of such instances or dict of such \
-            instances, default=None
-            The metric(s) to report. The possible values are:
-
-            - if a string, either one of the built-in metrics or a scikit-learn scorer
-              name. You can get the possible list of string using
-              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
-              the built-in metrics or the scikit-learn scorers, respectively.
-            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
-              first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `metric_kwargs`. No favorability indicator can
-              be displayed in this case.
-            - if the callable API is too restrictive (e.g. need to pass
-              same parameter name with different values), you can use scikit-learn
-              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
-              the metric favorability will only be displayed if it is given explicitly
-              via `make_scorer`'s `greater_is_better` parameter.
-            - if a dict, the keys are used as metric names and the values are the
-              metric functions (strings, callables, or scorers as described above).
-            - if a list, each element can be any of the above types (strings, callables,
-              scorers).
-
-        metric_kwargs : dict, default=None
-            The keyword arguments to pass to the metric functions.
-
-        response_method : {"predict", "predict_proba", "predict_log_proba", \
-            "decision_function"} or list of such str, default=None
-            The estimator's method to be invoked to get the predictions. Only necessary
-            for custom metrics.
+        metric : str or list of str or None, default=None
+            The metrics to report, from the list of registered metrics. None means show
+            all registered metrics. To add a custom metric, see :meth:`add`.
 
         Returns
         -------
@@ -125,8 +95,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     delayed(report.metrics.summarize)(
                         data_source=data_source,
                         metric=metric,
-                        metric_kwargs=metric_kwargs,
-                        response_method=response_method,
                     )
                     for report in self._parent.estimator_reports_
                 ),
@@ -145,6 +113,67 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             ),
             report_type="cross-validation",
         )
+
+    def add(
+        self,
+        metric: MetricLike,
+        *,
+        name: str | None = None,
+        response_method: str | list[str] = "predict",
+        greater_is_better: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Add a custom metric to be included in :meth:`summarize` by default.
+
+        Parameters
+        ----------
+        metric : str, sklearn scorer, or callable
+            The metric to add.
+        name : str, optional
+            Custom name for the metric. If not provided, the name is inferred
+            from the metric (e.g. the function's ``__name__``).
+        response_method : str or list of str, default="predict"
+            Estimator method to get predictions (only for callables).
+        greater_is_better : bool, default=True
+            Whether higher values are better (only for callables).
+        **kwargs : Any
+            Default keyword arguments passed to the score function at call
+            time.  Only used when *metric* is a plain callable.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.metrics import make_scorer, mean_absolute_error
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=2, pos_label=1)
+        >>> report.metrics.add(
+        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ... )
+        >>> report.metrics.summarize().frame()
+                            LogisticRegression
+                                          mean       std
+        Metric
+        Accuracy                       0.94...   0.00...
+        Precision                      0.94...   0.02...
+        Recall                         0.96...   0.02...
+        ROC AUC                        0.98...   0.00...
+        Log loss                       0.14...   0.03...
+        Brier score                    0.04...   0.00...
+        Fit time (s)                       ...       ...
+        Predict time (s)                   ...       ...
+        Mean Absolute Error            0.05...   0.00...
+        """
+        for report in self._parent.estimator_reports_:
+            report.metrics.add(
+                metric,
+                name=name,
+                response_method=response_method,
+                greater_is_better=greater_is_better,
+                **kwargs,
+            )
 
     def timings(
         self,
@@ -255,9 +284,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        average: (
-            Literal["binary", "macro", "micro", "weighted", "samples"] | None
-        ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -270,32 +296,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        average : {"binary","macro", "micro", "weighted", "samples"} or None, \
-                default=None
-            Used with multiclass problems.
-            If `None`, the metrics for each class are returned. Otherwise, this
-            determines the type of averaging performed on the data:
-
-            - "binary": Only report results for the class specified by the
-              report's `pos_label`. This is applicable only if targets
-              (`y_{true,pred}`) are binary.
-            - "micro": Calculate metrics globally by counting the total true positives,
-              false negatives and false positives.
-            - "macro": Calculate metrics for each label, and find their unweighted
-              mean.  This does not take label imbalance into account.
-            - "weighted": Calculate metrics for each label, and find their average
-              weighted by support (the number of true instances for each label). This
-              alters 'macro' to account for label imbalance; it can result in an F-score
-              that is not between precision and recall.
-            - "samples": Calculate metrics for each instance, and find their average
-              (only meaningful for multilabel classification where this differs from
-              :func:`accuracy_score`).
-
-            .. note::
-                If the report's `pos_label` is specified and `average` is None,
-                then we report only the statistics of the positive class (i.e.
-                equivalent to `average="binary"`).
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -327,7 +327,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         return self.summarize(
             metric=["precision"],
             data_source=data_source,
-            metric_kwargs={"average": average},
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "recall"))
@@ -335,9 +334,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        average: (
-            Literal["binary", "macro", "micro", "weighted", "samples"] | None
-        ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -350,33 +346,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        average : {"binary","macro", "micro", "weighted", "samples"} or None, \
-                default=None
-            Used with multiclass problems.
-            If `None`, the metrics for each class are returned. Otherwise, this
-            determines the type of averaging performed on the data:
-
-            - "binary": Only report results for the class specified by the
-              report's `pos_label`. This is applicable only if targets
-              (`y_{true,pred}`) are binary.
-            - "micro": Calculate metrics globally by counting the total true positives,
-              false negatives and false positives.
-            - "macro": Calculate metrics for each label, and find their unweighted
-              mean.  This does not take label imbalance into account.
-            - "weighted": Calculate metrics for each label, and find their average
-              weighted by support (the number of true instances for each label). This
-              alters 'macro' to account for label imbalance; it can result in an F-score
-              that is not between precision and recall. Weighted recall is equal to
-              accuracy.
-            - "samples": Calculate metrics for each instance, and find their average
-              (only meaningful for multilabel classification where this differs from
-              :func:`accuracy_score`).
-
-            .. note::
-                If the report's `pos_label` is specified and `average` is None,
-                then we report only the statistics of the positive class (i.e.
-                equivalent to `average="binary"`).
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -408,7 +377,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         return self.summarize(
             metric=["recall"],
             data_source=data_source,
-            metric_kwargs={"average": average},
         ).frame(
             aggregate=aggregate,
             flat_index=flat_index,
@@ -468,8 +436,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        average: Literal["macro", "micro", "weighted", "samples"] | None = None,
-        multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
         aggregate: Aggregate | None = ("mean", "std"),
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -482,39 +448,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        average : {"macro", "micro", "weighted", "samples"}, default=None
-            Average to compute the ROC AUC score in a multiclass setting. By default,
-            no average is computed. Otherwise, this determines the type of averaging
-            performed on the data.
-
-            - "micro": Calculate metrics globally by considering each element of
-              the label indicator matrix as a label.
-            - "macro": Calculate metrics for each label, and find their unweighted
-              mean. This does not take label imbalance into account.
-            - "weighted": Calculate metrics for each label, and find their average,
-              weighted by support (the number of true instances for each label).
-            - "samples": Calculate metrics for each instance, and find their
-              average.
-
-            .. note::
-                Multiclass ROC AUC currently only handles the "macro" and
-                "weighted" averages. For multiclass targets, `average=None` is only
-                implemented for `multi_class="ovr"` and `average="micro"` is only
-                implemented for `multi_class="ovr"`.
-
-        multi_class : {"raise", "ovr", "ovo"}, default="ovr"
-            The multi-class strategy to use.
-
-            - "raise": Raise an error if the data is multiclass.
-            - "ovr": Stands for One-vs-rest. Computes the AUC of each class against the
-              rest. This treats the multiclass case in the same way as the multilabel
-              case. Sensitive to class imbalance even when `average == "macro"`,
-              because class imbalance affects the composition of each of the "rest"
-              groupings.
-            - "ovo": Stands for One-vs-one. Computes the average AUC of all possible
-              pairwise combinations of classes. Insensitive to class imbalance when
-              `average == "macro"`.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -545,7 +478,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         return self.summarize(
             metric=["roc_auc"],
             data_source=data_source,
-            metric_kwargs={"average": average, "multi_class": multi_class},
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
@@ -602,7 +534,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -615,16 +546,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
-                (n_outputs,), default="raw_values"
-            Defines aggregating of multiple output values. Array-like value defines
-            weights used to average errors. The other possible values are:
-
-            - "raw_values": Returns a full set of errors in case of multioutput input.
-            - "uniform_average": Errors of all outputs are averaged with uniform weight.
-
-            By default, no averaging is done.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -655,7 +576,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         return self.summarize(
             metric=["r2"],
             data_source=data_source,
-            metric_kwargs={"multioutput": multioutput},
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "rmse"))
@@ -663,7 +583,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
         flat_index: bool = False,
     ) -> pd.DataFrame:
@@ -676,16 +595,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-
-        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
-                (n_outputs,), default="raw_values"
-            Defines aggregating of multiple output values. Array-like value defines
-            weights used to average errors. The other possible values are:
-
-            - "raw_values": Returns a full set of errors in case of multioutput input.
-            - "uniform_average": Errors of all outputs are averaged with uniform weight.
-
-            By default, no averaging is done.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -715,97 +624,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         return self.summarize(
             metric=["rmse"],
-            data_source=data_source,
-            metric_kwargs={"multioutput": multioutput},
-        ).frame(aggregate=aggregate, flat_index=flat_index)
-
-    def custom_metric(
-        self,
-        metric_function: Callable,
-        response_method: str | list[str],
-        *,
-        metric_name: str | None = None,
-        data_source: DataSource = "test",
-        aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
-        **kwargs,
-    ) -> pd.DataFrame:
-        """Compute a custom metric.
-
-        It brings some flexibility to compute any desired metric. However, we need to
-        follow some rules:
-
-        - `metric_function` should take `y_true` and `y_pred` as the first two
-          positional arguments.
-        - `response_method` corresponds to the estimator's method to be invoked to get
-          the predictions. It can be a string or a list of strings to defined in which
-          order the methods should be invoked.
-
-        Parameters
-        ----------
-        metric_function : callable
-            The metric function to be computed. The expected signature is
-            `metric_function(y_true, y_pred, **kwargs)`.
-
-        response_method : {"predict", "predict_proba", "predict_log_proba", \
-            "decision_function"} or list of such str
-            The estimator's method to be invoked to get the predictions.
-
-        metric_name : str, default=None
-            The name of the metric. If not provided, it will be inferred from the
-            metric function.
-
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
-            Function to aggregate the scores across the cross-validation splits.
-            None will return the scores for each split.
-
-        flat_index : bool, default=True
-            Whether to return a flat index or a multi-index.
-
-        **kwargs : dict
-            Any additional keyword arguments to be passed to the metric function.
-
-        Returns
-        -------
-        pd.DataFrame
-            The custom metric.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.metrics import mean_absolute_error
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=2)
-        >>> report.metrics.custom_metric(
-        ...     metric_function=mean_absolute_error,
-        ...     response_method="predict",
-        ...     metric_name="MAE",
-        ... )
-                Ridge
-                    mean       std
-        Metric
-        MAE     51.4...  1.7...
-        """
-        # create a scorer with `greater_is_better=True` to not alter the output of
-        # `metric_function`
-        scorer = make_scorer(
-            metric_function,
-            greater_is_better=True,
-            response_method=response_method,
-            **kwargs,
-        )
-        metric = {metric_name: scorer} if metric_name is not None else [scorer]
-        return self.summarize(
-            metric=metric,
             data_source=data_source,
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
