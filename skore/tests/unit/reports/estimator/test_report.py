@@ -502,5 +502,5 @@ def test_from_state_rejects_unknown_version(logistic_binary_classification_with_
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     state = report.get_state() | {"version": 999}
 
-    with pytest.raises(ValueError, match="Unsupported EstimatorReport state version"):
+    with pytest.raises(ValueError, match="Unsupported state version"):
         EstimatorReport.from_state(state)
