@@ -356,5 +356,5 @@ def test_from_state_rejects_unknown_version(logistic_binary_classification_data)
     report = CrossValidationReport(estimator, X, y, splitter=2)
     state = report.get_state() | {"version": 999}
 
-    with pytest.raises(ValueError, match="Unsupported state version"):
+    with pytest.raises(ValueError, match="Unexpected state version"):
         CrossValidationReport.from_state(state)
