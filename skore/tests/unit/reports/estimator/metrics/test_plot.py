@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from pandas.testing import assert_frame_equal
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
@@ -49,7 +50,7 @@ def test_display_binary_classification_pos_label(pyplot, metric):
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_display_binary_classification_decision_function_default_pos_label(
+def test_display_binary_classification_decision_function_report_pos_label(
     pyplot, metric, binary_classification_data
 ):
     """Check that the default binary behaviour works with 1D decision scores."""
@@ -72,6 +73,63 @@ def test_display_binary_classification_decision_function_default_pos_label(
     assert legend is not None
     expected_n_entries = len(classifier.classes_) + (1 if metric == "roc" else 0)
     assert len(legend.get_texts()) == expected_n_entries
+
+
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
+def test_display_binary_classification_label_overrides_report_pos_label(
+    metric, binary_classification_data
+):
+    """Check that `label` overrides the report positive label for plots and frames."""
+    X, y = binary_classification_data
+    labels = np.array(["A", "B"])
+    y = labels[y]
+    classifier = LogisticRegression().fit(X, y)
+    report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")
+    display = getattr(report.metrics, metric)()
+
+    frame_kwargs = (
+        {"with_roc_auc": True} if metric == "roc" else {"with_average_precision": True}
+    )
+    all_curves = display.frame(label=None, **frame_kwargs)
+    selected = display.frame(label="B", **frame_kwargs)
+    expected = all_curves.query("label == 'B'").drop(columns="label")
+    expected = expected.reset_index(drop=True)
+
+    assert_frame_equal(
+        display.frame(**frame_kwargs), display.frame(label="A", **frame_kwargs)
+    )
+    assert_frame_equal(selected, expected)
+    assert "Positive label: B" in display.plot(label="B").get_suptitle()
+
+
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
+def test_display_multiclass_label_selects_curve_and_validates(
+    metric, multiclass_classification_data
+):
+    """Check multiclass label selection and validation for plots and frames."""
+    X, y = multiclass_classification_data
+    classifier = LogisticRegression().fit(X, y)
+    report = EstimatorReport(classifier, X_test=X, y_test=y)
+    display = getattr(report.metrics, metric)()
+
+    frame_kwargs = (
+        {"with_roc_auc": True} if metric == "roc" else {"with_average_precision": True}
+    )
+    all_curves = display.frame(label=None, **frame_kwargs)
+    selected = display.frame(label=1, **frame_kwargs)
+    expected = all_curves.query("label == 1").drop(columns="label")
+    expected = expected.reset_index(drop=True)
+    assert_frame_equal(selected, expected)
+
+    assert "Label: 1" in display.plot(label=1).get_suptitle()
+    # check label normalization:
+    assert "Label: 1" in display.plot(label=True).get_suptitle()
+
+    err_msg = "label='invalid' is not a valid label"
+    with pytest.raises(ValueError, match=err_msg):
+        display.frame(label="invalid")
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(label="invalid")
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
