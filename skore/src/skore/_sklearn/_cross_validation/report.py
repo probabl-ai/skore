@@ -15,6 +15,7 @@ from sklearn.pipeline import Pipeline
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._diagnostic import check_metrics_consistency_across_folds
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -455,6 +456,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     ),
                 }
 
+        issues.update(check_metrics_consistency_across_folds(self))
+        all_checked_codes |= {"SKD003"}
         return issues, all_checked_codes
 
     @property

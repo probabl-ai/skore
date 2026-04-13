@@ -23,7 +23,9 @@ from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._diagnostic import (
     DiagnosticNotApplicable,
+    check_high_class_imbalance,
     check_overfitting_underfitting,
+    check_underrepresented_classes,
 )
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.metrics import MetricRegistry
@@ -602,7 +604,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         issues: dict[str, dict] = {}
         checked_codes: set[str] = set()
-        for codes, check_fn in [({"SKD001", "SKD002"}, check_overfitting_underfitting)]:
+        for codes, check_fn in [
+            ({"SKD001", "SKD002"}, check_overfitting_underfitting),
+            ({"SKD004"}, check_high_class_imbalance),
+            ({"SKD005"}, check_underrepresented_classes),
+        ]:
             try:
                 issues.update(check_fn(self))
                 checked_codes |= codes

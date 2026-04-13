@@ -1,6 +1,7 @@
 from pathlib import Path
 from urllib.parse import urlparse
 
+import pytest
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -190,3 +191,33 @@ def test_diagnose_reuses_cached_results(monkeypatch, regression_data):
     calls_after_first = calls
     report.diagnose()
     assert calls == calls_after_first
+
+
+@pytest.mark.parametrize(
+    "weights, code", [([0.9, 0.1], "SKD004"), ([0.9, 0.05, 0.05], "SKD005")]
+)
+def test_diagnose_detects_high_class_imbalance(weights, code):
+    """Check that the high class imbalance issue is detected."""
+    X, y = make_classification(
+        n_samples=400,
+        n_features=6,
+        n_informative=3,
+        n_classes=len(weights),
+        random_state=0,
+    )
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    result = report.diagnose()
+    assert code not in result.issues
+
+    X, y = make_classification(
+        n_samples=400,
+        n_features=6,
+        n_informative=3,
+        n_classes=len(weights),
+        weights=weights,
+        random_state=0,
+    )
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    result = report.diagnose()
+    assert code in result.issues
+    assert "Accuracy should not be used alone" in result.issues[code]["explanation"]
