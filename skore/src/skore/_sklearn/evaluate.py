@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 def evaluate(
     estimator: BaseEstimator | list[BaseEstimator] | dict[str, BaseEstimator],
-    X: ArrayLike | list[ArrayLike | None] | dict[str, ArrayLike | None] | None = None,
+    X: ArrayLike | list[ArrayLike] | dict[str, ArrayLike] | None = None,
     y: ArrayLike | None = None,
     data: dict | None = None,
     *,
@@ -45,9 +45,10 @@ def evaluate(
         feature matrices (one per estimator) to compare models with different
         preprocessing pipelines. When ``estimator`` is a dict, ``X`` can be a
         dict with the **same keys** mapping each name to its feature matrix, or
-        a single matrix broadcast to every estimator. A list of ``X`` is not
-        supported when ``estimator`` is a dict; use a dict aligned on names or a
-        single matrix.
+        a single matrix broadcast to every estimator. When comparing prefit
+        estimators and no test features are needed, pass ``X=None``. A list of
+        ``X`` is not supported when ``estimator`` is a dict; use a dict aligned on
+        names or a single matrix.
 
     y : array-like of shape (n_samples,)
         Target vector.
@@ -81,17 +82,6 @@ def evaluate(
         or :class:`~skore.ComparisonReport`
         The report corresponding to the evaluation strategy.
 
-    Raises
-    ------
-    ValueError
-        If ``splitter`` is a string other than ``"prefit"``, or if ``estimator``
-        is a dict and ``X`` is a dict whose keys do not match those of
-        ``estimator``.
-
-    TypeError
-        If ``estimator`` is a dict and ``X`` is a list, or if ``estimator`` is a
-        list and ``X`` is a dict.
-
     Examples
     --------
     >>> from sklearn.datasets import make_classification
@@ -122,12 +112,14 @@ def evaluate(
     ...     y,
     ...     splitter=0.2,
     ... )
-    >>> sorted(report.reports_)
+    >>> report.reports_
     ['m1', 'm2']
     """
     if isinstance(estimator, (list, dict)):
         if isinstance(splitter, float):
             splitter = TrainTestSplit(test_size=splitter)
+
+        x_list: list[ArrayLike | None]
 
         if isinstance(estimator, dict):
             names, estimator = zip(*estimator.items(), strict=True)
@@ -144,9 +136,9 @@ def evaluate(
                         f"same keys; got estimator keys {sorted(names)!r}"
                         f" and X keys {sorted(X)!r}."
                     )
-                X = [X[name] for name in names]
+                x_list = [X[name] for name in names]
             else:
-                X = [X] * len(estimator)
+                x_list = [cast(ArrayLike | None, X)] * len(estimator)
         else:
             names = None
             if isinstance(X, dict):
@@ -155,8 +147,10 @@ def evaluate(
                     "array-like broadcast to all estimators, or a list of "
                     "array-like with one matrix per estimator."
                 )
-            if not isinstance(X, list):
-                X = [X] * len(estimator)
+            if isinstance(X, list):
+                x_list = cast(list[ArrayLike | None], X)
+            else:
+                x_list = [cast(ArrayLike | None, X)] * len(estimator)
 
         reports = [
             evaluate(
@@ -168,7 +162,7 @@ def evaluate(
                 pos_label=pos_label,
                 n_jobs=n_jobs,
             )
-            for est, x in zip(estimator, X, strict=True)
+            for est, x in zip(estimator, x_list, strict=True)
         ]
 
         if names is not None:
