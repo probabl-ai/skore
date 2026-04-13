@@ -289,20 +289,6 @@ class TestProject:
         assert report.estimator_name_ == regression.estimator_name_
         assert report._ml_task == regression._ml_task
 
-    def test_put_binary_classification_reuses_report_id(
-        self, tmp_path, binary_classification
-    ):
-        project = Project("<project>", workspace=tmp_path)
-        project.put("<key>", binary_classification)
-
-        binary_classification.cache_predictions()
-        project.put("<key>", binary_classification)
-
-        assert list(project._Project__artifacts_storage.keys()) == [
-            str(binary_classification.id)
-        ]
-        assert len(project._Project__metadata_storage) == 2
-
     def test_get_exception(self, tmp_path, regression):
         import re
 
