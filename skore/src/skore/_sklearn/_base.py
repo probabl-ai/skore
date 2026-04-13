@@ -1,8 +1,11 @@
+import inspect
 from abc import abstractmethod
+from functools import update_wrapper
 from io import StringIO
 from typing import Generic, Literal, TypeVar
 from uuid import uuid4
 
+import joblib
 from rich.console import Console
 from rich.panel import Panel
 
@@ -130,3 +133,57 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
             )
         )
         return string_buffer.getvalue()
+
+
+class record_calls:
+    """Descriptor that records normalized method calls on the parent report."""
+
+    def __init__(self, func):
+        self.function = func
+        self.signature = inspect.signature(func)
+        self.attr_name = f"__calls_{id(func)}"
+        update_wrapper(self, func)
+
+    def __get__(self, instance, cls):
+        if instance is None:
+            return self
+        return _BoundRecordedMethod(self, instance)
+
+
+class _BoundRecordedMethod:
+    """Callable wrapper returned by ``record_calls``."""
+
+    def __init__(self, decorator, instance):
+        self._decorator = decorator
+        self._instance = instance
+        update_wrapper(self, decorator.function)
+
+    def __call__(self, *args, **kwargs):
+        decorator = self._decorator
+        instance = self._instance
+        # Accessors are re-instantiated on each lookup, so the bound wrapper stores
+        # call history on the shared parent report rather than on the accessor.
+        storage_owner = instance._parent
+
+        bound_args = decorator.signature.bind(instance, *args, **kwargs)
+        bound_args.apply_defaults()
+
+        args_dict = dict(bound_args.arguments)
+        args_dict.pop("self", None)
+
+        # Identical calls overwrite the same entry so ``.calls`` reports unique
+        # parameter combinations rather than every invocation.
+        h = joblib.hash(args_dict)
+
+        result = decorator.function(instance, *args, **kwargs)
+
+        calls = storage_owner.__dict__.setdefault(decorator.attr_name, {})
+        calls[h] = args_dict
+
+        return result
+
+    @property
+    def calls(self):
+        storage_owner = self._instance._parent
+        calls = storage_owner.__dict__.get(self._decorator.attr_name, {})
+        return list(calls.values())

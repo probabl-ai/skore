@@ -118,6 +118,50 @@ def test_cache_display_stored(regression_train_test_split):
     assert cached_display is display
 
 
+def test_calls_on_permutation_importance(regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    method = report.inspection.permutation_importance
+
+    method()
+    assert len(method.calls) == 1
+    assert method.calls == [
+        {
+            "data_source": "test",
+            "at_step": 0,
+            "metric": None,
+            "n_repeats": 5,
+            "max_samples": 1.0,
+            "n_jobs": None,
+            "seed": None,
+        }
+    ]
+
+    # same calls should be deduplicated:
+    method()
+    assert len(method.calls) == 1
+    # "test" is the default, so this is not a different call:
+    method(data_source="test")
+    assert len(method.calls) == 1
+
+    method(data_source="train")
+    assert len(method.calls) == 2
+
+    # check that re-accessing from the accessor returns the same calls:
+    assert method.calls == report.inspection.permutation_importance.calls
+
+    # check an error is not recorded:
+    with pytest.raises(ValueError):
+        method(data_source="invalid")
+    assert len(method.calls) == 2
+
+
 @pytest.mark.parametrize(
     "param_name, first_value, second_value, use_pipeline",
     [

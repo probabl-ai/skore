@@ -3,7 +3,7 @@ from __future__ import annotations
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor
+from skore._sklearn._base import _BaseAccessor, record_calls
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
 from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDisplay
@@ -106,6 +106,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report_type=self._parent._report_type,
         )
 
+    @record_calls
     def permutation_importance(
         self,
         *,
