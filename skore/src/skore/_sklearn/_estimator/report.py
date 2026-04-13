@@ -251,9 +251,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._predictions = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
 
-        self._metric_registry = MetricRegistry(self)
-
         self._ml_task = _find_ml_task(self.y_test, estimator=self._estimator)
+        self._metric_registry = MetricRegistry(self)
 
         if pos_label is None:
             return
