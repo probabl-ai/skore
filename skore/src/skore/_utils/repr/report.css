@@ -12,7 +12,6 @@
 
 .report-hint-note::before {
     content: "Note";
-    display: block;
     font-style: normal;
     font-weight: 600;
     font-size: 9px;
@@ -21,6 +20,7 @@
     color: var(--color-orange);
     opacity: 0.9;
     margin-bottom: 0.35em;
+    margin-right: 1em;
 }
 
 .report-hint-note-link {
@@ -48,8 +48,23 @@
     white-space: nowrap;
 }
 
+.report-inline-right {
+    float: right;
+    margin-top: -1.6em;
+}
+
 .report-disclosure {
     color: var(--color-text);
+}
+
+details.report-disclosure {
+    display: inline-flex;
+    padding-right: 1.5em;
+}
+
+details.report-disclosure:open {
+    display: block;
+    padding-right: 0ex;
 }
 
 .report-disclosure > summary {
