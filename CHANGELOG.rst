@@ -54,8 +54,7 @@ Added
   :class:`~skore.CrossValidationReport` and :class:`~skore.ComparisonReport`) now
   accept scikit-learn metric names without the `neg_` prefix. For example,
   ``"mean_squared_error"`` can be passed instead of ``"neg_mean_squared_error"``
-  and is resolved automatically.
-
+  and is resolved automatically. See :pr:`2735` by :user:`direkkakkar319-ops`.
 - Reports now expose a `report.diagnose()` method that automatically
   detects common modeling issues such as overfitting and underfitting.
 
