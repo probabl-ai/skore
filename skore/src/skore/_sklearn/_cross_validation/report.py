@@ -655,8 +655,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
             if "aggregate" in method_params and "aggregate" not in kwargs:
                 kwargs_list = [
-                    kwargs,  # default to aggregate=("mean", "std")
-                    kwargs | {"aggregate": None},
+                    kwargs | {"aggregate": "mean"},
+                    kwargs | {"aggregate": "std"},
                 ]
             else:
                 kwargs_list = [kwargs]
