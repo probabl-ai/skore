@@ -57,6 +57,10 @@ Added
   and is resolved automatically. See :pr:`2735` by :user:`direkkakkar319-ops`.
 - Reports now expose a `report.diagnose()` method that automatically
   detects common modeling issues such as overfitting and underfitting.
+- :class:`~skore.EstimatorReport` and :class:`~skore.CrossValidationReport` now
+  expose :meth:`get_state` / :meth:`from_state` helpers to support more robust
+  serialization and deserialization across skore versions than plain pickling.
+  See :pr:`2741` by :user:`cakedev0`.
 
 Removed
 -------
