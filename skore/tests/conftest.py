@@ -539,6 +539,52 @@ def comparison_cross_validation_reports_regression(
 
 
 @pytest.fixture
+def estimator_reports_multioutput_regression(regression_multioutput_train_test_split):
+    X_train, X_test, y_train, y_test = regression_multioutput_train_test_split
+
+    estimator_report_1 = EstimatorReport(
+        DummyRegressor(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    estimator_report_2 = EstimatorReport(
+        DummyRegressor(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    return estimator_report_1, estimator_report_2
+
+
+@pytest.fixture
+def comparison_estimator_reports_multioutput_regression(
+    estimator_reports_multioutput_regression,
+):
+    estimator_report_1, estimator_report_2 = estimator_reports_multioutput_regression
+    return ComparisonReport([estimator_report_1, estimator_report_2])
+
+
+@pytest.fixture
+def cross_validation_reports_multioutput_regression(regression_multioutput_data):
+    X, y = regression_multioutput_data
+    cv_report_1 = CrossValidationReport(DummyRegressor(), X, y, splitter=2)
+    cv_report_2 = CrossValidationReport(DummyRegressor(), X, y, splitter=2)
+    return cv_report_1, cv_report_2
+
+
+@pytest.fixture
+def comparison_cross_validation_reports_multioutput_regression(
+    cross_validation_reports_multioutput_regression,
+):
+    cv_report_1, cv_report_2 = cross_validation_reports_multioutput_regression
+    return ComparisonReport([cv_report_1, cv_report_2])
+
+
+@pytest.fixture
 def linear_regression_comparison_report(linear_regression_with_train_test):
     """Fixture providing a ComparisonReport with two linear regression estimators."""
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test

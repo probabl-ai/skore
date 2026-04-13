@@ -721,7 +721,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     data_source="train" if data_source == "train" else "test"
                 )
                 .frame()
-                ._repr_html_()
+                .reset_index()
+                .to_html(index=False)
             )
         try:
             estimator_html = self.estimator_._repr_html_()
@@ -768,6 +769,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "container_id": container_id,
                 "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
+                "report_title": f"Report for {self.estimator_name_}",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
