@@ -34,6 +34,9 @@ if TYPE_CHECKING:
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
 
 
+_STATE_VERSION = 1
+
+
 def _generate_estimator_report(
     estimator: BaseEstimator,
     X: ArrayLike,
@@ -272,6 +275,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             state.pop("data")
 
         return {
+            "version": _STATE_VERSION,
             "metadata": self._metadata,
             "initialized_with_data_op": self._initialized_with_data_op,
             "raw_estimator": self._raw_estimator,
@@ -286,6 +290,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     @classmethod
     def from_state(cls, state: dict[str, Any]) -> CrossValidationReport:
         """Rebuild a report from :meth:`get_state` output."""
+        version = state.get("version", 0)
+        if version != _STATE_VERSION:
+            # in the future, we could support some BW compatibility instead of crashing
+            raise ValueError(f"Unexpected state version: {version!r}")
+
         report = cls.__new__(cls)
 
         report._metadata = state["metadata"]

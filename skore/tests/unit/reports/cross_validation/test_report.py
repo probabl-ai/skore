@@ -349,3 +349,14 @@ def test_get_from_state_with_complex_data_op():
     preds = restored.get_predictions(data_source="test")
     for pred, expected_pred in zip(preds, expected_preds, strict=True):
         np.testing.assert_array_equal(pred, expected_pred)
+
+
+def test_from_state_rejects_unknown_version(logistic_binary_classification_data):
+    estimator, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    state = report.get_state() | {"version": 999}
+
+    with pytest.raises(
+        ValueError, match="Unsupported CrossValidationReport state version"
+    ):
+        CrossValidationReport.from_state(state)

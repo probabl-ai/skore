@@ -41,6 +41,9 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 
 
+_STATE_VERSION = 1
+
+
 def _check_estimator_and_data(
     estimator, X_train, y_train, X_test, y_test, train_data, test_data
 ):
@@ -286,6 +289,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 cached_results[key] = val
 
         return {
+            "version": _STATE_VERSION,
             # -------- CORE STATE ---------
             "metadata": self._metadata,
             "initialized_with_data_op": self._initialized_with_data_op,
@@ -309,6 +313,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     @classmethod
     def from_state(cls, state: dict[str, Any]) -> EstimatorReport:
         """Rebuild a report from :meth:`get_state` output."""
+        version = state.get("version")
+        if version != _STATE_VERSION:
+            # in the future, we could support some BW compatibility instead of crashing
+            raise ValueError(f"Unexpected state version: {version!r}")
+
         report = cls.__new__(cls)
 
         report._metadata = state["metadata"]

@@ -495,3 +495,12 @@ def test_from_state_bypasses_init_and_restores_state(
 
     # check new metrics can be computed:
     report.metrics.roc_auc()
+
+
+def test_from_state_rejects_unknown_version(logistic_binary_classification_with_test):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    state = report.get_state() | {"version": 999}
+
+    with pytest.raises(ValueError, match="Unsupported EstimatorReport state version"):
+        EstimatorReport.from_state(state)
