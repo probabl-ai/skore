@@ -122,59 +122,39 @@ class TestProject:
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
         assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
-    def test_pickle_estimator_report(self, regression):
-        # Pickle the report once, without any value in the cache
-        assert not regression._cache
-        hash1, pickle1 = Project.pickle(regression)
-        assert not regression._cache
+    def test_put_estimator_report_reuses_artifact_id(self, tmp_path, regression):
+        project = Project("<project>", workspace=tmp_path)
 
-        # Pickle the same report, but with values in the cache
+        project.put("<key-1>", regression)
         regression.cache_predictions()
+        project.put("<key-2>", regression)
 
-        assert regression._cache
-        hash2, pickle2 = Project.pickle(regression)
-        assert regression._cache
+        # Ensure only one artifact was persisted:
+        assert len(project._Project__artifacts_storage) == 1
+        # but two reports:
+        assert len(project.summarize()) == 2
 
-        # Make sure that the two pickles on the report are not affected by the cache
-        assert (hash1, pickle1) == (hash2, pickle2)
+        # Make sure the pickle is not broken:
+        report = project.get(str(regression.id))
+        report.cache_predictions()
 
-        # Make sure that pickles are not broken
-        with BytesIO(pickle1) as stream:
-            report1 = joblib.load(stream)
+    def test_put_cross_validation_report_reuses_artifact_id(
+        self, tmp_path, cv_regression
+    ):
+        project = Project("<project>", workspace=tmp_path)
 
-        with BytesIO(pickle2) as stream:
-            report2 = joblib.load(stream)
-
-        report1.cache_predictions()
-        report2.cache_predictions()
-
-    def test_pickle_cross_validation_report(self, cv_regression):
-        reports = cv_regression.estimator_reports_
-
-        # Pickle the report once, without any value in the cache
-        assert not any(report._cache for report in reports)
-        hash1, pickle1 = Project.pickle(cv_regression)
-        assert not any(report._cache for report in reports)
-
-        # Pickle the same report, but with values in the cache
+        project.put("<key-1>", cv_regression)
         cv_regression.cache_predictions()
+        project.put("<key-2>", cv_regression)
 
-        assert any(report._cache for report in reports)
-        hash2, pickle2 = Project.pickle(cv_regression)
-        assert any(report._cache for report in reports)
+        # Ensure only one artifact was persisted:
+        assert len(project._Project__artifacts_storage) == 1
+        # but two reports:
+        assert len(project.summarize()) == 2
 
-        # Make sure that the two pickles on the report are not affected by the cache
-        assert (hash1, pickle1) == (hash2, pickle2)
-
-        # Make sure that pickles are not broken
-        with BytesIO(pickle1) as stream:
-            report1 = joblib.load(stream)
-
-        with BytesIO(pickle2) as stream:
-            report2 = joblib.load(stream)
-
-        report1.cache_predictions()
-        report2.cache_predictions()
+        # Make sure the pickle is not broken:
+        report = project.get(str(cv_regression.id))
+        report.cache_predictions()
 
     def test_init_with_envar(self, monkeypatch, tmp_path):
         monkeypatch.setenv("SKORE_WORKSPACE", str(tmp_path))
@@ -236,7 +216,7 @@ class TestProject:
             {
                 "project_name": "<project>",
                 "key": "<key>",
-                "artifact_id": next(project._Project__artifacts_storage.keys()),
+                "artifact_id": str(regression.id),
                 "date": nowstr,
                 "learner": "Ridge",
                 "dataset": joblib.hash(regression.y_test),
@@ -276,7 +256,7 @@ class TestProject:
             {
                 "project_name": "<project>",
                 "key": "<key>",
-                "artifact_id": next(project._Project__artifacts_storage.keys()),
+                "artifact_id": str(cv_regression.id),
                 "date": nowstr,
                 "learner": "Ridge",
                 "dataset": joblib.hash(cv_regression.y),
@@ -301,7 +281,7 @@ class TestProject:
         project.put("<key>", regression)
         project.put("<key>", regression)
 
-        report = project.get(next(project._Project__artifacts_storage.keys()))
+        report = project.get(str(regression.id))
 
         assert len(project._Project__artifacts_storage) == 1
         assert len(project._Project__metadata_storage) == 2
@@ -332,13 +312,11 @@ class TestProject:
         project.put("<key1>", regression)
         project.put("<key2>", cv_regression)
 
-        artifact_ids = list(project._Project__artifacts_storage.keys())
-
         assert len(project._Project__artifacts_storage) == 2
         assert len(project._Project__metadata_storage) == 3
         assert project.summarize() == [
             {
-                "id": artifact_ids[0],
+                "id": str(regression.id),
                 "key": "<key1>",
                 "date": Datetime.nows_isoformat[0],
                 "learner": "Ridge",
@@ -357,7 +335,7 @@ class TestProject:
                 "predict_time_mean": None,
             },
             {
-                "id": artifact_ids[0],
+                "id": str(regression.id),
                 "key": "<key1>",
                 "date": Datetime.nows_isoformat[1],
                 "learner": "Ridge",
@@ -376,7 +354,7 @@ class TestProject:
                 "predict_time_mean": None,
             },
             {
-                "id": artifact_ids[1],
+                "id": str(cv_regression.id),
                 "key": "<key2>",
                 "date": Datetime.nows_isoformat[2],
                 "learner": "Ridge",

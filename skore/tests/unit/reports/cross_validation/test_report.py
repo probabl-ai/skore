@@ -6,7 +6,7 @@ import skrub
 from sklearn.base import clone
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification
-from sklearn.dummy import DummyClassifier
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -274,25 +274,60 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
     assert est_report_with_test.pos_label == cv_report.pos_label
 
 
-@pytest.mark.parametrize("splitter", [2, 3])
-@pytest.mark.parametrize("bad_estimator", [False, True])
-def test_report_repr_html(splitter, bad_estimator):
-    X, y = make_classification(n_classes=2, random_state=42)
+class _DummyClassifierBadRepr(DummyClassifier):
+    def _repr_html_(self):
+        raise TypeError("error")
 
-    class DummyClassifierBadRepr(DummyClassifier):
-        def _repr_html_(self):
-            raise TypeError("error")
 
-    estimator = DummyClassifierBadRepr() if bad_estimator else DummyClassifier()
-    report = CrossValidationReport(estimator, X, y, splitter=splitter)
-    html_out = report._repr_html_()
+def _assert_cross_validation_report_repr_html(
+    html_out: str, expected_estimator_name: str
+) -> None:
     assert "skore-cross-validation-report-" in html_out
-    assert "DummyClassifier" in html_out
+    assert expected_estimator_name in html_out
     assert "skoreInitEstimatorReport" in html_out
     assert "report-hint-note" in html_out
     assert "docs.skore.probabl.ai" in html_out
-    assert "report-disclosure-title" in html_out
+    assert "report-tabset" in html_out
+    assert "Report for" in html_out
     assert "CrossValidationReport.metrics" in html_out
+
+
+def test_report_repr_html_binary_classification():
+    X, y = make_classification(n_classes=2, random_state=42)
+    estimator = DummyClassifier()
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    _assert_cross_validation_report_repr_html(report._repr_html_(), "DummyClassifier")
+
+
+def test_report_repr_html_multiclass_classification(multiclass_classification_data):
+    X, y = multiclass_classification_data
+    estimator = DummyClassifier(strategy="uniform", random_state=0)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    _assert_cross_validation_report_repr_html(report._repr_html_(), "DummyClassifier")
+
+
+def test_report_repr_html_regression(regression_data):
+    X, y = regression_data
+    estimator = DummyRegressor()
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    _assert_cross_validation_report_repr_html(report._repr_html_(), "DummyRegressor")
+
+
+def test_report_repr_html_multioutput_regression(regression_multioutput_data):
+    X, y = regression_multioutput_data
+    estimator = DummyRegressor()
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    _assert_cross_validation_report_repr_html(report._repr_html_(), "DummyRegressor")
+
+
+@pytest.mark.parametrize("splitter", [2, 3])
+def test_report_repr_html_sklearn_estimator_bad_html_repr(splitter):
+    """HTML repr must still work when the underlying estimator rejects
+    ``_repr_html_``."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    estimator = _DummyClassifierBadRepr()
+    report = CrossValidationReport(estimator, X, y, splitter=splitter)
+    _assert_cross_validation_report_repr_html(report._repr_html_(), "DummyClassifier")
 
 
 def test_report_with_data_op():
