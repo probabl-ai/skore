@@ -25,15 +25,17 @@ class TestConfusionMatrixDisplay:
         display = report.metrics.confusion_matrix()
         assert isinstance(display, ConfusionMatrixDisplay)
 
-        assert hasattr(display, "confusion_matrix")
+        assert hasattr(display, "confusion_matrix_predict")
+        assert hasattr(display, "confusion_matrix_thresholded")
         assert hasattr(display, "display_labels")
         assert hasattr(display, "report_type")
         assert hasattr(display, "ml_task")
         assert hasattr(display, "data_source")
-        assert hasattr(display, "pos_label")
+        assert hasattr(display, "report_pos_label")
         assert hasattr(display, "response_method")
 
         assert hasattr(display, "thresholds")
+        assert hasattr(display, "labels")
 
         fig = display.plot()
         assert fig is not None
@@ -53,13 +55,12 @@ class TestConfusionMatrixDisplay:
 
         frame = display.frame()
         assert isinstance(frame, pd.DataFrame)
-        assert frame.shape == (n_classes * n_classes * n_splits * n_reports, 7)
+        assert frame.shape == (n_classes * n_classes * n_splits * n_reports, 6)
 
         expected_columns = [
             "true_label",
             "predicted_label",
             "value",
-            "threshold",
             "split",
             "estimator",
             "data_source",
@@ -72,34 +73,31 @@ class TestConfusionMatrixDisplay:
         )
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_confusion_matrix_structure(self, fixture_prefix, task, request):
-        """Check the structure of the confusion_matrix attribute."""
+    def test_confusion_matrix_predict_structure(self, fixture_prefix, task, request):
+        """Check the structure of the confusion_matrix_predict attribute."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
 
-        assert isinstance(display.confusion_matrix, pd.DataFrame)
-        assert display.confusion_matrix.columns.tolist() == [
+        assert isinstance(display.confusion_matrix_predict, pd.DataFrame)
+        assert display.confusion_matrix_predict.columns.tolist() == [
             "true_label",
             "predicted_label",
             "count",
             "normalized_by_true",
             "normalized_by_pred",
             "normalized_by_all",
-            "threshold",
             "split",
             "estimator",
             "data_source",
         ]
         n_classes = len(display.display_labels)
-        expected_rows = 0
-        for _, group in display.confusion_matrix.groupby(
-            ["split", "estimator"], dropna=False
-        ):
-            n_t = max(1, group["threshold"].nunique())
-            expected_rows += n_classes * n_classes * n_t
-        assert display.confusion_matrix.shape[0] == expected_rows
+        n_splits = 2 if "cross_validation" in fixture_prefix else 1
+        n_reports = 2 if "comparison" in fixture_prefix else 1
+        assert display.confusion_matrix_predict.shape[0] == (
+            n_classes * n_classes * n_splits * n_reports
+        )
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_facet_grid_kwargs(self, pyplot, fixture_prefix, task, request):
@@ -173,30 +171,19 @@ class TestConfusionMatrixDisplay:
             report = report[0]
         display = report.metrics.confusion_matrix()
 
+        assert display.confusion_matrix_thresholded is not None
         assert display.thresholds is not None
         assert len(display.thresholds) > 0
-        assert "threshold" in display.confusion_matrix.columns
-
-        figure, _ = request.getfixturevalue(
-            f"{fixture_prefix}_binary_classification_figure_axes"
-        )
-        assert "threshold" in figure.get_suptitle().lower()
 
     def test_thresholds_in_multiclass(self, pyplot, fixture_prefix, request):
-        """Check that the absence of thresholds in handled properly in multiclass."""
+        """Check that the absence of thresholds is handled properly in multiclass."""
         report = request.getfixturevalue(f"{fixture_prefix}_multiclass_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
 
-        assert len(display.thresholds) == 1
-        assert np.isnan(display.thresholds[0])
-
-        err_msg = "Threshold support is only available for binary classification."
-        with pytest.raises(ValueError, match=err_msg):
-            display.frame(threshold_value=0.5)
-        with pytest.raises(ValueError, match=err_msg):
-            display.plot(threshold_value=0.5)
+        assert display.confusion_matrix_thresholded is not None
+        assert len(display.thresholds) > 0
 
     def test_threshold_values_are_sorted(self, fixture_prefix, request):
         """Check that thresholds are sorted in ascending order."""
@@ -209,15 +196,15 @@ class TestConfusionMatrixDisplay:
 
     def test_threshold_values_are_unique(self, fixture_prefix, request):
         """Check that thresholds contains unique values."""
-        report = request.getfixturevalue(f"{fixture_prefix}_multiclass_classification")
+        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
 
         assert len(display.thresholds) == len(np.unique(display.thresholds))
 
-    def test_plot_multiclass_no_threshold_in_title(self, fixture_prefix, request):
-        """Check that multiclass classification does not show threshold in title."""
+    def test_plot_no_threshold_in_title_by_default(self, fixture_prefix, request):
+        """Check that default plot (predict-based) does not show threshold in title."""
         report = request.getfixturevalue(f"{fixture_prefix}_multiclass_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -234,34 +221,44 @@ class TestConfusionMatrixDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
-        frame = display.frame(threshold_value=1.1)
-        cm = display.confusion_matrix
+        label = display.labels[-1]
+        frame = display.frame(threshold_value=1.1, label=label)
+        frame_all = display.frame(threshold_value="all", label=label)
 
-        for (_est, _split), group in frame.groupby(["estimator", "split"]):
+        for (_est, _split), group in frame.groupby(
+            ["estimator", "split"], observed=True
+        ):
             assert group["threshold"].nunique() == 1
-            mask_est = cm["estimator"] == _est
-            mask_split = (
-                cm["split"].isna() if pd.isna(_split) else cm["split"] == _split
-            )
-            full = cm[mask_est & mask_split]
-            assert group["threshold"].iloc[0] == full["threshold"].max()
+            group_all = frame_all
+            if _est is not None and not (isinstance(_est, float) and np.isnan(_est)):
+                group_all = group_all.query(f"estimator == '{_est}'")
+            if _split is not None and not (
+                isinstance(_split, float) and np.isnan(_split)
+            ):
+                group_all = group_all.query(f"split == {_split}")
+            assert group["threshold"].iloc[0] == group_all["threshold"].max()
 
     def test_threshold_lower_than_min(self, fixture_prefix, request):
         report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
-        frame = display.frame(threshold_value=-0.1)
-        cm = display.confusion_matrix
+        label = display.labels[-1]
+        frame = display.frame(threshold_value=-0.1, label=label)
+        frame_all = display.frame(threshold_value="all", label=label)
 
-        for (_est, _split), group in frame.groupby(["estimator", "split"]):
+        for (_est, _split), group in frame.groupby(
+            ["estimator", "split"], observed=True
+        ):
             assert group["threshold"].nunique() == 1
-            mask_est = cm["estimator"] == _est
-            mask_split = (
-                cm["split"].isna() if pd.isna(_split) else cm["split"] == _split
-            )
-            full = cm[mask_est & mask_split]
-            assert group["threshold"].iloc[0] == full["threshold"].min()
+            group_all = frame_all
+            if _est is not None and not (isinstance(_est, float) and np.isnan(_est)):
+                group_all = group_all.query(f"estimator == '{_est}'")
+            if _split is not None and not (
+                isinstance(_split, float) and np.isnan(_split)
+            ):
+                group_all = group_all.query(f"split == {_split}")
+            assert group["threshold"].iloc[0] == group_all["threshold"].min()
 
     def test_frame_all_returns_all_thresholds_binary(self, fixture_prefix, request):
         """Check that frame(threshold_value="all") returns all thresholds for binary."""
@@ -269,15 +266,12 @@ class TestConfusionMatrixDisplay:
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
-        # Binary classification has real thresholds (no nan)
-        n_thresholds = int(np.sum(~np.isnan(display.thresholds)))
 
         frame_all = display.frame(threshold_value="all")
-        frame_default = display.frame(threshold_value="default")
+        frame_at_threshold = display.frame(threshold_value=0.5)
 
-        assert frame_all["threshold"].nunique() == n_thresholds
-        assert frame_all.shape[0] == len(display.confusion_matrix)
-        assert frame_all.shape[0] > frame_default.shape[0]
+        assert frame_all["threshold"].nunique() > 1
+        assert frame_all.shape[0] > frame_at_threshold.shape[0]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_normalization(self, pyplot, fixture_prefix, task, request):

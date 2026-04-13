@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
 
 from skore import EstimatorReport
 
@@ -58,15 +57,13 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
         assert isinstance(axes[0], mpl.axes.Axes)
 
 
-@pytest.mark.parametrize(
-    "estimator, expected_default_threshold",
-    [(SVC(probability=False), 0), (LogisticRegression(), 0.5)],
-)
-def test_frame_default_threshold(
-    binary_classification_train_test_split, estimator, expected_default_threshold
+def test_frame_default_returns_predict_based(
+    forest_binary_classification_with_train_test,
 ):
-    """Check that frame() uses the right default threshold."""
-    X_train, X_test, y_train, y_test = binary_classification_train_test_split
+    """Check that frame() returns the predict-based n x n matrix by default."""
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
@@ -75,12 +72,8 @@ def test_frame_default_threshold(
     frame = display.frame()
     assert isinstance(frame, pd.DataFrame)
     n_classes = len(display.display_labels)
-    assert frame.shape == (n_classes * n_classes, 7)
-    assert frame["threshold"].nunique() == 1
-    closest_threshold = display.thresholds[
-        np.argmin(abs(display.thresholds - expected_default_threshold))
-    ]
-    assert frame["threshold"].iloc[0] == closest_threshold
+    assert frame.shape == (n_classes * n_classes, 6)
+    assert "threshold" not in frame.columns
 
 
 def test_threshold_closest_match(pyplot, forest_binary_classification_with_train_test):
@@ -93,7 +86,6 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
     )
     display = report.metrics.confusion_matrix()
 
-    # Create a threshold that is not in the list to test the closest match
     middle_index = len(display.thresholds) // 2
     threshold = (
         display.thresholds[middle_index] + display.thresholds[middle_index + 1]
@@ -102,23 +94,21 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
 
     fig = display.plot(threshold_value=threshold)
     ax = fig.axes[0]
-    expected_title = (
-        f"Confusion Matrix\nDecision threshold: {threshold:.2f}"
-        + "\nData source: Test set"
-    )
-    assert fig.get_suptitle() == expected_title
+    assert f"Decision threshold: {threshold:.2f}" in fig.get_suptitle()
 
     np.testing.assert_allclose(
         ax.collections[0].get_array(),
-        display.frame(normalize=None, threshold_value=threshold)
+        display.frame(
+            normalize=None, threshold_value=threshold, label=display.labels[-1]
+        )
         .pivot(index="true_label", columns="predicted_label", values="value")
-        .reindex(index=display.display_labels, columns=display.display_labels)
+        .reindex(index=["0", "1"], columns=["0", "1"])
         .values,
     )
 
 
 def test_pos_label(pyplot, forest_binary_classification_with_train_test):
-    """Check that the pos_label parameter works correctly."""
+    """Check that the report_pos_label parameter works correctly."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
