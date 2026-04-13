@@ -9,8 +9,8 @@ Skore has three types of reports: :class:`~skore.EstimatorReport`
 (single train-test evaluation), :class:`~skore.CrossValidationReport`
 (cross-validation), and :class:`~skore.ComparisonReport` (comparing several
 estimators). All three are created via :func:`~skore.evaluate` by passing an
-estimator (or a list of estimators for comparison), the data ``X`` and ``y``,
-and a ``splitter`` that controls the evaluation strategy.
+estimator (or a list or dict of named estimators for comparison), the data ``X``
+and ``y``, and a ``splitter`` that controls the evaluation strategy.
 
 This example showcases the **unified API** shared by these reports: they expose
 the same accessors (``data``, ``metrics``, ``inspection``). Methods that
@@ -26,7 +26,7 @@ produce a visualization return a **Display** object with ``plot()``, ``frame()``
 # ``splitter`` argument: an :class:`~skore.EstimatorReport` when ``splitter`` is a
 # float or ``"prefit"``, a :class:`~skore.CrossValidationReport` when ``splitter`` is
 # an integer or a scikit-learn cross-validator (e.g. ``KFold``, ``StratifiedKFold``),
-# or a :class:`~skore.ComparisonReport` when passing a list of estimators.
+# or a :class:`~skore.ComparisonReport` when passing a list or dict of estimators.
 # All three respect the same accessor layout where applicable:
 #
 # - **data**: dataset analysis
@@ -131,7 +131,7 @@ cv_report.inspection.coefficients().plot(select_k=10, sorting_order="descending"
 # Third report type: comparison
 # =============================
 #
-# Passing a **list of estimators** to :func:`~skore.evaluate` returns a
+# Passing a **list or dict of estimators** to :func:`~skore.evaluate` returns a
 # :class:`~skore.ComparisonReport`. It exposes the same ``metrics`` and
 # ``inspection`` accessors (no ``data`` accessor, since compared models can
 # use different datasets). The display API is unchanged.
