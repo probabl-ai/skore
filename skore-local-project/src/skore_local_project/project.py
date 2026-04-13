@@ -170,23 +170,6 @@ class Project:
         """The workspace of the project."""
         return self.__workspace
 
-    @staticmethod
-    def pickle(report: EstimatorReport | CrossValidationReport) -> tuple[str, bytes]:
-        """
-        Pickle ``report``, return the bytes and the corresponding artifact id.
-
-        Notes
-        -----
-        Artifact identity is derived from the report id, not from the serialized bytes.
-        """
-        artifact_id = str(report.id)
-
-        with io.BytesIO() as stream:
-            joblib.dump(report, stream)
-            pickle_bytes = stream.getvalue()
-
-        return artifact_id, pickle_bytes
-
     @ensure_project_is_not_deleted
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
@@ -224,10 +207,12 @@ class Project:
                 f"ort` (found '{type(report)}')"
             )
 
-        artifact_id, pickle_bytes = Project.pickle(report)
+        artifact_id = str(report.id)
 
         if artifact_id not in self.__artifacts_storage:
-            self.__artifacts_storage[artifact_id] = pickle_bytes
+            with io.BytesIO() as stream:
+                joblib.dump(report, stream)
+                self.__artifacts_storage[artifact_id] = stream.getvalue()
 
         self.__metadata_storage[uuid4().hex] = dict(
             Metadata(

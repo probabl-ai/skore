@@ -122,75 +122,39 @@ class TestProject:
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
         assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
-    def test_pickle_estimator_report(self, regression):
-        regression.clear_cache()
+    def test_put_estimator_report_reuses_artifact_id(self, tmp_path, regression):
+        project = Project("<project>", workspace=tmp_path)
 
-        # Pickle the report once, without any value in the cache
-        assert not regression._cache
-        artifact_id1, pickle1 = Project.pickle(regression)
-        assert not regression._cache
-
-        # Pickle the same report, but with values in the cache
+        project.put("<key-1>", regression)
         regression.cache_predictions()
+        project.put("<key-2>", regression)
 
-        assert regression._cache
-        stored_predictions = getattr(regression, "_predictions", None)
-        if stored_predictions is not None:
-            stored_predictions = stored_predictions.copy()
-        artifact_id2, pickle2 = Project.pickle(regression)
-        assert regression._cache
-        assert getattr(regression, "_predictions", None) == stored_predictions
+        # Ensure only one artifact was persisted:
+        assert len(project._Project__artifacts_storage) == 1
+        # but two reports:
+        assert len(project.summarize()) == 2
 
-        assert artifact_id1 == artifact_id2 == str(regression.id)
-        assert pickle1 != pickle2
+        # Make sure the pickle is not broken:
+        report = project.get(str(regression.id))
+        report.cache_predictions()
 
-        # Make sure that pickles are not broken
-        with BytesIO(pickle1) as stream:
-            report1 = joblib.load(stream)
+    def test_put_cross_validation_report_reuses_artifact_id(
+        self, tmp_path, cv_regression
+    ):
+        project = Project("<project>", workspace=tmp_path)
 
-        with BytesIO(pickle2) as stream:
-            report2 = joblib.load(stream)
-
-        report1.cache_predictions()
-        report2.cache_predictions()
-
-    def test_pickle_cross_validation_report(self, cv_regression):
-        cv_regression.clear_cache()
-        reports = cv_regression.estimator_reports_
-
-        # Pickle the report once, without any value in the cache
-        assert not any(report._cache for report in reports)
-        artifact_id1, pickle1 = Project.pickle(cv_regression)
-        assert not any(report._cache for report in reports)
-
-        # Pickle the same report, but with values in the cache
+        project.put("<key-1>", cv_regression)
         cv_regression.cache_predictions()
+        project.put("<key-2>", cv_regression)
 
-        assert any(report._cache for report in reports)
-        stored_predictions = []
-        for report in reports:
-            predictions = getattr(report, "_predictions", None)
-            stored_predictions.append(
-                None if predictions is None else predictions.copy()
-            )
-        artifact_id2, pickle2 = Project.pickle(cv_regression)
-        assert any(report._cache for report in reports)
-        assert [
-            getattr(report, "_predictions", None) for report in reports
-        ] == stored_predictions
+        # Ensure only one artifact was persisted:
+        assert len(project._Project__artifacts_storage) == 1
+        # but two reports:
+        assert len(project.summarize()) == 2
 
-        assert artifact_id1 == artifact_id2 == str(cv_regression.id)
-        assert pickle1 != pickle2
-
-        # Make sure that pickles are not broken
-        with BytesIO(pickle1) as stream:
-            report1 = joblib.load(stream)
-
-        with BytesIO(pickle2) as stream:
-            report2 = joblib.load(stream)
-
-        report1.cache_predictions()
-        report2.cache_predictions()
+        # Make sure the pickle is not broken:
+        report = project.get(str(cv_regression.id))
+        report.cache_predictions()
 
     def test_init_with_envar(self, monkeypatch, tmp_path):
         monkeypatch.setenv("SKORE_WORKSPACE", str(tmp_path))
