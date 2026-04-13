@@ -1,62 +1,13 @@
+{% set report_tabs = [
+    {"label": "Results", "help_variant": "accessor", "help_url": metrics_accessor_doc_url, "accessor_name": "metrics"},
+    {"label": "Diagnostic", "help_variant": "accessor", "help_url": diagnose_documentation_url, "accessor_name": "diagnose"},
+    {"label": "Estimator", "help_variant": "accessor", "help_url": inspection_accessor_doc_url, "accessor_name": "inspection"},
+    {"label": "Data", "help_variant": "comparison_data"},
+] %}
 <div class="container">
     <header class="title">{{ report_title | e }}</header>
     <div class="report-tabset">
-        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-0" class="report-tab-input" checked>
-        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-1" class="report-tab-input">
-        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-2" class="report-tab-input">
-        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-3" class="report-tab-input">
-        <div class="report-tablist-row">
-            <div class="report-tablist" role="tablist">
-                <div class="report-tab-item">
-                    <label class="report-tab-label" for="{{ container_id }}-report-tab-0" role="presentation">Results</label>
-                </div>
-                <div class="report-tab-item">
-                    <label class="report-tab-label" for="{{ container_id }}-report-tab-1" role="presentation">Diagnostic</label>
-                </div>
-                <div class="report-tab-item">
-                    <label class="report-tab-label" for="{{ container_id }}-report-tab-2" role="presentation">Estimator</label>
-                </div>
-                <div class="report-tab-item">
-                    <label class="report-tab-label" for="{{ container_id }}-report-tab-3" role="presentation">Data</label>
-                </div>
-            </div>
-            <div class="report-tablist-help">
-                <button type="button" class="report-tab-help report-tab-help-global" aria-label="Help for the selected tab">
-                    ?
-                    <span class="tooltip-text report-tab-help-tip report-tab-help-tip-0">
-                        Investigate more with
-                        <a
-                            href="{{ metrics_accessor_doc_url }}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="report-hint-note-link"
-                        >{{ report_class_name }}.metrics</a>.
-                    </span>
-                    <span class="tooltip-text report-tab-help-tip report-tab-help-tip-1">
-                        Investigate more with
-                        <a
-                            href="{{ diagnose_documentation_url }}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="report-hint-note-link"
-                        >{{ report_class_name }}.diagnose</a>.
-                    </span>
-                    <span class="tooltip-text report-tab-help-tip report-tab-help-tip-2">
-                        Investigate more with
-                        <a
-                            href="{{ inspection_accessor_doc_url }}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="report-hint-note-link"
-                        >{{ report_class_name }}.inspection</a>.
-                    </span>
-                    <span class="tooltip-text report-tab-help-tip report-tab-help-tip-3">
-                        Explore the data for each compared report via that report's
-                        <code>.data</code> accessor.
-                    </span>
-                </button>
-            </div>
-        </div>
+        {% include "_report_tabset_chrome.html.j2" %}
         <div class="report-tab-panels">
             <div class="report-tab-panel">
                 <div class="report-section report-metrics">{{ metrics_summary | safe }}</div>
