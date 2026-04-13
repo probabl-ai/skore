@@ -826,7 +826,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
-        prediction_pos_label=None,
     ) -> (
         RocCurveDisplay
         | PrecisionRecallCurveDisplay
@@ -887,14 +886,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if cache_value is not None:
             return cache_value
 
+        data_source = cast(DataSource, data_source)
         _, y_true = self._parent._get_data_and_y_true(data_source=data_source)
-        if prediction_pos_label is None:
-            prediction_pos_label = self._parent.pos_label
 
         y_pred = self._parent._get_predictions(
-            data_source=data_source,
-            response_method=response_method,
-            pos_label=prediction_pos_label,
+            data_source=data_source, response_method=response_method
         )
 
         display = display_class._compute_data_for_display(
@@ -961,7 +957,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": self._parent.pos_label}
+        display_kwargs = {"report_pos_label": self._parent.pos_label}
         display = cast(
             RocCurveDisplay,
             self._get_display(
@@ -1013,7 +1009,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": self._parent.pos_label}
+        display_kwargs = {"report_pos_label": self._parent.pos_label}
         display = cast(
             PrecisionRecallCurveDisplay,
             self._get_display(
@@ -1145,20 +1141,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
 
         response_method: str | list[str] | tuple[str, ...]
-        pos_label = self._parent.pos_label
-        pred_pos_label: PositiveLabel | None
         if self._parent._ml_task == "binary-classification":
             response_method = ("predict_proba", "decision_function")
-            pred_pos_label = (
-                self._parent.estimator_.classes_[-1] if pos_label is None else pos_label
-            )
         else:
             response_method = "predict"
-            pred_pos_label = None
 
         display_kwargs = {
-            "pos_label": self._parent.pos_label,
             "response_method": response_method,
+            "pos_label": self._parent.pos_label,
         }
         display = cast(
             ConfusionMatrixDisplay,
@@ -1169,7 +1159,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 response_method=response_method,
                 display_class=ConfusionMatrixDisplay,
                 display_kwargs=display_kwargs,
-                prediction_pos_label=pred_pos_label,
             ),
         )
         return display

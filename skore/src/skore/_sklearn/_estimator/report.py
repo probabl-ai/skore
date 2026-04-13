@@ -247,13 +247,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         self._pos_label = pos_label
         self.fit_time_ = self._fit_time
-        # TODO? Rename class "Cache" to "ThreadSafeDict"?
         self._cache = Cache()
         self._predictions = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
 
-        self._ml_task = _find_ml_task(self.y_test, estimator=self._estimator)
         self._metric_registry = MetricRegistry(self)
+
+        self._ml_task = _find_ml_task(self.y_test, estimator=self._estimator)
 
         if pos_label is None:
             return
