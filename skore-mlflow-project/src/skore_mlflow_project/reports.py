@@ -211,7 +211,8 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
         yield (
             f"split_{split_id}",
             itertools.chain(
-                [Tag("split_id", str(split_id))], iter_estimator(estimator_report)
+                [Tag("split_id", str(split_id))],
+                iter_estimator(estimator_report, include_data_analyze=False),
             ),
         )
 
@@ -225,7 +226,9 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
         yield Params({"cv_splitter.n_splits": n_splits})
 
 
-def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
+def iter_estimator(
+    report: EstimatorReport, *, include_data_analyze: bool = True
+) -> Generator[LogItem, None, None]:
     """Yield loggable objects for an estimator report."""
     yield from iter_estimator_metrics(report)
 
@@ -233,7 +236,8 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
     yield Params(estimator.get_params())
     yield Model(estimator, _sample_input_example(report.X_test))
 
-    yield Artifact("data.analyze", _data_analyze_html(report))
+    if include_data_analyze:
+        yield Artifact("data.analyze", _data_analyze_html(report))
 
     yield _dataset_from_Xy(report.X_train, report.y_train, context="training")
     yield _dataset_from_Xy(report.X_test, report.y_test, context="evaluation")
