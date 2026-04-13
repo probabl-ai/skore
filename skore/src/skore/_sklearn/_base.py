@@ -1,4 +1,5 @@
-from abc import abstractmethod
+from __future__ import annotations
+
 from io import StringIO
 from typing import Generic, Literal, TypeVar
 from uuid import uuid4
@@ -7,7 +8,9 @@ from rich.console import Console
 from rich.panel import Panel
 
 from skore._config import configuration
-from skore._sklearn._diagnostic.base import DiagnosticDisplay
+from skore._sklearn._diagnostic.base import Check, DiagnosticDisplay
+from skore._sklearn._diagnostic.model_checks import _create_model_checks
+from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
@@ -26,17 +29,40 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
-    _issues_cache: tuple[dict[str, dict], set[str]]
 
-    @abstractmethod
-    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
-        """Return detected issues and the set of check codes that were evaluated."""
+    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
+        """Aggregate EstimatorReport checks.
+
+        Overwritten in CrossValidation and Comparison reports.
+        """
+        return ({}, set())
 
     def _get_issues(self) -> tuple[dict[str, dict], set[str]]:
         """Get the issues from the cache or compute them."""
         if not hasattr(self, "_issues_cache"):
-            self._issues_cache = self._run_checks()
-        return self._issues_cache
+            self._issues_cache: dict[str, dict] = {}
+        if not hasattr(self, "_checked_codes"):
+            self._checked_codes: set[str] = set()
+
+        for check in self._checks_registry:
+            if (
+                check.code not in self._checked_codes
+                and check.report_type == self._report_type
+            ):
+                try:
+                    self._issues_cache.update(check._run(self))
+                    self._checked_codes.add(check.code)
+                except DiagnosticNotApplicable:
+                    self._checked_codes |= {check.code}
+
+        if "cross-validation" in self._report_type or "comparison" in self._report_type:
+            aggregated = self._aggregate_checks()
+            return (
+                self._issues_cache | aggregated[0],
+                self._checked_codes | aggregated[1],
+            )
+
+        return self._issues_cache, self._checked_codes
 
     def diagnose(
         self,
@@ -95,8 +121,28 @@ class _BaseReport(ReportHelpMixin):
         checks_ran = len(checked_codes - ignored)
         return DiagnosticDisplay(filtered, checks_ran, n_ignored=len(ignored))
 
+    def add_checks(
+        self,
+        checks: list[Check],
+    ) -> None:
+        """Register additional diagnostic checks for this report.
+
+        Appends the given checks to the registry used by
+        :meth:`diagnose`. The next call to :meth:`diagnose` runs any newly added
+        checks (along with checks that have not yet been cached). Already-run
+        built-in checks are not re-executed.
+
+        Parameters
+        ----------
+        checks : list of Check
+            additional :class:`~skore.Check` instances to register
+
+        """
+        self._checks_registry.extend(checks)
+
     def __init__(self) -> None:
         self.id = uuid4().int
+        self._checks_registry: list[Check] = _create_model_checks()
 
     @property
     def _hash(self) -> int:
