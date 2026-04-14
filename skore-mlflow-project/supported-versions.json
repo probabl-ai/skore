@@ -10,9 +10,8 @@
     {"os": "ubuntu-latest", "python": "3.13", "dependencies": ["scikit-learn==1.5.*", "mlflow==3.*"], "coverage": false},
     {"os": "ubuntu-latest", "python": "3.13", "dependencies": ["scikit-learn==1.6.*", "mlflow==3.*"], "coverage": false},
     {"os": "ubuntu-latest", "python": "3.13", "dependencies": ["scikit-learn==1.7.*", "mlflow==3.*"], "coverage": false},
-    {"os": "ubuntu-latest", "python": "3.13", "dependencies": ["scikit-learn==1.8.*", "mlflow==2.20.*"], "coverage": false},
     {"os": "ubuntu-latest", "python": "3.13", "dependencies": ["scikit-learn==1.8.*", "mlflow==2.*"], "coverage": false},
-    {"os": "ubuntu-latest", "python": "3.13", "dependencies": ["scikit-learn==1.8.*", "mlflow==3.0.*"], "coverage": false},
+    {"os": "ubuntu-latest", "python": "3.13", "dependencies": ["scikit-learn==1.8.*", "mlflow==3.4.*"], "coverage": false},
     {"os": "ubuntu-latest", "python": "3.13", "dependencies": ["scikit-learn==1.8.*", "mlflow==3.*"], "coverage": true},
     {"os": "windows-latest", "python": "3.10", "dependencies": ["scikit-learn==1.5.*", "mlflow==3.*"], "coverage": false},
     {"os": "windows-latest", "python": "3.10", "dependencies": ["scikit-learn==1.7.*", "mlflow==3.*"], "coverage": false},
@@ -25,8 +24,7 @@
     {"os": "windows-latest", "python": "3.13", "dependencies": ["scikit-learn==1.5.*", "mlflow==3.*"], "coverage": false},
     {"os": "windows-latest", "python": "3.13", "dependencies": ["scikit-learn==1.6.*", "mlflow==3.*"], "coverage": false},
     {"os": "windows-latest", "python": "3.13", "dependencies": ["scikit-learn==1.7.*", "mlflow==3.*"], "coverage": false},
-    {"os": "windows-latest", "python": "3.13", "dependencies": ["scikit-learn==1.8.*", "mlflow==2.20.*"], "coverage": false},
     {"os": "windows-latest", "python": "3.13", "dependencies": ["scikit-learn==1.8.*", "mlflow==2.*"], "coverage": false},
-    {"os": "windows-latest", "python": "3.13", "dependencies": ["scikit-learn==1.8.*", "mlflow==3.0.*"], "coverage": false},
+    {"os": "windows-latest", "python": "3.13", "dependencies": ["scikit-learn==1.8.*", "mlflow==3.4.*"], "coverage": false},
     {"os": "windows-latest", "python": "3.13", "dependencies": ["scikit-learn==1.8.*", "mlflow==3.*"], "coverage": false}
 ]
