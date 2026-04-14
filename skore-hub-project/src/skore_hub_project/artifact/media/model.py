@@ -2,6 +2,8 @@
 
 from typing import Literal
 
+from sklearn.utils import estimator_html_repr
+
 from skore_hub_project.artifact.media.media import Media, Report
 
 
@@ -10,11 +12,9 @@ class EstimatorHtmlRepr(Media[Report]):  # noqa: D101
     data_source: None = None
     content_type: Literal["text/html"] = "text/html"
 
-    def content_to_upload(self) -> str:  # noqa: D102
-        import sklearn.utils
+    def compute(self) -> None:  # noqa: D102
+        if self.computed:
+            return
 
-        estimator_html_repr: str = sklearn.utils.estimator_html_repr(
-            self.report.estimator
-        )
-
-        return estimator_html_repr
+        self.filepath.write_text(estimator_html_repr(self.report.estimator))
+        self.computed = True
