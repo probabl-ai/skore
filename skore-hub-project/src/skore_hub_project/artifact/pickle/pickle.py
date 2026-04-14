@@ -48,6 +48,5 @@ class Pickle(Artifact):
         if self.computed:
             return
 
-        dump(self.report, self.filepath)
-
         self.computed = True
+        dump(self.report, self.filepath)
