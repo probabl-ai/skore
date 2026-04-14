@@ -280,7 +280,9 @@ class TestConfusionMatrixDisplay:
 
         for normalize in ("true", "pred", "all"):
             frame = display.frame(normalize=normalize)
-            for (_est, _split), group in frame.groupby(["estimator", "split"]):
+            for (_est, _split), group in frame.groupby(
+                ["estimator", "split"], observed=True
+            ):
                 pivoted = group.pivot(
                     index="true_label",
                     columns="predicted_label",

@@ -169,9 +169,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             based on the report type.
 
         label : int, float, bool, str or None, default=report pos_label
-            The class to select when using the thresholded view
-            (`threshold_value` is not None). If None, show all labels. Ignored when
-            `threshold_value` is None.
+            The class to consider as positive when using the thresholded view.
+            Required when `threshold_value` is not None. Ignored when `threshold_value`
+            is None.
 
         Returns
         -------
@@ -244,7 +244,11 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             **facet_grid_kwargs_validated,
         )
         figure, axes = facet.figure, facet.axes.flatten()
-        display_labels = frame["true_label"].unique().tolist()
+
+        display_labels = self.labels
+        # The positive label is set in second position (which
+        # means true-positive counts is the bottom-right cell in the matrix).
+        # Usually, TP is the top-left cell, but we align with sklearn.
         if (
             self.ml_task == "multiclass-classification"
             and label is not None
@@ -631,11 +635,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 "decision_function."
             )
 
-        label = _check_label(
-            self.confusion_matrix_thresholded["label"].cat.categories.tolist(),
-            label,
-            self.report_pos_label,
-        )
+        label = _check_label(self.labels, label, self.report_pos_label)
 
         df = self.confusion_matrix_thresholded
         if label is not None:
