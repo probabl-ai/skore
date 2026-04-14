@@ -164,7 +164,7 @@ pyparsing==3.3.2
     # via
     #   matplotlib
     #   pydot
-pytest==9.0.2
+pytest==9.0.3
     # via
     #   skore-hub-project (skore-hub-project/pyproject.toml)
     #   pytest-cov
