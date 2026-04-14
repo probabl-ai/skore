@@ -26,6 +26,7 @@ class EstimatorReport(Protocol):
     """Protocol equivalent to ``skore.EstimatorReport``."""
 
     _hash: int
+    id: int
     cache_predictions: Any
     clear_cache: Any
     _cache: Any
@@ -49,6 +50,7 @@ class CrossValidationReport(Protocol):
     """Protocol equivalent to ``skore.CrossValidationReport``."""
 
     _hash: int
+    id: int
     cache_predictions: Any
     clear_cache: Any
     metrics: Any

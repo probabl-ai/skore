@@ -1,12 +1,10 @@
 """Definition of the payload used to associate the pickled report with the report."""
 
-from collections.abc import Generator
-from contextlib import contextmanager
-from io import BytesIO
+from functools import cached_property
 from typing import Literal
 
 from joblib import dump
-from pydantic import Field
+from pydantic import Field, computed_field
 
 from skore_hub_project.artifact.artifact import Artifact
 from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
@@ -21,45 +19,35 @@ class Pickle(Artifact):
     Attributes
     ----------
     project : Project
-        The project to which the artifact's payload must be associated.
+        The project to which the pickle's payload must be associated.
     content_type : str
-        The content-type of the artifact content.
+        The content-type of the pickle content.
+    computed : bool
+        True when the pickle content is computed, False otherwise.
+    uploaded : bool
+        True when the pickle is uploaded, False otherwise.
     report : EstimatorReport | CrossValidationReport
-        The report to pickled.
+        The report to pickle.
 
     Notes
     -----
-    It uploads the pickled report to the artifacts storage in a lazy way.
-
-    The report is uploaded without its cache, to avoid salting the checksum.
-    The report is primarily pickled on disk to reduce RAM footprint.
+    The artifact is computed in a lazy way. It pickles the report on disk to reduce RAM
+    footprint, before uploading it to the artifacts storage.
     """
 
-    report: Report = Field(repr=False, exclude=True)
     content_type: Literal["application/octet-stream"] = "application/octet-stream"
+    report: Report = Field(repr=False, exclude=True)
 
-    @contextmanager
-    def content_to_upload(self) -> Generator[bytes, None, None]:
-        """
-        Content of the pickled report.
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def checksum(self) -> str:
+        """The checksum of the pickled report."""
+        return f"skore-{self.report.__class__.__name__}-{self.report.id}"
 
-        Notes
-        -----
-        The report is pickled without its cache, to avoid salting the checksum.
-        """
-        reports = [self.report] + getattr(self.report, "estimator_reports_", [])
-        reports_with_cache = [
-            (report, report._cache) for report in reports if hasattr(report, "_cache")
-        ]
-        self.report.clear_cache()
+    def compute(self) -> None:  # noqa: D102
+        if self.computed:
+            return
 
-        try:
-            with BytesIO() as stream:
-                dump(self.report, stream)
+        dump(self.report, self.filepath)
 
-                pickle_bytes = stream.getvalue()
-
-            yield pickle_bytes
-        finally:
-            for report, cache in reports_with_cache:
-                report._cache = cache
+        self.computed = True
