@@ -7,20 +7,19 @@ from math import ceil
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from ..client.client import Client, HUBClient
-from .serializer import Serializer
+from skore_hub_project.client.client import Client, HUBClient
 
 if TYPE_CHECKING:
     from typing import Final
 
-    import httpx
+    from httpx import Client as httpx_Client
 
-    from ..project.project import Project
+    from skore_hub_project.project.project import Project
 
 
 def upload_chunk(
     filepath: Path,
-    client: httpx.Client,
+    client: httpx_Client,
     url: str,
     offset: int,
     length: int,
@@ -72,31 +71,24 @@ def upload_chunk(
 CHUNK_SIZE: Final[int] = int(1e7)  # ~10mb
 
 
-def upload(project: Project, content: str | bytes, content_type: str) -> str:
+def upload(project: Project, checksum: str, filepath: Path, content_type: str) -> None:
     """
-    Upload content to the artifacts storage.
+    Upload file to the artifacts storage.
 
     Parameters
     ----------
     project : ``Project``
-        The project where to upload the content.
-    content : str | bytes
-        The content to upload.
-    content_type : str
-        The type of content to upload.
-
-    Returns
-    -------
+        The project where to upload the file.
     checksum : str
-        The checksum of the content before upload to the artifacts storage, based on its
-        serialization.
-
-    Notes
-    -----
-    A content that was already uploaded in its whole will be ignored.
+        The checksum of the file.
+    filepath : Path
+        The file to upload.
+    content_type : str
+        The type of file to upload.
     """
+    assert filepath.stat().st_size, "`filepath` must not be empty"
+
     with (
-        Serializer(content) as serializer,
         HUBClient() as hub_client,
         Client() as standard_client,
         ThreadPoolExecutor() as pool,
@@ -106,68 +98,60 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
             url=f"projects/{project.workspace}/{project.name}/artifacts",
             json=[
                 {
-                    "checksum": serializer.checksum,
-                    "chunk_number": ceil(serializer.size / CHUNK_SIZE),
+                    "checksum": checksum,
+                    "chunk_number": ceil(filepath.stat().st_size / CHUNK_SIZE),
                     "content_type": content_type,
                 }
             ],
         )
 
-        # An empty response means that an artifact with the same checksum already
-        # exists. The content doesn't have to be re-uploaded.
-        if urls := response.json():
-            task_to_chunk_id = {}
+        urls = response.json()
+        task_to_chunk_id = {}
 
-            # Upload each chunk of the serialized content to the artifacts storage,
-            # using a disk temporary file.
-            #
-            # Each task is in charge of reading its own file chunk at runtime, to reduce
-            # RAM footprint.
-            #
-            # Use `threading` over `asyncio` to ensure compatibility with Jupyter
-            # notebooks, where the event loop is already running.
-            for url in urls:
-                chunk_id = url["chunk_id"] or 1
-                task = pool.submit(
-                    upload_chunk,
-                    filepath=serializer.filepath,
-                    client=standard_client,
-                    url=url["upload_url"],
-                    offset=((chunk_id - 1) * CHUNK_SIZE),
-                    length=CHUNK_SIZE,
-                    content_type=(
-                        content_type if len(urls) == 1 else "application/octet-stream"
-                    ),
-                )
+        assert urls, "`checksum` must not be already uploaded"
 
-                task_to_chunk_id[task] = chunk_id
-
-            try:
-                etags = dict(
-                    sorted(
-                        (
-                            task_to_chunk_id[task],
-                            task.result(),
-                        )
-                        for task in as_completed(task_to_chunk_id)
-                    )
-                )
-            except BaseException:
-                # Cancel all remaining tasks, especially on `KeyboardInterrupt`.
-                for task in task_to_chunk_id:
-                    task.cancel()
-
-                raise
-
-            # Acknowledge the upload, to let the hub/storage rebuild the whole.
-            hub_client.post(
-                url=f"projects/{project.workspace}/{project.name}/artifacts/complete",
-                json=[
-                    {
-                        "checksum": serializer.checksum,
-                        "etags": etags,
-                    }
-                ],
+        # Upload each chunk of the file to the artifacts storage.
+        #
+        # Each task is in charge of reading its own file chunk at runtime, to reduce
+        # RAM footprint.
+        #
+        # Use `threading` over `asyncio` to ensure compatibility with Jupyter
+        # notebooks, where the event loop is already running.
+        for url in urls:
+            chunk_id = url["chunk_id"] or 1
+            task = pool.submit(
+                upload_chunk,
+                filepath=filepath,
+                client=standard_client,
+                url=url["upload_url"],
+                offset=((chunk_id - 1) * CHUNK_SIZE),
+                length=CHUNK_SIZE,
+                content_type=(
+                    content_type if len(urls) == 1 else "application/octet-stream"
+                ),
             )
 
-    return serializer.checksum
+            task_to_chunk_id[task] = chunk_id
+
+        try:
+            tasks = as_completed(task_to_chunk_id)
+            etags = dict(
+                sorted((task_to_chunk_id[task], task.result()) for task in tasks)
+            )
+        except BaseException:
+            # Cancel all remaining tasks, especially on `KeyboardInterrupt`.
+            for task in task_to_chunk_id:
+                task.cancel()
+
+            raise
+
+        # Acknowledge the upload, to let the hub/storage rebuild the whole.
+        hub_client.post(
+            url=f"projects/{project.workspace}/{project.name}/artifacts/complete",
+            json=[
+                {
+                    "checksum": checksum,
+                    "etags": etags,
+                }
+            ],
+        )
