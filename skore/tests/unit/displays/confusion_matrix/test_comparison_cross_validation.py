@@ -49,7 +49,7 @@ def test_split_aggregation(
             for text in ax.texts
             if text.get_text() and "±" in text.get_text()
         ]
-        assert len(annotation_texts) == len(display.display_labels) ** 2
+        assert len(annotation_texts) == len(display.labels) ** 2
 
         for text_content in annotation_texts:
             assert "\n" in text_content
@@ -83,7 +83,7 @@ def test_frame_default_returns_predict_based(binary_classification_data):
 
     frame = display.frame()
     assert isinstance(frame, pd.DataFrame)
-    n_classes = len(display.display_labels)
+    n_classes = len(display.labels)
     n_estimators = 2
     assert frame.shape == (n_classes * n_classes * n_estimators * cv, 6)
     assert "threshold" not in frame.columns
@@ -104,7 +104,7 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_data):
     ) / 2 - 1e-6
     assert threshold not in display.thresholds
 
-    fig = display.plot(threshold_value=threshold)
+    fig = display.plot(threshold_value=threshold, label=display.labels[-1])
     axes = fig.axes
     assert f"Decision threshold: {threshold:.2f}" in fig.get_suptitle()
     for idx, estimator_name in enumerate(report.reports_):
@@ -120,7 +120,7 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_data):
         )
         expected_values = aggregated.pivot(
             index="true_label", columns="predicted_label", values="mean"
-        ).reindex(index=["0", "1"], columns=["0", "1"])
+        ).reindex(index=display.labels, columns=display.labels)
         np.testing.assert_allclose(
             axes[idx].collections[0].get_array(), expected_values.values
         )

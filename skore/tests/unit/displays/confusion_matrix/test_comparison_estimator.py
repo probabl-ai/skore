@@ -48,7 +48,7 @@ def test_frame_default_returns_predict_based(binary_classification_train_test_sp
 
     frame = display.frame()
     assert isinstance(frame, pd.DataFrame)
-    n_classes = len(display.display_labels)
+    n_classes = len(display.labels)
     n_estimators = 2
     assert frame.shape == (n_classes * n_classes * n_estimators, 6)
     assert "threshold" not in frame.columns
@@ -84,7 +84,7 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
     ) / 2 - 1e-6
     assert threshold not in display.thresholds
 
-    fig = display.plot(threshold_value=threshold)
+    fig = display.plot(threshold_value=threshold, label=display.labels[-1])
     axes = fig.axes
     assert f"Decision threshold: {threshold:.2f}" in fig.get_suptitle()
 
@@ -98,7 +98,7 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
             )
             .query(f"estimator == '{estimator_name}'")
             .pivot(index="true_label", columns="predicted_label", values="value")
-            .reindex(index=["0", "1"], columns=["0", "1"])
+            .reindex(index=display.labels, columns=display.labels)
             .values,
         )
 

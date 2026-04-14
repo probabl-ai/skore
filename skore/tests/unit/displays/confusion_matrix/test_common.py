@@ -27,12 +27,10 @@ class TestConfusionMatrixDisplay:
 
         assert hasattr(display, "confusion_matrix_predict")
         assert hasattr(display, "confusion_matrix_thresholded")
-        assert hasattr(display, "display_labels")
         assert hasattr(display, "report_type")
         assert hasattr(display, "ml_task")
         assert hasattr(display, "data_source")
         assert hasattr(display, "report_pos_label")
-        assert hasattr(display, "response_method")
 
         assert hasattr(display, "thresholds")
         assert hasattr(display, "labels")
@@ -49,7 +47,7 @@ class TestConfusionMatrixDisplay:
             report = report[0]
 
         display = report.metrics.confusion_matrix()
-        n_classes = len(display.display_labels)
+        n_classes = len(display.labels)
         n_splits = 2 if "cross_validation" in fixture_prefix else 1
         n_reports = 2 if "comparison" in fixture_prefix else 1
 
@@ -66,8 +64,8 @@ class TestConfusionMatrixDisplay:
             "data_source",
         ]
         assert frame.columns.tolist() == expected_columns
-        assert set(frame["true_label"]) == set(display.display_labels)
-        assert set(frame["predicted_label"]) == set(display.display_labels)
+        assert set(frame["true_label"]) == set(display.labels)
+        assert set(frame["predicted_label"]) == set(display.labels)
         assert frame["split"].nunique() == (
             2 if "cross_validation" in fixture_prefix else 0
         )
@@ -92,7 +90,7 @@ class TestConfusionMatrixDisplay:
             "estimator",
             "data_source",
         ]
-        n_classes = len(display.display_labels)
+        n_classes = len(display.labels)
         n_splits = 2 if "cross_validation" in fixture_prefix else 1
         n_reports = 2 if "comparison" in fixture_prefix else 1
         assert display.confusion_matrix_predict.shape[0] == (
@@ -149,7 +147,7 @@ class TestConfusionMatrixDisplay:
         assert ax.get_xlabel() == "Predicted label"
         assert ax.get_ylabel() == "True label"
 
-        n_classes = len(display.display_labels)
+        n_classes = len(display.labels)
         assert len(ax.get_xticks()) == n_classes
         assert len(ax.get_yticks()) == n_classes
 

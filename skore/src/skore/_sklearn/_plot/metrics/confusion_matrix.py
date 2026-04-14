@@ -43,9 +43,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         Same columns as confusion_matrix_predict plus "threshold" and "label".
         None when the estimator only supports predict.
 
-    display_labels : list of str
-        Display labels for the class names.
-
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
         The type of report.
@@ -81,7 +78,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         confusion_matrix_predict: pd.DataFrame,
         confusion_matrix_thresholded: pd.DataFrame | None,
-        display_labels: list[str],
         report_type: ReportType,
         ml_task: MLTask,
         data_source: DataSource,
@@ -89,7 +85,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     ):
         self.confusion_matrix_predict = confusion_matrix_predict
         self.confusion_matrix_thresholded = confusion_matrix_thresholded
-        self.display_labels = display_labels
         self.report_type = report_type
         self.ml_task = ml_task
         self.data_source = data_source
@@ -97,7 +92,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     @property
     def labels(self):
-        return self.confusion_matrix_predict["predicted_label"].cat.categories.to_list()
+        return self.confusion_matrix_predict["predicted_label"].unique().tolist()
 
     @property
     def thresholds(self):
@@ -132,7 +127,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         return cls(
             confusion_matrix_predict=confusion_matrix_predict,
             confusion_matrix_thresholded=confusion_matrix_thresholded,
-            display_labels=first_display.display_labels,
             report_type=report_type,
             ml_task=first_display.ml_task,
             data_source=first_display.data_source,
@@ -165,8 +159,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         threshold_value : float or None, default=None
             When None, plots the predict-based n x n confusion matrix.
-            When a float, plots the thresholded OvR 2x2 confusion matrix at the
-            closest available threshold for the selected label.
+            When a float, plots the thresholded 2x2 confusion matrix at the closest
+            available threshold for the selected label. This is obtained in multiclass
+            by creating a binary problem for the label in a one-vs-rest fashion.
 
         subplot_by : {"split", "estimator", "auto"} or None, default="auto"
             The variable to use for subplotting. If None, the confusion matrix will not
@@ -184,6 +179,11 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             Figure containing the confusion matrix.
         """
         label = _check_label(self.labels, label, self.report_pos_label)
+        if label is None and threshold_value is not None:
+            raise ValueError(
+                "Please indicate the class to consider as positive to show the "
+                "thresholded confusion matrix."
+            )
         return self._plot(
             normalize=normalize,
             threshold_value=threshold_value,
@@ -244,17 +244,28 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             **facet_grid_kwargs_validated,
         )
         figure, axes = facet.figure, facet.axes.flatten()
+        display_labels = frame["true_label"].unique().tolist()
+        if (
+            self.ml_task == "multiclass-classification"
+            and label is not None
+            and threshold_value is not None
+        ):
+            display_labels = [f"not {label}", str(label)]
+        elif self.ml_task == "binary-classification" and label is not None:
+            display_labels = [
+                next(clss for clss in display_labels if clss != label),
+                label,
+            ]
 
         def plot_heatmap(data, **kwargs):
             """Plot heatmap for each facet."""
             heatmap_data = data.pivot(
                 index="true_label", columns="predicted_label", values="value"
-            ).reindex(index=self.display_labels, columns=self.display_labels)
-
+            ).reindex(index=display_labels, columns=display_labels)
             if "cross-validation" in self.report_type and "annot" in data.columns:
                 annot_data = data.pivot(
                     index="true_label", columns="predicted_label", values="annot"
-                ).reindex(index=self.display_labels, columns=self.display_labels)
+                ).reindex(index=display_labels, columns=display_labels)
                 if "annot" in kwargs and kwargs["annot"]:
                     kwargs["annot"] = annot_data
                 kwargs["fmt"] = ""
@@ -287,22 +298,19 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 filter(None, [title, info_threshold, info_label, info_data_source])
             )
         )
-
+        if len(axes[0].get_xticklabels()) == 2 and label is not None:
+            ticklabels = [
+                axes[0].get_xticklabels()[0].get_text(),
+                f"{axes[0].get_xticklabels()[1].get_text()}*",
+            ]
+        else:
+            ticklabels = None
         for ax in axes:
             ax.set(
                 xlabel="Predicted label",
                 ylabel="True label",
             )
-            if (
-                threshold_value is None
-                and self.ml_task == "binary-classification"
-                and self.report_pos_label is not None
-            ):
-                ticklabels = [
-                    f"{label}*" if label == str(self.report_pos_label) else label
-                    for label in self.display_labels
-                ]
-
+            if ticklabels is not None:
                 ax.set(
                     xticklabels=ticklabels,
                     yticklabels=ticklabels,
@@ -336,7 +344,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         Parameters
         ----------
-        subplot_by : Literal["split", "estimator", "auto"] | None
+        subplot_by : {"split", "estimator", "auto"} or None
             The variable to use for subplotting.
 
         report_type : {"comparison-cross-validation", "comparison-estimator", \
@@ -345,7 +353,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         Returns
         -------
-        Literal["split", "estimator"] | None
+        {"split", "estimator"} or None
             The validated `subplot_by` parameter.
         """
         if subplot_by == "auto":
@@ -436,24 +444,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         data_source = cast(DataSource, data_source)
 
         classes = estimator.classes_
-        neg_label = None
-
-        # Order classes so positive label is in second position (binary case)
-        if (
-            ml_task == "binary-classification"
-            and report_pos_label is not None
-            and report_pos_label == classes[0]
-        ):
-            # When report_pos_label is provided, it is set in second position (which
-            # means true-positive counts is the bottom-right cell in the matrix).
-            # Usually, TP is the top-left cell, but we align with sklearn.
-            classes = (classes[1], classes[0])
-            neg_label = classes[0]
-
-        display_labels = [str(label) for label in classes]
 
         confusion_matrix_predict = cls._build_predict_frame(
-            sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred, labels=classes),
+            sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred),
             classes,
             estimator_name,
             data_source,
@@ -469,12 +462,16 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 ovr_df = cls._compute_data_ovr(
                     y_true=y_true_onehot[:, class_idx],
                     y_score=y_scores_arr[:, class_idx],
+                    labels=[
+                        next(clss for clss in classes if clss != label)
+                        if ml_task == "binary-classification"
+                        else f"not {label}",
+                        label,
+                    ],
+                    label=label,
                     estimator=estimator_name,
                     data_source=data_source,
                     split=None,
-                    neg_label="rest"
-                    if ml_task == "multiclass-classification"
-                    else neg_label,
                 )
                 ovr_dfs.append(ovr_df)
 
@@ -483,7 +480,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         return cls(
             confusion_matrix_predict=confusion_matrix_predict,
             confusion_matrix_thresholded=confusion_matrix_thresholded,
-            display_labels=display_labels,
             report_type=report_type,
             ml_task=ml_task,
             data_source=data_source,
@@ -635,7 +631,11 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 "decision_function."
             )
 
-        label = _check_label(self.labels, label, self.report_pos_label)
+        label = _check_label(
+            self.confusion_matrix_thresholded["label"].cat.categories.tolist(),
+            label,
+            self.report_pos_label,
+        )
 
         df = self.confusion_matrix_thresholded
         if label is not None:

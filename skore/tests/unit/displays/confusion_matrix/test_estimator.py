@@ -2,7 +2,6 @@ import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.linear_model import LogisticRegression
 
 from skore import EstimatorReport
 
@@ -71,7 +70,7 @@ def test_frame_default_returns_predict_based(
 
     frame = display.frame()
     assert isinstance(frame, pd.DataFrame)
-    n_classes = len(display.display_labels)
+    n_classes = len(display.labels)
     assert frame.shape == (n_classes * n_classes, 6)
     assert "threshold" not in frame.columns
 
@@ -92,7 +91,7 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
     ) / 2 - 1e-6
     assert threshold not in display.thresholds
 
-    fig = display.plot(threshold_value=threshold)
+    fig = display.plot(threshold_value=threshold, label=display.labels[-1])
     ax = fig.axes[0]
     assert f"Decision threshold: {threshold:.2f}" in fig.get_suptitle()
 
@@ -102,7 +101,7 @@ def test_threshold_closest_match(pyplot, forest_binary_classification_with_train
             normalize=None, threshold_value=threshold, label=display.labels[-1]
         )
         .pivot(index="true_label", columns="predicted_label", values="value")
-        .reindex(index=["0", "1"], columns=["0", "1"])
+        .reindex(index=display.labels, columns=display.labels)
         .values,
     )
 
