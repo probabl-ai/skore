@@ -18,6 +18,8 @@ class TableReport(Media[Report]):  # noqa: D101
         if self.computed:
             return
 
+        self.computed = True
+
         display = (
             self.report.data.analyze()
             if self.data_source is None
@@ -35,7 +37,6 @@ class TableReport(Media[Report]):  # noqa: D101
         del table_report["sample_table"]
 
         self.filepath.write_bytes(dumps(table_report))
-        self.computed = True
 
 
 class TableReportTrain(TableReport[EstimatorReport]):  # noqa: D101

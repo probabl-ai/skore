@@ -22,6 +22,8 @@ class Inspection(Media[Report], ABC):  # noqa: D101
         if self.computed:
             return
 
+        self.computed = True
+
         try:
             function = cast(
                 "Callable[..., Display]",
@@ -32,12 +34,12 @@ class Inspection(Media[Report], ABC):  # noqa: D101
 
         display = function()
         frame = display.frame(aggregate=None)
-        frame_as_dict = (
-            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
-        )
 
-        self.filepath.write_bytes(dumps(frame_as_dict))
-        self.computed = True
+        self.filepath.write_bytes(
+            dumps(
+                frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+            )
+        )
 
 
 class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
@@ -54,9 +56,7 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
         frames = []
 
         for i, display in enumerate(
-            PermutationImportance.__display_from_estimator_report(
-                data_source, report
-            )
+            PermutationImportance.__display_from_estimator_report(data_source, report)
             for report in report.estimator_reports_
         ):
             if display is None:
@@ -98,6 +98,8 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
         if self.computed:
             return
 
+        self.computed = True
+
         display = (
             self.__display_from_estimator_report(self.data_source, self.report)
             if isinstance(self.report, EstimatorReport)
@@ -110,12 +112,12 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
             return
 
         frame = display.frame(aggregate=None)
-        frame_as_dict = (
-            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
-        )
 
-        self.filepath.write_bytes(dumps(frame_as_dict))
-        self.computed = True
+        self.filepath.write_bytes(
+            dumps(
+                frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+            )
+        )
 
 
 class PermutationImportanceTrain(PermutationImportance[Report]):  # noqa: D101

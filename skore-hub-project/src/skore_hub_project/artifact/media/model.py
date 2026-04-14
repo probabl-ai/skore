@@ -16,5 +16,5 @@ class EstimatorHtmlRepr(Media[Report]):  # noqa: D101
         if self.computed:
             return
 
-        self.filepath.write_text(estimator_html_repr(self.report.estimator))
         self.computed = True
+        self.filepath.write_text(estimator_html_repr(self.report.estimator))
