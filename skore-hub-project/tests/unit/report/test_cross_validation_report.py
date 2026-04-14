@@ -363,6 +363,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.respx()
     def test_estimators(self, project, payload, upload_mock):
+        payload.report.cache_predictions()
         assert len(payload.estimators) == len(payload.report.estimator_reports_)
 
         for i, estimator in enumerate(payload.estimators):
