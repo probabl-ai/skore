@@ -1121,7 +1121,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         With specific threshold for binary classification:
 
         >>> display = report.metrics.confusion_matrix()
-        >>> display.plot(threshold_value=0.7)
+        >>> display.plot(threshold_value=0.7, label=1)
         """
         if data_source == "both":
             raise ValueError(

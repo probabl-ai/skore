@@ -1049,7 +1049,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         With specific threshold for binary classification:
 
         >>> display = report.metrics.confusion_matrix()
-        >>> display.plot(threshold_value=0.7)
+        >>> display.plot(threshold_value=0.7, label=1)
         """
         child_displays = [
             report.metrics.confusion_matrix(data_source=data_source)
