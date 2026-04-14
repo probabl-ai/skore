@@ -624,7 +624,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         metrics_html = (
             self.metrics.summarize(data_source="test")
             .frame(aggregate=("mean", "std"), favorability=False)
-            ._repr_html_()
+            .droplevel(level=0, axis="columns")
+            .reset_index()
+            .to_html(index=False)
         )
 
         df = self.data._prepare_dataframe_for_display(
@@ -679,6 +681,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "container_id": container_id,
                 "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
+                "report_title": f"Report for {self.estimator_name_}",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,

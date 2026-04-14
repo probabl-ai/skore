@@ -118,6 +118,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
               name. You can get the possible list of string using
               `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
               the built-in metrics or the scikit-learn scorers, respectively.
+              Scikit-learn metrics that require a ``neg_`` prefix (e.g.
+              ``"neg_mean_squared_error"``) can also be passed without it (e.g.
+              ``"mean_squared_error"``); the alias is resolved automatically.
             - if a callable, it should take as arguments `y_true`, `y_pred` as the two
               first arguments. Additional arguments can be passed as keyword arguments
               and will be forwarded with `metric_kwargs`. No favorability indicator can
