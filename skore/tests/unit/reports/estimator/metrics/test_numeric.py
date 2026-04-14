@@ -357,6 +357,9 @@ def test_precision_recall_macro_average_ignores_pos_label(metric):
 
     assert isinstance(result, float)
 
+    result = getattr(report.metrics, metric)(average="binary")
+    assert isinstance(result, float)
+
 
 def test_roc_multiclass_requires_predict_proba(
     svc_multiclass_classification_with_test, svc_binary_classification_with_test

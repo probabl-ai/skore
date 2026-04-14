@@ -299,8 +299,8 @@ class Precision(Metric):
         if report._ml_task == "binary-classification":
             if average is None and report.pos_label is not None:
                 average = "binary"
-            else:
-                kwargs.setdefault("pos_label", None)
+            elif average != "binary":
+                kwargs["pos_label"] = None
 
         return super().__call__(
             report=report, data_source=data_source, average=average, **kwargs
@@ -324,8 +324,8 @@ class Recall(Metric):
         if report._ml_task == "binary-classification":
             if average is None and report.pos_label is not None:
                 average = "binary"
-            else:
-                kwargs.setdefault("pos_label", None)
+            elif average != "binary":
+                kwargs["pos_label"] = None
 
         return super().__call__(
             report=report, data_source=data_source, average=average, **kwargs
