@@ -164,7 +164,7 @@ pandas==2.3.3
     #   seaborn
     #   skore
     #   skrub
-pillow==12.1.1
+pillow==12.2.0
     # via matplotlib
 platformdirs==4.9.4
     # via
@@ -209,7 +209,7 @@ pyparsing==3.3.2
     # via
     #   matplotlib
     #   pydot
-pytest==9.0.2
+pytest==9.0.3
     # via
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
     #   pytest-cov
