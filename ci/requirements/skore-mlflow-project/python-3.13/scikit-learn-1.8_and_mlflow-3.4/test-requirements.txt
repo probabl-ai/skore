@@ -57,7 +57,7 @@ coverage[toml]==7.13.5
     # via pytest-cov
 cronsim==2.7
     # via pydocket
-cryptography==45.0.7
+cryptography==46.0.7
     # via
     #   authlib
     #   google-auth
@@ -98,7 +98,7 @@ fakeredis[lua]==2.34.1
     #   pydocket
 fastapi==0.135.3
     # via mlflow-skinny
-fastmcp==2.14.7
+fastmcp==3.2.0
     # via mlflow
 filelock==3.25.2
     # via
