@@ -16,6 +16,9 @@ from sklearn.utils.validation import check_is_fitted
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._sklearn._cross_validation.report import _generate_estimator_report
+from skore._sklearn._plot.inspection.permutation_importance import (
+    PermutationImportanceDisplay,
+)
 from skore._utils._testing import MockEstimator
 
 
@@ -308,3 +311,68 @@ def test_report_with_data_op():
     assert list(report.metrics.accuracy(aggregate="mean").columns) == [
         ("SkrubLearner", "mean")
     ]
+
+
+def test_get_results_aggregates_metrics_and_rebuilds_cached_permutation_importance(
+    linear_regression_multioutput_data,
+):
+    estimator, X, y = linear_regression_multioutput_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    report.inspection.permutation_importance(seed=0, n_repeats=2)
+
+    results = report.get_results()
+
+    assert set(results) == {"metrics", "displays", "inspection"}
+
+    r2_rows = [row for row in results["metrics"] if row["name"] == "r2"]
+    assert {row["aggregate"] for row in r2_rows} == {"mean", "std"}
+    assert {row["data_source"] for row in r2_rows} == {"train", "test"}
+    assert {row["output"] for row in r2_rows} == {0, 1}
+    for row in r2_rows:
+        assert row["verbose_name"] == "R²"
+        assert row["greater_is_better"] is True
+        assert row["kwargs"] == {}
+        assert np.isfinite(row["value"]) or np.isnan(row["value"])
+
+    display_names = {(row["name"], row["data_source"]) for row in results["displays"]}
+    assert ("prediction_error", "train") in display_names
+    assert ("prediction_error", "test") in display_names
+    assert ("prediction_error", "both") in display_names
+
+    inspection_names = {row["name"] for row in results["inspection"]}
+    assert "coefficients" in inspection_names
+    assert "permutation_importance" in inspection_names
+
+    permutation_rows = [
+        row for row in results["inspection"] if row["name"] == "permutation_importance"
+    ]
+    assert len(permutation_rows) == 1
+    permutation_row = permutation_rows[0]
+    assert permutation_row["data_source"] == "test"
+    assert permutation_row["kwargs"] == {
+        "at_step": 0,
+        "max_samples": 1.0,
+        "metric": None,
+        "n_repeats": 2,
+        "seed": 0,
+    }
+    assert isinstance(permutation_row["display"], PermutationImportanceDisplay)
+    assert permutation_row["display"].report_type == "cross-validation"
+    assert permutation_row["display"].importances["split"].nunique() == 2
+
+
+def test_get_results_reports_pos_label_for_precision_and_recall(
+    logistic_binary_classification_data,
+):
+    estimator, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2, pos_label=1)
+
+    results = report.get_results()
+
+    pos_label_rows = [
+        row
+        for row in results["metrics"]
+        if row["name"] in {"precision", "recall"} and row["data_source"] == "test"
+    ]
+    assert {row["label"] for row in pos_label_rows} == {1}
+    assert {row["aggregate"] for row in pos_label_rows} == {"mean", "std"}

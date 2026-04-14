@@ -18,6 +18,9 @@ from sklearn.svm import SVC
 from sklearn.utils.validation import check_is_fitted
 
 from skore import EstimatorReport, evaluate
+from skore._sklearn._plot.inspection.permutation_importance import (
+    PermutationImportanceDisplay,
+)
 
 
 def test_report_can_be_rebuilt_using_parameters(linear_regression_with_test):
@@ -258,6 +261,64 @@ def test_get_predictions():
     )
     np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
 
+
+def test_get_results_finds_metrics_displays_and_cached_permutation_importance(
+    forest_binary_classification_with_train_test,
+):
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    cached_display = report.inspection.permutation_importance(seed=0)
+
+    results = report.get_results()
+
+    assert set(results) == {"metrics", "displays", "inspection"}
+
+    accuracy_rows = [row for row in results["metrics"] if row["name"] == "accuracy"]
+    assert {row["data_source"] for row in accuracy_rows} == {"train", "test"}
+    for row in accuracy_rows:
+        assert row["verbose_name"] == "Accuracy"
+        assert row["greater_is_better"] is True
+        assert row["kwargs"] == {}
+        assert np.isfinite(row["value"])
+        assert row["label"] is None
+        assert row["output"] is None
+
+    display_names = {(row["name"], row["data_source"]) for row in results["displays"]}
+    assert ("roc", "train") in display_names
+    assert ("roc", "test") in display_names
+    assert ("roc", "both") in display_names
+    assert ("precision_recall", "both") in display_names
+    assert ("confusion_matrix", "train") in display_names
+    assert ("confusion_matrix", "test") in display_names
+
+    inspection_names = {row["name"] for row in results["inspection"]}
+    assert "impurity_decrease" in inspection_names
+    assert "permutation_importance" in inspection_names
+
+    permutation_rows = [
+        row for row in results["inspection"] if row["name"] == "permutation_importance"
+    ]
+    assert len(permutation_rows) == 1
+    permutation_row = permutation_rows[0]
+    assert permutation_row["data_source"] == "test"
+    assert permutation_row["kwargs"] == {
+        "at_step": 0,
+        "max_samples": 1.0,
+        "metric": None,
+        "n_repeats": 5,
+        "seed": 0,
+    }
+    assert permutation_row["display"] is cached_display
+    assert isinstance(permutation_row["display"], PermutationImportanceDisplay)
+
     # check the behaviour in conjunction of a report `pos_label`
     report = EstimatorReport(
         estimator,
@@ -273,6 +334,14 @@ def test_get_predictions():
     np.testing.assert_allclose(
         predictions, report.estimator_.predict_proba(X_train)[:, 0]
     )
+
+    pos_label_results = report.get_results()
+    pos_label_rows = [
+        row
+        for row in pos_label_results["metrics"]
+        if row["data_source"] == "test" and row["name"] in {"precision", "recall"}
+    ]
+    assert {row["label"] for row in pos_label_rows} == {0}
 
 
 def test_get_predictions_error():

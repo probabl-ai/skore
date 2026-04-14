@@ -277,6 +277,31 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         self._cache = Cache()
 
+    def get_results(self) -> dict[str, list[dict]]:
+        """Collect generic report results for metrics, displays, and inspection.
+
+        Returns
+        -------
+        dict
+            A dictionary with three keys:
+
+            - ``"metrics"``: scalar metric values for each available data source;
+            - ``"displays"``: available performance display objects;
+            - ``"inspection"``: available inspection display objects.
+
+        Notes
+        -----
+        Cached permutation-importance displays are discovered by inspecting the report
+        cache so all previously computed configurations can be returned.
+
+        Metrics computed through :meth:`metrics.custom_metric` are currently not
+        surfaced by this method, even though their scalar values are cached on the
+        report.
+        """
+        from skore._sklearn._results import get_estimator_report_results
+
+        return get_estimator_report_results(self)
+
     def cache_predictions(
         self,
         data_source: DataSource | Literal["both"] = "both",

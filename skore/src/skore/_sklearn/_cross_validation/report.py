@@ -277,6 +277,31 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         for report in self.estimator_reports_:
             report.clear_cache()
 
+    def get_results(self) -> dict[str, list[dict]]:
+        """Collect generic report results for metrics, displays, and inspection.
+
+        Returns
+        -------
+        dict
+            A dictionary with three keys:
+
+            - ``"metrics"``: aggregated metric values across splits;
+            - ``"displays"``: available performance display objects;
+            - ``"inspection"``: available inspection display objects.
+
+        Notes
+        -----
+        Cached permutation-importance displays are reconstructed from the split-level
+        caches when the same configuration is available for every split.
+
+        Metrics computed through :meth:`metrics.custom_metric` are currently not
+        surfaced by this method, even though their split-level scalar values are
+        cached on the underlying estimator reports.
+        """
+        from skore._sklearn._results import get_cross_validation_report_results
+
+        return get_cross_validation_report_results(self)
+
     def cache_predictions(
         self,
     ) -> None:
