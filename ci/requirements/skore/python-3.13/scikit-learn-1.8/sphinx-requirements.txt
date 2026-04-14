@@ -325,7 +325,7 @@ pyparsing==3.3.2
     # via
     #   matplotlib
     #   pydot
-pytest==9.0.2
+pytest==9.0.3
     # via pytest-timeout
 pytest-timeout==2.4.0
     # via kaleido
