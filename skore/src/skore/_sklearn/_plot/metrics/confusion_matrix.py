@@ -553,7 +553,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         n_thresholds = len(thresholds)
         data = {
-            **metadata,
             "true_label": np.tile(np.repeat(labels, 2), n_thresholds),
             "predicted_label": np.tile(np.tile(labels, 2), n_thresholds),
             "count": counts,
@@ -561,6 +560,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             "normalized_by_pred": cm_pred.reshape(-1),
             "normalized_by_all": cm_all.reshape(-1),
             "threshold": np.repeat(thresholds, 4),
+            **metadata,
         }
         n = n_thresholds * 4
         for col in metadata:

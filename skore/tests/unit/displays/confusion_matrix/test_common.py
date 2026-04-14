@@ -98,6 +98,38 @@ class TestConfusionMatrixDisplay:
         )
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
+    def test_confusion_matrix_thresholded_structure(
+        self, fixture_prefix, task, request
+    ):
+        """Check the structure of the confusion_matrix_thresholded attribute."""
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.metrics.confusion_matrix()
+
+        assert isinstance(display.confusion_matrix_thresholded, pd.DataFrame)
+        assert display.confusion_matrix_thresholded.columns.tolist() == [
+            "true_label",
+            "predicted_label",
+            "count",
+            "normalized_by_true",
+            "normalized_by_pred",
+            "normalized_by_all",
+            "threshold",
+            "label",
+            "estimator",
+            "data_source",
+            "split",
+        ]
+        expected_rows = 0
+        for _, group in display.confusion_matrix_thresholded.groupby(
+            ["split", "estimator"], dropna=False, observed=True
+        ):
+            n_t = max(1, group["threshold"].nunique())
+            expected_rows += 2 * 2 * n_t
+        assert display.confusion_matrix_thresholded.shape[0] == expected_rows
+
+    @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_facet_grid_kwargs(self, pyplot, fixture_prefix, task, request):
         """Check that we can override default facet grid kwargs."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
@@ -169,9 +201,9 @@ class TestConfusionMatrixDisplay:
             report = report[0]
         display = report.metrics.confusion_matrix()
 
-        assert display.confusion_matrix_thresholded is not None
         assert display.thresholds is not None
         assert len(display.thresholds) > 0
+        assert "threshold" in display.confusion_matrix_thresholded.columns
 
     def test_thresholds_in_multiclass(self, pyplot, fixture_prefix, request):
         """Check that the absence of thresholds is handled properly in multiclass."""
@@ -180,8 +212,9 @@ class TestConfusionMatrixDisplay:
             report = report[0]
         display = report.metrics.confusion_matrix()
 
-        assert display.confusion_matrix_thresholded is not None
+        assert display.thresholds is not None
         assert len(display.thresholds) > 0
+        assert display.confusion_matrix_thresholded is not None
 
     def test_threshold_values_are_sorted(self, fixture_prefix, request):
         """Check that thresholds are sorted in ascending order."""
