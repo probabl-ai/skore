@@ -1,3 +1,4 @@
+import warnings
 from numbers import Real
 
 import joblib
@@ -338,6 +339,23 @@ def test_precision_recall_pos_label_overwrite(metric, metric_fn):
     assert getattr(report.metrics, metric)() == pytest.approx(
         metric_fn(y, classifier.predict(X), pos_label="A")
     )
+
+
+@pytest.mark.parametrize("metric", ["precision", "recall"])
+def test_precision_recall_macro_average_ignores_pos_label(metric):
+    """Check that macro-averaged precision/recall does not forward pos_label."""
+    X, y = make_classification(
+        n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
+    )
+    y = np.array(["negative", "positive"], dtype=object)[y]
+    classifier = LogisticRegression(max_iter=1000).fit(X, y)
+    report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="positive")
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        result = getattr(report.metrics, metric)(average="macro")
+
+    assert isinstance(result, float)
 
 
 def test_roc_multiclass_requires_predict_proba(
