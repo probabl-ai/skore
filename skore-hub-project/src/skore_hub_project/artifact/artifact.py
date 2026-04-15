@@ -6,11 +6,11 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any
+from typing import Any, cast
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
-from skore_hub_project.artifact.upload import upload, uploaded
+from skore_hub_project.artifact.upload import upload, uploaded as file_uploaded
 from skore_hub_project.client.client import HUBClient
 from skore_hub_project.project.project import Project
 
@@ -41,7 +41,6 @@ class Artifact(BaseModel, ABC):
     project: Project = Field(repr=False, exclude=True)
     content_type: str = Field(init=False)
     computed: bool = Field(init=False, repr=False, exclude=True, default=False)
-    uploaded: bool = Field(init=False, repr=False, exclude=True, default=False)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -68,6 +67,15 @@ class Artifact(BaseModel, ABC):
         It is triggered when ``artifact.upload`` is called, in a lazy way.
         """
 
+    @property
+    def uploaded(self) -> bool:
+        assert self.checksum is not None, "`checksum` must not be None"
+
+        if not hasattr(self, "__uploaded"):
+            self.__uploaded = file_uploaded(self.project, self.checksum)
+
+        return self.__uploaded
+
     def upload(self) -> None:
         """
         Upload the artifact.
@@ -77,16 +85,12 @@ class Artifact(BaseModel, ABC):
         Artifact that was already uploaded in its whole will be ignored.
         It triggers the compute of the content of the artifact, in a lazy way.
         """
-        if self.uploaded:
-            return
+        assert self.checksum is not None, "`checksum` must not be None"
 
-        self.uploaded = True
+        if not self.uploaded:
+            assert self.computed, "`artifact` must be computed"
+            assert not self.uploaded, "`artifact` must not be uploaded"
 
-        if (self.checksum is not None) and (not uploaded(self.project, self.checksum)):
-            # ...
-            self.compute()
-
-            # ...
             upload(
                 project=self.project,
                 checksum=self.checksum,
@@ -94,12 +98,11 @@ class Artifact(BaseModel, ABC):
                 content_type=self.content_type,
             )
 
+        self.__uploaded = True
+
     def model_dump(self, **kwargs: Any) -> dict[str, Any]:  # noqa: D102
-        if not self.uploaded:
-            raise RuntimeError(
-                "You cannot access the dictionary representation of the model of an "
-                "artifact without explicitly uploading it. "
-                "Please use `artifact.upload()` before."
-            )
+        assert self.checksum is not None, "`checksum` must not be None"
+        assert self.computed, "`artifact` must be computed"
+        assert self.uploaded, "`artifact` must be uploaded"
 
         return super().model_dump(**kwargs)

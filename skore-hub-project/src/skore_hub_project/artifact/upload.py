@@ -118,53 +118,54 @@ def upload(project: Project, checksum: str, filepath: Path, content_type: str) -
             ],
         )
 
-        urls = response.json()
-        task_to_chunk_id = {}
+        # An empty response means that an artifact with the same checksum already
+        # exists. The content doesn't have to be re-uploaded.
+        if urls := response.json():
+            task_to_chunk_id = {}
 
-        assert urls, "`checksum` must not be already uploaded"
+            # Upload each chunk of the serialized content to the artifacts storage,
+            # using a disk temporary file.
+            #
+            # Each task is in charge of reading its own file chunk at runtime, to reduce
+            # RAM footprint.
+            #
+            # Use `threading` over `asyncio` to ensure compatibility with Jupyter
+            # notebooks, where the event loop is already running.
+            for url in urls:
+                chunk_id = url["chunk_id"] or 1
+                task = pool.submit(
+                    upload_chunk,
+                    filepath=filepath,
+                    client=standard_client,
+                    url=url["upload_url"],
+                    offset=((chunk_id - 1) * CHUNK_SIZE),
+                    length=CHUNK_SIZE,
+                    content_type=(
+                        content_type if len(urls) == 1 else "application/octet-stream"
+                    ),
+                )
 
-        # Upload each chunk of the file to the artifacts storage.
-        #
-        # Each task is in charge of reading its own file chunk at runtime, to reduce
-        # RAM footprint.
-        #
-        # Use `threading` over `asyncio` to ensure compatibility with Jupyter
-        # notebooks, where the event loop is already running.
-        for url in urls:
-            chunk_id = url["chunk_id"] or 1
-            task = pool.submit(
-                upload_chunk,
-                filepath=filepath,
-                client=standard_client,
-                url=url["upload_url"],
-                offset=((chunk_id - 1) * CHUNK_SIZE),
-                length=CHUNK_SIZE,
-                content_type=(
-                    content_type if len(urls) == 1 else "application/octet-stream"
-                ),
+                task_to_chunk_id[task] = chunk_id
+
+            try:
+                tasks = as_completed(task_to_chunk_id)
+                etags = dict(
+                    sorted((task_to_chunk_id[task], task.result()) for task in tasks)
+                )
+            except BaseException:
+                # Cancel all remaining tasks, especially on `KeyboardInterrupt`.
+                for task in task_to_chunk_id:
+                    task.cancel()
+
+                raise
+
+            # Acknowledge the upload, to let the hub/storage rebuild the whole.
+            hub_client.post(
+                url=f"projects/{project.workspace}/{project.name}/artifacts/complete",
+                json=[
+                    {
+                        "checksum": checksum,
+                        "etags": etags,
+                    }
+                ],
             )
-
-            task_to_chunk_id[task] = chunk_id
-
-        try:
-            tasks = as_completed(task_to_chunk_id)
-            etags = dict(
-                sorted((task_to_chunk_id[task], task.result()) for task in tasks)
-            )
-        except BaseException:
-            # Cancel all remaining tasks, especially on `KeyboardInterrupt`.
-            for task in task_to_chunk_id:
-                task.cancel()
-
-            raise
-
-        # Acknowledge the upload, to let the hub/storage rebuild the whole.
-        hub_client.post(
-            url=f"projects/{project.workspace}/{project.name}/artifacts/complete",
-            json=[
-                {
-                    "checksum": checksum,
-                    "etags": etags,
-                }
-            ],
-        )
