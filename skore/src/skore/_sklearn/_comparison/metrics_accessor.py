@@ -745,6 +745,215 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             aggregate=aggregate,
         )
 
+    @available_if(_check_any_sub_report_has_metric("mae"))
+    def mae(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> pd.DataFrame:
+        """Compute the mean absolute error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
+
+        Returns
+        -------
+        pd.DataFrame
+            The mean absolute error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> estimator_1 = Ridge(random_state=42)
+        >>> estimator_2 = Ridge(random_state=43)
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
+        >>> comparison_report.metrics.mae()
+        Estimator     Ridge_1    Ridge_2
+        Metric
+        MAE        46.5...    46.5...
+        """
+        return self.summarize(
+            metric=["mae"],
+            data_source=data_source,
+            metric_kwargs={"multioutput": multioutput},
+        ).frame(
+            aggregate=aggregate,
+        )
+
+    @available_if(_check_any_sub_report_has_metric("map"))
+    def map(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> pd.DataFrame:
+        """Compute the mean absolute percentage error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
+
+        Returns
+        -------
+        pd.DataFrame
+            The mean absolute percentage error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> estimator_1 = Ridge(random_state=42)
+        >>> estimator_2 = Ridge(random_state=43)
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
+        >>> comparison_report.metrics.map()
+        Estimator     Ridge_1    Ridge_2
+        Metric
+        MAP        0.3...     0.3...
+        """
+        return self.summarize(
+            metric=["map"],
+            data_source=data_source,
+            metric_kwargs={"multioutput": multioutput},
+        ).frame(
+            aggregate=aggregate,
+        )
+
+    def custom_metric(
+        self,
+        metric_function: Callable,
+        response_method: str | list[str],
+        *,
+        metric_name: str | None = None,
+        data_source: DataSource = "test",
+        aggregate: Aggregate | None = ("mean", "std"),
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        """Compute a custom metric.
+
+        It brings some flexibility to compute any desired metric. However, we need to
+        follow some rules:
+
+        - `metric_function` should take `y_true` and `y_pred` as the first two
+          positional arguments.
+        - `response_method` corresponds to the estimator's method to be invoked to get
+          the predictions. It can be a string or a list of strings to defined in which
+          order the methods should be invoked.
+
+        Parameters
+        ----------
+        metric_function : callable
+            The metric function to be computed. The expected signature is
+            `metric_function(y_true, y_pred, **kwargs)`.
+
+        response_method : {"predict", "predict_proba", "predict_log_proba", \
+            "decision_function"} or list of such str
+            The estimator's method to be invoked to get the predictions.
+
+        metric_name : str, default=None
+            The name of the metric. If not provided, it will be inferred from the
+            metric function.
+
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        **kwargs : dict
+            Any additional keyword arguments to be passed to the metric function.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
+
+        Returns
+        -------
+        pd.DataFrame
+            The custom metric.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.metrics import mean_absolute_error
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> estimator_1 = Ridge(random_state=42)
+        >>> estimator_2 = Ridge(random_state=43)
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
+        >>> comparison_report.metrics.custom_metric(
+        ...     metric_function=mean_absolute_error,
+        ...     response_method="predict",
+        ...     metric_name="MAE",
+        ... )
+        Estimator      Ridge_1      Ridge_2
+        Metric
+        MAE           46.56...     46.56...
+        """
+        # create a scorer with `greater_is_better=True` to not alter the output of
+        # `metric_function`
+        scorer = make_scorer(
+            metric_function,
+            greater_is_better=True,
+            response_method=response_method,
+            **kwargs,
+        )
+        metric = {metric_name: scorer} if metric_name is not None else [scorer]
+        return self.summarize(
+            metric=metric,
+            data_source=data_source,
+        ).frame(
+            aggregate=aggregate,
+        )
+
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
