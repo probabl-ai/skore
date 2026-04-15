@@ -131,7 +131,7 @@ class Check:
         `"comparison-estimator"`, or `"comparison-cross-validation"`.
 
     docs_url : str or None, default=None
-        optional link or documentation anchor: a string starting with `"https"`
+        optional link or documentation anchor: a string starting with `"http"`
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
         the automatic diagnostic user guide.
     """
@@ -162,17 +162,17 @@ class Check:
         self.report_type = report_type
 
     def run(self, report: _BaseReport) -> dict | None:
-        """Run the check on the report and build a formatted result.
+        """Run the check on the report and return an issue dictionary.
 
         Parameters
         ----------
-        report : EstimatorReport or CrossValidationReport or ComparisonReport
+        report : _BaseReport
             The report to run the check on.
 
         Returns
         -------
         dict or None
-            A dictionary with the check code, title, documentation URL, and explanation
+            A dictionary with the title, documentation URL, and explanation
             as the value, or None if the check did not find any issues.
         """
         explanation = self.check_function(report)
