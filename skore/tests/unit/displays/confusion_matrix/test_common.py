@@ -116,9 +116,9 @@ class TestConfusionMatrixDisplay:
             "normalized_by_all",
             "threshold",
             "label",
+            "split",
             "estimator",
             "data_source",
-            "split",
         ]
         expected_rows = 0
         for _, group in display.confusion_matrix_thresholded.groupby(

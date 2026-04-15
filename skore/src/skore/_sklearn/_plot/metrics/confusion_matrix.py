@@ -442,12 +442,15 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         classes = estimator.classes_
 
-        confusion_matrix_predict = cls._build_predict_frame(
-            sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred),
-            classes,
-            estimator_name,
-            data_source,
-        )
+        confusion_matrix_predict = cls._build_confusion_frame(
+            sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred)[np.newaxis, ...],
+            thresholds=np.array([np.nan]),
+            labels=classes,
+            # metadata:
+            split=None,
+            estimator=estimator_name,
+            data_source=data_source,
+        ).drop(columns=["threshold"])
 
         confusion_matrix_thresholded = None
         if y_scores is not None:
@@ -456,22 +459,30 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
             ovr_dfs = []
             for class_idx, label in enumerate(classes):
-                ovr_df = cls._compute_data_ovr(
+                tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
                     y_true=y_true_onehot[:, class_idx],
                     y_score=y_scores_arr[:, class_idx],
-                    labels=[
-                        next(clss for clss in classes if clss != label)
-                        if ml_task == "binary-classification"
-                        else f"not {label}",
-                        label,
-                    ],
-                    label=label,
-                    estimator=estimator_name,
-                    data_source=data_source,
-                    split=None,
+                    pos_label=1,
                 )
-                ovr_dfs.append(ovr_df)
-
+                ovr_dfs.append(
+                    cls._build_confusion_frame(
+                        cm=np.column_stack([tns, fps, fns, tps])
+                        .reshape(-1, 2, 2)
+                        .astype(int),
+                        thresholds=thresholds,
+                        labels=[
+                            next(clss for clss in classes if clss != label)
+                            if ml_task == "binary-classification"
+                            else f"not {label}",
+                            label,
+                        ],
+                        # metadata:
+                        label=label,
+                        split=None,
+                        estimator=estimator_name,
+                        data_source=data_source,
+                    )
+                )
             confusion_matrix_thresholded = _concat_frames_with_column_data(ovr_dfs)
 
         return cls(
@@ -484,80 +495,36 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         )
 
     @staticmethod
-    def _build_predict_frame(
-        cm: NDArray,
-        classes: list[str],
-        estimator_name: str,
-        data_source: DataSource,
-    ) -> pd.DataFrame:
-        """Build the predict-based n x n confusion matrix dataframe."""
-        cm_batch = cm[np.newaxis, ...]
-        n_classes = len(classes)
-
-        counts = cm_batch.reshape(-1)
-
-        row_sums = cm_batch.sum(axis=2, keepdims=True)
-        cm_true = np.zeros_like(cm_batch, dtype=float)
-        np.divide(cm_batch, row_sums, out=cm_true, where=row_sums != 0)
-
-        col_sums = cm_batch.sum(axis=1, keepdims=True)
-        cm_pred = np.zeros_like(cm_batch, dtype=float)
-        np.divide(cm_batch, col_sums, out=cm_pred, where=col_sums != 0)
-
-        total_sums = cm_batch.sum(axis=(1, 2), keepdims=True)
-        cm_all = np.zeros_like(cm_batch, dtype=float)
-        np.divide(cm_batch, total_sums, out=cm_all, where=total_sums != 0)
-
-        return pd.DataFrame(
-            {
-                "true_label": np.repeat(classes, n_classes),
-                "predicted_label": np.tile(classes, n_classes),
-                "count": counts,
-                "normalized_by_true": cm_true.reshape(-1),
-                "normalized_by_pred": cm_pred.reshape(-1),
-                "normalized_by_all": cm_all.reshape(-1),
-                "split": None,
-                "estimator": estimator_name,
-                "data_source": data_source,
-            }
-        )
-
-    @staticmethod
-    def _compute_data_ovr(y_true, y_score, labels, **metadata):
+    def _build_confusion_frame(cm, thresholds, labels, **metadata):
         """Compute per-class OvR confusion matrix at all thresholds."""
-        tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
-            y_true=y_true, y_score=y_score, pos_label=1
-        )
-        cms = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
+        counts = cm.reshape(-1)
 
-        counts = cms.reshape(-1)
+        row_sums = cm.sum(axis=2, keepdims=True)
+        cm_true = np.zeros_like(cm, dtype=float)
+        np.divide(cm, row_sums, out=cm_true, where=row_sums != 0)
 
-        row_sums = cms.sum(axis=2, keepdims=True)
-        cm_true = np.zeros_like(cms, dtype=float)
-        np.divide(cms, row_sums, out=cm_true, where=row_sums != 0)
+        col_sums = cm.sum(axis=1, keepdims=True)
+        cm_pred = np.zeros_like(cm, dtype=float)
+        np.divide(cm, col_sums, out=cm_pred, where=col_sums != 0)
 
-        col_sums = cms.sum(axis=1, keepdims=True)
-        cm_pred = np.zeros_like(cms, dtype=float)
-        np.divide(cms, col_sums, out=cm_pred, where=col_sums != 0)
+        total_sums = cm.sum(axis=(1, 2), keepdims=True)
+        cm_all = np.zeros_like(cm, dtype=float)
+        np.divide(cm, total_sums, out=cm_all, where=total_sums != 0)
 
-        total_sums = cms.sum(axis=(1, 2), keepdims=True)
-        cm_all = np.zeros_like(cms, dtype=float)
-        np.divide(cms, total_sums, out=cm_all, where=total_sums != 0)
-
-        n_thresholds = len(thresholds)
         data = {
-            "true_label": np.tile(np.repeat(labels, 2), n_thresholds),
-            "predicted_label": np.tile(np.tile(labels, 2), n_thresholds),
+            "true_label": np.tile(np.repeat(labels, len(labels)), len(thresholds)),
+            "predicted_label": np.tile(np.tile(labels, len(labels)), len(thresholds)),
             "count": counts,
             "normalized_by_true": cm_true.reshape(-1),
             "normalized_by_pred": cm_pred.reshape(-1),
             "normalized_by_all": cm_all.reshape(-1),
-            "threshold": np.repeat(thresholds, 4),
+            "threshold": np.repeat(thresholds, len(labels) ** 2),
             **metadata,
         }
-        n = n_thresholds * 4
         for col in metadata:
-            data[col] = pd.Series([data[col]], dtype="category").repeat(n)
+            data[col] = pd.Series([data[col]], dtype="category").repeat(
+                len(thresholds) * len(labels) ** 2
+            )
 
         return pd.DataFrame(data)
 
