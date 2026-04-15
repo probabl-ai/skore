@@ -4,6 +4,7 @@ from io import BytesIO
 
 import joblib
 import numpy as np
+import pandas as pd
 import pytest
 import skrub
 from sklearn.cluster import KMeans
@@ -225,6 +226,33 @@ def test_pickle(forest_binary_classification_with_test):
 
     with BytesIO() as stream:
         joblib.dump(report, stream)
+
+
+def test_flat_index(forest_binary_classification_with_test):
+    """Check that the index is flattened when `flat_index` is True.
+
+    Since `pos_label` is None, then by default a MultiIndex would be returned.
+    Here, we force to have a single-index by passing `flat_index=True`.
+    """
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result = report.metrics.summarize().frame(flat_index=True)
+    assert result.shape == (10, 1)
+    assert isinstance(result.index, pd.Index)
+    assert result.index.tolist() == [
+        "accuracy",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "log_loss",
+        "brier_score",
+        "fit_time_s",
+        "predict_time_s",
+    ]
+
+    assert result.columns.tolist() == ["RandomForestClassifier"]
 
 
 def test_get_predictions():
@@ -498,3 +526,45 @@ def test_report_with_data_op():
 
     report = EstimatorReport(data_op)
     assert isinstance(report.metrics.accuracy(), float)
+
+
+def test_from_state_bypasses_init_and_restores_state(
+    monkeypatch, logistic_binary_classification_with_test
+):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(
+        estimator,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    expected_accuracy = report.metrics.accuracy()
+    report.cache_predictions()
+    state = report.get_state()
+
+    def _unexpected_init(self, *args, **kwargs):
+        raise AssertionError("__init__ should not be called by from_state")
+
+    monkeypatch.setattr(EstimatorReport, "__init__", _unexpected_init)
+
+    restored = EstimatorReport.from_state(state)
+
+    assert restored.id == report.id
+    assert restored.fit == report.fit
+    assert restored.fit_time_ == report.fit_time_
+    assert restored.X_test is report.X_test
+    assert restored.ml_task == report.ml_task
+    assert restored.pos_label == report.pos_label
+    assert restored._cache == report._cache
+    assert restored.metrics.accuracy() == expected_accuracy
+
+    # check new metrics can be computed:
+    report.metrics.roc_auc()
+
+
+def test_from_state_rejects_unknown_version(logistic_binary_classification_with_test):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    state = report.get_state() | {"version": 999}
+
+    with pytest.raises(ValueError, match="Unexpected state version"):
+        EstimatorReport.from_state(state)
