@@ -50,7 +50,9 @@ class _BaseReport(ReportHelpMixin):
                 and check.report_type == self._report_type
             ):
                 try:
-                    self._issues_cache.update(check._run(self))
+                    result = check.run(self)
+                    if result:
+                        self._issues_cache.update({check.code: result})
                     self._checked_codes.add(check.code)
                 except DiagnosticNotApplicable:
                     self._checked_codes |= {check.code}

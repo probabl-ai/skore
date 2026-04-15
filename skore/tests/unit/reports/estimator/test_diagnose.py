@@ -61,7 +61,7 @@ def test_exception_when_train_data_missing(regression_train_test_split):
     for check in report._checks_registry:
         if check.code in ["SKD001", "SKD002"]:
             with pytest.raises(DiagnosticNotApplicable):
-                check._run(report)
+                check.run(report)
 
 
 def test_diagnose_no_issues(monkeypatch, regression_data):
@@ -122,14 +122,14 @@ def test_diagnose_documentation_url_points_to_existing_rst():
 def test_diagnose_reuses_cached_results(monkeypatch, regression_data):
     """Check that check results are cached and reused."""
     calls = 0
-    original_run = Check._run
+    original_run = Check.run
 
     def counting_run(self, report):
         nonlocal calls
         calls += 1
         return original_run(self, report)
 
-    monkeypatch.setattr(Check, "_run", counting_run)
+    monkeypatch.setattr(Check, "run", counting_run)
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=0.2)
     report.diagnose()
@@ -163,14 +163,14 @@ def test_add_checks_reuses_builtin_cache(monkeypatch, regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
     calls = 0
-    original_run = Check._run
+    original_run = Check.run
 
     def counting_run(self, rpt):
         nonlocal calls
         calls += 1
         return original_run(self, rpt)
 
-    monkeypatch.setattr(Check, "_run", counting_run)
+    monkeypatch.setattr(Check, "run", counting_run)
 
     report.diagnose()
     calls_after_first = calls

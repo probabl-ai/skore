@@ -35,7 +35,7 @@ def check_high_feature_count(report):
     if report.X_test is None:
         raise DiagnosticNotApplicable()
 
-    n_features = np.asarray(report.X_test).shape[1]
+    n_features = X.shape[1]
     if n_features > 50:
         return (
             f"The dataset has {n_features} features which may hurt model performance. "
@@ -46,7 +46,7 @@ def check_high_feature_count(report):
 
 
 custom_check_1 = Check(
-    function=check_high_feature_count,
+    check_function=check_high_feature_count,
     code="CSTM001",
     title="High feature count",
     report_type="estimator",
@@ -111,7 +111,7 @@ def check_cv_score_variance(report):
 
 
 custom_check_2 = Check(
-    function=check_cv_score_variance,
+    check_function=check_cv_score_variance,
     code="CSTM002",
     title="High score variance across folds",
     report_type="cross-validation",

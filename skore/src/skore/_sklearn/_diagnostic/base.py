@@ -3,12 +3,16 @@ from __future__ import annotations
 from collections.abc import Callable
 from html import escape
 from importlib.metadata import PackageNotFoundError, version
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
 from skore._externals._sklearn_compat import parse_version
 from skore._sklearn.types import ReportType
 from skore._utils.repr.base import DisplayHelpMixin
+
+if TYPE_CHECKING:
+    from skore._sklearn._base import _BaseReport
 
 
 class DiagnosticDisplay(DisplayHelpMixin):
@@ -110,7 +114,7 @@ class Check:
 
     Parameters
     ----------
-    function : callable
+    check_function : callable
         callable taking the report instance and returning an explanation string
         when the check detects a problem, or a false value (e.g. `None` or
         `""`) when there is nothing to report.
@@ -134,13 +138,13 @@ class Check:
 
     def __init__(
         self,
-        function: Callable,
+        check_function: Callable,
         code: str,
         title: str,
         report_type: ReportType,
         docs_url: str | None = None,
     ):
-        self.function = function
+        self.check_function = check_function
         self.code = code
         self.title = title
         self.docs_url = docs_url
@@ -157,24 +161,36 @@ class Check:
             )
         self.report_type = report_type
 
-    def _run(self, report) -> dict[str, dict]:
-        explanation = self.function(report)
+    def run(self, report: _BaseReport) -> dict | None:
+        """Run the check on the report and build a formatted result.
+
+        Parameters
+        ----------
+        report : EstimatorReport or CrossValidationReport or ComparisonReport
+            The report to run the check on.
+
+        Returns
+        -------
+        dict or None
+            A dictionary with the check code, title, documentation URL, and explanation
+            as the value, or None if the check did not find any issues.
+        """
+        explanation = self.check_function(report)
         if explanation:
             return {
-                self.code: {
-                    "title": self.title,
-                    "docs_url": self.docs_url,
-                    "explanation": explanation,
-                }
+                "title": self.title,
+                "docs_url": self.docs_url,
+                "explanation": explanation,
             }
-        return {}
+
+        return None
 
 
 def _get_issue_documentation_url(issue: dict) -> str | None:
     docs_url = issue.get("docs_url")
     if docs_url is None:
         return None
-    if docs_url.startswith("https"):
+    if docs_url.startswith("http"):
         return docs_url
 
     try:
@@ -189,18 +205,11 @@ def _get_issue_documentation_url(issue: dict) -> str | None:
     return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automatic_diagnostic.html#{docs_url}"
 
 
-def _is_external_url(issue: dict) -> bool:
-    return issue.get("docs_url", "").startswith("https")
-
-
 def _format_issue_message(code: str, issue: dict) -> str:
     msg = f"[{code}] {issue['title']}. {issue['explanation']}"
     docs_url = _get_issue_documentation_url(issue)
     if docs_url is not None:
-        if _is_external_url(issue):
-            msg += f" Read more about this here: {docs_url}."
-        else:
-            msg += f" Read our documentation for more details: {docs_url}."
+        msg += f" Read more about this here: {docs_url}."
     msg += f" Mute with `ignore=['{code}']`."
     return msg
 
@@ -213,16 +222,9 @@ def _format_issue_message_html(code: str, issue: dict) -> str:
     docs_url = _get_issue_documentation_url(issue)
     if docs_url is not None:
         escaped_url = escape(docs_url, quote=True)
-        if _is_external_url(issue):
-            msg += (
-                f' Read more about this <a href="{escaped_url}" target="_blank"'
-                ' rel="noopener noreferrer">here</a>.'
-            )
-        else:
-            msg += (
-                f' Read <a href="{escaped_url}" target="_blank"'
-                ' rel="noopener noreferrer">our documentation</a>'
-                " for more details."
-            )
+        msg += (
+            f' Read more about this <a href="{escaped_url}" target="_blank"'
+            ' rel="noopener noreferrer">here</a>.'
+        )
     msg += f" Mute with <code>ignore=['{escaped_code}']</code>."
     return msg
