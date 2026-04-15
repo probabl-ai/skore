@@ -108,7 +108,9 @@ def test_multiclass_classification(
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
-@pytest.mark.parametrize("metric, nb_stats", [("r2", 1), ("rmse", 1)])
+@pytest.mark.parametrize(
+    "metric, nb_stats", [("r2", 1), ("rmse", 1), ("mae", 1), ("map", 1)]
+)
 def test_regression(linear_regression_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = linear_regression_data, 2
@@ -116,7 +118,9 @@ def test_regression(linear_regression_data, metric, nb_stats):
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
-@pytest.mark.parametrize("metric, nb_stats", [("r2", 2), ("rmse", 2)])
+@pytest.mark.parametrize(
+    "metric, nb_stats", [("r2", 2), ("rmse", 2), ("mae", 2), ("map", 2)]
+)
 def test_regression_multioutput(linear_regression_multioutput_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = linear_regression_multioutput_data, 2
