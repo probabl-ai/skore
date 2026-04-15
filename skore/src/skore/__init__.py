@@ -1,5 +1,6 @@
 """Configure logging and global settings."""
 
+from importlib.metadata import version
 from logging import INFO, NullHandler, getLogger
 from warnings import warn
 
@@ -94,8 +95,4 @@ skore_console_theme = Theme(
 
 
 console = Console(theme=skore_console_theme, width=88)
-
-
-from importlib.metadata import version
-
 __version__ = version("skore")
