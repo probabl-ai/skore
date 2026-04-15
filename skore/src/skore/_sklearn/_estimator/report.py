@@ -304,10 +304,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "test_data": self._test_data,
             },
             "predictions": predictions,
-            # ---------- RESULTS ------------
+            # ---------- OPTIONAL STATE ------------
             # this part is less structured and not crucial for reconstructing a report
             # so we won't try ensuring backward compatibility.
-            "cache": cached_results,
+            "optional": {
+                "cache": cached_results,
+            },
         }
 
     @classmethod
@@ -332,7 +334,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report._train_data = data["train_data"]
         report._test_data = data["test_data"]
         report._cache = Cache()
-        report._cache.update(state["cache"])
+        report._cache.update(state["optional"]["cache"])
         report._cache.update(
             {
                 make_cache_key(data_source, name): val

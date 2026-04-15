@@ -336,7 +336,7 @@ def test_from_state_bypasses_init_and_restores_state(
     assert len(restored.estimator_reports_) == len(report.estimator_reports_)
     assert restored.estimator_reports_[0]._cache == report.estimator_reports_[0]._cache
     assert state["estimator_reports"][0]["predictions"]
-    assert state["estimator_reports"][0]["cache"]
+    assert state["estimator_reports"][0]["optional"]["cache"]
     assert restored.metrics.accuracy().equals(expected_accuracy)
 
     # check new metrics/predictions can be computed:
