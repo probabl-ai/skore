@@ -57,6 +57,7 @@ def monkeypatch_upload_with_mock(monkeypatch, upload_mock):
 @fixture
 def monkeypatch_upload_routes(respx_mock):
     mocks = [
+        ("get", "projects/workspace/name/artifacts", Response(201, json=[])),
         (
             "post",
             "projects/workspace/name/artifacts",

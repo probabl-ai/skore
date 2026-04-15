@@ -148,7 +148,7 @@ class TestEstimatorReportPayload:
             list(map(type, payload.metrics))
 
     @mark.respx()
-    def test_medias(self, payload):
+    def test_medias(self, tmp_path, payload):
         assert list(map(type, payload.medias)) == [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
@@ -169,6 +169,9 @@ class TestEstimatorReportPayload:
             TableReportTest,
             TableReportTrain,
         ]
+
+        # ensure that there is no residual file
+        assert not len(list(tmp_path.iterdir()))
 
     @mark.respx()
     def test_model_dump(self, binary_classification, payload):

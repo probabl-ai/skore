@@ -6,12 +6,11 @@ from abc import ABC, abstractmethod
 from functools import cached_property
 from pathlib import Path
 from tempfile import NamedTemporaryFile
-from typing import Any, cast
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from skore_hub_project.artifact.upload import upload, uploaded as file_uploaded
-from skore_hub_project.client.client import HUBClient
+from skore_hub_project.artifact.upload import upload, uploaded
 from skore_hub_project.project.project import Project
 
 
@@ -29,11 +28,6 @@ class Artifact(BaseModel, ABC):
         True when the artifact content is computed, False otherwise.
     uploaded : bool
         True when the artifact is uploaded, False otherwise.
-
-    Notes
-    -----
-    It triggers the upload of the content of the artifact, in a lazy way. It is uploaded
-    as a file to the ``hub`` artifacts storage.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -59,32 +53,19 @@ class Artifact(BaseModel, ABC):
 
     @abstractmethod
     def compute(self) -> None:
-        """
-        Compute and write the content of the artifact in ``artifact.filepath``.
-
-        Notes
-        -----
-        It is triggered when ``artifact.upload`` is called, in a lazy way.
-        """
+        """Compute and write the content of the artifact in ``artifact.filepath``."""
 
     @property
     def uploaded(self) -> bool:
         assert self.checksum is not None, "`checksum` must not be None"
 
-        if not hasattr(self, "__uploaded"):
-            self.__uploaded = file_uploaded(self.project, self.checksum)
+        if not hasattr(self, "_Artifact__uploaded"):
+            self.__uploaded = uploaded(self.project, self.checksum)
 
         return self.__uploaded
 
     def upload(self) -> None:
-        """
-        Upload the artifact.
-
-        Notes
-        -----
-        Artifact that was already uploaded in its whole will be ignored.
-        It triggers the compute of the content of the artifact, in a lazy way.
-        """
+        """Upload the artifact."""
         assert self.checksum is not None, "`checksum` must not be None"
 
         if not self.uploaded:
