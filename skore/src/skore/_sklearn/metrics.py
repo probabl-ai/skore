@@ -296,12 +296,11 @@ class Precision(Metric):
     def __call__(
         self, *, report: EstimatorReport, data_source="test", average=None, **kwargs
     ):
-        if (
-            average is None
-            and report._ml_task == "binary-classification"
-            and report.pos_label is not None
-        ):
-            average = "binary"
+        if report._ml_task == "binary-classification":
+            if average is None and report.pos_label is not None:
+                average = "binary"
+            elif average != "binary":
+                kwargs["pos_label"] = None
 
         return super().__call__(
             report=report, data_source=data_source, average=average, **kwargs
@@ -322,12 +321,11 @@ class Recall(Metric):
     def __call__(
         self, *, report: EstimatorReport, data_source="test", average=None, **kwargs
     ):
-        if (
-            average is None
-            and report._ml_task == "binary-classification"
-            and report.pos_label is not None
-        ):
-            average = "binary"
+        if report._ml_task == "binary-classification":
+            if average is None and report.pos_label is not None:
+                average = "binary"
+            elif average != "binary":
+                kwargs["pos_label"] = None
 
         return super().__call__(
             report=report, data_source=data_source, average=average, **kwargs

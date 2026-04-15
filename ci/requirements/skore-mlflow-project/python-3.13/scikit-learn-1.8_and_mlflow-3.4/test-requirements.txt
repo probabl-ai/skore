@@ -1,56 +1,118 @@
 alembic==1.18.4
     # via mlflow
+annotated-doc==0.0.4
+    # via
+    #   fastapi
+    #   typer
 annotated-types==0.7.0
     # via pydantic
+anyio==4.13.0
+    # via
+    #   httpx
+    #   mcp
+    #   sse-starlette
+    #   starlette
+attrs==26.1.0
+    # via
+    #   cyclopts
+    #   jsonschema
+    #   referencing
+authlib==1.6.10
+    # via fastmcp
+beartype==0.22.9
+    # via
+    #   py-key-value-aio
+    #   py-key-value-shared
 blinker==1.9.0
     # via flask
-cachetools==5.5.2
-    # via mlflow-skinny
+cachetools==6.2.6
+    # via
+    #   mlflow-skinny
+    #   mlflow-tracing
+    #   py-key-value-aio
 certifi==2026.2.25
-    # via requests
+    # via
+    #   httpcore
+    #   httpx
+    #   requests
 cffi==2.0.0
     # via cryptography
 cfgv==3.5.0
     # via pre-commit
-charset-normalizer==3.4.5
+charset-normalizer==3.4.7
     # via requests
-click==8.3.1
+click==8.3.2
     # via
     #   flask
     #   mlflow-skinny
+    #   typer
+    #   uvicorn
 cloudpickle==3.1.2
-    # via mlflow-skinny
+    # via
+    #   mlflow-skinny
+    #   pydocket
 contourpy==1.3.3
     # via matplotlib
-coverage[toml]==7.13.4
+coverage[toml]==7.13.5
     # via pytest-cov
-cryptography==46.0.7
-    # via google-auth
+cronsim==2.7
+    # via pydocket
+cryptography==45.0.7
+    # via
+    #   authlib
+    #   google-auth
+    #   mlflow
+    #   pyjwt
+    #   secretstorage
 cycler==0.12.1
     # via matplotlib
-databricks-sdk==0.98.0
-    # via mlflow-skinny
+cyclopts==4.10.2
+    # via fastmcp
+databricks-sdk==0.102.0
+    # via
+    #   mlflow-skinny
+    #   mlflow-tracing
 diskcache==5.6.3
-    # via skore-local-project
+    # via
+    #   py-key-value-aio
+    #   skore-local-project
 distlib==0.4.0
     # via virtualenv
+dnspython==2.8.0
+    # via email-validator
 docker==7.1.0
     # via mlflow
+docstring-parser==0.18.0
+    # via cyclopts
+docutils==0.22.4
+    # via rich-rst
+email-validator==2.3.0
+    # via pydantic
+exceptiongroup==1.3.1
+    # via fastmcp
 execnet==2.1.2
     # via pytest-xdist
-filelock==3.25.1
+fakeredis[lua]==2.34.1
+    # via
+    #   fastmcp
+    #   pydocket
+fastapi==0.135.3
+    # via mlflow-skinny
+fastmcp==2.14.7
+    # via mlflow
+filelock==3.25.2
     # via
     #   python-discovery
     #   virtualenv
 flask==3.1.3
     # via mlflow
-fonttools==4.62.0
+fonttools==4.62.1
     # via matplotlib
 gitdb==4.0.12
     # via gitpython
 gitpython==3.1.46
     # via mlflow-skinny
-google-auth==2.49.0
+google-auth==2.49.2
     # via databricks-sdk
 graphene==3.4.3
     # via mlflow
@@ -60,14 +122,30 @@ graphql-core==3.2.8
     #   graphql-relay
 graphql-relay==3.2.0
     # via graphene
-greenlet==3.3.2
+greenlet==3.4.0
     # via sqlalchemy
 gunicorn==23.0.0
     # via mlflow
-identify==2.6.17
+h11==0.16.0
+    # via
+    #   httpcore
+    #   uvicorn
+httpcore==1.0.9
+    # via httpx
+httpx==0.28.1
+    # via
+    #   fastmcp
+    #   mcp
+httpx-sse==0.4.3
+    # via mcp
+identify==2.6.18
     # via pre-commit
 idna==3.11
-    # via requests
+    # via
+    #   anyio
+    #   email-validator
+    #   httpx
+    #   requests
 importlib-metadata==8.7.1
     # via
     #   mlflow-skinny
@@ -76,10 +154,19 @@ iniconfig==2.3.0
     # via pytest
 itsdangerous==2.2.0
     # via flask
+jaraco-classes==3.4.0
+    # via keyring
+jaraco-context==6.1.2
+    # via keyring
+jaraco-functools==4.4.0
+    # via keyring
+jeepney==0.9.0
+    # via
+    #   keyring
+    #   secretstorage
 jinja2==3.1.6
     # via
     #   flask
-    #   mlflow
     #   skore
     #   skrub
 joblib==1.5.3
@@ -88,12 +175,22 @@ joblib==1.5.3
     #   scikit-learn
     #   skore
     #   skore-local-project
+jsonref==1.1.0
+    # via fastmcp
+jsonschema==4.26.0
+    # via mcp
+jsonschema-path==0.4.5
+    # via fastmcp
+jsonschema-specifications==2025.9.1
+    # via jsonschema
+keyring==25.7.0
+    # via py-key-value-aio
 kiwisolver==1.5.0
     # via matplotlib
+lupa==2.7
+    # via fakeredis
 mako==1.3.10
     # via alembic
-markdown==3.10.2
-    # via mlflow
 markdown-it-py==4.0.0
     # via rich
 markupsafe==3.0.3
@@ -109,19 +206,27 @@ matplotlib==3.10.8
     #   seaborn
     #   skore
     #   skrub
+mcp==1.27.0
+    # via fastmcp
 mdurl==0.1.2
     # via markdown-it-py
-mlflow==2.20.4
+mlflow==3.4.0
     # via
     #   --override skore-mlflow-project/overrides.txt
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
-mlflow-skinny==2.20.4
+mlflow-skinny==3.4.0
     # via mlflow
-narwhals==2.18.0
+mlflow-tracing==3.4.0
+    # via mlflow
+more-itertools==11.0.2
+    # via
+    #   jaraco-classes
+    #   jaraco-functools
+narwhals==2.19.0
     # via plotly
 nodeenv==1.10.0
     # via pre-commit
-numpy==2.4.3
+numpy==2.4.4
     # via
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
     #   contourpy
@@ -133,20 +238,32 @@ numpy==2.4.3
     #   seaborn
     #   skore
     #   skrub
-opentelemetry-api==1.40.0
+openapi-pydantic==0.5.1
+    # via fastmcp
+opentelemetry-api==1.41.0
     # via
     #   mlflow-skinny
+    #   mlflow-tracing
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
-opentelemetry-sdk==1.40.0
-    # via mlflow-skinny
-opentelemetry-semantic-conventions==0.61b0
-    # via opentelemetry-sdk
-packaging==24.2
+    #   pydocket
+opentelemetry-proto==1.41.0
     # via
+    #   mlflow-skinny
+    #   mlflow-tracing
+opentelemetry-sdk==1.41.0
+    # via
+    #   mlflow-skinny
+    #   mlflow-tracing
+opentelemetry-semantic-conventions==0.62b0
+    # via opentelemetry-sdk
+packaging==25.0
+    # via
+    #   fastmcp
     #   gunicorn
     #   matplotlib
     #   mlflow-skinny
+    #   mlflow-tracing
     #   plotly
     #   pytest
 pandas==2.3.3
@@ -156,14 +273,19 @@ pandas==2.3.3
     #   seaborn
     #   skore
     #   skrub
-pillow==12.1.1
+pathable==0.5.0
+    # via jsonschema-path
+pathvalidate==3.3.1
+    # via py-key-value-aio
+pillow==12.2.0
     # via matplotlib
-platformdirs==4.9.4
+platformdirs==4.9.6
     # via
+    #   fastmcp
     #   python-discovery
     #   skore-local-project
     #   virtualenv
-plotly==6.6.0
+plotly==6.7.0
     # via skore
 pluggy==1.6.0
     # via
@@ -171,42 +293,65 @@ pluggy==1.6.0
     #   pytest-cov
 pre-commit==4.5.1
     # via skore-mlflow-project (skore-mlflow-project/pyproject.toml)
-protobuf==5.29.6
+prometheus-client==0.25.0
+    # via pydocket
+protobuf==6.33.6
     # via
     #   databricks-sdk
     #   mlflow-skinny
-pyarrow==19.0.1
+    #   mlflow-tracing
+    #   opentelemetry-proto
+py-key-value-aio[disk, keyring, memory, redis]==0.3.0
+    # via
+    #   fastmcp
+    #   pydocket
+py-key-value-shared==0.3.0
+    # via py-key-value-aio
+pyarrow==21.0.0
     # via mlflow
 pyasn1==0.6.3
-    # via
-    #   pyasn1-modules
-    #   rsa
+    # via pyasn1-modules
 pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0
     # via cffi
-pydantic==2.12.5
-    # via mlflow-skinny
-pydantic-core==2.41.5
+pydantic[email]==2.13.0
+    # via
+    #   fastapi
+    #   fastmcp
+    #   mcp
+    #   mlflow-skinny
+    #   mlflow-tracing
+    #   openapi-pydantic
+    #   pydantic-settings
+pydantic-core==2.46.0
     # via pydantic
+pydantic-settings==2.13.1
+    # via mcp
+pydocket==0.18.2
+    # via fastmcp
 pydot==4.0.1
     # via skrub
 pygments==2.20.0
     # via
     #   pytest
     #   rich
+pyjwt[crypto]==2.12.1
+    # via mcp
 pyparsing==3.3.2
     # via
     #   matplotlib
     #   pydot
-pytest==9.0.2
+pyperclip==1.11.0
+    # via fastmcp
+pytest==9.0.3
     # via
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
     #   pytest-cov
     #   pytest-order
     #   pytest-randomly
     #   pytest-xdist
-pytest-cov==7.0.0
+pytest-cov==7.1.0
     # via skore-mlflow-project (skore-mlflow-project/pyproject.toml)
 pytest-order==1.3.0
     # via skore-mlflow-project (skore-mlflow-project/pyproject.toml)
@@ -219,27 +364,56 @@ python-dateutil==2.9.0.post0
     #   graphene
     #   matplotlib
     #   pandas
-python-discovery==1.1.3
+python-discovery==1.2.2
     # via virtualenv
+python-dotenv==1.2.2
+    # via
+    #   fastmcp
+    #   mlflow-skinny
+    #   pydantic-settings
+python-json-logger==4.1.0
+    # via pydocket
+python-multipart==0.0.26
+    # via mcp
 pytz==2026.1.post1
     # via pandas
 pyyaml==6.0.3
     # via
+    #   jsonschema-path
     #   mlflow-skinny
     #   pre-commit
-requests==2.33.0
+redis==7.4.0
+    # via
+    #   fakeredis
+    #   py-key-value-aio
+    #   pydocket
+referencing==0.37.0
+    # via
+    #   jsonschema
+    #   jsonschema-path
+    #   jsonschema-specifications
+requests==2.33.1
     # via
     #   databricks-sdk
     #   docker
     #   mlflow-skinny
     #   skrub
-rich==14.3.3
+rich==15.0.0
     # via
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
+    #   cyclopts
+    #   fastmcp
+    #   pydocket
+    #   rich-rst
     #   skore
     #   skore-local-project
-rsa==4.9.1
-    # via google-auth
+    #   typer
+rich-rst==1.3.2
+    # via cyclopts
+rpds-py==0.30.0
+    # via
+    #   jsonschema
+    #   referencing
 scikit-learn==1.8.0
     # via
     #   --override skore-mlflow-project/overrides.txt
@@ -254,49 +428,81 @@ scipy==1.17.1
     #   skrub
 seaborn==0.13.2
     # via skore
+secretstorage==3.5.0
+    # via keyring
+shellingham==1.5.4
+    # via typer
 six==1.17.0
     # via python-dateutil
-skore==0.13.1
+skore==0.15.0
     # via skore-mlflow-project (skore-mlflow-project/pyproject.toml)
-skore-local-project==0.0.5
+skore-local-project==0.0.6
     # via skore
-skrub==0.7.2
+skrub==0.8.0
     # via skore
 smmap==5.0.3
     # via gitdb
-sqlalchemy==2.0.48
+sortedcontainers==2.4.0
+    # via fakeredis
+sqlalchemy==2.0.49
     # via
     #   alembic
     #   mlflow
 sqlparse==0.5.5
     # via mlflow-skinny
+sse-starlette==3.3.4
+    # via mcp
+starlette==1.0.0
+    # via
+    #   fastapi
+    #   mcp
+    #   sse-starlette
 threadpoolctl==3.6.0
     # via scikit-learn
+typer==0.24.1
+    # via pydocket
 typing-extensions==4.15.0
     # via
     #   alembic
+    #   fastapi
     #   graphene
+    #   mcp
     #   mlflow-skinny
     #   opentelemetry-api
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
+    #   py-key-value-shared
     #   pydantic
     #   pydantic-core
+    #   pydocket
     #   sqlalchemy
     #   typing-inspection
 typing-inspection==0.4.2
-    # via pydantic
-tzdata==2025.3
+    # via
+    #   fastapi
+    #   mcp
+    #   pydantic
+    #   pydantic-settings
+tzdata==2026.1
     # via pandas
+uncalled-for==0.3.1
+    # via pydocket
 urllib3==2.6.3
     # via
     #   docker
     #   requests
-virtualenv==21.2.0
+uvicorn==0.44.0
+    # via
+    #   fastmcp
+    #   mcp
+    #   mlflow-skinny
+virtualenv==21.2.3
     # via pre-commit
-werkzeug==3.1.6
+websockets==16.0
+    # via fastmcp
+werkzeug==3.1.8
     # via flask
-xdoctest==1.3.0
+xdoctest==1.3.2
     # via skore-mlflow-project (skore-mlflow-project/pyproject.toml)
-zipp==3.23.0
+zipp==3.23.1
     # via importlib-metadata
