@@ -32,7 +32,6 @@ class TestConfusionMatrixDisplay:
         assert hasattr(display, "data_source")
         assert hasattr(display, "report_pos_label")
 
-        assert hasattr(display, "thresholds")
         assert hasattr(display, "labels")
 
         fig = display.plot()
@@ -192,117 +191,29 @@ class TestConfusionMatrixDisplay:
             assert xticklabels == ["0", "1", "2"]
             assert yticklabels == ["0", "1", "2"]
 
-    def test_thresholds_available_for_binary_classification(
-        self, fixture_prefix, request
-    ):
-        """Check that thresholds are available for binary classification."""
-        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
-        if isinstance(report, tuple):
-            report = report[0]
-        display = report.metrics.confusion_matrix()
-
-        assert display.thresholds is not None
-        assert len(display.thresholds) > 0
-        assert "threshold" in display.confusion_matrix_thresholded.columns
-
-    def test_thresholds_in_multiclass(self, pyplot, fixture_prefix, request):
-        """Check that the absence of thresholds is handled properly in multiclass."""
-        report = request.getfixturevalue(f"{fixture_prefix}_multiclass_classification")
-        if isinstance(report, tuple):
-            report = report[0]
-        display = report.metrics.confusion_matrix()
-
-        assert display.thresholds is not None
-        assert len(display.thresholds) > 0
-        assert display.confusion_matrix_thresholded is not None
-
-    def test_threshold_values_are_sorted(self, fixture_prefix, request):
-        """Check that thresholds are sorted in ascending order."""
-        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
-        if isinstance(report, tuple):
-            report = report[0]
-        display = report.metrics.confusion_matrix()
-
-        assert np.all(display.thresholds[:-1] <= display.thresholds[1:])
-
-    def test_threshold_values_are_unique(self, fixture_prefix, request):
-        """Check that thresholds contains unique values."""
-        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
-        if isinstance(report, tuple):
-            report = report[0]
-        display = report.metrics.confusion_matrix()
-
-        assert len(display.thresholds) == len(np.unique(display.thresholds))
-
-    def test_plot_no_threshold_in_title_by_default(self, fixture_prefix, request):
+    @pytest.mark.parametrize("task", ["binary", "multiclass"])
+    def test_plot_no_threshold_in_title_by_default(self, fixture_prefix, task, request):
         """Check that default plot (predict-based) does not show threshold in title."""
-        report = request.getfixturevalue(f"{fixture_prefix}_multiclass_classification")
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
         figure, _ = request.getfixturevalue(
-            f"{fixture_prefix}_multiclass_classification_figure_axes"
+            f"{fixture_prefix}_{task}_classification_figure_axes"
         )
 
         expected_title = "Confusion Matrix" + "\nData source: Test set"
         assert figure.get_suptitle() == expected_title
         assert "threshold" not in figure.get_suptitle().lower()
 
-    def test_threshold_greater_than_max(self, fixture_prefix, request):
-        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
+    @pytest.mark.parametrize("task", ["binary", "multiclass"])
+    def test_frame_all_returns_all_thresholds(self, fixture_prefix, task, request):
+        """Check that frame(threshold_value="all") returns all thresholds."""
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
-        label = display.labels[-1]
-        frame = display.frame(threshold_value=1.1, label=label)
-        frame_all = display.frame(threshold_value="all", label=label)
-
-        for (_est, _split), group in frame.groupby(
-            ["estimator", "split"], observed=True
-        ):
-            assert group["threshold"].nunique() == 1
-            group_all = frame_all
-            if _est is not None and not (isinstance(_est, float) and np.isnan(_est)):
-                group_all = group_all.query(f"estimator == '{_est}'")
-            if _split is not None and not (
-                isinstance(_split, float) and np.isnan(_split)
-            ):
-                group_all = group_all.query(f"split == {_split}")
-            assert group["threshold"].iloc[0] == group_all["threshold"].max()
-
-    def test_threshold_lower_than_min(self, fixture_prefix, request):
-        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
-        if isinstance(report, tuple):
-            report = report[0]
-        display = report.metrics.confusion_matrix()
-        label = display.labels[-1]
-        frame = display.frame(threshold_value=-0.1, label=label)
-        frame_all = display.frame(threshold_value="all", label=label)
-
-        for (_est, _split), group in frame.groupby(
-            ["estimator", "split"], observed=True
-        ):
-            assert group["threshold"].nunique() == 1
-            group_all = frame_all
-            if _est is not None and not (isinstance(_est, float) and np.isnan(_est)):
-                group_all = group_all.query(f"estimator == '{_est}'")
-            if _split is not None and not (
-                isinstance(_split, float) and np.isnan(_split)
-            ):
-                group_all = group_all.query(f"split == {_split}")
-            assert group["threshold"].iloc[0] == group_all["threshold"].min()
-
-    def test_frame_all_returns_all_thresholds_binary(self, fixture_prefix, request):
-        """Check that frame(threshold_value="all") returns all thresholds for binary."""
-        report = request.getfixturevalue(f"{fixture_prefix}_binary_classification")
-        if isinstance(report, tuple):
-            report = report[0]
-        display = report.metrics.confusion_matrix()
-
         frame_all = display.frame(threshold_value="all")
-        frame_at_threshold = display.frame(threshold_value=0.5)
-
-        assert frame_all["threshold"].nunique() > 1
-        assert frame_all.shape[0] > frame_at_threshold.shape[0]
+        assert frame_all.shape[0] == display.confusion_matrix_thresholded.shape[0]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_normalization(self, pyplot, fixture_prefix, task, request):
@@ -335,6 +246,43 @@ class TestConfusionMatrixDisplay:
                     assert np.all(valid), f"col sums should be 0 or 1, got {col_sums}"
                 else:
                     np.testing.assert_allclose(pivoted.sum().sum(), 1.0)
+
+    @pytest.mark.parametrize("task", ["binary", "multiclass"])
+    def test_threshold_selection(self, fixture_prefix, task, request):
+        """Check that frame snaps to the closest threshold and clips outside [0, 1]."""
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.metrics.confusion_matrix()
+
+        label = display.labels[-1]
+        frame_all = display.frame(threshold_value="all", label=label)
+
+        groupby_cols = []
+        if "cross-validation" in display.report_type:
+            groupby_cols.append("split")
+        if "comparison" in display.report_type:
+            groupby_cols.append("estimator")
+
+        def iter_groups(frame):
+            if groupby_cols:
+                return frame.groupby(groupby_cols, observed=True)
+            return [("_ungrouped", frame)]
+
+        available_thresholds_by_group = {
+            key: group["threshold"].unique() for key, group in iter_groups(frame_all)
+        }
+
+        for test_value in [0.3, 0.7, -10.0, 10.0]:
+            frame_selected = display.frame(threshold_value=test_value, label=label)
+            for key, selected_group in iter_groups(frame_selected):
+                selected_threshold = selected_group["threshold"].unique()
+                assert len(selected_threshold) == 1
+                available_thresholds = available_thresholds_by_group[key]
+                expected_threshold = available_thresholds[
+                    np.argmin(np.abs(available_thresholds - test_value))
+                ]
+                assert selected_threshold[0] == expected_threshold
 
 
 def test_data_source_both_is_not_supported(forest_binary_classification_with_test):

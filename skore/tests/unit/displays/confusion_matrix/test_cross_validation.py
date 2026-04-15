@@ -1,6 +1,5 @@
 import matplotlib as mpl
 import numpy as np
-import pandas as pd
 import pytest
 from sklearn.linear_model import LogisticRegression
 
@@ -15,8 +14,8 @@ def test_multiple_thresholds_different_confusion_matrices(
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.confusion_matrix()
 
-    low_threshold = display.thresholds[len(display.thresholds) // 4]
-    high_threshold = display.thresholds[3 * len(display.thresholds) // 4]
+    low_threshold = display.confusion_matrix_thresholded["threshold"].min()
+    high_threshold = display.confusion_matrix_thresholded["threshold"].max()
 
     frame_low = display.frame(threshold_value=low_threshold)
     frame_high = display.frame(threshold_value=high_threshold)
@@ -77,53 +76,6 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
         fig = display.plot(subplot_by=subplot_by)
         axes = fig.axes
         assert isinstance(axes[0], mpl.axes.Axes)
-
-
-def test_frame_default_returns_predict_based(forest_binary_classification_data):
-    """Check that frame() returns the predict-based n x n matrix by default."""
-    (estimator, X, y), cv = forest_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.confusion_matrix()
-
-    frame = display.frame()
-    assert isinstance(frame, pd.DataFrame)
-    n_classes = len(display.labels)
-    assert frame.shape == (n_classes * n_classes * cv, 6)
-    assert "threshold" not in frame.columns
-
-
-def test_threshold_closest_match(forest_binary_classification_data):
-    """Check that the closest threshold is selected for data."""
-    (estimator, X, y), cv = forest_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.confusion_matrix()
-
-    middle_index = len(display.thresholds) // 2
-    threshold = (
-        display.thresholds[middle_index] + display.thresholds[middle_index + 1]
-    ) / 2 - 1e-6
-    assert threshold not in display.thresholds
-
-    fig = display.plot(threshold_value=threshold, label=display.labels[-1])
-    assert f"Decision threshold: {threshold:.2f}" in fig.get_suptitle()
-
-    frame = display.frame(
-        normalize=None, threshold_value=threshold, label=display.labels[-1]
-    )
-    aggregated = (
-        frame.groupby(["true_label", "predicted_label"])["value"]
-        .agg(["mean", "std"])
-        .reset_index()
-    )
-    expected_values = aggregated.pivot(
-        index="true_label", columns="predicted_label", values="mean"
-    ).reindex(index=display.labels, columns=display.labels)
-
-    ax = fig.axes[0]
-    np.testing.assert_allclose(
-        ax.collections[0].get_array(),
-        expected_values.values,
-    )
 
 
 def test_pos_label(pyplot, forest_binary_classification_data):

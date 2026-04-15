@@ -94,13 +94,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     def labels(self):
         return self.confusion_matrix_predict["predicted_label"].unique().tolist()
 
-    @property
-    def thresholds(self):
-        """Return available thresholds."""
-        if self.confusion_matrix_thresholded is not None:
-            return np.unique(self.confusion_matrix_thresholded["threshold"])
-        return np.array([np.nan])
-
     @classmethod
     def _concatenate(
         cls,
