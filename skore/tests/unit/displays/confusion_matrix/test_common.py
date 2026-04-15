@@ -1,8 +1,9 @@
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.linear_model import LogisticRegression
 
-from skore import EstimatorReport
+from skore import evaluate
 from skore._sklearn._plot import ConfusionMatrixDisplay
 
 
@@ -192,8 +193,8 @@ class TestConfusionMatrixDisplay:
             assert yticklabels == ["0", "1", "2"]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_plot_no_threshold_in_title_by_default(self, fixture_prefix, task, request):
-        """Check that default plot (predict-based) does not show threshold in title."""
+    def test_threshold_in_title(self, pyplot, fixture_prefix, task, request):
+        """Check title for both default and thresholded plots."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -201,9 +202,37 @@ class TestConfusionMatrixDisplay:
             f"{fixture_prefix}_{task}_classification_figure_axes"
         )
 
-        expected_title = "Confusion Matrix" + "\nData source: Test set"
-        assert figure.get_suptitle() == expected_title
+        assert figure.get_suptitle() == "Confusion Matrix\nData source: Test set"
         assert "threshold" not in figure.get_suptitle().lower()
+
+        display = report.metrics.confusion_matrix()
+        label = display.labels[-1]
+        fig = display.plot(threshold_value=0.5, label=label)
+        title = fig.get_suptitle()
+        assert "Decision threshold: 0.50" in title
+        expected_label_line = (
+            f"Positive label: {label}" if task == "binary" else f"Label: {label}"
+        )
+        assert expected_label_line in title
+
+    @pytest.mark.parametrize("task", ["binary", "multiclass"])
+    def test_thresholded_plot_ticklabels(self, pyplot, fixture_prefix, task, request):
+        """Check that thresholded plot uses OvR tick labels with positive class star."""
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.metrics.confusion_matrix()
+        label = display.labels[-1]
+        fig = display.plot(threshold_value=0.5, label=label)
+        ax = fig.axes[0]
+        xticklabels = [t.get_text() for t in ax.get_xticklabels()]
+        yticklabels = [t.get_text() for t in ax.get_yticklabels()]
+        if task == "binary":
+            assert xticklabels == [str(display.labels[0]), f"{label}*"]
+            assert yticklabels == [str(display.labels[0]), f"{label}*"]
+        else:
+            assert xticklabels == [f"not {label}", f"{label}*"]
+            assert yticklabels == [f"not {label}", f"{label}*"]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_frame_all_returns_all_thresholds(self, fixture_prefix, task, request):
@@ -217,35 +246,38 @@ class TestConfusionMatrixDisplay:
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_normalization(self, pyplot, fixture_prefix, task, request):
+        """Check normalization on both predict-based and thresholded frames."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
         display = report.metrics.confusion_matrix()
+        label = display.labels[-1]
 
-        for normalize in ("true", "pred", "all"):
-            frame = display.frame(normalize=normalize)
-            for (_est, _split), group in frame.groupby(
-                ["estimator", "split"], observed=True
-            ):
-                pivoted = group.pivot(
-                    index="true_label",
-                    columns="predicted_label",
-                    values="value",
-                )
-                if normalize == "true":
-                    row_sums = pivoted.sum(axis=1)
-                    valid = (np.abs(row_sums - 1.0) < 1e-10) | (
-                        np.abs(row_sums) < 1e-10
+        for frame_kwargs in [{}, {"threshold_value": 0.5, "label": label}]:
+            for normalize in ("true", "pred", "all"):
+                frame = display.frame(normalize=normalize, **frame_kwargs)
+                for (_est, _split), group in frame.groupby(
+                    ["estimator", "split"], observed=True
+                ):
+                    pivoted = group.pivot(
+                        index="true_label",
+                        columns="predicted_label",
+                        values="value",
                     )
-                    assert np.all(valid), f"row sums should be 0 or 1, got {row_sums}"
-                elif normalize == "pred":
-                    col_sums = pivoted.sum(axis=0)
-                    valid = (np.abs(col_sums - 1.0) < 1e-10) | (
-                        np.abs(col_sums) < 1e-10
-                    )
-                    assert np.all(valid), f"col sums should be 0 or 1, got {col_sums}"
-                else:
-                    np.testing.assert_allclose(pivoted.sum().sum(), 1.0)
+                    if normalize == "true":
+                        row_sums = pivoted.sum(axis=1)
+                        valid = (np.abs(row_sums - 1.0) < 1e-10) | (
+                            np.abs(row_sums) < 1e-10
+                        )
+                        assert np.all(valid)
+                    elif normalize == "pred":
+                        col_sums = pivoted.sum(axis=0)
+                        valid = (np.abs(col_sums - 1.0) < 1e-10) | (
+                            np.abs(col_sums) < 1e-10
+                        )
+                        assert np.all(valid)
+                    else:
+                        np.testing.assert_allclose(pivoted.sum().sum(), 1.0)
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_threshold_selection(self, fixture_prefix, task, request):
@@ -285,15 +317,41 @@ class TestConfusionMatrixDisplay:
                 assert selected_threshold[0] == expected_threshold
 
 
-def test_data_source_both_is_not_supported(forest_binary_classification_with_test):
+def test_data_source_both_is_not_supported(binary_classification_data):
     """Check that confusion_matrix rejects data_source='both' explicitly."""
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(
-        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
-    )
+    X, y = binary_classification_data
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
 
     with pytest.raises(
         ValueError,
         match="data_source='both' is not supported for confusion_matrix.",
     ):
         report.metrics.confusion_matrix(data_source="both")
+
+
+def test_plot_threshold_requires_label(pyplot, binary_classification_data):
+    """Check that plot raises when threshold_value is set but label is None."""
+    X, y = binary_classification_data
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+
+    display = report.metrics.confusion_matrix()
+    with pytest.raises(
+        ValueError, match="Please indicate the class to consider as positive"
+    ):
+        display.plot(threshold_value=0.5, label=None)
+
+
+def test_frame_threshold_unavailable_for_predict_only(
+    custom_classifier_no_predict_proba_data,
+):
+    """Check that frame raises when thresholded data is unavailable, also after
+    _concatenate via CrossValidationReport."""
+    estimator, X, y = custom_classifier_no_predict_proba_data
+    report = evaluate(estimator, X, y, splitter=0.2)
+
+    display = report.metrics.confusion_matrix()
+    assert display.confusion_matrix_thresholded is None
+    with pytest.raises(
+        ValueError, match="Thresholded confusion matrices are not available"
+    ):
+        display.frame(threshold_value=0.5)
