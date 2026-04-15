@@ -99,6 +99,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         cls,
         child_displays: Sequence["ConfusionMatrixDisplay"],
         *,
+        do_thresholds: bool = True,
         report_type: ReportType,
         column_data: dict[str, list] | None = None,
         **kwargs,  # for compatibility
@@ -109,13 +110,16 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             [d.confusion_matrix_predict for d in child_displays],
             column_data,
         )
-        if first_display.confusion_matrix_thresholded is not None:
+
+        if not do_thresholds or all(
+            d.confusion_matrix_thresholded is None for d in child_displays
+        ):
+            confusion_matrix_thresholded = None
+        else:
             confusion_matrix_thresholded = _concat_frames_with_column_data(
                 [d.confusion_matrix_thresholded for d in child_displays],
                 column_data,
             )
-        else:
-            confusion_matrix_thresholded = None
 
         return cls(
             confusion_matrix_predict=confusion_matrix_predict,

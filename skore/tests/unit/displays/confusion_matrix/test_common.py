@@ -1,7 +1,9 @@
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 
 from skore import evaluate
 from skore._sklearn._plot import ConfusionMatrixDisplay
@@ -344,12 +346,43 @@ def test_plot_threshold_requires_label(pyplot, binary_classification_data):
 def test_frame_threshold_unavailable_for_predict_only(
     custom_classifier_no_predict_proba_data,
 ):
-    """Check that frame raises when thresholded data is unavailable, also after
-    _concatenate via CrossValidationReport."""
+    """Check that frame raises when thresholded data is unavailable."""
     estimator, X, y = custom_classifier_no_predict_proba_data
     report = evaluate(estimator, X, y, splitter=0.2)
 
     display = report.metrics.confusion_matrix()
+    assert display.confusion_matrix_thresholded is None
+    with pytest.raises(
+        ValueError, match="Thresholded confusion matrices are not available"
+    ):
+        display.frame(threshold_value=0.5)
+
+
+def test_confusion_matrix_thresholded_not_available_comparison(
+    custom_classifier_no_predict_proba_data,
+):
+    """Check that confusion_matrix raises and warns when comparing estimators with
+    different methods."""
+    no_predict_proba_estimator, X, y = custom_classifier_no_predict_proba_data
+    report = evaluate(
+        [LogisticRegression(), no_predict_proba_estimator], X, y, splitter=0.2
+    )
+
+    with pytest.warns(
+        UserWarning, match="Thresholded confusion matrices are not available"
+    ):
+        display = report.metrics.confusion_matrix()
+    assert display.confusion_matrix_thresholded is None
+    with pytest.raises(
+        ValueError, match="Thresholded confusion matrices are not available"
+    ):
+        display.frame(threshold_value=0.5)
+
+    report = evaluate([SVC(), RandomForestClassifier()], X, y, splitter=0.2)
+    with pytest.warns(
+        UserWarning, match="Thresholded confusion matrices are not available"
+    ):
+        display = report.metrics.confusion_matrix()
     assert display.confusion_matrix_thresholded is None
     with pytest.raises(
         ValueError, match="Thresholded confusion matrices are not available"
