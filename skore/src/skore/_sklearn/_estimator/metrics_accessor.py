@@ -21,6 +21,8 @@ from skore._sklearn.metrics import (
     Brier,
     FitTime,
     LogLoss,
+    Mae,
+    Map,
     Metric,
     Precision,
     PredictTime,
@@ -699,6 +701,174 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         return Rmse()(
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
+
+    def mae(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
+    ) -> float | list:
+        """Compute the mean absolute error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        Returns
+        -------
+        float or list of ``n_outputs``
+            The mean absolute error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
+        >>> report.metrics.mae()
+        46.5...
+        """
+        return Mae()(
+            report=self._parent, data_source=data_source, multioutput=multioutput
+        )
+
+    def map(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
+    ) -> float | list:
+        """Compute the mean absolute percentage error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        Returns
+        -------
+        float or list of ``n_outputs``
+            The mean absolute percentage error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
+        >>> report.metrics.map()
+        0.3...
+        """
+        return Map()(
+            report=self._parent, data_source=data_source, multioutput=multioutput
+        )
+
+    def custom_metric(
+        self,
+        metric_function: Callable,
+        response_method: str | list[str],
+        *,
+        data_source: DataSource = "test",
+        **kwargs: Any,
+    ) -> float | dict[PositiveLabel, float] | list:
+        """Compute a custom metric.
+
+        It brings some flexibility to compute any desired metric. However, we need to
+        follow some rules:
+
+        - `metric_function` should take `y_true` and `y_pred` as the first two
+          positional arguments.
+        - `response_method` corresponds to the estimator's method to be invoked to get
+          the predictions. It can be a string or a list of strings to defined in which
+          order the methods should be invoked.
+
+        Parameters
+        ----------
+        metric_function : callable
+            The metric function to be computed. The expected signature is
+            `metric_function(y_true, y_pred, **kwargs)`.
+
+        response_method : {"predict", "predict_proba", "predict_log_proba", \
+            "decision_function"} or list of such str
+            The estimator's method to be invoked to get the predictions.
+
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        **kwargs : dict
+            Any additional keyword arguments to be passed to the metric function.
+
+        Returns
+        -------
+        float, dict, or list of ``n_outputs``
+            The custom metric. The output type depends on the metric function.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from sklearn.metrics import mean_absolute_error
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
+        >>> report.metrics.custom_metric(
+        ...     metric_function=mean_absolute_error,
+        ...     response_method="predict",
+        ... )
+        46.5...
+        >>> def metric_function(y_true, y_pred):
+        ...     return {"output": float(mean_absolute_error(y_true, y_pred))}
+        >>> report.metrics.custom_metric(
+        ...     metric_function=metric_function,
+        ...     response_method="predict",
+        ... )
+        {'output': 46.5...}
+        """
+        metric = self._parent._metric_registry.check_metric(
+            metric_function,
+            {"response_method": response_method},
+        )
+        return metric(report=self._parent, data_source=data_source, **kwargs)
+
 
     ####################################################################################
     # Methods related to the help tree
