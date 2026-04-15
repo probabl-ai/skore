@@ -68,7 +68,7 @@ class Artifact(BaseModel, ABC):
         It is triggered when ``artifact.upload`` is called, in a lazy way.
         """
 
-    def upload(self, *, checksums_being_uploaded: set[str]) -> None:
+    def upload(self) -> None:
         """
         Upload the artifact.
 
@@ -82,20 +82,17 @@ class Artifact(BaseModel, ABC):
 
         self.uploaded = True
 
-        if (self.checksum is None) or (self.checksum in checksums_being_uploaded):
-            return
-
-        checksums_being_uploaded.add(self.checksum)
-
-        if not uploaded(self.project, self.checksum):
+        if (self.checksum is not None) and (not uploaded(self.project, self.checksum)):
+            # ...
             self.compute()
+
+            # ...
             upload(
                 project=self.project,
                 checksum=self.checksum,
                 filepath=self.filepath,
                 content_type=self.content_type,
             )
-
 
     def model_dump(self, **kwargs: Any) -> dict[str, Any]:  # noqa: D102
         if not self.uploaded:
