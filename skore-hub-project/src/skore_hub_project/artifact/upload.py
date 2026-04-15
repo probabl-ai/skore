@@ -1,4 +1,4 @@
-"""Function definition of the artifact ``upload``."""
+"""Function to upload files."""
 
 from __future__ import annotations
 
@@ -26,20 +26,20 @@ def upload_chunk(
     content_type: str,
 ) -> str:
     """
-    Upload a chunk of the serialized content to the artifacts storage.
+    Upload a chunk of the file to the artifacts storage.
 
     Parameters
     ----------
     filepath : ``Path``
-        The path of the file containing the serialized content.
+        The path of the file.
     client : ``httpx.Client``
         The client used to upload the chunk to the artifacts storage.
     url : str
         The url used to upload the chunk to the artifacts storage.
     offset : int
-        The start of the chunk in the file containing the serialized content.
+        The start of the chunk in the file.
     length: int
-        The length of the chunk in the file containing the serialized content.
+        The length of the chunk in the file.
     content_type: strategy
         The type of the content to upload.
 
@@ -69,6 +69,19 @@ def upload_chunk(
 # This is both the threshold at which a content is split into several small parts for
 # upload, and the size of these small parts.
 CHUNK_SIZE: Final[int] = int(1e7)  # ~10mb
+
+
+def uploaded(project: Project, checksum: str) -> bool:
+    with HUBClient() as hub_client:
+        response = hub_client.get(
+            url=f"projects/{project.workspace}/{project.name}/artifacts",
+            params={
+                "artifact_checksum": checksum,
+                "status": "uploaded",
+            },
+        )
+
+        return bool(response.json())
 
 
 def upload(project: Project, checksum: str, filepath: Path, content_type: str) -> None:

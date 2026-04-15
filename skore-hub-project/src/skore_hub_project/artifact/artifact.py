@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from skore_hub_project.artifact.upload import upload as upload_artifact
+from skore_hub_project.artifact.upload import upload, uploaded
 from skore_hub_project.client.client import HUBClient
 from skore_hub_project.project.project import Project
 
@@ -87,30 +87,15 @@ class Artifact(BaseModel, ABC):
 
         checksums_being_uploaded.add(self.checksum)
 
-        with HUBClient() as hub_client:
-            # Ask for the artifact.
-            #
-            # An non-empty response means that an artifact with the same checksum
-            # already exists. The content doesn't have to be re-uploaded.
-            if (
-                response := hub_client.get(
-                    url=f"projects/{self.project.workspace}/{self.project.name}/artifacts",
-                    params={
-                        "artifact_checksum": self.checksum,
-                        "status": "uploaded",
-                    },
-                )
-            ) and (response.json()):
-                return
+        if not uploaded(self.project, self.checksum):
+            self.compute()
+            upload(
+                project=self.project,
+                checksum=self.checksum,
+                filepath=self.filepath,
+                content_type=self.content_type,
+            )
 
-        self.compute()
-
-        upload_artifact(
-            project=self.project,
-            checksum=self.checksum,
-            filepath=self.filepath,
-            content_type=self.content_type,
-        )
 
     def model_dump(self, **kwargs: Any) -> dict[str, Any]:  # noqa: D102
         if not self.uploaded:
