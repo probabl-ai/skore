@@ -215,14 +215,18 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
 
             Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
 
-        metric : str, callable, or sklearn scorer, default=None
-            The metric to pass to :func:`~sklearn.inspection.permutation_importance`.
+        metric : str, callable, scorer, or list of such instances or dict of such \
+            instances, default=None
+            The metric to pass to :func:`sklearn.inspection.permutation_importance`.
 
-            - If a string, a scikit-learn scorer name (see
-              :func:`sklearn.metrics.get_scorer_names`).
-            - If a callable, it should accept ``(y_true, y_pred)`` as the
-              first two arguments.
-            - If an sklearn scorer (e.g. from :func:`sklearn.metrics.make_scorer`).
+            - if ``None``, a suitable default will be used.
+            - if a string, must be a scikit-learn scorer name. You can get the list of
+              available scorers with :func:`sklearn.metrics.get_scorer_names`.
+            - if a callable, must be a function with signature
+              ``scorer(estimator, X, y)``.
+
+            For more details on the accepted types, see the `scoring` argument of
+            :func:`sklearn.inspection.permutation_importance`.
 
         n_repeats : int, default=5
             Number of times to permute a feature.

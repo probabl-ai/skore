@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import inspect
+import pickle
 from collections import UserDict
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
@@ -84,6 +85,15 @@ class Metric:
         )
         self.greater_is_better = greater_is_better
 
+    def __getstate__(self) -> dict[str, Any]:
+        state = self.__dict__.copy()
+        if state.get("score_func") is not None:
+            try:
+                pickle.dumps(state["score_func"])
+            except Exception:
+                state["score_func"] = None
+        return state
+
     @property
     def icon(self) -> str:
         """Favorability icon derived from ``greater_is_better``."""
@@ -115,7 +125,8 @@ class Metric:
             f"response_method={self.response_method!r}",
             f"greater_is_better={self.greater_is_better}",
             f"score_func={self.score_func}",
-        ] + [f"{k}={v}" for k, v in self.kwargs.items()]
+            f"kwargs={self.kwargs}",
+        ]
 
         return f"Metric({', '.join(args)})"
 
@@ -138,9 +149,7 @@ class Metric:
             Additional keyword arguments passed to ``score_func``.
         """
         if self.score_func is None:
-            raise NotImplementedError(
-                f"Metric {self.name!r} has no score_func and must override __call__."
-            )
+            raise ValueError(f"Metric {self.name!r} has no score_func.")
 
         _, y_true = report._get_data_and_y_true(data_source=data_source)
 
@@ -183,9 +192,8 @@ class Metric:
         report._cache[cache_key] = score
         return score
 
-    @classmethod
+    @staticmethod
     def new(
-        cls,
         metric: MetricLike | Metric,
         *,
         name: str | None = None,
@@ -244,7 +252,7 @@ class Metric:
             else:
                 return metric
         elif isinstance(metric, _BaseScorer):
-            return cls(
+            return Metric(
                 name=name or _callable_name(metric._score_func),
                 greater_is_better=metric._sign == 1,
                 score_func=metric._score_func,
@@ -263,7 +271,7 @@ class Metric:
                     f"{sklearn.metrics.get_scorer_names()}."
                 ) from None
             name = name if name is not None else metric.removeprefix("neg_")
-            return cls.new(scorer, name=name)
+            return Metric.new(scorer, name=name)
         elif callable(metric):
             if response_method is None:
                 raise ValueError(
@@ -288,7 +296,7 @@ class Metric:
                     f"provided kwargs. Pass them as keyword arguments: "
                     f"add({_callable_name(metric)}, {args_msg})"
                 )
-            return cls(
+            return Metric(
                 name=name or _callable_name(metric),
                 greater_is_better=greater_is_better,
                 score_func=metric,

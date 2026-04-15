@@ -63,7 +63,7 @@ def metric_score_to_rows(
     }
 
     if ml_task == "binary-classification" and kwargs.get("average") == "binary":
-        return [{**row, "label": pos_label}]
+        return [{**row, "label": kwargs.get("pos_label", pos_label)}]
     if ml_task in ("binary-classification", "multiclass-classification"):
         if isinstance(score, dict):
             return [{**row, "label": label, "score": score[label]} for label in score]

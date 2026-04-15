@@ -123,6 +123,17 @@ class TestBasicAdd:
         display = report.metrics.summarize(metric="business_loss")
         assert display.data["score"].notna().all()
 
+    def test_pos_label(self, binary_classification_report):
+        """Test adding a scorer with `pos_label` set."""
+        report = binary_classification_report
+
+        report.metrics.add(
+            make_scorer(precision_score, average="binary", pos_label=0),
+            name="precision_0",
+        )
+        display = report.metrics.summarize(metric=["precision_0"])
+        assert display.data["label"].tolist() == [0]
+
     def test_metric_instance(self, binary_classification_report):
         """Test adding a Metric instance directly."""
         from skore._sklearn.metrics import Metric
@@ -567,7 +578,8 @@ class TestMetric:
         )
         assert repr(m) == (
             "Metric(name='accuracy', verbose_name='Accuracy', "
-            "response_method='predict', greater_is_better=True, score_func=None)"
+            "response_method='predict', greater_is_better=True, score_func=None, "
+            "kwargs={})"
         )
 
     def test_repr_kwargs(self):
@@ -583,7 +595,7 @@ class TestMetric:
         assert repr(m) == (
             "Metric(name='accuracy', verbose_name='Accuracy', "
             "response_method='predict', greater_is_better=True, score_func=None, "
-            "hello=1)"
+            "kwargs={'hello': 1})"
         )
 
     def test_greater_is_better_none(self):
@@ -598,7 +610,7 @@ class TestMetric:
 class TestSerialization:
     """Test that added metrics survive pickling (for Project storage)."""
 
-    def test_report_with_added_metric(self, binary_classification_report):
+    def test_serde(self, binary_classification_report):
         """Test that added metrics survive pickle/unpickle with metadata."""
         report = binary_classification_report
 
@@ -625,6 +637,21 @@ class TestSerialization:
 
         display = report2.metrics.summarize()
         assert "Business Loss" in display.data["metric"].values
+
+    def test_serde_lambda(self, binary_classification_report):
+        """Test that if added metric is a lambda, it is lost when pickling."""
+        report = binary_classification_report
+
+        scorer = make_scorer(lambda y_true, y_pred: (y_true - y_pred).abs().mean())
+        report.metrics.add(scorer)
+        assert report._metric_registry["<lambda>"].score_func is not None
+
+        report2 = pickle.loads(pickle.dumps(report))
+        assert report2._metric_registry["<lambda>"].score_func is None
+
+        err_msg = "Metric '<lambda>' has no score_func."
+        with pytest.raises(ValueError, match=err_msg):
+            report2.metrics.summarize()
 
 
 class TestMetricNew:
