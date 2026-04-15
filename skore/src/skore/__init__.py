@@ -96,12 +96,6 @@ skore_console_theme = Theme(
 console = Console(theme=skore_console_theme, width=88)
 
 
-def __getattr__(name):
-    if name == "__version__":
-        # Lazily get version for `skore`
-        from importlib.metadata import version
+from importlib.metadata import version
 
-        __version__ = version("skore")
-        globals()["__version__"] = __version__  # cache it
-        return __version__
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+__version__ = version("skore")
