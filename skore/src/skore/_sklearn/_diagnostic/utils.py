@@ -55,7 +55,15 @@ def majority_vote(votes: list[bool]) -> tuple[bool, int, int]:
     return n_positive > total / 2, n_positive, total
 
 
-def detect_outliers_modified_zscore(scores, threshold=3.5):
+def detect_outliers_modified_zscore(scores, threshold=3):
+    """Detect outliers using the modified Z-score method.
+
+    The constant 0.6745 is a scaling factor that makes the MAD a consistent estimator
+    of the standard deviation for Gaussian data, so that the resulting
+    scores are comparable to ordinary Z-scores.
+
+    See https://en.wikipedia.org/wiki/Median_absolute_deviation
+    """
     median = np.median(scores)
     mad = np.median(np.abs(scores - median))
     if mad == 0:

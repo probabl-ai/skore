@@ -127,7 +127,11 @@ def check_overfitting_underfitting(report: EstimatorReport) -> dict[str, dict]:
 def check_metrics_consistency_across_folds(
     report: CrossValidationReport,
 ) -> dict[str, dict]:
-    """Check the consistency of metrics across folds (SDK003)."""
+    """Check the consistency of metrics across folds (SKD003).
+
+    Outlier folds are identified with a modified Z-score based on the
+    Median Absolute Deviation (MAD) to be robust to extreme values.
+    """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
         report_data = report.metrics.summarize(data_source="test").frame(

@@ -119,14 +119,18 @@ How it is detected
 This check applies only to :class:`~skore.CrossValidationReport`.
 
 `skore` examines each fold's test scores across the report's default predictive metrics
-(timing metrics are excluded). For every metric, a **modified Z-score** based on the
-Median Absolute Deviation (MAD) is computed:
+(timing metrics are excluded). For every metric, a `modified Z-score
+<https://en.wikipedia.org/wiki/Median_absolute_deviation#Relation_to_standard_deviation>`_
+based on the Median Absolute Deviation (MAD) is computed:
 
 .. math::
 
    z_i = 0.6745 \times \frac{x_i - \widetilde{x}}{\text{MAD}}
 
-A fold is flagged as an outlier for a given metric when :math:`|z_i| > 3.5`.
+It is a version of the Z-score that is more robust to extreme values and does not make
+assumptions about the distribution of the data.
+A fold is flagged as an outlier for a given metric when :math:`|z_i| > 3` which is
+analogous to being outside 3 standard deviations from the mean.
 
 A fold votes as inconsistent when a **strict majority** of metrics flag it as an
 outlier. The check detects an issue when at least one fold is voted inconsistent.
