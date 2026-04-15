@@ -159,7 +159,7 @@ SKD004 - High class imbalance
 How it is detected
 ^^^^^^^^^^^^^^^^^^
 
-This check applies only to classification tasks.
+This check applies only to binary classification tasks.
 
 `skore` counts the occurrences of each class across the train and test sets. The check
 detects an issue when the most frequent class represents more than **80 %** of the
@@ -179,3 +179,33 @@ How to reduce the risk
 - resample the dataset (oversampling the minority or undersampling the majority),
 - use class weights in the estimator,
 - collect more data for the minority class if possible.
+
+
+.. _skd005-underrepresented_classes:
+
+SKD005 - Underrepresented classes
+---------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+This check applies only to multiclass classification tasks.
+
+`skore` counts the occurrences of each class across the train and test sets. The check
+detects an issue when one or more classes each represent less than **10 %** of the
+dataset.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+When some classes are severely underrepresented, the model may never learn to
+distinguish them reliably. Overall accuracy can look acceptable while per-class
+performance on the rare classes remains poor.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- use per-class metrics (precision, recall, F1 per class) to monitor all classes,
+- resample the dataset (oversampling rare classes or undersampling frequent ones),
+- use class weights in the estimator,
+- collect more data for the underrepresented classes if possible.
