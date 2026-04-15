@@ -1,14 +1,10 @@
 import warnings
-from numbers import Real
 
-import joblib
 import numpy as np
 import pytest
-from sklearn.base import BaseEstimator
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
-    make_scorer,
     precision_score,
     recall_score,
 )
@@ -34,209 +30,15 @@ def test_interaction_cache_metrics(
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    # The underlying metrics will call `_compute_metric_scores` that take some arbitrary
-    # kwargs apart from `pos_label`. Let's pass an arbitrary kwarg and make sure it is
-    # part of the cache.
-    multioutput = "raw_values"
-    result_r2_raw_values = report.metrics.r2(multioutput=multioutput)
-    multioutput_in_cache_key = any(
-        deep_contain(cached_key, multioutput) for cached_key in report._cache
-    )
-    assert multioutput_in_cache_key, (
-        f"The value {multioutput} should be stored in one of the cache keys"
-    )
+    result_r2_raw_values = report.metrics.r2()
     assert len(result_r2_raw_values) == 2
 
-    multioutput = "uniform_average"
-    result_r2_uniform_average = report.metrics.r2(multioutput=multioutput)
     multioutput_in_cache_key = any(
-        deep_contain(cached_key, multioutput) for cached_key in report._cache
+        deep_contain(cached_key, "raw_values") for cached_key in report._cache
     )
     assert multioutput_in_cache_key, (
-        f"The value {multioutput} should be stored in one of the cache keys"
+        "The value 'raw_values' should be stored in one of the cache keys"
     )
-    assert isinstance(result_r2_uniform_average, float)
-
-
-def test_custom_metric(linear_regression_with_test):
-    """Check the behaviour of the `custom_metric` computation in the report."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    def custom_metric(y_true, y_pred, threshold=0.5):
-        residuals = y_true - y_pred
-        return np.mean(np.where(residuals < threshold, residuals, 1))
-
-    threshold = 1
-    result = report.metrics.custom_metric(
-        metric_function=custom_metric,
-        response_method="predict",
-        threshold=threshold,
-    )
-    threshold_in_cache_key = any(
-        deep_contain(cached_key, threshold) for cached_key in report._cache
-    )
-    assert threshold_in_cache_key, (
-        f"The value {threshold} should be stored in one of the cache keys"
-    )
-
-    assert isinstance(result, float)
-    assert result == pytest.approx(
-        custom_metric(y_test, estimator.predict(X_test), threshold)
-    )
-
-    threshold = 100
-    result = report.metrics.custom_metric(
-        metric_function=custom_metric,
-        response_method="predict",
-        threshold=threshold,
-    )
-    threshold_in_cache_key = any(
-        deep_contain(cached_key, threshold) for cached_key in report._cache
-    )
-    assert threshold_in_cache_key, (
-        f"The value {threshold} should be stored in one of the cache keys"
-    )
-
-    assert isinstance(result, float)
-    assert result == pytest.approx(
-        custom_metric(y_test, estimator.predict(X_test), threshold)
-    )
-
-
-def test_custom_metric_scorer(linear_regression_with_test):
-    """Check the behaviour of the `custom_metric` computation in the report when the
-    custom metric is a sklearn Scorer."""
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    def custom_metric(y_true, y_pred, threshold=0.5):
-        residuals = y_true - y_pred
-        return np.mean(np.where(residuals < threshold, residuals, 1))
-
-    custom_score = make_scorer(custom_metric, greater_is_better=False)
-
-    threshold = 1
-    result = report.metrics.custom_metric(
-        metric_function=custom_score,
-        response_method="predict",
-        threshold=threshold,
-    )
-    threshold_in_cache_key = any(
-        deep_contain(cached_key, threshold) for cached_key in report._cache
-    )
-    assert threshold_in_cache_key, (
-        f"The value {threshold} should be stored in one of the cache keys"
-    )
-
-    assert isinstance(result, float)
-    assert result == pytest.approx(
-        custom_metric(y_test, estimator.predict(X_test), threshold)
-    )
-
-    threshold = 100
-    result = report.metrics.custom_metric(
-        metric_function=custom_metric,
-        response_method="predict",
-        threshold=threshold,
-    )
-    threshold_in_cache_key = any(
-        deep_contain(cached_key, threshold) for cached_key in report._cache
-    )
-    assert threshold_in_cache_key, (
-        f"The value {threshold} should be stored in one of the cache keys"
-    )
-
-    assert isinstance(result, float)
-    assert result == pytest.approx(
-        custom_metric(y_test, estimator.predict(X_test), threshold)
-    )
-
-
-def test_custom_function_kwargs_numpy_array(
-    linear_regression_with_test,
-):
-    """Check that we are able to store a hash of a numpy array in the cache when they
-    are passed as kwargs.
-    """
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    weights = np.ones_like(y_test) * 2
-    hash_weights = joblib.hash(weights)
-
-    def custom_metric(y_true, y_pred, some_weights):
-        return np.mean((y_true - y_pred) * some_weights)
-
-    result = report.metrics.custom_metric(
-        metric_function=custom_metric,
-        response_method="predict",
-        some_weights=weights,
-    )
-    hash_weights_in_cache_key = any(
-        deep_contain(cached_key, hash_weights) for cached_key in report._cache
-    )
-    assert hash_weights_in_cache_key, (
-        "The hash of the weights should be stored in one of the cache keys"
-    )
-
-    assert isinstance(result, float)
-    assert result == pytest.approx(
-        custom_metric(y_test, estimator.predict(X_test), weights)
-    )
-
-
-def test_custom_metric_compatible_estimator(
-    forest_binary_classification_with_test,
-):
-    """Check that the estimator report still works if an estimator has a compatible
-    scikit-learn API.
-    """
-    _, X_test, y_test = forest_binary_classification_with_test
-
-    class CompatibleEstimator(BaseEstimator):
-        """Estimator exposing only a predict method but it should be enough for the
-        reports.
-        """
-
-        def fit(self, X, y):
-            self.fitted_ = True
-            return self
-
-        def predict(self, X):
-            return np.ones(X.shape[0])
-
-    estimator = CompatibleEstimator().fit(None, None)
-    report = EstimatorReport(estimator, fit=False, X_test=X_test, y_test=y_test)
-    result = report.metrics.custom_metric(
-        metric_function=lambda y_true, y_pred: 1,
-        response_method="predict",
-    )
-    assert isinstance(result, Real)
-    assert result == pytest.approx(1)
-
-
-def test_custom_metric_with_scorer_no_attribute_error(linear_regression_with_test):
-    """
-    Passing a make_scorer object to custom_metric()
-    used to raise AttributeError because the code accessed ._score_func.__name__
-    instead of scorer.__name__.
-
-    Regression test for #2204.
-    """
-    estimator, X_test, y_test = linear_regression_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    def business_loss(y_true, y_pred):
-        return np.mean(np.abs(y_true - y_pred))
-
-    scorer = make_scorer(
-        business_loss, greater_is_better=False, response_method="predict"
-    )
-
-    result = report.metrics.custom_metric(
-        metric_function=scorer, response_method="predict"
-    )
-    assert result == pytest.approx(business_loss(y_test, estimator.predict(X_test)))
 
 
 @pytest.mark.parametrize("prefit_estimator", [True, False])
@@ -301,16 +103,16 @@ def test_brier_score_requires_binary_classification():
 
 
 def test_average_return_float(forest_binary_classification_with_test):
-    """Check that we expect a float value when computing a metric with averaging.
+    """Check that we expect a float value when computing a metric with pos_label.
 
     Non-regression test for:
     https://github.com/probabl-ai/skore/issues/1501
     """
     estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
 
     for metric_name in ("precision", "recall", "roc_auc"):
-        result = getattr(report.metrics, metric_name)(average="macro")
+        result = getattr(report.metrics, metric_name)()
         assert isinstance(result, float)
 
 

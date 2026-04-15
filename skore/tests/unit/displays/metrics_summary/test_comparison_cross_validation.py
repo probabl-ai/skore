@@ -1,10 +1,8 @@
 """Tests of `ComparisonReport.metrics.summarize`."""
 
 import pandas as pd
-import pytest
 from pandas.testing import assert_frame_equal, assert_index_equal
 from sklearn.dummy import DummyClassifier
-from sklearn.metrics import accuracy_score, get_scorer
 
 from skore import ComparisonReport, CrossValidationReport
 
@@ -170,27 +168,3 @@ def test_aggregate_sequence_of_one_element(
         report.metrics.summarize().frame(aggregate="mean"),
         report.metrics.summarize().frame(aggregate=["mean"]),
     )
-
-
-@pytest.mark.parametrize(
-    "metric, metric_kwargs",
-    [
-        ("accuracy", None),
-        ("neg_log_loss", None),
-        (accuracy_score, {"response_method": "predict"}),
-        (get_scorer("accuracy"), None),
-    ],
-)
-def test_metric_single_list_equivalence(
-    comparison_cross_validation_reports_binary_classification, metric, metric_kwargs
-):
-    """Check that passing a single string, callable, scorer is equivalent to passing a
-    list with a single element."""
-    report = comparison_cross_validation_reports_binary_classification
-    result_single = report.metrics.summarize(
-        metric=metric, metric_kwargs=metric_kwargs
-    ).frame()
-    result_list = report.metrics.summarize(
-        metric=[metric], metric_kwargs=metric_kwargs
-    ).frame()
-    assert result_single.equals(result_list)

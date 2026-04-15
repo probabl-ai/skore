@@ -211,72 +211,22 @@ import numpy as np
 rng = np.random.default_rng(42)
 amount = rng.integers(low=100, high=1000, size=len(split_data["y_test"]))
 
-# %%
-#
-# Let's make sure that a function called the `predict` method and cached the result.
-# We compute the accuracy metric to make sure that the `predict` method is called.
-report.metrics.accuracy()
-
-# %%
-#
-# We can now compute the cost of our operational decision.
-start = time.time()
-cost = report.metrics.custom_metric(
-    metric_function=operational_decision_cost, response_method="predict", amount=amount
+report.metrics.add(
+    metric=operational_decision_cost,
+    response_method="predict",
+    amount=amount,
 )
-end = time.time()
+
+cost = report.metrics.summarize(metric="operational_decision_cost")
 cost
 
 # %%
-print(f"Time taken to compute the cost: {end - start:.2f} seconds")
-
-# %%
 #
-# Let's now clean the cache and see if it is faster.
-report.clear_cache()
-
-# %%
-start = time.time()
-cost = report.metrics.custom_metric(
-    metric_function=operational_decision_cost, response_method="predict", amount=amount
-)
-end = time.time()
-cost
-
-# %%
-print(f"Time taken to compute the cost: {end - start:.2f} seconds")
-
-# %%
-#
-# We observe that caching is working as expected. It is really handy because it means
+# By the way, skore caches the model predictions. It is really handy because it means
 # that we can compute some additional metrics without having to recompute the
 # the predictions.
 report.metrics.summarize(
-    metric={
-        "Precision": "precision",
-        "Recall": "recall",
-        "Operational Decision Cost": operational_decision_cost,
-    },
-    metric_kwargs={"amount": amount, "response_method": "predict"},
-).frame()
-
-# %%
-#
-# It could happen that we are interested in providing several custom metrics which
-# does not necessarily share the same parameters. In this more complex case, skore will
-# require us to provide a scorer using the :func:`sklearn.metrics.make_scorer`
-# function.
-from sklearn.metrics import f1_score, make_scorer
-
-f1_scorer = make_scorer(f1_score, response_method="predict")
-operational_decision_cost_scorer = make_scorer(
-    operational_decision_cost, response_method="predict", amount=amount
-)
-report.metrics.summarize(
-    metric={
-        "F1 Score": f1_scorer,
-        "Operational Decision Cost": operational_decision_cost_scorer,
-    },
+    metric=["precision", "recall", "operational_decision_cost"],
 ).frame()
 
 # %%

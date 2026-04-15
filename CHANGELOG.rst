@@ -1,5 +1,5 @@
 .. Template for a new "Unreleased" section (hidden from docs).
-   Copy-paste at the top of the changelog when releasing, then remove the 3-space indentation.
+   When releasing, copy-paste at the top of the changelog, and remove the indentation.
 
    `Unreleased`_
    =============
@@ -46,6 +46,14 @@ Changed
   ``response_methods`` on estimator, cross-validation, and comparison reports.
   It now infers and caches the relevant prediction outputs automatically. See
   :pr:`2677` by :user:`cakedev0`.
+
+- **Breaking change:** Computing custom metrics on reports is now done by calling
+  :meth:`EstimatorReport.metrics.add` followed by :meth:`summarize`.
+  :meth:`custom_metric` has been removed, and :meth:`summarize` no longer accepts
+  callables or keyword arguments; only names of registered metrics are supported
+  (which includes the default metrics such as `accuracy` for classifiers).
+  Example usage is available `here <https://docs.skore.probabl.ai/dev/auto_examples/model_evaluation/plot_custom_metrics.html>`__.
+  See :pr:`2736` by :user:`auguste-probabl`.
 
 Added
 -----
