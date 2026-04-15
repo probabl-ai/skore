@@ -143,6 +143,26 @@ def test_regression(metric_name, expected, comparison_estimator_reports_regressi
     pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
 
+@pytest.mark.parametrize("metric_name, verbose_name", [("mae", "MAE"), ("map", "MAP")])
+def test_regression_mae_map(
+    metric_name, verbose_name, comparison_estimator_reports_regression
+):
+    """Check that MAE and MAP metrics work for regression comparison reports."""
+    comp = comparison_estimator_reports_regression
+    result = getattr(comp.metrics, metric_name)()
+    assert isinstance(result, pd.DataFrame)
+    assert result.shape == (1, 2)
+    assert result.index.name == "Metric"
+    assert result.index[0] == verbose_name
+    assert result.columns.name == "Estimator"
+    # Both identical DummyRegressors produce the same score
+    assert result.iloc[0, 0] == result.iloc[0, 1]
+
+    # ensure metric is valid from cache
+    result_cached = getattr(comp.metrics, metric_name)()
+    pd.testing.assert_frame_equal(result, result_cached)
+
+
 def test_timings(comparison_estimator_reports_binary_classification):
     """Check the general behaviour of the `timings` method."""
     report = comparison_estimator_reports_binary_classification
