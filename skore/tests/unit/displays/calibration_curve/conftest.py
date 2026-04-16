@@ -10,8 +10,8 @@ def estimator_reports_binary_classification_figure_axes(
 ):
     report = estimator_reports_binary_classification[0]
     display = report.inspection.calibration_curve()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -20,8 +20,8 @@ def cross_validation_reports_binary_classification_figure_axes(
 ):
     report = cross_validation_reports_binary_classification[0]
     display = report.inspection.calibration_curve()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -30,8 +30,8 @@ def comparison_estimator_reports_binary_classification_figure_axes(
 ):
     report = comparison_estimator_reports_binary_classification
     display = report.inspection.calibration_curve()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+    return fig, fig.axes
 
 
 @pytest.fixture(scope="module")
@@ -40,5 +40,5 @@ def comparison_cross_validation_reports_binary_classification_figure_axes(
 ):
     report = comparison_cross_validation_reports_binary_classification
     display = report.inspection.calibration_curve()
-    display.plot()
-    return display.figure_, display.ax_
+    fig = display.plot()
+    return fig, fig.axes

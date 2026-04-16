@@ -1,20 +1,21 @@
 from __future__ import annotations
 
-import time
 from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib.figure import Figure
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator
 from sklearn.calibration import calibration_curve
 
-from skore._sklearn._base import _get_cached_response_values
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn._plot.utils import _despine_matplotlib_axis
-from skore._sklearn.types import DataSource, ReportType
-from skore._utils._cache import Cache
+from skore._sklearn._plot.utils import (
+    _check_label,
+    _despine_matplotlib_axis,
+    _one_hot_encode,
+)
+from skore._sklearn.types import _DEFAULT, DataSource, PositiveLabel, ReportType
 
 
 class CalibrationDisplay(DisplayMixin):
@@ -70,12 +71,36 @@ class CalibrationDisplay(DisplayMixin):
 
     _default_line_kwargs = {"marker": "s", "linestyle": "-", "color": "blue"}
 
-    def __init__(self, *, calibration_report: pd.DataFrame, report_type: ReportType):
+    def __init__(
+        self,
+        *,
+        calibration_report: pd.DataFrame,
+        report_type: ReportType,
+        report_pos_label: PositiveLabel = None,
+    ):
         self.calibration_report = calibration_report
         self.report_type = report_type
+        self.report_pos_label = report_pos_label
 
-    def frame(self) -> pd.DataFrame:
-        """Return the data used for the display as a DataFrame."""
+    @property
+    def labels(self) -> list:
+        """Return the list of labels available in the calibration data."""
+        return self.calibration_report["label"].unique().tolist()
+
+    def frame(self, *, label: PositiveLabel = _DEFAULT) -> pd.DataFrame:
+        """Return the data used for the display as a DataFrame.
+
+        Parameters
+        ----------
+        label : int, float, bool, str or None, default=report pos_label
+            The class whose curve to select. Use ``None`` to show all classes.
+
+        Returns
+        -------
+        DataFrame
+        """
+        label = _check_label(self.labels, label, self.report_pos_label)
+
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
         elif self.report_type == "cross-validation":
@@ -85,65 +110,72 @@ class CalibrationDisplay(DisplayMixin):
         else:  # comparison-cross-validation
             columns_to_drop = []
 
-        frame = self.calibration_report.drop(columns=columns_to_drop)
-        return frame
+        df = self.calibration_report.drop(columns=columns_to_drop)
+
+        if label is not None:
+            df = df.query("label == @label").reset_index(drop=True)
+            df = df.drop(columns=["label"])
+
+        return df
 
     @classmethod
     def _compute_data_for_display(
         cls,
         data_source: DataSource,
-        estimator: BaseEstimator,
         name: str,
-        X: ArrayLike,
+        y_pred: ArrayLike,
         y: ArrayLike,
         report_type: ReportType,
         n_bins: int = 5,
         strategy: Literal["uniform", "quantile"] = "quantile",
-        pos_label: int | None = None,
+        report_pos_label: PositiveLabel = None,
     ) -> CalibrationDisplay:
         """Compute the data for the calibration curve display."""
-        cache = Cache()
-        # Randomly generate estimator hash
-        rng = np.random.default_rng(time.time_ns())
-        estimator_hash = rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
+        y_arr = np.asarray(y)
+        y_pred_arr = np.asarray(y_pred)
 
-        # Get predicted probabilities
-        y_pred_cache = _get_cached_response_values(
-            cache=cache,
-            estimator_hash=int(estimator_hash),
-            estimator=estimator,
-            X=X,
-            response_method="predict_proba",
-            pos_label=pos_label,
-        )
-        # unpack actual predictions value
-        pred_vals = y_pred_cache[0][1]
+        classes = np.unique(y_arr)
+        y_true_onehot = _one_hot_encode(y_arr, classes)
 
-        # ensure ndarray-compatible
-        y_pred = pred_vals if isinstance(pred_vals, np.ndarray) else pred_vals.values
+        curve_dfs = []
+        for class_idx, cls_label in enumerate(classes):
+            frac_pos, pred_prob = calibration_curve(
+                y_true_onehot[:, class_idx],
+                y_pred_arr[:, class_idx],
+                n_bins=n_bins,
+                strategy=strategy,
+            )
+            df = pd.DataFrame(
+                {
+                    "predicted_probability": pred_prob,
+                    "fraction_of_positives": frac_pos,
+                }
+            )
+            df["estimator"] = name
+            df["data_source"] = data_source
+            df["label"] = cls_label
+            df["split"] = np.nan
+            curve_dfs.append(df)
 
-        # Compute the calibration curve
-        fraction_of_positives, predicted_probability = calibration_curve(
-            y, y_pred, n_bins=n_bins, strategy=strategy
+        calibration_df = pd.concat(curve_dfs, ignore_index=True)
+        return cls(
+            calibration_report=calibration_df,
+            report_type=report_type,
+            report_pos_label=report_pos_label,
         )
-        # Create a DataFrame for the display
-        df = pd.DataFrame(
-            {
-                "predicted_probability": predicted_probability,
-                "fraction_of_positives": fraction_of_positives,
-            }
-        )
-        df["estimator"] = name
-        df["data_source"] = data_source
-        df["pos_label"] = pos_label
-        df["split"] = np.nan
-        return cls(calibration_report=df, report_type=report_type)
 
     @DisplayMixin.style_plot
-    def plot(self) -> None:
-        """Plot the mean decrease in impurity for the different features.
+    def plot(self, *, label: PositiveLabel = _DEFAULT) -> Figure:
+        """Plot the calibration curve.
+
+        Parameters
+        ----------
+        label : int, float, bool, str or None, default=report pos_label
+            The class whose curve to plot. Use ``None`` to show all classes.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
 
         Examples
         --------
@@ -155,28 +187,22 @@ class CalibrationDisplay(DisplayMixin):
         >>> split_data = train_test_split(
         ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
         ... )
-        >>> report = EstimatorReport(RandomForestClassifier(), **split_data)
+        >>> report = EstimatorReport(LogisticRegression(), **split_data)
         >>> display = report.inspection.calibration_curve()
         >>> display.plot()
         """
-        return self._plot()
+        label = _check_label(self.labels, label, self.report_pos_label)
+        return self._plot(label=label)
 
-    def _plot_matplotlib(self) -> None:
-        """Dispatch the plotting function for matplotlib backend.
-
-        This method creates a bar plot showing the mean decrease in impurity for each
-        feature using seaborn's catplot. For cross-validation reports, it uses a
-        strip plot with boxplot overlay to show the distribution across splits.
-        """
-        # Make copy of the dictionary since we are going to pop some keys later
+    def _plot_matplotlib(self, *, label: PositiveLabel) -> Figure:
+        """Dispatch the plotting function for matplotlib backend."""
         lineplot_kwargs = self._default_line_kwargs.copy()
-
+        plot_data = self.frame(label=label)
         return self._plot_calibration_curve_single_estimator(
-            frame=self.frame(),
-            estimator_name=self.calibration_report["estimator"][0],
-            ref_line=True,
-            hue=None,
+            frame=plot_data,
+            estimator_name=self.calibration_report["estimator"].iloc[0],
             lineplot_kwargs=lineplot_kwargs,
+            label=label,
         )
 
     def _plot_calibration_curve_single_estimator(
@@ -184,39 +210,54 @@ class CalibrationDisplay(DisplayMixin):
         *,
         frame: pd.DataFrame,
         estimator_name: str,
-        hue: str | None = None,
-        ref_line: bool = True,
         lineplot_kwargs: dict[str, Any],
+        label: PositiveLabel = None,
     ):
-        self.plot_ = sns.lineplot(
-            data=frame,
-            x="predicted_probability",
-            y="fraction_of_positives",
-            markers=True,
-            hue=hue,
-            label=estimator_name,
-            **lineplot_kwargs,
-        )
-        self.figure_, self.ax_ = self.plot_.figure, self.plot_.axes
+        if "label" in frame.columns:
+            # Multiple classes: let seaborn handle colours via hue
+            lineplot_kwargs = {k: v for k, v in lineplot_kwargs.items() if k != "color"}
+            facet = sns.lineplot(
+                data=frame,
+                x="predicted_probability",
+                y="fraction_of_positives",
+                hue="label",
+                markers=True,
+                **lineplot_kwargs,
+            )
+        else:
+            facet = sns.lineplot(
+                data=frame,
+                x="predicted_probability",
+                y="fraction_of_positives",
+                markers=True,
+                label=estimator_name,
+                **lineplot_kwargs,
+            )
+
+        figure = facet.figure
+        ax = facet.axes
         ref_line_label = "Perfectly calibrated"
-        if ref_line:
-            self.ax_.plot([0, 1], [0, 1], "k:", label=ref_line_label)
+        ax.plot([0, 1], [0, 1], "k:", label=ref_line_label)
 
         # We always have to show the legend for at least the reference line
-        self.ax_.legend(loc="lower right")
+        ax.legend(loc="lower right")
 
-        self.ax_.set_xlabel("Mean predicted probability")
-        self.ax_.set_ylabel("Fraction of positives")
-        self.ax_.set_xlim(0, 1)
-        self.ax_.set_ylim(0, 1)
+        ax.set_xlabel("Mean predicted probability")
+        ax.set_ylabel("Fraction of positives")
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
 
         _despine_matplotlib_axis(
-            self.ax_,
+            ax,
             axis_to_despine=("top", "right"),
             remove_ticks=True,
             x_range=None,
             y_range=None,
         )
-        self.figure_.suptitle(f"Calibration Curve of {estimator_name}")
 
-        return self
+        title_parts = [f"Calibration Curve of {estimator_name}"]
+        if label is not None:
+            title_parts.append(f"Positive label: {label}")
+        figure.suptitle("\n".join(title_parts))
+
+        return figure

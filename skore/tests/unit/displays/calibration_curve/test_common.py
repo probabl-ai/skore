@@ -20,10 +20,10 @@ class TestCalibrationDisplay:
         assert hasattr(display.calibration_report, "predicted_probability")
         assert hasattr(display.calibration_report, "fraction_of_positives")
         assert hasattr(display.calibration_report, "data_source")
-        assert hasattr(display.calibration_report, "pos_label")
-        display.plot()
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
+        assert hasattr(display, "report_pos_label")
+        fig = display.plot()
+        assert fig is not None
+        assert len(fig.axes) >= 1
 
     def test_frame_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -35,7 +35,7 @@ class TestCalibrationDisplay:
             "predicted_probability",
             "fraction_of_positives",
             "data_source",
-            "pos_label",
+            "label",
         }
         assert set(frame.columns) == expected
 
@@ -48,7 +48,7 @@ class TestCalibrationDisplay:
             "predicted_probability",
             "fraction_of_positives",
             "data_source",
-            "pos_label",
+            "label",
         }
         assert set(display.frame().columns) == expected
 
@@ -56,9 +56,8 @@ class TestCalibrationDisplay:
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
-        _, ax = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
-        if hasattr(ax, "flatten"):
-            ax = ax.flatten()[0]
+        _, axes = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
+        ax = axes[0]
         assert ax.get_xlabel() == "Mean predicted probability"
         assert ax.get_ylabel() == "Fraction of positives"
 
@@ -87,8 +86,8 @@ class TestCalibrationDisplay:
         assert figure.get_figheight() == 6
         if "estimator" in fixture_prefix:
             display.set_style(barplot_kwargs={"height": 8})
-            display.plot()
+            fig = display.plot()
         else:  # "cross_validation"
             display.set_style(stripplot_kwargs={"height": 8})
-            display.plot()
-        assert display.figure_.get_figheight() == 8
+            fig = display.plot()
+        assert fig.get_figheight() == 8

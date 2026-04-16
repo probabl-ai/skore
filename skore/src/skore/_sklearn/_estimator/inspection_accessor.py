@@ -382,21 +382,20 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             The calibration curve display. :meth:`CalibrationDisplay.plot` for
             more details.
 
-        Returns
-        -------
-        :class:`CalibrationDisplay`
-            The calibration curve display.
         """
+        y_pred = self._parent.get_predictions(
+            data_source=data_source,
+            response_method="predict_proba",
+        )
         return CalibrationDisplay._compute_data_for_display(
-            estimator=self._parent.estimator_,
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
             data_source=data_source,
-            X=self._parent.X_test if data_source == "test" else self._parent.X_train,
+            y_pred=y_pred,
             y=self._parent.y_test if data_source == "test" else self._parent.y_train,
             n_bins=n_bins,
             strategy=strategy,
-            pos_label=self._parent.pos_label,
+            report_pos_label=self._parent.pos_label,
         )
 
     ####################################################################################
