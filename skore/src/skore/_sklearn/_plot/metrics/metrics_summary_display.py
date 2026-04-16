@@ -1,4 +1,3 @@
-import itertools
 from typing import Any, Literal, cast
 
 import pandas as pd
@@ -55,21 +54,11 @@ class MetricsSummaryDisplay(DisplayMixin):
         child_displays: list["MetricsSummaryDisplay"],
         *,
         report_type: ReportType,
-        extra_rows_data: list[dict[str, Any]] | None = None,
+        extra_rows_data: list[dict[str, Any]],
     ):
-        if extra_rows_data is None:
-            extra_rows_data = [{} for _ in child_displays]
-
-        rows = list(
-            itertools.chain(
-                *[
-                    [row | extra_data for row in display.rows]
-                    for display, extra_data in zip(
-                        child_displays, extra_rows_data, strict=True
-                    )
-                ]
-            )
-        )
+        rows = []
+        for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
+            rows.extend([row | extra_data for row in display.rows])
 
         return MetricsSummaryDisplay(rows, report_type=report_type)
 
