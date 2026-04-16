@@ -71,6 +71,13 @@ class CalibrationDisplay(DisplayMixin):
     """
 
     _default_line_kwargs = {"marker": "s", "linestyle": "-", "color": "blue"}
+    _default_ax_set_kwargs = {
+        "xlabel": "Mean predicted probability",
+        "ylabel": "Fraction of positives",
+        "xlim": (0, 1),
+        "ylim": (0, 1),
+        "aspect": "equal",
+    }
 
     def __init__(
         self,
@@ -198,11 +205,13 @@ class CalibrationDisplay(DisplayMixin):
     def _plot_matplotlib(self, *, label: PositiveLabel) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
         lineplot_kwargs = self._default_line_kwargs.copy()
+        ax_set_kwargs = self._default_ax_set_kwargs.copy()
         plot_data = self.frame(label=label)
         return self._plot_calibration_curve_single_estimator(
             frame=plot_data,
             estimator_name=self.calibration_report["estimator"].iloc[0],
             lineplot_kwargs=lineplot_kwargs,
+            ax_set_kwargs=ax_set_kwargs,
             label=label,
         )
 
@@ -212,6 +221,7 @@ class CalibrationDisplay(DisplayMixin):
         frame: pd.DataFrame,
         estimator_name: str,
         lineplot_kwargs: dict[str, Any],
+        ax_set_kwargs: dict[str, Any],
         label: PositiveLabel = None,
     ):
         if "label" in frame.columns:
@@ -222,7 +232,6 @@ class CalibrationDisplay(DisplayMixin):
                 x="predicted_probability",
                 y="fraction_of_positives",
                 hue="label",
-                markers=True,
                 **lineplot_kwargs,
             )
         else:
@@ -230,8 +239,8 @@ class CalibrationDisplay(DisplayMixin):
                 data=frame,
                 x="predicted_probability",
                 y="fraction_of_positives",
-                markers=True,
                 label=estimator_name,
+                hue=None,
                 **lineplot_kwargs,
             )
 
@@ -243,10 +252,7 @@ class CalibrationDisplay(DisplayMixin):
         # We always have to show the legend for at least the reference line
         ax.legend(loc="lower right")
 
-        ax.set_xlabel("Mean predicted probability")
-        ax.set_ylabel("Fraction of positives")
-        ax.set_xlim(0, 1)
-        ax.set_ylim(0, 1)
+        ax.set(**ax_set_kwargs)
 
         _despine_matplotlib_axis(
             ax,
@@ -262,3 +268,39 @@ class CalibrationDisplay(DisplayMixin):
         figure.suptitle("\n".join(title_parts))
 
         return figure
+
+    # ignore the type signature because we override kwargs by specifying the name of
+    # the parameters for the user.
+    def set_style(  # type: ignore[override]
+        self,
+        *,
+        policy: Literal["override", "update"] = "update",
+        line_kwargs: dict | None = None,
+        ax_set_kwargs: dict | None = None,
+    ):
+        """Set the style parameters for the display.
+
+        Parameters
+        ----------
+        policy : {"override", "update"}, default="update"
+            Policy to use when setting the style parameters.
+            If "override", existing settings are set to the provided values.
+            If "update", existing settings are not changed; only settings that were
+            previously unset are changed.
+
+        line_kwargs : dict, default=None
+            Keyword arguments passed to :func:`seaborn.lineplot`.
+
+        ax_set_kwargs : dict, default=None
+            Keyword arguments passed to :meth:`matplotlib.axes.Axes.set`.
+            Useful keys include `xlabel`, `ylabel`, `xlim`, and `ylim`.
+
+        Returns
+        -------
+        None
+        """
+        return super().set_style(
+            policy=policy,
+            line_kwargs=line_kwargs or {},
+            ax_set_kwargs=ax_set_kwargs or {},
+        )
