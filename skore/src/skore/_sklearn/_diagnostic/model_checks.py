@@ -48,6 +48,7 @@ def check_overfitting_underfitting(report: EstimatorReport) -> dict[str, dict]:
         y_test=report.y_test,
         pos_label=report.pos_label,
     )
+    baseline_report._metric_registry = report._metric_registry
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
         report_data = report.metrics.summarize(data_source="train").data.rename(

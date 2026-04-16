@@ -7,6 +7,8 @@ _TIMING_METRICS = {
     "predict time (s)",
     "fit_time_s",
     "predict_time_s",
+    "Fit time s",
+    "Predict time s",
 }
 
 
