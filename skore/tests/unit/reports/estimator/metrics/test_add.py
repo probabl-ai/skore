@@ -642,7 +642,7 @@ class TestSerialization:
         """Test that if added metric is a lambda, it is lost when pickling."""
         report = binary_classification_report
 
-        scorer = make_scorer(lambda y_true, y_pred: (y_true - y_pred).abs().mean())
+        scorer = make_scorer(lambda y_true, y_pred: np.abs(y_true - y_pred).mean())
         report.metrics.add(scorer)
         assert report._metric_registry["<lambda>"].score_func is not None
 
@@ -652,6 +652,11 @@ class TestSerialization:
         err_msg = "Metric '<lambda>' has no score_func."
         with pytest.raises(ValueError, match=err_msg):
             report2.metrics.summarize()
+
+        # if we cache beforehand, then it works:
+        report.metrics.summarize()
+        report3 = pickle.loads(pickle.dumps(report))
+        report3.metrics.summarize()
 
 
 class TestMetricNew:

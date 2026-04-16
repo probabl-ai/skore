@@ -148,9 +148,6 @@ class Metric:
         **kwargs
             Additional keyword arguments passed to ``score_func``.
         """
-        if self.score_func is None:
-            raise ValueError(f"Metric {self.name!r} has no score_func.")
-
         _, y_true = report._get_data_and_y_true(data_source=data_source)
 
         # Merge default kwargs with call-time kwargs
@@ -160,6 +157,9 @@ class Metric:
         score = report._cache.get(cache_key)
         if score is not None:
             return score
+
+        if self.score_func is None:
+            raise ValueError(f"Metric {self.name!r} has no score_func.")
 
         assert self.response_method is not None
 
