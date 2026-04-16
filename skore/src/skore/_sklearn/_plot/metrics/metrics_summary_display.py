@@ -228,11 +228,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         -------
         frame : pandas.DataFrame
             The report metrics as a dataframe.
-
-            The returned columns depend on ``report_type`` and on the
-            ``aggregate``/``favorability`` parameters described in the class notes.
-            The row index always starts with ``"Metric"`` and may include additional
-            levels for class labels, averaging modes, outputs, estimators, or splits.
         """
         if self.report_type == "estimator":
             return MetricsSummaryDisplay._frame_estimator(
