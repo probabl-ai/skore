@@ -56,7 +56,7 @@ class CalibrationDisplay(DisplayMixin):
     ...     n_samples=100_000, n_features=20, n_informative=2, n_redundant=10,
     ...     random_state=42)
     >>> split_data = train_test_split(
-    ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
+    ...     X=X, y=y, random_state=0, as_dict=True,
     ... )
     >>> report = EstimatorReport(LogisticRegression(), **split_data)
     >>> display = report.inspection.calibration_curve(n_bins=5, strategy="uniform")
