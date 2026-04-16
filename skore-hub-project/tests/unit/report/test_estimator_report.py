@@ -1,4 +1,6 @@
-from joblib import hash
+from io import BytesIO
+
+from joblib import hash, dump
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
 from skore import CrossValidationReport, EstimatorReport
@@ -23,7 +25,6 @@ from skore_hub_project.artifact.media import (
     TableReportTest,
     TableReportTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.metric import (
     AccuracyTest,
     AccuracyTrain,
@@ -45,28 +46,22 @@ from skore_hub_project.report import EstimatorReportPayload
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
-    import io
-
-    import joblib
-
     reports = [object] + getattr(object, "estimator_reports_", [])
     reports_with_cache = [
         (report, report._cache) for report in reports if hasattr(report, "_cache")
     ]
+
     object.clear_cache()
 
     try:
-        with io.BytesIO() as stream:
-            joblib.dump(object, stream)
+        with BytesIO() as stream:
+            dump(object, stream)
             pickle_bytes = stream.getvalue()
     finally:
         for report, cache in reports_with_cache:
             report._cache = cache
 
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
-    return pickle_bytes, checksum
+    return pickle_bytes, f"skore-{object.__class__.__name__}-{object.id}"
 
 
 @fixture
@@ -87,7 +82,7 @@ def payload(project, binary_classification):
 class TestEstimatorReportPayload:
     @mark.respx()
     def test_pickle(
-        self, binary_classification, project, payload, upload_mock, respx_mock
+        self, tmp_path, binary_classification, project, payload, upload_mock
     ):
         pickle, checksum = serialize(binary_classification)
 
@@ -102,9 +97,13 @@ class TestEstimatorReportPayload:
         assert not upload_mock.call_args.args
         assert upload_mock.call_args.kwargs == {
             "project": project,
-            "content": pickle,
+            "filepath": payload.pickle.filepath,
+            "checksum": checksum,
             "content_type": "application/octet-stream",
         }
+
+        # ensure that there is no residual file
+        assert not len(list(tmp_path.iterdir()))
 
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
