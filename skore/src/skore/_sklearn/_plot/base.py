@@ -210,16 +210,23 @@ class StyleDisplayMixin:
             # `plt.style.context` has a side effect with the interactive mode.
             # See https://github.com/matplotlib/matplotlib/issues/25041
             original_params = {key: plt.rcParams[key] for key in DEFAULT_STYLE}
+            figures_before = set(plt.get_fignums())
             plt.rcParams.update(DEFAULT_STYLE)
             result: Any = None
             try:
                 with plt.ioff():
                     result = plot_func(self, *args, **kwargs)
-            finally:
                 if isinstance(result, Figure):
                     result.tight_layout()
+                return result
+            finally:
+                # Seaborn figure-level helpers go through pyplot and keep figures
+                # registered until they are explicitly closed. Deregister all figures
+                # created during this display call while keeping the returned Figure
+                # object usable by the caller.
+                for figure_num in set(plt.get_fignums()) - figures_before:
+                    plt.close(figure_num)
                 plt.rcParams.update(original_params)
-            return result
 
         return wrapper
 
