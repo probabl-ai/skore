@@ -85,9 +85,8 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             )
         )
 
-        results = [
-            result.data
-            for result in track(
+        summaries = list(
+            track(
                 parallel(
                     joblib.delayed(report.metrics.summarize)(
                         data_source=data_source,
@@ -98,40 +97,34 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
                 description="Compute metric for each estimator",
                 total=len(self._parent.reports_),
             )
-        ]
-
-        data = pd.concat(
-            [
-                df.assign(estimator_name=estimator_name)
-                for df, estimator_name in zip(
-                    results, self._parent.reports_.keys(), strict=True
-                )
-            ],
-            axis="index",
         )
 
-        return MetricsSummaryDisplay(data=data, report_type=self._parent._report_type)
+        return MetricsSummaryDisplay._concatenate(
+            summaries,
+            report_type=self._parent._report_type,
+            extra_rows_data=[
+                {"estimator_name": estimator_name}
+                for estimator_name in self._parent.reports_
+            ],
+        )
 
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
     ) -> MetricsSummaryDisplay:
         """Compute a single metric across compared reports, forwarding *kwargs*."""
-        results = [
-            report.metrics._metric(metric_name, data_source=data_source, **kwargs).data
+        summaries = [
+            report.metrics._metric(metric_name, data_source=data_source, **kwargs)
             for report in self._parent.reports_.values()
         ]
 
-        data = pd.concat(
-            [
-                df.assign(estimator_name=estimator_name)
-                for df, estimator_name in zip(
-                    results, self._parent.reports_.keys(), strict=True
-                )
+        return MetricsSummaryDisplay._concatenate(
+            summaries,
+            report_type=self._parent._report_type,
+            extra_rows_data=[
+                {"estimator_name": estimator_name}
+                for estimator_name in self._parent.reports_
             ],
-            axis="index",
         )
-
-        return MetricsSummaryDisplay(data=data, report_type=self._parent._report_type)
 
     def add(
         self,

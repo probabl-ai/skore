@@ -1,4 +1,5 @@
-from typing import Literal, cast
+import itertools
+from typing import Any, Literal, cast
 
 import pandas as pd
 from matplotlib.figure import Figure
@@ -6,6 +7,7 @@ from matplotlib.figure import Figure
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn.types import Aggregate, ReportType
 from skore._utils._index import flatten_multi_index
+from skore._utils._metric_rows import rows_to_dataframe
 
 
 class MetricsSummaryDisplay(DisplayMixin):
@@ -16,21 +18,100 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     Parameters
     ----------
-    data : pandas.DataFrame
-        The data to display.
+    rows : list
+        The rows to display.
 
     report_type : {"estimator", "comparison-estimator", "cross-validation", \
             "comparison-cross-validation"}
         The type of report.
+
+    Attributes
+    ----------
+    data : pandas.DataFrame
+        Raw metric summary data.
+
+        ``data`` always contains the following columns:
+
+        - ``"metric"``: human-readable metric name shown in the display.
+        - ``"estimator_name"``: estimator name used for score columns.
+        - ``"data_source"``: ``"train"`` or ``"test"``.
+        - ``"score"``: numeric metric value.
+        - ``"favorability"``: direction indicator, such as ``"(↗︎)"`` or
+          ``"(↘︎)"``.
+
+        Depending on the metric shape and report type, ``data`` may also contain:
+
+        - ``"label"``: class label for per-class classification metrics.
+        - ``"average"``: averaging mode when a metric is reported as a single
+          aggregated row, for instance ``"macro"`` or ``"weighted"``.
+        - ``"output"``: output index for multioutput regression metrics.
+        - ``"split"``: cross-validation split index. Present only for
+          cross-validation-based report types.
+
+        Columns such as ``"label"``, ``"average"``, and ``"output"`` are kept in
+        ``data`` even when unused for a given metric; in that case their values are
+        missing.
+
+    Notes
+    -----
+    :meth:`frame` reshapes ``data`` into a presentation-oriented dataframe. The score
+    columns depend on ``report_type``:
+
+    - ``"estimator"``: one score column named after the estimator. When
+      ``summarize(data_source="both")`` was used, two columns are returned instead:
+      ``"<estimator> (train)"`` and ``"<estimator> (test)"``.
+    - ``"comparison-estimator"``: one score column per estimator, or one pair of
+      ``"<estimator> (train)"`` / ``"<estimator> (test)"`` columns per estimator
+      when both data sources were summarized.
+    - ``"cross-validation"``: a two-level column index with
+      ``(<estimator>, <aggregate-or-split>)``. The second level is the aggregation
+      name such as ``"mean"`` or ``"std"``, or ``"Split #i"`` when
+      ``aggregate=None``.
+    - ``"comparison-cross-validation"``: with aggregation, a two-level column index
+      ``(<aggregate>, <estimator>)``. With ``aggregate=None``, scores are stacked in a
+      single ``"Value"`` column and the index gains ``"Estimator"`` and ``"Split"``
+      levels.
+
+    In all cases, ``frame(favorability=True)`` appends a ``"Favorability"`` column.
+    The row index always starts with ``"Metric"`` and may additionally include
+    ``"Label / Average"``, ``"Average"``, or ``"Output"``, depending on the metrics
+    being shown.
     """
 
     def __init__(
         self,
-        data: pd.DataFrame,
+        rows: list[dict],
         report_type: ReportType,
     ):
-        self.data = data
+        self.rows = rows
         self.report_type = report_type
+
+    @property
+    def data(self):
+        return rows_to_dataframe(self.rows)
+
+    @staticmethod
+    def _concatenate(
+        child_displays: list["MetricsSummaryDisplay"],
+        *,
+        report_type: ReportType,
+        extra_rows_data: list[dict[str, Any]] | None = None,
+    ):
+        if extra_rows_data is None:
+            extra_rows_data = [{} for _ in child_displays]
+
+        rows = list(
+            itertools.chain(
+                *[
+                    [row | extra_data for row in display.rows]
+                    for display, extra_data in zip(
+                        child_displays, extra_rows_data, strict=True
+                    )
+                ]
+            )
+        )
+
+        return MetricsSummaryDisplay(rows, report_type=report_type)
 
     @staticmethod
     def _flatten_index(df: pd.DataFrame) -> pd.DataFrame:
@@ -187,6 +268,11 @@ class MetricsSummaryDisplay(DisplayMixin):
         -------
         frame : pandas.DataFrame
             The report metrics as a dataframe.
+
+            The returned columns depend on ``report_type`` and on the
+            ``aggregate``/``favorability`` parameters described in the class notes.
+            The row index always starts with ``"Metric"`` and may include additional
+            levels for class labels, averaging modes, outputs, estimators, or splits.
         """
         if self.report_type == "estimator":
             return MetricsSummaryDisplay._frame_estimator(
