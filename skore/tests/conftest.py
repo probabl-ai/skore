@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+import matplotlib
 import numpy as np
 import pytest
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
@@ -15,15 +16,26 @@ from sklearn.svm import SVC
 from sklearn.utils.multiclass import unique_labels
 from sklearn.utils.validation import check_is_fitted
 
-from skore import ComparisonReport, CrossValidationReport, EstimatorReport
+from skore import (
+    ComparisonReport,
+    CrossValidationReport,
+    EstimatorReport,
+    configuration,
+)
+from skore._config import LocalConfiguration
 from skore._externals._sklearn_compat import validate_data
 
 
 def pytest_configure(config):
-    # Use matplotlib agg backend during the tests including doctests
-    import matplotlib
+    """Set up global test configuration.
 
+    Some of these could be set in fixtures, but doctests do not run fixtures.
+    """
     matplotlib.use("agg")
+
+    # Disable progress bars during tests to avoid rich interfering with
+    # doctest stdout capture.
+    configuration.show_progress = False
 
 
 @pytest.fixture(autouse=True)
@@ -46,13 +58,9 @@ def monkeypatch_tmpdir(monkeypatch, tmp_path):
 
 @pytest.fixture(autouse=True)
 def monkeypatch_configuration(monkeypatch):
-    from skore import configuration
-    from skore._config import LocalConfiguration
-
-    monkeypatch.setattr(
-        "skore._config.configuration.local",
-        LocalConfiguration(**configuration.local.__dict__),
-    )
+    """Ensure that the test gets the default configuration,
+    independently of the others."""
+    monkeypatch.setattr("skore._config.configuration.local", LocalConfiguration())
 
 
 @pytest.fixture
@@ -535,6 +543,52 @@ def comparison_cross_validation_reports_regression(
     cross_validation_reports_regression,
 ):
     cv_report_1, cv_report_2 = cross_validation_reports_regression
+    return ComparisonReport([cv_report_1, cv_report_2])
+
+
+@pytest.fixture
+def estimator_reports_multioutput_regression(regression_multioutput_train_test_split):
+    X_train, X_test, y_train, y_test = regression_multioutput_train_test_split
+
+    estimator_report_1 = EstimatorReport(
+        DummyRegressor(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    estimator_report_2 = EstimatorReport(
+        DummyRegressor(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    return estimator_report_1, estimator_report_2
+
+
+@pytest.fixture
+def comparison_estimator_reports_multioutput_regression(
+    estimator_reports_multioutput_regression,
+):
+    estimator_report_1, estimator_report_2 = estimator_reports_multioutput_regression
+    return ComparisonReport([estimator_report_1, estimator_report_2])
+
+
+@pytest.fixture
+def cross_validation_reports_multioutput_regression(regression_multioutput_data):
+    X, y = regression_multioutput_data
+    cv_report_1 = CrossValidationReport(DummyRegressor(), X, y, splitter=2)
+    cv_report_2 = CrossValidationReport(DummyRegressor(), X, y, splitter=2)
+    return cv_report_1, cv_report_2
+
+
+@pytest.fixture
+def comparison_cross_validation_reports_multioutput_regression(
+    cross_validation_reports_multioutput_regression,
+):
+    cv_report_1, cv_report_2 = cross_validation_reports_multioutput_regression
     return ComparisonReport([cv_report_1, cv_report_2])
 
 

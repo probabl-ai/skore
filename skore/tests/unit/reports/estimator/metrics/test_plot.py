@@ -171,7 +171,7 @@ def test_display_regression_switching_data_source(
         estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
     )
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)(data_source="test")
+    display_first_call = getattr(report.metrics, display)(data_source="test", seed=0)
     assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)(data_source="train")
+    display_second_call = getattr(report.metrics, display)(data_source="train", seed=0)
     assert display_first_call is not display_second_call

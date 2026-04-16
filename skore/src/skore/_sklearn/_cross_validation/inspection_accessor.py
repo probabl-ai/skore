@@ -116,22 +116,16 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         metric : str, callable, scorer, or list of such instances or dict of such \
             instances, default=None
-            The metric to pass to :func:`~sklearn.inspection.permutation_importance`.
-            The possible values (whether or not in a list) are:
+            The metric to pass to :func:`sklearn.inspection.permutation_importance`.
 
-            - if a string, either one of the built-in metrics or a scikit-learn scorer
-              name. You can get the possible list of string using
-              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
-              the built-in metrics or the scikit-learn scorers, respectively.
-            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
-              first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `metric_kwargs`. No favorability indicator can
-              be displayed in this case.
-            - if the callable API is too restrictive (e.g. need to pass
-              same parameter name with different values), you can use scikit-learn
-              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
-              the metric favorability will only be displayed if it is given explicitly
-              via `make_scorer`'s `greater_is_better` parameter.
+            - if ``None``, a suitable default will be used.
+            - if a string, must be a scikit-learn scorer name. You can get the list of
+              available scorers with :func:`sklearn.metrics.get_scorer_names`.
+            - if a callable, must be a function with signature
+              ``scorer(estimator, X, y)``.
+
+            For more details on the accepted types, see the `scoring` argument of
+            :func:`sklearn.inspection.permutation_importance`.
 
         n_repeats : int, default=5
             Number of times to permute a feature.

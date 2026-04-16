@@ -1,4 +1,6 @@
 from abc import abstractmethod
+from datetime import datetime, timezone
+from importlib.metadata import version
 from io import StringIO
 from typing import Generic, Literal, TypeVar
 from uuid import uuid4
@@ -96,7 +98,15 @@ class _BaseReport(ReportHelpMixin):
         return DiagnosticDisplay(filtered, checks_ran, n_ignored=len(ignored))
 
     def __init__(self) -> None:
-        self.id = uuid4().int
+        self._metadata = {
+            "id": uuid4().int,
+            "skore-version": version("skore"),
+            "creation-date": datetime.now(timezone.utc).isoformat(),
+        }
+
+    @property
+    def id(self):
+        return self._metadata["id"]
 
     @property
     def _hash(self) -> int:
