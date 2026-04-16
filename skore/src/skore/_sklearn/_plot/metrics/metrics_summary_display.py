@@ -18,64 +18,24 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     Parameters
     ----------
-    rows : list
+    rows : list of dicts
         The rows to display.
+        Expected keys:
+        - "metric": human-readable metric name shown in the display.
+        - "estimator_name"
+        - "data_source": "train" or "test".
+        - "score": numeric metric value (scalar).
+        - "favorability": "(↗︎)", "(↘︎)" or "".
+
+        Depending on the metric shape and report type, rows may also contain:
+        - "label": class label for per-class classification metrics.
+        - "output": output index for multioutput regression metrics.
+        - "average": averaging mode when averaged over labels or outputs.
+        - "split": cross-validation split index.
 
     report_type : {"estimator", "comparison-estimator", "cross-validation", \
             "comparison-cross-validation"}
         The type of report.
-
-    Attributes
-    ----------
-    data : pandas.DataFrame
-        Raw metric summary data.
-
-        ``data`` always contains the following columns:
-
-        - ``"metric"``: human-readable metric name shown in the display.
-        - ``"estimator_name"``: estimator name used for score columns.
-        - ``"data_source"``: ``"train"`` or ``"test"``.
-        - ``"score"``: numeric metric value.
-        - ``"favorability"``: direction indicator, such as ``"(↗︎)"`` or
-          ``"(↘︎)"``.
-
-        Depending on the metric shape and report type, ``data`` may also contain:
-
-        - ``"label"``: class label for per-class classification metrics.
-        - ``"average"``: averaging mode when a metric is reported as a single
-          aggregated row, for instance ``"macro"`` or ``"weighted"``.
-        - ``"output"``: output index for multioutput regression metrics.
-        - ``"split"``: cross-validation split index. Present only for
-          cross-validation-based report types.
-
-        Columns such as ``"label"``, ``"average"``, and ``"output"`` are kept in
-        ``data`` even when unused for a given metric; in that case their values are
-        missing.
-
-    Notes
-    -----
-    :meth:`frame` reshapes ``data`` into a presentation-oriented dataframe. The score
-    columns depend on ``report_type``:
-
-    - ``"estimator"``: one score column named after the estimator. When
-      ``summarize(data_source="both")`` was used, two columns are returned instead:
-      ``"<estimator> (train)"`` and ``"<estimator> (test)"``.
-    - ``"comparison-estimator"``: one score column per estimator, or one pair of
-      ``"<estimator> (train)"`` / ``"<estimator> (test)"`` columns per estimator
-      when both data sources were summarized.
-    - ``"cross-validation"``: a two-level column index with
-      ``(<estimator>, <aggregate-or-split>)``. The second level is the aggregation
-      name such as ``"mean"`` or ``"std"``, or ``"Split #i"`` when
-      ``aggregate=None``.
-    - ``"comparison-cross-validation"``: with aggregation, a two-level column index
-      ``(<aggregate>, <estimator>)``. With ``aggregate=None``, scores are stacked in a
-      single ``"Value"`` column and the index gains ``"Estimator"`` and ``"Split"``
-      levels.
-
-    In all cases, ``frame(favorability=True)`` appends a ``"Favorability"`` column.
-    The row index always starts with ``"Metric"`` and may additionally include
-    ``"Label / Average"``, ``"Average"``, or ``"Output"``, depending on the metrics
-    being shown.
     """
 
     def __init__(
