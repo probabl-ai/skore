@@ -35,9 +35,11 @@ def regression():
 
 @fixture(autouse=True)
 def monkeypatch_table_report_representation(monkeypatch):
+    def compute(artifact):
+        artifact.computed = True
+
     monkeypatch.setattr(
-        "skore_hub_project.artifact.media.data.TableReport.content_to_upload",
-        lambda self: None,
+        "skore_hub_project.artifact.media.data.TableReport.compute", compute
     )
 
 
@@ -191,11 +193,9 @@ class TestProject:
             (
                 "post",
                 "/projects/workspace/name",
-                Response(
-                    201,
-                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
-                ),
+                Response(201, json={"id": 42, "url": "http://domain/workspace/name"}),
             ),
+            ("get", "projects/workspace/name/artifacts", Response(201, json=[])),
             ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
             (
                 "post",
@@ -240,11 +240,9 @@ class TestProject:
             (
                 "post",
                 "/projects/workspace/name",
-                Response(
-                    201,
-                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
-                ),
+                Response(201, json={"id": 42, "url": "http://domain/workspace/name"}),
             ),
+            ("get", "projects/workspace/name/artifacts", Response(201, json=[])),
             ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
             (
                 "post",
@@ -282,11 +280,9 @@ class TestProject:
             (
                 "post",
                 "/projects/workspace/name",
-                Response(
-                    201,
-                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
-                ),
+                Response(201, json={"id": 42, "url": "http://domain/workspace/name"}),
             ),
+            ("get", "projects/workspace/name/artifacts", Response(201, json=[])),
             ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
             (
                 "post",
@@ -326,11 +322,9 @@ class TestProject:
             (
                 "post",
                 "/projects/workspace/name",
-                Response(
-                    201,
-                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
-                ),
+                Response(201, json={"id": 42, "url": "http://domain/workspace/name"}),
             ),
+            ("get", "projects/workspace/name/artifacts", Response(201, json=[])),
             ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
             (
                 "post",
@@ -615,27 +609,19 @@ class TestProject:
             (
                 "post",
                 "/projects/workspace/name",
-                Response(
-                    201,
-                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
-                ),
+                Response(201, json={"id": 42, "url": "http://domain/workspace/name"}),
             ),
+            ("get", "projects/workspace/name/artifacts", Response(201, json=[])),
             ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
             (
                 "post",
                 "projects/workspace/name/estimator-reports",
-                Response(
-                    201,
-                    json={"id": 42},
-                ),
+                Response(201, json={"id": 42}),
             ),
             (
                 "post",
                 "projects/workspace/name/cross-validation-reports",
-                Response(
-                    201,
-                    json={"id": 42},
-                ),
+                Response(201, json={"id": 42}),
             ),
         ]
 
