@@ -1,16 +1,12 @@
-from collections.abc import Callable
-from typing import Any, Literal, cast
+import numbers
+from typing import Any, Literal
 
 import joblib
 import pandas as pd
-from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import (
-    _BaseAccessor,
-    _BaseMetricsAccessor,
-)
+from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._plot.metrics import (
     ConfusionMatrixDisplay,
@@ -19,25 +15,18 @@ from skore._sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.types import (
-    Aggregate,
-    Metric,
-    YPlotData,
-)
+from skore._sklearn.types import Aggregate, MetricLike
 from skore._utils._accessor import (
     _check_any_sub_report_has_metric,
     _check_supported_ml_task,
-    _expand_data_sources,
-    _get_ys_for_single_report,
 )
-from skore._utils._cache_key import deep_key_sanitize
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._progress_bar import track
 
 DataSource = Literal["test", "train", "both"]
 
 
-class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
+class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -50,9 +39,7 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
-        metric_kwargs: dict[str, Any] | None = None,
-        response_method: str | list[str] | None = None,
+        metric: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for the estimators.
 
@@ -66,31 +53,9 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
             - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
 
-        metric : str, callable, scorer, or list of such instances or dict of such \
-            instances, default=None
-            The metrics to report. The possible values (whether or not in a list) are:
-
-            - if a string, either one of the built-in metrics or a scikit-learn scorer
-              name. You can get the possible list of string using
-              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
-              the built-in metrics or the scikit-learn scorers, respectively.
-            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
-              first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `metric_kwargs`. No favorability indicator can
-              be displayed in this case.
-            - if the callable API is too restrictive (e.g. need to pass
-              same parameter name with different values), you can use scikit-learn
-              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
-              the metric favorability will only be displayed if it is given explicitly
-              via `make_scorer`'s `greater_is_better` parameter.
-
-        metric_kwargs : dict, default=None
-            The keyword arguments to pass to the metric functions.
-
-        response_method : {"predict", "predict_proba", "predict_log_proba", \
-            "decision_function"} or list of such str, default=None
-            The estimator's method to be invoked to get the predictions. Only necessary
-            for custom metrics.
+        metric : str or list of str or None, default=None
+            The metrics to report, from the list of registered metrics. None means show
+            all registered metrics. To add a custom metric, see :meth:`add`.
 
         Returns
         -------
@@ -101,76 +66,130 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data, pos_label=1)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data, pos_label=1)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
+        >>> comparison_report = evaluate(
+        ...     [estimator_1, estimator_2], X, y, splitter=0.2, pos_label=1
         ... )
-        >>> comparison_report.metrics.summarize(
-        ...     metric=["precision", "recall"],
-        ... ).frame()
+        >>> comparison_report.metrics.summarize(metric=["precision", "recall"]).frame()
         Estimator       LogisticRegression_1  LogisticRegression_2
         Metric
-        Precision                    0.96...               0.96...
-        Recall                       0.97...               0.97...
+        Precision                    0.98...               0.98...
+        Recall                       0.92...               0.92...
         """
-        cache_key = deep_key_sanitize(
-            (
-                self._parent._hash,
-                data_source,
-                metric,
-                metric_kwargs,
-                response_method,
+        parallel = joblib.Parallel(
+            **_validate_joblib_parallel_params(
+                n_jobs=self._parent.n_jobs, return_as="generator"
             )
         )
 
-        results = self._parent._cache.get(cache_key)
-        if results is None:
-            parallel = joblib.Parallel(
-                **_validate_joblib_parallel_params(
-                    n_jobs=self._parent.n_jobs, return_as="generator"
-                )
-            )
-
-            results = [
-                result.data
-                for result in track(
-                    parallel(
-                        joblib.delayed(report.metrics.summarize)(
-                            data_source=data_source,
-                            metric=metric,
-                            metric_kwargs=metric_kwargs,
-                            response_method=response_method,
-                        )
-                        for report in self._parent.reports_.values()
-                    ),
-                    description="Compute metric for each estimator",
-                    total=len(self._parent.reports_),
-                )
-            ]
-
-            data = pd.concat(
-                [
-                    df.assign(estimator_name=estimator_name)
-                    for df, estimator_name in zip(
-                        results, self._parent.reports_.keys(), strict=True
+        results = [
+            result.data
+            for result in track(
+                parallel(
+                    joblib.delayed(report.metrics.summarize)(
+                        data_source=data_source,
+                        metric=metric,
                     )
-                ],
-                axis="index",
+                    for report in self._parent.reports_.values()
+                ),
+                description="Compute metric for each estimator",
+                total=len(self._parent.reports_),
             )
+        ]
 
-            results = MetricsSummaryDisplay(
-                data=data, report_type=self._parent._report_type
+        data = pd.concat(
+            [
+                df.assign(estimator_name=estimator_name)
+                for df, estimator_name in zip(
+                    results, self._parent.reports_.keys(), strict=True
+                )
+            ],
+            axis="index",
+        )
+
+        return MetricsSummaryDisplay(data=data, report_type=self._parent._report_type)
+
+    def _metric(
+        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+    ) -> MetricsSummaryDisplay:
+        """Compute a single metric across compared reports, forwarding *kwargs*."""
+        results = [
+            report.metrics._metric(metric_name, data_source=data_source, **kwargs).data
+            for report in self._parent.reports_.values()
+        ]
+
+        data = pd.concat(
+            [
+                df.assign(estimator_name=estimator_name)
+                for df, estimator_name in zip(
+                    results, self._parent.reports_.keys(), strict=True
+                )
+            ],
+            axis="index",
+        )
+
+        return MetricsSummaryDisplay(data=data, report_type=self._parent._report_type)
+
+    def add(
+        self,
+        metric: MetricLike,
+        *,
+        name: str | None = None,
+        response_method: str | list[str] = "predict",
+        greater_is_better: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Add a custom metric to be included in :meth:`summarize` by default.
+
+        Parameters
+        ----------
+        metric : str, sklearn scorer, or callable
+            The metric to add.
+
+        name : str, optional
+            Custom name for the metric. If not provided, the name is inferred
+            from the metric (e.g. the function's ``__name__``).
+
+        response_method : str or list of str, default="predict"
+            Estimator method to get predictions (only for callables).
+
+        greater_is_better : bool, default=True
+            Whether higher values are better (only for callables).
+
+        **kwargs : Any
+            Default keyword arguments passed to the score function at call
+            time.  Only used when *metric* is a plain callable.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.metrics import make_scorer, mean_absolute_error
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> estimator_1 = LogisticRegression(max_iter=10_000)
+        >>> estimator_2 = LogisticRegression(max_iter=10_000, C=2)
+        >>> report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
+        >>> report.metrics.add(
+        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ... )
+        >>> report.metrics.summarize().frame()
+        Estimator                            LogisticRegression_1  LogisticRegression_2
+        Metric              Label / Average
+        ...
+        Mean Absolute Error                                   ...                   ...
+        """
+        for report in self._parent.reports_.values():
+            report.metrics.add(
+                metric,
+                name=name,
+                response_method=response_method,
+                greater_is_better=greater_is_better,
+                **kwargs,
             )
-
-            self._parent._cache[cache_key] = results
-        return results
 
     def timings(
         self,
@@ -197,27 +216,21 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> report = ComparisonReport(
-        ...     {"model1": estimator_report_1, "model2": estimator_report_2}
-        ... )
+        >>> report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> report.metrics.timings()
-                        model1    model2
-        Fit time (s)       ...       ...
-        >>> report.cache_predictions(response_methods=["predict"])
+                        LogisticRegression_1    LogisticRegression_2
+        Fit time (s)                     ...                     ...
+        >>> report.cache_predictions()
         >>> report.metrics.timings()
-                                model1    model2
-        Fit time (s)               ...       ...
-        Predict time test (s)      ...       ...
-        Predict time train (s)     ...       ...
+                                LogisticRegression_1    LogisticRegression_2
+        Fit time (s)                             ...                     ...
+        Predict time test (s)                    ...                     ...
+        Predict time train (s)                   ...                     ...
         """
         if self._parent._report_type == "comparison-estimator":
             timings = pd.concat(
@@ -283,23 +296,17 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.accuracy()
         Estimator      LogisticRegression_1  LogisticRegression_2
         Metric
-        Accuracy                    0.96...               0.96...
+        Accuracy                    0.94...               0.94...
         """
-        return self.summarize(metric=["accuracy"], data_source=data_source).frame(
+        return self._metric("accuracy", data_source=data_source).frame(
             aggregate=aggregate,
         )
 
@@ -363,27 +370,19 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.precision()
         Estimator                    LogisticRegression_1  LogisticRegression_2
         Metric      Label / Average
-        Precision                 0               0.96...               0.96...
-                                  1               0.96...               0.96...
+        Precision                 0               0.90...               0.90...
+                                  1               0.98...               0.98...
         """
-        return self.summarize(
-            metric=["precision"],
-            data_source=data_source,
-            metric_kwargs={"average": average},
+        return self._metric(
+            "precision", data_source=data_source, average=average
         ).frame(
             aggregate=aggregate,
         )
@@ -449,28 +448,18 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.recall()
         Estimator                    LogisticRegression_1  LogisticRegression_2
         Metric      Label / Average
-        Recall                    0              0.944...              0.944...
-                                  1              0.977...              0.977...
+        Recall                    0              0.978...              0.978...
+                                  1              0.925...              0.925...
         """
-        return self.summarize(
-            metric=["recall"],
-            data_source=data_source,
-            metric_kwargs={"average": average},
-        ).frame(
+        return self._metric("recall", data_source=data_source, average=average).frame(
             aggregate=aggregate,
         )
 
@@ -505,26 +494,17 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.brier_score()
         Estimator         LogisticRegression_1  LogisticRegression_2
         Metric
-        Brier score                   0.025...              0.025...
+        Brier score                   0.036...              0.036...
         """
-        return self.summarize(
-            metric=["brier_score"],
-            data_source=data_source,
-        ).frame(
+        return self._metric("brier_score", data_source=data_source).frame(
             aggregate=aggregate,
         )
 
@@ -595,26 +575,18 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.roc_auc()
         Estimator      LogisticRegression_1  LogisticRegression_2
         Metric
         ROC AUC                     0.99...               0.99...
         """
-        return self.summarize(
-            metric=["roc_auc"],
-            data_source=data_source,
-            metric_kwargs={"average": average, "multi_class": multi_class},
+        return self._metric(
+            "roc_auc", data_source=data_source, average=average, multi_class=multi_class
         ).frame(
             aggregate=aggregate,
         )
@@ -650,26 +622,17 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.log_loss()
         Estimator      LogisticRegression_1  LogisticRegression_2
         Metric
-        Log loss                   0.082...              0.082...
+        Log loss                   0.110...              0.110...
         """
-        return self.summarize(
-            metric=["log_loss"],
-            data_source=data_source,
-        ).frame(
+        return self._metric("log_loss", data_source=data_source).frame(
             aggregate=aggregate,
         )
 
@@ -715,26 +678,18 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.r2()
         Estimator     Ridge_1    Ridge_2
         Metric
-        R²            0.43...    0.43...
+        R²            0.34...    0.34...
         """
-        return self.summarize(
-            metric=["r2"],
-            data_source=data_source,
-            metric_kwargs={"multioutput": multioutput},
+        return self._metric(
+            "r2", data_source=data_source, multioutput=multioutput
         ).frame(
             aggregate=aggregate,
         )
@@ -781,121 +736,18 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.rmse()
         Estimator       Ridge_1       Ridge_2
         Metric
-        RMSE          55.726...     55.726...
+        RMSE          58.132...     58.132...
         """
-        return self.summarize(
-            metric=["rmse"],
-            data_source=data_source,
-            metric_kwargs={"multioutput": multioutput},
-        ).frame(
-            aggregate=aggregate,
-        )
-
-    def custom_metric(
-        self,
-        metric_function: Callable,
-        response_method: str | list[str],
-        *,
-        metric_name: str | None = None,
-        data_source: DataSource = "test",
-        aggregate: Aggregate | None = ("mean", "std"),
-        **kwargs: Any,
-    ) -> pd.DataFrame:
-        """Compute a custom metric.
-
-        It brings some flexibility to compute any desired metric. However, we need to
-        follow some rules:
-
-        - `metric_function` should take `y_true` and `y_pred` as the first two
-          positional arguments.
-        - `response_method` corresponds to the estimator's method to be invoked to get
-          the predictions. It can be a string or a list of strings to defined in which
-          order the methods should be invoked.
-
-        Parameters
-        ----------
-        metric_function : callable
-            The metric function to be computed. The expected signature is
-            `metric_function(y_true, y_pred, **kwargs)`.
-
-        response_method : {"predict", "predict_proba", "predict_log_proba", \
-            "decision_function"} or list of such str
-            The estimator's method to be invoked to get the predictions.
-
-        metric_name : str, default=None
-            The name of the metric. If not provided, it will be inferred from the
-            metric function.
-
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        **kwargs : dict
-            Any additional keyword arguments to be passed to the metric function.
-
-        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
-            Function to aggregate the scores across the cross-validation splits.
-            None will return the scores for each split.
-            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
-
-        Returns
-        -------
-        pd.DataFrame
-            The custom metric.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.metrics import mean_absolute_error
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
-        >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
-        >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
-        >>> comparison_report.metrics.custom_metric(
-        ...     metric_function=mean_absolute_error,
-        ...     response_method="predict",
-        ...     metric_name="MAE",
-        ... )
-        Estimator      Ridge_1      Ridge_2
-        Metric
-        MAE           45.91...     45.91...
-        """
-        # create a scorer with `greater_is_better=True` to not alter the output of
-        # `metric_function`
-        scorer = make_scorer(
-            metric_function,
-            greater_is_better=True,
-            response_method=response_method,
-            **kwargs,
-        )
-        metric = {metric_name: scorer} if metric_name is not None else [scorer]
-        return self.summarize(
-            metric=metric,
-            data_source=data_source,
+        return self._metric(
+            "rmse", data_source=data_source, multioutput=multioutput
         ).frame(
             aggregate=aggregate,
         )
@@ -907,160 +759,6 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation using rich."""
         return self._rich_repr(class_name="skore.ComparisonReport.metrics")
-
-    ####################################################################################
-    # Methods related to displays
-    ####################################################################################
-
-    def _get_display(
-        self,
-        *,
-        data_source: DataSource | Literal["both"],
-        response_method: str | list[str] | tuple[str, ...],
-        display_class: type[
-            RocCurveDisplay
-            | PrecisionRecallCurveDisplay
-            | PredictionErrorDisplay
-            | ConfusionMatrixDisplay
-        ],
-        display_kwargs: dict[str, Any],
-    ) -> (
-        RocCurveDisplay
-        | PrecisionRecallCurveDisplay
-        | PredictionErrorDisplay
-        | ConfusionMatrixDisplay
-    ):
-        """Get the display from the cache or compute it.
-
-        Parameters
-        ----------
-        data_source : {"test", "train", "both"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metric.
-
-        response_method : str, list of str or tuple of str
-            The response method.
-
-        display_class : class
-            The display class.
-
-        display_kwargs : dict
-            The display kwargs used by `display_class._from_predictions`.
-
-        Returns
-        -------
-        display : display_class
-            The display.
-        """
-        pos_label = self._parent.pos_label
-        data_sources = _expand_data_sources(data_source)
-
-        # Compute cache key
-        if "seed" in display_kwargs and display_kwargs["seed"] is None:
-            cache_key = None
-        else:
-            cache_key = deep_key_sanitize(
-                (
-                    self._parent._hash,
-                    display_class.__name__,
-                    display_kwargs,
-                    data_source,
-                )
-            )
-
-        cache_value = self._parent._cache.get(cache_key)
-        if cache_value is not None:
-            return cache_value
-
-        y_true: list[YPlotData] = []
-        y_pred: list[YPlotData] = []
-
-        if self._parent._report_type == "comparison-estimator":
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing predictions for display",
-                total=len(self._parent.reports_),
-            ):
-                for ds in data_sources:
-                    report_X, report_y = report.metrics._get_X_y(data_source=ds)
-
-                    y_true_data, y_pred_data = _get_ys_for_single_report(
-                        cache=report._cache,
-                        estimator_hash=int(report._hash),
-                        estimator=report._estimator,
-                        estimator_name=report_name,
-                        X=report_X,
-                        y_true=report_y,
-                        data_source=ds,
-                        response_method=response_method,
-                        pos_label=pos_label,
-                        split=None,
-                    )
-                    y_true.append(y_true_data)
-                    y_pred.append(y_pred_data)
-
-            display = display_class._compute_data_for_display(
-                y_true=y_true,
-                y_pred=y_pred,
-                report_type=self._parent._report_type,
-                estimators=[
-                    report.estimator_ for report in self._parent.reports_.values()
-                ],
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-            )
-
-        else:
-            for report_name, report in track(
-                self._parent.reports_.items(),
-                description="Computing predictions for display",
-                total=len(self._parent.reports_),
-            ):
-                for split, estimator_report in enumerate(report.estimator_reports_):
-                    for ds in data_sources:
-                        report_X, report_y = estimator_report.metrics._get_X_y(
-                            data_source=ds
-                        )
-
-                        y_true_data, y_pred_data = _get_ys_for_single_report(
-                            cache=estimator_report._cache,
-                            estimator_hash=int(estimator_report._hash),
-                            estimator=estimator_report.estimator_,
-                            estimator_name=report_name,
-                            X=report_X,
-                            y_true=report_y,
-                            data_source=ds,
-                            response_method=response_method,
-                            pos_label=pos_label,
-                            split=split,
-                        )
-                        y_true.append(y_true_data)
-                        y_pred.append(y_pred_data)
-
-            display = display_class._compute_data_for_display(
-                y_true=y_true,
-                y_pred=y_pred,
-                report_type=self._parent._report_type,
-                estimators=[
-                    estimator_report.estimator_
-                    for report in self._parent.reports_.values()
-                    for estimator_report in report.estimator_reports_
-                ],
-                ml_task=self._parent._ml_task,
-                data_source=data_source,
-                **display_kwargs,
-            )
-
-        if cache_key is not None:
-            # Unless seed is an int (i.e. the call is deterministic),
-            # we do not cache
-            self._parent._cache[cache_key] = display
-
-        return display
 
     @available_if(
         _check_supported_ml_task(
@@ -1092,30 +790,27 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> display = comparison_report.metrics.roc()
         >>> display.plot()
         """
-        response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": self._parent.pos_label}
-        display = cast(
-            RocCurveDisplay,
-            self._get_display(
-                data_source=data_source,
-                response_method=response_method,
-                display_class=RocCurveDisplay,
-                display_kwargs=display_kwargs,
-            ),
+        child_displays = [
+            report.metrics.roc(data_source=data_source)
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
+            )
+        ]
+        estimator_names = self._parent.reports_.keys()
+
+        display = RocCurveDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"estimator": list(estimator_names)},
         )
         return display
 
@@ -1149,30 +844,27 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> display = comparison_report.metrics.precision_recall()
         >>> display.plot()
         """
-        response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": self._parent.pos_label}
-        display = cast(
-            PrecisionRecallCurveDisplay,
-            self._get_display(
-                data_source=data_source,
-                response_method=response_method,
-                display_class=PrecisionRecallCurveDisplay,
-                display_kwargs=display_kwargs,
-            ),
+        child_displays = [
+            report.metrics.precision_recall(data_source=data_source)
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
+            )
+        ]
+        estimator_names = self._parent.reports_.keys()
+
+        display = PrecisionRecallCurveDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"estimator": list(estimator_names)},
         )
         return display
 
@@ -1221,29 +913,39 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = Ridge(random_state=42)
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
         >>> estimator_2 = Ridge(random_state=43)
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> comparison_report = ComparisonReport(
-        ...     [estimator_report_1, estimator_report_2]
-        ... )
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> display = comparison_report.metrics.prediction_error()
         >>> display.plot(kind="actual_vs_predicted")
         """
-        display_kwargs = {"subsample": subsample, "seed": seed}
-        display = cast(
-            PredictionErrorDisplay,
-            self._get_display(
+        if isinstance(subsample, numbers.Integral):
+            # Preserve the total number of sub-samples:
+            n_children = len(self._parent.reports_)
+            if 0 < subsample < n_children:
+                subsample = 1
+            else:
+                subsample //= n_children
+
+        child_displays = [
+            report.metrics.prediction_error(
                 data_source=data_source,
-                response_method="predict",
-                display_class=PredictionErrorDisplay,
-                display_kwargs=display_kwargs,
-            ),
+                subsample=subsample,
+                seed=seed,
+            )
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
+            )
+        ]
+        estimator_names = self._parent.reports_.keys()
+
+        display = PredictionErrorDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"estimator": list(estimator_names)},
         )
         return display
 
@@ -1279,10 +981,10 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot()
 
@@ -1291,35 +993,18 @@ class _MetricsAccessor(_BaseMetricsAccessor, _BaseAccessor, DirNamesMixin):
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
-        response_method: str | list[str] | tuple[str, ...]
-        if self._parent._ml_task == "binary-classification":
-            response_method = ("predict_proba", "decision_function")
-        else:
-            response_method = "predict"
-
-        if self._parent._report_type == "comparison-cross-validation":
-            display_labels = tuple(
-                next(iter(self._parent.reports_.values()))
-                .estimator_reports_[0]
-                .estimator_.classes_
+        child_displays = [
+            report.metrics.confusion_matrix(data_source=data_source)
+            for report in track(
+                list(self._parent.reports_.values()),
+                description="Computing display for each report",
             )
-        else:
-            display_labels = tuple(
-                next(iter(self._parent.reports_.values())).estimator_.classes_
-            )
+        ]
+        estimator_names = self._parent.reports_.keys()
 
-        display_kwargs = {
-            "display_labels": display_labels,
-            "pos_label": self._parent.pos_label,
-            "response_method": response_method,
-        }
-        display = cast(
-            ConfusionMatrixDisplay,
-            self._get_display(
-                data_source=data_source,
-                response_method=response_method,
-                display_class=ConfusionMatrixDisplay,
-                display_kwargs=display_kwargs,
-            ),
+        display = ConfusionMatrixDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"estimator": list(estimator_names)},
         )
         return display

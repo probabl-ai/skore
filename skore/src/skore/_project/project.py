@@ -89,34 +89,13 @@ class Project:
     --------
     Construct reports.
 
-    >>> from sklearn.datasets import make_classification, make_regression
-    >>> from sklearn.linear_model import LinearRegression, LogisticRegression
-    >>> from sklearn.model_selection import train_test_split
-    >>> from skore import CrossValidationReport, EstimatorReport
-    >>>
-    >>> X, y = make_classification(random_state=42)
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    >>> classifier = LogisticRegression(max_iter=10)
-    >>> classifier_report = EstimatorReport(
-    >>>     classifier,
-    >>>     X_train=X_train,
-    >>>     y_train=y_train,
-    >>>     X_test=X_test,
-    >>>     y_test=y_test,
-    >>> )
+    >>> from sklearn.datasets import make_regression
+    >>> from sklearn.linear_model import LinearRegression
+    >>> from skore import evaluate
     >>>
     >>> X, y = make_regression(random_state=42)
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> regressor = LinearRegression()
-    >>> regressor_report = EstimatorReport(
-    >>>     regressor,
-    >>>     X_train=X_train,
-    >>>     y_train=y_train,
-    >>>     X_test=X_test,
-    >>>     y_test=y_test,
-    >>> )
-    >>>
-    >>> cv_regressor_report = CrossValidationReport(regressor, X, y)
+    >>> regressor_report = evaluate(regressor, X, y, splitter=0.2)
 
     Construct the project in local mode, persisted in a temporary directory.
 
@@ -130,7 +109,6 @@ class Project:
     Put reports in the project.
 
     >>> local_project.put("my-simple-regression", regressor_report)
-    >>> local_project.put("my-simple-cv_regression", cv_regressor_report)
 
     Investigate metadata/metrics to filter the best reports.
 

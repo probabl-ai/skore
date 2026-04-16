@@ -2,22 +2,21 @@ from collections.abc import Sequence
 from typing import Any, Literal, cast
 
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.figure import Figure
-from pandas import DataFrame
-from sklearn.utils.validation import (
-    _check_pos_label_consistency,
-    check_consistent_length,
-)
+from numpy.typing import NDArray
+from pandas import CategoricalDtype, DataFrame
+from sklearn.preprocessing import LabelBinarizer
 
 from skore._sklearn.types import (
+    _DEFAULT,
     DataSource,
     MLTask,
     PositiveLabel,
     ReportType,
-    YPlotData,
 )
 
 LINESTYLE = [
@@ -47,24 +46,6 @@ class _ClassifierDisplayMixin:
     # defined in the concrete display class
     estimator_name: str
     ml_task: MLTask
-    pos_label: PositiveLabel | None
-
-    @classmethod
-    def _validate_from_predictions_params(
-        cls,
-        y_true: Sequence[YPlotData],
-        y_pred: Sequence[YPlotData],
-        *,
-        ml_task: str,
-        pos_label: PositiveLabel | None = None,
-    ) -> PositiveLabel | None:
-        for y_true_i, y_pred_i in zip(y_true, y_pred, strict=False):
-            check_consistent_length(y_true_i.y, y_pred_i.y)
-
-        if ml_task == "binary-classification":
-            pos_label = _check_pos_label_consistency(pos_label, y_true[0].y)
-
-        return pos_label
 
 
 def _rotate_ticklabels(
@@ -277,7 +258,7 @@ def sample_mpl_colormap(
 def _get_curve_plot_columns(
     plot_data: DataFrame,
     report_type: ReportType,
-    ml_task: MLTask,
+    label,
     data_source: DataSource | Literal["both"],
     subplot_by: Literal["auto", "label", "estimator", "data_source"] | None = "auto",
 ) -> tuple[str | None, str | None, str | None]:
@@ -286,9 +267,9 @@ def _get_curve_plot_columns(
     Rules:
     - Default ("auto"): None for EstimatorReport and Cross-Validation Report,
         "estimator" for ComparisonReport
-    - subplot_by=None disallowed for comparison in multiclass
+    - subplot_by=None disallowed for comparison when plotting one-vs-rest curves
     - subplot_by="estimator" only allowed for comparison reports
-    - subplot_by="label" only allowed for multiclass classification
+    - subplot_by="label" only allowed when plotting one-vs-rest curves
     - subplot_by="data_source" only allowed for EstimatorReport with both data \
         sources
     - hue priority: estimator > label > data_source (excluding col)
@@ -299,11 +280,11 @@ def _get_curve_plot_columns(
         "estimator" in plot_data.columns and plot_data["estimator"].nunique() > 1
     )
     is_comparison = "comparison" in report_type
-    is_multiclass = ml_task == "multiclass-classification"
+    is_one_vs_rest = label is None
     has_both_data_sources = data_source == "both"
 
     allowed_values: set[str | None] = {"auto"}
-    if is_multiclass:
+    if is_one_vs_rest:
         allowed_values.add("label")
         if not is_comparison:
             allowed_values.add(None)
@@ -311,9 +292,9 @@ def _get_curve_plot_columns(
         allowed_values.add(None)
     if is_comparison and has_multiple_estimators:
         allowed_values.add("estimator")
-    if has_both_data_sources and (not is_comparison or not is_multiclass):
+    if has_both_data_sources and (not is_comparison or not is_one_vs_rest):
         allowed_values.add("data_source")
-    # Disallow for comparison reports in multiclass classification
+    # Disallow for comparison reports when plotting one-vs-rest curves.
 
     if subplot_by not in allowed_values:
         allowed_str = ", ".join(sorted([str(s) for s in allowed_values]))
@@ -433,3 +414,81 @@ def _format_legend_label(
         )
         + f" ({statistic})"
     )
+
+
+def _column_data_to_records(column_data: dict[str, list] | None) -> list[dict]:
+    """Convert column-wise data into one record per row.
+
+    Examples
+    --------
+    >>> _column_data_to_records({"estimator": ["A", "B"], "split": [0, 1]})
+    [{'estimator': 'A', 'split': 0}, {'estimator': 'B', 'split': 1}]
+    """
+    if column_data is None or not column_data:
+        return []
+
+    keys = list(column_data)
+    values = [list(column_data[key]) for key in keys]
+    lengths = {len(value) for value in values}
+    if len(lengths) > 1:
+        raise ValueError("All column data iterables must have the same length.")
+
+    return [dict(zip(keys, row, strict=True)) for row in zip(*values, strict=True)]
+
+
+def _concat_frames_with_column_data(
+    frames: Sequence[DataFrame], column_data: dict[str, list] | None = None
+) -> DataFrame:
+    """Concatenate frames and assign column-wise metadata as categorical columns."""
+    column_records = _column_data_to_records(column_data)
+    if not column_records:
+        column_records = [{} for _ in frames]
+
+    frame = pd.concat(
+        [
+            child_frame.assign(**column_record)
+            for child_frame, column_record in zip(frames, column_records, strict=True)
+        ],
+        ignore_index=True,
+    )
+
+    categorical_columns = {
+        column
+        for column in frame.columns
+        if all(
+            column in child_frame.columns
+            and isinstance(child_frame[column].dtype, CategoricalDtype)
+            for child_frame in frames
+        )
+    }
+    if column_data:
+        categorical_columns.update(column_data)
+
+    if categorical_columns:
+        frame = frame.astype(dict.fromkeys(categorical_columns, "category"))
+
+    return frame
+
+
+def _one_hot_encode(y_true, classes) -> NDArray:
+    label_binarizer = LabelBinarizer().fit(classes)
+    y_true_onehot: NDArray = label_binarizer.transform(y_true)
+    if len(classes) == 2:
+        y_true_onehot = np.hstack(((1 - y_true_onehot), y_true_onehot))
+    return y_true_onehot
+
+
+def _check_label(labels: list, label: PositiveLabel, default_label: PositiveLabel):
+    if label is _DEFAULT:
+        return default_label
+    elif label is None:
+        return None
+    elif label not in labels:
+        raise ValueError(
+            f"label={label!r} is not a valid label. It should be one of: {labels!r}."
+        )
+    else:
+        # necessary clean-up for `df.query("label == @label")` to work in some cases
+        # Ex: with `labels=[0, 1]` and `label=True`:
+        # `label in labels` is true but `df.query("label == @label")` is empty.
+        return labels[labels.index(label)]

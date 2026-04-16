@@ -21,7 +21,7 @@ def test_aggregate_mean(forest_binary_classification_data):
 
     assert isinstance(result.columns, pd.MultiIndex)
     assert result.columns.tolist() == [("RandomForestClassifier", "mean")]
-    assert result.shape == (9, 1)
+    assert result.shape == (10, 1)
 
 
 def test_aggregate_mean_std(forest_binary_classification_data):
@@ -37,7 +37,7 @@ def test_aggregate_mean_std(forest_binary_classification_data):
         ("RandomForestClassifier", "mean"),
         ("RandomForestClassifier", "std"),
     ]
-    assert result.shape == (9, 2)
+    assert result.shape == (10, 2)
 
 
 def test_aggregate_none(forest_binary_classification_data):
@@ -53,7 +53,7 @@ def test_aggregate_none(forest_binary_classification_data):
         ("RandomForestClassifier", "Split #0"),
         ("RandomForestClassifier", "Split #1"),
     ]
-    assert result.shape == (9, 2)
+    assert result.shape == (10, 2)
 
 
 def test_favorability_with_aggregate_mean_std(forest_binary_classification_data):
@@ -119,6 +119,7 @@ def test_flat_index_binary_classification(forest_binary_classification_data):
         "recall_0",
         "recall_1",
         "roc_auc",
+        "log_loss",
         "brier_score",
         "fit_time_s",
         "predict_time_s",
@@ -129,7 +130,7 @@ def test_multioutput_with_flat_index(linear_regression_multioutput_data):
     """Test flat_index with multioutput regression cross-validation data."""
     estimator, X, y = linear_regression_multioutput_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    display = report.metrics.summarize(metric_kwargs={"multioutput": "raw_values"})
+    display = report.metrics.summarize()
 
     result_multi = display.frame(aggregate=["mean", "std"], flat_index=False)
     assert isinstance(result_multi.index, pd.MultiIndex)
@@ -189,6 +190,7 @@ def test_flat_index_with_favorability(forest_binary_classification_data):
         "recall_0",
         "recall_1",
         "roc_auc",
+        "log_loss",
         "brier_score",
         "fit_time_s",
         "predict_time_s",

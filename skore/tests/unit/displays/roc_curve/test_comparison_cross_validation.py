@@ -25,10 +25,17 @@ def test_legend_binary_classification(
         assert legend is not None
         legend_texts = [text.get_text() for text in legend.get_texts()]
 
-        plot_data = display.frame(with_roc_auc=True)
-        roc_auc = plot_data.query(f"estimator == '{estimator}'")["roc_auc"]
-        assert legend_texts[0] == f"AUC={roc_auc.mean():.2f}±{roc_auc.std():.2f}"
-        assert len(legend_texts) == 2
+        labels = display.roc_curve["label"].cat.categories
+        for label_idx, label in enumerate(labels):
+            plot_data = display.frame(with_roc_auc=True)
+            roc_auc = plot_data.query(f"label == {label} & estimator == '{estimator}'")[
+                "roc_auc"
+            ]
+            assert (
+                legend_texts[label_idx] == f"{label} (AUC={roc_auc.mean():.2f}"
+                f"±{roc_auc.std():.2f})"
+            )
+        assert len(legend_texts) == len(labels) + 1
         assert legend_texts[-1] == "Chance level (AUC = 0.5)"
 
 
@@ -78,9 +85,7 @@ def test_multiclass_str_labels_roc_plot(pyplot):
     report_1 = CrossValidationReport(LogisticRegression(max_iter=500), X=X, y=y)
     report_2 = CrossValidationReport(LogisticRegression(max_iter=1000), X=X, y=y)
     report = ComparisonReport([report_1, report_2])
-
-    display = report.metrics.roc()
-    display.plot()
+    report.metrics.roc().plot()
 
 
 @pytest.mark.parametrize(
@@ -88,7 +93,7 @@ def test_multiclass_str_labels_roc_plot(pyplot):
     [
         (
             "comparison_cross_validation_reports_binary_classification",
-            ["None", "auto", "estimator"],
+            ["auto", "estimator", "label"],
         ),
         (
             "comparison_cross_validation_reports_multiclass_classification",
@@ -114,7 +119,7 @@ def test_invalid_subplot_by(fixture_name, valid_values, request):
     [
         (
             "comparison_cross_validation_reports_binary_classification",
-            [(None, 0), ("estimator", 2)],
+            [("label", 2), ("estimator", 2)],
         ),
         (
             "comparison_cross_validation_reports_multiclass_classification",
@@ -127,8 +132,10 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.roc()
     for subplot_by, expected_len in subplot_by_tuples:
-        display.plot(subplot_by=subplot_by)
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
         if subplot_by is None:
-            assert isinstance(display.ax_, mpl.axes.Axes)
+            assert len(axes) == 1
+            assert isinstance(axes[0], mpl.axes.Axes)
         else:
-            assert len(display.ax_) == expected_len
+            assert len(axes) == expected_len

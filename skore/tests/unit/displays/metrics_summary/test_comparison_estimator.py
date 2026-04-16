@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-import pytest
-from sklearn.metrics import accuracy_score, get_scorer
 
 from skore import ComparisonReport, MetricsSummaryDisplay
 
@@ -21,6 +19,7 @@ def test_data_source_both(
         ("Recall", "0"),
         ("Recall", "1"),
         ("ROC AUC", ""),
+        ("Log loss", ""),
         ("Brier score", ""),
         ("Fit time (s)", ""),
         ("Predict time (s)", ""),
@@ -52,6 +51,7 @@ def test_flat_index(estimator_reports_binary_classification):
         "recall_0",
         "recall_1",
         "roc_auc",
+        "log_loss",
         "brier_score",
         "fit_time_s",
         "predict_time_s",
@@ -75,27 +75,3 @@ def test_aggregate(comparison_estimator_reports_binary_classification):
         report.metrics.summarize().frame(aggregate="mean"),
         report.metrics.summarize().frame(),
     )
-
-
-@pytest.mark.parametrize(
-    "metric, metric_kwargs",
-    [
-        ("accuracy", None),
-        ("neg_log_loss", None),
-        (accuracy_score, {"response_method": "predict"}),
-        (get_scorer("accuracy"), None),
-    ],
-)
-def test_metric_single_list_equivalence(
-    comparison_estimator_reports_binary_classification, metric, metric_kwargs
-):
-    """Check that passing a single string, callable, scorer is equivalent to passing a
-    list with a single element."""
-    report = comparison_estimator_reports_binary_classification
-    result_single = report.metrics.summarize(
-        metric=metric, metric_kwargs=metric_kwargs
-    ).frame()
-    result_list = report.metrics.summarize(
-        metric=[metric], metric_kwargs=metric_kwargs
-    ).frame()
-    assert result_single.equals(result_list)

@@ -49,8 +49,8 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             The target data.
         """
         err_msg = "{} is required when `data_source={!r}`."
-        X = getattr(self._parent, f"_X_{dataset}")
-        y = getattr(self._parent, f"_y_{dataset}")
+        X = getattr(self._parent, f"X_{dataset}")
+        y = getattr(self._parent, f"y_{dataset}")
 
         if X is None:
             raise ValueError(err_msg.format(f"X_{dataset}", data_source))
@@ -112,14 +112,24 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data, pos_label=1)
+        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
         >>> report.data.analyze().frame()
         """
+        df = self._prepare_dataframe_for_display(
+            data_source=data_source,
+            with_y=with_y,
+            subsample=subsample,
+            subsample_strategy=subsample_strategy,
+            seed=seed,
+        )
+        return TableReportDisplay._compute_data_for_display(df)
+
+    def _prepare_dataframe_for_display(
+        self, data_source, with_y, subsample, subsample_strategy, seed
+    ):
         if data_source not in (data_source_options := ("train", "test", "both")):
             raise ValueError(
                 f"'data_source' options are {data_source_options!r}, got {data_source}."
@@ -156,7 +166,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             else:  # subsample_strategy == "random":
                 df = sbd.sample(df, subsample, seed=seed)
 
-        return TableReportDisplay._compute_data_for_display(df)
+        return df
 
     ####################################################################################
     # Methods related to the help tree

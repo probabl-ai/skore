@@ -35,7 +35,7 @@ dependencies = [
   "rich>=14.2",
   "scikit-learn",
   "skore[local]",
-  "skrub",
+  "skrub>=0.8",
   "seaborn",
   "jinja2",
 ]
@@ -70,10 +70,12 @@ sphinx-base = [
   "sphinx-copybutton",
   "sphinx-design",
   "sphinx-gallery",
+  "sphinx-issues",
   "sphinx-tabs",
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
-  "xgboost-cpu",
+  "xgboost-cpu ; platform_system != 'Darwin'",
+  "xgboost ; platform_system == 'Darwin'",
 ]
 sphinx = ["skore[sphinx-base, hub, mlflow]", "mlflow", "polars"]
 sphinx-lts-cpu = ["skore[sphinx-base, hub, mlflow]", "mlflow", "polars-lts-cpu"]
@@ -82,7 +84,7 @@ dev = [
   "ipykernel",
 ]
 local = ["skore-local-project>=0.0.4"]
-hub = ["skore-hub-project>=0.0.17"]
+hub = ["skore-hub-project>=0.0.19"]
 mlflow = ["skore-mlflow-project>=0.0.2"]
 
 [project.urls]

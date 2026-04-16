@@ -1,6 +1,7 @@
 <div id="{{ container_id }}-wrapper">
     <template id="{{ container_id }}-template">
         <style>
+{% include "theme.css" %}
 {% include "help.css" %}
         </style>
         {% include "report_help-content.html.j2" %}
@@ -9,7 +10,7 @@
     <div id="{{ container_id }}"></div>
 
     <script>
-{% include "help.js" %}
+{% include "report_theme.js" %}
     </script>
 </div>
 
@@ -33,7 +34,7 @@
     // Apply theme to the container (wrapper is ref for luma-based detection)
     const helpContainer = shadowRoot.querySelector('.container');
     if (helpContainer) {
-        applyThemeToHelpContainer(helpContainer, '{{ container_id }}-wrapper');
+        applyThemeToReportContainer(helpContainer, '{{ container_id }}-wrapper');
     }
 })();
 </script>

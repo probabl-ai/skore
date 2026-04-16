@@ -4,9 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
-from sklearn.metrics import (
-    accuracy_score,
-)
 from sklearn.svm import SVC
 
 from skore import CrossValidationReport
@@ -50,8 +47,8 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
     assert list(split_names) == expected_split_names
 
-    # check that something was written to the cache
-    assert report._cache != {}
+    # check that something was written to the children's cache
+    assert all(report._cache != {} for report in report.estimator_reports_)
     report.clear_cache()
 
     _check_metrics_names(result, [metric], expected_nb_stats)
@@ -139,19 +136,6 @@ def test_brier_score_requires_probabilities():
 
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     assert not hasattr(report.metrics, "brier_score")
-
-
-def test_custom_metric(forest_binary_classification_data):
-    """Check that we can compute a custom metric."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
-
-    result = report.metrics.custom_metric(
-        metric_function=accuracy_score,
-        response_method="predict",
-    )
-    assert result.shape == (1, 2)
-    assert result.index == ["Accuracy Score"]
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])

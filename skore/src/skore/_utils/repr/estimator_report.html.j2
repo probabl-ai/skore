@@ -1,0 +1,25 @@
+<div id="{{ container_id }}-wrapper">
+    <template id="{{ container_id }}-template">
+        <style>
+{% include "theme.css" %}
+{% include "help.css" %}
+{% include "report.css" %}
+        </style>
+        {% include "estimator_report-content.html.j2" %}
+    </template>
+
+    <div id="{{ container_id }}">
+        <div slot="estimator-display">{{ estimator_display | safe }}</div>
+        <div slot="table-report">{{ table_report | safe }}</div>
+        <div slot="diagnostic">{{ diagnostic | safe }}</div>
+    </div>
+
+    <script>
+{% include "report_theme.js" %}
+{% include "estimator_report.js" %}
+    </script>
+</div>
+
+<script>
+skoreInitEstimatorReport("{{ container_id }}");
+</script>

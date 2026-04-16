@@ -8,9 +8,16 @@ from threading import local as Local
 
 
 class LocalConfiguration(Local):
-    def __init__(self, *, show_progress=True, plot_backend="matplotlib"):
+    def __init__(
+        self,
+        *,
+        show_progress=True,
+        plot_backend="matplotlib",
+        ignore_checks: list[str] | tuple[str, ...] | None = None,
+    ):
         self.show_progress = show_progress
         self.plot_backend = plot_backend
+        self.ignore_checks = ignore_checks
 
 
 class Configuration:
@@ -31,6 +38,10 @@ class Configuration:
         Backend used for rendering plots (e.g. ``"matplotlib"``).
         Default is ``"matplotlib"``.
 
+    ignore_checks : list of str or tuple of str or None
+        Global diagnostic codes ignored by ``report.diagnose(...)``.
+        Default is ``None``.
+
     Examples
     --------
     **Global configuration** using the ``configuration`` instance from skore:
@@ -39,6 +50,7 @@ class Configuration:
     >>> from skore import configuration
     >>> configuration.show_progress = False
     >>> configuration.plot_backend = "matplotlib"
+    >>> configuration.ignore_checks = ["SKD001"]
 
     **Temporary overrides** using the context manager (previous values are
     restored on exit):
@@ -48,6 +60,8 @@ class Configuration:
     ...     report.fit(X, y)
     >>> with configuration(plot_backend="plotly"):
     ...     report.plot()
+    >>> with configuration(ignore_checks=["SKD002"]):
+    ...     report.diagnose()
     """
 
     def __init__(self):
@@ -57,7 +71,8 @@ class Configuration:
         return (
             f"Configuration("
             f"show_progress={self.local.show_progress}, "
-            f"plot_backend={self.local.plot_backend!r}"
+            f"plot_backend={self.local.plot_backend!r}, "
+            f"ignore_checks={self.local.ignore_checks}"
             ")"
         )
 
@@ -74,6 +89,7 @@ class Configuration:
         self.local = LocalConfiguration(
             show_progress=value,
             plot_backend=self.local.plot_backend,
+            ignore_checks=self.local.ignore_checks,
         )
 
     @property
@@ -89,12 +105,36 @@ class Configuration:
         self.local = LocalConfiguration(
             show_progress=self.local.show_progress,
             plot_backend=value,
+            ignore_checks=self.local.ignore_checks,
+        )
+
+    @property
+    def ignore_checks(self):
+        return self.local.ignore_checks
+
+    @ignore_checks.setter
+    def ignore_checks(self, value):
+        if current_thread().ident != main_thread().ident:
+            self.local.ignore_checks = value
+            return
+
+        self.local = LocalConfiguration(
+            show_progress=self.local.show_progress,
+            plot_backend=self.local.plot_backend,
+            ignore_checks=value,
         )
 
     @contextmanager
-    def __call__(self, *, show_progress=..., plot_backend=...):
+    def __call__(
+        self,
+        *,
+        show_progress=...,
+        plot_backend=...,
+        ignore_checks=...,
+    ):
         show_progress_copy = self.show_progress
         plot_backend_copy = self.plot_backend
+        ignore_checks_copy = self.ignore_checks
 
         if show_progress is not ...:
             self.show_progress = show_progress
@@ -102,11 +142,15 @@ class Configuration:
         if plot_backend is not ...:
             self.plot_backend = plot_backend
 
+        if ignore_checks is not ...:
+            self.ignore_checks = ignore_checks
+
         try:
             yield
         finally:
             self.show_progress = show_progress_copy
             self.plot_backend = plot_backend_copy
+            self.ignore_checks = ignore_checks_copy
 
 
 configuration = Configuration()

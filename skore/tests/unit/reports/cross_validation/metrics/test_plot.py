@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from skore import CrossValidationReport, RocCurveDisplay
+from skore._utils._testing import check_cache_unchanged
 
 
 def test_plot_roc(forest_binary_classification_data):
@@ -19,10 +20,11 @@ def test_display_binary_classification(
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)()
-    assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)()
-    assert display_first_call is display_second_call
+    _ = getattr(report.metrics, display)()
+    child_cache = report.estimator_reports_[0]._cache
+    assert child_cache != {}
+    with check_cache_unchanged(child_cache):
+        _ = getattr(report.metrics, display)()
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
@@ -31,10 +33,11 @@ def test_display_regression(pyplot, linear_regression_data, display):
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, display)
-    display_first_call = getattr(report.metrics, display)(seed=0)
-    assert report._cache != {}
-    display_second_call = getattr(report.metrics, display)(seed=0)
-    assert display_first_call is display_second_call
+    _ = getattr(report.metrics, display)(seed=0)
+    child_cache = report.estimator_reports_[0]._cache
+    assert child_cache != {}
+    with check_cache_unchanged(child_cache):
+        _ = getattr(report.metrics, display)(seed=0)
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
@@ -46,18 +49,21 @@ def test_display_binary_classification_pos_label(
     labels = np.array(["A", "B"], dtype=object)
     y = labels[y]
     report = CrossValidationReport(classifier, X, y)
-    with pytest.raises(ValueError, match="pos_label is not specified"):
-        getattr(report.metrics, metric)()
+    display = getattr(report.metrics, metric)()
+    fig = display.plot()
+    assert "Positive label" not in fig.get_suptitle()
+    fig = display.plot(label="A")
+    assert "Positive label: A" in fig.get_suptitle()
 
     report = CrossValidationReport(classifier, X, y, pos_label="A")
     display = getattr(report.metrics, metric)()
-    display.plot()
-    assert "Positive label: A" in display.figure_.get_suptitle()
+    fig = display.plot()
+    assert "Positive label: A" in fig.get_suptitle()
 
     report = CrossValidationReport(classifier, X, y, pos_label="B")
     display = getattr(report.metrics, metric)()
-    display.plot()
-    assert "Positive label: B" in display.figure_.get_suptitle()
+    fig = display.plot()
+    assert "Positive label: B" in fig.get_suptitle()
 
 
 def test_seed_none(linear_regression_data):
@@ -66,5 +72,9 @@ def test_seed_none(linear_regression_data):
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
     report.metrics.prediction_error(seed=None)
-    # skore should store the y_pred of the internal estimators, but not the plot
-    assert report._cache == {}
+    # skore stores the predictions of the internal estimators, but not the
+    # concatenated cross-validation display.
+    assert all(
+        len(estimator_report._cache) == 2
+        for estimator_report in report.estimator_reports_
+    )

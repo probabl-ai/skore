@@ -69,7 +69,7 @@ jobs:
 
       - name: Define if at least one file has changed
         id: filter
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
           filters: ${{ runner.temp }}/filters.yaml
 
@@ -205,7 +205,7 @@ jobs:
           cache: pip
 
       - name: Restore python-venv
-        uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         id: cache-python-venv
         with:
           path: ${{ matrix.package }}/venv
@@ -240,7 +240,7 @@ jobs:
           python -m pip install --requirement test-requirements.txt
 
       - name: Save python-venv
-        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         with:
           path: ${{ matrix.package }}/venv
@@ -273,7 +273,7 @@ jobs:
 
       - name: Upload coverage reports
         if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{ matrix.package }}-coverage
           path: ${{ matrix.package }}/coverage/

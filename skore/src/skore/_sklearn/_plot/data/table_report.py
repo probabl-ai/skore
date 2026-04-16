@@ -171,24 +171,14 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
     summary : dict
         The summary of the dataset, as returned by ``summarize_dataframe``.
 
-    Attributes
-    ----------
-    ax_ : matplotlib axes
-        The axes of the figure.
-
-    figure_ : matplotlib figure.
-        The figure of the plot.
-
     Examples
     --------
     >>> from sklearn.datasets import load_breast_cancer
     >>> from sklearn.linear_model import LogisticRegression
-    >>> from skore import train_test_split
-    >>> from skore import EstimatorReport
+    >>> from skore import evaluate
     >>> X, y = load_breast_cancer(return_X_y=True)
-    >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
     >>> classifier = LogisticRegression(max_iter=10_000)
-    >>> report = EstimatorReport(classifier, **split_data)
+    >>> report = evaluate(classifier, X, y, splitter=0.2)
     >>> display = report.data.analyze()
     >>> display.plot(kind="corr")
     """
@@ -235,7 +225,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         hue: str | None = None,
         kind: Literal["dist", "corr"] = "dist",
         top_k_categories: int = 20,
-    ) -> None:
+    ) -> Figure:
         """Plot distribution or correlation of the columns from the dataset.
 
         Parameters
@@ -268,16 +258,19 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             For categorical columns, the number of most frequent elements to display.
             Only used when ``kind='dist'``.
 
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the plot.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> display = report.data.analyze()
         >>> display.plot(kind="corr")
         """
@@ -297,9 +290,9 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         hue: str | None = None,
         kind: Literal["dist", "corr"] = "dist",
         top_k_categories: int = 20,
-    ) -> None:
+    ) -> Figure:
         """Matplotlib implementation of the `plot` method."""
-        self.figure_, self.ax_ = plt.subplots()
+        figure, ax = plt.subplots()
         if kind == "dist":
             match (x is None, y is None, hue is None):
                 case (True, True, True) | (True, True, False):
@@ -309,6 +302,8 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                     )
                 case (False, True, True) | (True, False, True):
                     self._plot_distribution_1d(
+                        figure=figure,
+                        ax=ax,
                         x=x,
                         y=y,
                         k=top_k_categories,
@@ -316,6 +311,8 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                     )
                 case _:
                     self._plot_distribution_2d(
+                        figure=figure,
+                        ax=ax,
                         x=x,
                         y=y,
                         hue=hue,
@@ -334,14 +331,20 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                     raise ValueError(
                         f"When {kind=!r}, {param_name!r} argument must be None."
                     )
-            self._plot_cramer(heatmap_kwargs=self._default_heatmap_kwargs)
+            self._plot_cramer(
+                figure=figure, ax=ax, heatmap_kwargs=self._default_heatmap_kwargs
+            )
 
         else:
             raise ValueError(f"'kind' options are 'dist', 'corr', got {kind!r}.")
 
+        return figure
+
     def _plot_distribution_1d(
         self,
         *,
+        figure: Figure,
+        ax: Axes,
         x: str | None,
         y: str | None,
         k: int,
@@ -394,16 +397,16 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             histplot_params = {"x": column}
             despine_params = {"bottom": is_categorical}
             if duration_unit is not None:
-                self.ax_.set(xlabel=f"{duration_unit.capitalize()}s")
+                ax.set(xlabel=f"{duration_unit.capitalize()}s")
         else:  # y is not None
             histplot_params = {"y": column}
             despine_params = {"left": is_categorical}
             if duration_unit is not None:
-                self.ax_.set(ylabel=f"{duration_unit.capitalize()}s")
+                ax.set(ylabel=f"{duration_unit.capitalize()}s")
 
-        sns.histplot(ax=self.ax_, **histplot_params, **histplot_kwargs_validated)
+        sns.histplot(ax=ax, **histplot_params, **histplot_kwargs_validated)
         sns.despine(
-            self.figure_,
+            figure,
             top=True,
             right=True,
             trim=True,
@@ -413,21 +416,23 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
 
         if is_categorical:
             _resize_categorical_axis(
-                figure=self.figure_,
-                ax=self.ax_,
+                figure=figure,
+                ax=ax,
                 n_categories=sbd.n_unique(column),
                 is_x_axis=x is not None,
             )
 
         if x is not None and any(
-            len(label.get_text()) > 1 for label in self.ax_.get_xticklabels()
+            len(label.get_text()) > 1 for label in ax.get_xticklabels()
         ):
             # rotate only for string longer than 1 character
-            _rotate_ticklabels(self.ax_, rotation=45)
+            _rotate_ticklabels(ax, rotation=45)
 
     def _plot_distribution_2d(
         self,
         *,
+        figure: Figure,
+        ax: Axes,
         x: str | None,
         y: str | None,
         heatmap_kwargs: dict[str, Any],
@@ -485,7 +490,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 x=x,
                 y=y,
                 hue=hue,
-                ax=self.ax_,
+                ax=ax,
                 **scatterplot_kwargs_validated,
             )
         elif is_x_num or is_y_num:
@@ -519,12 +524,12 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             else:
                 x = _truncate_top_k_categories(x, k)
 
-            sns.boxplot(x=x, y=y, ax=self.ax_, **boxplot_kwargs_validated)
-            sns.stripplot(x=x, y=y, hue=hue, ax=self.ax_, **stripplot_kwargs_validated)
+            sns.boxplot(x=x, y=y, ax=ax, **boxplot_kwargs_validated)
+            sns.stripplot(x=x, y=y, hue=hue, ax=ax, **stripplot_kwargs_validated)
 
             _resize_categorical_axis(
-                figure=self.figure_,
-                ax=self.ax_,
+                figure=figure,
+                ax=ax,
                 n_categories=sbd.n_unique(y) if is_x_num else sbd.n_unique(x),
                 is_x_axis=not is_x_num,
             )
@@ -532,10 +537,8 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 despine_params["left"] = True
             else:
                 despine_params["bottom"] = True
-                if any(
-                    len(label.get_text()) > 1 for label in self.ax_.get_xticklabels()
-                ):
-                    _rotate_ticklabels(self.ax_, rotation=45)
+                if any(len(label.get_text()) > 1 for label in ax.get_xticklabels()):
+                    _rotate_ticklabels(ax, rotation=45)
         else:
             if (hue is not None) and (not sbd.is_numeric(hue)):
                 raise ValueError(
@@ -583,9 +586,9 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 },
                 heatmap_kwargs,
             )
-            sns.heatmap(contingency_table, ax=self.ax_, **heatmap_kwargs_validated)
+            sns.heatmap(contingency_table, ax=ax, **heatmap_kwargs_validated)
             despine_params.update(left=True, bottom=True)
-            self.ax_.tick_params(axis="both", length=0)
+            ax.tick_params(axis="both", length=0)
 
             for is_x_axis, x_or_y in zip(
                 [True, False],
@@ -596,20 +599,22 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 strict=False,
             ):
                 _resize_categorical_axis(
-                    figure=self.figure_,
-                    ax=self.ax_,
+                    figure=figure,
+                    ax=ax,
                     n_categories=sbd.n_unique(x_or_y),
                     is_x_axis=is_x_axis,
                     size_per_category=size_per_category,
                 )
 
-        sns.despine(self.figure_, **despine_params)
+        sns.despine(figure, **despine_params)
 
-        self.ax_.set(xlabel=sbd.name(x), ylabel=sbd.name(y))
-        if self.ax_.legend_ is not None:
-            sns.move_legend(self.ax_, (1.05, 0.0))
+        ax.set(xlabel=sbd.name(x), ylabel=sbd.name(y))
+        if ax.legend_ is not None:
+            sns.move_legend(ax, (1.05, 0.0))
 
-    def _plot_cramer(self, *, heatmap_kwargs: dict[str, Any]) -> None:
+    def _plot_cramer(
+        self, *, figure: Figure, ax: Axes, heatmap_kwargs: dict[str, Any]
+    ) -> None:
         """Plot Cramer's V correlation among all columns.
 
         Parameters
@@ -639,8 +644,8 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         # and keep the diagonal as well.
         mask = np.triu(np.ones_like(cramer_v_table, dtype=bool), k=1)
 
-        sns.heatmap(cramer_v_table, mask=mask, ax=self.ax_, **heatmap_kwargs_validated)
-        self.ax_.set(title="Cramer's V Correlation")
+        sns.heatmap(cramer_v_table, mask=mask, ax=ax, **heatmap_kwargs_validated)
+        ax.set(title="Cramer's V Correlation")
 
     def frame(
         self, *, kind: Literal["dataset", "top-associations"] = "dataset"

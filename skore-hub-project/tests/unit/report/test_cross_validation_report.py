@@ -1,14 +1,20 @@
 from io import BytesIO
 
 from joblib import dump, hash
-from pandas import Series
 from pydantic import ValidationError
-from pytest import fixture, mark, raises
+from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.linear_model import LinearRegression
-from sklearn.model_selection import KFold, RepeatedKFold
-from skore import CrossValidationReport, EstimatorReport, train_test_split
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.model_selection import (
+    KFold,
+    RepeatedKFold,
+    RepeatedStratifiedKFold,
+    ShuffleSplit,
+    StratifiedKFold,
+    StratifiedShuffleSplit,
+    TimeSeriesSplit,
+)
+from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.artifact.media import (
     ConfusionMatrixDataFrameTest,
@@ -70,8 +76,9 @@ from skore_hub_project.report import (
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
     reports = [object] + getattr(object, "estimator_reports_", [])
-    caches = [report_to_clear._cache for report_to_clear in reports]
-
+    reports_with_cache = [
+        (report, report._cache) for report in reports if hasattr(report, "_cache")
+    ]
     object.clear_cache()
 
     try:
@@ -79,7 +86,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
             dump(object, stream)
             pickle_bytes = stream.getvalue()
     finally:
-        for report, cache in zip(reports, caches, strict=True):
+        for report, cache in reports_with_cache:
             report._cache = cache
 
     with Serializer(pickle_bytes) as serializer:
@@ -110,193 +117,220 @@ class TestCrossValidationReportPayload:
     def test_dataset_size(self, payload):
         assert payload.dataset_size == 10
 
-    @mark.respx(assert_all_called=False)
-    def test_splitting_strategy(self, payload):
+    @mark.parametrize(
+        ("splitter", "metadata", "expected_splits"),
+        [
+            param(
+                KFold(n_splits=2, shuffle=False),
+                {
+                    "type": "KFold",
+                    "n_splits": 2,
+                    "n_repeats": None,
+                    "shuffle": False,
+                    "random_state": None,
+                },
+                [
+                    [1, 1, 1, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 1, 1, 1],
+                ],
+                id="KFold",
+            ),
+            param(
+                RepeatedKFold(n_splits=2, n_repeats=2, random_state=0),
+                {
+                    "type": "RepeatedKFold",
+                    "n_splits": 2,
+                    "n_repeats": 2,
+                    "shuffle": True,
+                    "random_state": 0,
+                },
+                [
+                    [1, 1, 1, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 1, 1, 1],
+                ],
+                id="RepeatedKFold",
+            ),
+            param(
+                ShuffleSplit(n_splits=2, test_size=0.25, random_state=0),
+                {
+                    "type": "ShuffleSplit",
+                    "n_splits": 2,
+                    "n_repeats": None,
+                    "shuffle": True,
+                    "random_state": 0,
+                },
+                [
+                    [0, 0, 1, 0, 0, 0, 1, 0],
+                    [0, 1, 0, 0, 0, 0, 1, 0],
+                ],
+                id="ShuffleSplit",
+            ),
+            param(
+                TimeSeriesSplit(n_splits=2),
+                {
+                    "type": "TimeSeriesSplit",
+                    "n_splits": 2,
+                    "n_repeats": None,
+                    "shuffle": False,
+                    "random_state": None,
+                },
+                [
+                    [0, 0, 0, 0, 1, 1, -1, -1],
+                    [0, 0, 0, 0, 0, 0, 1, 1],
+                ],
+                id="TimeSeriesSplit",
+            ),
+        ],
+    )
+    def test_regression_splitting_strategy(
+        self, project, splitter, metadata, expected_splits, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "skore_hub_project.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
+            10,
+        )
+
+        X, y = make_regression(random_state=42, n_samples=8)
+        estimator = LinearRegression()
+
+        report = CrossValidationReport(estimator, X, y, splitter=splitter)
+        payload = CrossValidationReportPayload(
+            project=project, report=report, key="<key>"
+        )
+
+        train_target_distributions = payload.splitting_strategy.pop(
+            "train_target_distributions"
+        )
+        test_target_distributions = payload.splitting_strategy.pop(
+            "test_target_distributions"
+        )
+        for train_distribution, test_distribution in zip(
+            train_target_distributions, test_target_distributions, strict=True
+        ):
+            assert len(train_distribution) == len(test_distribution) == 10
+            assert all(0 <= distribution <= 1 for distribution in train_distribution)
+            assert all(0 <= distribution <= 1 for distribution in test_distribution)
+
+        train_target_distributions_sample_counts = payload.splitting_strategy.pop(
+            "train_target_distributions_sample_counts"
+        )
+        test_target_distributions_sample_counts = payload.splitting_strategy.pop(
+            "test_target_distributions_sample_counts"
+        )
+        assert len(train_target_distributions_sample_counts) == len(
+            test_target_distributions_sample_counts
+        )
+        assert len(train_target_distributions_sample_counts) == len(
+            test_target_distributions_sample_counts
+        )
+
         assert payload.splitting_strategy == {
-            "repeat_count": 1,
-            "seed": "None",
-            "splits": [
-                {
-                    "test": {
-                        "target_distribution": [3, 2],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train": {
-                        "target_distribution": [2, 3],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train_test_distribution": [1, 1, 1, 1, 0, 1, 0, 0, 0, 0],
-                },
-                {
-                    "test": {
-                        "target_distribution": [2, 3],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train": {
-                        "target_distribution": [3, 2],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train_test_distribution": [0, 0, 0, 0, 1, 0, 1, 1, 1, 1],
-                },
-            ],
-            "strategy_name": "StratifiedKFold",
+            "splitter": metadata,
+            "splits": expected_splits,
         }
 
-    @mark.respx(assert_all_called=False)
-    def test_splitting_strategy_with_repetitions(self, project):
-        X, y = make_classification(random_state=42, n_samples=10)
-        payload = CrossValidationReportPayload(
-            project=project,
-            report=CrossValidationReport(
-                RandomForestClassifier(random_state=42),
-                X,
-                y,
-                splitter=RepeatedKFold(n_splits=2, n_repeats=2, random_state=42),
+    @mark.filterwarnings(
+        # ignore deprecation warning due to `scikit-learn` misusing `scipy` arguments,
+        # raised by `scipy`
+        (
+            "ignore:scipy.optimize.*The `disp` and `iprint` options of the L-BFGS-B "
+            "solver are deprecated:DeprecationWarning"
+        ),
+    )
+    @mark.parametrize(
+        ("splitter", "metadata", "expected_splits"),
+        [
+            param(
+                StratifiedKFold(n_splits=2, shuffle=False),
+                {
+                    "type": "StratifiedKFold",
+                    "n_splits": 2,
+                    "n_repeats": None,
+                    "shuffle": False,
+                    "random_state": None,
+                },
+                [
+                    [1, 1, 1, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 1, 1, 0, 1, 1],
+                ],
+                id="StratifiedKFold",
             ),
-            key="<key>",
+            param(
+                RepeatedStratifiedKFold(n_splits=2, n_repeats=2, random_state=0),
+                {
+                    "type": "RepeatedStratifiedKFold",
+                    "n_splits": 2,
+                    "shuffle": True,
+                    "n_repeats": 2,
+                    "random_state": 0,
+                },
+                [
+                    [1, 1, 1, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 1, 1, 0, 1, 1],
+                ],
+                id="RepeatedStratifiedKFold",
+            ),
+            param(
+                StratifiedShuffleSplit(n_splits=2, test_size=0.25, random_state=0),
+                {
+                    "type": "StratifiedShuffleSplit",
+                    "n_splits": 2,
+                    "n_repeats": None,
+                    "shuffle": True,
+                    "random_state": 0,
+                },
+                [
+                    [1, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 1, 0],
+                ],
+                id="StratifiedShuffleSplit",
+            ),
+        ],
+    )
+    def test_classification_splitting_strategy(
+        self,
+        project,
+        splitter,
+        metadata,
+        expected_splits,
+        monkeypatch,
+    ):
+        X, y = make_classification(random_state=42, n_samples=8, n_classes=2)
+        estimator = LogisticRegression(random_state=42)
+
+        report = CrossValidationReport(estimator, X, y, splitter=splitter)
+        payload = CrossValidationReportPayload(
+            project=project, report=report, key="<key>"
         )
+
+        train_target_distributions = payload.splitting_strategy.pop(
+            "train_target_distributions"
+        )
+        test_target_distributions = payload.splitting_strategy.pop(
+            "test_target_distributions"
+        )
+
+        for train_distribution, test_distribution in zip(
+            train_target_distributions, test_target_distributions, strict=True
+        ):
+            assert len(train_distribution) == len(test_distribution) == 2
+
+        train_target_distributions_sample_counts = payload.splitting_strategy.pop(
+            "train_target_distributions_sample_counts"
+        )
+        test_target_distributions_sample_counts = payload.splitting_strategy.pop(
+            "test_target_distributions_sample_counts"
+        )
+        assert len(train_target_distributions_sample_counts) == len(
+            test_target_distributions
+        )
+        assert len(train_target_distributions_sample_counts) == len(
+            test_target_distributions_sample_counts
+        )
+
         assert payload.splitting_strategy == {
-            "repeat_count": 2,
-            "seed": "42",
-            "splits": [
-                {
-                    "test": {
-                        "target_distribution": [4, 1],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train": {
-                        "target_distribution": [1, 4],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train_test_distribution": [1, 1, 0, 0, 0, 1, 0, 1, 1, 0],
-                },
-                {
-                    "test": {
-                        "target_distribution": [1, 4],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train": {
-                        "target_distribution": [4, 1],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train_test_distribution": [0, 0, 1, 1, 1, 0, 1, 0, 0, 1],
-                },
-                {
-                    "test": {
-                        "target_distribution": [4, 1],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train": {
-                        "target_distribution": [1, 4],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train_test_distribution": [1, 1, 0, 1, 0, 1, 0, 0, 1, 0],
-                },
-                {
-                    "test": {
-                        "target_distribution": [1, 4],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train": {
-                        "target_distribution": [4, 1],
-                        "groups": None,
-                        "sample_count": 5,
-                    },
-                    "train_test_distribution": [0, 0, 1, 0, 1, 0, 1, 1, 0, 1],
-                },
-            ],
-            "strategy_name": "RepeatedKFold",
-        }
-
-    @mark.respx(assert_all_called=False)
-    def test_splitting_strategy_for_regression(self, project):
-        X, y = make_regression(random_state=42, n_samples=10)
-        payload = CrossValidationReportPayload(
-            project=project,
-            report=CrossValidationReport(
-                LinearRegression(),
-                X,
-                y,
-                splitter=KFold(n_splits=2),
-            ),
-            key="<key>",
-        )
-
-        assert payload.splitting_strategy["repeat_count"] == 1
-        assert payload.splitting_strategy["seed"] == "None"
-        splits = payload.splitting_strategy["splits"]
-        assert len(splits) == 2
-        for split in splits:
-            train_target_distribution = split["train"]["target_distribution"]
-            test_target_distribution = split["test"]["target_distribution"]
-            assert len(train_target_distribution) == 100
-            assert len(test_target_distribution) == 100
-            assert all(isinstance(value, float) for value in train_target_distribution)
-            assert all(isinstance(value, float) for value in test_target_distribution)
-
-    @mark.respx(assert_all_called=False)
-    def test_splitting_strategy_with_y_series_and_index(self, project):
-        X, y = make_classification(random_state=42, n_samples=10)
-        X_experiment, _, y_experiment, _ = train_test_split(
-            X, Series(y), random_state=42
-        )
-
-        payload = CrossValidationReportPayload(
-            project=project,
-            report=CrossValidationReport(
-                RandomForestClassifier(random_state=42),
-                X_experiment,
-                y_experiment,
-                splitter=2,
-            ),
-            key="<key>",
-        )
-
-        assert 5 not in y_experiment.index
-        assert 5 in payload.report.split_indices[0][0]
-        assert payload.splitting_strategy == {
-            "repeat_count": 1,
-            "seed": "None",
-            "splits": [
-                {
-                    "test": {
-                        "target_distribution": [1, 3],
-                        "groups": None,
-                        "sample_count": 4,
-                    },
-                    "train": {
-                        "target_distribution": [1, 2],
-                        "groups": None,
-                        "sample_count": 3,
-                    },
-                    "train_test_distribution": [1, 1, 1, 1, 0, 0, 0],
-                },
-                {
-                    "test": {
-                        "target_distribution": [1, 2],
-                        "groups": None,
-                        "sample_count": 3,
-                    },
-                    "train": {
-                        "target_distribution": [1, 3],
-                        "groups": None,
-                        "sample_count": 4,
-                    },
-                    "train_test_distribution": [0, 0, 0, 0, 1, 1, 1],
-                },
-            ],
-            "strategy_name": "StratifiedKFold",
+            "splitter": metadata,
+            "splits": expected_splits,
         }
 
     @mark.respx(assert_all_called=False)
@@ -329,6 +363,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.respx()
     def test_estimators(self, project, payload, upload_mock):
+        payload.report.cache_predictions()
         assert len(payload.estimators) == len(payload.report.estimator_reports_)
 
         for i, estimator in enumerate(payload.estimators):
@@ -434,8 +469,8 @@ class TestCrossValidationReportPayload:
 
     @mark.filterwarnings(
         # ignore deprecation warnings generated by the way `pandas` is used by
-        # `searborn`, which is a dependency of `skore`
-        "ignore:The default of observed=False is deprecated.*:FutureWarning:seaborn",
+        # `searborn` and `skore`
+        "ignore:The default of observed=False is deprecated.*:FutureWarning",
     )
     @mark.respx()
     def test_medias(self, payload):
@@ -464,8 +499,8 @@ class TestCrossValidationReportPayload:
         # `small_cv_binary_classification`, raised by `scikit-learn`
         "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning",
         # ignore deprecation warnings generated by the way `pandas` is used by
-        # `searborn`, which is a dependency of `skore`
-        "ignore:The default of observed=False is deprecated.*:FutureWarning:seaborn",
+        # `searborn` and `skore`
+        "ignore:The default of observed=False is deprecated.*:FutureWarning",
     )
     @mark.respx()
     def test_model_dump_classification(self, small_cv_binary_classification, payload):

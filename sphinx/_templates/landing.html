@@ -1,0 +1,113 @@
+  <!-- Feature Section 1 -->
+  <div class="row mb-0 row-padding-between-features">
+    <div class="col-md-5 mb-5">
+      <h4 class="feature-title">Reports for your Experiments</h4>
+      <p class="feature-text">Evaluate one or several estimators, with a single
+        train-test split or by cross-validation and get a structured report with the
+        <a class="reference internal"
+        href="reference/api/skore.evaluate.html#evaluate"
+        title="skore.evaluate"><code class="xref py py-func docutils
+        literal notranslate sk-landing-code"><span class="pre">evaluate</span></code></a>
+        function.
+      </p>
+      <br/>
+      <p class="feature-text">
+        It returns an
+        <a class="reference internal"
+        href="reference/api/skore.EstimatorReport.html#estimatorreport"
+        title="skore.EstimatorReport"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">EstimatorReport</span></code></a>,
+        a <a class="reference internal"
+        href="reference/api/skore.CrossValidationReport.html#crossvalidationreport"
+        title="skore.CrossValidationReport"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">CrossValidationReport</span></code></a>,
+        or a
+        <a class="reference internal"
+        href="reference/api/skore.ComparisonReport.html#comparisonreport"
+        title="skore.ComparisonReport"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">ComparisonReport</span></code></a>,
+        all with the same API to discover all facets of your predictive models while
+        experimenting.
+      </p>
+    </div>
+
+    <div class="col-md-7">
+      <div class="container-fluid" style="max-width: 58rem;">
+        <div class="sd-card card-landing">
+          <div class="card-body">
+            <details>
+              <summary>Given some data
+                <code class="docutils literal notranslate"><span class="pre">df</span></code>: <i>(expand for full code)</i>
+              </summary>
+              <div class="code-margin">{{ load_data }}</div>
+            </details>
+          </div>
+          {{ create_report }}
+        </div>
+      </div>
+      <div class="container-fluid" style="max-width: 58rem;">
+        <div class="sd-card card-landing">
+          <div class="card-body">
+            <div class="output_subarea output_html rendered_html output_result">
+              {% include "generated_landing_report_ridge.html" %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Section 2 -->
+  <div class="row mb-0 flex-md-row-reverse row-padding-between-features">
+    <div class="col-md-5">
+      <h4 class="feature-title">Get Insights that Matter</h4>
+      <p class="feature-text">Quickly generate beautiful visualizations with
+        <code class="highlight python"><span class="n">display</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span></code>
+        <div class="code-margin">{{ plot_error }}</div>
+        and access the raw data with
+        <code class="highlight python"><span class="n">display</span><span class="o">.</span><span class="n">frame</span><span class="p">()</span></code>
+        <div class="code-margin">{{ summarize }}</div>
+      </p>
+    </div>
+    <div class="col-md-7">
+      <div class="prediction-error-image"></div>
+      <div class="container-fluid" style="max-width: 58rem">
+        <div class="sd-card card-landing">
+          <div class="card-body">
+            <div class="output_subarea output_html rendered_html output_result">
+              {{ frame_html }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Section 3 -->
+  <div class="row mb-0 row-padding-between-features">
+    <div class="col-md-5">
+      <h4 class="feature-title">Store and Retrieve your Reports, Locally or on Skore Hub</h4>
+      <p class="feature-text">
+        <a class="reference internal"
+        href="reference/api/skore.Project.html#project"
+        title="skore.Project"><code class="xref py py-class docutils
+        literal notranslate sk-landing-code"><span class="pre">Project</span></code></a>
+        stores and retrieves your reports so you can revisit insights or compare with
+        new experiments later.
+      </p>
+      <div class="code-margin">{{ put_in_project }}</div>
+      <p class="feature-text">
+        Store everything locally on disk, or on
+        <a href="https://skore.probabl.ai" target="_blank" rel="noopener noreferrer">Skore Hub</a>
+        to enhance your exploration and search for the impactful insights.
+      </p>
+      <div class="text-center mt-4 pt-1">
+        <a class="btn sk-btn-orange d-inline-block px-4 py-2"
+        href="{% raw %}{{ skore_hub_example_url }}{% endraw %}"
+        target="_blank" rel="noopener noreferrer" role="button">See a live example on Skore Hub →</a>
+      </div>
+    </div>
+    <div class="col-md-7 pe-5">
+      <div class="project-summary-image"></div>
+    </div>
+  </div>

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import time
+import uuid
 from collections import Counter
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Literal, cast
@@ -15,8 +15,9 @@ from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
-from skore._utils._cache import Cache
 from skore._utils._progress_bar import track
+from skore._utils.repr.data import get_documentation_url
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._comparison.inspection_accessor import (
@@ -249,16 +250,12 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         - all estimators have non-empty X_test and y_test,
         - all estimators have the same X_test and y_test.
         """
+        super().__init__()
         self.reports_, self._report_type, self._pos_label = (
             ComparisonReport._validate_reports(reports)
         )
 
         self.n_jobs = n_jobs
-        self._rng = np.random.default_rng(time.time_ns())
-        self._hash = self._rng.integers(
-            low=np.iinfo(np.int64).min, high=np.iinfo(np.int64).max
-        )
-        self._cache = Cache()
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
 
     def clear_cache(self) -> None:
@@ -279,32 +276,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> report.clear_cache()
-        >>> report._cache
-        {}
         """
         for report in self.reports_.values():
             report.clear_cache()
 
-        self._cache = Cache()
-
     def cache_predictions(
         self,
-        response_methods: Literal[
-            "auto", "predict", "predict_proba", "decision_function"
-        ] = "auto",
-        n_jobs: int | None = None,
     ) -> None:
         """Cache the predictions for sub-estimators reports.
-
-        Parameters
-        ----------
-        response_methods : {"auto", "predict", "predict_proba", "decision_function"},\
-                default="auto"
-            The methods to use to compute the predictions.
-
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. If `None`, we use the `n_jobs`
-            parameter when initializing the report.
 
         Examples
         --------
@@ -320,18 +299,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
-        >>> report._cache
-        {...}
         """
-        if n_jobs is None:
-            n_jobs = self.n_jobs
-
         for report in track(
             self.reports_.values(),
             description="Estimator predictions",
             total=len(self.reports_),
         ):
-            report.cache_predictions(response_methods=response_methods, n_jobs=n_jobs)
+            report.cache_predictions()
 
     def get_predictions(
         self,
@@ -400,8 +374,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self,
         *,
         report_key: str,
-        X_test: ArrayLike | None = None,
-        y_test: ArrayLike | None = None,
+        X_test: ArrayLike,
+        y_test: ArrayLike,
     ) -> EstimatorReport:
         """Create an estimator report from one of the reports in the comparison.
 
@@ -417,7 +391,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             the :attr:`reports_` attribute of the :class:`~skore.ComparisonReport`.
             List the available keys with `reports_.keys()`.
 
-        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
             Testing data. It should have the same structure as the training data.
 
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
@@ -465,14 +439,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         estimator_report = cast(EstimatorReport, self.reports_[report_key])
         X_concat = (
-            pd.concat([estimator_report._X_train, estimator_report._X_test])
-            if isinstance(estimator_report._X_train, pd.DataFrame)
-            else np.concatenate([estimator_report._X_train, estimator_report._X_test])
+            pd.concat([estimator_report.X_train, estimator_report.X_test])
+            if isinstance(estimator_report.X_train, pd.DataFrame)
+            else np.concatenate([estimator_report.X_train, estimator_report.X_test])
         )
         y_concat = (
-            pd.concat([estimator_report._y_train, estimator_report._y_test])
-            if isinstance(estimator_report._y_train, (pd.DataFrame, pd.Series))
-            else np.concatenate([estimator_report._y_train, estimator_report._y_test])
+            pd.concat([estimator_report.y_train, estimator_report.y_test])
+            if isinstance(estimator_report.y_train, (pd.DataFrame, pd.Series))
+            else np.concatenate([estimator_report.y_train, estimator_report.y_test])
         )
         report = EstimatorReport(
             estimator_report.estimator,
@@ -482,7 +456,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             y_test=y_test,
             pos_label=self._pos_label,
         )
-        report._parent_hash = self._hash
         return report
 
     @property
@@ -492,6 +465,25 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ####################################################################################
     # Methods related to the help and repr
     ####################################################################################
+
+    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
+        comparison_issues: dict[str, dict] = {}
+        all_checked_codes: set[str] = set()
+        for report_name, report in self.reports_.items():
+            report_issues, checked_codes = report._get_issues()
+            all_checked_codes |= checked_codes
+            for code, issue in report_issues.items():
+                if code in comparison_issues:
+                    comparison_issues[code]["explanation"] = (
+                        f"[{report_name}] " + comparison_issues[code]["explanation"]
+                    )
+                else:
+                    comparison_issues[code] = {
+                        "title": issue["title"],
+                        "docs_anchor": issue["docs_anchor"],
+                        "explanation": f"[{report_name}] {issue['explanation']}",
+                    }
+        return comparison_issues, all_checked_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"
@@ -504,6 +496,65 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"{self.__class__.__name__}(...)"
+
+    def _repr_html_(self) -> str:
+        """HTML representation with a selector to inspect one compared report."""
+        metrics_frame = (
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .rename_axis(
+                None if self._report_type == "comparison-estimator" else [None, None],
+                axis="columns",
+            )
+        )
+        if self._report_type == "comparison-cross-validation":
+            metrics_frame = metrics_frame.swaplevel(axis="columns")
+        metrics_html = metrics_frame.reset_index().to_html(index=False)
+
+        comparison_reports = []
+        for label, report in self.reports_.items():
+            fragments = report._html_repr_fragments()
+            comparison_reports.append(
+                {
+                    "label": label,
+                    "estimator_display": fragments["estimator_display"],
+                    "table_report": fragments["table_report"],
+                    "diagnostic": fragments["diagnostic"],
+                }
+            )
+
+        container_id = f"skore-comparison-report-{uuid.uuid4().hex[:8]}"
+        help_doc_url = get_documentation_url(obj=self, method_name="help")
+        report_class_name = self.__class__.__name__
+        metrics_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="metrics"
+        )
+        inspection_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="inspection"
+        )
+        diagnose_documentation_url = get_documentation_url(
+            obj=self, method_name="diagnose"
+        )
+        return render_template(
+            "comparison_report.html.j2",
+            {
+                "container_id": container_id,
+                "metrics_summary": metrics_html,
+                "comparison_reports": comparison_reports,
+                "help_doc_url": help_doc_url,
+                "report_class_name": report_class_name,
+                "report_title": "Model comparison",
+                "metrics_accessor_doc_url": metrics_accessor_doc_url,
+                "inspection_accessor_doc_url": inspection_accessor_doc_url,
+                "diagnose_documentation_url": diagnose_documentation_url,
+            },
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by Jupyter kernels to display the report."""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output
 
 
 def _deduplicate_report_names(report_names: list[str]) -> list[str]:

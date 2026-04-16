@@ -23,7 +23,6 @@ class MethodHelp:
     name: str
     parameters: str
     description: str
-    favorability: str | None
     doc_url: str
 
 
@@ -336,8 +335,6 @@ class _BaseHelpDataMixin(ABC):
         Returns
         -------
         MethodHelp
-            Dataclass with ``name``, ``parameters``, ``description``,
-            ``favorability``, and ``doc_url``.
         """
         sig = inspect.signature(method)
         parameter_names = [
@@ -348,11 +345,6 @@ class _BaseHelpDataMixin(ABC):
         parameters = f"({', '.join(parameter_names)})"
 
         description = get_method_short_summary(method)
-        favorability = (
-            obj._get_favorability_text(name)
-            if hasattr(obj, "_get_favorability_text")
-            else None
-        )
 
         doc_url = get_documentation_url(
             obj=parent_obj,
@@ -364,7 +356,6 @@ class _BaseHelpDataMixin(ABC):
             name=name,
             parameters=parameters,
             description=description,
-            favorability=favorability,
             doc_url=doc_url,
         )
 

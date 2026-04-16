@@ -1,0 +1,36 @@
+{% set report_tabs = [
+    {"label": "Results", "help_variant": "accessor", "help_url": metrics_accessor_doc_url, "accessor_name": "metrics"},
+    {"label": "Diagnostic", "help_variant": "accessor", "help_url": diagnose_documentation_url, "accessor_name": "diagnose"},
+    {"label": "Estimator", "help_variant": "accessor", "help_url": inspection_accessor_doc_url, "accessor_name": "inspection"},
+    {"label": "Data", "help_variant": "accessor", "help_url": data_accessor_doc_url, "accessor_name": "data"},
+] %}
+<div class="container">
+    <header class="title">{{ report_title | e }}</header>
+    <div class="report-tabset">
+        {% include "_report_tabset_chrome.html.j2" %}
+        <div class="report-tab-panels">
+            <div class="report-tab-panel">
+                <div class="report-section report-metrics">{{ metrics_summary | safe }}</div>
+            </div>
+            <div class="report-tab-panel">
+                <div class="report-section report-diagnostic"><slot name="diagnostic"></slot></div>
+            </div>
+            <div class="report-tab-panel">
+                <div class="report-section report-estimator"><slot name="estimator-display"></slot></div>
+            </div>
+            <div class="report-tab-panel">
+                <div class="report-section report-data"><slot name="table-report"></slot></div>
+            </div>
+        </div>
+    </div>
+    <p class="report-hint-note" role="note">
+        Use
+        <a
+            href="{{ help_doc_url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="report-hint-note-link"
+        >.help()</a>
+        for information on available functionality.
+    </p>
+</div>

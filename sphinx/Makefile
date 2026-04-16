@@ -1,15 +1,15 @@
 # Minimal makefile for Sphinx documentation
 #
 
-# Ensures SPHINX_DOMAIN is not an empty string
-ifeq ($(SPHINX_DOMAIN),)
-	SPHINX_DOMAIN := docs.skore.probabl.ai
+# Ensures SPHINX_URL is not an empty string
+ifeq ($(SPHINX_URL),)
+	SPHINX_URL := https://docs.skore.probabl.ai
 endif
 
 export SPHINX_BUILD ?= 1
 export SPHINX_VERSION ?= dev
 export SPHINX_RELEASE ?= 0.0.0+dev
-export SPHINX_DOMAIN
+export SPHINX_URL
 
 # You can set these variables from the command line, and also
 # from the environment for the first two.

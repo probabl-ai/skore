@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from skore import EstimatorReport
 from skore._sklearn._plot import ConfusionMatrixDisplay
 
 
@@ -34,10 +35,9 @@ class TestConfusionMatrixDisplay:
 
         assert hasattr(display, "thresholds")
 
-        display.plot()
-        assert hasattr(display, "facet_")
-        assert hasattr(display, "figure_")
-        assert hasattr(display, "ax_")
+        fig = display.plot()
+        assert fig is not None
+        assert len(fig.axes) >= 1
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_frame_structure(self, fixture_prefix, task, request):
@@ -114,8 +114,8 @@ class TestConfusionMatrixDisplay:
         assert figure.get_figheight() == 6
 
         display.set_style(facet_grid_kwargs={"height": 8})
-        display.plot()
-        assert display.figure_.get_figheight() == 8
+        fig = display.plot()
+        assert fig.get_figheight() == 8
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_heatmap_kwargs(self, pyplot, fixture_prefix, task, request):
@@ -127,12 +127,12 @@ class TestConfusionMatrixDisplay:
         _, ax = request.getfixturevalue(
             f"{fixture_prefix}_{task}_classification_figure_axes"
         )
-        ax = ax[0] if isinstance(ax, np.ndarray) else ax
+        ax = ax[0]
 
         assert ax.collections[0].get_cmap().name == "Blues"
         display.set_style(heatmap_kwargs={"cmap": "Reds"})
-        display.plot()
-        ax = display.ax_[0] if isinstance(display.ax_, np.ndarray) else display.ax_
+        fig = display.plot()
+        ax = fig.axes[0]
         assert ax.collections[0].get_cmap().name == "Reds"
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
@@ -147,7 +147,7 @@ class TestConfusionMatrixDisplay:
         )
         assert "Confusion Matrix" in figure.get_suptitle()
 
-        ax = ax[0] if isinstance(ax, np.ndarray) else ax
+        ax = ax[0]
         assert ax.get_xlabel() == "Predicted label"
         assert ax.get_ylabel() == "True label"
 
@@ -158,8 +158,8 @@ class TestConfusionMatrixDisplay:
         xticklabels = [label.get_text() for label in ax.get_xticklabels()]
         yticklabels = [label.get_text() for label in ax.get_yticklabels()]
         if task == "binary":
-            assert xticklabels == ["0", "1*"]
-            assert yticklabels == ["0", "1*"]
+            assert xticklabels == ["0", "1"]
+            assert yticklabels == ["0", "1"]
         else:
             assert xticklabels == ["0", "1", "2"]
             assert yticklabels == ["0", "1", "2"]
@@ -308,3 +308,17 @@ class TestConfusionMatrixDisplay:
                     assert np.all(valid), f"col sums should be 0 or 1, got {col_sums}"
                 else:
                     np.testing.assert_allclose(pivoted.sum().sum(), 1.0)
+
+
+def test_data_source_both_is_not_supported(forest_binary_classification_with_test):
+    """Check that confusion_matrix rejects data_source='both' explicitly."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(
+        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="data_source='both' is not supported for confusion_matrix.",
+    ):
+        report.metrics.confusion_matrix(data_source="both")

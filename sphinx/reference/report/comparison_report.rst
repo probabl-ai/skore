@@ -20,6 +20,7 @@ way. The functionalities of the report are accessible through accessors.
     :template: class_methods_no_index.rst
 
     ComparisonReport.help
+    ComparisonReport.diagnose
     ComparisonReport.cache_predictions
     ComparisonReport.clear_cache
     ComparisonReport.create_estimator_report

@@ -16,7 +16,7 @@ interacting with a reporter. Let's provide an example:
 
     from sklearn.datasets import make_classification
     from sklearn.linear_model import LogisticRegression
-    from skore import CrossValidationReport
+    from skore import evaluate
 
     X, y = make_classification(
         n_samples=10_000,
@@ -25,7 +25,7 @@ interacting with a reporter. Let's provide an example:
         n_clusters_per_class=1,
         random_state=42,
     )
-    report = CrossValidationReport(LogisticRegression(), X, y)
+    report = evaluate(LogisticRegression(), X, y, splitter=5)
     display = report.metrics.roc()
     display.plot()
 
@@ -38,9 +38,12 @@ display object interactively:
 
     display.help()
 
-Another available method is ``plot``. It shows graphically
-the information contained in the display. Call it as many times as you want - it does
-not modify the display object nor require heavy computation.
+Another available method is ``plot``. It builds a :class:`matplotlib.figure.Figure`
+with the information contained in the display and **returns** that figure. In Jupyter,
+leaving ``display.plot()`` as the last expression shows the figure automatically via its
+representation; in a script, assign ``fig = display.plot(...)`` and call ``fig.show()``
+if needed. Call ``plot`` as many times as you want — it does not modify the display's
+underlying data nor require heavy computation.
 
 .. plot::
     :context: close-figs

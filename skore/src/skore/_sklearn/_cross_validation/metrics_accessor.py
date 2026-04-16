@@ -1,17 +1,12 @@
-from collections.abc import Callable
-from typing import Any, Literal, cast
+import numbers
+from typing import Any, Literal
 
 import pandas as pd
 from joblib import Parallel
-from numpy.typing import ArrayLike
-from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import (
-    _BaseAccessor,
-    _BaseMetricsAccessor,
-)
+from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -20,26 +15,17 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.types import (
-    Aggregate,
-    Metric,
-    YPlotData,
-)
-from skore._utils._accessor import (
-    _check_estimator_report_has_method,
-    _get_ys_for_single_report,
-)
-from skore._utils._cache_key import deep_key_sanitize
+from skore._sklearn.types import Aggregate, MetricLike
+from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
+from skore._utils._metric_rows import metric_score_to_rows, rows_to_dataframe
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
 DataSource = Literal["test", "train"]
 
 
-class _MetricsAccessor(
-    _BaseMetricsAccessor, _BaseAccessor["CrossValidationReport"], DirNamesMixin
-):
+class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -52,9 +38,7 @@ class _MetricsAccessor(
         self,
         *,
         data_source: DataSource = "test",
-        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
-        metric_kwargs: dict[str, Any] | None = None,
-        response_method: str | list[str] | None = None,
+        metric: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -66,35 +50,9 @@ class _MetricsAccessor(
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        metric : str, callable, scorer, or list of such instances or dict of such \
-            instances, default=None
-            The metric(s) to report. The possible values are:
-
-            - if a string, either one of the built-in metrics or a scikit-learn scorer
-              name. You can get the possible list of string using
-              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
-              the built-in metrics or the scikit-learn scorers, respectively.
-            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
-              first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `metric_kwargs`. No favorability indicator can
-              be displayed in this case.
-            - if the callable API is too restrictive (e.g. need to pass
-              same parameter name with different values), you can use scikit-learn
-              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
-              the metric favorability will only be displayed if it is given explicitly
-              via `make_scorer`'s `greater_is_better` parameter.
-            - if a dict, the keys are used as metric names and the values are the
-              metric functions (strings, callables, or scorers as described above).
-            - if a list, each element can be any of the above types (strings, callables,
-              scorers).
-
-        metric_kwargs : dict, default=None
-            The keyword arguments to pass to the metric functions.
-
-        response_method : {"predict", "predict_proba", "predict_log_proba", \
-            "decision_function"} or list of such str, default=None
-            The estimator's method to be invoked to get the predictions. Only necessary
-            for custom metrics.
+        metric : str or list of str or None, default=None
+            The metrics to report, from the list of registered metrics. None means show
+            all registered metrics. To add a custom metric, see :meth:`add`.
 
         Returns
         -------
@@ -105,11 +63,11 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(
-        ...     classifier, X=X, y=y, splitter=2, pos_label=1
+        >>> report = evaluate(
+        ...     classifier, X, y, splitter=2, pos_label=1
         ... )
         >>> report.metrics.summarize(
         ...     metric=["precision", "recall"],
@@ -120,62 +78,100 @@ class _MetricsAccessor(
         Precision           0.94...  0.02...         (↗︎)
         Recall              0.96...  0.02...         (↗︎)
         """
-        pos_label = self._parent.pos_label
-
         if data_source == "both":
             raise NotImplementedError(
                 'data_source="both" is not yet supported for CrossValidationReport'
             )
 
-        cache_key = deep_key_sanitize(
-            (
-                self._parent._hash,
-                data_source,
-                metric,
-                metric_kwargs,
-                response_method,
-                pos_label,
+        parallel = Parallel(
+            **_validate_joblib_parallel_params(
+                n_jobs=self._parent.n_jobs, return_as="generator"
             )
         )
 
-        results = self._parent._cache.get(cache_key)
-        if results is None:
-            parallel = Parallel(
-                **_validate_joblib_parallel_params(
-                    n_jobs=self._parent.n_jobs, return_as="generator"
-                )
-            )
-
-            results = [
-                result.data
-                for result in track(
-                    parallel(
-                        delayed(report.metrics.summarize)(
-                            data_source=data_source,
-                            metric=metric,
-                            metric_kwargs=metric_kwargs,
-                            response_method=response_method,
-                        )
-                        for report in self._parent.estimator_reports_
-                    ),
-                    description="Compute metric for each split",
-                    total=len(self._parent.estimator_reports_),
-                )
-            ]
-
-            results = MetricsSummaryDisplay(
-                data=(
-                    pd.concat(
-                        results, axis="index", keys=range(len(results)), names=["split"]
+        results = [
+            result.data
+            for result in track(
+                parallel(
+                    delayed(report.metrics.summarize)(
+                        data_source=data_source,
+                        metric=metric,
                     )
-                    .reset_index()
-                    .drop(columns="level_1")
+                    for report in self._parent.estimator_reports_
                 ),
-                report_type="cross-validation",
+                description="Compute metric for each split",
+                total=len(self._parent.estimator_reports_),
             )
+        ]
 
-            self._parent._cache[cache_key] = results
-        return results
+        return MetricsSummaryDisplay(
+            data=(
+                pd.concat(
+                    results, axis="index", keys=range(len(results)), names=["split"]
+                )
+                .reset_index()
+                .drop(columns="level_1")
+            ),
+            report_type="cross-validation",
+        )
+
+    def add(
+        self,
+        metric: MetricLike,
+        *,
+        name: str | None = None,
+        response_method: str | list[str] = "predict",
+        greater_is_better: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Add a custom metric to be included in :meth:`summarize` by default.
+
+        Parameters
+        ----------
+        metric : str, sklearn scorer, or callable
+            The metric to add.
+
+        name : str, optional
+            Custom name for the metric. If not provided, the name is inferred
+            from the metric (e.g. the function's ``__name__``).
+
+        response_method : str or list of str, default="predict"
+            Estimator method to get predictions (only for callables).
+
+        greater_is_better : bool, default=True
+            Whether higher values are better (only for callables).
+
+        **kwargs : Any
+            Default keyword arguments passed to the score function at call
+            time.  Only used when *metric* is a plain callable.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.metrics import make_scorer, mean_absolute_error
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=2, pos_label=1)
+        >>> report.metrics.add(
+        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ... )
+        >>> report.metrics.summarize().frame()
+                            LogisticRegression
+                                mean       std
+        Metric
+        ...
+        Mean Absolute Error      ...       ...
+        """
+        for report in self._parent.estimator_reports_:
+            report.metrics.add(
+                metric,
+                name=name,
+                response_method=response_method,
+                greater_is_better=greater_is_better,
+                **kwargs,
+            )
 
     def timings(
         self,
@@ -203,12 +199,12 @@ class _MetricsAccessor(
         >>> from sklearn.linear_model import LogisticRegression
         >>> X, y = make_classification(random_state=42)
         >>> estimator = LogisticRegression()
-        >>> from skore import CrossValidationReport
-        >>> report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+        >>> from skore import evaluate
+        >>> report = evaluate(estimator, X, y, splitter=2)
         >>> report.metrics.timings()
                           mean       std
         Fit time (s)       ...       ...
-        >>> report.cache_predictions(response_methods=["predict"])
+        >>> report.cache_predictions()
         >>> report.metrics.timings()
                                     mean       std
         Fit time (s)                 ...       ...
@@ -232,6 +228,37 @@ class _MetricsAccessor(
         timings.index = pd.Index([f"{idx} (s)" for idx in timings.index])
 
         return timings
+
+    def _metric(
+        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+    ) -> MetricsSummaryDisplay:
+        """Compute a single metric across cross-validation splits.
+
+        This helper allows passing kwargs to the sub-reports, unlike :meth:`summarize`.
+        """
+        reports = self._parent.estimator_reports_
+        metric = reports[0]._metric_registry[metric_name]
+
+        rows: list[dict] = []
+        for split_idx, report in enumerate(reports):
+            score = getattr(report.metrics, metric_name)(
+                data_source=data_source, **kwargs
+            )
+            split_rows = metric_score_to_rows(
+                score,
+                metric=metric,
+                ml_task=report._ml_task,
+                data_source=data_source,
+                estimator_name=report.estimator_name_,
+                pos_label=report.pos_label,
+                kwargs=kwargs or None,
+            )
+            for r in split_rows:
+                r["split"] = split_idx
+            rows.extend(split_rows)
+
+        data = rows_to_dataframe(rows)
+        return MetricsSummaryDisplay(data=data, report_type="cross-validation")
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(
@@ -267,17 +294,17 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.accuracy(flat_index=False)
                 LogisticRegression
                             mean      std
         Metric
         Accuracy           0.94...  0.00...
         """
-        return self.summarize(metric=["accuracy"], data_source=data_source).frame(
+        return self._metric("accuracy", data_source=data_source).frame(
             aggregate=aggregate, flat_index=flat_index
         )
 
@@ -344,10 +371,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.precision()
                                 LogisticRegression
                                                 mean       std
@@ -355,10 +382,8 @@ class _MetricsAccessor(
         Precision 0                         0.93...  0.04...
                   1                         0.94...  0.02...
         """
-        return self.summarize(
-            metric=["precision"],
-            data_source=data_source,
-            metric_kwargs={"average": average},
+        return self._metric(
+            "precision", data_source=data_source, average=average
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "recall"))
@@ -425,10 +450,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.recall()
                             LogisticRegression
                                             mean       std
@@ -436,13 +461,8 @@ class _MetricsAccessor(
         Recall 0                         0.91...  0.04...
                1                         0.96...  0.02...
         """
-        return self.summarize(
-            metric=["recall"],
-            data_source=data_source,
-            metric_kwargs={"average": average},
-        ).frame(
-            aggregate=aggregate,
-            flat_index=flat_index,
+        return self._metric("recall", data_source=data_source, average=average).frame(
+            aggregate=aggregate, flat_index=flat_index
         )
 
     @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
@@ -479,20 +499,19 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.brier_score()
                     LogisticRegression
                                 mean       std
         Metric
         Brier score            0.04...  0.00...
         """
-        return self.summarize(
-            metric=["brier_score"],
-            data_source=data_source,
-        ).frame(aggregate=aggregate, flat_index=flat_index)
+        return self._metric("brier_score", data_source=data_source).frame(
+            aggregate=aggregate, flat_index=flat_index
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "roc_auc"))
     def roc_auc(
@@ -563,20 +582,18 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.roc_auc()
                 LogisticRegression
                             mean       std
         Metric
         ROC AUC           0.98...  0.00...
         """
-        return self.summarize(
-            metric=["roc_auc"],
-            data_source=data_source,
-            metric_kwargs={"average": average, "multi_class": multi_class},
+        return self._metric(
+            "roc_auc", data_source=data_source, average=average, multi_class=multi_class
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
@@ -613,18 +630,18 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.log_loss()
                 LogisticRegression
                             mean       std
         Metric
         Log loss            0.14...  0.03...
         """
-        return self.summarize(
-            metric=["log_loss"],
+        return self._metric(
+            "log_loss",
             data_source=data_source,
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
@@ -673,20 +690,18 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
+        >>> report = evaluate(regressor, X, y, splitter=2)
         >>> report.metrics.r2()
                 Ridge
                     mean       std
         Metric
         R²      0.37...  0.02...
         """
-        return self.summarize(
-            metric=["r2"],
-            data_source=data_source,
-            metric_kwargs={"multioutput": multioutput},
+        return self._metric(
+            "r2", data_source=data_source, multioutput=multioutput
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "rmse"))
@@ -734,110 +749,18 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
+        >>> report = evaluate(regressor, X, y, splitter=2)
         >>> report.metrics.rmse()
                     Ridge
                     mean       std
         Metric
         RMSE    60.7...  1.0...
         """
-        return self.summarize(
-            metric=["rmse"],
-            data_source=data_source,
-            metric_kwargs={"multioutput": multioutput},
-        ).frame(aggregate=aggregate, flat_index=flat_index)
-
-    def custom_metric(
-        self,
-        metric_function: Callable,
-        response_method: str | list[str],
-        *,
-        metric_name: str | None = None,
-        data_source: DataSource = "test",
-        aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
-        **kwargs,
-    ) -> pd.DataFrame:
-        """Compute a custom metric.
-
-        It brings some flexibility to compute any desired metric. However, we need to
-        follow some rules:
-
-        - `metric_function` should take `y_true` and `y_pred` as the first two
-          positional arguments.
-        - `response_method` corresponds to the estimator's method to be invoked to get
-          the predictions. It can be a string or a list of strings to defined in which
-          order the methods should be invoked.
-
-        Parameters
-        ----------
-        metric_function : callable
-            The metric function to be computed. The expected signature is
-            `metric_function(y_true, y_pred, **kwargs)`.
-
-        response_method : {"predict", "predict_proba", "predict_log_proba", \
-            "decision_function"} or list of such str
-            The estimator's method to be invoked to get the predictions.
-
-        metric_name : str, default=None
-            The name of the metric. If not provided, it will be inferred from the
-            metric function.
-
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
-            Function to aggregate the scores across the cross-validation splits.
-            None will return the scores for each split.
-
-        flat_index : bool, default=True
-            Whether to return a flat index or a multi-index.
-
-        **kwargs : dict
-            Any additional keyword arguments to be passed to the metric function.
-
-        Returns
-        -------
-        pd.DataFrame
-            The custom metric.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.metrics import mean_absolute_error
-        >>> from skore import CrossValidationReport
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
-        >>> report.metrics.custom_metric(
-        ...     metric_function=mean_absolute_error,
-        ...     response_method="predict",
-        ...     metric_name="MAE",
-        ... )
-                Ridge
-                    mean       std
-        Metric
-        MAE     51.4...  1.7...
-        """
-        # create a scorer with `greater_is_better=True` to not alter the output of
-        # `metric_function`
-        scorer = make_scorer(
-            metric_function,
-            greater_is_better=True,
-            response_method=response_method,
-            **kwargs,
-        )
-        metric = {metric_name: scorer} if metric_name is not None else [scorer]
-        return self.summarize(
-            metric=metric,
-            data_source=data_source,
+        return self._metric(
+            "rmse", data_source=data_source, multioutput=multioutput
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     ####################################################################################
@@ -847,116 +770,6 @@ class _MetricsAccessor(
     def __repr__(self) -> str:
         """Return a string representation using rich."""
         return self._rich_repr(class_name="skore.CrossValidationReport.metrics")
-
-    ####################################################################################
-    # Methods related to displays
-    ####################################################################################
-
-    def _get_display(
-        self,
-        *,
-        data_source: DataSource,
-        response_method: str | list[str] | tuple[str, ...],
-        display_class: type[
-            RocCurveDisplay
-            | PrecisionRecallCurveDisplay
-            | PredictionErrorDisplay
-            | ConfusionMatrixDisplay
-        ],
-        display_kwargs: dict[str, Any],
-    ) -> (
-        RocCurveDisplay
-        | PrecisionRecallCurveDisplay
-        | PredictionErrorDisplay
-        | ConfusionMatrixDisplay
-    ):
-        """Get the display from the cache or compute it.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        response_method : str, list of str, or tuple of str
-            The response method.
-
-        display_class : class
-            The display class.
-
-        display_kwargs : dict
-            The display kwargs used by `display_class._from_predictions`.
-
-        Returns
-        -------
-        display : display_class
-            The display.
-        """
-        pos_label = self._parent.pos_label
-
-        # Compute cache key
-        if "seed" in display_kwargs and display_kwargs["seed"] is None:
-            cache_key = None
-        else:
-            cache_key = deep_key_sanitize(
-                (
-                    self._parent._hash,
-                    display_class.__name__,
-                    display_kwargs,
-                    data_source,
-                )
-            )
-
-        cache_value = self._parent._cache.get(cache_key)
-        if cache_value is not None:
-            return cache_value
-
-        y_true: list[YPlotData] = []
-        y_pred: list[YPlotData] = []
-
-        for report_idx, report in track(
-            enumerate(self._parent.estimator_reports_),
-            description="Computing predictions for display",
-            total=len(self._parent.estimator_reports_),
-        ):
-            # Retrieve data stored in the individual reports
-            report_X, report_y = report.metrics._get_X_y(data_source=data_source)
-
-            y_true_data, y_pred_data = _get_ys_for_single_report(
-                cache=report._cache,
-                estimator_hash=int(report._hash),
-                estimator=report._estimator,
-                estimator_name=self._parent.estimator_name_,
-                X=report_X,
-                y_true=cast(ArrayLike, report_y),
-                data_source=data_source,
-                response_method=response_method,
-                pos_label=pos_label,
-                split=report_idx,
-            )
-            y_true.append(y_true_data)
-            y_pred.append(y_pred_data)
-
-        display = display_class._compute_data_for_display(
-            y_true=y_true,
-            y_pred=y_pred,
-            report_type=self._parent._report_type,
-            estimators=[
-                report.estimator_ for report in self._parent.estimator_reports_
-            ],
-            ml_task=self._parent._ml_task,
-            data_source=data_source,
-            **display_kwargs,
-        )
-
-        if cache_key is not None:
-            # Unless seed is an int (i.e. the call is deterministic),
-            # we do not cache
-            self._parent._cache[cache_key] = display
-
-        return display
 
     @available_if(_check_estimator_report_has_method("metrics", "roc"))
     def roc(
@@ -983,24 +796,24 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> display = report.metrics.roc()
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
         >>> display.plot()
         """
-        response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": self._parent.pos_label}
-        display = cast(
-            RocCurveDisplay,
-            self._get_display(
-                data_source=data_source,
-                response_method=response_method,
-                display_class=RocCurveDisplay,
-                display_kwargs=display_kwargs,
-            ),
+        child_displays = [
+            report.metrics.roc(data_source=data_source)
+            for report in self._parent.estimator_reports_
+        ]
+        split_indices = range(len(self._parent.estimator_reports_))
+
+        display = RocCurveDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"split": list(split_indices)},
         )
         return display
 
@@ -1029,23 +842,23 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> display = report.metrics.precision_recall()
         >>> display.plot()
         """
-        response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": self._parent.pos_label}
-        display = cast(
-            PrecisionRecallCurveDisplay,
-            self._get_display(
-                data_source=data_source,
-                response_method=response_method,
-                display_class=PrecisionRecallCurveDisplay,
-                display_kwargs=display_kwargs,
-            ),
+        child_displays = [
+            report.metrics.precision_recall(data_source=data_source)
+            for report in self._parent.estimator_reports_
+        ]
+        split_indices = range(len(self._parent.estimator_reports_))
+
+        display = PrecisionRecallCurveDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"split": list(split_indices)},
         )
         return display
 
@@ -1088,23 +901,36 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_diabetes
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
-        >>> report = CrossValidationReport(regressor, X=X, y=y, splitter=2)
+        >>> report = evaluate(regressor, X, y, splitter=2)
         >>> display = report.metrics.prediction_error()
         >>> display.set_style(perfect_model_kwargs={"color": "tab:red"})
         >>> display.plot(kind="actual_vs_predicted")
         """
-        display_kwargs = {"subsample": subsample, "seed": seed}
-        display = cast(
-            PredictionErrorDisplay,
-            self._get_display(
+        if isinstance(subsample, numbers.Integral):
+            # Preserve the total number of sub-samples:
+            n_children = len(self._parent.estimator_reports_)
+            if 0 < subsample < n_children:
+                subsample = 1
+            else:
+                subsample //= n_children
+
+        child_displays = [
+            report.metrics.prediction_error(
                 data_source=data_source,
-                response_method="predict",
-                display_class=PredictionErrorDisplay,
-                display_kwargs=display_kwargs,
-            ),
+                subsample=subsample,
+                seed=seed,
+            )
+            for report in self._parent.estimator_reports_
+        ]
+        split_indices = range(len(self._parent.estimator_reports_))
+
+        display = PredictionErrorDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"split": list(split_indices)},
         )
         return display
 
@@ -1136,10 +962,10 @@ class _MetricsAccessor(
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot()
 
@@ -1148,26 +974,15 @@ class _MetricsAccessor(
         >>> display = report.metrics.confusion_matrix()
         >>> display.plot(threshold_value=0.7)
         """
-        response_method: str | list[str] | tuple[str, ...]
-        if self._parent._ml_task == "binary-classification":
-            response_method = ("predict_proba", "decision_function")
-        else:
-            response_method = "predict"
+        child_displays = [
+            report.metrics.confusion_matrix(data_source=data_source)
+            for report in self._parent.estimator_reports_
+        ]
+        split_indices = range(len(self._parent.estimator_reports_))
 
-        display_kwargs = {
-            "display_labels": tuple(
-                self._parent.estimator_reports_[0].estimator_.classes_
-            ),
-            "pos_label": self._parent.pos_label,
-            "response_method": response_method,
-        }
-        display = cast(
-            ConfusionMatrixDisplay,
-            self._get_display(
-                data_source=data_source,
-                response_method=response_method,
-                display_class=ConfusionMatrixDisplay,
-                display_kwargs=display_kwargs,
-            ),
+        display = ConfusionMatrixDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"split": list(split_indices)},
         )
         return display

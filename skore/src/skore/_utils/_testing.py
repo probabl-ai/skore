@@ -2,8 +2,10 @@ import contextlib
 import copy
 from typing import Any, Literal
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.figure import Figure
 from matplotlib.legend import Legend
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.metrics import r2_score
@@ -14,6 +16,7 @@ from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
 from skore._sklearn._plot.metrics.roc_curve import RocCurveDisplay
+from skore._utils._skrub import to_learner
 
 
 def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDisplay):
@@ -64,6 +67,10 @@ class MockEstimator(ClassifierMixin, BaseEstimator):
         self.classes_ = np.unique(y)
         return self
 
+    def set_params(self, **params):
+        params["n_call"] = params.get("n_call", self.n_call) + 1
+        return self
+
     def __sklearn_clone__(self):
         self.n_call += 1
         return self
@@ -83,6 +90,9 @@ class MockReport(_BaseReport):
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {}
 
+    def _run_checks(self):
+        return {}, set()
+
     def __init__(
         self,
         estimator,
@@ -91,33 +101,58 @@ class MockReport(_BaseReport):
         X_test=None,
         y_test=None,
     ):
-        self._estimator = estimator
-        self._X_train = X_train
-        self._y_train = y_train
-        self._X_test = X_test
-        self._y_test = y_test
+        super().__init__()
+        self._raw_estimator = estimator
+        self._estimator = to_learner(estimator)
+        if X_train is not None:
+            self._train_data = {
+                "X": X_train,
+                "_skrub_X": X_train,
+                "y": y_train,
+                "_skrub_y": y_train,
+            }
+        else:
+            self._train_data = None
+
+        if X_test is not None:
+            self._test_data = {
+                "X": X_test,
+                "_skrub_X": X_test,
+                "y": y_test,
+                "_skrub_y": y_test,
+            }
+        else:
+            self._test_data = None
         self.no_private = "no_private"
         self.attr_without_description = "attr_without_description"
 
     @property
     def estimator_(self):
-        return self._estimator
+        return self._raw_estimator
 
     @property
     def X_train(self):
-        return self._X_train
+        return (self._train_data or {}).get("X")
 
     @property
     def y_train(self):
-        return self._y_train
+        return (self._train_data or {}).get("y")
 
     @property
     def X_test(self):
-        return self._X_test
+        return (self._test_data or {}).get("X")
 
     @property
     def y_test(self):
-        return self._y_test
+        return (self._test_data or {}).get("y")
+
+    @property
+    def train_data(self):
+        return self._train_data
+
+    @property
+    def test_data(self):
+        return self._test_data
 
     def _get_help_title(self) -> str:
         return "Mock report"
@@ -138,8 +173,8 @@ class MockAccessor(_BaseAccessor):
 class MockDisplay:
     """Minimal display for testing, following the Display protocol."""
 
-    def plot(self, **kwargs: Any) -> None:
-        pass
+    def plot(self, **kwargs: Any) -> Figure:
+        return plt.figure()
 
     def set_style(
         self, *, policy: Literal["override", "update"] = "update", **kwargs: Any

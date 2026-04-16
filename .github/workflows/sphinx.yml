@@ -11,6 +11,7 @@ name: sphinx
 # For instance, with the following timeline:
 #
 #        dev/ dev/ dev/ dev/ dev/
+#        stable/             stable/
 #        0.1/                0.2/
 # main -- x -- x -- x -- x -- x -- >
 #         |                   |
@@ -21,6 +22,7 @@ name: sphinx
 #     ├── 0.1/
 #     ├── 0.2/
 #     ├── dev/
+#     ├── stable/
 #     ├── index.html
 #     └── versions.json
 #
@@ -81,7 +83,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Define if at least one file has changed
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         id: filter
         with:
           filters: |
@@ -89,6 +91,8 @@ jobs:
               - '.github/actions/sphinx/**'
               - '.github/workflows/sphinx.yml'
               - 'ci/requirements/skore/**/sphinx-requirements.txt'
+              - 'CHANGELOG.rst'
+              - 'CONTRIBUTING.rst'
               - 'examples/**'
               - 'sphinx/**'
               - 'skore/**'
@@ -126,7 +130,7 @@ jobs:
           changes=$(git diff --name-only HEAD^1 HEAD)
 
           if
-            (echo "${changes}" | grep -qE "skore/pyproject.toml") &&
+            (echo "${changes}" | grep -qE "/pyproject.toml") &&
             (echo "${changes}" | (! grep -qE "${LOCKFILE}"))
           then
               curl -LsSf https://astral.sh/uv/0.6.16/install.sh | sh
@@ -192,7 +196,7 @@ jobs:
           cache: pip
 
       - name: Restore python-venv
-        uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         id: cache-python-venv
         with:
           path: skore/venv
@@ -222,15 +226,22 @@ jobs:
           python -m pip install --requirement "${LOCKFILE}"
 
       - name: Save python-venv
-        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         with:
           path: skore/venv
           key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
 
-      - name: Install
-        working-directory: skore
-        run: python -m pip install --force-reinstall --no-deps .
+      - name: Install graphviz
+        run: |
+          sudo apt-get install -y graphviz
+
+      - name: Install all packages from local branch
+        run: |
+          python -m pip install --force-reinstall --no-deps skore/
+          python -m pip install --force-reinstall --no-deps skore-hub-project/
+          python -m pip install --force-reinstall --no-deps skore-local-project/
+          python -m pip install --force-reinstall --no-deps skore-mlflow-project/
 
       - name: Build documentation
         working-directory: sphinx
@@ -239,13 +250,13 @@ jobs:
         env:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
-          SPHINX_DOMAIN: ${{ vars.DOCUMENTATION_DOMAIN }}
+          SPHINX_URL: ${{ vars.DOCUMENTATION_URL }}
           SPHINX_EXAMPLE_API_KEY: ${{ secrets.DOCUMENTATION_EXAMPLE_API_KEY }}
           SPHINX_EXAMPLE_WORKSPACE: ${{ vars.DOCUMENTATION_EXAMPLE_WORKSPACE }}
           SPHINX_EXAMPLE_BASE_URL: ${{ vars.DOCUMENTATION_EXAMPLE_BASE_URL }}
 
       - name: Upload documentation
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: sphinx-html-artifact
           path: sphinx/build/html/
@@ -265,7 +276,7 @@ jobs:
           sparse-checkout: .github
 
       - name: Download HTML artifacts
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: sphinx-html-artifact
           path: html/
@@ -287,15 +298,20 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    outputs:
+      preferred: ${{ steps.write-root-files.outputs.preferred }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: .github
-      - shell: python
+
+      - name: Write `versions.json` and `index.html`
+        shell: python
+        id: write-root-files
         run: |
             import os
             import requests
-            import operator
             import json
 
             version = os.environ["SPHINX_VERSION"]
@@ -321,12 +337,12 @@ jobs:
             # Rewrite the history with "dev" and the 10 latest versions
             new = [
                 {
-                    "name": version,
-                    "version": release,
-                    "url": f"{url}/{version}/",
+                    "name": name,
+                    "version": version,
+                    "url": f"{url}/{name}/",
                     "preferred": i == 1,
                 }
-                for i, (version, release) in enumerate(history[:11])
+                for i, (name, version) in enumerate(history[:11])
             ]
 
             os.mkdir("artifacts")
@@ -338,15 +354,20 @@ jobs:
               file.write(
                   f"""
                   <head>
-                    <meta http-equiv=\"refresh\" content=\"0; url={new[1]["url"]}\"/>
+                    <meta http-equiv=\"refresh\" content=\"0; url={url}/stable/\"/>
                   </head>
                   """
               )
+
+            with open(os.environ["GITHUB_OUTPUT"], mode="a") as file:
+              file.write(f"preferred={json.dumps(new[1]["version"] == release)}\n")
         env:
           SPHINX_VERSION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}
           SPHINX_RELEASE: ${{ needs.sphinx-version.outputs.SPHINX_RELEASE }}
-          SPHINX_URL: https://${{ vars.DOCUMENTATION_DOMAIN }}
-      - uses: ./.github/actions/sphinx/deploy-aws
+          SPHINX_URL: ${{ vars.DOCUMENTATION_URL }}
+
+      - name: Deploy `versions.json` and `index.html`
+        uses: ./.github/actions/sphinx/deploy-aws
         with:
           BUCKET: ${{ vars.DOCUMENTATION_BUCKET }}
           ROLE_TO_ASSUME: ${{ vars.AWS_ROLE }}
@@ -354,6 +375,35 @@ jobs:
           AWS_REGION: ${{ vars.AWS_REGION }}
           SOURCE: artifacts/
           DESTINATION:
+
+  sphinx-deploy-stable:
+    if: ${{ (github.event_name == 'push') && (github.ref_type == 'tag') && (needs.sphinx-deploy-root-files.outputs.preferred == 'true')}}
+    runs-on: ubuntu-latest
+    needs: [sphinx-version, sphinx-build, sphinx-deploy-html, sphinx-deploy-root-files]
+    environment: prod
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github
+
+      - name: Download HTML artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: sphinx-html-artifact
+          path: html/
+
+      - name: Deploy HTML artifacts
+        uses: ./.github/actions/sphinx/deploy-aws
+        with:
+          BUCKET: ${{ vars.DOCUMENTATION_BUCKET }}
+          ROLE_TO_ASSUME: ${{ vars.AWS_ROLE }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          SOURCE: html/
+          DESTINATION: stable/
 
   sphinx-purge-cdn-cache:
     runs-on: ubuntu-latest
@@ -367,10 +417,8 @@ jobs:
     #
     # https://github.com/actions/runner/issues/1540
     #
-    if: ${{ (! cancelled()) && ((needs.sphinx-deploy-html.result == 'success') || (needs.sphinx-deploy-root-files == 'success')) }}
-    needs:
-      - sphinx-deploy-html
-      - sphinx-deploy-root-files
+    if: ${{ (! cancelled()) && ((needs.sphinx-deploy-html.result == 'success') || (needs.sphinx-deploy-root-files == 'success') || (needs.sphinx-stable == 'success')) }}
+    needs: [sphinx-deploy-html, sphinx-deploy-root-files, sphinx-deploy-stable]
     steps:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
@@ -387,9 +435,9 @@ jobs:
   sphinx-clean-artifacts:
     runs-on: ubuntu-latest
     if: ${{ always() && (github.event_name != 'pull_request') }}
-    needs: [sphinx-version, sphinx-build, sphinx-deploy-html, sphinx-deploy-root-files]
+    needs: [sphinx-deploy-html, sphinx-deploy-root-files, sphinx-deploy-stable]
     steps:
-      - uses: geekyeggo/delete-artifact@f275313e70c08f6120db482d7a6b98377786765b # v5.1.0
+      - uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
         with:
           name: sphinx-html-artifact
 
@@ -401,6 +449,7 @@ jobs:
       - sphinx-build
       - sphinx-deploy-html
       - sphinx-deploy-root-files
+      - sphinx-deploy-stable
       - sphinx-clean-artifacts
     if: ${{ always() }}
     runs-on: Ubuntu-latest

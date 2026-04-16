@@ -12,12 +12,11 @@ from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDi
 from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
-from skore._sklearn.types import DataSource, Metric
+from skore._sklearn.types import DataSource, MetricLike
 from skore._utils._accessor import (
     _check_comparison_report_sub_estimators_have_coef,
     _check_comparison_report_sub_estimators_have_feature_importances,
 )
-from skore._utils._cache_key import deep_key_sanitize
 
 if TYPE_CHECKING:
     from skore import ComparisonReport
@@ -169,7 +168,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         at_step: int | str = 0,
-        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
         n_jobs: int | None = None,
@@ -218,22 +217,16 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
 
         metric : str, callable, scorer, or list of such instances or dict of such \
             instances, default=None
-            The metric to pass to :func:`~sklearn.inspection.permutation_importance`.
-            The possible values (whether or not in a list) are:
+            The metric to pass to :func:`sklearn.inspection.permutation_importance`.
 
-            - if a string, either one of the built-in metrics or a scikit-learn scorer
-              name. You can get the possible list of string using
-              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
-              the built-in metrics or the scikit-learn scorers, respectively.
-            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
-              first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `metric_kwargs`. No favorability indicator can
-              be displayed in this case.
-            - if the callable API is too restrictive (e.g. need to pass
-              same parameter name with different values), you can use scikit-learn
-              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
-              the metric favorability will only be displayed if it is given explicitly
-              via `make_scorer`'s `greater_is_better` parameter.
+            - if ``None``, a suitable default will be used.
+            - if a string, must be a scikit-learn scorer name. You can get the list of
+              available scorers with :func:`sklearn.metrics.get_scorer_names`.
+            - if a callable, must be a function with signature
+              ``scorer(estimator, X, y)``.
+
+            For more details on the accepted types, see the `scoring` argument of
+            :func:`sklearn.inspection.permutation_importance`.
 
         n_repeats : int, default=5
             Number of times to permute a feature.
@@ -322,68 +315,27 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
-        # NOTE: to temporary improve the `project.put` UX, we always store the
-        # permutation importance into the cache dictionary even when seed is None.
-        # Be aware that if seed is None, we still trigger the computation for all cases.
-        # We only store it such that when we serialize to send to the hub, we only
-        # fetch for the cache store instead of recomputing it because it is expensive.
-        # FIXME: the workaround above should be removed once we are able to trigger
-        # computation on the server side of skore-hub.
-
         if seed is not None and not isinstance(seed, int):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 
-        # n_jobs should not be in cache
-        kwargs = {"n_repeats": n_repeats, "max_samples": max_samples, "seed": seed}
-        cache_key = deep_key_sanitize(
-            (
-                self._parent._hash,
-                "permutation_importance",
-                data_source,
-                at_step,
-                #
-                # skore-hub-project expects an item for data_source_hash (but
-                # ignores its value). Until skore-hub-project is updated we
-                # insert None as a placeholder.
-                None,
-                #
-                metric,
-                kwargs,
-            )
+        return PermutationImportanceDisplay(
+            importances=pd.concat(
+                [
+                    report.inspection.permutation_importance(
+                        data_source=data_source,
+                        at_step=at_step,
+                        metric=metric,
+                        n_repeats=n_repeats,
+                        max_samples=max_samples,
+                        n_jobs=n_jobs,
+                        seed=seed,
+                    ).importances.assign(estimator=name)
+                    for name, report in self._parent.reports_.items()
+                ],
+                ignore_index=True,
+            ),
+            report_type=self._parent._report_type,
         )
-
-        # NOTE: avoid to fetch from the cache if the seed is None because we want
-        # to trigger the computation in this case. We only have the permutation
-        # stored as a workaround for the serialization for skore-hub as explained
-        # earlier.
-        display = None if seed is None else self._parent._cache.get(cache_key)
-        if display is None:
-            display = PermutationImportanceDisplay(
-                importances=pd.concat(
-                    [
-                        report.inspection.permutation_importance(
-                            data_source=data_source,
-                            at_step=at_step,
-                            metric=metric,
-                            n_repeats=n_repeats,
-                            max_samples=max_samples,
-                            n_jobs=n_jobs,
-                            seed=seed,
-                        )
-                        .importances.copy()
-                        .assign(estimator=name)
-                        for name, report in self._parent.reports_.items()
-                    ],
-                    ignore_index=True,
-                ),
-                report_type=self._parent._report_type,
-            )
-
-            if cache_key is not None:
-                # NOTE: for the moment, we will always store the permutation importance
-                self._parent._cache[cache_key] = display
-
-        return display
 
     ####################################################################################
     # Methods related to the help tree

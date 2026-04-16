@@ -2,12 +2,20 @@
 
 from collections import Counter, defaultdict
 from functools import cached_property
+from inspect import signature
 from typing import Any, ClassVar
 
 import numpy as np
+import pandas as pd
 from pydantic import computed_field
 from scipy.stats import gaussian_kde
-from sklearn.model_selection._split import _CVIterableWrapper
+from sklearn.model_selection import (
+    KFold,
+    ShuffleSplit,
+    StratifiedKFold,
+    StratifiedShuffleSplit,
+    TimeSeriesSplit,
+)
 
 from skore_hub_project.artifact.media import (
     Coefficients,
@@ -78,6 +86,18 @@ from skore_hub_project.metric.metric import Metric
 from skore_hub_project.protocol import CrossValidationReport
 from skore_hub_project.report.estimator_report import EstimatorReportPayload
 from skore_hub_project.report.report import ReportPayload
+
+SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
+TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT = 100
+SPLITTERS = {
+    "KFold": KFold,
+    "RepeatedKFold": KFold,
+    "StratifiedKFold": StratifiedKFold,
+    "RepeatedStratifiedKFold": StratifiedKFold,
+    "ShuffleSplit": ShuffleSplit,
+    "StratifiedShuffleSplit": StratifiedShuffleSplit,
+    "TimeSeriesSplit": TimeSeriesSplit,
+}
 
 
 class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
@@ -195,22 +215,83 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def splitting_strategy(self) -> dict[str, Any]:
-        """
-        Splitting strategy used to split the dataset into train and test sets.
-
-        This includes the number of splits, the number of repeats, the seed,
-        and the distribution of the train and test sets.
-
-        The distribution of each split is computed by dividing the split into a maximum
-        of 200 buckets, and averaging the number of samples belonging to the test-set in
-        each of these buckets. @TODO: find a better representation of the distribution.
-        """
+        """The splitting strategy used in the report."""
         from skore._externals._sklearn_compat import (  # type: ignore[attr-defined]
             _safe_indexing,
         )
 
-        splits = []
+        splitter = self.report.splitter
+        target = self.report.y
+        is_classifier = "classification" in self.ml_task
 
+        n_repeats = getattr(splitter, "n_repeats", None)
+        n_splits = splitter.get_n_splits() // (n_repeats or 1)
+        splitter_metadata = {
+            "type": splitter.__class__.__name__,
+            "n_splits": n_splits,
+            "n_repeats": n_repeats,
+            # first check if shuffle is available;
+            # otherwise, we could have splitter always
+            # shuffling and only exposing a random_state
+            "shuffle": getattr(splitter, "shuffle", hasattr(splitter, "random_state")),
+            "random_state": getattr(splitter, "random_state", None),
+        }
+
+        rng = np.random.default_rng(0)
+        rng_size = min(len(target), SPLITTING_STRATEGY_REPR_SAMPLE_COUNT)
+
+        if len(target) < SPLITTING_STRATEGY_REPR_SAMPLE_COUNT:
+            target_repr = target
+        elif is_classifier:
+            # create an undersampled target to create a simplify representation
+            if not isinstance(target, pd.Series):
+                target = pd.Series(target)
+            probs = target.value_counts(normalize=True)
+            target_repr = rng.choice(
+                probs.index.to_numpy(),  # classes
+                size=rng_size,
+                p=probs.to_numpy(),  # probabilities
+                replace=True,
+            )
+            target_repr.sort()
+        else:  # regression
+            # uniformly sample the target because it will have no impact on the
+            # representation
+            target_repr = rng.choice(target, size=rng_size, replace=False)
+
+        # create a simplified splitter without shuffling and repetitions
+        simplified_cls = SPLITTERS.get(splitter.__class__.__name__, splitter.__class__)
+        simplified_cls_parameters = {}
+
+        for key in signature(simplified_cls.__init__).parameters:
+            if key in splitter_metadata:
+                simplified_cls_parameters[key] = splitter_metadata[key]
+            elif hasattr(splitter, key):
+                simplified_cls_parameters[key] = getattr(splitter, key)
+
+        if "shuffle" in simplified_cls_parameters:
+            simplified_cls_parameters["shuffle"] = False
+            simplified_cls_parameters["random_state"] = None
+
+        simplified_splitter = simplified_cls(**simplified_cls_parameters)
+
+        # Per split: one list of length N_SAMPLES_REPR, ordered by sample index,
+        # with 0 = train fold and 1 = test fold for that split.
+        splits: list[list[int]] = []
+        X = rng.normal(size=(rng_size, 1))
+
+        for train_idx, test_idx in simplified_splitter.split(X, target_repr):
+            split_flags = np.full(rng_size, -1, dtype=int)
+            split_flags[train_idx] = 0
+            split_flags[test_idx] = 1
+
+            splits.append(split_flags.tolist())
+
+        # compute target distributions
+        train_target_distributions = []
+        train_target_distributions_sample_count = []
+        test_target_distributions = []
+        test_target_distributions_sample_count = []
         for train_indices, test_indices in self.report.split_indices:
             train_y = _safe_indexing(self.report.y, train_indices)
             test_y = _safe_indexing(self.report.y, test_indices)
@@ -227,47 +308,31 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
             else:
                 linspace = np.linspace(
-                    float(train_y.min()), float(train_y.max()), num=100
+                    float(train_y.min()),
+                    float(train_y.max()),
+                    num=TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT,
                 )
                 train_kernel = gaussian_kde(train_y)
                 train_target_distribution = [float(x) for x in train_kernel(linspace)]
                 test_kernel = gaussian_kde(test_y)
                 test_target_distribution = [float(x) for x in test_kernel(linspace)]
 
-            # remove this when a better solution is found
-            # see #2212 for details
-            buckets_number = min(len(self.report.X), 200)
-            split = np.zeros(len(self.report.X), dtype=int)
-            split[test_indices] = 1
-
-            splits.append(
-                {
-                    "train": {
-                        "sample_count": len(train_indices),
-                        "target_distribution": train_target_distribution,
-                        "groups": None,
-                    },
-                    "test": {
-                        "sample_count": len(test_indices),
-                        "target_distribution": test_target_distribution,
-                        "groups": None,
-                    },
-                    "train_test_distribution": [
-                        float(np.mean(bucket))
-                        for bucket in np.array_split(split, buckets_number)
-                    ],
-                }
-            )
+            train_target_distributions.append(train_target_distribution)
+            train_target_distributions_sample_count.append(len(train_indices))
+            test_target_distributions.append(test_target_distribution)
+            test_target_distributions_sample_count.append(len(test_indices))
 
         return {
-            "strategy_name": (
-                isinstance(self.report.splitter, _CVIterableWrapper)
-                and "custom"
-                or self.report.splitter.__class__.__name__
-            ),
-            "repeat_count": getattr(self.report.splitter, "n_repeats", 1),
-            "seed": str(getattr(self.report.splitter, "random_state", "")),
+            "splitter": splitter_metadata,
             "splits": splits,
+            "train_target_distributions": train_target_distributions,
+            "train_target_distributions_sample_counts": (
+                train_target_distributions_sample_count
+            ),
+            "test_target_distributions": test_target_distributions,
+            "test_target_distributions_sample_counts": (
+                test_target_distributions_sample_count
+            ),
         }
 
     groups: list[int] | None = None

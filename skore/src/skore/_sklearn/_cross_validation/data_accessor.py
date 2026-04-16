@@ -51,6 +51,39 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         return X, y
 
+    def _prepare_dataframe_for_display(
+        self,
+        *,
+        with_y: bool | None = None,
+        subsample: int | None = None,
+        subsample_strategy: Literal["head", "random"] = "head",
+        seed: int | None = None,
+    ):
+        """Return features (and target when ``with_y``) as a single DataFrame.
+
+        When ``with_y`` is ``None``, it defaults to supervised tasks only
+        (``ml_task != "clustering"``): for clustering, only ``X`` is returned.
+        """
+        if subsample_strategy not in (subsample_strategy_options := ("head", "random")):
+            raise ValueError(
+                f"'subsample_strategy' options are {subsample_strategy_options!r}, got "
+                f"{subsample_strategy}."
+            )
+
+        if with_y is None:
+            with_y = self._parent.ml_task != "clustering"
+
+        X, y = self._retrieve_data_as_frame(with_y)
+        df = sbd.concat(X, y, axis=1) if with_y else X
+
+        if subsample:
+            if subsample_strategy == "head":
+                df = sbd.head(df, subsample)
+            else:  # subsample_strategy == "random":
+                df = sbd.sample(df, subsample, seed=seed)
+
+        return df
+
     def analyze(
         self,
         with_y: bool = True,
@@ -93,28 +126,18 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression()
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.data.analyze().frame()
         """
-        if subsample_strategy not in (subsample_strategy_options := ("head", "random")):
-            raise ValueError(
-                f"'subsample_strategy' options are {subsample_strategy_options!r}, got "
-                f"{subsample_strategy}."
-            )
-
-        X, y = self._retrieve_data_as_frame(with_y)
-
-        df = sbd.concat(X, y, axis=1) if with_y else X
-
-        if subsample:
-            if subsample_strategy == "head":
-                df = sbd.head(df, subsample)
-            else:  # subsample_strategy == "random":
-                df = sbd.sample(df, subsample, seed=seed)
-
+        df = self._prepare_dataframe_for_display(
+            with_y=with_y,
+            subsample=subsample,
+            subsample_strategy=subsample_strategy,
+            seed=seed,
+        )
         return TableReportDisplay._compute_data_for_display(df)
 
     ####################################################################################

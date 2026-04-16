@@ -1,0 +1,39 @@
+<div id="{{ container_id }}-wrapper">
+    <template id="{{ container_id }}-template">
+        <style>
+{% include "theme.css" %}
+{% include "help.css" %}
+{% include "report.css" %}
+        </style>
+        {% include "comparison_report-content.html.j2" %}
+    </template>
+
+    <div id="{{ container_id }}">
+        {% for row in comparison_reports %}
+        <div
+            class="skore-cmp-estimator-slot"
+            data-comparison-index="{{ loop.index0 }}"
+            {% if loop.index0 == 0 %} slot="estimator-display"{% endif %}
+        >{{ row.estimator_display | safe }}</div>
+        <div
+            class="skore-cmp-table-slot"
+            data-comparison-index="{{ loop.index0 }}"
+            {% if loop.index0 == 0 %} slot="table-report"{% endif %}
+        >{{ row.table_report | safe }}</div>
+        <div
+            class="skore-cmp-diagnostic-slot"
+            data-comparison-index="{{ loop.index0 }}"
+            {% if loop.index0 == 0 %} slot="diagnostic"{% endif %}
+        >{{ row.diagnostic | safe }}</div>
+        {% endfor %}
+    </div>
+
+    <script>
+{% include "report_theme.js" %}
+{% include "comparison_report.js" %}
+    </script>
+</div>
+
+<script>
+skoreInitComparisonReport("{{ container_id }}");
+</script>

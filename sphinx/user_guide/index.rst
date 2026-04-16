@@ -38,5 +38,6 @@ Table of contents
    :maxdepth: 2
 
    reporters
+   automatic_diagnostic
    displays
    project

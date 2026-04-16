@@ -37,25 +37,3 @@ def test_timings(forest_binary_classification_data, aggregate, expected_columns)
         "Predict time test (s)",
     ]
     assert timings.columns.tolist() == expected_columns
-
-
-def test_timings_flat_index(forest_binary_classification_data):
-    """Check the behaviour of the `timings` method display formatting."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
-
-    report.get_predictions(data_source="train")
-    report.get_predictions(data_source="test")
-
-    results = report.metrics.summarize().frame(flat_index=True)
-    assert results.index.tolist() == [
-        "accuracy",
-        "precision_0",
-        "precision_1",
-        "recall_0",
-        "recall_1",
-        "roc_auc",
-        "brier_score",
-        "fit_time_s",
-        "predict_time_s",
-    ]

@@ -6,7 +6,6 @@ import pytest
 from pandas.testing import assert_index_equal
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
 
 from skore import ComparisonReport, CrossValidationReport
 
@@ -193,18 +192,6 @@ def test_metrics(case):
     assert_index_equal(result.columns, expected_columns)
 
 
-def test_custom_metric(case_accuracy):
-    report, metric, expected_index, expected_columns = case_accuracy
-
-    result = report.metrics.custom_metric(
-        metric_function=accuracy_score,
-        response_method="predict",
-    )
-    result = getattr(report.metrics, metric)()
-    assert_index_equal(result.index, expected_index)
-    assert_index_equal(result.columns, expected_columns)
-
-
 @pytest.mark.parametrize(
     "case",
     [
@@ -237,7 +224,7 @@ def test_metrics_aggregate(case):
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_binary_classification_pos_label(pyplot, metric):
-    """Check the behaviour of the display methods when `pos_label` needs to be set."""
+    """Check the behaviour of the display methods when `pos_label` is not set."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
     )
@@ -246,15 +233,16 @@ def test_binary_classification_pos_label(pyplot, metric):
     report_1 = CrossValidationReport(LogisticRegression(C=1), X, y)
     report_2 = CrossValidationReport(LogisticRegression(C=2), X, y)
     report = ComparisonReport([report_1, report_2])
-    with pytest.raises(ValueError, match="pos_label is not specified"):
-        getattr(report.metrics, metric)()
+    display = getattr(report.metrics, metric)()
+    fig = display.plot()
+    assert "Positive label" not in fig.get_suptitle()
 
     report_1 = CrossValidationReport(LogisticRegression(C=1), X, y, pos_label="A")
     report_2 = CrossValidationReport(LogisticRegression(C=2), X, y, pos_label="A")
     report = ComparisonReport([report_1, report_2])
     display = getattr(report.metrics, metric)()
-    display.plot()
-    assert "Positive label: A" in display.figure_.get_suptitle()
+    fig = display.plot()
+    assert "Positive label: A" in fig.get_suptitle()
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])

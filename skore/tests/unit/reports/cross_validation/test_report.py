@@ -1,13 +1,15 @@
-import inspect
-
 import joblib
 import numpy as np
+import pandas as pd
 import pytest
+import skrub
 from sklearn.base import clone
 from sklearn.cluster import KMeans
+from sklearn.datasets import make_classification
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils._testing import _convert_container
@@ -26,7 +28,7 @@ def test_report_can_be_rebuilt_using_parameters(
 
     assert isinstance(report, CrossValidationReport)
 
-    for parameter in inspect.signature(CrossValidationReport).parameters:
+    for parameter in ["estimator", "X", "y", "splitter"]:
         assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
 
         parameters[parameter] = getattr(report, parameter)
@@ -100,10 +102,11 @@ def test_attributes(fixture_name, request, cv, n_jobs):
     [
         # expected n keys:
         # (result + time for 'predict'
-        #  & result for 'predict_proba' or 'decision_function') x train, test
-        ("forest_binary_classification_data", 6),
+        #  & result for 'predict_proba'/'predict_log_proba' or 'decision_function')
+        # x train, test
+        ("forest_binary_classification_data", 8),
         ("svc_binary_classification_data", 6),
-        ("forest_multiclass_classification_data", 6),
+        ("forest_multiclass_classification_data", 8),
         ("linear_regression_data", 4),
     ],
 )
@@ -112,16 +115,15 @@ def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
     """Check that calling cache_predictions fills the cache."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
-    report.cache_predictions(n_jobs=n_jobs)
-    # no effect on the actual cache of the cross-validation report but only on the
-    # underlying estimator reports
-    assert report._cache == {}
+    for estimator_report in report.estimator_reports_:
+        assert estimator_report._cache == {}
+
+    report.cache_predictions()
 
     for estimator_report in report.estimator_reports_:
         assert len(estimator_report._cache) == expected_n_keys
 
     report.clear_cache()
-    assert report._cache == {}
     for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
 
@@ -151,11 +153,14 @@ def test_get_predictions(
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_shape = report.estimator_reports_[split_idx].y_train.shape
+            expected_len = len(report.estimator_reports_[split_idx].y_train)
         else:
             assert data_source == "test"
-            expected_shape = report.estimator_reports_[split_idx].y_test.shape
-        assert split_predictions.shape == expected_shape
+            expected_len = len(report.estimator_reports_[split_idx].y_test)
+        if response_method == "predict_proba" and pos_label is None:
+            assert split_predictions.shape == (expected_len, 2)
+        else:
+            assert split_predictions.shape == (expected_len,)
 
 
 def test_get_predictions_error(
@@ -206,7 +211,7 @@ def test_clustering():
         match="Clustering models are not supported yet. "
         "Please use a classification or regression model instead.",
     ):
-        CrossValidationReport(KMeans(), X=np.random.rand(10, 5))
+        CrossValidationReport(KMeans(), X=np.random.rand(10, 5), y=None)
 
 
 @pytest.mark.parametrize(
@@ -221,24 +226,170 @@ def test_create_estimator_report(container_types, forest_binary_classification_d
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
     cv_report = CrossValidationReport(estimator, X_experiment, y_experiment, splitter=2)
-    est_report = cv_report.create_estimator_report()
-
-    assert isinstance(est_report, EstimatorReport)
-    assert est_report._parent_hash == cv_report._hash
-    assert joblib.hash(est_report.X_train) == joblib.hash(X_experiment)
-    assert joblib.hash(est_report.y_train) == joblib.hash(y_experiment)
-    assert est_report.X_test is None
-    assert est_report.y_test is None
-    assert est_report.pos_label == cv_report.pos_label
 
     est_report_with_test = cv_report.create_estimator_report(
         X_test=X_heldout, y_test=y_heldout
     )
 
     assert isinstance(est_report_with_test, EstimatorReport)
-    assert est_report_with_test._parent_hash == cv_report._hash
     assert joblib.hash(est_report_with_test.X_train) == joblib.hash(X_experiment)
     assert joblib.hash(est_report_with_test.y_train) == joblib.hash(y_experiment)
     assert joblib.hash(est_report_with_test.X_test) == joblib.hash(X_heldout)
     assert joblib.hash(est_report_with_test.y_test) == joblib.hash(y_heldout)
     assert est_report_with_test.pos_label == cv_report.pos_label
+
+
+class _DummyClassifierBadRepr(DummyClassifier):
+    def _repr_html_(self):
+        raise TypeError("error")
+
+
+def _assert_cross_validation_report_repr_html(
+    html_out: str, expected_estimator_name: str
+) -> None:
+    assert "skore-cross-validation-report-" in html_out
+    assert expected_estimator_name in html_out
+    assert "skoreInitEstimatorReport" in html_out
+    assert "report-hint-note" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-tabset" in html_out
+    assert "Report for" in html_out
+    assert "CrossValidationReport.metrics" in html_out
+
+
+def test_report_repr_html_binary_classification():
+    X, y = make_classification(n_classes=2, random_state=42)
+    estimator = DummyClassifier()
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    _assert_cross_validation_report_repr_html(report._repr_html_(), "DummyClassifier")
+
+
+def test_report_repr_html_multiclass_classification(multiclass_classification_data):
+    X, y = multiclass_classification_data
+    estimator = DummyClassifier(strategy="uniform", random_state=0)
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    _assert_cross_validation_report_repr_html(report._repr_html_(), "DummyClassifier")
+
+
+def test_report_repr_html_regression(regression_data):
+    X, y = regression_data
+    estimator = DummyRegressor()
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    _assert_cross_validation_report_repr_html(report._repr_html_(), "DummyRegressor")
+
+
+def test_report_repr_html_multioutput_regression(regression_multioutput_data):
+    X, y = regression_multioutput_data
+    estimator = DummyRegressor()
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    _assert_cross_validation_report_repr_html(report._repr_html_(), "DummyRegressor")
+
+
+@pytest.mark.parametrize("splitter", [2, 3])
+def test_report_repr_html_sklearn_estimator_bad_html_repr(splitter):
+    """HTML repr must still work when the underlying estimator rejects
+    ``_repr_html_``."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    estimator = _DummyClassifierBadRepr()
+    report = CrossValidationReport(estimator, X, y, splitter=splitter)
+    _assert_cross_validation_report_repr_html(report._repr_html_(), "DummyClassifier")
+
+
+def test_report_with_data_op():
+    X_a, y_a = make_classification(n_samples=10)
+    data_op = skrub.X(X_a).skb.apply(LogisticRegression(), y=skrub.y(y_a))
+    learner = data_op.skb.make_learner()
+
+    report = CrossValidationReport(learner, data=data_op.skb.get_data())
+    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
+        ("SkrubLearner", "mean")
+    ]
+
+    report = CrossValidationReport(data_op)
+    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
+        ("SkrubLearner", "mean")
+    ]
+
+
+def test_from_state_bypasses_init_and_restores_state(
+    monkeypatch, logistic_binary_classification_data
+):
+    estimator, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    expected_accuracy = report.metrics.accuracy()
+    report.cache_predictions()
+    state = report.get_state()
+
+    def _unexpected_init(self, *args, **kwargs):
+        raise AssertionError("__init__ should not be called by from_state")
+
+    monkeypatch.setattr(CrossValidationReport, "__init__", _unexpected_init)
+
+    restored = CrossValidationReport.from_state(state)
+
+    assert restored.id == report.id
+    assert restored.X is report.X
+    assert restored.y is report.y
+    assert restored.ml_task == report.ml_task
+    assert restored.pos_label == report.pos_label
+    assert restored._split_indices == report._split_indices
+    assert len(restored.estimator_reports_) == len(report.estimator_reports_)
+    assert restored.estimator_reports_[0]._cache == report.estimator_reports_[0]._cache
+    assert state["estimator_reports"][0]["predictions"]
+    assert state["estimator_reports"][0]["optional"]["cache"]
+    assert restored.metrics.accuracy().equals(expected_accuracy)
+
+    # check new metrics/predictions can be computed:
+    restored.metrics.roc_auc()
+    _ = report.get_predictions(data_source="test")
+    report.cache_predictions()
+
+
+def test_get_from_state_with_complex_data_op():
+    X, y = make_classification(random_state=0)
+    left = pd.DataFrame(
+        {
+            "row_id": np.arange(len(y)),
+            "x0": X[:, 0],
+            "x1": X[:, 1],
+        }
+    )
+    right = pd.DataFrame(
+        {
+            "row_id": np.arange(len(y)),
+            "x2": X[:, 2],
+            "x3": X[:, 3],
+        }
+    )
+
+    def _join_features(left, right):
+        return left.merge(right, on="row_id").drop(columns="row_id")
+
+    data_op = (
+        skrub.var("left", left)
+        .skb.apply_func(_join_features, skrub.var("right", right))
+        .skb.mark_as_X()
+        .skb.apply(LogisticRegression(), y=skrub.y(y))
+    )
+    report = CrossValidationReport(data_op, splitter=2)
+    expected_accuracy = report.metrics.accuracy()
+    expected_preds = report.get_predictions(data_source="test")
+    state = report.get_state()
+
+    restored = CrossValidationReport.from_state(state)
+
+    # check fresh computations still work after restoring from state:
+    restored.clear_cache()
+    assert restored.metrics.accuracy().equals(expected_accuracy)
+    preds = restored.get_predictions(data_source="test")
+    for pred, expected_pred in zip(preds, expected_preds, strict=True):
+        np.testing.assert_array_equal(pred, expected_pred)
+
+
+def test_from_state_rejects_unknown_version(logistic_binary_classification_data):
+    estimator, X, y = logistic_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+    state = report.get_state() | {"version": 999}
+
+    with pytest.raises(ValueError, match="Unexpected state version"):
+        CrossValidationReport.from_state(state)

@@ -1,15 +1,15 @@
+from abc import abstractmethod
+from datetime import datetime, timezone
+from importlib.metadata import version
 from io import StringIO
-from typing import Any, Generic, Literal, TypeVar, cast
+from typing import Generic, Literal, TypeVar
+from uuid import uuid4
 
-from numpy.typing import ArrayLike, NDArray
 from rich.console import Console
 from rich.panel import Panel
-from sklearn.base import BaseEstimator
-from sklearn.utils._response import _check_response_method, _get_response_values
 
-from skore._sklearn.types import PositiveLabel
-from skore._utils._cache import Cache
-from skore._utils._measure_time import MeasureTime
+from skore._config import configuration
+from skore._sklearn._diagnostic.base import DiagnosticDisplay
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
@@ -28,6 +28,90 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
+    _issues_cache: tuple[dict[str, dict], set[str]]
+
+    @abstractmethod
+    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
+        """Return detected issues and the set of check codes that were evaluated."""
+
+    def _get_issues(self) -> tuple[dict[str, dict], set[str]]:
+        """Get the issues from the cache or compute them."""
+        if not hasattr(self, "_issues_cache"):
+            self._issues_cache = self._run_checks()
+        return self._issues_cache
+
+    def diagnose(
+        self,
+        *,
+        ignore: list[str] | tuple[str, ...] | None = None,
+    ) -> DiagnosticDisplay:
+        """Run checks and return a diagnostic with detected issues.
+
+        Checks look for common modeling problems such as overfitting and
+        underfitting. Check codes can be muted per-call via `ignore` or globally
+        via :func:`~skore.configuration()` with `ignore_checks=...`.
+
+        Parameters
+        ----------
+        ignore : list of str or tuple of str or None, default=None
+            Check codes to exclude from the results, e.g. `["SKD001"]`.
+
+        Returns
+        -------
+        DiagnosticDisplay
+            A display object with an HTML representation, with the full list of
+            detected issues accessible via the :meth:`~DiagnosticDisplay.frame`
+            method.
+
+        Examples
+        --------
+        >>> from skore import evaluate
+        >>> from sklearn.dummy import DummyClassifier
+        >>> from sklearn.datasets import make_classification
+        >>> X, y = make_classification(random_state=42)
+        >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
+        >>> report.diagnose()
+        Diagnostic: 1 issue(s) detected, 2 check(s) ran, 0 ignored.
+        - [SKD002] Potential underfitting. Train/test scores are on par and not
+        significantly better than the dummy baseline for 8/8 comparable metrics. Read
+        our documentation for more details:
+        https://docs.skore.probabl.ai/dev/user_guide/automatic_diagnostic.html#skd002-underfitting.
+        Mute with `ignore=['SKD002']`.
+        >>> report.diagnose(ignore=["SKD002"])
+        Diagnostic: 0 issue(s) detected, 1 check(s) ran, 1 ignored.
+        - No issues were detected in your report!
+        """
+        ignored: set[str] = set()
+        if ignore:
+            ignored.update(code.strip().upper() for code in ignore if code.strip())
+        if configuration.ignore_checks:
+            ignored.update(
+                code.strip().upper()
+                for code in configuration.ignore_checks
+                if code.strip()
+            )
+        issues, checked_codes = self._get_issues()
+        filtered = {
+            code: issue for code, issue in issues.items() if code not in ignored
+        }
+        checks_ran = len(checked_codes - ignored)
+        return DiagnosticDisplay(filtered, checks_ran, n_ignored=len(ignored))
+
+    def __init__(self) -> None:
+        self._metadata = {
+            "id": uuid4().int,
+            "skore-version": version("skore"),
+            "creation-date": datetime.now(timezone.utc).isoformat(),
+        }
+
+    @property
+    def id(self):
+        return self._metadata["id"]
+
+    @property
+    def _hash(self) -> int:
+        # FIXME: only for backward compatibility
+        return self.id
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
@@ -56,179 +140,3 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
             )
         )
         return string_buffer.getvalue()
-
-    def _get_X_y(
-        self,
-        *,
-        data_source: Literal["test", "train"],
-    ) -> tuple[ArrayLike, ArrayLike]:
-        """Get the requested dataset.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        Returns
-        -------
-        X : array-like of shape (n_samples, n_features)
-            The requested dataset.
-
-        y : array-like of shape (n_samples,)
-            The requested dataset.
-        """
-        if data_source == "test":
-            if self._parent._X_test is None or self._parent._y_test is None:
-                missing_data = "X_test and y_test"
-                raise ValueError(
-                    f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the report. Please provide the {data_source} "
-                    "data when creating the report."
-                )
-            return self._parent._X_test, self._parent._y_test
-        elif data_source == "train":
-            if self._parent._X_train is None or self._parent._y_train is None:
-                missing_data = "X_train and y_train"
-                raise ValueError(
-                    f"No {data_source} data (i.e. {missing_data}) were provided "
-                    f"when creating the report. Please provide the {data_source} "
-                    "data when creating the report."
-                )
-            return self._parent._X_train, self._parent._y_train
-        else:
-            raise ValueError(
-                f"Invalid data source: {data_source}. Possible values are: test, train."
-            )
-
-
-def _get_cached_response_values(
-    *,
-    cache: Cache,
-    estimator_hash: int,
-    estimator: BaseEstimator,
-    X: ArrayLike | None,
-    response_method: str | list[str] | tuple[str, ...],
-    pos_label: PositiveLabel | None = None,
-    data_source: Literal["test", "train"] = "test",
-) -> list[tuple[tuple[Any, ...], Any, bool]]:
-    """Compute or load from local cache the response values.
-
-    Be aware that the predictions will be loaded from the cache if present, but they
-    will not be added to it. The reason is that we want to be able to run this function
-    in parallel settings in a thread-safe manner. The update should be done outside of
-    this function.
-
-    Parameters
-    ----------
-    cache : Cache
-        The cache backend to use.
-
-    estimator_hash : int
-        A hash associated with the estimator such that we can retrieve the data from
-        the cache.
-
-    estimator : estimator object
-        The estimator used to generate the predictions.
-
-    X : {array-like, sparse matrix} of shape (n_samples, n_features) or None
-        The input data on which to compute the responses when needed.
-
-    response_method : str, list of str or tuple of str
-        The response method.
-
-    pos_label : int, float, bool or str, default=None
-        The positive label.
-
-    data_source : {"test", "train"}, default="test"
-        The data source to use.
-
-        - "test" : use the test set provided when creating the report.
-        - "train" : use the train set provided when creating the report.
-
-    Returns
-    -------
-    list of tuples
-        A list of tuples, each containing:
-
-        - cache_key : tuple
-            The cache key.
-
-        - cache_value : Any
-            The cache value. It corresponds to the predictions but also to the predict
-            time when it has not been cached yet.
-
-        - is_cached : bool
-            Whether the cache value was loaded from the cache.
-    """
-    prediction_method = _check_response_method(estimator, response_method).__name__
-
-    if prediction_method not in ("predict_proba", "decision_function"):
-        # pos_label is only important in classification and with probabilities
-        # and decision functions
-        pos_label = None
-
-    cache_key: tuple[Any, ...] = (
-        estimator_hash,
-        pos_label,
-        prediction_method,
-        data_source,
-    )
-
-    if cache_key in cache:
-        cached_predictions = cast(NDArray, cache[cache_key])
-        return [(cache_key, cached_predictions, True)]
-
-    with MeasureTime() as predict_time:
-        predictions, _ = _get_response_values(
-            estimator,
-            X=X,
-            response_method=prediction_method,
-            pos_label=pos_label,
-            return_response_method_used=False,
-        )
-
-    predict_time_cache_key: tuple[Any, ...] = (
-        estimator_hash,
-        data_source,
-        "predict_time",
-    )
-
-    return [
-        (cache_key, predictions, False),
-        (predict_time_cache_key, predict_time(), False),
-    ]
-
-
-class _BaseMetricsAccessor:
-    _score_or_loss_info: dict[str, dict[str, str]] = {
-        "fit_time": {"name": "Fit time (s)", "icon": "(↘︎)"},
-        "predict_time": {"name": "Predict time (s)", "icon": "(↘︎)"},
-        "accuracy": {"name": "Accuracy", "icon": "(↗︎)"},
-        "precision": {"name": "Precision", "icon": "(↗︎)"},
-        "recall": {"name": "Recall", "icon": "(↗︎)"},
-        "brier_score": {"name": "Brier score", "icon": "(↘︎)"},
-        "roc_auc": {"name": "ROC AUC", "icon": "(↗︎)"},
-        "log_loss": {"name": "Log loss", "icon": "(↘︎)"},
-        "r2": {"name": "R²", "icon": "(↗︎)"},
-        "rmse": {"name": "RMSE", "icon": "(↘︎)"},
-        "custom_metric": {"name": "Custom metric", "icon": ""},
-        "report_metrics": {"name": "Report metrics", "icon": ""},
-    }
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def _get_favorability_text(self, name: str) -> str | None:
-        """Get favorability text for a method, or None if not applicable."""
-        if name not in self._score_or_loss_info:
-            return None
-        icon = self._score_or_loss_info[name]["icon"]
-        if icon == "(↗︎)":
-            return "Higher value is better."
-        elif icon == "(↘︎)":
-            return "Lower value is better."
-        return None

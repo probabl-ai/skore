@@ -77,7 +77,7 @@ def test_fit_time(estimator_data):
     estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
-    assert isinstance(report.metrics._fit_time(cast=False), float)
+    assert isinstance(report.metrics.fit_time(cast=False), float)
 
 
 def test_fit_time_estimator_already_fitted(estimator_data):
@@ -87,8 +87,8 @@ def test_fit_time_estimator_already_fitted(estimator_data):
     estimator.fit(data["X_train"], data["y_train"])
     report = EstimatorReport(estimator, X_test=data["X_test"], y_test=data["y_test"])
 
-    assert report.metrics._fit_time(cast=False) is None
-    assert math.isnan(report.metrics._fit_time(cast=True))
+    assert report.metrics.fit_time(cast=False) is None
+    assert math.isnan(report.metrics.fit_time(cast=True))
 
 
 def test_fit_time_estimator_unfitted(estimator_data):
@@ -96,8 +96,8 @@ def test_fit_time_estimator_unfitted(estimator_data):
     estimator, data = estimator_data
     report = EstimatorReport(estimator, fit=False, **data)
 
-    assert report.metrics._fit_time(cast=False) is None
-    assert math.isnan(report.metrics._fit_time(cast=True))
+    assert report.metrics.fit_time(cast=False) is None
+    assert math.isnan(report.metrics.fit_time(cast=True))
 
 
 @pytest.mark.parametrize("data_source", ["test", "train"])
@@ -108,7 +108,7 @@ def test_predict_time(data_source, estimator_data):
     # Compute predictions
     report.metrics.accuracy(data_source=data_source)
 
-    assert isinstance(report.metrics._predict_time(data_source=data_source), float)
+    assert isinstance(report.metrics.predict_time(data_source=data_source), float)
 
 
 def test_summarize_fit_time(estimator_data):

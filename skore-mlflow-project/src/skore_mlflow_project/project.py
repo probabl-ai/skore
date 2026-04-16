@@ -167,8 +167,7 @@ class Project:
 
             with TemporaryDirectory() as tmp_dir:
                 pickle_path = Path(tmp_dir) / "report.pkl"
-                with _cache_cleared_for_pickle(report):
-                    joblib.dump(report, pickle_path)
+                joblib.dump(report, pickle_path)
                 mlflow.log_artifact(local_path=str(pickle_path))
 
             mlflow.set_tag("skore_status", "completed")
@@ -337,22 +336,6 @@ def _filterwarnings(category: type[Warning], msg: str) -> Iterator[None]:
             category=category,
         )
         yield
-
-
-@contextmanager
-def _cache_cleared_for_pickle(
-    report: EstimatorReport | CrossValidationReport,
-) -> Iterator[None]:
-    # Keep track of nested estimator report caches to restore local object state.
-    reports = [report] + getattr(report, "estimator_reports_", [])
-    caches = [report_to_clear._cache for report_to_clear in reports]
-    report.clear_cache()
-
-    try:
-        yield
-    finally:
-        for report_to_restore, cache in zip(reports, caches, strict=True):
-            report_to_restore._cache = cache
 
 
 def _log_artifact(artifact: Artifact) -> None:

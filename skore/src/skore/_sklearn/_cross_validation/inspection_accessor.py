@@ -11,12 +11,11 @@ from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDi
 from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
-from skore._sklearn.types import DataSource, Metric
+from skore._sklearn.types import DataSource, MetricLike
 from skore._utils._accessor import (
     _check_cross_validation_sub_estimator_has_coef,
     _check_cross_validation_sub_estimator_has_feature_importances,
 )
-from skore._utils._cache_key import deep_key_sanitize
 
 
 class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
@@ -42,9 +41,9 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_regression
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = make_regression(n_features=3, random_state=42)
-        >>> report = CrossValidationReport(estimator=Ridge(), X=X, y=y, splitter=2)
+        >>> report = evaluate(Ridge(), X, y, splitter=2)
         >>> display = report.inspection.coefficients()
         >>> display.frame()
               feature  coefficient_mean  coefficient_std
@@ -72,7 +71,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         at_step: int | str = 0,
-        metric: Metric | list[Metric] | dict[str, Metric] | None = None,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
         n_repeats: int = 5,
         max_samples: float = 1.0,
         n_jobs: int | None = None,
@@ -117,22 +116,16 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         metric : str, callable, scorer, or list of such instances or dict of such \
             instances, default=None
-            The metric to pass to :func:`~sklearn.inspection.permutation_importance`.
-            The possible values (whether or not in a list) are:
+            The metric to pass to :func:`sklearn.inspection.permutation_importance`.
 
-            - if a string, either one of the built-in metrics or a scikit-learn scorer
-              name. You can get the possible list of string using
-              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
-              the built-in metrics or the scikit-learn scorers, respectively.
-            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
-              first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `metric_kwargs`. No favorability indicator can
-              be displayed in this case.
-            - if the callable API is too restrictive (e.g. need to pass
-              same parameter name with different values), you can use scikit-learn
-              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
-              the metric favorability will only be displayed if it is given explicitly
-              via `make_scorer`'s `greater_is_better` parameter.
+            - if ``None``, a suitable default will be used.
+            - if a string, must be a scikit-learn scorer name. You can get the list of
+              available scorers with :func:`sklearn.metrics.get_scorer_names`.
+            - if a callable, must be a function with signature
+              ``scorer(estimator, X, y)``.
+
+            For more details on the accepted types, see the `scoring` argument of
+            :func:`sklearn.inspection.permutation_importance`.
 
         n_repeats : int, default=5
             Number of times to permute a feature.
@@ -166,10 +159,9 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_regression
         >>> from sklearn.linear_model import Ridge
-        >>> from skore import train_test_split
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> X, y = make_regression(n_features=3, random_state=0)
-        >>> report = CrossValidationReport(estimator=Ridge(), X=X, y=y, splitter=2)
+        >>> report = evaluate(Ridge(), X, y, splitter=2)
         >>> report.inspection.permutation_importance(
         ...    n_repeats=2,
         ...    seed=0,
@@ -223,9 +215,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> from sklearn.pipeline import make_pipeline
         >>> from sklearn.preprocessing import StandardScaler
         >>> pipeline = make_pipeline(StandardScaler(), Ridge())
-        >>> pipeline_report = CrossValidationReport(
-        ...     estimator=pipeline, X=X, y=y, splitter=2
-        ... )
+        >>> pipeline_report = evaluate(pipeline, X, y, splitter=2)
         >>> pipeline_report.inspection.permutation_importance(
         ...    n_repeats=2,
         ...    seed=0,
@@ -249,70 +239,27 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """  # noqa: E501
-        # NOTE: to temporary improve the `project.put` UX, we always store the
-        # permutation importance into the cache dictionary even when seed is None.
-        # Be aware that if seed is None, we still trigger the computation for all cases.
-        # We only store it such that when we serialize to send to the hub, we only
-        # fetch for the cache store instead of recomputing it because it is expensive.
-        # FIXME: the workaround above should be removed once we are able to trigger
-        # computation on the server side of skore-hub.
-
         if seed is not None and not isinstance(seed, int):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 
-        # n_jobs should not be in cache
-        kwargs = {"n_repeats": n_repeats, "max_samples": max_samples, "seed": seed}
-        cache_key = deep_key_sanitize(
-            (
-                self._parent._hash,
-                "permutation_importance",
-                data_source,
-                at_step,
-                #
-                # skore-hub-project expects an item for data_source_hash (but
-                # ignores its value). Until skore-hub-project is updated we
-                # insert None as a placeholder.
-                None,
-                #
-                metric,
-                kwargs,
-            )
+        return PermutationImportanceDisplay(
+            importances=pd.concat(
+                [
+                    report.inspection.permutation_importance(
+                        data_source=data_source,
+                        at_step=at_step,
+                        metric=metric,
+                        n_repeats=n_repeats,
+                        max_samples=max_samples,
+                        n_jobs=n_jobs,
+                        seed=seed,
+                    ).importances.assign(split=split_idx)
+                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                ],
+                ignore_index=True,
+            ),
+            report_type=self._parent._report_type,
         )
-
-        # NOTE: avoid to fetch from the cache if the seed is None because we want
-        # to trigger the computation in this case. We only have the permutation
-        # stored as a workaround for the serialization for skore-hub as explained
-        # earlier.
-        display = None if seed is None else self._parent._cache.get(cache_key)
-        if display is None:
-            display = PermutationImportanceDisplay(
-                importances=pd.concat(
-                    [
-                        report.inspection.permutation_importance(
-                            data_source=data_source,
-                            at_step=at_step,
-                            metric=metric,
-                            n_repeats=n_repeats,
-                            max_samples=max_samples,
-                            n_jobs=n_jobs,
-                            seed=seed,
-                        )
-                        .importances.copy()
-                        .assign(split=split_idx)
-                        for split_idx, report in enumerate(
-                            self._parent.estimator_reports_
-                        )
-                    ],
-                    ignore_index=True,
-                ),
-                report_type=self._parent._report_type,
-            )
-
-            if cache_key is not None:
-                # NOTE: for the moment, we will always store the permutation importance
-                self._parent._cache[cache_key] = display
-
-        return display
 
     @available_if(_check_cross_validation_sub_estimator_has_feature_importances())
     def impurity_decrease(self) -> ImpurityDecreaseDisplay:
@@ -334,13 +281,11 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_iris
         >>> from sklearn.ensemble import RandomForestClassifier
-        >>> from skore import CrossValidationReport
+        >>> from skore import evaluate
         >>> iris = load_iris(as_frame=True)
         >>> X, y = iris.data, iris.target
         >>> y = iris.target_names[y]
-        >>> report = CrossValidationReport(
-        ...     estimator=RandomForestClassifier(random_state=0), X=X, y=y, splitter=5
-        ... )
+        >>> report = evaluate(RandomForestClassifier(random_state=0), X, y, splitter=5)
         >>> display = report.inspection.impurity_decrease()
         >>> display.frame()
                      feature  importance_mean  importance_std

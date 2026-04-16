@@ -170,32 +170,6 @@ class Project:
         """The workspace of the project."""
         return self.__workspace
 
-    @staticmethod
-    def pickle(report: EstimatorReport | CrossValidationReport) -> tuple[str, bytes]:
-        """
-        Pickle ``report``, return the bytes and the corresponding hash.
-
-        Notes
-        -----
-        The report is pickled without its cache, to avoid salting the hash.
-        """
-        reports = [report] + getattr(report, "estimator_reports_", [])
-        caches = [report_to_clear._cache for report_to_clear in reports]
-
-        report.clear_cache()
-
-        try:
-            with io.BytesIO() as stream:
-                joblib.dump(report, stream)
-
-                pickle_bytes = stream.getvalue()
-                pickle_hash = joblib.hash(pickle_bytes)
-        finally:
-            for report, cache in zip(reports, caches, strict=True):
-                report._cache = cache
-
-        return pickle_hash, pickle_bytes
-
     @ensure_project_is_not_deleted
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
@@ -233,15 +207,17 @@ class Project:
                 f"ort` (found '{type(report)}')"
             )
 
-        pickle_hash, pickle_bytes = Project.pickle(report)
+        artifact_id = str(report.id)
 
-        if pickle_hash not in self.__artifacts_storage:
-            self.__artifacts_storage[pickle_hash] = pickle_bytes
+        if artifact_id not in self.__artifacts_storage:
+            with io.BytesIO() as stream:
+                joblib.dump(report, stream)
+                self.__artifacts_storage[artifact_id] = stream.getvalue()
 
         self.__metadata_storage[uuid4().hex] = dict(
             Metadata(
                 report=report,
-                artifact_id=pickle_hash,
+                artifact_id=artifact_id,
                 project_name=self.name,
                 key=key,
             )

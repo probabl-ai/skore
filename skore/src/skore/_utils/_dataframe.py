@@ -23,6 +23,8 @@ def _normalize_X_as_dataframe(X: ArrayLike) -> pd.DataFrame:
         columns = [f"Feature {i}" for i in range(X.shape[1])]
         return pd.DataFrame(X, columns=columns)
 
+    if sbd.is_polars(X):
+        return X
     X_df = cast(pd.DataFrame, X)
     if all(isinstance(col, str) for col in X_df.columns):
         return X_df
@@ -39,6 +41,11 @@ def _normalize_y_as_dataframe(y: ArrayLike) -> pd.DataFrame:
             "Data analysis via skrub is currently not supported for sparse matrices. "
             "Please use dense data."
         )
+
+    if sbd.is_column(y) and sbd.is_polars(y):
+        return sbd.make_dataframe_like(y, [y])
+    elif sbd.is_dataframe(y) and sbd.is_polars(y):
+        return y
 
     if isinstance(y, pd.Series):
         name = y.name if y.name is not None else "Target"
