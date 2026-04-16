@@ -44,26 +44,6 @@ from skore_hub_project.metric import (
 )
 from skore_hub_project.report import EstimatorReportPayload
 
-
-def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
-    reports = [object] + getattr(object, "estimator_reports_", [])
-    reports_with_cache = [
-        (report, report._cache) for report in reports if hasattr(report, "_cache")
-    ]
-
-    object.clear_cache()
-
-    try:
-        with BytesIO() as stream:
-            dump(object, stream)
-            pickle_bytes = stream.getvalue()
-    finally:
-        for report, cache in reports_with_cache:
-            report._cache = cache
-
-    return pickle_bytes, f"skore-{object.__class__.__name__}-{object.id}"
-
-
 @fixture
 def payload(project, binary_classification):
     # Force the compute of the permutations
@@ -84,12 +64,9 @@ class TestEstimatorReportPayload:
     def test_pickle(
         self, tmp_path, binary_classification, project, payload, upload_mock
     ):
-        pickle, checksum = serialize(binary_classification)
+        checksum = f"skore-EstimatorReport-{binary_classification.id}"
 
-        # Ensure payload is well constructed
-        assert payload.pickle.checksum == checksum
-
-        # Ensure payload is well constructed
+        # Ensure checksum is well constructed
         assert payload.pickle.checksum == checksum
 
         # ensure `upload` is well called
@@ -174,7 +151,7 @@ class TestEstimatorReportPayload:
 
     @mark.respx()
     def test_model_dump(self, binary_classification, payload):
-        _, checksum = serialize(binary_classification)
+        checksum = f"skore-EstimatorReport-{binary_classification.id}"
 
         payload_dict = payload.model_dump()
 

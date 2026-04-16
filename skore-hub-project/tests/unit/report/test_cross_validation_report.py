@@ -35,7 +35,6 @@ from skore_hub_project.artifact.media import (
     RocSVGTrain,
 )
 from skore_hub_project.artifact.media.data import TableReport
-from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
@@ -72,27 +71,6 @@ from skore_hub_project.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
 )
-
-
-def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
-    reports = [object] + getattr(object, "estimator_reports_", [])
-    reports_with_cache = [
-        (report, report._cache) for report in reports if hasattr(report, "_cache")
-    ]
-    object.clear_cache()
-
-    try:
-        with BytesIO() as stream:
-            dump(object, stream)
-            pickle_bytes = stream.getvalue()
-    finally:
-        for report, cache in reports_with_cache:
-            report._cache = cache
-
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
-    return pickle_bytes, checksum
 
 
 @fixture
@@ -363,7 +341,6 @@ class TestCrossValidationReportPayload:
     )
     @mark.respx()
     def test_estimators(self, project, payload, upload_mock):
-        payload.report.cache_predictions()
         assert len(payload.estimators) == len(payload.report.estimator_reports_)
 
         for i, estimator in enumerate(payload.estimators):
@@ -373,7 +350,7 @@ class TestCrossValidationReportPayload:
             assert estimator.report == payload.report.estimator_reports_[i]
 
             # ensure `upload` is well called
-            pickle, checksum = serialize(payload.report.estimator_reports_[i])
+            estimator_checksum = f"skore-EstimatorReport-{estimator.report.id}"
 
             estimator.model_dump()
 
@@ -381,7 +358,8 @@ class TestCrossValidationReportPayload:
             assert not upload_mock.call_args.args
             assert upload_mock.call_args.kwargs == {
                 "project": project,
-                "content": pickle,
+                "filepath": estimator.pickle.filepath,
+                "checksum": estimator_checksum,
                 "content_type": "application/octet-stream",
             }
 
@@ -389,11 +367,11 @@ class TestCrossValidationReportPayload:
 
     @mark.respx()
     def test_pickle(
-        self, small_cv_binary_classification, project, payload, upload_mock
+        self, tmp_path, small_cv_binary_classification, project, payload, upload_mock
     ):
-        pickle, checksum = serialize(small_cv_binary_classification)
+        checksum = f"skore-CrossValidationReport-{small_cv_binary_classification.id}"
 
-        # Ensure payload is well constructed
+        # Ensure checksum is well constructed
         assert payload.pickle.checksum == checksum
 
         # ensure `upload` is well called
@@ -401,9 +379,13 @@ class TestCrossValidationReportPayload:
         assert not upload_mock.call_args.args
         assert upload_mock.call_args.kwargs == {
             "project": project,
-            "content": pickle,
+            "filepath": payload.pickle.filepath,
+            "checksum": checksum,
             "content_type": "application/octet-stream",
         }
+
+        # ensure that there is no residual file
+        assert not len(list(tmp_path.iterdir()))
 
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
@@ -473,7 +455,7 @@ class TestCrossValidationReportPayload:
         "ignore:The default of observed=False is deprecated.*:FutureWarning",
     )
     @mark.respx()
-    def test_medias(self, payload):
+    def test_medias(self, tmp_path, payload):
         assert list(map(type, payload.medias)) == [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
@@ -494,6 +476,9 @@ class TestCrossValidationReportPayload:
             TableReport,
         ]
 
+        # ensure that there is no residual file
+        assert not len(list(tmp_path.iterdir()))
+
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
         # `small_cv_binary_classification`, raised by `scikit-learn`
@@ -504,7 +489,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.respx()
     def test_model_dump_classification(self, small_cv_binary_classification, payload):
-        _, checksum = serialize(small_cv_binary_classification)
+        checksum = f"skore-CrossValidationReport-{small_cv_binary_classification.id}"
 
         payload_dict = payload.model_dump()
 
