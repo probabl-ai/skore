@@ -44,9 +44,10 @@ def test_repeated_display_plot_calls_do_not_keep_figures_open(pyplot, tmp_path):
         y_test=y_test,
     )
     display = report.metrics.precision_recall()
+    figures_before = set(pyplot.get_fignums())
 
     for idx in range(25):
         fig = display.plot()
         fig.savefig(tmp_path / f"precision-recall-{idx}.svg")
 
-    assert pyplot.get_fignums() == []
+    assert set(pyplot.get_fignums()) == figures_before
