@@ -366,19 +366,15 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : DataSource | None, optional
+        data_source : {"test", "train"}, default="test"
             The data source for the calibration curve. If None, the default data
             source is used.
+
         n_bins : int, default=5
             The number of bins to use for the calibration curve. Default is 5.
-        strategy : str, optional
+
+        strategy : {"uniform", "quantile"}, default="quantile"
             The strategy to use for binning. Default is "uniform".
-        response_method : str, optional
-            The method to use for obtaining prediction probabilities. Default is
-            "auto".
-        pos_label : int | str | None, optional
-            The label of the positive class. If None, the default positive label
-            is used.
 
         Returns
         -------
