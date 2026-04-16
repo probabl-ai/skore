@@ -17,7 +17,7 @@ def check_display_structure(
     expected_metrics,
     expected_estimator_name=None,
     expected_data_source="test",
-    expected_favorability=None,
+    expected_greater_is_better=None,
 ):
     """
     Helper function to check the structure of a MetricsSummaryDisplay.data DataFrame.
@@ -32,8 +32,8 @@ def check_display_structure(
         Expected estimator name.
     expected_data_source : str, default="test"
         Expected data source value.
-    expected_favorability : set, optional
-        Expected set of favorability indicators.
+    expected_greater_is_better : set, optional
+        Expected set of greater-is-better flags.
     """
     assert isinstance(display, MetricsSummaryDisplay)
     assert isinstance(display.data, pd.DataFrame)
@@ -48,7 +48,7 @@ def check_display_structure(
         "average",
         "output",
         "score",
-        "favorability",
+        "greater_is_better",
     }
     assert set(data["metric"]) == expected_metrics
     assert set(data["estimator_name"]) == {expected_estimator_name}
@@ -56,10 +56,10 @@ def check_display_structure(
     assert set(data["split"]) == {0, 1}
     assert pd.api.types.is_numeric_dtype(data["score"])
     assert pd.api.types.is_integer_dtype(data["split"])
-    if expected_favorability is None:
-        assert set(data["favorability"]) == {"(↗︎)", "(↘︎)"}
+    if expected_greater_is_better is None:
+        assert set(data["greater_is_better"]) == {True, False}
     else:
-        assert set(data["favorability"]) == expected_favorability
+        assert set(data["greater_is_better"]) == expected_greater_is_better
 
 
 # Tests for the happy path, with different ML tasks

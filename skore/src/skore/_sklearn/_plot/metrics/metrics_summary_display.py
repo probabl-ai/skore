@@ -24,7 +24,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         - "estimator_name"
         - "data_source": "train" or "test".
         - "score": numeric metric value (scalar).
-        - "favorability": "(↗︎)", "(↘︎)" or "".
+        - "greater_is_better": True, False or None.
 
         Depending on the metric shape and report type, rows may also contain:
         - "label": class label for per-class classification metrics.
@@ -48,6 +48,21 @@ class MetricsSummaryDisplay(DisplayMixin):
     @property
     def data(self):
         return rows_to_dataframe(self.rows)
+
+    @staticmethod
+    def _to_favorability_icon(
+        greater_is_better: pd.Series | None,
+        *,
+        index: pd.Index,
+    ) -> pd.Series:
+        if greater_is_better is None:
+            return pd.Series("", index=index, dtype="object")
+
+        return (
+            greater_is_better.map({True: "(↗︎)", False: "(↘︎)"})
+            .fillna("")
+            .astype("object")
+        )
 
     @staticmethod
     def _concatenate(
@@ -84,6 +99,15 @@ class MetricsSummaryDisplay(DisplayMixin):
     ) -> pd.DataFrame:
         """Process estimator report data into a formatted dataframe."""
         df = data.copy()
+        favorability_col = MetricsSummaryDisplay._to_favorability_icon(
+            df["greater_is_better"] if "greater_is_better" in df.columns else None,
+            index=df.index,
+        )
+
+        df = df.drop(columns="greater_is_better", errors="ignore")
+        if favorability:
+            df["favorability"] = favorability_col
+
         df = df.dropna(axis="columns", how="all")
 
         for col in df.columns.intersection(["label", "output", "average"]):
@@ -96,7 +120,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         df = df.set_index(index)
 
         if not favorability:
-            df = df.drop(columns="favorability")
+            df = df.drop(columns="favorability", errors="ignore")
         else:
             # Put favorability at the end
             df = df[

@@ -201,7 +201,7 @@ class TestSummarizeIntegration:
         assert len(display.data) == 1
         row = display.data.iloc[0]
         assert row["metric"] == "Business Loss"
-        assert row["favorability"] == "(↘︎)"
+        assert not row["greater_is_better"]
 
     def test_summarize_with_mixed_metrics(self, binary_classification_report):
         """Test summarize with both built-in and custom metrics."""
@@ -530,7 +530,7 @@ class TestStringScorerNames:
         assert metrics_after - metrics_before == {"F1"}
 
     def test_neg_scorer(self, regression_report):
-        """Test that neg_* scorers have correct sign, favorability, and display name."""
+        """Test that neg_* scorers have correct sign, direction, and display name."""
         report = regression_report
 
         report.metrics.add(get_scorer("neg_mean_squared_error"))
@@ -542,7 +542,7 @@ class TestStringScorerNames:
         row = display.data.iloc[0]
 
         assert row["score"] >= 0
-        assert row["favorability"] == "(↘︎)"
+        assert not row["greater_is_better"]
         assert not row["metric"].lower().startswith("neg")
 
     def test_without_neg_prefix(self, regression_report):
@@ -599,12 +599,12 @@ class TestMetric:
         )
 
     def test_greater_is_better_none(self):
-        """Test icon when greater_is_better is None."""
+        """Test that the metric stores an undefined direction when applicable."""
         m = Metric(name="test", greater_is_better=None)
-        assert m.icon == ""
+        assert m.greater_is_better is None
 
         m = Metric(name="test", greater_is_better=True)
-        assert m.icon == "(↗︎)"
+        assert m.greater_is_better is True
 
 
 class TestSerialization:

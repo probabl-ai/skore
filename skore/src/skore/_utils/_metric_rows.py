@@ -30,7 +30,7 @@ def metric_score_to_rows(
         The metric score.
 
     metric : Metric
-        The metric instance (provides ``verbose_name``, ``icon``,
+        The metric instance (provides ``verbose_name``, ``greater_is_better``,
         and default ``kwargs``).
 
     ml_task : str
@@ -55,7 +55,7 @@ def metric_score_to_rows(
         "metric": metric.verbose_name,
         "estimator_name": estimator_name,
         "data_source": data_source,
-        "favorability": metric.icon,
+        "greater_is_better": metric.greater_is_better,
         "label": None,
         "average": None,
         "output": None,
@@ -78,6 +78,9 @@ def metric_score_to_rows(
 def rows_to_dataframe(rows: list[dict]) -> pd.DataFrame:
     """Convert display rows to a DataFrame, preserving nullable dtypes."""
     data = pd.DataFrame(rows)
+
+    if "greater_is_better" in data.columns:
+        data["greater_is_better"] = data["greater_is_better"].astype(pd.BooleanDtype())
 
     if any(isinstance(r["label"], bool) for r in rows):
         data["label"] = data["label"].astype(pd.BooleanDtype())
