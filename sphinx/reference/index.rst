@@ -37,8 +37,6 @@ ML Assistance
      - Evaluate one or more estimators on the given data.
    * - :func:`compare`
      - Compare pre-existing reports with a :class:`~skore.ComparisonReport`
-   * - :func:`diagnose`
-     - Run checks and return a diagnostic with detected issues.
    * - :func:`train_test_split`
      - Split arrays or matrices into random train and test subsets
    * - :class:`TrainTestSplit`
