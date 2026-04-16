@@ -203,3 +203,6 @@ skore-mlflow-project/LICENSE
 
 # uv
 uv.lock
+
+# mlflow
+mlflow.db

@@ -1,10 +1,8 @@
 import numbers
-from collections.abc import Callable
 from typing import Any, Literal
 
 import pandas as pd
 from joblib import Parallel
-from sklearn.metrics import make_scorer
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -20,6 +18,7 @@ from skore._sklearn._plot import (
 from skore._sklearn.types import Aggregate, MetricLike
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
+from skore._utils._metric_rows import metric_score_to_rows, rows_to_dataframe
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
@@ -39,9 +38,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
-        metric_kwargs: dict[str, Any] | None = None,
-        response_method: str | list[str] | None = None,
+        metric: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -53,35 +50,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
 
-        metric : str, callable, scorer, or list of such instances or dict of such \
-            instances, default=None
-            The metric(s) to report. The possible values are:
-
-            - if a string, either one of the built-in metrics or a scikit-learn scorer
-              name. You can get the possible list of string using
-              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
-              the built-in metrics or the scikit-learn scorers, respectively.
-            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
-              first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `metric_kwargs`. No favorability indicator can
-              be displayed in this case.
-            - if the callable API is too restrictive (e.g. need to pass
-              same parameter name with different values), you can use scikit-learn
-              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
-              the metric favorability will only be displayed if it is given explicitly
-              via `make_scorer`'s `greater_is_better` parameter.
-            - if a dict, the keys are used as metric names and the values are the
-              metric functions (strings, callables, or scorers as described above).
-            - if a list, each element can be any of the above types (strings, callables,
-              scorers).
-
-        metric_kwargs : dict, default=None
-            The keyword arguments to pass to the metric functions.
-
-        response_method : {"predict", "predict_proba", "predict_log_proba", \
-            "decision_function"} or list of such str, default=None
-            The estimator's method to be invoked to get the predictions. Only necessary
-            for custom metrics.
+        metric : str or list of str or None, default=None
+            The metrics to report, from the list of registered metrics. None means show
+            all registered metrics. To add a custom metric, see :meth:`add`.
 
         Returns
         -------
@@ -125,8 +96,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     delayed(report.metrics.summarize)(
                         data_source=data_source,
                         metric=metric,
-                        metric_kwargs=metric_kwargs,
-                        response_method=response_method,
                     )
                     for report in self._parent.estimator_reports_
                 ),
@@ -145,6 +114,64 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             ),
             report_type="cross-validation",
         )
+
+    def add(
+        self,
+        metric: MetricLike,
+        *,
+        name: str | None = None,
+        response_method: str | list[str] = "predict",
+        greater_is_better: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Add a custom metric to be included in :meth:`summarize` by default.
+
+        Parameters
+        ----------
+        metric : str, sklearn scorer, or callable
+            The metric to add.
+
+        name : str, optional
+            Custom name for the metric. If not provided, the name is inferred
+            from the metric (e.g. the function's ``__name__``).
+
+        response_method : str or list of str, default="predict"
+            Estimator method to get predictions (only for callables).
+
+        greater_is_better : bool, default=True
+            Whether higher values are better (only for callables).
+
+        **kwargs : Any
+            Default keyword arguments passed to the score function at call
+            time.  Only used when *metric* is a plain callable.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.metrics import make_scorer, mean_absolute_error
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=2, pos_label=1)
+        >>> report.metrics.add(
+        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ... )
+        >>> report.metrics.summarize().frame()
+                            LogisticRegression
+                                mean       std
+        Metric
+        ...
+        Mean Absolute Error      ...       ...
+        """
+        for report in self._parent.estimator_reports_:
+            report.metrics.add(
+                metric,
+                name=name,
+                response_method=response_method,
+                greater_is_better=greater_is_better,
+                **kwargs,
+            )
 
     def timings(
         self,
@@ -202,6 +229,37 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         return timings
 
+    def _metric(
+        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+    ) -> MetricsSummaryDisplay:
+        """Compute a single metric across cross-validation splits.
+
+        This helper allows passing kwargs to the sub-reports, unlike :meth:`summarize`.
+        """
+        reports = self._parent.estimator_reports_
+        metric = reports[0]._metric_registry[metric_name]
+
+        rows: list[dict] = []
+        for split_idx, report in enumerate(reports):
+            score = getattr(report.metrics, metric_name)(
+                data_source=data_source, **kwargs
+            )
+            split_rows = metric_score_to_rows(
+                score,
+                metric=metric,
+                ml_task=report._ml_task,
+                data_source=data_source,
+                estimator_name=report.estimator_name_,
+                pos_label=report.pos_label,
+                kwargs=kwargs or None,
+            )
+            for r in split_rows:
+                r["split"] = split_idx
+            rows.extend(split_rows)
+
+        data = rows_to_dataframe(rows)
+        return MetricsSummaryDisplay(data=data, report_type="cross-validation")
+
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(
         self,
@@ -246,7 +304,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Metric
         Accuracy           0.94...  0.00...
         """
-        return self.summarize(metric=["accuracy"], data_source=data_source).frame(
+        return self._metric("accuracy", data_source=data_source).frame(
             aggregate=aggregate, flat_index=flat_index
         )
 
@@ -324,10 +382,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Precision 0                         0.93...  0.04...
                   1                         0.94...  0.02...
         """
-        return self.summarize(
-            metric=["precision"],
-            data_source=data_source,
-            metric_kwargs={"average": average},
+        return self._metric(
+            "precision", data_source=data_source, average=average
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "recall"))
@@ -405,13 +461,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Recall 0                         0.91...  0.04...
                1                         0.96...  0.02...
         """
-        return self.summarize(
-            metric=["recall"],
-            data_source=data_source,
-            metric_kwargs={"average": average},
-        ).frame(
-            aggregate=aggregate,
-            flat_index=flat_index,
+        return self._metric("recall", data_source=data_source, average=average).frame(
+            aggregate=aggregate, flat_index=flat_index
         )
 
     @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
@@ -458,10 +509,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Metric
         Brier score            0.04...  0.00...
         """
-        return self.summarize(
-            metric=["brier_score"],
-            data_source=data_source,
-        ).frame(aggregate=aggregate, flat_index=flat_index)
+        return self._metric("brier_score", data_source=data_source).frame(
+            aggregate=aggregate, flat_index=flat_index
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "roc_auc"))
     def roc_auc(
@@ -542,10 +592,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Metric
         ROC AUC           0.98...  0.00...
         """
-        return self.summarize(
-            metric=["roc_auc"],
-            data_source=data_source,
-            metric_kwargs={"average": average, "multi_class": multi_class},
+        return self._metric(
+            "roc_auc", data_source=data_source, average=average, multi_class=multi_class
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
@@ -592,8 +640,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Metric
         Log loss            0.14...  0.03...
         """
-        return self.summarize(
-            metric=["log_loss"],
+        return self._metric(
+            "log_loss",
             data_source=data_source,
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
@@ -652,10 +700,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Metric
         R²      0.37...  0.02...
         """
-        return self.summarize(
-            metric=["r2"],
-            data_source=data_source,
-            metric_kwargs={"multioutput": multioutput},
+        return self._metric(
+            "r2", data_source=data_source, multioutput=multioutput
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     @available_if(_check_estimator_report_has_method("metrics", "rmse"))
@@ -713,100 +759,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Metric
         RMSE    60.7...  1.0...
         """
-        return self.summarize(
-            metric=["rmse"],
-            data_source=data_source,
-            metric_kwargs={"multioutput": multioutput},
-        ).frame(aggregate=aggregate, flat_index=flat_index)
-
-    def custom_metric(
-        self,
-        metric_function: Callable,
-        response_method: str | list[str],
-        *,
-        metric_name: str | None = None,
-        data_source: DataSource = "test",
-        aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
-        **kwargs,
-    ) -> pd.DataFrame:
-        """Compute a custom metric.
-
-        It brings some flexibility to compute any desired metric. However, we need to
-        follow some rules:
-
-        - `metric_function` should take `y_true` and `y_pred` as the first two
-          positional arguments.
-        - `response_method` corresponds to the estimator's method to be invoked to get
-          the predictions. It can be a string or a list of strings to defined in which
-          order the methods should be invoked.
-
-        Parameters
-        ----------
-        metric_function : callable
-            The metric function to be computed. The expected signature is
-            `metric_function(y_true, y_pred, **kwargs)`.
-
-        response_method : {"predict", "predict_proba", "predict_log_proba", \
-            "decision_function"} or list of such str
-            The estimator's method to be invoked to get the predictions.
-
-        metric_name : str, default=None
-            The name of the metric. If not provided, it will be inferred from the
-            metric function.
-
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
-            Function to aggregate the scores across the cross-validation splits.
-            None will return the scores for each split.
-
-        flat_index : bool, default=True
-            Whether to return a flat index or a multi-index.
-
-        **kwargs : dict
-            Any additional keyword arguments to be passed to the metric function.
-
-        Returns
-        -------
-        pd.DataFrame
-            The custom metric.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.metrics import mean_absolute_error
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=2)
-        >>> report.metrics.custom_metric(
-        ...     metric_function=mean_absolute_error,
-        ...     response_method="predict",
-        ...     metric_name="MAE",
-        ... )
-                Ridge
-                    mean       std
-        Metric
-        MAE     51.4...  1.7...
-        """
-        # create a scorer with `greater_is_better=True` to not alter the output of
-        # `metric_function`
-        scorer = make_scorer(
-            metric_function,
-            greater_is_better=True,
-            response_method=response_method,
-            **kwargs,
-        )
-        metric = {metric_name: scorer} if metric_name is not None else [scorer]
-        return self.summarize(
-            metric=metric,
-            data_source=data_source,
+        return self._metric(
+            "rmse", data_source=data_source, multioutput=multioutput
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     ####################################################################################

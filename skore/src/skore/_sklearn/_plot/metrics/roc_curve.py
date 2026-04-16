@@ -11,6 +11,7 @@ from sklearn.metrics import auc, roc_curve
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _build_custom_legend_with_stats,
+    _check_label,
     _ClassifierDisplayMixin,
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
@@ -19,11 +20,14 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
 )
 from skore._sklearn.types import (
+    _DEFAULT,
     DataSource,
     MLTask,
     PositiveLabel,
     ReportType,
 )
+
+Label = int | float | bool | str
 
 
 class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
@@ -54,8 +58,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `label`
         - `roc_auc`.
 
-    pos_label : int, float, bool, str or None
-        The class considered as positive. Only meaningful for binary classification.
+    report_pos_label : int, float, bool, str or None
+        Default positive label used when `plot(label=...)` is not specified.
 
     data_source : {"train", "test", "both"}
         The data source used to compute the ROC curve.
@@ -102,17 +106,21 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         roc_curve: DataFrame,
         roc_auc: DataFrame,
-        pos_label: PositiveLabel | None,
+        report_pos_label: PositiveLabel,
         data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
         self.roc_curve = roc_curve
         self.roc_auc = roc_auc
-        self.pos_label = pos_label
+        self.report_pos_label = report_pos_label
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
+
+    @property
+    def labels(self):
+        return self.roc_curve["label"].cat.categories.to_list()
 
     @classmethod
     def _concatenate(
@@ -134,7 +142,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 [display.roc_auc for display in child_displays],
                 column_data,
             ),
-            pos_label=first_display.pos_label,
+            report_pos_label=first_display.report_pos_label,
             data_source=data_source or first_display.data_source,
             ml_task=first_display.ml_task,
             report_type=report_type,
@@ -148,6 +156,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         | None = "auto",
         plot_chance_level: bool = True,
         despine: bool = True,
+        label: PositiveLabel = _DEFAULT,
     ) -> Figure:
         """Plot visualization.
 
@@ -167,7 +176,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - "data_source": one subplot per data source \
               (:class:`~skore.EstimatorReport` with both data sources only)
             - None: no subplots (Not available for comparison in classification \
-                with no specified pos_label)
+                with no specified label)
 
         plot_chance_level : bool, default=True
             Whether to plot the chance level.
@@ -175,6 +184,11 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
 
+        label : int, float, bool, str or None, default=report pos_label
+            The class whose curve to select. We always compute one curve per class,
+            in a one-vs-rest fashion in multiclass classification and by alternating
+            the positive class in binary classification. This lets you display only
+            the curve of the desired class. Use `None` to show them all.
 
         Returns
         -------
@@ -193,27 +207,29 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display.set_style(relplot_kwargs={"color": "tab:red"})
         >>> display.plot()
         """
+        label = _check_label(self.labels, label, self.report_pos_label)
         return self._plot(
             subplot_by=subplot_by,
             plot_chance_level=plot_chance_level,
             despine=despine,
+            label=label,
         )
 
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: Literal["auto", "label", "estimator", "data_source"]
-        | None = "auto",
-        plot_chance_level: bool = True,
-        despine: bool = True,
+        subplot_by: Literal["auto", "label", "estimator", "data_source"] | None,
+        plot_chance_level: bool,
+        despine: bool,
+        label: PositiveLabel,
     ) -> Figure:
         """Matplotlib implementation of the `plot` method."""
-        plot_data = self.frame(with_roc_auc=True)
+        plot_data = self.frame(with_roc_auc=True, label=label)
 
         col, hue, style = _get_curve_plot_columns(
             plot_data=plot_data,
             report_type=self.report_type,
-            pos_label=self.pos_label,
+            label=label,
             data_source=self.data_source,
             subplot_by=subplot_by,
         )
@@ -284,10 +300,14 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 chance_level_label="Chance level (AUC = 0.5)",
             )
 
-        if self.ml_task == "binary-classification" and self.pos_label is not None:
-            info_pos_label = f"Positive label: {self.pos_label}"
+        if label is not None:
+            info_label = (
+                f"Positive label: {label}"
+                if self.ml_task == "binary-classification"
+                else f"Label: {label}"
+            )
         else:
-            info_pos_label = None
+            info_label = None
 
         info_data_source = (
             f"Data source: {self.data_source.capitalize()} set"
@@ -298,9 +318,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         title = "ROC Curve"
         if "comparison" not in self.report_type:
             title += f" for {self.roc_curve['estimator'].cat.categories.item()}"
-        figure.suptitle(
-            "\n".join(filter(None, [title, info_pos_label, info_data_source]))
-        )
+        figure.suptitle("\n".join(filter(None, [title, info_label, info_data_source])))
 
         for ax in axes:
             ax.set(
@@ -324,7 +342,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource,
-        pos_label: PositiveLabel | None = None,
+        report_pos_label: PositiveLabel = None,
         drop_intermediate: bool = True,
     ) -> "RocCurveDisplay":
         """Private method to create a RocCurveDisplay from predictions.
@@ -334,10 +352,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         y_true : array-like of shape (n_samples,)
             True binary labels in binary classification.
 
-        y_pred : array-like of shape (n_samples,) or (n_samples, n_classes)
-            Target scores, can either be probability estimates of the positive class,
-            confidence values, or non-thresholded measure of decisions (as returned by
-            "decision_function" on some classifiers).
+        y_pred : array-like of shape (n_samples, n_classes)
+            Target scores, can either be probability estimates or non-thresholded
+            measure of decisions (as returned by "decision_function").
 
         report_type : {"comparison-cross-validation", "comparison-estimator", \
                 "cross-validation", "estimator"}
@@ -355,10 +372,6 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         data_source : {"train", "test"}
             The data source used to compute the ROC curve.
 
-        pos_label : int, float, bool or str, default=None
-            The class considered as the positive class when computing the
-            precision and recall metrics.
-
         drop_intermediate : bool, default=True
             Whether to drop intermediate points with identical value.
 
@@ -367,52 +380,44 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         display : RocCurveDisplay
             Object that stores computed values.
         """
-        if pos_label is None:
-            classes = estimator.classes_
-            # OvR fashion to collect fpr, tpr, and roc_auc
-            y_true_onehot = _one_hot_encode(y_true, classes)
-            y_pred_arr = cast(NDArray, y_pred)
+        classes = estimator.classes_.tolist()
+        y_true_onehot = _one_hot_encode(y_true, classes)
+        y_pred_arr = cast(NDArray, y_pred)
 
-            displays = [
-                cls._compute_data_for_display(
-                    y_true=y_true_onehot[:, class_idx],
-                    y_pred=y_pred_arr[:, class_idx],
-                    report_type=report_type,
-                    estimator=estimator,
-                    estimator_name=estimator_name,
-                    ml_task="binary-classification",
-                    data_source=data_source,
-                    pos_label=1,
-                    drop_intermediate=drop_intermediate,
-                )
-                for class_idx in range(len(classes))
-            ]
-
-            display = cls._concatenate(
-                displays,
-                report_type=report_type,
-                column_data={"label": classes.tolist()},
+        curve_dfs = []
+        auc_dfs = []
+        for class_idx, label in enumerate(classes):
+            curve_df, auc_df = cls._compute_data_ovr(
+                y_true=y_true_onehot[:, class_idx],
+                y_pred=y_pred_arr[:, class_idx],
+                drop_intermediate=drop_intermediate,
+                # metadata:
+                estimator=estimator_name,
+                data_source=data_source,
+                split=None,
+                label=label,
             )
-            display.ml_task = ml_task
-            display.pos_label = None
-            return display
+            curve_dfs.append(curve_df)
+            auc_dfs.append(auc_df)
 
-        # binary-classification with pos_label set:
+        return cls(
+            roc_curve=_concat_frames_with_column_data(curve_dfs),
+            roc_auc=_concat_frames_with_column_data(auc_dfs),
+            report_pos_label=report_pos_label,
+            data_source=data_source,
+            ml_task=ml_task,
+            report_type=report_type,
+        )
 
+    @staticmethod
+    def _compute_data_ovr(y_true, y_pred, drop_intermediate, **metadata):
         fpr, tpr, thresholds = roc_curve(
             y_true,
             y_pred,
-            pos_label=pos_label,
+            pos_label=1,
             drop_intermediate=drop_intermediate,
         )
         roc_auc = auc(fpr, tpr)
-
-        metadata = {
-            "estimator": estimator_name,
-            "data_source": data_source,
-            "split": None,
-            "label": pos_label,
-        }
 
         curve_data = {
             **metadata,
@@ -427,22 +432,25 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         auc_df = DataFrame.from_records([{**metadata, "roc_auc": roc_auc}])
         auc_df = auc_df.astype(dict.fromkeys(metadata, "category"))
 
-        return cls(
-            roc_curve=DataFrame(curve_data),
-            roc_auc=auc_df,
-            pos_label=pos_label,
-            data_source=data_source,
-            ml_task=ml_task,
-            report_type=report_type,
-        )
+        return DataFrame(curve_data), auc_df
 
-    def frame(self, with_roc_auc: bool = False) -> DataFrame:
+    def frame(
+        self,
+        with_roc_auc: bool = False,
+        label: PositiveLabel = _DEFAULT,
+    ) -> DataFrame:
         """Get the data used to create the ROC curve plot.
 
         Parameters
         ----------
         with_roc_auc : bool, default=False
             Whether to include ROC AUC scores in the output DataFrame.
+
+        label : int, float, bool, str or None, default=report pos_label
+            The class whose curve to select. We always compute one curve per class,
+            in a one-vs-rest fashion in multiclass classification and by alternating
+            the positive class in binary classification. This lets you display only
+            the curve of the desired class. Use `None` to show them all.
 
         Returns
         -------
@@ -470,6 +478,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display = report.metrics.roc()
         >>> df = display.frame()
         """
+        label = _check_label(self.labels, label, self.report_pos_label)
+
         if with_roc_auc:  # noqa: SIM108
             # The merge between the ROC curve and the ROC AUC is done without
             # specifying the columns to merge on, hence done on all columns that are
@@ -496,7 +506,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if self.data_source == "both":
             indexing_columns += ["data_source"]
 
-        if self.pos_label is not None:
+        if label is not None:
+            df = df.query("label == @label").reset_index(drop=True)
             columns = indexing_columns + statistical_columns
         else:
             columns = indexing_columns + ["label"] + statistical_columns

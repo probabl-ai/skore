@@ -154,6 +154,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
             ):
                 payload = media_cls(project=self.project, report=self.report)
 
+                # NOTE: Accessing `payload.checksum` lazily uploads the artifact.
                 if payload.checksum is not None:
                     payloads.append(payload)
 
