@@ -36,17 +36,6 @@ class CalibrationDisplay(DisplayMixin):
             "comparison-cross-validation"}
         Report type from which the display is created.
 
-    Attributes
-    ----------
-    facet_ : seaborn FacetGrid
-        FacetGrid containing the coefficients.
-
-    figure_ : matplotlib Figure
-        Figure containing the plot.
-
-    ax_ : ndarray of matplotlib Axes
-        Array of matplotlib Axes with the different matplotlib axis.
-
     Examples
     --------
     >>> from sklearn.datasets import make_classification
