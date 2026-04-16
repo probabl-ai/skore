@@ -17,6 +17,7 @@ These functions and classes build upon scikit-learn's functionality.
 
     evaluate
     compare
+    diagnose
     train_test_split
     TrainTestSplit
 
