@@ -50,13 +50,17 @@ class CalibrationDisplay(DisplayMixin):
     >>> report = EstimatorReport(LogisticRegression(), **split_data)
     >>> display = report.inspection.calibration_curve(n_bins=5, strategy="uniform")
     >>> display.frame()
-                predicted_probability	fraction_of_positives	data_source	pos_label
-        0	        0.049821	            0.067349	            test	   1
-        1	        0.293844	            0.346451	            test	   1
-        2	        0.501131	            0.553564	            test	   1
-        3	        0.707339	            0.726359	            test	   1
-        4	        0.944889	            0.936064	            test	   1
-
+        predicted_probability  fraction_of_positives data_source  label
+    0               0.058363               0.059952        test      0
+    1               0.292843               0.293697        test      0
+    2               0.499930               0.473191        test      0
+    3               0.709112               0.712788        test      0
+    4               0.941642               0.945545        test      0
+    5               0.058358               0.054455        test      1
+    6               0.290888               0.287212        test      1
+    7               0.500070               0.526809        test      1
+    8               0.707157               0.706303        test      1
+    9               0.941637               0.940048        test      1
     """
 
     _default_line_kwargs = {"marker": "s", "linestyle": "-", "color": "blue"}
