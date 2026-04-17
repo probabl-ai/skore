@@ -26,7 +26,7 @@ execnet==2.1.2
     # via pytest-xdist
 executing==2.2.1
     # via stack-data
-filelock==3.25.2
+filelock==3.28.0
     # via
     #   python-discovery
     #   virtualenv
@@ -98,7 +98,7 @@ numpy-typing-compat==20251206.2.4
     # via optype
 optype[numpy]==0.17.0
     # via scipy-stubs
-packaging==26.0
+packaging==26.1
     # via
     #   matplotlib
     #   plotly
@@ -178,7 +178,7 @@ pyyaml==6.0.3
     # via pre-commit
 requests==2.33.1
     # via skrub
-rich==14.3.3
+rich==15.0.0
     # via
     #   skore (skore/pyproject.toml)
     #   skore-local-project
@@ -191,7 +191,7 @@ scipy==1.17.1
     # via
     #   scikit-learn
     #   skrub
-scipy-stubs==1.17.1.3
+scipy-stubs==1.17.1.4
     # via skore (skore/pyproject.toml)
 seaborn==0.13.2
     # via skore (skore/pyproject.toml)
@@ -214,7 +214,7 @@ typing-extensions==4.15.0
     # via anywidget
 urllib3==2.6.3
     # via requests
-virtualenv==21.2.1
+virtualenv==21.2.4
     # via pre-commit
 wcwidth==0.6.0
     # via prompt-toolkit
