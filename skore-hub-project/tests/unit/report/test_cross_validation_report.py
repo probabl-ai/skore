@@ -1,4 +1,5 @@
 from io import BytesIO
+from unittest.mock import Mock
 
 from joblib import dump, hash
 from pydantic import ValidationError
@@ -16,6 +17,7 @@ from sklearn.model_selection import (
 )
 from skore import CrossValidationReport, EstimatorReport
 
+from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.artifact.media import (
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
@@ -339,53 +341,50 @@ class TestCrossValidationReportPayload:
         # `small_cv_binary_classification`, raised by `scikit-learn`
         "ignore:Precision is ill-defined*:sklearn.exceptions.UndefinedMetricWarning"
     )
-    @mark.respx()
-    def test_estimators(self, project, payload, upload_mock):
-        assert len(payload.estimators) == len(payload.report.estimator_reports_)
+    @mark.respx(assert_all_called=False)
+    def test_estimators(self, project, small_cv_binary_classification, payload):
+        assert len(payload.estimators) == len(
+            small_cv_binary_classification.estimator_reports_
+        )
 
         for i, estimator in enumerate(payload.estimators):
             # Ensure payload is well constructed
             assert isinstance(estimator, EstimatorReportPayload)
             assert estimator.project == project
-            assert estimator.report == payload.report.estimator_reports_[i]
-
-            # ensure `upload` is well called
-            estimator_checksum = f"skore-EstimatorReport-{estimator.report.id}"
-
-            estimator.model_dump()
-
-            assert upload_mock.called
-            assert not upload_mock.call_args.args
-            assert upload_mock.call_args.kwargs == {
-                "project": project,
-                "filepath": estimator.pickle.filepath,
-                "checksum": estimator_checksum,
-                "content_type": "application/octet-stream",
-            }
-
-            upload_mock.reset_mock()
+            assert (
+                estimator.report == small_cv_binary_classification.estimator_reports_[i]
+            )
 
     @mark.respx()
-    def test_pickle(
-        self, tmp_path, small_cv_binary_classification, project, payload, upload_mock
-    ):
-        checksum = f"skore-CrossValidationReport-{small_cv_binary_classification.id}"
+    def test_pickle(self, tmp_path, payload, project, small_cv_binary_classification):
+        pickle = payload.pickle
 
-        # Ensure checksum is well constructed
-        assert payload.pickle.checksum == checksum
-
-        # ensure `upload` is well called
-        assert upload_mock.called
-        assert not upload_mock.call_args.args
-        assert upload_mock.call_args.kwargs == {
-            "project": project,
-            "filepath": payload.pickle.filepath,
-            "checksum": checksum,
-            "content_type": "application/octet-stream",
-        }
+        assert type(pickle) is Pickle
+        assert pickle.project == project
+        assert pickle.report == small_cv_binary_classification
+        assert pickle.computed
+        assert pickle.uploaded
 
         # ensure that there is no residual file
         assert not len(list(tmp_path.iterdir()))
+
+    @mark.respx(assert_all_called=False)
+    def test_pickle_uploaded(
+        self, monkeypatch, payload, project, small_cv_binary_classification
+    ):
+        compute, upload = Mock(), Mock()
+
+        monkeypatch.setattr("skore_hub_project.artifact.pickle.Pickle.compute", compute)
+        monkeypatch.setattr("skore_hub_project.artifact.pickle.Pickle.upload", upload)
+        monkeypatch.setattr("skore_hub_project.artifact.pickle.Pickle.uploaded", True)
+
+        pickle = payload.pickle
+
+        assert type(pickle) is Pickle
+        assert pickle.project == project
+        assert pickle.report == small_cv_binary_classification
+        assert not compute.called
+        assert not upload.called
 
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
@@ -455,8 +454,8 @@ class TestCrossValidationReportPayload:
         "ignore:The default of observed=False is deprecated.*:FutureWarning",
     )
     @mark.respx()
-    def test_medias(self, tmp_path, payload):
-        assert list(map(type, payload.medias)) == [
+    def test_medias(self, tmp_path, payload, project, small_cv_binary_classification):
+        types = [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
             ConfusionMatrixSVGTest,
@@ -476,8 +475,100 @@ class TestCrossValidationReportPayload:
             TableReport,
         ]
 
+        medias = payload.medias
+
+        assert isinstance(medias, list)
+        assert len(medias) == len(types)
+
+        for i, media in enumerate(medias):
+            assert type(media) is types[i]
+            assert media.project == project
+            assert media.report == small_cv_binary_classification
+            assert media.computed
+            assert media.uploaded
+
         # ensure that there is no residual file
         assert not len(list(tmp_path.iterdir()))
+
+    @mark.respx(assert_all_called=False)
+    def test_medias_none(self, monkeypatch, payload):
+        types = [
+            ConfusionMatrixDataFrameTest,
+            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixSVGTest,
+            ConfusionMatrixSVGTrain,
+            EstimatorHtmlRepr,
+            ImpurityDecrease,
+            PermutationImportanceTest,
+            PermutationImportanceTrain,
+            PrecisionRecallDataFrameTest,
+            PrecisionRecallDataFrameTrain,
+            PrecisionRecallSVGTest,
+            PrecisionRecallSVGTrain,
+            RocDataFrameTest,
+            RocDataFrameTrain,
+            RocSVGTest,
+            RocSVGTrain,
+            TableReport,
+        ]
+
+        compute, upload = Mock(), Mock()
+
+        for cls in types:
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.checksum", None)
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.compute", compute)
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.upload", upload)
+
+        medias = payload.medias
+
+        assert isinstance(medias, list)
+        assert not medias
+        assert not compute.called
+        assert not upload.called
+
+    @mark.respx(assert_all_called=False)
+    def test_medias_uploaded(
+        self, monkeypatch, payload, project, small_cv_binary_classification
+    ):
+        types = [
+            ConfusionMatrixDataFrameTest,
+            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixSVGTest,
+            ConfusionMatrixSVGTrain,
+            EstimatorHtmlRepr,
+            ImpurityDecrease,
+            PermutationImportanceTest,
+            PermutationImportanceTrain,
+            PrecisionRecallDataFrameTest,
+            PrecisionRecallDataFrameTrain,
+            PrecisionRecallSVGTest,
+            PrecisionRecallSVGTrain,
+            RocDataFrameTest,
+            RocDataFrameTrain,
+            RocSVGTest,
+            RocSVGTrain,
+            TableReport,
+        ]
+
+        compute, upload = Mock(), Mock()
+
+        for cls in types:
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.checksum", "checksum")
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.compute", compute)
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.upload", upload)
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.uploaded", True)
+
+        medias = payload.medias
+
+        assert isinstance(medias, list)
+        assert len(medias) == len(types)
+        assert not compute.called
+        assert not upload.called
+
+        for i, media in enumerate(medias):
+            assert type(media) is types[i]
+            assert media.project == project
+            assert media.report == small_cv_binary_classification
 
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
