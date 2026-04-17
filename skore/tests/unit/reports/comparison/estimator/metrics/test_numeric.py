@@ -129,6 +129,28 @@ def test_binary_classification(
                 index=pd.Index(["R²"], name="Metric"),
             ),
         ),
+        (
+            "mae",
+            pd.DataFrame(
+                [[79.536267, 79.536267]],
+                columns=pd.Index(
+                    ["DummyRegressor_1", "DummyRegressor_2"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["MAE"], name="Metric"),
+            ),
+        ),
+        (
+            "mape",
+            pd.DataFrame(
+                [[1.012348, 1.012348]],
+                columns=pd.Index(
+                    ["DummyRegressor_1", "DummyRegressor_2"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["MAPE"], name="Metric"),
+            ),
+        ),
     ],
 )
 def test_regression(metric_name, expected, comparison_estimator_reports_regression):
@@ -141,28 +163,6 @@ def test_regression(metric_name, expected, comparison_estimator_reports_regressi
     # ensure metric is valid even from the cache
     result = getattr(comp.metrics, metric_name)()
     pd.testing.assert_frame_equal(result, expected, check_index_type=False)
-
-
-@pytest.mark.parametrize(
-    "metric_name, verbose_name", [("mae", "MAE"), ("mape", "MAPE")]
-)
-def test_regression_mae_map(
-    metric_name, verbose_name, comparison_estimator_reports_regression
-):
-    """Check that MAE and MAP metrics work for regression comparison reports."""
-    comp = comparison_estimator_reports_regression
-    result = getattr(comp.metrics, metric_name)()
-    assert isinstance(result, pd.DataFrame)
-    assert result.shape == (1, 2)
-    assert result.index.name == "Metric"
-    assert result.index[0] == verbose_name
-    assert result.columns.name == "Estimator"
-    # Both identical DummyRegressors produce the same score
-    assert result.iloc[0, 0] == result.iloc[0, 1]
-
-    # ensure metric is valid from cache
-    result_cached = getattr(comp.metrics, metric_name)()
-    pd.testing.assert_frame_equal(result, result_cached)
 
 
 def test_timings(comparison_estimator_reports_binary_classification):
