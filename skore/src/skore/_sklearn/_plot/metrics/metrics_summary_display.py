@@ -38,8 +38,6 @@ class MetricsSummaryRow(TypedDict, total=False):
         Output index for multioutput regression metrics.
     split : int, optional
         Cross-validation split index.
-    verbose_name : str, optional
-        Alternate metric label consumed by the display when present.
     """
 
     metric: str
@@ -51,7 +49,6 @@ class MetricsSummaryRow(TypedDict, total=False):
     average: str | None
     output: int | None
     split: int
-    verbose_name: str
 
 
 def metric_score_to_rows(
@@ -200,7 +197,7 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         estimator_name = df.pop("estimator_name").iloc[0]
         index = df.columns.intersection(
-            ["metric", "verbose_name", "label", "output", "average"]
+            ["metric", "label", "output", "average"]
         ).to_list()
         df = df.set_index(index)
 
@@ -215,7 +212,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         # Rename columns as well as index names
         new_columns = {
             "metric": "Metric",
-            "verbose_name": "Metric",
             "label": "Label / Average",
             "output": "Output",
             "average": "Average",

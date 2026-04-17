@@ -233,7 +233,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         reports = self._parent.estimator_reports_
         metric = reports[0]._metric_registry[metric_name]
 
-        rows: list = []
+        rows = []
         for split_idx, report in enumerate(reports):
             score = getattr(report.metrics, metric_name)(
                 data_source=data_source, **kwargs
