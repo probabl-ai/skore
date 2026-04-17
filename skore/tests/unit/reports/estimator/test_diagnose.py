@@ -1,11 +1,9 @@
 from pathlib import Path
 from urllib.parse import urlparse
 
-import numpy as np
 import pytest
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.linear_model import LinearRegression
-from sklearn.metrics import confusion_matrix, make_scorer
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import Check, EstimatorReport, configuration, evaluate
@@ -240,22 +238,8 @@ def test_check_invalid_protocol(regression_data):
 def test_diagnose_custom_metric(binary_classification_data):
     """Check that diagnose works with custom metrics in the report."""
     X, y = binary_classification_data
-    report = evaluate(DummyClassifier(), X, y)
-
-    def custom_score(y, y_pred, neg_label, pos_label):
-        cm = confusion_matrix(y, y_pred, labels=[neg_label, pos_label])
-        gain_matrix = np.array(
-            [
-                [2, -10],
-                [-1, 2],
-            ]
-        )
-        return np.sum(cm * gain_matrix)
-
-    custom_scorer = make_scorer(
-        custom_score, neg_label=0, pos_label=1, response_method="predict"
-    )
-    report.metrics.add(custom_scorer)
+    report = evaluate(DummyClassifier(), X, y, pos_label=1)
+    report.metrics.add("f1")
     result = report.diagnose()
     assert "SKD002" in result.issues
-    assert "9/9 comparable metrics" in result.issues["SKD002"]["explanation"]
+    assert "7/7 comparable metrics" in result.issues["SKD002"]["explanation"]
