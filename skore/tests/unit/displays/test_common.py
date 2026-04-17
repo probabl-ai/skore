@@ -31,23 +31,16 @@ def test_display_protocol(pyplot, capsys, plot_func, estimator, dataset):
     assert isinstance(display, Display)
 
 
-def test_repeated_display_plot_calls_do_not_keep_figures_open(pyplot, tmp_path):
+def test_repeated_display_plot_calls_do_not_keep_figures_open(
+    pyplot, estimator_reports_binary_classification
+):
     """Repeated plotting should not accumulate pyplot-managed figures."""
 
-    X, y = make_classification(random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    report = EstimatorReport(
-        LogisticRegression(),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    report = estimator_reports_binary_classification[0]
     display = report.metrics.precision_recall()
     figures_before = set(pyplot.get_fignums())
 
-    for idx in range(25):
-        fig = display.plot()
-        fig.savefig(tmp_path / f"precision-recall-{idx}.svg")
+    for _ in range(25):
+        display.plot()
 
     assert set(pyplot.get_fignums()) == figures_before
