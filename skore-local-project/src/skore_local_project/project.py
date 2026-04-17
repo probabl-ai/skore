@@ -197,13 +197,14 @@ class Project:
                 joblib.dump(value, stream)
                 pickle_bytes = stream.getvalue()
             pickle_hash = joblib.hash(pickle_bytes)
-            state_hashes[key] = pickle_hash
-            yield pickle_hash, pickle_bytes
+            artifact_id = f"{key}_{pickle_hash}"
+            state_hashes[key] = artifact_id
+            yield artifact_id, pickle_bytes
 
         state_hashes["__report_type__"] = report._report_type
 
         with io.BytesIO() as stream:
-            joblib.dump(value, stream)
+            joblib.dump(state_hashes, stream)
             pickle_bytes = stream.getvalue()
         pickle_hash = joblib.hash(pickle_bytes)
         yield pickle_hash, pickle_bytes
@@ -278,6 +279,8 @@ class Project:
         for key, pickle_id in state_hashes.items():
             with io.BytesIO(self.__artifacts_storage[pickle_id]) as stream:
                 state[key] = joblib.load(stream)
+
+        from skore import CrossValidationReport, EstimatorReport
 
         if report_type == "estimator":
             return EstimatorReport.from_state(state)

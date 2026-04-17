@@ -279,12 +279,16 @@ class TestProject:
     def test_get(self, tmp_path, regression):
         project = Project("<project>", workspace=tmp_path)
         project.put("<key>", regression)
+        regression.cache_predictions()
         project.put("<key>", regression)
-
-        report = project.get(str(regression.id))
-
-        assert len(project._Project__artifacts_storage) == 1
         assert len(project._Project__metadata_storage) == 2
+        n_data = sum(
+            key.startswith("data_") for key in project._Project__artifacts_storage
+        )
+        assert n_data == 1
+
+        artifact_id = project.summarize()[1]["id"]
+        report = project.get(artifact_id)
         assert isinstance(report, EstimatorReport)
         assert report.estimator_name_ == regression.estimator_name_
         assert report._ml_task == regression._ml_task
