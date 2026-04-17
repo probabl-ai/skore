@@ -315,7 +315,7 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0
     # via cffi
-pydantic[email]==2.13.1
+pydantic[email]==2.13.2
     # via
     #   fastapi
     #   fastmcp
@@ -324,7 +324,7 @@ pydantic[email]==2.13.1
     #   mlflow-tracing
     #   openapi-pydantic
     #   pydantic-settings
-pydantic-core==2.46.1
+pydantic-core==2.46.2
     # via pydantic
 pydantic-settings==2.13.1
     # via mcp
@@ -414,7 +414,7 @@ rpds-py==0.30.0
     # via
     #   jsonschema
     #   referencing
-scikit-learn==1.8.0
+scikit-learn==1.5.2
     # via
     #   --override skore-mlflow-project/overrides.txt
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)

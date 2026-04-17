@@ -194,11 +194,11 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0
     # via cffi
-pydantic==2.13.1
+pydantic==2.13.2
     # via
     #   fastapi
     #   mlflow-skinny
-pydantic-core==2.46.1
+pydantic-core==2.46.2
     # via pydantic
 pydot==4.0.1
     # via skrub
@@ -249,7 +249,7 @@ rich==15.0.0
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
     #   skore
     #   skore-local-project
-scikit-learn==1.8.0
+scikit-learn==1.5.2
     # via
     #   --override skore-mlflow-project/overrides.txt
     #   skore-mlflow-project (skore-mlflow-project/pyproject.toml)
