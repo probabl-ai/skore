@@ -536,9 +536,11 @@ def test_from_state_bypasses_init_and_restores_state(
         estimator,
         X_test=X_test,
         y_test=y_test,
+        pos_label=1,
     )
     expected_accuracy = report.metrics.accuracy()
     report.cache_predictions()
+    report.metrics.add("f1", name="F1")
     state = report.get_state()
 
     def _unexpected_init(self, *args, **kwargs):
@@ -557,8 +559,10 @@ def test_from_state_bypasses_init_and_restores_state(
     assert restored._cache == report._cache
     assert restored.metrics.accuracy() == expected_accuracy
 
-    # check new metrics can be computed:
-    report.metrics.roc_auc()
+    # check new metrics can be computed, including custom metrics:
+    restored.metrics.roc_auc()
+    df = restored.metrics.summarize().frame()
+    assert "F1" in df.index
 
 
 def test_from_state_rejects_unknown_version(logistic_binary_classification_with_test):
