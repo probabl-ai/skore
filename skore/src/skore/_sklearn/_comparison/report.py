@@ -466,10 +466,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
+    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
         comparison_issues: dict[str, dict] = {}
         all_checked_codes: set[str] = set()
         for report_name, report in self.reports_.items():
+            report.add_checks(self._checks_registry)
             report_issues, checked_codes = report._get_issues()
             all_checked_codes |= checked_codes
             for code, issue in report_issues.items():
@@ -480,7 +481,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 else:
                     comparison_issues[code] = {
                         "title": issue["title"],
-                        "docs_anchor": issue["docs_anchor"],
+                        "docs_url": issue.get("docs_url"),
                         "explanation": f"[{report_name}] {issue['explanation']}",
                     }
         return comparison_issues, all_checked_codes

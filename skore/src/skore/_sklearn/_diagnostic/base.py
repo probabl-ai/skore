@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+from abc import abstractmethod
 from html import escape
 from importlib.metadata import PackageNotFoundError, version
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import pandas as pd
 
 from skore._externals._sklearn_compat import parse_version
+from skore._sklearn.types import ReportType
 from skore._utils.repr.base import DisplayHelpMixin
+
+if TYPE_CHECKING:
+    from skore._sklearn._base import _BaseReport
 
 
 class DiagnosticDisplay(DisplayHelpMixin):
@@ -20,7 +26,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
     issues : dict of str to dict
         Detected issues produced by the report, keyed by check code
         (e.g. ``"SKD001"``). Each value is a dict with keys ``"title"``,
-        ``"docs_anchor"``, and ``"explanation"``.
+        ``"explanation"``, and optionally ``"docs_url"``.
 
     checks_ran : int
         Total number of checks that were executed.
@@ -36,7 +42,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
         self._checks_ran = checks_ran
         if issues:
             self._messages = [
-                format_issue_message(code, d) for code, d in issues.items()
+                _format_issue_message(code, d) for code, d in issues.items()
             ]
         else:
             self._messages = ["No issues were detected in your report!"]
@@ -65,9 +71,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
                 "code": code,
                 "title": issue["title"],
                 "explanation": issue["explanation"],
-                "documentation_url": get_issue_documentation_url(
-                    docs_anchor=issue["docs_anchor"]
-                ),
+                "documentation_url": _get_issue_documentation_url(issue),
             }
             for code, issue in self._issues.items()
         ]
@@ -78,7 +82,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
     def _repr_html_(self) -> str:
         if self._issues:
             items_html = "".join(
-                f"<li>{format_issue_message_html(code, issue)}</li>"
+                f"<li>{_format_issue_message_html(code, issue)}</li>"
                 for code, issue in self._issues.items()
             )
         else:
@@ -100,7 +104,62 @@ class DiagnosticDisplay(DisplayHelpMixin):
         return "\n".join([self.header, *[f"- {message}" for message in self._messages]])
 
 
-def get_issue_documentation_url(*, docs_anchor: str) -> str:
+@runtime_checkable
+class Check(Protocol):
+    """Protocol for defining diagnostic checks.
+
+    Each check wraps a callable that inspects a report. If the callable returns a
+    non-empty string, that text is recorded as an issue under :attr:`code` with the
+    given :attr:`title`. Checks are scoped to a single report kind via
+    :attr:`report_type` so they only run on matching reports.
+
+    Parameters
+    ----------
+    code : str
+        Unique identifier for this check , used in
+        :meth:`~skore.EstimatorReport.diagnose` and `ignore` lists.
+
+    title : str
+        Short label shown for the issue when one is reported.
+
+    report_type : str
+        Must be one of `"cross-validation"`, `"estimator"`,
+        `"comparison-estimator"`, or `"comparison-cross-validation"`.
+
+    docs_url : str or None, default=None
+        Optional link or documentation anchor: a string starting with `"http"`
+        is shown as-is; otherwise it is treated as an HTML anchor fragment under
+        the automatic diagnostic user guide.
+    """
+
+    code: str
+    title: str
+    report_type: ReportType
+    docs_url: str | None
+
+    @abstractmethod
+    def check_function(self, report: _BaseReport) -> str | None:
+        """Check function to run on the report and that returns an explanation string.
+
+        Parameters
+        ----------
+        report : _BaseReport
+            The report to run the check on.
+
+        Returns
+        -------
+        str or None
+            An explanation string, or None if the check did not find any issues.
+        """
+
+
+def _get_issue_documentation_url(issue: dict) -> str | None:
+    docs_url = issue.get("docs_url")
+    if docs_url is None:
+        return None
+    if docs_url.startswith("http"):
+        return docs_url
+
     try:
         skore_version = parse_version(version("skore"))
         url_version = (
@@ -110,29 +169,29 @@ def get_issue_documentation_url(*, docs_anchor: str) -> str:
         )
     except PackageNotFoundError:
         url_version = "dev"
-    return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automatic_diagnostic.html#{docs_anchor}"
+    return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automatic_diagnostic.html#{docs_url}"
 
 
-def format_issue_message(code: str, issue: dict) -> str:
-    return (
-        f"[{code}] {issue['title']}. {issue['explanation']} "
-        "Read our documentation for more details: "
-        f"{get_issue_documentation_url(docs_anchor=issue['docs_anchor'])}. "
-        f"Mute with `ignore=['{code}']`."
-    )
+def _format_issue_message(code: str, issue: dict) -> str:
+    msg = f"[{code}] {issue['title']}. {issue['explanation']}"
+    docs_url = _get_issue_documentation_url(issue)
+    if docs_url is not None:
+        msg += f" Read more about this here: {docs_url}."
+    msg += f" Mute with `ignore=['{code}']`."
+    return msg
 
 
-def format_issue_message_html(code: str, issue: dict) -> str:
+def _format_issue_message_html(code: str, issue: dict) -> str:
     escaped_code = escape(code)
     title = escape(issue["title"])
     explanation = escape(issue["explanation"])
-    docs_url = escape(
-        get_issue_documentation_url(docs_anchor=issue["docs_anchor"]),
-        quote=True,
-    )
-    return (
-        f"[{escaped_code}] {title}. {explanation} "
-        f'Read <a href="{docs_url}" target="_blank" rel="noopener noreferrer">'
-        "our documentation</a> for more details. "
-        f"Mute with <code>ignore=['{escaped_code}']</code>."
-    )
+    msg = f"[{escaped_code}] {title}. {explanation}"
+    docs_url = _get_issue_documentation_url(issue)
+    if docs_url is not None:
+        escaped_url = escape(docs_url, quote=True)
+        msg += (
+            f' Read more about this <a href="{escaped_url}" target="_blank"'
+            ' rel="noopener noreferrer">here</a>.'
+        )
+    msg += f" Mute with <code>ignore=['{escaped_code}']</code>."
+    return msg
