@@ -55,7 +55,7 @@ Changed
   Example usage is available `here <https://docs.skore.probabl.ai/dev/auto_examples/model_evaluation/plot_custom_metrics.html>`__.
   See :pr:`2736` by :user:`auguste-probabl`.
 
-- Drop support of Python `3.10` in favor of Python `3.14`. See :pr:`2771` by :user:`thomass-dev`.
+- Python `3.14.4` is now supported, while Python `3.10` support is now deprecated. See :pr:`2771` by :user:`thomass-dev`.
 
 Added
 -----
