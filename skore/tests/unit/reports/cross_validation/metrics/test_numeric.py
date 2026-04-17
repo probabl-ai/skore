@@ -4,9 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
-from sklearn.metrics import (
-    accuracy_score,
-)
 from sklearn.svm import SVC
 
 from skore import CrossValidationReport
@@ -139,19 +136,6 @@ def test_brier_score_requires_probabilities():
 
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     assert not hasattr(report.metrics, "brier_score")
-
-
-def test_custom_metric(forest_binary_classification_data):
-    """Check that we can compute a custom metric."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
-
-    result = report.metrics.custom_metric(
-        metric_function=accuracy_score,
-        response_method="predict",
-    )
-    assert result.shape == (1, 2)
-    assert result.index == ["Accuracy Score"]
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])

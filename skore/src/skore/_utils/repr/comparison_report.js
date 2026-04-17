@@ -23,7 +23,7 @@ function skoreInitComparisonReport(containerId) {
         applyThemeToReportContainer(root, containerId + "-wrapper");
     }
 
-    shadowRoot.querySelectorAll(".report-disclosure .tooltip-text a").forEach((a) => {
+    shadowRoot.querySelectorAll(".report-tabset .tooltip-text a").forEach((a) => {
         a.addEventListener("click", (e) => {
             e.stopPropagation();
         });

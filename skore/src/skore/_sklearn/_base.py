@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+from importlib.metadata import version
 from io import StringIO
 from typing import Generic, Literal, TypeVar
 from uuid import uuid4
@@ -83,7 +85,7 @@ class _BaseReport(ReportHelpMixin):
 
         Checks look for common modeling problems such as overfitting and
         underfitting. Check codes can be muted per-call via `ignore` or globally
-        via :func:`~skore.configuration(ignore_checks=...)` .
+        via :func:`~skore.configuration()` with `ignore_checks=...`.
 
         Parameters
         ----------
@@ -167,8 +169,16 @@ class _BaseReport(ReportHelpMixin):
         self._checks_registry.extend(checks)
 
     def __init__(self) -> None:
-        self.id = uuid4().int
+        self._metadata = {
+            "id": uuid4().int,
+            "skore-version": version("skore"),
+            "creation-date": datetime.now(timezone.utc).isoformat(),
+        }
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
+
+    @property
+    def id(self):
+        return self._metadata["id"]
 
     @property
     def _hash(self) -> int:

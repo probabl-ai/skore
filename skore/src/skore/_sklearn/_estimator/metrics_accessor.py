@@ -1,7 +1,6 @@
-from collections.abc import Callable, Sized
+from collections.abc import Iterable
 from typing import Any, Literal, cast
 
-import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
@@ -32,6 +31,7 @@ from skore._sklearn.metrics import (
 from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
 from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
+from skore._utils._metric_rows import metric_score_to_rows
 
 
 class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -56,47 +56,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
         return super().__getattribute__(name)
 
-    def _parse_metrics(
-        self,
-        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None,
-        metric_kwargs: dict[str, Any],
-    ) -> dict[str, Metric]:
-        """Normalize arguments into a mapping from verbose name to Metric.
-
-        Parameters
-        ----------
-        metric : MetricLike, list of MetricLike, dict of MetricLike, or None
-            The metrics to parse.
-        metric_kwargs : dict
-            Kwargs to pass to each metric.
-        """
-        items: list[tuple[str | None, MetricLike]]
-        if metric is None or (isinstance(metric, Sized) and len(metric) == 0):
-            items = [(None, m) for m in self._parent._metric_registry]
-        elif isinstance(metric, dict):
-            items = list(metric.items())
-        elif isinstance(metric, list):
-            items = [(None, m) for m in metric]
-        else:
-            items = [(None, metric)]
-
-        result = {}
-        for display_name, m in items:
-            parsed_metric = self._parent._metric_registry.check_metric(m, metric_kwargs)
-            key = (
-                display_name if display_name is not None else parsed_metric.verbose_name
-            )
-            result[key] = parsed_metric
-
-        return result
-
     def summarize(
         self,
         *,
         data_source: DataSource | Literal["both"] = "test",
-        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
-        metric_kwargs: dict[str, Any] | None = None,
-        response_method: str | list[str] | None = None,
+        metric: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
@@ -110,35 +74,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             - "both" : use both the train and test sets to compute the metrics and
               present them side-by-side.
 
-        metric : str, callable, scorer, or list of such instances or dict of such \
-            instances, default=None
-            The metrics to report. The possible values are:
-
-            - if a string, either one of the built-in metrics or a scikit-learn scorer
-              name. You can get the possible list of string using
-              `report.metrics.help()` or :func:`sklearn.metrics.get_scorer_names` for
-              the built-in metrics or the scikit-learn scorers, respectively.
-            - if a callable, it should take as arguments `y_true`, `y_pred` as the two
-              first arguments. Additional arguments can be passed as keyword arguments
-              and will be forwarded with `metric_kwargs`. No favorability indicator can
-              be displayed in this case.
-            - if the callable API is too restrictive (e.g. need to pass
-              same parameter name with different values), you can use scikit-learn
-              scorers as provided by :func:`sklearn.metrics.make_scorer`. In this case,
-              the metric favorability will only be displayed if it is given explicitly
-              via `make_scorer`'s `greater_is_better` parameter.
-            - if a dict, the keys are used as metric names and the values are the
-              metric functions (strings, callables, or scorers as described above).
-            - if a list, each element can be any of the above types (strings, callables,
-              scorers).
-
-        metric_kwargs : dict, default=None
-            The keyword arguments to pass to the metric functions.
-
-        response_method : {"predict", "predict_proba", "predict_log_proba", \
-            "decision_function"} or list of such str, default=None
-            The estimator's method to be invoked to get the predictions. Only necessary
-            for custom metrics.
+        metric : str or list of str or None, default=None
+            The metrics to report, from the list of registered metrics. None means show
+            all registered metrics. To add a custom metric, see :meth:`add`.
 
         Returns
         -------
@@ -165,10 +103,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Log loss               0.11...         (↘︎)
         Brier score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
-        >>> report.metrics.summarize(metric="f1").frame(favorability=True)
-                                  LogisticRegression Favorability
-        Metric   Label / Average
-        F1 Score               1             0.95...          (↗︎)
+        >>> report.metrics.summarize(metric="log_loss").frame(favorability=True)
+                  LogisticRegression Favorability
+        Metric
+        Log loss             0.11...          (↘︎)
         >>> report.metrics.summarize(
         ...    data_source="both"
         ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
@@ -182,91 +120,125 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Brier score                     0.02...                     0.03...          (↘︎)
         """
         if data_source == "both":
-            train_summary = self.summarize(
-                data_source="train",
-                metric=metric,
-                metric_kwargs=metric_kwargs,
-                response_method=response_method,
-            )
-            test_summary = self.summarize(
-                data_source="test",
-                metric=metric,
-                metric_kwargs=metric_kwargs,
-                response_method=response_method,
-            )
+            train_summary = self.summarize(data_source="train", metric=metric)
+            test_summary = self.summarize(data_source="test", metric=metric)
 
-            combined = pd.concat(
-                [train_summary.data, test_summary.data], ignore_index=True
-            )
-            return MetricsSummaryDisplay(data=combined, report_type="estimator")
+            combined = train_summary.rows + test_summary.rows
+            return MetricsSummaryDisplay(rows=combined, report_type="estimator")
 
-        parsed_metrics = self._parse_metrics(
-            metric,
-            (metric_kwargs or {})
-            | ({"response_method": response_method} if response_method else {}),
-        )
+        registry = self._parent._metric_registry
+        parsed_metrics: list[Metric]
+        if isinstance(metric, str):
+            parsed_metrics = [registry[metric]]
+        elif isinstance(metric, Iterable) and metric:
+            parsed_metrics = [registry[m] for m in metric]
+        else:
+            parsed_metrics = list(registry.values())
 
         rows = []
-        for metric_name, parsed_metric in parsed_metrics.items():
+        for parsed_metric in parsed_metrics:
             score = parsed_metric(
                 report=self._parent,
                 data_source=data_source,
                 **parsed_metric.kwargs,
             )
+            rows.extend(
+                metric_score_to_rows(
+                    score,
+                    metric=parsed_metric,
+                    ml_task=self._parent._ml_task,
+                    data_source=data_source,
+                    estimator_name=self._parent.estimator_name_,
+                    pos_label=self._parent.pos_label,
+                )
+            )
 
-            row = {
-                "metric": metric_name,
-                "estimator_name": self._parent.estimator_name_,
-                "data_source": data_source,
-                "favorability": parsed_metric.icon,
-                "label": None,
-                "average": None,
-                "output": None,
-                "score": score,
-            }
+        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
 
-            if (
-                self._parent._ml_task == "binary-classification"
-                and parsed_metric.kwargs.get("average") == "binary"
-            ):
-                rows.append({**row, "label": self._parent.pos_label})
-            elif self._parent._ml_task in (
-                "binary-classification",
-                "multiclass-classification",
-            ):
-                if isinstance(score, dict):
-                    for label in score:
-                        rows.append({**row, "label": label, "score": score[label]})  # noqa: PERF401
-                else:
-                    rows.append({**row, "average": parsed_metric.kwargs.get("average")})
-            elif self._parent._ml_task == "multioutput-regression":
-                if isinstance(score, list):
-                    for output_idx, output_score in enumerate(score):
-                        rows.append(
-                            {**row, "output": output_idx, "score": output_score}
-                        )
-                else:
-                    rows.append(
-                        {**row, "average": parsed_metric.kwargs.get("multioutput")}
-                    )
-            else:
-                rows.append(row)
+    def _metric(
+        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+    ) -> MetricsSummaryDisplay:
+        """Compute a single metric, forwarding *kwargs* to the score function."""
+        metric = self._parent._metric_registry[metric_name]
+        rows = metric_score_to_rows(
+            score=metric(report=self._parent, data_source=data_source, **kwargs),
+            metric=metric,
+            ml_task=self._parent._ml_task,
+            data_source=data_source,
+            estimator_name=self._parent.estimator_name_,
+            pos_label=self._parent.pos_label,
+            kwargs=kwargs or None,
+        )
+        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
 
-        data = pd.DataFrame(rows)
+    def add(
+        self,
+        metric: MetricLike,
+        *,
+        name: str | None = None,
+        response_method: str | list[str] = "predict",
+        greater_is_better: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Add a custom metric to be included in :meth:`summarize` by default.
 
-        # Preserve original types from being converted to float
-        # (which is pandas' default behaviour when there are `None` in the columns)
-        if any(isinstance(row["label"], bool) for row in rows):
-            data["label"] = data["label"].astype(pd.BooleanDtype())
-        elif any(isinstance(row["label"], int) for row in rows):
-            data["label"] = data["label"].astype(pd.Int64Dtype())
+        Parameters
+        ----------
+        metric : str, sklearn scorer, or callable
+            The metric to add.
 
-        if any(isinstance(row["output"], int) for row in rows):
-            data["output"] = data["output"].astype(pd.Int64Dtype())
+            - If a string, it will be run through :func:`sklearn.metrics.get_scorer`.
+              Metrics that require a ``neg_`` prefix (e.g. ``"neg_mean_squared_error"``)
+              may also be passed without it (e.g. ``"mean_squared_error"``); the alias
+              is resolved automatically.
+            - If a callable, it must have the signature
+              ``(y_true, y_pred, **kw) -> float``. It may also return a ``dict`` mapping
+              class labels to floats (e.g. ``{0: 0.9, 1: 0.85}``), in which case
+              :meth:`summarize` will show one row per class label under the metric name.
 
-        return MetricsSummaryDisplay(data=data, report_type="estimator")
+        name : str, optional
+            Custom name for the metric. If not provided, the name is inferred
+            from the metric (e.g. the function's ``__name__``).
 
-    def fit_time(self, cast: bool = True, **kwargs) -> float | None:
+        response_method : str or list of str, default="predict"
+            Estimator method to get predictions (only for callables).
+
+        greater_is_better : bool, default=True
+            Whether higher values are better (only for callables).
+
+        **kwargs : Any
+            Default keyword arguments passed to the score function at call
+            time. Only used when *metric* is a plain callable.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.metrics import make_scorer, mean_absolute_error
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
+        >>> report.metrics.add(
+        ...     make_scorer(mean_absolute_error, response_method="predict")
+        ... )
+        >>> report.metrics.summarize().frame()
+                            LogisticRegression
+        Metric
+                                           ...
+        Mean Absolute Error                ...
+        """
+        self._parent._metric_registry.add(
+            Metric.new(
+                metric,
+                name=name,
+                response_method=response_method,
+                greater_is_better=greater_is_better,
+                kwargs=kwargs,
+            )
+        )
+
+    def fit_time(self, cast: bool = True) -> float | None:
         """Get time to fit the estimator.
 
         Parameters
@@ -274,10 +246,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         cast : bool, default=True
             Whether to cast the return value to a float. If `False`, the return value
             is `None` when the estimator is not fitted.
-
-        kwargs : dict
-            Additional arguments that are ignored but present for compatibility with
-            other metrics.
         """
         return FitTime()(report=self._parent, cast=cast)
 
@@ -732,77 +700,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
-    def custom_metric(
-        self,
-        metric_function: Callable,
-        response_method: str | list[str],
-        *,
-        data_source: DataSource = "test",
-        **kwargs: Any,
-    ) -> float | dict[PositiveLabel, float] | list:
-        """Compute a custom metric.
-
-        It brings some flexibility to compute any desired metric. However, we need to
-        follow some rules:
-
-        - `metric_function` should take `y_true` and `y_pred` as the first two
-          positional arguments.
-        - `response_method` corresponds to the estimator's method to be invoked to get
-          the predictions. It can be a string or a list of strings to defined in which
-          order the methods should be invoked.
-
-        Parameters
-        ----------
-        metric_function : callable
-            The metric function to be computed. The expected signature is
-            `metric_function(y_true, y_pred, **kwargs)`.
-
-        response_method : {"predict", "predict_proba", "predict_log_proba", \
-            "decision_function"} or list of such str
-            The estimator's method to be invoked to get the predictions.
-
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        **kwargs : dict
-            Any additional keyword arguments to be passed to the metric function.
-
-        Returns
-        -------
-        float, dict, or list of ``n_outputs``
-            The custom metric. The output type depends on the metric function.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from sklearn.metrics import mean_absolute_error
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=0.2)
-        >>> report.metrics.custom_metric(
-        ...     metric_function=mean_absolute_error,
-        ...     response_method="predict",
-        ... )
-        46.5...
-        >>> def metric_function(y_true, y_pred):
-        ...     return {"output": float(mean_absolute_error(y_true, y_pred))}
-        >>> report.metrics.custom_metric(
-        ...     metric_function=metric_function,
-        ...     response_method="predict",
-        ... )
-        {'output': 46.5...}
-        """
-        metric = self._parent._metric_registry.check_metric(
-            metric_function,
-            {"response_method": response_method},
-        )
-        return metric(report=self._parent, data_source=data_source, **kwargs)
-
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
@@ -827,7 +724,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             | ConfusionMatrixDisplay
         ],
         display_kwargs: dict[str, Any],
-        prediction_pos_label=None,
     ) -> (
         RocCurveDisplay
         | PrecisionRecallCurveDisplay
@@ -888,14 +784,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             return cache_value
 
         data_source = cast(DataSource, data_source)
-        data, y_true = self._parent._get_data_and_y_true(data_source=data_source)
-        if prediction_pos_label is None:
-            prediction_pos_label = self._parent.pos_label
+        _, y_true = self._parent._get_data_and_y_true(data_source=data_source)
 
         y_pred = self._parent._get_predictions(
-            data_source=data_source,
-            response_method=response_method,
-            pos_label=prediction_pos_label,
+            data_source=data_source, response_method=response_method
         )
 
         display = display_class._compute_data_for_display(
@@ -956,7 +848,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": self._parent.pos_label}
+        display_kwargs = {"report_pos_label": self._parent.pos_label}
         display = cast(
             RocCurveDisplay,
             self._get_display(
@@ -1006,7 +898,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> display.plot()
         """
         response_method = ("predict_proba", "decision_function")
-        display_kwargs = {"pos_label": self._parent.pos_label}
+        display_kwargs = {"report_pos_label": self._parent.pos_label}
         display = cast(
             PrecisionRecallCurveDisplay,
             self._get_display(
@@ -1134,20 +1026,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
 
         response_method: str | list[str] | tuple[str, ...]
-        pos_label = self._parent.pos_label
-        pred_pos_label: PositiveLabel | None
         if self._parent._ml_task == "binary-classification":
             response_method = ("predict_proba", "decision_function")
-            pred_pos_label = (
-                self._parent.estimator_.classes_[-1] if pos_label is None else pos_label
-            )
         else:
             response_method = "predict"
-            pred_pos_label = None
 
         display_kwargs = {
-            "pos_label": self._parent.pos_label,
             "response_method": response_method,
+            "pos_label": self._parent.pos_label,
         }
         display = cast(
             ConfusionMatrixDisplay,
@@ -1156,7 +1042,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 response_method=response_method,
                 display_class=ConfusionMatrixDisplay,
                 display_kwargs=display_kwargs,
-                prediction_pos_label=pred_pos_label,
             ),
         )
         return display

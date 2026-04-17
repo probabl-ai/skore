@@ -72,7 +72,7 @@ def test_flat_index_multioutput(linear_regression_multioutput_with_test):
     """Test flat_index with multioutput regression data."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    display = report.metrics.summarize(metric_kwargs={"multioutput": "raw_values"})
+    display = report.metrics.summarize()
 
     result_multi = display.frame(favorability=False, flat_index=False)
     assert isinstance(result_multi.index, pd.MultiIndex)

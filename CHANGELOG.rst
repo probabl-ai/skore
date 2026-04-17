@@ -1,5 +1,5 @@
 .. Template for a new "Unreleased" section (hidden from docs).
-   Copy-paste at the top of the changelog when releasing, then remove the 3-space indentation.
+   When releasing, copy-paste at the top of the changelog, and remove the indentation.
 
    `Unreleased`_
    =============
@@ -47,11 +47,30 @@ Changed
   It now infers and caches the relevant prediction outputs automatically. See
   :pr:`2677` by :user:`cakedev0`.
 
+- **Breaking change:** Computing custom metrics on reports is now done by calling
+  :meth:`EstimatorReport.metrics.add` followed by :meth:`summarize`.
+  :meth:`custom_metric` has been removed, and :meth:`summarize` no longer accepts
+  callables or keyword arguments; only names of registered metrics are supported
+  (which includes the default metrics such as `accuracy` for classifiers).
+  Example usage is available `here <https://docs.skore.probabl.ai/dev/auto_examples/model_evaluation/plot_custom_metrics.html>`__.
+  See :pr:`2736` by :user:`auguste-probabl`.
+
+- Python `3.14.4` is now supported, while Python `3.10` support is now deprecated. See :pr:`2771` by :user:`thomass-dev`.
+
 Added
 -----
 
+- :meth:`~EstimatorReport.metrics.summarize` (and equivalent methods on
+  :class:`~skore.CrossValidationReport` and :class:`~skore.ComparisonReport`) now
+  accept scikit-learn metric names without the `neg_` prefix. For example,
+  ``"mean_squared_error"`` can be passed instead of ``"neg_mean_squared_error"``
+  and is resolved automatically. See :pr:`2735` by :user:`direkkakkar319-ops`.
 - Reports now expose a `report.diagnose()` method that automatically
   detects common modeling issues such as overfitting and underfitting.
+- :class:`~skore.EstimatorReport` and :class:`~skore.CrossValidationReport` now
+  expose :meth:`get_state` / :meth:`from_state` helpers to support more robust
+  serialization and deserialization across skore versions than plain pickling.
+  See :pr:`2741` by :user:`cakedev0`.
 
 Removed
 -------

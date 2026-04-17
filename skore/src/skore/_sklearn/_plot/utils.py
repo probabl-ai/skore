@@ -12,6 +12,7 @@ from pandas import CategoricalDtype, DataFrame
 from sklearn.preprocessing import LabelBinarizer
 
 from skore._sklearn.types import (
+    _DEFAULT,
     DataSource,
     MLTask,
     PositiveLabel,
@@ -45,7 +46,6 @@ class _ClassifierDisplayMixin:
     # defined in the concrete display class
     estimator_name: str
     ml_task: MLTask
-    pos_label: PositiveLabel | None
 
 
 def _rotate_ticklabels(
@@ -258,7 +258,7 @@ def sample_mpl_colormap(
 def _get_curve_plot_columns(
     plot_data: DataFrame,
     report_type: ReportType,
-    pos_label,
+    label,
     data_source: DataSource | Literal["both"],
     subplot_by: Literal["auto", "label", "estimator", "data_source"] | None = "auto",
 ) -> tuple[str | None, str | None, str | None]:
@@ -280,7 +280,7 @@ def _get_curve_plot_columns(
         "estimator" in plot_data.columns and plot_data["estimator"].nunique() > 1
     )
     is_comparison = "comparison" in report_type
-    is_one_vs_rest = pos_label is None
+    is_one_vs_rest = label is None
     has_both_data_sources = data_source == "both"
 
     allowed_values: set[str | None] = {"auto"}
@@ -476,3 +476,19 @@ def _one_hot_encode(y_true, classes) -> NDArray:
     if len(classes) == 2:
         y_true_onehot = np.hstack(((1 - y_true_onehot), y_true_onehot))
     return y_true_onehot
+
+
+def _check_label(labels: list, label: PositiveLabel, default_label: PositiveLabel):
+    if label is _DEFAULT:
+        return default_label
+    elif label is None:
+        return None
+    elif label not in labels:
+        raise ValueError(
+            f"label={label!r} is not a valid label. It should be one of: {labels!r}."
+        )
+    else:
+        # necessary clean-up for `df.query("label == @label")` to work in some cases
+        # Ex: with `labels=[0, 1]` and `label=True`:
+        # `label in labels` is true but `df.query("label == @label")` is empty.
+        return labels[labels.index(label)]

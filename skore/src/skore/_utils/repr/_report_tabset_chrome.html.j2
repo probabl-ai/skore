@@ -1,0 +1,35 @@
+{# Shared tab chrome: radio inputs, tab labels, and per-tab help tooltips.
+   Expects: container_id, report_tabs (see parent templates), report_class_name. #}
+{% for tab in report_tabs %}
+        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-{{ loop.index0 }}" class="report-tab-input"{% if loop.first %} checked{% endif %}>
+{% endfor %}
+        <div class="report-tablist-row">
+            <div class="report-tablist" role="tablist">
+{% for tab in report_tabs %}
+                <div class="report-tab-item">
+                    <label class="report-tab-label" for="{{ container_id }}-report-tab-{{ loop.index0 }}" role="presentation">{{ tab.label }}</label>
+                </div>
+{% endfor %}
+            </div>
+            <div class="report-tablist-help">
+                <button type="button" class="report-tab-help report-tab-help-global" aria-label="Help for the selected tab">
+                    ?
+{% for tab in report_tabs %}
+                    <span class="tooltip-text report-tab-help-tip report-tab-help-tip-{{ loop.index0 }}">
+{% if tab.help_variant == "comparison_data" %}
+                        Explore the data for each compared report via that report's
+                        <code>.data</code> accessor.
+{% else %}
+                        Investigate more with
+                        <a
+                            href="{{ tab.help_url }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="report-hint-note-link"
+                        >{{ report_class_name }}.{{ tab.accessor_name }}</a>.
+{% endif %}
+                    </span>
+{% endfor %}
+                </button>
+            </div>
+        </div>
