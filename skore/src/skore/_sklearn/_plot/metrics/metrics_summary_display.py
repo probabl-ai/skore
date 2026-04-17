@@ -1,12 +1,120 @@
-from typing import Any, Literal, cast
+from typing import Any, Literal, TypedDict, cast
 
 import pandas as pd
 from matplotlib.figure import Figure
 
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn.types import Aggregate, ReportType
+from skore._sklearn.metrics import Metric
+from skore._sklearn.types import (
+    Aggregate,
+    DataSource,
+    MLTask,
+    PositiveLabel,
+    ReportType,
+)
 from skore._utils._index import flatten_multi_index
-from skore._utils._metric_rows import rows_to_dataframe
+
+
+class MetricsSummaryRow(TypedDict, total=False):
+    """A single row rendered by ``MetricsSummaryDisplay``.
+
+    Parameters
+    ----------
+    metric : str
+        Human-readable metric name shown in the display.
+    estimator_name : str
+        Name shown in the display.
+    data_source : {"train", "test"}
+        Dataset split used to compute the metric.
+    favorability : {"(↗︎)", "(↘︎)", ""}
+        Indicator showing whether higher or lower values are better.
+    score : Any
+        Scalar metric value stored in the row.
+    label : label, default=None
+        Class label for per-class classification metrics.
+    average : str, default=None
+        Averaging mode when a metric is aggregated across labels or outputs.
+    output : int, default=None
+        Output index for multioutput regression metrics.
+    split : int, optional
+        Cross-validation split index.
+    verbose_name : str, optional
+        Alternate metric label consumed by the display when present.
+    """
+
+    metric: str
+    estimator_name: str
+    data_source: DataSource
+    favorability: str
+    score: Any
+    label: PositiveLabel | None
+    average: str | None
+    output: int | None
+    split: int
+    verbose_name: str
+
+
+def metric_score_to_rows(
+    score: float | list | dict,
+    *,
+    metric: Metric,
+    ml_task: MLTask,
+    data_source: DataSource,
+    estimator_name: str,
+    pos_label: PositiveLabel = None,
+    kwargs: dict[str, Any] | None = None,
+) -> list[MetricsSummaryRow]:
+    """Expand a metric score into display rows based on the ML task.
+
+    Parameters
+    ----------
+    score : float, dict, or list
+        The metric score.
+
+    metric : Metric
+        The metric instance (provides ``verbose_name``, ``icon``,
+        and default ``kwargs``).
+
+    ml_task : str
+        The ML task (e.g. ``"binary-classification"``).
+
+    data_source : {"test", "train"}
+        The data source to use.
+
+    estimator_name : str
+        Name shown in the display.
+
+    pos_label : label, default=None
+        Positive label for binary classification.
+
+    kwargs : dict, optional
+        Keyword arguments used for the score call. Default is ``metric.kwargs``.
+    """
+    if kwargs is None:
+        kwargs = metric.kwargs
+
+    row: MetricsSummaryRow = {
+        "metric": metric.verbose_name,
+        "estimator_name": estimator_name,
+        "data_source": data_source,
+        "favorability": metric.icon,
+        "label": None,
+        "average": None,
+        "output": None,
+        "score": score,
+    }
+
+    if ml_task == "binary-classification" and kwargs.get("average") == "binary":
+        return [{**row, "label": kwargs.get("pos_label", pos_label)}]
+    if ml_task in ("binary-classification", "multiclass-classification"):
+        if isinstance(score, dict):
+            return [{**row, "label": label, "score": score[label]} for label in score]
+        return [{**row, "average": kwargs.get("average")}]
+    if ml_task == "multioutput-regression":
+        if isinstance(score, list):
+            return [{**row, "output": idx, "score": s} for idx, s in enumerate(score)]
+        return [{**row, "average": kwargs.get("multioutput")}]
+    return [row]
 
 
 class MetricsSummaryDisplay(DisplayMixin):
@@ -17,20 +125,8 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     Parameters
     ----------
-    rows : list of dicts
-        The rows to display.
-        Expected keys:
-        - "metric": human-readable metric name shown in the display.
-        - "estimator_name"
-        - "data_source": "train" or "test".
-        - "score": numeric metric value (scalar).
-        - "favorability": "(↗︎)", "(↘︎)" or "".
-
-        Depending on the metric shape and report type, rows may also contain:
-        - "label": class label for per-class classification metrics.
-        - "output": output index for multioutput regression metrics.
-        - "average": averaging mode when averaged over labels or outputs.
-        - "split": cross-validation split index.
+    rows : list of MetricsSummaryRow
+        The rows to display. See ``MetricsSummaryRow`` for the row schema.
 
     report_type : {"estimator", "comparison-estimator", "cross-validation", \
             "comparison-cross-validation"}
@@ -39,7 +135,7 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     def __init__(
         self,
-        rows: list[dict],
+        rows: list[MetricsSummaryRow],
         report_type: ReportType,
     ):
         self.rows = rows
@@ -47,18 +143,31 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     @property
     def data(self):
-        return rows_to_dataframe(self.rows)
+        """Return rows as a DataFrame, preserving nullable dtypes."""
+        data = pd.DataFrame(self.rows)
+
+        if any(isinstance(r["label"], bool) for r in self.rows):
+            data["label"] = data["label"].astype(pd.BooleanDtype())
+        elif any(isinstance(r["label"], int) for r in self.rows):
+            data["label"] = data["label"].astype(pd.Int64Dtype())
+
+        if any(isinstance(r["output"], int) for r in self.rows):
+            data["output"] = data["output"].astype(pd.Int64Dtype())
+
+        return data
 
     @staticmethod
     def _concatenate(
         child_displays: list["MetricsSummaryDisplay"],
         *,
         report_type: ReportType,
-        extra_rows_data: list[dict[str, Any]],
+        extra_rows_data: list[MetricsSummaryRow],
     ):
         rows = []
         for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
-            rows.extend([row | extra_data for row in display.rows])
+            rows.extend(
+                [cast(MetricsSummaryRow, row | extra_data) for row in display.rows]
+            )
 
         return MetricsSummaryDisplay(rows, report_type=report_type)
 

@@ -14,6 +14,7 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore._sklearn._plot.metrics.metrics_summary_display import metric_score_to_rows
 from skore._sklearn.metrics import (
     BUILTIN_METRICS,
     R2,
@@ -31,7 +32,6 @@ from skore._sklearn.metrics import (
 from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
 from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
-from skore._utils._metric_rows import metric_score_to_rows
 
 
 class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
