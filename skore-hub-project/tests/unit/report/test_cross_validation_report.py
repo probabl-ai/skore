@@ -1,7 +1,7 @@
-from io import BytesIO
 from unittest.mock import Mock
 
-from joblib import dump, hash
+from httpx import Response
+from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
@@ -15,9 +15,8 @@ from sklearn.model_selection import (
     StratifiedShuffleSplit,
     TimeSeriesSplit,
 )
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport
 
-from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.artifact.media import (
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
@@ -37,6 +36,7 @@ from skore_hub_project.artifact.media import (
     RocSVGTrain,
 )
 from skore_hub_project.artifact.media.data import TableReport
+from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
@@ -370,19 +370,22 @@ class TestCrossValidationReportPayload:
 
     @mark.respx(assert_all_called=False)
     def test_pickle_uploaded(
-        self, monkeypatch, payload, project, small_cv_binary_classification
+        self, monkeypatch, payload, project, small_cv_binary_classification, respx_mock
     ):
-        compute, upload = Mock(), Mock()
+        uploaded = respx_mock.get("/projects/workspace/name/artifacts").mock(
+            Response(201, json=True)
+        )
 
+        compute, upload = Mock(), Mock()
         monkeypatch.setattr("skore_hub_project.artifact.pickle.Pickle.compute", compute)
         monkeypatch.setattr("skore_hub_project.artifact.pickle.Pickle.upload", upload)
-        monkeypatch.setattr("skore_hub_project.artifact.pickle.Pickle.uploaded", True)
 
         pickle = payload.pickle
 
         assert type(pickle) is Pickle
         assert pickle.project == project
         assert pickle.report == small_cv_binary_classification
+        assert uploaded.called
         assert not compute.called
         assert not upload.called
 
@@ -528,8 +531,12 @@ class TestCrossValidationReportPayload:
 
     @mark.respx(assert_all_called=False)
     def test_medias_uploaded(
-        self, monkeypatch, payload, project, small_cv_binary_classification
+        self, monkeypatch, payload, project, small_cv_binary_classification, respx_mock
     ):
+        uploaded = respx_mock.get("/projects/workspace/name/artifacts").mock(
+            Response(201, json=True)
+        )
+
         types = [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
@@ -556,12 +563,12 @@ class TestCrossValidationReportPayload:
             monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.checksum", "checksum")
             monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.compute", compute)
             monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.upload", upload)
-            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.uploaded", True)
 
         medias = payload.medias
 
         assert isinstance(medias, list)
         assert len(medias) == len(types)
+        assert uploaded.called
         assert not compute.called
         assert not upload.called
 

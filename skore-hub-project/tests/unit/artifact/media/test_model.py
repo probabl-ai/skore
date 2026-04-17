@@ -1,9 +1,9 @@
 from pydantic import ValidationError
 from pytest import mark, raises
 from sklearn.utils import estimator_html_repr
+from skore_hub_project.artifact.serializer import Serializer
 
 from skore_hub_project.artifact.media import EstimatorHtmlRepr
-from skore_hub_project.artifact.serializer import Serializer
 
 
 @mark.respx()
