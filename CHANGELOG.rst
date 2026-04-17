@@ -75,7 +75,7 @@ Added
   :meth:`~EstimatorReport.metrics.map` (and equivalent methods on
   :class:`~skore.CrossValidationReport` and :class:`~skore.ComparisonReport`) are
   now available as default regression metrics, exposing mean absolute error (MAE)
-  and mean absolute percentage error (MAP). See :pr:`#2765` by :user:`direkkakkar319-ops`.
+  and mean absolute percentage error (MAPE). See :pr:`#2765` by :user:`direkkakkar319-ops`.
 
 Removed
 -------
