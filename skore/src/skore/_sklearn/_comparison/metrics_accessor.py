@@ -3,6 +3,7 @@ from typing import Any, Literal
 
 import joblib
 import pandas as pd
+from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -750,7 +751,8 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the mean absolute error.
@@ -808,7 +810,8 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         self,
         *,
         data_source: DataSource = "test",
-        multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Compute the mean absolute percentage error.
