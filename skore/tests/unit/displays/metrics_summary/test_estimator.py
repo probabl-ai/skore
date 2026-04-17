@@ -91,8 +91,8 @@ def test_flat_index_multioutput(linear_regression_multioutput_with_test):
         "rmse_1",
         "mae_0",
         "mae_1",
-        "map_0",
-        "map_1",
+        "mape_0",
+        "mape_1",
         "fit_time_s",
         "predict_time_s",
     ]

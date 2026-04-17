@@ -569,9 +569,9 @@ class Mae(Metric):
         )
 
 
-class Map(Metric):
-    name = "map"
-    verbose_name = "MAP"
+class Mape(Metric):
+    name = "mape"
+    verbose_name = "MAPE"
     score_func = staticmethod(sklearn.metrics.mean_absolute_percentage_error)
     response_method = "predict"
     greater_is_better = False
@@ -604,7 +604,7 @@ BUILTIN_METRICS: list[Metric] = [
     R2(),
     Rmse(),
     Mae(),
-    Map(),
+    Mape(),
     FitTime(),
     PredictTime(),
 ]

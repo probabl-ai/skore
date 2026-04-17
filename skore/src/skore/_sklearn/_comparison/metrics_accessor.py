@@ -803,8 +803,8 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             aggregate=aggregate,
         )
 
-    @available_if(_check_any_sub_report_has_metric("map"))
-    def map(
+    @available_if(_check_any_sub_report_has_metric("mape"))
+    def mape(
         self,
         *,
         data_source: DataSource = "test",
@@ -850,13 +850,13 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> estimator_1 = Ridge(random_state=42)
         >>> estimator_2 = Ridge(random_state=43)
         >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
-        >>> comparison_report.metrics.map()
+        >>> comparison_report.metrics.mape()
         Estimator     Ridge_1    Ridge_2
         Metric
-        MAP        0.3...     0.3...
+        MAPE       0.3...     0.3...
         """
         return self._metric(
-            "map", data_source=data_source, multioutput=multioutput
+            "mape", data_source=data_source, multioutput=multioutput
         ).frame(
             aggregate=aggregate,
         )

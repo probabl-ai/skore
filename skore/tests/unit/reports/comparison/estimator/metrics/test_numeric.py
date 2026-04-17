@@ -143,7 +143,9 @@ def test_regression(metric_name, expected, comparison_estimator_reports_regressi
     pd.testing.assert_frame_equal(result, expected, check_index_type=False)
 
 
-@pytest.mark.parametrize("metric_name, verbose_name", [("mae", "MAE"), ("map", "MAP")])
+@pytest.mark.parametrize(
+    "metric_name, verbose_name", [("mae", "MAE"), ("mape", "MAPE")]
+)
 def test_regression_mae_map(
     metric_name, verbose_name, comparison_estimator_reports_regression
 ):

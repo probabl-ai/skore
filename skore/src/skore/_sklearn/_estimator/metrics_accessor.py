@@ -22,7 +22,7 @@ from skore._sklearn.metrics import (
     FitTime,
     LogLoss,
     Mae,
-    Map,
+    Mape,
     Metric,
     Precision,
     PredictTime,
@@ -750,7 +750,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
-    def map(
+    def mape(
         self,
         *,
         data_source: DataSource = "test",
@@ -791,10 +791,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
         >>> report = evaluate(regressor, X, y, splitter=0.2)
-        >>> report.metrics.map()
+        >>> report.metrics.mape()
         0.3...
         """
-        return Map()(
+        return Mape()(
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 

@@ -815,8 +815,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             "mae", data_source=data_source, multioutput=multioutput
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
-    @available_if(_check_estimator_report_has_method("metrics", "map"))
-    def map(
+    @available_if(_check_estimator_report_has_method("metrics", "mape"))
+    def mape(
         self,
         *,
         data_source: DataSource = "test",
@@ -864,14 +864,14 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> X, y = load_diabetes(return_X_y=True)
         >>> regressor = Ridge()
         >>> report = evaluate(regressor, X, y, splitter=2)
-        >>> report.metrics.map()
+        >>> report.metrics.mape()
                     Ridge
                     mean       std
         Metric
-        MAP       0....      ...
+        MAPE      0....      ...
         """
         return self._metric(
-            "map", data_source=data_source, multioutput=multioutput
+            "mape", data_source=data_source, multioutput=multioutput
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     ####################################################################################
