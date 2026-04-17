@@ -154,21 +154,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         return data
 
     @staticmethod
-    def _to_favorability_icon(
-        greater_is_better: pd.Series | None,
-        *,
-        index: pd.Index,
-    ) -> pd.Series:
-        if greater_is_better is None:
-            return pd.Series("", index=index, dtype="object")
-
-        return (
-            greater_is_better.map({True: "(↗︎)", False: "(↘︎)"})
-            .fillna("")
-            .astype("object")
-        )
-
-    @staticmethod
     def _concatenate(
         child_displays: list["MetricsSummaryDisplay"],
         *,
