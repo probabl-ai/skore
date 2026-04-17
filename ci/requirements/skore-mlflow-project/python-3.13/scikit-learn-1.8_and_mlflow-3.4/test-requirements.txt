@@ -96,11 +96,11 @@ fakeredis[lua]==2.34.1
     # via
     #   fastmcp
     #   pydocket
-fastapi==0.135.3
+fastapi==0.136.0
     # via mlflow-skinny
 fastmcp==2.14.7
     # via mlflow
-filelock==3.25.2
+filelock==3.28.0
     # via
     #   python-discovery
     #   virtualenv
@@ -187,9 +187,9 @@ keyring==25.7.0
     # via py-key-value-aio
 kiwisolver==1.5.0
     # via matplotlib
-lupa==2.7
+lupa==2.8
     # via fakeredis
-mako==1.3.10
+mako==1.3.11
     # via alembic
 markdown-it-py==4.0.0
     # via rich
@@ -315,7 +315,7 @@ pyasn1-modules==0.4.2
     # via google-auth
 pycparser==3.0
     # via cffi
-pydantic[email]==2.13.0
+pydantic[email]==2.13.2
     # via
     #   fastapi
     #   fastmcp
@@ -324,7 +324,7 @@ pydantic[email]==2.13.0
     #   mlflow-tracing
     #   openapi-pydantic
     #   pydantic-settings
-pydantic-core==2.46.0
+pydantic-core==2.46.2
     # via pydantic
 pydantic-settings==2.13.1
     # via mcp
@@ -496,7 +496,7 @@ uvicorn==0.44.0
     #   fastmcp
     #   mcp
     #   mlflow-skinny
-virtualenv==21.2.3
+virtualenv==21.2.4
     # via pre-commit
 websockets==16.0
     # via fastmcp
