@@ -49,7 +49,7 @@ class _BaseReport(ReportHelpMixin):
 
         Checks look for common modeling problems such as overfitting and
         underfitting. Check codes can be muted per-call via `ignore` or globally
-        via :func:`~skore.configuration(ignore_checks=...)` .
+        via :func:`~skore.configuration()` with `ignore_checks=...`.
 
         Parameters
         ----------
