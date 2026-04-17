@@ -9,7 +9,7 @@ from rich.panel import Panel
 
 from skore._config import configuration
 from skore._sklearn._diagnostic.base import Check, DiagnosticDisplay
-from skore._sklearn._diagnostic.model_checks import _create_model_checks
+from skore._sklearn._diagnostic.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
@@ -50,9 +50,17 @@ class _BaseReport(ReportHelpMixin):
                 and check.report_type == self._report_type
             ):
                 try:
-                    result = check.run(self)
-                    if result:
-                        self._issues_cache.update({check.code: result})
+                    explanation = check.check_function(self)
+                    if explanation:
+                        self._issues_cache.update(
+                            {
+                                check.code: {
+                                    "title": check.title,
+                                    "docs_url": check.docs_url,
+                                    "explanation": explanation,
+                                }
+                            }
+                        )
                     self._checked_codes.add(check.code)
                 except DiagnosticNotApplicable:
                     self._checked_codes |= {check.code}
@@ -129,6 +137,8 @@ class _BaseReport(ReportHelpMixin):
     ) -> None:
         """Register additional diagnostic checks for this report.
 
+        Checks are defined by implementing the :class:`~skore.Check` protocol.
+
         Appends the given checks to the registry used by
         :meth:`diagnose`. The next call to :meth:`diagnose` runs any newly added
         checks (along with checks that have not yet been cached). Already-run
@@ -137,14 +147,28 @@ class _BaseReport(ReportHelpMixin):
         Parameters
         ----------
         checks : list of Check
-            additional :class:`~skore.Check` instances to register
+            Additional checks to register
 
         """
+        report_types = [
+            "cross-validation",
+            "estimator",
+            "comparison-estimator",
+            "comparison-cross-validation",
+        ]
+        for check in checks:
+            if not isinstance(check, Check):
+                raise ValueError(f"{check} does not implement the Check protocol.")
+            if check.report_type not in report_types:
+                raise ValueError(
+                    f"Check report_type should be one of: {', '.join(report_types)}. "
+                    f"Got {check.report_type} instead."
+                )
         self._checks_registry.extend(checks)
 
     def __init__(self) -> None:
         self.id = uuid4().int
-        self._checks_registry: list[Check] = _create_model_checks()
+        self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
 
     @property
     def _hash(self) -> int:

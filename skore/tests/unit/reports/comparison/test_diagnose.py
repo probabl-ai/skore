@@ -1,5 +1,6 @@
+import pytest
+
 from skore._sklearn._diagnostic import DiagnosticDisplay
-from skore._sklearn._diagnostic.base import Check
 
 
 def test_diagnose_collects_component_issues(report, monkeypatch):
@@ -37,18 +38,15 @@ def test_diagnose_collects_component_issues(report, monkeypatch):
 
 def test_diagnose_reuses_component_cached_results(report, monkeypatch):
     """Check that check results are cached and reused."""
-    calls = 0
-    original_run = Check.run
-
-    def counting_run(self, report):
-        nonlocal calls
-        calls += 1
-        return original_run(self, report)
-
-    monkeypatch.setattr(Check, "run", counting_run)
-
-    report.diagnose()
-    calls_after_first = calls
     report.diagnose()
 
-    assert calls == calls_after_first
+    for sub_report in report.reports_.values():
+        for estimator_report in getattr(sub_report, "estimator_reports_", [sub_report]):
+            for check in estimator_report._checks_registry:
+                monkeypatch.setattr(
+                    check,
+                    "check_function",
+                    lambda rpt: pytest.fail("re-ran cached check"),
+                )
+
+    report.diagnose()

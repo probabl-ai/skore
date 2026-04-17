@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from abc import abstractmethod
 from html import escape
 from importlib.metadata import PackageNotFoundError, version
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import pandas as pd
 
@@ -104,8 +104,9 @@ class DiagnosticDisplay(DisplayHelpMixin):
         return "\n".join([self.header, *[f"- {message}" for message in self._messages]])
 
 
-class Check:
-    """Single diagnostic check.
+@runtime_checkable
+class Check(Protocol):
+    """Protocol for defining diagnostic checks.
 
     Each check wraps a callable that inspects a report. If the callable returns a
     non-empty string, that text is recorded as an issue under :attr:`code` with the
@@ -114,55 +115,31 @@ class Check:
 
     Parameters
     ----------
-    check_function : callable
-        callable taking the report instance and returning an explanation string
-        when the check detects a problem, or a false value (e.g. `None` or
-        `""`) when there is nothing to report.
-
     code : str
-        unique identifier for this check , used in
+        Unique identifier for this check , used in
         :meth:`~skore.EstimatorReport.diagnose` and `ignore` lists.
 
     title : str
-        short label shown for the issue when one is reported.
+        Short label shown for the issue when one is reported.
 
     report_type : str
-        must be one of `"cross-validation"`, `"estimator"`,
+        Must be one of `"cross-validation"`, `"estimator"`,
         `"comparison-estimator"`, or `"comparison-cross-validation"`.
 
     docs_url : str or None, default=None
-        optional link or documentation anchor: a string starting with `"http"`
+        Optional link or documentation anchor: a string starting with `"http"`
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
         the automatic diagnostic user guide.
     """
 
-    def __init__(
-        self,
-        check_function: Callable,
-        code: str,
-        title: str,
-        report_type: ReportType,
-        docs_url: str | None = None,
-    ):
-        self.check_function = check_function
-        self.code = code
-        self.title = title
-        self.docs_url = docs_url
-        report_types = [
-            "cross-validation",
-            "estimator",
-            "comparison-estimator",
-            "comparison-cross-validation",
-        ]
-        if report_type not in report_types:
-            raise ValueError(
-                f"report_type should be one of: {', '.join(report_types)}. "
-                f"Got {report_type} instead."
-            )
-        self.report_type = report_type
+    code: str
+    title: str
+    report_type: ReportType
+    docs_url: str | None
 
-    def run(self, report: _BaseReport) -> dict | None:
-        """Run the check on the report and return an issue dictionary.
+    @abstractmethod
+    def check_function(self, report: _BaseReport) -> str | None:
+        """Check function to run on the report and that returns an explanation string.
 
         Parameters
         ----------
@@ -171,19 +148,9 @@ class Check:
 
         Returns
         -------
-        dict or None
-            A dictionary with the title, documentation URL, and explanation
-            as the value, or None if the check did not find any issues.
+        str or None
+            An explanation string, or None if the check did not find any issues.
         """
-        explanation = self.check_function(report)
-        if explanation:
-            return {
-                "title": self.title,
-                "docs_url": self.docs_url,
-                "explanation": explanation,
-            }
-
-        return None
 
 
 def _get_issue_documentation_url(issue: dict) -> str | None:

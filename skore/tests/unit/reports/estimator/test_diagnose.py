@@ -25,6 +25,23 @@ def mock_issue(report):
     )
 
 
+class TestingCheck(Check):
+    code = "TST001"
+    title = "Test issue"
+    report_type = "estimator"
+    docs_url = "tst001"
+
+    def __init__(
+        self, has_issue: bool = True, docs_url="tst001", report_type="estimator"
+    ):
+        self.has_issue = has_issue
+        self.docs_url = docs_url
+        self.report_type = report_type
+
+    def check_function(self, report):
+        return "Something was found." if self.has_issue else None
+
+
 def test_diagnose_detects_overfitting(regression_data):
     """Check that the overfitting issue is detected."""
     X, y = regression_data
@@ -61,7 +78,7 @@ def test_exception_when_train_data_missing(regression_train_test_split):
     for check in report._checks_registry:
         if check.code in ["SKD001", "SKD002"]:
             with pytest.raises(DiagnosticNotApplicable):
-                check.run(report)
+                check.check_function(report)
 
 
 def test_diagnose_no_issues(monkeypatch, regression_data):
@@ -122,14 +139,14 @@ def test_diagnose_documentation_url_points_to_existing_rst():
 def test_diagnose_reuses_cached_results(monkeypatch, regression_data):
     """Check that check results are cached and reused."""
     calls = 0
-    original_run = Check.run
+    original_run = Check.check_function
 
     def counting_run(self, report):
         nonlocal calls
         calls += 1
         return original_run(self, report)
 
-    monkeypatch.setattr(Check, "run", counting_run)
+    monkeypatch.setattr(Check, "check_function", counting_run)
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=0.2)
     report.diagnose()
@@ -143,47 +160,27 @@ def test_add_checks_runs_custom_check(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
 
-    check = Check(
-        lambda report: "Something was found.",
-        "CUSTOM001",
-        "Custom issue",
-        "estimator",
-        "custom001",
-    )
-    report.add_checks([check])
+    report.add_checks([TestingCheck(has_issue=True)])
     result = report.diagnose()
-    assert "CUSTOM001" in result.issues
-    assert result.issues["CUSTOM001"]["title"] == "Custom issue"
-    assert result.issues["CUSTOM001"]["docs_url"] == "custom001"
-    assert result.issues["CUSTOM001"]["explanation"] == "Something was found."
+    assert "TST001" in result.issues
+    assert result.issues["TST001"]["title"] == "Test issue"
+    assert result.issues["TST001"]["docs_url"] == "tst001"
+    assert result.issues["TST001"]["explanation"] == "Something was found."
 
 
 def test_add_checks_reuses_builtin_cache(monkeypatch, regression_data):
     """Check that add_checks does not re-run already cached built-in checks."""
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
-    calls = 0
-    original_run = Check.run
-
-    def counting_run(self, rpt):
-        nonlocal calls
-        calls += 1
-        return original_run(self, rpt)
-
-    monkeypatch.setattr(Check, "run", counting_run)
-
-    report.diagnose()
-    calls_after_first = calls
-
-    def my_check(report):
-        return "Details."
-
-    custom = Check(my_check, "CUSTOM002", "Another issue", "estimator")
-    report.add_checks([custom])
     report.diagnose()
 
-    # Only the new custom check should have run, not the built-in ones again
-    assert calls == calls_after_first + 1
+    for check in report._checks_registry:
+        monkeypatch.setattr(
+            check, "check_function", lambda report: pytest.fail("re-ran cached check")
+        )
+
+    report.add_checks([TestingCheck(has_issue=True)])
+    report.diagnose()
 
 
 def test_add_checks_docs_url_full(regression_data):
@@ -191,16 +188,11 @@ def test_add_checks_docs_url_full(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
 
-    def check_with_url(report):
-        return "Has a URL."
-
-    check = Check(
-        check_with_url, "URL001", "URL test", "estimator", "https://example.com/my-doc"
-    )
+    check = TestingCheck(has_issue=True, docs_url="https://example.com/my-doc")
     report.add_checks([check])
     result = report.diagnose()
     frame = result.frame()
-    row = frame.query("code == 'URL001'")
+    row = frame.query("code == 'TST001'")
     assert row["documentation_url"].iloc[0] == "https://example.com/my-doc"
     assert "Read more about this here" in repr(result)
 
@@ -210,22 +202,34 @@ def test_add_checks_docs_url_absent(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
 
-    def check_no_url(report):
-        return "No docs_url provided."
-
-    check = Check(check_no_url, "NOURL001", "No URL", "estimator")
+    check = TestingCheck(has_issue=True, docs_url=None)
     report.add_checks([check])
     result = report.diagnose()
     frame = result.frame()
-    row = frame[frame["code"] == "NOURL001"]
+    row = frame[frame["code"] == "TST001"]
     assert row["documentation_url"].iloc[0] is None
 
 
-def test_check_invalid_report_type():
+def test_check_invalid_report_type(regression_data):
     """Check that Check raises ValueError for unsupported report_type."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
 
-    def my_check(report):
-        return None
-
+    check = TestingCheck(has_issue=False, report_type="invalid")
     with pytest.raises(ValueError, match="report_type should be one of"):
-        Check(my_check, "X", "Title", "invalid")
+        report.add_checks([check])
+
+
+def test_check_invalid_protocol(regression_data):
+    """Check that Check raises ValueError for unsupported protocol."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+
+    class InvalidCheck:
+        code = "INVALID001"
+        title = "Invalid issue"
+        report_type = "estimator"
+        docs_url = "invalid001"
+
+    with pytest.raises(ValueError, match="does not implement the Check protocol."):
+        report.add_checks([InvalidCheck()])

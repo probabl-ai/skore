@@ -30,28 +30,25 @@ import numpy as np
 from skore import Check, DiagnosticNotApplicable
 
 
-def check_high_feature_count(report):
-    """Flag when the number of features exceeds a threshold."""
-    if report.X_test is None:
-        raise DiagnosticNotApplicable()
+class CustomCheck1(Check):
+    code = "CSTM001"
+    title = "High feature count"
+    report_type = "estimator"
+    docs_url = "https://scikit-learn.org/stable/modules/feature_selection.html#feature-selection"
 
-    n_features = X.shape[1]
-    if n_features > 50:
-        return (
-            f"The dataset has {n_features} features which may hurt model performance. "
-            "Consider feature selection or dimensionality reduction."
-        )
+    def check_function(self, report):
+        """Flag when the number of features exceeds a threshold."""
+        if report.X_test is None:
+            raise DiagnosticNotApplicable()
 
-    return None
+        n_features = X.shape[1]
+        if n_features > 50:
+            return (
+                f"The dataset has {n_features} features which may hurt model performance. "
+                "Consider feature selection or dimensionality reduction."
+            )
+        return None
 
-
-custom_check_1 = Check(
-    check_function=check_high_feature_count,
-    code="CSTM001",
-    title="High feature count",
-    report_type="estimator",
-    docs_url="https://scikit-learn.org/stable/modules/feature_selection.html#feature-selection",
-)
 
 # %%
 # Registering the check
@@ -68,7 +65,7 @@ X = rng.normal(size=(200, 80))
 y = X[:, 0] + rng.normal(size=200)
 
 report = evaluate(LinearRegression(), X, y)
-report.add_checks([custom_check_1])
+report.add_checks([CustomCheck1()])
 report.diagnose()
 
 # %%
@@ -91,34 +88,32 @@ y_noisy[: len(y_noisy) // 5] = rng.normal(size=len(y_noisy) // 5)
 cv_report = evaluate(LinearRegression(), X, y_noisy, splitter=5)
 
 
-def check_cv_score_variance(report):
-    """Flag high score variance across CV splits."""
-    frames = [
-        sub_report.metrics.summarize(data_source="test").data
-        for sub_report in report.estimator_reports_
-    ]
-    scores = pd.concat(frames, ignore_index=True)
+class CustomCheck2(Check):
+    code = "CSTM002"
+    title = "High score variance across CV splits"
+    report_type = "cross-validation"
+    docs_url = None
 
-    high_var_metrics = [
-        metric_name
-        for metric_name, group in scores.groupby("metric")
-        if group["score"].std() > 0.1
-    ]
+    def check_function(self, report):
+        """Flag high score variance across CV splits."""
+        frames = [
+            sub_report.metrics.summarize(data_source="test").data
+            for sub_report in report.estimator_reports_
+        ]
+        scores = pd.concat(frames, ignore_index=True)
 
-    if high_var_metrics:
-        return f"Metrics with high variance: {', '.join(high_var_metrics)}."
-    return None
+        high_var_metrics = [
+            metric_name
+            for metric_name, group in scores.groupby("metric")
+            if group["score"].std() > 0.1
+        ]
 
-
-custom_check_2 = Check(
-    check_function=check_cv_score_variance,
-    code="CSTM002",
-    title="High score variance across folds",
-    report_type="cross-validation",
-)
+        if high_var_metrics:
+            return f"Metrics with high variance: {', '.join(high_var_metrics)}."
+        return None
 
 
-cv_report.add_checks([custom_check_2])
+cv_report.add_checks([CustomCheck2()])
 cv_report.diagnose()
 
 # %%
@@ -128,7 +123,7 @@ cv_report.diagnose()
 # We can also reuse our first check to run it on the component estimator reports
 # and aggregate the results across splits.
 
-cv_report.add_checks([custom_check_1])
+cv_report.add_checks([CustomCheck1()])
 cv_report.diagnose()
 
 # %%
@@ -139,5 +134,5 @@ from sklearn.ensemble import RandomForestRegressor
 comparison_report = evaluate(
     [LinearRegression(), RandomForestRegressor()], X, y, splitter=5
 )
-comparison_report.add_checks([custom_check_1, custom_check_2])
+comparison_report.add_checks([CustomCheck1(), CustomCheck2()])
 comparison_report.diagnose()
