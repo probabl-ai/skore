@@ -238,6 +238,7 @@ def test_check_invalid_protocol(regression_data):
 
 
 def test_diagnose_custom_metric(binary_classification_data):
+    """Check that diagnose works with custom metrics in the report."""
     X, y = binary_classification_data
     report = evaluate(DummyClassifier(), X, y)
 
