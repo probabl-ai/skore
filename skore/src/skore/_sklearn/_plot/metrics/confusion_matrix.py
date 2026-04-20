@@ -92,7 +92,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     @property
     def labels(self):
-        return self.confusion_matrix_predict["predicted_label"].unique().tolist()
+        return self.confusion_matrix_predict["predicted_label"].cat.categories.to_list()
 
     @classmethod
     def _concatenate(
@@ -516,8 +516,14 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         np.divide(cm, total_sums, out=cm_all, where=total_sums != 0)
 
         data = {
-            "true_label": np.tile(np.repeat(labels, len(labels)), len(thresholds)),
-            "predicted_label": np.tile(np.tile(labels, len(labels)), len(thresholds)),
+            "true_label": pd.Series(
+                np.tile(np.repeat(labels, len(labels)), len(thresholds)),
+                dtype="category",
+            ),
+            "predicted_label": pd.Series(
+                np.tile(np.tile(labels, len(labels)), len(thresholds)),
+                dtype="category",
+            ),
             "count": counts,
             "normalized_by_true": cm_true.reshape(-1),
             "normalized_by_pred": cm_pred.reshape(-1),
@@ -526,8 +532,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             **metadata,
         }
         for col in metadata:
-            data[col] = pd.Series([data[col]], dtype="category").repeat(
-                len(thresholds) * len(labels) ** 2
+            data[col] = pd.Series(
+                np.array(data[col]).repeat(len(thresholds) * len(labels) ** 2),
+                dtype="category",
             )
 
         return pd.DataFrame(data)
