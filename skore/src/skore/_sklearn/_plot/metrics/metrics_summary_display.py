@@ -159,7 +159,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         *,
         report_type: ReportType,
         extra_rows_data: list[dict[str, Any]],
-    ):
+    ) -> "MetricsSummaryDisplay":
         rows = []
         for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
             rows.extend(
