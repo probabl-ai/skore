@@ -34,10 +34,41 @@ Changelog
 `Unreleased`_
 =============
 
-.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.15.0...HEAD
+.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.16.0...HEAD
 
 Release highlights
 ------------------
+
+Changed
+-------
+
+Added
+-----
+
+Removed
+-------
+
+Fixed
+-----
+
+`0.16.0`_ (2026-04-20)
+======================
+
+.. _0.16.0: https://github.com/probabl-ai/skore/compare/skore/0.15.0...skore/0.16.0
+
+Release highlights
+------------------
+
+- **Breaking change:** Computing custom metrics on reports is now done by calling
+  :meth:`EstimatorReport.metrics.add` followed by :meth:`summarize`.
+  :meth:`custom_metric` has been removed, and :meth:`summarize` no longer accepts
+  callables or keyword arguments; only names of registered metrics are supported
+  (which includes the default metrics such as `accuracy` for classifiers).
+  Example usage is available `here <https://docs.skore.probabl.ai/0.16/auto_examples/model_evaluation/plot_custom_metrics.html>`__.
+  See :pr:`2736` by :user:`auguste-probabl`.
+
+- Reports now expose a `report.diagnose()` method that automatically
+  detects common modeling issues such as overfitting and underfitting.
 
 Changed
 -------
@@ -52,7 +83,7 @@ Changed
   :meth:`custom_metric` has been removed, and :meth:`summarize` no longer accepts
   callables or keyword arguments; only names of registered metrics are supported
   (which includes the default metrics such as `accuracy` for classifiers).
-  Example usage is available `here <https://docs.skore.probabl.ai/dev/auto_examples/model_evaluation/plot_custom_metrics.html>`__.
+  Example usage is available `here <https://docs.skore.probabl.ai/0.16/auto_examples/model_evaluation/plot_custom_metrics.html>`__.
   See :pr:`2736` by :user:`auguste-probabl`.
 
 - Python `3.14.4` is now supported, while Python `3.10` support is now deprecated. See :pr:`2771` by :user:`thomass-dev`.
@@ -65,18 +96,14 @@ Added
   accept scikit-learn metric names without the `neg_` prefix. For example,
   ``"mean_squared_error"`` can be passed instead of ``"neg_mean_squared_error"``
   and is resolved automatically. See :pr:`2735` by :user:`direkkakkar319-ops`.
+
 - Reports now expose a `report.diagnose()` method that automatically
   detects common modeling issues such as overfitting and underfitting.
+
 - :class:`~skore.EstimatorReport` and :class:`~skore.CrossValidationReport` now
   expose :meth:`get_state` / :meth:`from_state` helpers to support more robust
   serialization and deserialization across skore versions than plain pickling.
   See :pr:`2741` by :user:`cakedev0`.
-
-Removed
--------
-
-Fixed
------
 
 `0.15.0`_ (2026-04-02)
 ======================
@@ -119,7 +146,7 @@ Release highlights
 ------------------
 
 - :func:`skore.evaluate` and :func:`skore.compare` are new top-level dispatcher functions that create the appropriate report class from an estimator in a single function call. See :pr:`2573` by :user:`raotalha71` and :pr:`2604` by :user:`glemaitre`.
-- skore can now integrate with MLflow by passing `mode="mlflow"` and the new `tracking_uri` option to :class:`~skore.Project`. Example usage is available `here <https://docs.skore.probabl.ai/dev/auto_examples/technical_details/plot_skore_mlflow_project.html>`__. See :pr:`2527` by :user:`cakedev0`.
+- skore can now integrate with MLflow by passing `mode="mlflow"` and the new `tracking_uri` option to :class:`~skore.Project`. Example usage is available `here <https://docs.skore.probabl.ai/0.14/auto_examples/technical_details/plot_skore_mlflow_project.html>`__. See :pr:`2527` by :user:`cakedev0`.
 
 Changed
 -------
