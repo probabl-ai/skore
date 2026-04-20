@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING, cast
 
+import numpy as np
 from numpy.typing import ArrayLike
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
@@ -146,4 +147,40 @@ class CheckUnderfitting(Check):
         return None
 
 
-_BUILTIN_CHECKS = [CheckOverfitting(), CheckUnderfitting()]
+class CheckUnscaledCoefficients(Check):
+    code = "SKD006"
+    title = "Unscaled coefficients"
+    report_type = "estimator"
+    docs_url = "skd006-unscaled_coefficients"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        """Check for unscaled coefficients (SKD006).
+
+        When using a linear model, the input features should be scaled so that their
+        coefficient values can be used as a measure of feature importance.
+        """
+        from skore._sklearn._estimator.report import EstimatorReport
+
+        if not (
+            isinstance(report, EstimatorReport)
+            and report.X_train is not None
+            and report.X_test is not None
+            and hasattr(report.estimator, "coef_")
+        ):
+            raise DiagnosticNotApplicable()
+
+        X = np.concatenate([report.X_train, report.X_test])
+        if not np.allclose(X.mean(axis=0), 0) and not np.allclose(X.std(axis=0), 1):
+            return (
+                "The input features are not scaled. When using a linear "
+                "model, the input features should be scaled so that their coefficient "
+                "values can be used as a measure of feature importance."
+            )
+        return None
+
+
+_BUILTIN_CHECKS = [
+    CheckOverfitting(),
+    CheckUnderfitting(),
+    CheckUnscaledCoefficients(),
+]
