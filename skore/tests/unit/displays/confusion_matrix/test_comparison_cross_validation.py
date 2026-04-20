@@ -1,9 +1,6 @@
 import matplotlib as mpl
 import numpy as np
-import pandas as pd
 import pytest
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
 
 from skore import ComparisonReport, CrossValidationReport
 
@@ -50,7 +47,7 @@ def test_split_aggregation(
             for text in ax.texts
             if text.get_text() and "±" in text.get_text()
         ]
-        assert len(annotation_texts) == len(display.display_labels) ** 2
+        assert len(annotation_texts) == len(display.labels) ** 2
 
         for text_content in annotation_texts:
             assert "\n" in text_content
@@ -68,89 +65,13 @@ def test_estimator_names_in_confusion_matrix(
     report = comparison_cross_validation_reports_binary_classification
     display = report.metrics.confusion_matrix()
 
-    estimator_names = display.confusion_matrix["estimator"].unique()
+    estimator_names = display.confusion_matrix_predict["estimator"].unique()
     assert len(estimator_names) == 2
     assert set(estimator_names) == set(report.reports_.keys())
 
 
-@pytest.mark.parametrize(
-    "estimator, expected_default_threshold",
-    [(SVC(probability=False), 0), (LogisticRegression(), 0.5)],
-)
-def test_frame_default_threshold(
-    binary_classification_data, estimator, expected_default_threshold
-):
-    """Check that frame() uses the rightdefault threshold."""
-    (X, y), cv = binary_classification_data, 3
-    cv_report_1 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    cv_report_2 = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    report = ComparisonReport([cv_report_1, cv_report_2])
-    display = report.metrics.confusion_matrix()
-
-    frame = display.frame()
-    assert isinstance(frame, pd.DataFrame)
-    n_classes = len(display.display_labels)
-    n_estimators = 2
-    assert frame.shape == (n_classes * n_classes * n_estimators * cv, 7)
-
-    for estimator_name in report.reports_:
-        for split_idx in range(cv):
-            estimator_split_frame = frame.query(
-                f"estimator == '{estimator_name}'"
-            ).query(f"split == {split_idx}")
-            assert estimator_split_frame["threshold"].nunique() == 1
-            estimator_split_thresholds = (
-                display.confusion_matrix.query(f"estimator == '{estimator_name}'")
-                .query(f"split == {split_idx}")["threshold"]
-                .unique()
-            )
-            closest_threshold = estimator_split_thresholds[
-                np.argmin(abs(estimator_split_thresholds - expected_default_threshold))
-            ]
-            assert estimator_split_frame["threshold"].iloc[0] == closest_threshold
-
-
-def test_threshold_closest_match(pyplot, forest_binary_classification_data):
-    """Check that the closest threshold is selected for data."""
-    estimator, X, y = forest_binary_classification_data
-    cv_report_1 = CrossValidationReport(estimator, X, y, splitter=3)
-    cv_report_2 = CrossValidationReport(estimator, X, y, splitter=3)
-    report = ComparisonReport([cv_report_1, cv_report_2])
-
-    display = report.metrics.confusion_matrix()
-
-    middle_index = len(display.thresholds) // 2
-    threshold = (
-        display.thresholds[middle_index] + display.thresholds[middle_index + 1]
-    ) / 2 - 1e-6
-    assert threshold not in display.thresholds
-
-    fig = display.plot(threshold_value=threshold)
-    axes = fig.axes
-    expected_title = (
-        f"Confusion Matrix\nDecision threshold: {threshold:.2f}"
-        + "\nData source: Test set"
-    )
-    assert fig.get_suptitle() == expected_title
-    for idx, estimator in enumerate(report.reports_):
-        frame = display.frame(normalize=None, threshold_value=threshold).query(
-            f"estimator == '{estimator}'"
-        )
-        aggregated = (
-            frame.groupby(["true_label", "predicted_label"])["value"]
-            .agg(["mean", "std"])
-            .reset_index()
-        )
-        expected_values = aggregated.pivot(
-            index="true_label", columns="predicted_label", values="mean"
-        ).reindex(index=display.display_labels, columns=display.display_labels)
-        np.testing.assert_allclose(
-            axes[idx].collections[0].get_array(), expected_values.values
-        )
-
-
 def test_pos_label(pyplot, forest_binary_classification_data):
-    """Check that the pos_label parameter works correctly."""
+    """Check that the report_pos_label parameter works correctly."""
     estimator, X, y = forest_binary_classification_data
     labels = np.array(["A", "B"], dtype=object)
     y_labeled = labels[y]

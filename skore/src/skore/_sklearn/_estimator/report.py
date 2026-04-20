@@ -300,6 +300,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "test_data": self._test_data,
             },
             "predictions": predictions,
+            "metric_registry": self._metric_registry,
             # ---------- OPTIONAL STATE ------------
             # this part is less structured and not crucial for reconstructing a report
             # so we won't try ensuring backward compatibility.
@@ -315,6 +316,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if version != _STATE_VERSION:
             # in the future, we could support some BW compatibility instead of crashing
             raise ValueError(f"Unexpected state version: {version!r}")
+
+        report_type = state["metadata"]["report_type"]
+        if report_type != cls._report_type:
+            raise ValueError(f"Unexpected report_type in state: {report_type}")
 
         report = cls.__new__(cls)
 
@@ -337,7 +342,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 for (data_source, name), val in state["predictions"].items()
             }
         )
-        report._metric_registry = MetricRegistry(report)
+        report._metric_registry = state["metric_registry"]
 
         return report
 
