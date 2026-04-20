@@ -1,4 +1,4 @@
-from typing import Any, Literal, TypedDict, cast
+from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import pandas as pd
 from matplotlib.figure import Figure
@@ -15,12 +15,12 @@ from skore._sklearn.types import (
 from skore._utils._index import flatten_multi_index
 
 
-class MetricsSummaryRow(TypedDict, total=False):
+class MetricsSummaryRow(TypedDict):
     """A single row rendered by ``MetricsSummaryDisplay``.
 
     Parameters
     ----------
-    metric : str
+    metric_verbose_name : str
         Human-readable metric name shown in the display.
     estimator_name : str
         Name shown in the display.
@@ -40,7 +40,7 @@ class MetricsSummaryRow(TypedDict, total=False):
         Cross-validation split index.
     """
 
-    metric: str
+    metric_verbose_name: str
     estimator_name: str
     data_source: DataSource
     greater_is_better: bool | None
@@ -48,7 +48,7 @@ class MetricsSummaryRow(TypedDict, total=False):
     label: PositiveLabel | None
     average: str | None
     output: int | None
-    split: int
+    split: NotRequired[int]
 
 
 def metric_score_to_rows(
@@ -91,7 +91,7 @@ def metric_score_to_rows(
         kwargs = metric.kwargs
 
     row: MetricsSummaryRow = {
-        "metric": metric.verbose_name,
+        "metric_verbose_name": metric.verbose_name,
         "estimator_name": estimator_name,
         "data_source": data_source,
         "greater_is_better": metric.greater_is_better,
@@ -123,7 +123,7 @@ class MetricsSummaryDisplay(DisplayMixin):
     Parameters
     ----------
     rows : list of MetricsSummaryRow
-        The rows to display. See ``MetricsSummaryRow`` for the row schema.
+        The rows to display.
 
     report_type : {"estimator", "comparison-estimator", "cross-validation", \
             "comparison-cross-validation"}
@@ -158,8 +158,8 @@ class MetricsSummaryDisplay(DisplayMixin):
         child_displays: list["MetricsSummaryDisplay"],
         *,
         report_type: ReportType,
-        extra_rows_data: list[MetricsSummaryRow],
-    ):
+        extra_rows_data: list[dict[str, Any]],
+    ) -> "MetricsSummaryDisplay":
         rows = []
         for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
             rows.extend(
@@ -197,13 +197,13 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         estimator_name = df.pop("estimator_name").iloc[0]
         index = df.columns.intersection(
-            ["metric", "label", "output", "average"]
+            ["metric_verbose_name", "label", "output", "average"]
         ).to_list()
         df = df.set_index(index)
 
         # Rename columns as well as index names
         new_columns = {
-            "metric": "Metric",
+            "metric_verbose_name": "Metric",
             "label": "Label / Average",
             "output": "Output",
             "average": "Average",
