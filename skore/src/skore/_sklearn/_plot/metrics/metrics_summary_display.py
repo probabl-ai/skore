@@ -20,7 +20,7 @@ class MetricsSummaryRow(TypedDict):
 
     Parameters
     ----------
-    metric : str
+    metric_verbose_name : str
         Human-readable metric name shown in the display.
     estimator_name : str
         Name shown in the display.
@@ -40,7 +40,7 @@ class MetricsSummaryRow(TypedDict):
         Cross-validation split index.
     """
 
-    metric: str
+    metric_verbose_name: str
     estimator_name: str
     data_source: DataSource
     favorability: str
@@ -91,7 +91,7 @@ def metric_score_to_rows(
         kwargs = metric.kwargs
 
     row: MetricsSummaryRow = {
-        "metric": metric.verbose_name,
+        "metric_verbose_name": metric.verbose_name,
         "estimator_name": estimator_name,
         "data_source": data_source,
         "favorability": metric.icon,
@@ -197,7 +197,7 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         estimator_name = df.pop("estimator_name").iloc[0]
         index = df.columns.intersection(
-            ["metric", "label", "output", "average"]
+            ["metric_verbose_name", "label", "output", "average"]
         ).to_list()
         df = df.set_index(index)
 
@@ -211,7 +211,7 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         # Rename columns as well as index names
         new_columns = {
-            "metric": "Metric",
+            "metric_verbose_name": "Metric",
             "label": "Label / Average",
             "output": "Output",
             "average": "Average",

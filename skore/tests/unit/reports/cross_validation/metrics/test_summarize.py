@@ -41,7 +41,7 @@ def check_display_structure(
 
     assert set(data.columns) == {
         "split",
-        "metric",
+        "metric_verbose_name",
         "estimator_name",
         "data_source",
         "label",
@@ -50,7 +50,7 @@ def check_display_structure(
         "score",
         "favorability",
     }
-    assert set(data["metric"]) == expected_metrics
+    assert set(data["metric_verbose_name"]) == expected_metrics
     assert set(data["estimator_name"]) == {expected_estimator_name}
     assert set(data["data_source"]) == {expected_data_source}
     assert set(data["split"]) == {0, 1}
@@ -89,11 +89,13 @@ def test_binary_classification_forest(forest_binary_classification_data):
         expected_estimator_name="RandomForestClassifier",
     )
 
-    data = display.data.set_index(["split", "metric"]).sort_index()
+    data = display.data.set_index(["split", "metric_verbose_name"]).sort_index()
     assert len(data.loc[(0, "Precision")]) == 2
     assert len(data.loc[(0, "Recall")]) == 2
 
-    assert set(display.data.set_index("metric").loc["Precision", "label"]) == {0, 1}
+    assert set(
+        display.data.set_index("metric_verbose_name").loc["Precision", "label"]
+    ) == {0, 1}
     assert display.data["output"].isna().all()
 
 
@@ -146,7 +148,7 @@ def test_multiclass_classification_forest(forest_multiclass_classification_data)
 
     assert display.data["output"].isna().all()
 
-    data = display.data.set_index(["split", "metric"]).sort_index()
+    data = display.data.set_index(["split", "metric_verbose_name"]).sort_index()
     # 3 classes
     assert (
         set(data.loc[(0, "Precision"), "label"])
@@ -176,7 +178,7 @@ def test_multiclass_classification_svc(svc_multiclass_classification_data):
 
     assert display.data["output"].isna().all()
 
-    data = display.data.set_index(["split", "metric"]).sort_index()
+    data = display.data.set_index(["split", "metric_verbose_name"]).sort_index()
     assert len(data.loc[(0, "Precision")]) == 3
     assert len(data.loc[(0, "Recall")]) == 3
 
@@ -211,7 +213,7 @@ def test_multioutput_regression(linear_regression_multioutput_data):
 
     assert display.data["label"].isna().all()
 
-    data = display.data.set_index(["split", "metric"]).sort_index()
+    data = display.data.set_index(["split", "metric_verbose_name"]).sort_index()
     assert len(data.loc[(0, "R²")]) == 2
     assert set(data.loc[(0, "R²"), "output"]) == {0, 1}
 
@@ -248,7 +250,11 @@ def test_default_multioutput_regression(linear_regression_multioutput_data):
 
     # Each metric should have 2 outputs per split
     assert (
-        len(display.data.set_index(["split", "metric"]).sort_index().loc[(0, "R²")])
+        len(
+            display.data.set_index(["split", "metric_verbose_name"])
+            .sort_index()
+            .loc[(0, "R²")]
+        )
         == 2
     )
 
@@ -263,7 +269,7 @@ def test_default_multiclass_classification(forest_multiclass_classification_data
 
     assert (
         len(
-            display.data.set_index(["split", "metric"])
+            display.data.set_index(["split", "metric_verbose_name"])
             .sort_index()
             .loc[(0, "Precision")]
         )
@@ -288,7 +294,7 @@ def test_pos_label_overwrite(metric, logistic_binary_classification_data):
     report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
     display = report.metrics.summarize(metric=metric)
 
-    data = display.data.set_index(["split", "metric"]).sort_index()
+    data = display.data.set_index(["split", "metric_verbose_name"]).sort_index()
     assert data.loc[(0, metric_display_name), "label"].to_list() == ["A", "B"]
 
     # With pos_label
