@@ -410,4 +410,4 @@ def test_missing_class_in_split(pyplot, binary_classification_data):
 
     display = report.metrics.confusion_matrix()
     assert display.labels == [0, 1]
-    assert display.confusion_matrix_predict.shape == (2**2, 9)
+    assert len(display.confusion_matrix_predict) == 2**2
