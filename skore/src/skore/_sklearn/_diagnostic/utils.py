@@ -35,7 +35,7 @@ def check_score_gap_to_baseline(
     if pd.isna(greater_is_better):
         return False
 
-    if bool(greater_is_better):
+    if greater_is_better:
         return score - baseline >= adaptive_threshold(
             floor=floor, fraction=fraction, references=(baseline,)
         )
