@@ -128,6 +128,20 @@ def test_regression_multioutput(linear_regression_multioutput_data, metric, nb_s
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
+@pytest.mark.parametrize("metric", ["mae", "mape"])
+def test_regression_multioutput_array_weights(
+    linear_regression_multioutput_data, metric
+):
+    """Check that mae and mape accept an array of weights for multioutput."""
+    (estimator, X, y), cv = linear_regression_multioutput_data, 2
+    report = CrossValidationReport(estimator, X, y, splitter=cv)
+    weights = np.array([0.3, 0.7])
+    result = getattr(report.metrics, metric)(multioutput=weights)
+    assert isinstance(result, pd.DataFrame)
+    # weighted average produces a single scalar per split, so 1 row
+    assert result.shape[0] == 1
+
+
 def test_brier_score_requires_probabilities():
     """Check that the Brier score is not defined for estimator that do not
     implement `predict_proba`.
