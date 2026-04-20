@@ -25,7 +25,7 @@ def mock_issue(report):
     )
 
 
-class TestingCheck(Check):
+class MockCheck(Check):
     code = "TST001"
     title = "Test issue"
     report_type = "estimator"
@@ -160,7 +160,7 @@ def test_add_checks_runs_custom_check(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
 
-    report.add_checks([TestingCheck(has_issue=True)])
+    report.add_checks([MockCheck(has_issue=True)])
     result = report.diagnose()
     assert "TST001" in result.issues
     assert result.issues["TST001"]["title"] == "Test issue"
@@ -179,7 +179,7 @@ def test_add_checks_reuses_builtin_cache(monkeypatch, regression_data):
             check, "check_function", lambda report: pytest.fail("re-ran cached check")
         )
 
-    report.add_checks([TestingCheck(has_issue=True)])
+    report.add_checks([MockCheck(has_issue=True)])
     report.diagnose()
 
 
@@ -188,7 +188,7 @@ def test_add_checks_docs_url_full(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
 
-    check = TestingCheck(has_issue=True, docs_url="https://example.com/my-doc")
+    check = MockCheck(has_issue=True, docs_url="https://example.com/my-doc")
     report.add_checks([check])
     result = report.diagnose()
     frame = result.frame()
@@ -202,7 +202,7 @@ def test_add_checks_docs_url_absent(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
 
-    check = TestingCheck(has_issue=True, docs_url=None)
+    check = MockCheck(has_issue=True, docs_url=None)
     report.add_checks([check])
     result = report.diagnose()
     frame = result.frame()
@@ -215,7 +215,7 @@ def test_check_invalid_report_type(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
 
-    check = TestingCheck(has_issue=False, report_type="invalid")
+    check = MockCheck(has_issue=False, report_type="invalid")
     with pytest.raises(ValueError, match="report_type should be one of"):
         report.add_checks([check])
 
