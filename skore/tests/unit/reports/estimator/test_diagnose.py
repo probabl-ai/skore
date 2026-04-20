@@ -2,10 +2,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from sklearn.datasets import make_classification
-from sklearn.dummy import DummyClassifier
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
 from skore import EstimatorReport, configuration, evaluate
 from skore._sklearn._diagnostic import DiagnosticDisplay, get_issue_documentation_url
@@ -30,6 +30,15 @@ def test_diagnose_detects_overfitting():
     assert "6/6 default predictive metrics" in result.issues["SKD001"]["explanation"]
 
 
+def test_diagnose_detects_overfitting_regression(regression_data):
+    """Check that the overfitting issue is detected for regression with 4 metrics."""
+    X, y = regression_data
+    report = evaluate(DecisionTreeRegressor(random_state=0), X, y)
+    result = report.diagnose()
+    assert "SKD001" in result.issues
+    assert "4/4 default predictive metrics" in result.issues["SKD001"]["explanation"]
+
+
 def test_diagnose_detects_underfitting():
     """Check that the underfitting issue is detected."""
     X, y = make_classification(n_samples=400, n_features=8, random_state=0)
@@ -47,6 +56,15 @@ def test_diagnose_detects_underfitting():
     result = report.diagnose()
     assert "SKD002" in result.issues
     assert "6/6 comparable metrics" in result.issues["SKD002"]["explanation"]
+
+
+def test_diagnose_detects_underfitting_regression(regression_data):
+    """Check that the underfitting issue is detected for regression with 4 metrics."""
+    X, y = regression_data
+    report = evaluate(DummyRegressor(), X, y)
+    result = report.diagnose()
+    assert "SKD002" in result.issues
+    assert "4/4 comparable metrics" in result.issues["SKD002"]["explanation"]
 
 
 def test_diagnose_ignore(monkeypatch, regression_train_test_split):
