@@ -388,3 +388,14 @@ def test_confusion_matrix_thresholded_not_available_comparison(
         ValueError, match="Thresholded confusion matrices are not available"
     ):
         display.frame(threshold_value=0.5)
+
+
+def test_missing_class_in_split(pyplot, binary_classification_data):
+    """Check that the confusion matrix is correct when a class is missing in a split."""
+    X = np.array([[0], [1], [0], [0]])
+    y = np.array([0, 1, 0, 0])
+    report = evaluate(LogisticRegression(), X, y, splitter=0.5)
+
+    display = report.metrics.confusion_matrix()
+    assert display.labels == [0, 1]
+    assert display.confusion_matrix_predict.shape == (2**2, 9)
