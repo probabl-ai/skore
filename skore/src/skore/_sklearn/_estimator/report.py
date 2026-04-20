@@ -300,6 +300,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "test_data": self._test_data,
             },
             "predictions": predictions,
+            "metric_registry": self._metric_registry,
             # ---------- OPTIONAL STATE ------------
             # this part is less structured and not crucial for reconstructing a report
             # so we won't try ensuring backward compatibility.
@@ -337,7 +338,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 for (data_source, name), val in state["predictions"].items()
             }
         )
-        report._metric_registry = MetricRegistry(report)
+        report._metric_registry = state["metric_registry"]
 
         return report
 
