@@ -86,6 +86,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         21    report big alpha  Feature #9        0.4...
         >>> display.plot() # shows plot
         """
+        self._parent._inspection_accessed = True
         return CoefficientsDisplay(
             coefficients=pd.concat(
                 [
@@ -150,6 +151,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         7    big trees   petal width (cm)       0.4...
         >>> display.plot() # shows plot
         """
+        self._parent._inspection_accessed = True
         return ImpurityDecreaseDisplay(
             importances=pd.concat(
                 [
@@ -315,6 +317,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
+        self._parent._inspection_accessed = True
         if seed is not None and not isinstance(seed, int):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 

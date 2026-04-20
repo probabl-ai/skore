@@ -178,6 +178,7 @@ class _BaseReport(ReportHelpMixin):
             "report_type": getattr(self, "_report_type", "comparison"),
         }
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
+        self._inspection_accessed: bool = False
 
     @property
     def id(self):
