@@ -18,7 +18,7 @@ from skore._sklearn._plot import (
 from skore._sklearn.types import Aggregate, MetricLike
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
-from skore._utils._metric_rows import metric_score_to_rows, rows_to_dataframe
+from skore._utils._metric_rows import metric_score_to_rows
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
@@ -89,9 +89,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             )
         )
 
-        results = [
-            result.data
-            for result in track(
+        summaries = list(
+            track(
                 parallel(
                     delayed(report.metrics.summarize)(
                         data_source=data_source,
@@ -102,17 +101,12 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 description="Compute metric for each split",
                 total=len(self._parent.estimator_reports_),
             )
-        ]
+        )
 
-        return MetricsSummaryDisplay(
-            data=(
-                pd.concat(
-                    results, axis="index", keys=range(len(results)), names=["split"]
-                )
-                .reset_index()
-                .drop(columns="level_1")
-            ),
+        return MetricsSummaryDisplay._concatenate(
+            summaries,
             report_type="cross-validation",
+            extra_rows_data=[{"split": i} for i in range(len(summaries))],
         )
 
     def add(
@@ -257,8 +251,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 r["split"] = split_idx
             rows.extend(split_rows)
 
-        data = rows_to_dataframe(rows)
-        return MetricsSummaryDisplay(data=data, report_type="cross-validation")
+        return MetricsSummaryDisplay(rows=rows, report_type="cross-validation")
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(

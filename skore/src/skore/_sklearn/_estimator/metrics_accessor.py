@@ -1,7 +1,6 @@
 from collections.abc import Iterable
 from typing import Any, Literal, cast
 
-import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
@@ -32,7 +31,7 @@ from skore._sklearn.metrics import (
 from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
 from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
-from skore._utils._metric_rows import metric_score_to_rows, rows_to_dataframe
+from skore._utils._metric_rows import metric_score_to_rows
 
 
 class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -124,10 +123,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             train_summary = self.summarize(data_source="train", metric=metric)
             test_summary = self.summarize(data_source="test", metric=metric)
 
-            combined = pd.concat(
-                [train_summary.data, test_summary.data], ignore_index=True
-            )
-            return MetricsSummaryDisplay(data=combined, report_type="estimator")
+            combined = train_summary.rows + test_summary.rows
+            return MetricsSummaryDisplay(rows=combined, report_type="estimator")
 
         registry = self._parent._metric_registry
         parsed_metrics: list[Metric]
@@ -156,8 +153,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 )
             )
 
-        data = rows_to_dataframe(rows)
-        return MetricsSummaryDisplay(data=data, report_type="estimator")
+        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
 
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
@@ -173,8 +169,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             pos_label=self._parent.pos_label,
             kwargs=kwargs or None,
         )
-        data = rows_to_dataframe(rows)
-        return MetricsSummaryDisplay(data=data, report_type="estimator")
+        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
 
     def add(
         self,

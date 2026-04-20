@@ -1,4 +1,4 @@
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 import pandas as pd
 from matplotlib.figure import Figure
@@ -6,6 +6,7 @@ from matplotlib.figure import Figure
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn.types import Aggregate, ReportType
 from skore._utils._index import flatten_multi_index
+from skore._utils._metric_rows import rows_to_dataframe
 
 
 class MetricsSummaryDisplay(DisplayMixin):
@@ -16,8 +17,20 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     Parameters
     ----------
-    data : pandas.DataFrame
-        The data to display.
+    rows : list of dicts
+        The rows to display.
+        Expected keys:
+        - "metric": human-readable metric name shown in the display.
+        - "estimator_name"
+        - "data_source": "train" or "test".
+        - "score": numeric metric value (scalar).
+        - "favorability": "(↗︎)", "(↘︎)" or "".
+
+        Depending on the metric shape and report type, rows may also contain:
+        - "label": class label for per-class classification metrics.
+        - "output": output index for multioutput regression metrics.
+        - "average": averaging mode when averaged over labels or outputs.
+        - "split": cross-validation split index.
 
     report_type : {"estimator", "comparison-estimator", "cross-validation", \
             "comparison-cross-validation"}
@@ -26,11 +39,28 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     def __init__(
         self,
-        data: pd.DataFrame,
+        rows: list[dict],
         report_type: ReportType,
     ):
-        self.data = data
+        self.rows = rows
         self.report_type = report_type
+
+    @property
+    def data(self):
+        return rows_to_dataframe(self.rows)
+
+    @staticmethod
+    def _concatenate(
+        child_displays: list["MetricsSummaryDisplay"],
+        *,
+        report_type: ReportType,
+        extra_rows_data: list[dict[str, Any]],
+    ):
+        rows = []
+        for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
+            rows.extend([row | extra_data for row in display.rows])
+
+        return MetricsSummaryDisplay(rows, report_type=report_type)
 
     @staticmethod
     def _flatten_index(df: pd.DataFrame) -> pd.DataFrame:
