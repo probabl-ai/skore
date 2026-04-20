@@ -19,18 +19,20 @@ from skore._sklearn._diagnostic.utils import (
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
-    from skore._sklearn._cross_validation.report import CrossValidationReport
-    from skore._sklearn._estimator.report import EstimatorReport
 
 
-def _get_metrics_data(report: EstimatorReport) -> tuple:
+def _get_metrics_data(report: _BaseReport) -> tuple:
     """Compute report/baseline metrics data for SKD001 and SKD002.
 
     Raises :class:`DiagnosticNotApplicable` when train+test data is
     unavailable.
     """
+    # Avoid circular import
+    from skore._sklearn._estimator.report import EstimatorReport
+
     if (
-        report.X_train is None
+        not isinstance(report, EstimatorReport)
+        or report.X_train is None
         or report.y_train is None
         or report.X_test is None
         or report.y_test is None
@@ -80,7 +82,6 @@ class CheckOverfitting(Check):
         Raises :class:`DiagnosticNotApplicable` when train+test data is
         unavailable.
         """
-        report = cast(EstimatorReport, report)
         report_data, _baseline_data = _get_metrics_data(report)
 
         votes = [
@@ -117,7 +118,6 @@ class CheckUnderfitting(Check):
         Raises :class:`DiagnosticNotApplicable` when train+test data is
         unavailable.
         """
-        report = cast(EstimatorReport, report)
         report_data, baseline_data = _get_metrics_data(report)
 
         votes = [
@@ -154,16 +154,17 @@ class CheckMetricsConsistencyAcrossFolds(Check):
     report_type = "cross-validation"
     docs_url = "skd003-inconsistent_performance"
 
-    def check_function(
-        self,
-        report: _BaseReport,
-    ) -> str | None:
+    def check_function(self, report: _BaseReport) -> str | None:
         """Check the consistency of metrics across folds (SKD003).
 
         Outlier folds are identified with a modified Z-score based on the
         Median Absolute Deviation (MAD) to be robust to extreme values.
         """
-        report = cast(CrossValidationReport, report)
+        from skore._sklearn._cross_validation.report import CrossValidationReport
+
+        if not isinstance(report, CrossValidationReport):
+            raise DiagnosticNotApplicable()
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UndefinedMetricWarning)
             report_data = report.metrics.summarize(data_source="test").frame(
@@ -198,9 +199,11 @@ class CheckHighClassImbalance(Check):
         Detects an issue when the most frequent class represents more than 80% of the
         dataset.
         """
-        report = cast(EstimatorReport, report)
+        from skore._sklearn._estimator.report import EstimatorReport
+
         if (
-            report.ml_task != "binary-classification"
+            not isinstance(report, EstimatorReport)
+            or report.ml_task != "binary-classification"
             or report.y_train is None
             or report.y_test is None
         ):
@@ -233,9 +236,11 @@ class CheckUnderrepresentedClasses(Check):
 
         Detects an issue when some classes represent less than 10% of the dataset.
         """
-        report = cast(EstimatorReport, report)
+        from skore._sklearn._estimator.report import EstimatorReport
+
         if (
-            report.ml_task != "multiclass-classification"
+            not isinstance(report, EstimatorReport)
+            or report.ml_task != "multiclass-classification"
             or report.y_train is None
             or report.y_test is None
         ):

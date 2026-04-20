@@ -1,15 +1,6 @@
 import numpy as np
 
-_TIMING_METRICS = {
-    "Fit time (s)",
-    "Predict time (s)",
-    "fit time (s)",
-    "predict time (s)",
-    "fit_time_s",
-    "predict_time_s",
-    "Fit time s",
-    "Predict time s",
-}
+_TIMING_METRICS = {"Fit time (s)", "Predict time (s)", "fit_time_s", "predict_time_s"}
 
 
 def adaptive_threshold(
