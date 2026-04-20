@@ -2,7 +2,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import pytest
-from sklearn.dummy import DummyRegressor
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 
@@ -233,3 +233,13 @@ def test_check_invalid_protocol(regression_data):
 
     with pytest.raises(ValueError, match="does not implement the Check protocol."):
         report.add_checks([InvalidCheck()])
+
+
+def test_diagnose_custom_metric(binary_classification_data):
+    """Check that diagnose works with custom metrics in the report."""
+    X, y = binary_classification_data
+    report = evaluate(DummyClassifier(), X, y, pos_label=1)
+    report.metrics.add("f1")
+    result = report.diagnose()
+    assert "SKD002" in result.issues
+    assert "7/7 comparable metrics" in result.issues["SKD002"]["explanation"]
