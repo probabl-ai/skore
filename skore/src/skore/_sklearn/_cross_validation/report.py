@@ -15,7 +15,6 @@ from sklearn.pipeline import Pipeline
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._diagnostic import check_metrics_consistency_across_folds
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -296,6 +295,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             # in the future, we could support some BW compatibility instead of crashing
             raise ValueError(f"Unexpected state version: {version!r}")
 
+        report_type = state["metadata"]["report_type"]
+        if report_type != cls._report_type:
+            raise ValueError(f"Unexpected report_type in state: {report_type}")
+
         report = cls.__new__(cls)
 
         report._metadata = state["metadata"]
@@ -525,14 +528,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
         return report
 
-    def _run_checks(
-        self,
-    ) -> tuple[dict[str, dict], set[str]]:
+    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
         total_splits = len(self.estimator_reports_)
         all_checked_codes: set[str] = set()
         positives_by_code: dict[str, list[dict]] = {}
 
         for estimator_report in self.estimator_reports_:
+            estimator_report.add_checks(self._checks_registry)
             results, checked_codes = estimator_report._get_issues()
             all_checked_codes |= checked_codes
             for code, diagnostic in results.items():
@@ -545,14 +547,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 ref = positives[0]
                 issues[code] = {
                     "title": ref["title"],
-                    "docs_anchor": ref["docs_anchor"],
+                    "docs_url": ref.get("docs_url"),
                     "explanation": (
                         f"Detected in {len(positives)}/{total_splits} evaluated splits."
                     ),
                 }
-
-        issues.update(check_metrics_consistency_across_folds(self))
-        all_checked_codes |= {"SKD003"}
         return issues, all_checked_codes
 
     @property

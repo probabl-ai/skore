@@ -21,12 +21,6 @@ from sklearn.utils.validation import _num_samples, check_is_fitted
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._diagnostic import (
-    DiagnosticNotApplicable,
-    check_high_class_imbalance,
-    check_overfitting_underfitting,
-    check_underrepresented_classes,
-)
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.metrics import MetricRegistry
 from skore._sklearn.types import DataSource, PositiveLabel
@@ -306,6 +300,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "test_data": self._test_data,
             },
             "predictions": predictions,
+            "metric_registry": self._metric_registry,
             # ---------- OPTIONAL STATE ------------
             # this part is less structured and not crucial for reconstructing a report
             # so we won't try ensuring backward compatibility.
@@ -321,6 +316,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if version != _STATE_VERSION:
             # in the future, we could support some BW compatibility instead of crashing
             raise ValueError(f"Unexpected state version: {version!r}")
+
+        report_type = state["metadata"]["report_type"]
+        if report_type != cls._report_type:
+            raise ValueError(f"Unexpected report_type in state: {report_type}")
 
         report = cls.__new__(cls)
 
@@ -343,7 +342,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 for (data_source, name), val in state["predictions"].items()
             }
         )
-        report._metric_registry = MetricRegistry(report)
+        report._metric_registry = state["metric_registry"]
 
         return report
 
@@ -682,27 +681,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         # (copied from sklearn's _process_predict_proba)
         col_idx = np.flatnonzero(self.estimator_.classes_ == pos_label)[0]
         return predictions[:, col_idx]
-
-    def _run_checks(
-        self,
-    ) -> tuple[dict[str, dict], set[str]]:
-        """Run all registered checks against the report.
-
-        Returns a tuple of (detected issues, set of check codes that were evaluated).
-        """
-        issues: dict[str, dict] = {}
-        checked_codes: set[str] = set()
-        for codes, check_fn in [
-            ({"SKD001", "SKD002"}, check_overfitting_underfitting),
-            ({"SKD004"}, check_high_class_imbalance),
-            ({"SKD005"}, check_underrepresented_classes),
-        ]:
-            try:
-                issues.update(check_fn(self))
-                checked_codes |= codes
-            except DiagnosticNotApplicable:
-                pass
-        return issues, checked_codes
 
     @property
     def ml_task(self):

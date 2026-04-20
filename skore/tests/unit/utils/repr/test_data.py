@@ -419,9 +419,9 @@ def test_report_build_help_data_output(report_with_methods):
     assert data.root_node == "_ReportWithExplicitMethods"
     assert data.class_name == "_ReportWithExplicitMethods"
     assert data.accessors == []
-    assert len(data.base_methods) == 2
+    assert len(data.base_methods) == 3
     method_names = {m.name for m in data.base_methods}
-    assert method_names == {"diagnose", "public_action"}
+    assert method_names == {"add_checks", "diagnose", "public_action"}
     for m in data.base_methods:
         assert m.parameters != ""
         assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
