@@ -1,4 +1,4 @@
-from typing import Any, Literal, TypedDict, cast
+from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import pandas as pd
 from matplotlib.figure import Figure
@@ -15,7 +15,7 @@ from skore._sklearn.types import (
 from skore._utils._index import flatten_multi_index
 
 
-class MetricsSummaryRow(TypedDict, total=False):
+class MetricsSummaryRow(TypedDict):
     """A single row rendered by ``MetricsSummaryDisplay``.
 
     Parameters
@@ -48,7 +48,7 @@ class MetricsSummaryRow(TypedDict, total=False):
     label: PositiveLabel | None
     average: str | None
     output: int | None
-    split: int
+    split: NotRequired[int]
 
 
 def metric_score_to_rows(
@@ -158,7 +158,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         child_displays: list["MetricsSummaryDisplay"],
         *,
         report_type: ReportType,
-        extra_rows_data: list[MetricsSummaryRow],
+        extra_rows_data: list[dict[str, Any]],
     ):
         rows = []
         for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
