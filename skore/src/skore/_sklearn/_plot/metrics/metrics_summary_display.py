@@ -123,7 +123,7 @@ class MetricsSummaryDisplay(DisplayMixin):
     Parameters
     ----------
     rows : list of MetricsSummaryRow
-        The rows to display. See ``MetricsSummaryRow`` for the row schema.
+        The rows to display.
 
     report_type : {"estimator", "comparison-estimator", "cross-validation", \
             "comparison-cross-validation"}
