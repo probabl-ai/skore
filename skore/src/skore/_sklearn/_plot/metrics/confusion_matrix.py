@@ -176,6 +176,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             Figure containing the confusion matrix.
         """
         label = _check_label(self.labels, label, self.report_pos_label)
+        if threshold_value == "all":
+            raise ValueError(
+                "threshold_value='all' is not supported for the plot method."
+            )
         if label is None and threshold_value is not None:
             raise ValueError(
                 "Please indicate the class to consider as positive to show the "

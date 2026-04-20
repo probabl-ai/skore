@@ -343,6 +343,18 @@ def test_plot_threshold_requires_label(pyplot, binary_classification_data):
         display.plot(threshold_value=0.5, label=None)
 
 
+def test_plot_threshold_all_not_supported(pyplot, binary_classification_data):
+    """Check that plot raises when threshold_value='all'."""
+    X, y = binary_classification_data
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+
+    display = report.metrics.confusion_matrix()
+    with pytest.raises(
+        ValueError, match="threshold_value='all' is not supported for the plot method."
+    ):
+        display.plot(threshold_value="all")
+
+
 def test_frame_threshold_unavailable_for_predict_only(
     custom_classifier_no_predict_proba_data,
 ):
