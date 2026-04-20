@@ -173,6 +173,7 @@ class _BaseReport(ReportHelpMixin):
             "id": uuid4().int,
             "skore-version": version("skore"),
             "creation-date": datetime.now(timezone.utc).isoformat(),
+            "report_type": self._report_type,
         }
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
 

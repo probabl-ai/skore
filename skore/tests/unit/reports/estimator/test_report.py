@@ -540,6 +540,7 @@ def test_from_state_bypasses_init_and_restores_state(
     expected_accuracy = report.metrics.accuracy()
     report.cache_predictions()
     state = report.get_state()
+    assert state["metadata"]["report_type"] == report._report_type
 
     def _unexpected_init(self, *args, **kwargs):
         raise AssertionError("__init__ should not be called by from_state")
