@@ -447,7 +447,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         classes = estimator.classes_
 
         confusion_matrix_predict = cls._build_confusion_frame(
-            sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred)[np.newaxis, ...],
+            sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred, labels=classes)[
+                np.newaxis, ...
+            ],
             thresholds=np.array([np.nan]),
             labels=classes,
             # metadata:
