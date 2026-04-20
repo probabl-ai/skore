@@ -111,7 +111,7 @@ class _BaseReport(ReportHelpMixin):
         - [SKD002] Potential underfitting. Train/test scores are on par and not
         significantly better than the dummy baseline for 8/8 comparable metrics. Read
         more about this here:
-        https://docs.skore.probabl.ai/dev/user_guide/automatic_diagnostic.html#skd002-underfitting.
+        https://docs.skore.probabl.ai/stable/user_guide/automatic_diagnostic.html#skd002-underfitting.
         Mute with `ignore=['SKD002']`.
         >>> report.diagnose(ignore=["SKD002"])
         Diagnostic: 0 issue(s) detected, 1 check(s) ran, 1 ignored.
