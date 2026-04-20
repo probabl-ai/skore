@@ -26,7 +26,7 @@ class MetricsSummaryRow(TypedDict, total=False):
         Name shown in the display.
     data_source : {"train", "test"}
         Dataset split used to compute the metric.
-    greater_is_better : True, False or None.
+    greater_is_better : bool or None
         Whether higher or lower values are better.
     score : Any
         Scalar metric value stored in the row.
@@ -216,9 +216,9 @@ class MetricsSummaryDisplay(DisplayMixin):
                 df["greater_is_better"]
                 .map({True: "(↗︎)", False: "(↘︎)"})
                 .fillna("")
-                .astype("object")
+                .astype("string")
             )
-        df = df.drop(columns="greater_is_better", errors="ignore")
+        df = df.drop(columns="greater_is_better")
 
         df.index = df.index.set_names(
             [new_columns.get(name, name) for name in df.index.names]
