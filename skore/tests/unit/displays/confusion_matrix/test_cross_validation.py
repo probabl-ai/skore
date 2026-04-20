@@ -1,9 +1,7 @@
 import matplotlib as mpl
 import numpy as np
-import pandas as pd
 import pytest
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
 
 from skore import CrossValidationReport
 
@@ -16,8 +14,8 @@ def test_multiple_thresholds_different_confusion_matrices(
     report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
     display = report.metrics.confusion_matrix()
 
-    low_threshold = display.thresholds[len(display.thresholds) // 4]
-    high_threshold = display.thresholds[3 * len(display.thresholds) // 4]
+    low_threshold = display.confusion_matrix_thresholded["threshold"].min()
+    high_threshold = display.confusion_matrix_thresholded["threshold"].max()
 
     frame_low = display.frame(threshold_value=low_threshold)
     frame_high = display.frame(threshold_value=high_threshold)
@@ -40,7 +38,7 @@ def test_split_aggregation(pyplot, forest_binary_classification_data):
         for text in ax.texts
         if text.get_text() and "±" in text.get_text()
     ]
-    assert len(annotation_texts) == len(display.display_labels) ** 2
+    assert len(annotation_texts) == len(display.labels) ** 2
 
     for text_content in annotation_texts:
         assert "\n" in text_content
@@ -80,75 +78,8 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
         assert isinstance(axes[0], mpl.axes.Axes)
 
 
-@pytest.mark.parametrize(
-    "estimator, expected_default_threshold",
-    [(SVC(probability=False), 0), (LogisticRegression(), 0.5)],
-)
-def test_frame_default_threshold(
-    binary_classification_data, estimator, expected_default_threshold
-):
-    """Check that frame() uses the right default threshold."""
-    X, y = binary_classification_data
-    cv = 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.confusion_matrix()
-
-    frame = display.frame()
-    assert isinstance(frame, pd.DataFrame)
-    n_classes = len(display.display_labels)
-    assert frame.shape == (n_classes * n_classes * cv, 7)
-
-    for split_idx in range(cv):
-        split_frame = frame.query(f"split == {split_idx}")
-        assert split_frame["threshold"].nunique() == 1
-
-        split_thresholds = display.confusion_matrix.query(f"split == {split_idx}")[
-            "threshold"
-        ].unique()
-        closest_threshold = split_thresholds[
-            np.argmin(abs(split_thresholds - expected_default_threshold))
-        ]
-        assert split_frame["threshold"].iloc[0] == closest_threshold
-
-
-def test_threshold_closest_match(forest_binary_classification_data):
-    """Check that the closest threshold is selected for data."""
-    (estimator, X, y), cv = forest_binary_classification_data, 3
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=cv)
-    display = report.metrics.confusion_matrix()
-
-    middle_index = len(display.thresholds) // 2
-    threshold = (
-        display.thresholds[middle_index] + display.thresholds[middle_index + 1]
-    ) / 2 - 1e-6
-    assert threshold not in display.thresholds
-
-    fig = display.plot(threshold_value=threshold)
-    ax = fig.axes[0]
-    expected_title = (
-        f"Confusion Matrix\nDecision threshold: {threshold:.2f}"
-        + "\nData source: Test set"
-    )
-    assert fig.get_suptitle() == expected_title
-
-    frame = display.frame(normalize=None, threshold_value=threshold)
-    aggregated = (
-        frame.groupby(["true_label", "predicted_label"])["value"]
-        .agg(["mean", "std"])
-        .reset_index()
-    )
-    expected_values = aggregated.pivot(
-        index="true_label", columns="predicted_label", values="mean"
-    ).reindex(index=display.display_labels, columns=display.display_labels)
-
-    np.testing.assert_allclose(
-        ax.collections[0].get_array(),
-        expected_values.values,
-    )
-
-
 def test_pos_label(pyplot, forest_binary_classification_data):
-    """Check that the pos_label parameter works correctly."""
+    """Check that the report_pos_label parameter works correctly."""
     (estimator, X, y), cv = forest_binary_classification_data, 3
     labels = np.array(["A", "B"], dtype=object)
     y = labels[y]

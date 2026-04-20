@@ -1,4 +1,5 @@
-from abc import abstractmethod
+from __future__ import annotations
+
 from datetime import datetime, timezone
 from importlib.metadata import version
 from io import StringIO
@@ -9,7 +10,9 @@ from rich.console import Console
 from rich.panel import Panel
 
 from skore._config import configuration
-from skore._sklearn._diagnostic.base import DiagnosticDisplay
+from skore._sklearn._diagnostic.base import Check, DiagnosticDisplay
+from skore._sklearn._diagnostic.model_checks import _BUILTIN_CHECKS
+from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
@@ -28,17 +31,50 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
-    _issues_cache: tuple[dict[str, dict], set[str]]
 
-    @abstractmethod
-    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
-        """Return detected issues and the set of check codes that were evaluated."""
+    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
+        """Aggregate EstimatorReport checks.
+
+        Overwritten in CrossValidation and Comparison reports.
+        """
+        return ({}, set())
 
     def _get_issues(self) -> tuple[dict[str, dict], set[str]]:
         """Get the issues from the cache or compute them."""
         if not hasattr(self, "_issues_cache"):
-            self._issues_cache = self._run_checks()
-        return self._issues_cache
+            self._issues_cache: dict[str, dict] = {}
+        if not hasattr(self, "_checked_codes"):
+            self._checked_codes: set[str] = set()
+
+        for check in self._checks_registry:
+            if (
+                check.code not in self._checked_codes
+                and check.report_type == self._report_type
+            ):
+                try:
+                    explanation = check.check_function(self)
+                    if explanation:
+                        self._issues_cache.update(
+                            {
+                                check.code: {
+                                    "title": check.title,
+                                    "docs_url": check.docs_url,
+                                    "explanation": explanation,
+                                }
+                            }
+                        )
+                    self._checked_codes.add(check.code)
+                except DiagnosticNotApplicable:
+                    self._checked_codes |= {check.code}
+
+        if "cross-validation" in self._report_type or "comparison" in self._report_type:
+            aggregated = self._aggregate_checks()
+            return (
+                self._issues_cache | aggregated[0],
+                self._checked_codes | aggregated[1],
+            )
+
+        return self._issues_cache, self._checked_codes
 
     def diagnose(
         self,
@@ -74,7 +110,7 @@ class _BaseReport(ReportHelpMixin):
         Diagnostic: 1 issue(s) detected, 2 check(s) ran, 0 ignored.
         - [SKD002] Potential underfitting. Train/test scores are on par and not
         significantly better than the dummy baseline for 8/8 comparable metrics. Read
-        our documentation for more details:
+        more about this here:
         https://docs.skore.probabl.ai/dev/user_guide/automatic_diagnostic.html#skd002-underfitting.
         Mute with `ignore=['SKD002']`.
         >>> report.diagnose(ignore=["SKD002"])
@@ -97,12 +133,51 @@ class _BaseReport(ReportHelpMixin):
         checks_ran = len(checked_codes - ignored)
         return DiagnosticDisplay(filtered, checks_ran, n_ignored=len(ignored))
 
+    def add_checks(
+        self,
+        checks: list[Check],
+    ) -> None:
+        """Register additional diagnostic checks for this report.
+
+        Checks are defined by implementing the :class:`~skore.Check` protocol.
+
+        Appends the given checks to the registry used by
+        :meth:`diagnose`. The next call to :meth:`diagnose` runs any newly added
+        checks (along with checks that have not yet been cached). Already-run
+        built-in checks are not re-executed.
+
+        Parameters
+        ----------
+        checks : list of Check
+            Additional checks to register
+
+        """
+        report_types = [
+            "cross-validation",
+            "estimator",
+            "comparison-estimator",
+            "comparison-cross-validation",
+        ]
+        for check in checks:
+            if not isinstance(check, Check):
+                raise ValueError(f"{check} does not implement the Check protocol.")
+            if check.report_type not in report_types:
+                raise ValueError(
+                    f"Check report_type should be one of: {', '.join(report_types)}. "
+                    f"Got {check.report_type} instead."
+                )
+        self._checks_registry.extend(checks)
+
     def __init__(self) -> None:
         self._metadata = {
             "id": uuid4().int,
             "skore-version": version("skore"),
             "creation-date": datetime.now(timezone.utc).isoformat(),
+            # comparison reports don't have a _report_type yet at init time
+            # but they don't have a `get_state` anyway:
+            "report_type": getattr(self, "_report_type", "comparison"),
         }
+        self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
 
     @property
     def id(self):
