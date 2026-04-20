@@ -28,8 +28,6 @@ class EstimatorReport(Protocol):
     _hash: int
     id: int
     cache_predictions: Any
-    clear_cache: Any
-    _cache: Any
     metrics: Any
     data: Any
     ml_task: str
@@ -52,7 +50,6 @@ class CrossValidationReport(Protocol):
     _hash: int
     id: int
     cache_predictions: Any
-    clear_cache: Any
     metrics: Any
     data: Any
     estimator_reports_: Any

@@ -49,16 +49,4 @@ class Pickle(Artifact):
             return
 
         self.computed = True
-
-        reports = [self.report] + getattr(self.report, "estimator_reports_", [])
-        reports_with_cache = [
-            (report, report._cache) for report in reports if hasattr(report, "_cache")
-        ]
-
-        self.report.clear_cache()
-
-        try:
-            dump(self.report, self.filepath)
-        finally:
-            for report, cache in reports_with_cache:
-                report._cache = cache
+        dump(self.report, self.filepath)
