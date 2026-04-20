@@ -317,6 +317,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             # in the future, we could support some BW compatibility instead of crashing
             raise ValueError(f"Unexpected state version: {version!r}")
 
+        report_type = state["metadata"]["report_type"]
+        if report_type != cls._report_type:
+            raise ValueError(f"Unexpected report_type in state: {report_type}")
+
         report = cls.__new__(cls)
 
         report._metadata = state["metadata"]
