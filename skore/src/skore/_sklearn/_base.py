@@ -173,6 +173,9 @@ class _BaseReport(ReportHelpMixin):
             "id": uuid4().int,
             "skore-version": version("skore"),
             "creation-date": datetime.now(timezone.utc).isoformat(),
+            # comparison reports don't have a _report_type yet at init time
+            # but they don't have a `get_state` anyway:
+            "report_type": getattr(self, "_report_type", "comparison"),
         }
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
 
