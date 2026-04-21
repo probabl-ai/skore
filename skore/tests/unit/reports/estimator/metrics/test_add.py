@@ -549,8 +549,8 @@ class TestStringScorerNames:
         row = display.data.iloc[0]
 
         assert row["score"] >= 0
-        assert not row["metric_verbose_name"].lower().startswith("neg")
         assert not row["greater_is_better"]
+        assert not row["metric_verbose_name"].lower().startswith("neg")
 
     def test_without_neg_prefix(self, regression_report):
         """Test that metric strings passed without 'neg_' prefix can be added and
