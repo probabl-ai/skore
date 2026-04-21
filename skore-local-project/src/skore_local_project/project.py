@@ -244,6 +244,8 @@ class Project:
                 f"ort` (found '{type(report)}')"
             )
 
+        report.metrics.summarize()
+
         for artifact_id, artifact_bytes in self.pickle_parts(report):
             if artifact_id in self.__artifacts_storage:
                 continue

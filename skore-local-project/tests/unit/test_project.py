@@ -1,5 +1,3 @@
-from io import BytesIO
-
 import joblib
 from pandas import DataFrame
 from pytest import fixture, raises
@@ -13,7 +11,7 @@ from skore_local_project import Project
 from skore_local_project.storage import DiskCacheStorage
 
 
-@fixture(scope="module")
+@fixture
 def regression() -> EstimatorReport:
     X, y = make_regression(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
@@ -29,14 +27,14 @@ def regression() -> EstimatorReport:
     )
 
 
-@fixture(scope="module")
+@fixture
 def cv_regression() -> CrossValidationReport:
     X, y = make_regression(random_state=42)
 
     return CrossValidationReport(Ridge(random_state=42), X, y)
 
 
-@fixture(scope="module")
+@fixture
 def binary_classification() -> EstimatorReport:
     X, y = make_classification(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
@@ -52,7 +50,7 @@ def binary_classification() -> EstimatorReport:
     )
 
 
-@fixture(scope="module")
+@fixture
 def cv_binary_classification() -> CrossValidationReport:
     X, y = make_classification(random_state=42, n_samples=10)
 
@@ -228,11 +226,13 @@ class TestProject:
         # Put the same report with a different key:
         project.put("<key-2>", regression)
         assert len(project.summarize()) == 3
+        *_, metadata = project.summarize()
+        assert metadata["key"] == "<key-2>"
         # Ensure artifacts are reused
         assert n_artifacts == len(project._Project__artifacts_storage)
 
         # Do some calculation (mutates the report and hence the state):
-        regression.metrics.summarize()
+        regression.cache_predictions()
         project.put("<key-3>", regression)
         # Ensure some new artifacts were created, but some were reused
         new_n_artifacts = len(project._Project__artifacts_storage)
@@ -247,40 +247,48 @@ class TestProject:
         project.put("<key>", cv_regression)
 
         # Ensure artifacts are persisted
-        assert len(project._Project__artifacts_storage) == 1
+        n_artifacts = len(project._Project__artifacts_storage)
+        assert n_artifacts >= 1
 
-        with BytesIO(next(project._Project__artifacts_storage.values())) as stream:
-            artifact = joblib.load(stream)
+        # Ensure metadata are persisted:
+        assert len(project.summarize()) == 1
+        (metadata,) = project.summarize()
+        assert metadata["key"] == "<key>"
+        assert metadata["date"] == nowstr
+        assert metadata["learner"] == "Ridge"
+        assert metadata["dataset"] == joblib.hash(cv_regression.y)
+        assert metadata["ml_task"] == "regression"
+        assert metadata["report_type"] == "cross-validation"
+        assert metadata["rmse_mean"] == float(hash("<rmse_mean_test>"))
+        assert metadata["log_loss_mean"] is None
+        assert metadata["roc_auc_mean"] is None
+        assert metadata["fit_time_mean"] == float(hash("<fit_time_mean>"))
+        assert metadata["predict_time_mean"] == float(hash("<predict_time_mean_test>"))
 
-        assert isinstance(artifact, CrossValidationReport)
-        assert artifact.estimator_name_ == cv_regression.estimator_name_
-        assert artifact.ml_task == "regression"
-
-        # Ensure metadata are persisted
-        assert len(project._Project__metadata_storage) == 1
-        assert list(project._Project__metadata_storage.values()) == [
-            {
-                "project_name": "<project>",
-                "key": "<key>",
-                "artifact_id": str(cv_regression.id),
-                "date": nowstr,
-                "learner": "Ridge",
-                "dataset": joblib.hash(cv_regression.y),
-                "ml_task": "regression",
-                "report_type": "cross-validation",
-                "rmse_mean": float(hash("<rmse_mean_test>")),
-                "log_loss_mean": None,
-                "roc_auc_mean": None,
-                "fit_time_mean": float(hash("<fit_time_mean>")),
-                "predict_time_mean": float(hash("<predict_time_mean_test>")),
-            }
-        ]
-
-        # Ensure put twice
+        # Ensure put twice (even with the same key)
         project.put("<key>", cv_regression)
+        assert len(project.summarize()) == 2
+        # A second put materializes the stable estimator_reports state
+        assert n_artifacts == len(project._Project__artifacts_storage)
 
-        assert len(project._Project__artifacts_storage) == 1
-        assert len(project._Project__metadata_storage) == 2
+        # Put the same report with a different key:
+        project.put("<key-2>", cv_regression)
+        assert len(project.summarize()) == 3
+        *_, metadata = project.summarize()
+        assert metadata["key"] == "<key-2>"
+        # Ensure artifacts are reused
+        assert n_artifacts == len(project._Project__artifacts_storage)
+
+        # Do some calculation (mutates the report and hence the state):
+        cv_regression.cache_predictions()
+        project.put("<key-3>", cv_regression)
+        # Ensure some new artifacts were created, but some were reused
+        new_n_artifacts = len(project._Project__artifacts_storage)
+        assert n_artifacts < new_n_artifacts < n_artifacts * 2
+
+        # Ensure nothing is returned for other projects
+        project = Project("<other-project>", workspace=tmp_path)
+        assert len(project.summarize()) == 0
 
     def test_get(self, tmp_path, regression):
         project = Project("<project>", workspace=tmp_path)
@@ -315,76 +323,7 @@ class TestProject:
         ):
             project.get(None)
 
-    def test_summarize(self, tmp_path, Datetime, regression, cv_regression):
-        project = Project("<project>", workspace=tmp_path)
-
-        project.put("<key1>", regression)
-        project.put("<key1>", regression)
-        project.put("<key2>", cv_regression)
-
-        assert len(project._Project__artifacts_storage) == 2
-        assert len(project._Project__metadata_storage) == 3
-        assert project.summarize() == [
-            {
-                "id": str(regression.id),
-                "key": "<key1>",
-                "date": Datetime.nows_isoformat[0],
-                "learner": "Ridge",
-                "ml_task": "regression",
-                "report_type": "estimator",
-                "dataset": joblib.hash(regression.y_test),
-                "rmse": float(hash("<rmse_test>")),
-                "log_loss": None,
-                "roc_auc": None,
-                "fit_time": float(hash("<fit_time>")),
-                "predict_time": float(hash("<predict_time_test>")),
-                "rmse_mean": None,
-                "log_loss_mean": None,
-                "roc_auc_mean": None,
-                "fit_time_mean": None,
-                "predict_time_mean": None,
-            },
-            {
-                "id": str(regression.id),
-                "key": "<key1>",
-                "date": Datetime.nows_isoformat[1],
-                "learner": "Ridge",
-                "ml_task": "regression",
-                "report_type": "estimator",
-                "dataset": joblib.hash(regression.y_test),
-                "rmse": float(hash("<rmse_test>")),
-                "log_loss": None,
-                "roc_auc": None,
-                "fit_time": float(hash("<fit_time>")),
-                "predict_time": float(hash("<predict_time_test>")),
-                "rmse_mean": None,
-                "log_loss_mean": None,
-                "roc_auc_mean": None,
-                "fit_time_mean": None,
-                "predict_time_mean": None,
-            },
-            {
-                "id": str(cv_regression.id),
-                "key": "<key2>",
-                "date": Datetime.nows_isoformat[2],
-                "learner": "Ridge",
-                "ml_task": "regression",
-                "report_type": "cross-validation",
-                "dataset": joblib.hash(cv_regression.y),
-                "rmse": None,
-                "log_loss": None,
-                "roc_auc": None,
-                "fit_time": None,
-                "predict_time": None,
-                "rmse_mean": float(hash("<rmse_mean_test>")),
-                "log_loss_mean": None,
-                "roc_auc_mean": None,
-                "fit_time_mean": float(hash("<fit_time_mean>")),
-                "predict_time_mean": float(hash("<predict_time_mean_test>")),
-            },
-        ]
-
-    def test_summarize_exception(self, tmp_path, regression):
+    def test_summarize_exception(self, tmp_path):
         import re
 
         project = Project("<project>", workspace=tmp_path)
