@@ -1,14 +1,28 @@
 import joblib
+import numpy as np
+import pytest
 from pandas import DataFrame
 from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport, evaluate
 
 from skore_local_project import Project
 from skore_local_project.storage import DiskCacheStorage
+
+
+class CountingRidge(Ridge):
+    predict_calls = 0
+
+    @classmethod
+    def reset_predict_calls(cls) -> None:
+        cls.predict_calls = 0
+
+    def predict(self, X):
+        type(self).predict_calls += 1
+        return super().predict(X)
 
 
 @fixture
@@ -314,22 +328,37 @@ class TestProject:
         project = Project("<other-project>", workspace=tmp_path)
         assert len(project.summarize()) == 0
 
-    def test_get(self, tmp_path, regression):
+    @pytest.mark.parametrize("splitter", [0.2, 5])
+    def test_get(self, tmp_path, splitter):
+        X, y = make_regression(random_state=42)
+        report0 = evaluate(CountingRidge(), X, y, splitter=splitter)
         project = Project("<project>", workspace=tmp_path)
-        project.put("<key>", regression)
-        regression.cache_predictions()
-        project.put("<key>", regression)
-        assert len(project._Project__metadata_storage) == 2
-        n_data = sum(
-            key.startswith("data_") for key in project._Project__artifacts_storage
-        )
-        assert n_data == 1
+        project.put("<key>", report0)
 
-        artifact_id = project.summarize()[1]["id"]
-        report = project.get(artifact_id)
-        assert isinstance(report, EstimatorReport)
-        assert report.estimator_name_ == regression.estimator_name_
-        assert report._ml_task == regression._ml_task
+        artifact_id = project.summarize()[-1]["id"]
+        report1 = project.get(artifact_id)
+        assert isinstance(report1, report0.__class__)
+        assert report1.estimator_name_ == report0.estimator_name_
+        assert report1._ml_task == report0._ml_task
+
+        CountingRidge.reset_predict_calls()
+        report1.get_predictions(data_source="train")
+        assert CountingRidge.predict_calls >= 1
+        project.put("<key>", report1)
+        artifact_id = project.summarize()[-1]["id"]
+        report2 = project.get(artifact_id)
+
+        CountingRidge.reset_predict_calls()
+        report2.get_predictions(data_source="train")
+        assert CountingRidge.predict_calls == 0
+
+        predictions2 = report2.get_predictions(data_source="train")
+        predictions0 = report0.get_predictions(data_source="train")
+        if isinstance(predictions2, list):
+            for y_pred2, y_pred0 in zip(predictions2, predictions0, strict=True):
+                np.testing.assert_array_equal(y_pred2, y_pred0)
+        else:
+            np.testing.assert_array_equal(predictions2, predictions0)
 
     def test_get_exception(self, tmp_path, regression):
         import re
