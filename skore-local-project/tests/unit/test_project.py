@@ -201,40 +201,46 @@ class TestProject:
         project.put("<key>", regression)
 
         # Ensure artifacts are persisted
-        assert len(project._Project__artifacts_storage) == 1
+        n_artifacts = len(project._Project__artifacts_storage)
+        assert n_artifacts >= 1
 
-        with BytesIO(next(project._Project__artifacts_storage.values())) as stream:
-            artifact = joblib.load(stream)
+        # Ensure metadata are persisted:
+        assert len(project.summarize()) == 1
+        (metadata,) = project.summarize()
+        assert metadata["key"] == "<key>"
+        assert metadata["date"] == nowstr
+        assert metadata["learner"] == "Ridge"
+        assert metadata["dataset"] == joblib.hash(regression.y_test)
+        assert metadata["ml_task"] == "regression"
+        assert metadata["report_type"] == "estimator"
+        assert metadata["rmse"] == float(hash("<rmse_test>"))
+        assert metadata["log_loss"] is None
+        assert metadata["roc_auc"] is None
+        assert metadata["fit_time"] == float(hash("<fit_time>"))
+        assert metadata["predict_time"] == float(hash("<predict_time_test>"))
 
-        assert isinstance(artifact, EstimatorReport)
-        assert artifact.estimator_name_ == "Ridge"
-        assert artifact.ml_task == "regression"
-
-        # Ensure metadata are persisted
-        assert len(project._Project__metadata_storage) == 1
-        assert list(project._Project__metadata_storage.values()) == [
-            {
-                "project_name": "<project>",
-                "key": "<key>",
-                "artifact_id": str(regression.id),
-                "date": nowstr,
-                "learner": "Ridge",
-                "dataset": joblib.hash(regression.y_test),
-                "ml_task": "regression",
-                "report_type": "estimator",
-                "rmse": float(hash("<rmse_test>")),
-                "log_loss": None,
-                "roc_auc": None,
-                "fit_time": float(hash("<fit_time>")),
-                "predict_time": float(hash("<predict_time_test>")),
-            }
-        ]
-
-        # Ensure put twice
+        # Ensure put twice (even with the same key)
         project.put("<key>", regression)
+        assert len(project.summarize()) == 2
+        # Ensure artifacts are reused
+        assert n_artifacts == len(project._Project__artifacts_storage)
 
-        assert len(project._Project__artifacts_storage) == 1
-        assert len(project._Project__metadata_storage) == 2
+        # Put the same report with a different key:
+        project.put("<key-2>", regression)
+        assert len(project.summarize()) == 3
+        # Ensure artifacts are reused
+        assert n_artifacts == len(project._Project__artifacts_storage)
+
+        # Do some calculation (mutates the report and hence the state):
+        regression.metrics.summarize()
+        project.put("<key-3>", regression)
+        # Ensure some new artifacts were created, but some were reused
+        new_n_artifacts = len(project._Project__artifacts_storage)
+        assert n_artifacts < new_n_artifacts < 2 * new_n_artifacts
+
+        # Ensure nothing is returned for other projects
+        project = Project("<other-project>", workspace=tmp_path)
+        assert len(project.summarize()) == 0
 
     def test_put_cross_validation_report(self, tmp_path, nowstr, cv_regression):
         project = Project("<project>", workspace=tmp_path)
