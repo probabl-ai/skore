@@ -99,14 +99,6 @@ class Metric:
         """Whether this metric is applicable to the given report."""
         return True
 
-    def _prediction_pos_label(self, report: EstimatorReport) -> PositiveLabel | None:
-        """Return the pos_label to use for ``_get_predictions``.
-
-        Subclasses may override this to provide a default when ``report.pos_label``
-        is ``None`` (e.g. binary classification metrics that need 1-D predictions).
-        """
-        return report.pos_label
-
     def __repr__(self) -> str:
         args = [
             f"name={self.name!r}",
@@ -152,16 +144,16 @@ class Metric:
 
         assert self.response_method is not None
 
-        y_pred = report._get_predictions(
-            data_source=data_source,
-            response_method=self.response_method,
-            pos_label=self._prediction_pos_label(report),
-        )
-
         metric_params = inspect.signature(self.score_func).parameters
         call_kwargs = merged_kwargs.copy()
         if "pos_label" in metric_params and "pos_label" not in call_kwargs:
             call_kwargs["pos_label"] = report.pos_label
+
+        y_pred = report._get_predictions(
+            data_source=data_source,
+            response_method=self.response_method,
+            pos_label=call_kwargs.get("pos_label", None),
+        )
 
         score = self.score_func(y_true, y_pred, **call_kwargs)
 
@@ -413,18 +405,14 @@ class Brier(Metric):
             report._estimator, "predict_proba"
         )
 
-    def _prediction_pos_label(self, report):
-        return report._estimator.classes_[-1]
-
     def __call__(self, *, report: EstimatorReport, data_source="test", **kwargs):
         # The Brier score in scikit-learn requests `pos_label` to ensure that
         # the integral encoding of `y_true` corresponds to the probabilities of
-        # the `pos_label`. We pass the same `pos_label` to `_get_predictions`
-        # (via `_prediction_pos_label`) and to the metric itself.
+        # the `pos_label`.
         return super().__call__(
             report=report,
             data_source=data_source,
-            pos_label=self._prediction_pos_label(report),
+            pos_label=report._estimator.classes_[-1],
             **kwargs,
         )
 
@@ -432,7 +420,6 @@ class Brier(Metric):
 class RocAuc(Metric):
     name = "roc_auc"
     verbose_name = "ROC AUC"
-    score_func = staticmethod(sklearn.metrics.roc_auc_score)
     response_method = ("predict_proba", "decision_function")
     greater_is_better = True
 
@@ -446,12 +433,11 @@ class RocAuc(Metric):
             return has_predict_proba
         return False
 
-    def _prediction_pos_label(self, report):
-        if report._ml_task == "multiclass-classification":
-            return None
-        if report.pos_label is None:
-            return report._estimator.classes_[-1]
-        return report.pos_label
+    @staticmethod
+    def score_func(y_true, y_score, **kwargs):
+        if y_score.ndim == 2 and y_score.shape[1] == 2:
+            y_score = y_score[:, 1]
+        return sklearn.metrics.roc_auc_score(y_true, y_score, **kwargs)
 
     def __call__(
         self,
