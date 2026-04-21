@@ -329,29 +329,35 @@ class TestProject:
         assert len(project.summarize()) == 0
 
     @pytest.mark.parametrize("splitter", [0.2, 5])
-    def test_get(self, tmp_path, splitter):
+    def test_get_restores_cached_predictions(self, tmp_path, splitter):
         X, y = make_regression(random_state=42)
         report0 = evaluate(CountingRidge(), X, y, splitter=splitter)
         project = Project("<project>", workspace=tmp_path)
         project.put("<key>", report0)
 
+        # Ensure the persisted report can be restored:
         artifact_id = project.summarize()[-1]["id"]
         report1 = project.get(artifact_id)
         assert isinstance(report1, report0.__class__)
         assert report1.estimator_name_ == report0.estimator_name_
         assert report1._ml_task == report0._ml_task
 
+        # The first restored report has no cached train predictions yet:
         CountingRidge.reset_predict_calls()
         report1.get_predictions(data_source="train")
         assert CountingRidge.predict_calls >= 1
+
+        # Persist the report again after computing train predictions:
         project.put("<key>", report1)
         artifact_id = project.summarize()[-1]["id"]
         report2 = project.get(artifact_id)
 
+        # Ensure cached train predictions are restored:
         CountingRidge.reset_predict_calls()
         report2.get_predictions(data_source="train")
         assert CountingRidge.predict_calls == 0
 
+        # Ensure the restored predictions match the original report:
         predictions2 = report2.get_predictions(data_source="train")
         predictions0 = report0.get_predictions(data_source="train")
         if isinstance(predictions2, list):
