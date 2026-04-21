@@ -120,39 +120,63 @@ class TestProject:
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
         assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
-    def test_put_estimator_report_reuses_artifact_id(self, tmp_path, regression):
+    def test_put_estimator_reports_deduplicate_data(self, tmp_path, regression):
         project = Project("<project>", workspace=tmp_path)
+        other_regression = EstimatorReport(
+            Ridge(alpha=2.0, random_state=42),
+            X_train=regression.X_train,
+            y_train=regression.y_train,
+            X_test=regression.X_test,
+            y_test=regression.y_test,
+        )
 
         project.put("<key-1>", regression)
-        regression.cache_predictions()
-        project.put("<key-2>", regression)
+        project.put("<key-2>", other_regression)
 
-        # Ensure only one artifact was persisted:
-        assert len(project._Project__artifacts_storage) == 1
-        # but two reports:
-        assert len(project.summarize()) == 2
+        # Ensure only one data artifact was persisted:
+        n_data = sum(
+            key.startswith("data_") for key in project._Project__artifacts_storage
+        )
+        assert n_data == 1
+        # but two different reports:
+        summaries = project.summarize()
+        assert len(summaries) == 2
+        artifact_ids = {metadata["id"] for metadata in summaries}
+        assert len(artifact_ids) == 2
 
         # Make sure the pickle is not broken:
-        report = project.get(str(regression.id))
-        report.cache_predictions()
+        reports = [project.get(metadata["id"]) for metadata in summaries]
+        assert all(isinstance(report, EstimatorReport) for report in reports)
+        assert [report.estimator_.alpha for report in reports] == [1.0, 2.0]
 
-    def test_put_cross_validation_report_reuses_artifact_id(
+    def test_put_cross_validation_reports_deduplicate_data(
         self, tmp_path, cv_regression
     ):
         project = Project("<project>", workspace=tmp_path)
+        other_cv_regression = CrossValidationReport(
+            Ridge(alpha=2.0, random_state=42),
+            cv_regression.X,
+            cv_regression.y,
+        )
 
         project.put("<key-1>", cv_regression)
-        cv_regression.cache_predictions()
-        project.put("<key-2>", cv_regression)
+        project.put("<key-2>", other_cv_regression)
 
-        # Ensure only one artifact was persisted:
-        assert len(project._Project__artifacts_storage) == 1
-        # but two reports:
-        assert len(project.summarize()) == 2
+        # Ensure only one data artifact was persisted:
+        n_data = sum(
+            key.startswith("data_") for key in project._Project__artifacts_storage
+        )
+        assert n_data == 1
+        # but two different reports:
+        summaries = project.summarize()
+        assert len(summaries) == 2
+        artifact_ids = {metadata["id"] for metadata in summaries}
+        assert len(artifact_ids) == 2
 
         # Make sure the pickle is not broken:
-        report = project.get(str(cv_regression.id))
-        report.cache_predictions()
+        reports = [project.get(metadata["id"]) for metadata in summaries]
+        assert all(isinstance(report, CrossValidationReport) for report in reports)
+        assert [report.estimator_.alpha for report in reports] == [1.0, 2.0]
 
     def test_init_with_envar(self, monkeypatch, tmp_path):
         monkeypatch.setenv("SKORE_WORKSPACE", str(tmp_path))

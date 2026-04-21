@@ -244,6 +244,9 @@ class Project:
                 f"ort` (found '{type(report)}')"
             )
 
+        # Metadata(report=report, ...) calls some metrics which mutates the
+        # report's state: we want to avoid mutation after the serialization
+        # (so that doing two `put` in a row does really nothing the second time):
         report.metrics.summarize()
 
         for artifact_id, artifact_bytes in self.pickle_parts(report):
