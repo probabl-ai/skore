@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, cast
 
 from sklearn.base import BaseEstimator
 
+from skore import configuration
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
@@ -146,6 +147,17 @@ def evaluate(
 
     if isinstance(splitter, float):
         splitter = TrainTestSplit(test_size=splitter)
+        with configuration(show_progress=False):
+            report = CrossValidationReport(
+                estimator,
+                X,
+                y,
+                data=data,
+                pos_label=pos_label,
+                splitter=splitter,
+                n_jobs=n_jobs,
+            )
+        return report.estimator_reports_[0]
 
     report = CrossValidationReport(
         estimator,
@@ -156,6 +168,8 @@ def evaluate(
         splitter=splitter,
         n_jobs=n_jobs,
     )
+
+    # In case the splitter only produces one split, return the single estimator report
     if len(report.estimator_reports_) == 1:
         return report.estimator_reports_[0]
     return report
