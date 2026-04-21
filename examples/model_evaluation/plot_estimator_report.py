@@ -207,15 +207,12 @@ def operational_decision_cost(y_true, y_pred, amount):
 # matrix based on some amount linked to each sample in the dataset that are provided to
 # us. Here, we randomly generate some amount as an illustration.
 import numpy as np
+from sklearn.metrics import make_scorer
 
 rng = np.random.default_rng(42)
 amount = rng.integers(low=100, high=1000, size=len(split_data["y_test"]))
 
-report.metrics.add(
-    metric=operational_decision_cost,
-    response_method="predict",
-    amount=amount,
-)
+report.metrics.add(metric=make_scorer(operational_decision_cost, amount=amount))
 
 cost = report.metrics.summarize(metric="operational_decision_cost")
 cost
@@ -226,7 +223,7 @@ cost
 # that we can compute some additional metrics without having to recompute the
 # the predictions.
 report.metrics.summarize(
-    metric=["precision", "recall", "operational_decision_cost"],
+    metric=["precision", "recall", "operational_decision_cost"]
 ).frame()
 
 # %%
@@ -234,9 +231,10 @@ report.metrics.summarize(
 # Effortless one-liner plotting
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# The :class:`skore.EstimatorReport` class also provides a plotting interface that
-# allows to plot *defacto* the most common plots. As for the metrics, we only
-# provide the meaningful set of plots for the provided estimator.
+# The :class:`skore.EstimatorReport` class also implements a number of the most common
+# data science plots.
+# As for the metrics, we only provide the meaningful set of plots for the provided
+# estimator.
 report.metrics.help()
 
 # %%

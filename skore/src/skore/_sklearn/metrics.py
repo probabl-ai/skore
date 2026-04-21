@@ -4,7 +4,7 @@ import copy
 import inspect
 import pickle
 from collections import UserDict
-from collections.abc import Callable
+from enum import Enum, auto
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -12,7 +12,13 @@ import sklearn
 import sklearn.metrics
 from sklearn.metrics._scorer import _BaseScorer
 
-from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
+from skore._sklearn.types import (
+    DataSource,
+    MetricCallable,
+    MetricLike,
+    PositiveLabel,
+    ScorerCallable,
+)
 from skore._utils._cache_key import make_cache_key
 from skore._utils._callable_name import _callable_name
 
@@ -35,6 +41,31 @@ _METRIC_ALIASES: dict[str, str] = {
 }
 
 
+class FunctionKind(Enum):
+    """Kind of scoring function, in the sklearn sense.
+
+    A metric is a callable of the form ``(y_true, y_pred, **kwargs) -> score``.
+    A scorer is a callable of the form ``(estimator, X, y_true, **kwargs) -> score``.
+    """
+
+    METRIC = auto()
+    SCORER = auto()
+
+
+class MissingKwargsError(Exception):
+    def __init__(self, metric, missing_kwargs):
+        self.metric = _callable_name(metric)
+        self.missing_kwargs = missing_kwargs
+        self.msg = (
+            f"Callable {self.metric!r} has required "
+            f"parameter(s) {tuple(self.missing_kwargs)} not covered by the "
+            f"provided kwargs."
+        )
+
+    def __str__(self):
+        return self.msg
+
+
 class Metric:
     """A metric that can compute a score from a report.
 
@@ -46,17 +77,20 @@ class Metric:
     verbose_name : str
         Display name shown in reports (e.g. ``"Accuracy"``).
 
-    greater_is_better : bool or None
-        Whether a higher value is better.
-
-    score_func : callable or None
-        The scoring function ``(y_true, y_pred, **kw) -> float``.
-
     response_method : str, list of str, or None, default="predict"
         Estimator method to get predictions.
 
+    greater_is_better : bool or None
+        Whether a higher value is better.
+
+    function : callable or None
+        Scoring function.
+
+    function_kind : FunctionKind or None, default=None
+        Kind of scoring function (either metric or scorer).
+
     kwargs : dict, default={}
-        Default keyword arguments for ``score_func``.
+        Default keyword arguments for the scoring function.
     """
 
     def __init__(
@@ -65,10 +99,16 @@ class Metric:
         name: str | None = None,
         verbose_name: str | None = None,
         greater_is_better: bool | None = None,
-        score_func: Callable | None = None,
         response_method: str | list[str] | tuple[str, ...] | None = None,
+        function: ScorerCallable | MetricCallable | None = None,
+        function_kind: FunctionKind | None = None,
         kwargs: dict[str, Any] | None = None,
     ):
+        """Construct a Metric.
+
+        Not meant to be executed directly; instead use `Metric.new` to instantiate a
+        new Metric.
+        """
         # When name is None, the metric is being instantiated from a subclass
         # (e.g. Accuracy()) whose fields are defined as class attributes.
         # Only `kwargs` needs to be set as an instance attribute.
@@ -79,19 +119,18 @@ class Metric:
 
         self.name = name
         self.verbose_name = verbose_name or name.replace("_", " ").title()
-        self.score_func = score_func
-        self.response_method: str | list[str] | tuple[str, ...] | None = (
-            response_method or "predict"
-        )
         self.greater_is_better = greater_is_better
+        self.response_method = response_method
+        self.function = function
+        self.function_kind = function_kind
 
     def __getstate__(self) -> dict[str, Any]:
         state = self.__dict__.copy()
-        if state.get("score_func") is not None:
+        if state.get("function") is not None:
             try:
-                pickle.dumps(state["score_func"])
+                pickle.dumps(state["function"])
             except Exception:
-                state["score_func"] = None
+                state["function"] = None
         return state
 
     @staticmethod
@@ -103,9 +142,9 @@ class Metric:
         args = [
             f"name={self.name!r}",
             f"verbose_name={self.verbose_name!r}",
-            f"response_method={self.response_method!r}",
+            f"function={self.function}",
             f"greater_is_better={self.greater_is_better}",
-            f"score_func={self.score_func}",
+            f"response_method={self.response_method}",
             f"kwargs={self.kwargs}",
         ]
 
@@ -124,13 +163,13 @@ class Metric:
         ----------
         report : EstimatorReport
             The report to compute the metric for.
+
         data_source : {"test", "train"}, default="test"
             Which data split to use.
-        **kwargs
-            Additional keyword arguments passed to ``score_func``.
-        """
-        _, y_true = report._get_data_and_y_true(data_source=data_source)
 
+        **kwargs
+            Additional keyword arguments passed to the scoring function.
+        """
         # Merge default kwargs with call-time kwargs
         merged_kwargs = self.kwargs | kwargs
 
@@ -139,29 +178,36 @@ class Metric:
         if score is not None:
             return score
 
-        if self.score_func is None:
-            raise ValueError(f"Metric {self.name!r} has no score_func.")
+        if self.function is None:
+            raise ValueError(f"Metric {self.name!r} has no scoring function.")
 
-        assert self.response_method is not None
-
-        metric_params = inspect.signature(self.score_func).parameters
+        metric_params = inspect.signature(self.function).parameters
         call_kwargs = merged_kwargs.copy()
         if "pos_label" in metric_params and "pos_label" not in call_kwargs:
             call_kwargs["pos_label"] = report.pos_label
 
-        y_pred = report._get_predictions(
-            data_source=data_source,
-            response_method=self.response_method,
-            pos_label=call_kwargs.get("pos_label", None),
-        )
+        if self.function_kind == FunctionKind.METRIC:
+            assert self.response_method is not None
 
-        score = self.score_func(y_true, y_pred, **call_kwargs)
+            _, y_true = report._get_data_and_y_true(data_source=data_source)
+            y_pred = report._get_predictions(
+                data_source=data_source,
+                response_method=self.response_method,
+                pos_label=call_kwargs.get("pos_label", None),
+            )
+
+            score = self.function(y_true, y_pred, **call_kwargs)  # type: ignore
+        elif self.function_kind == FunctionKind.SCORER:
+            data, y_true = report._get_data_and_y_true(data_source=data_source)
+            X = data["_skrub_X"]
+
+            score = self.function(report.estimator_, X, y_true, **call_kwargs)  # type: ignore
 
         if isinstance(score, np.ndarray):
             score = score.tolist()
 
         if hasattr(score, "item"):
-            score = score.item()
+            score = score.item()  # type: ignore
         elif isinstance(score, list):
             if len(score) == 1:
                 score = score[0]
@@ -171,14 +217,13 @@ class Metric:
                 )
 
         report._cache[cache_key] = score
-        return score
+        return score  # type: ignore
 
     @staticmethod
     def new(
         metric: MetricLike | Metric,
         *,
         name: str | None = None,
-        response_method: str | list[str] | tuple[str, ...] = "predict",
         greater_is_better: bool = True,
         kwargs: dict[str, Any] | None = None,
     ) -> Metric:
@@ -196,7 +241,7 @@ class Metric:
               (e.g. ``"mean_squared_error"``); the alias is resolved
               automatically.
             - If a callable, expected to be of the form
-              ``(y_true, y_pred, **kw) -> float``.
+              ``(estimator, X, y, **kw) -> float``.
             - If a sklearn scorer, expected to be a _BaseScorer instance
               (e.g. as returned by :func:`sklearn.metrics.make_scorer` and
               :func:`sklearn.metrics.get_scorer`).
@@ -206,13 +251,9 @@ class Metric:
             Custom name for the metric. If not provided the name is inferred
             from the input (e.g. the function's ``__name__``).
 
-        response_method : str or list of str, default="predict"
-            Estimator method used to obtain predictions. Only used when
-            *metric* is a plain callable.
-
         greater_is_better : bool, default=True
             Whether a higher score is better. Only used when *metric* is a
-            plain callable.
+            scorer callable.
 
         kwargs : dict, optional
             Default keyword arguments passed to the score function at call
@@ -236,9 +277,10 @@ class Metric:
             return Metric(
                 name=name or _callable_name(metric._score_func),
                 greater_is_better=metric._sign == 1,
-                score_func=metric._score_func,
+                function=metric._score_func,
                 response_method=metric._response_method,
                 kwargs=metric._kwargs.copy(),
+                function_kind=FunctionKind.METRIC,
             )
         elif isinstance(metric, str):
             metric_with_neg = _METRIC_ALIASES.get(metric, metric)
@@ -254,35 +296,23 @@ class Metric:
             name = name if name is not None else metric.removeprefix("neg_")
             return Metric.new(scorer, name=name)
         elif callable(metric):
-            if response_method is None:
-                raise ValueError(
-                    "response_method is required when metric is a plain "
-                    "callable. Pass it directly or use "
-                    "sklearn.metrics.make_scorer to create a scorer with a "
-                    "response_method."
-                )
+            # (estimator, X, y) -> score
             resolved_kwargs = kwargs or {}
             params = list(inspect.signature(metric).parameters.values())
             missing_kwargs = [
                 param.name
-                for param in params[2:]  # y_true, y_pred
+                for param in params[3:]  # estimator, X, y
                 if param.default is inspect.Parameter.empty
                 and param.name not in resolved_kwargs
             ]
             if missing_kwargs:
-                args_msg = ", ".join(f"{arg}=..." for arg in missing_kwargs)
-                raise TypeError(
-                    f"Callable {_callable_name(metric)!r} has required "
-                    f"parameter(s) {missing_kwargs} not covered by the "
-                    f"provided kwargs. Pass them as keyword arguments: "
-                    f"add({_callable_name(metric)}, {args_msg})"
-                )
+                raise MissingKwargsError(metric, missing_kwargs)
             return Metric(
                 name=name or _callable_name(metric),
                 greater_is_better=greater_is_better,
-                score_func=metric,
-                response_method=response_method,
+                function=metric,
                 kwargs=resolved_kwargs,
+                function_kind=FunctionKind.SCORER,
             )
         else:
             raise TypeError(
@@ -295,8 +325,8 @@ class FitTime(Metric):
     name = "fit_time"
     verbose_name = "Fit time (s)"
     greater_is_better = False
-    response_method = None
-    score_func = None
+    function = None
+    function_kind = None
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -314,8 +344,8 @@ class PredictTime(Metric):
     name = "predict_time"
     verbose_name = "Predict time (s)"
     greater_is_better = False
-    response_method = None
-    score_func = None
+    function = None
+    function_kind = None
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -333,9 +363,10 @@ class PredictTime(Metric):
 class Accuracy(Metric):
     name = "accuracy"
     verbose_name = "Accuracy"
-    score_func = staticmethod(sklearn.metrics.accuracy_score)
+    function = staticmethod(sklearn.metrics.accuracy_score)
     response_method = "predict"
     greater_is_better = True
+    function_kind = FunctionKind.METRIC
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -345,9 +376,10 @@ class Accuracy(Metric):
 class Precision(Metric):
     name = "precision"
     verbose_name = "Precision"
-    score_func = staticmethod(sklearn.metrics.precision_score)
+    function = staticmethod(sklearn.metrics.precision_score)
     response_method = "predict"
     greater_is_better = True
+    function_kind = FunctionKind.METRIC
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -370,9 +402,10 @@ class Precision(Metric):
 class Recall(Metric):
     name = "recall"
     verbose_name = "Recall"
-    score_func = staticmethod(sklearn.metrics.recall_score)
+    function = staticmethod(sklearn.metrics.recall_score)
     response_method = "predict"
     greater_is_better = True
+    function_kind = FunctionKind.METRIC
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -395,9 +428,10 @@ class Recall(Metric):
 class Brier(Metric):
     name = "brier_score"
     verbose_name = "Brier score"
-    score_func = staticmethod(sklearn.metrics.brier_score_loss)
+    function = staticmethod(sklearn.metrics.brier_score_loss)
     response_method = "predict_proba"
     greater_is_better = False
+    function_kind = FunctionKind.METRIC
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -422,6 +456,7 @@ class RocAuc(Metric):
     verbose_name = "ROC AUC"
     response_method = ("predict_proba", "decision_function")
     greater_is_better = True
+    function_kind = FunctionKind.METRIC
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -434,7 +469,7 @@ class RocAuc(Metric):
         return False
 
     @staticmethod
-    def score_func(y_true, y_score, **kwargs):
+    def function(y_true, y_score, **kwargs):
         if y_score.ndim == 2 and y_score.shape[1] == 2:
             y_score = y_score[:, 1]
         return sklearn.metrics.roc_auc_score(y_true, y_score, **kwargs)
@@ -460,9 +495,10 @@ class RocAuc(Metric):
 class LogLoss(Metric):
     name = "log_loss"
     verbose_name = "Log loss"
-    score_func = staticmethod(sklearn.metrics.log_loss)
+    function = staticmethod(sklearn.metrics.log_loss)
     response_method = "predict_proba"
     greater_is_better = False
+    function_kind = FunctionKind.METRIC
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -475,9 +511,10 @@ class LogLoss(Metric):
 class R2(Metric):
     name = "r2"
     verbose_name = "R²"
-    score_func = staticmethod(sklearn.metrics.r2_score)
+    function = staticmethod(sklearn.metrics.r2_score)
     response_method = "predict"
     greater_is_better = True
+    function_kind = FunctionKind.METRIC
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -499,9 +536,10 @@ class R2(Metric):
 class Rmse(Metric):
     name = "rmse"
     verbose_name = "RMSE"
-    score_func = staticmethod(sklearn.metrics.root_mean_squared_error)
+    function = staticmethod(sklearn.metrics.root_mean_squared_error)
     response_method = "predict"
     greater_is_better = False
+    function_kind = FunctionKind.METRIC
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -523,9 +561,10 @@ class Rmse(Metric):
 class Mae(Metric):
     name = "mae"
     verbose_name = "MAE"
-    score_func = staticmethod(sklearn.metrics.mean_absolute_error)
+    function = staticmethod(sklearn.metrics.mean_absolute_error)
     response_method = "predict"
     greater_is_better = False
+    function_kind = FunctionKind.METRIC
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -547,9 +586,10 @@ class Mae(Metric):
 class Mape(Metric):
     name = "mape"
     verbose_name = "MAPE"
-    score_func = staticmethod(sklearn.metrics.mean_absolute_percentage_error)
+    function = staticmethod(sklearn.metrics.mean_absolute_percentage_error)
     response_method = "predict"
     greater_is_better = False
+    function_kind = FunctionKind.METRIC
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:

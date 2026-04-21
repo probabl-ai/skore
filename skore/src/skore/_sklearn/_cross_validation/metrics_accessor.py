@@ -115,7 +115,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         metric: MetricLike,
         *,
         name: str | None = None,
-        response_method: str | list[str] = "predict",
         greater_is_better: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -124,14 +123,12 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Parameters
         ----------
         metric : str, sklearn scorer, or callable
-            The metric to add.
+            The metric to add. See :meth:`EstimatorReport.metrics.add` for a
+            description of accepted inputs.
 
         name : str, optional
             Custom name for the metric. If not provided, the name is inferred
             from the metric (e.g. the function's ``__name__``).
-
-        response_method : str or list of str, default="predict"
-            Estimator method to get predictions (only for callables).
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -163,7 +160,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             report.metrics.add(
                 metric,
                 name=name,
-                response_method=response_method,
                 greater_is_better=greater_is_better,
                 **kwargs,
             )

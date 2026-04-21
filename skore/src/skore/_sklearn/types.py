@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterator, Sequence
 from typing import Any, Literal, Protocol
 
 from numpy.typing import ArrayLike
+from sklearn.base import BaseEstimator
 
 PlotBackend = Literal["matplotlib", "plotly"]
 
@@ -49,7 +50,10 @@ class SKLearnScorer(Protocol):
     _kwargs: dict[str, Any]
 
 
-MetricLike = str | Callable | SKLearnScorer
+MetricCallable = Callable[[ArrayLike, ArrayLike], float]
+ScorerCallable = Callable[[BaseEstimator, ArrayLike, ArrayLike], float]
+
+MetricLike = str | MetricCallable | ScorerCallable | SKLearnScorer
 
 
 class SKLearnCrossValidator(Protocol):
