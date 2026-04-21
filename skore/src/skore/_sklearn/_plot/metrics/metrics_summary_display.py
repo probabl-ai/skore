@@ -26,8 +26,8 @@ class MetricsSummaryRow(TypedDict):
         Name shown in the display.
     data_source : {"train", "test"}
         Dataset split used to compute the metric.
-    favorability : {"(↗︎)", "(↘︎)", ""}
-        Indicator showing whether higher or lower values are better.
+    greater_is_better : bool or None
+        Whether higher or lower values are better.
     score : Any
         Scalar metric value stored in the row.
     label : label, default=None
@@ -43,7 +43,7 @@ class MetricsSummaryRow(TypedDict):
     metric_verbose_name: str
     estimator_name: str
     data_source: DataSource
-    favorability: str
+    greater_is_better: bool | None
     score: Any
     label: PositiveLabel | None
     average: str | None
@@ -94,7 +94,7 @@ def metric_score_to_rows(
         "metric_verbose_name": metric.verbose_name,
         "estimator_name": estimator_name,
         "data_source": data_source,
-        "favorability": metric.icon,
+        "greater_is_better": metric.greater_is_better,
         "label": None,
         "average": None,
         "output": None,
@@ -201,24 +201,25 @@ class MetricsSummaryDisplay(DisplayMixin):
         ).to_list()
         df = df.set_index(index)
 
-        if not favorability:
-            df = df.drop(columns="favorability")
-        else:
-            # Put favorability at the end
-            df = df[
-                [col for col in df.columns if col != "favorability"] + ["favorability"]
-            ]
-
         # Rename columns as well as index names
         new_columns = {
             "metric_verbose_name": "Metric",
             "label": "Label / Average",
             "output": "Output",
             "average": "Average",
-            "favorability": "Favorability",
             "score": estimator_name,
         }
         df = df.rename(columns=new_columns)
+
+        if favorability:
+            df["Favorability"] = (
+                df["greater_is_better"]
+                .map({True: "(↗︎)", False: "(↘︎)"})
+                .fillna("")
+                .astype("string")
+            )
+        df = df.drop(columns="greater_is_better")
+
         df.index = df.index.set_names(
             [new_columns.get(name, name) for name in df.index.names]
         )
@@ -238,8 +239,8 @@ class MetricsSummaryDisplay(DisplayMixin):
             ]
 
             if favorability:
-                df_pivoted["Favorability"] = df[df["data_source"] == "test"][
-                    "Favorability"
+                df_pivoted["Favorability"] = df.loc[
+                    df["data_source"] == "test", "Favorability"
                 ]
 
             df = df_pivoted.copy()

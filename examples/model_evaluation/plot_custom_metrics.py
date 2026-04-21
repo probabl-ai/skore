@@ -140,7 +140,7 @@ import numpy as np
 
 def mean_confidence(y_true, y_proba):
     """Average predicted probability assigned to the true class."""
-    return np.where(y_true == 1, y_proba, 1 - y_proba).mean()
+    return np.where(y_true == 1, y_proba[:, 1], y_proba[:, 0]).mean()
 
 
 report.metrics.add(

@@ -86,7 +86,7 @@ class CheckOverfitting(Check):
             check_score_gap_to_baseline(
                 score=report_data.loc[idx, "score_train"],
                 baseline=report_data.loc[idx, "score_test"],
-                favorability=report_data.loc[idx, "favorability"],
+                greater_is_better=report_data.loc[idx, "greater_is_better"],
                 floor=0.03,
                 fraction=0.10,
             )
@@ -122,14 +122,14 @@ class CheckUnderfitting(Check):
             not check_score_gap_to_baseline(
                 score=report_data.loc[idx, "score_train"],
                 baseline=baseline_data.loc[idx, "score_train"],
-                favorability=baseline_data.loc[idx, "favorability"],
+                greater_is_better=baseline_data.loc[idx, "greater_is_better"],
                 floor=0.01,
                 fraction=0.05,
             )
             and not check_score_gap_to_baseline(
                 score=report_data.loc[idx, "score_test"],
                 baseline=baseline_data.loc[idx, "score_test"],
-                favorability=baseline_data.loc[idx, "favorability"],
+                greater_is_better=baseline_data.loc[idx, "greater_is_better"],
                 floor=0.01,
                 fraction=0.05,
             )

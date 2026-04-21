@@ -104,6 +104,11 @@ Added
   expose :meth:`get_state` / :meth:`from_state` helpers to support more robust
   serialization and deserialization across skore versions than plain pickling.
   See :pr:`2741` by :user:`cakedev0`.
+- :meth:`~EstimatorReport.metrics.mae`,
+  :meth:`~EstimatorReport.metrics.map` (and equivalent methods on
+  :class:`~skore.CrossValidationReport` and :class:`~skore.ComparisonReport`) are
+  now available as default regression metrics, exposing mean absolute error (MAE)
+  and mean absolute percentage error (MAPE). See :pr:`#2765` by :user:`direkkakkar319-ops`.
 
 `0.15.0`_ (2026-04-02)
 ======================
