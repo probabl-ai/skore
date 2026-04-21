@@ -29,7 +29,7 @@ def check_display_structure(
     expected_metrics,
     expected_estimator_name=None,
     expected_data_source="test",
-    expected_favorability=None,
+    expected_greater_is_better=None,
     expected_average=None,
 ):
     """Check the full structure of a MetricsSummaryDisplay.data DataFrame."""
@@ -44,7 +44,7 @@ def check_display_structure(
         "average",
         "output",
         "score",
-        "favorability",
+        "greater_is_better",
     }
     assert pd.api.types.is_numeric_dtype(data["score"])
     assert set(data["metric_verbose_name"]) == expected_metrics
@@ -54,9 +54,9 @@ def check_display_structure(
         assert data["average"].isna().all()
     else:
         assert set(data["average"]) == expected_average
-    if expected_favorability is None:
-        expected_favorability = {"(↗︎)", "(↘︎)"}
-    assert set(data["favorability"]) == expected_favorability
+    if expected_greater_is_better is None:
+        expected_greater_is_better = {True, False}
+    assert set(data["greater_is_better"]) == expected_greater_is_better
 
 
 # Default metrics
@@ -169,7 +169,14 @@ def test_default_regression(linear_regression_with_test):
 
     check_display_structure(
         display,
-        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={
+            "R²",
+            "RMSE",
+            "MAE",
+            "MAPE",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
         expected_estimator_name="LinearRegression",
     )
 
@@ -185,7 +192,14 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
 
     check_display_structure(
         display,
-        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={
+            "R²",
+            "RMSE",
+            "MAE",
+            "MAPE",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
         expected_estimator_name="LinearRegression",
     )
 

@@ -3,6 +3,7 @@ from typing import Any, Literal
 
 import pandas as pd
 from joblib import Parallel
+from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -754,6 +755,126 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         return self._metric(
             "rmse", data_source=data_source, multioutput=multioutput
+        ).frame(aggregate=aggregate, flat_index=flat_index)
+
+    @available_if(_check_estimator_report_has_method("metrics", "mae"))
+    def mae(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
+        aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
+    ) -> pd.DataFrame:
+        """Compute the mean absolute error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        Returns
+        -------
+        pd.DataFrame
+            The mean absolute error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=2)
+        >>> report.metrics.mae()
+                    Ridge
+                    mean       std
+        Metric
+        MAE     5...       ...
+        """
+        return self._metric(
+            "mae", data_source=data_source, multioutput=multioutput
+        ).frame(aggregate=aggregate, flat_index=flat_index)
+
+    @available_if(_check_estimator_report_has_method("metrics", "mape"))
+    def mape(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
+        aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
+    ) -> pd.DataFrame:
+        """Compute the mean absolute percentage error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        Returns
+        -------
+        pd.DataFrame
+            The mean absolute percentage error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=2)
+        >>> report.metrics.mape()
+                    Ridge
+                    mean       std
+        Metric
+        MAPE      0....      ...
+        """
+        return self._metric(
+            "mape", data_source=data_source, multioutput=multioutput
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     ####################################################################################

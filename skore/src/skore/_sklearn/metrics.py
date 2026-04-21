@@ -94,17 +94,6 @@ class Metric:
                 state["score_func"] = None
         return state
 
-    @property
-    def icon(self) -> str:
-        """Favorability icon derived from ``greater_is_better``."""
-        match self.greater_is_better:
-            case True:
-                return "(↗︎)"
-            case False:
-                return "(↘︎)"
-            case _:
-                return ""
-
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         """Whether this metric is applicable to the given report."""
@@ -545,6 +534,54 @@ class Rmse(Metric):
         )
 
 
+class Mae(Metric):
+    name = "mae"
+    verbose_name = "MAE"
+    score_func = staticmethod(sklearn.metrics.mean_absolute_error)
+    response_method = "predict"
+    greater_is_better = False
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return report._ml_task in ("regression", "multioutput-regression")
+
+    def __call__(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source="test",
+        multioutput="raw_values",
+        **kwargs,
+    ):
+        return super().__call__(
+            report=report, data_source=data_source, multioutput=multioutput, **kwargs
+        )
+
+
+class Mape(Metric):
+    name = "mape"
+    verbose_name = "MAPE"
+    score_func = staticmethod(sklearn.metrics.mean_absolute_percentage_error)
+    response_method = "predict"
+    greater_is_better = False
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return report._ml_task in ("regression", "multioutput-regression")
+
+    def __call__(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source="test",
+        multioutput="raw_values",
+        **kwargs,
+    ):
+        return super().__call__(
+            report=report, data_source=data_source, multioutput=multioutput, **kwargs
+        )
+
+
 # Order matters for default display
 BUILTIN_METRICS: list[Metric] = [
     Accuracy(),
@@ -555,6 +592,8 @@ BUILTIN_METRICS: list[Metric] = [
     Brier(),
     R2(),
     Rmse(),
+    Mae(),
+    Mape(),
     FitTime(),
     PredictTime(),
 ]

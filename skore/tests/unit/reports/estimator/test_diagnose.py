@@ -49,7 +49,7 @@ def test_diagnose_detects_overfitting(regression_data):
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y)
     result = report.diagnose()
     assert "SKD001" in result.issues
-    assert "2/2 default predictive metrics" in result.issues["SKD001"]["explanation"]
+    assert "4/4 default predictive metrics" in result.issues["SKD001"]["explanation"]
 
 
 def test_diagnose_detects_underfitting(regression_data):
@@ -58,7 +58,7 @@ def test_diagnose_detects_underfitting(regression_data):
     report = evaluate(DummyRegressor(), X, y)
     result = report.diagnose()
     assert "SKD002" in result.issues
-    assert "2/2 comparable metrics" in result.issues["SKD002"]["explanation"]
+    assert "4/4 comparable metrics" in result.issues["SKD002"]["explanation"]
 
 
 @pytest.mark.parametrize(

@@ -4,6 +4,7 @@ from typing import Any, Literal
 
 import joblib
 import pandas as pd
+from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -742,6 +743,124 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "rmse", data_source=data_source, multioutput=multioutput
+        ).frame(
+            aggregate=aggregate,
+        )
+
+    @available_if(_check_any_sub_report_has_metric("mae"))
+    def mae(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> pd.DataFrame:
+        """Compute the mean absolute error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
+
+        Returns
+        -------
+        pd.DataFrame
+            The mean absolute error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> estimator_1 = Ridge(random_state=42)
+        >>> estimator_2 = Ridge(random_state=43)
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
+        >>> comparison_report.metrics.mae()
+        Estimator     Ridge_1    Ridge_2
+        Metric
+        MAE        46.5...    46.5...
+        """
+        return self._metric(
+            "mae", data_source=data_source, multioutput=multioutput
+        ).frame(
+            aggregate=aggregate,
+        )
+
+    @available_if(_check_any_sub_report_has_metric("mape"))
+    def mape(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> pd.DataFrame:
+        """Compute the mean absolute percentage error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
+
+        Returns
+        -------
+        pd.DataFrame
+            The mean absolute percentage error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> estimator_1 = Ridge(random_state=42)
+        >>> estimator_2 = Ridge(random_state=43)
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
+        >>> comparison_report.metrics.mape()
+        Estimator     Ridge_1    Ridge_2
+        Metric
+        MAPE       0.3...     0.3...
+        """
+        return self._metric(
+            "mape", data_source=data_source, multioutput=multioutput
         ).frame(
             aggregate=aggregate,
         )

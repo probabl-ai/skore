@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 _TIMING_METRICS = {"Fit time (s)", "Predict time (s)", "fit_time_s", "predict_time_s"}
 
@@ -18,7 +19,7 @@ def adaptive_threshold(
 def check_score_gap_to_baseline(
     score: float,
     baseline: float,
-    favorability: str,
+    greater_is_better: bool | None,
     floor: float,
     fraction: float,
 ) -> bool:
@@ -27,15 +28,16 @@ def check_score_gap_to_baseline(
     The gap threshold is `fraction` of the reference score, floored at `floor`
     to prevent the threshold from vanishing on near-zero scores.
     """
-    if favorability == "(↗︎)":
+    if pd.isna(greater_is_better):
+        return False
+
+    if greater_is_better:
         return score - baseline >= adaptive_threshold(
             floor=floor, fraction=fraction, references=(baseline,)
         )
-    if favorability == "(↘︎)":
-        return baseline - score >= adaptive_threshold(
-            floor=floor, fraction=fraction, references=(baseline,)
-        )
-    return False
+    return baseline - score >= adaptive_threshold(
+        floor=floor, fraction=fraction, references=(baseline,)
+    )
 
 
 def majority_vote(votes: list[bool]) -> tuple[bool, int, int]:
