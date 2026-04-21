@@ -110,7 +110,7 @@ How to reduce the risk
 
 .. _skd003-inconsistent_performance:
 
-SKD003 - Inconsistent performance across folds
+SKD003 - Inconsistent performance across splits
 -----------------------------------------------
 
 How it is detected
@@ -118,7 +118,7 @@ How it is detected
 
 This check applies only to :class:`~skore.CrossValidationReport`.
 
-`skore` examines each fold's test scores across the report's default predictive metrics
+`skore` examines each split's test scores across the report's default predictive metrics
 (timing metrics are excluded). For every metric, a `modified Z-score
 <https://en.wikipedia.org/wiki/Median_absolute_deviation#Relation_to_standard_deviation>`_
 based on the Median Absolute Deviation (MAD) is computed:
@@ -129,24 +129,24 @@ based on the Median Absolute Deviation (MAD) is computed:
 
 It is a version of the Z-score that is more robust to extreme values and does not make
 assumptions about the distribution of the data.
-A fold is flagged as an outlier for a given metric when :math:`|z_i| > 3` which is
+A split is flagged as an outlier for a given metric when :math:`|z_i| > 3` which is
 analogous to being outside 3 standard deviations from the mean.
 
-A fold is considered inconsistent when a **strict majority** of metrics flag it as an
-outlier. The check reports an issue if at least one fold is labeled inconsistent.
+A split is considered inconsistent when a **strict majority** of metrics flag it as an
+outlier. The check reports an issue if at least one split is labeled inconsistent.
 
 Why it matters
 ^^^^^^^^^^^^^^
 
-When one or more folds perform very differently from the rest, the cross-validation
+When one or more splits perform very differently from the rest, the cross-validation
 estimate becomes unreliable. The anomaly may reveal data leakage, uneven class
-distributions across folds, or a model that is sensitive to specific data splits.
+distributions across splits, or a model that is sensitive to specific data splits.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - use stratified or grouped cross-validation to ensure a more even split,
-- investigate whether the outlier fold contains a different data distribution,
+- investigate whether the outlier split contains a different data distribution,
 - check for data leakage or temporal effects,
 - increase the size of the dataset to improve stability.
 
