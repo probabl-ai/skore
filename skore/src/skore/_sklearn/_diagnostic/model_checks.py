@@ -93,7 +93,7 @@ class CheckOverfitting(Check):
                 fraction=0.10,
             )
             for idx in range(len(report_data))
-            if report_data.loc[idx, "metric"] not in _TIMING_METRICS
+            if report_data.loc[idx, "metric_verbose_name"] not in _TIMING_METRICS
         ]
 
         majority, n_positive, total = majority_vote(votes)
@@ -136,7 +136,7 @@ class CheckUnderfitting(Check):
                 fraction=0.05,
             )
             for idx in range(len(report_data))
-            if report_data.loc[idx, "metric"] not in _TIMING_METRICS
+            if report_data.loc[idx, "metric_verbose_name"] not in _TIMING_METRICS
         ]
         majority, n_positive, total = majority_vote(votes)
         if majority:

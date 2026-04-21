@@ -104,7 +104,7 @@ class CustomCheck2(Check):
 
         high_var_metrics = [
             metric_name
-            for metric_name, group in scores.groupby("metric")
+            for metric_name, group in scores.groupby("metric_verbose_name")
             if group["score"].std() > 0.1
         ]
 

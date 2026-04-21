@@ -14,6 +14,7 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore._sklearn._plot.metrics.metrics_summary_display import metric_score_to_rows
 from skore._sklearn.metrics import (
     BUILTIN_METRICS,
     R2,
@@ -31,7 +32,6 @@ from skore._sklearn.metrics import (
 from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
 from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
-from skore._utils._metric_rows import metric_score_to_rows
 
 
 class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -1018,28 +1018,32 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         With specific threshold for binary classification:
 
         >>> display = report.metrics.confusion_matrix()
-        >>> display.plot(threshold_value=0.7)
+        >>> display.plot(threshold_value=0.7, label=1)
         """
         if data_source == "both":
             raise ValueError(
                 "data_source='both' is not supported for confusion_matrix."
             )
 
-        response_method: str | list[str] | tuple[str, ...]
-        if self._parent._ml_task == "binary-classification":
-            response_method = ("predict_proba", "decision_function")
+        if hasattr(self._parent._estimator, "predict_proba") or hasattr(
+            self._parent._estimator, "decision_function"
+        ):
+            y_scores = self._parent._get_predictions(
+                data_source=data_source,
+                response_method=("predict_proba", "decision_function"),
+            )
         else:
-            response_method = "predict"
+            y_scores = None
 
-        display_kwargs = {
-            "response_method": response_method,
-            "pos_label": self._parent.pos_label,
+        display_kwargs: dict = {
+            "report_pos_label": self._parent.pos_label,
+            "y_scores": y_scores,
         }
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
                 data_source=data_source,
-                response_method=response_method,
+                response_method="predict",
                 display_class=ConfusionMatrixDisplay,
                 display_kwargs=display_kwargs,
             ),

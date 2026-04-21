@@ -15,10 +15,10 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore._sklearn._plot.metrics.metrics_summary_display import metric_score_to_rows
 from skore._sklearn.types import Aggregate, MetricLike
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
-from skore._utils._metric_rows import metric_score_to_rows
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
@@ -233,7 +233,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         reports = self._parent.estimator_reports_
         metric = reports[0]._metric_registry[metric_name]
 
-        rows: list[dict] = []
+        rows = []
         for split_idx, report in enumerate(reports):
             score = getattr(report.metrics, metric_name)(
                 data_source=data_source, **kwargs
@@ -965,7 +965,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         With specific threshold for binary classification:
 
         >>> display = report.metrics.confusion_matrix()
-        >>> display.plot(threshold_value=0.7)
+        >>> display.plot(threshold_value=0.7, label=1)
         """
         child_displays = [
             report.metrics.confusion_matrix(data_source=data_source)

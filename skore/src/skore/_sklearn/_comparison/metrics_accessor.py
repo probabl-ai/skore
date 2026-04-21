@@ -1,4 +1,5 @@
 import numbers
+import warnings
 from typing import Any, Literal
 
 import joblib
@@ -984,8 +985,25 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         With specific threshold for binary classification:
 
         >>> display = report.metrics.confusion_matrix()
-        >>> display.plot(threshold_value=0.7)
+        >>> display.plot(threshold_value=0.7, label=1)
         """
+        do_thresholds = True
+        if not all(
+            hasattr(report._estimator, "predict_proba")
+            for report in self._parent.reports_.values()
+        ) and not all(
+            hasattr(report._estimator, "decision_function")
+            for report in self._parent.reports_.values()
+        ):
+            warnings.warn(
+                (
+                    "Not all estimators have a `predict_proba` or a "
+                    "`decision_function` method. Thresholded confusion matrices are "
+                    "not available."
+                ),
+                stacklevel=2,
+            )
+            do_thresholds = False
         child_displays = [
             report.metrics.confusion_matrix(data_source=data_source)
             for report in track(
@@ -997,6 +1015,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         display = ConfusionMatrixDisplay._concatenate(
             child_displays,
+            do_thresholds=do_thresholds,
             report_type=self._parent._report_type,
             column_data={"estimator": list(estimator_names)},
         )
