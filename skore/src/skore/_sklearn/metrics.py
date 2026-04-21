@@ -94,17 +94,6 @@ class Metric:
                 state["score_func"] = None
         return state
 
-    @property
-    def icon(self) -> str:
-        """Favorability icon derived from ``greater_is_better``."""
-        match self.greater_is_better:
-            case True:
-                return "(↗︎)"
-            case False:
-                return "(↘︎)"
-            case _:
-                return ""
-
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         """Whether this metric is applicable to the given report."""
