@@ -77,7 +77,7 @@ def test_flat_index_multioutput(linear_regression_multioutput_with_test):
     result_multi = display.frame(favorability=False, flat_index=False)
     assert isinstance(result_multi.index, pd.MultiIndex)
     assert result_multi.index.names == ["Metric", "Output"]
-    assert result_multi.shape == (6, 1)
+    assert result_multi.shape == (10, 1)
     assert result_multi.loc[("R²", "0"), "LinearRegression"] == 1
     assert result_multi.loc[("R²", "1"), "LinearRegression"] == 1
 
@@ -89,6 +89,10 @@ def test_flat_index_multioutput(linear_regression_multioutput_with_test):
         "r²_1",
         "rmse_0",
         "rmse_1",
+        "mae_0",
+        "mae_1",
+        "mape_0",
+        "mape_1",
         "fit_time_s",
         "predict_time_s",
     ]

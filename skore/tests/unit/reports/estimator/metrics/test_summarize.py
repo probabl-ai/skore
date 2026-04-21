@@ -169,7 +169,14 @@ def test_default_regression(linear_regression_with_test):
 
     check_display_structure(
         display,
-        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={
+            "R²",
+            "RMSE",
+            "MAE",
+            "MAPE",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
         expected_estimator_name="LinearRegression",
     )
 
@@ -185,7 +192,14 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
 
     check_display_structure(
         display,
-        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={
+            "R²",
+            "RMSE",
+            "MAE",
+            "MAPE",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
         expected_estimator_name="LinearRegression",
     )
 

@@ -534,6 +534,54 @@ class Rmse(Metric):
         )
 
 
+class Mae(Metric):
+    name = "mae"
+    verbose_name = "MAE"
+    score_func = staticmethod(sklearn.metrics.mean_absolute_error)
+    response_method = "predict"
+    greater_is_better = False
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return report._ml_task in ("regression", "multioutput-regression")
+
+    def __call__(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source="test",
+        multioutput="raw_values",
+        **kwargs,
+    ):
+        return super().__call__(
+            report=report, data_source=data_source, multioutput=multioutput, **kwargs
+        )
+
+
+class Mape(Metric):
+    name = "mape"
+    verbose_name = "MAPE"
+    score_func = staticmethod(sklearn.metrics.mean_absolute_percentage_error)
+    response_method = "predict"
+    greater_is_better = False
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return report._ml_task in ("regression", "multioutput-regression")
+
+    def __call__(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source="test",
+        multioutput="raw_values",
+        **kwargs,
+    ):
+        return super().__call__(
+            report=report, data_source=data_source, multioutput=multioutput, **kwargs
+        )
+
+
 # Order matters for default display
 BUILTIN_METRICS: list[Metric] = [
     Accuracy(),
@@ -544,6 +592,8 @@ BUILTIN_METRICS: list[Metric] = [
     Brier(),
     R2(),
     Rmse(),
+    Mae(),
+    Mape(),
     FitTime(),
     PredictTime(),
 ]

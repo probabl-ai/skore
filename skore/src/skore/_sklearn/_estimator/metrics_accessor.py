@@ -22,6 +22,8 @@ from skore._sklearn.metrics import (
     Brier,
     FitTime,
     LogLoss,
+    Mae,
+    Mape,
     Metric,
     Precision,
     PredictTime,
@@ -697,6 +699,102 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         58.1...
         """
         return Rmse()(
+            report=self._parent, data_source=data_source, multioutput=multioutput
+        )
+
+    def mae(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
+    ) -> float | list:
+        """Compute the mean absolute error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        Returns
+        -------
+        float or list of ``n_outputs``
+            The mean absolute error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
+        >>> report.metrics.mae()
+        46.5...
+        """
+        return Mae()(
+            report=self._parent, data_source=data_source, multioutput=multioutput
+        )
+
+    def mape(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
+    ) -> float | list:
+        """Compute the mean absolute percentage error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        Returns
+        -------
+        float or list of ``n_outputs``
+            The mean absolute percentage error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
+        >>> report.metrics.mape()
+        0.3...
+        """
+        return Mape()(
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 

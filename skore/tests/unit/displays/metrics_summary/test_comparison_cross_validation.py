@@ -72,7 +72,10 @@ def test_default_regression(comparison_cross_validation_reports_regression):
     )
     assert_index_equal(
         result.index,
-        pd.Index(["R²", "RMSE", "Fit time (s)", "Predict time (s)"], name="Metric"),
+        pd.Index(
+            ["R²", "RMSE", "MAE", "MAPE", "Fit time (s)", "Predict time (s)"],
+            name="Metric",
+        ),
     )
 
 

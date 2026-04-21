@@ -191,7 +191,14 @@ def test_regression(linear_regression_data):
 
     check_display_structure(
         display,
-        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={
+            "R²",
+            "RMSE",
+            "MAE",
+            "MAPE",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
         expected_estimator_name="LinearRegression",
     )
 
@@ -207,7 +214,14 @@ def test_multioutput_regression(linear_regression_multioutput_data):
 
     check_display_structure(
         display,
-        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={
+            "R²",
+            "RMSE",
+            "MAE",
+            "MAPE",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
         expected_estimator_name="LinearRegression",
     )
 

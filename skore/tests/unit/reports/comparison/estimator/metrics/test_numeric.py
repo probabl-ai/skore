@@ -129,6 +129,28 @@ def test_binary_classification(
                 index=pd.Index(["R²"], name="Metric"),
             ),
         ),
+        (
+            "mae",
+            pd.DataFrame(
+                [[79.536267, 79.536267]],
+                columns=pd.Index(
+                    ["DummyRegressor_1", "DummyRegressor_2"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["MAE"], name="Metric"),
+            ),
+        ),
+        (
+            "mape",
+            pd.DataFrame(
+                [[1.012348, 1.012348]],
+                columns=pd.Index(
+                    ["DummyRegressor_1", "DummyRegressor_2"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["MAPE"], name="Metric"),
+            ),
+        ),
     ],
 )
 def test_regression(metric_name, expected, comparison_estimator_reports_regression):

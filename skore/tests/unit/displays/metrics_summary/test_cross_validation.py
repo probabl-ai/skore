@@ -144,6 +144,10 @@ def test_multioutput_with_flat_index(linear_regression_multioutput_data):
         "r²_1",
         "rmse_0",
         "rmse_1",
+        "mae_0",
+        "mae_1",
+        "mape_0",
+        "mape_1",
         "fit_time_s",
         "predict_time_s",
     ]
