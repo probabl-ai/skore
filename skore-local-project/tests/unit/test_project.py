@@ -398,21 +398,31 @@ class TestProject:
         ):
             project.summarize()
 
-    def test_delete(self, tmp_path, binary_classification, regression):
+    def test_delete(self, tmp_path, binary_classification, regression, cv_regression):
         project1 = Project("<project1>", workspace=tmp_path)
-        project1.put("<project1-key1>", binary_classification)
-        project1.put("<project1-key2>", regression)
+        project1.put("<key>", regression)
+        n_artifacts = len(DiskCacheStorage(tmp_path / "artifacts"))
+        assert n_artifacts >= 1
 
         project2 = Project("<project2>", workspace=tmp_path)
-        project2.put("<project2-key1>", binary_classification)
+        project2.put("<key>", binary_classification)
+        project2.put("<key>", cv_regression)
+        regression.cache_predictions()
+        project2.put("<key>", regression)
 
-        assert len(DiskCacheStorage(tmp_path / "metadata")) == 3
-        assert len(DiskCacheStorage(tmp_path / "artifacts")) == 2
+        assert len(DiskCacheStorage(tmp_path / "metadata")) == 4
+        assert len(DiskCacheStorage(tmp_path / "artifacts")) > n_artifacts
 
-        Project.delete("<project1>", workspace=tmp_path)
+        Project.delete("<project2>", workspace=tmp_path)
 
+        project1 = Project("<project1>", workspace=tmp_path)
+        assert len(project1.summarize()) == 1
         assert len(DiskCacheStorage(tmp_path / "metadata")) == 1
-        assert len(DiskCacheStorage(tmp_path / "artifacts")) == 1
+        assert len(DiskCacheStorage(tmp_path / "artifacts")) == n_artifacts
+
+        artifact_id = project1.summarize()[-1]["id"]
+        report = project1.get(artifact_id)
+        assert isinstance(report, EstimatorReport)
 
     def test_delete_exception(self, tmp_path):
         import re

@@ -350,17 +350,36 @@ class Project:
                 f"does not exist."
             )
 
+        def collect_artifact_ids(artifact_id: str) -> set[str]:
+            """Collect all artifacts needed to restore a persisted report."""
+            if artifact_id not in artifacts:
+                return set()
+
+            kept_artifacts = {artifact_id}
+            with io.BytesIO(artifacts[artifact_id]) as stream:
+                state_hashes = joblib.load(stream)
+
+            if not isinstance(state_hashes, dict):
+                # BW compatibility: the top-level artifact is the whole report.
+                return kept_artifacts
+
+            referenced_artifacts = set(state_hashes.values())
+            if referenced_artifacts.issubset(set(artifacts)):
+                kept_artifacts |= referenced_artifacts
+
+            return kept_artifacts
+
         # Delete all metadata related to the project
         remaining_artifacts = set()
 
-        for key, value in metadata.items():
+        for key, value in list(metadata.items()):
             if value["project_name"] == name:
                 del metadata[key]
             else:
-                remaining_artifacts.add(value["artifact_id"])
+                remaining_artifacts |= collect_artifact_ids(value["artifact_id"])
 
         # Prune artifacts not related to a project
-        for artifact in artifacts:
+        for artifact in list(artifacts):
             if artifact not in remaining_artifacts:
                 del artifacts[artifact]
 
