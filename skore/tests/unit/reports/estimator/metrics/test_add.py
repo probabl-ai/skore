@@ -200,7 +200,7 @@ class TestSummarizeIntegration:
 
         assert len(display.data) == 1
         row = display.data.iloc[0]
-        assert row["metric"] == "Business Loss"
+        assert row["metric_verbose_name"] == "Business Loss"
         assert row["favorability"] == "(↘︎)"
 
     def test_summarize_with_mixed_metrics(self, binary_classification_report):
@@ -212,7 +212,10 @@ class TestSummarizeIntegration:
         # Should work with list including both types
         display = report.metrics.summarize(metric=["accuracy", "business_loss"])
 
-        assert set(display.data["metric"]) == {"Accuracy", "Business Loss"}
+        assert set(display.data["metric_verbose_name"]) == {
+            "Accuracy",
+            "Business Loss",
+        }
 
 
 class TestCacheBehavior:
@@ -390,7 +393,7 @@ class TestDifferentMLTasks:
         report.metrics.add(scorer)
 
         display = report.metrics.summarize()
-        assert "Accuracy Score" in display.data["metric"].values
+        assert "Accuracy Score" in display.data["metric_verbose_name"].values
 
     def test_regression(self, regression_report):
         """Test add on regression report."""
@@ -407,7 +410,7 @@ class TestDifferentMLTasks:
         report.metrics.add(scorer)
 
         display = report.metrics.summarize()
-        assert "Custom Mse" in display.data["metric"].values
+        assert "Custom Mse" in display.data["metric_verbose_name"].values
 
     def test_multioutput_regression(
         self, linear_regression_multioutput_with_train_test
@@ -432,7 +435,7 @@ class TestDifferentMLTasks:
         report.metrics.add(scorer)
 
         display = report.metrics.summarize()
-        assert "Mean Squared Error" in display.data["metric"].values
+        assert "Mean Squared Error" in display.data["metric_verbose_name"].values
 
     def test_wrong_ml_task(self, linear_regression_with_train_test):
         """adding a metric incompatible with the ML task doesn't crash."""
@@ -471,7 +474,9 @@ class TestDictReturnValues:
 
         display = report.metrics.summarize(metric="per_class_accuracy")
 
-        metric_rows = display.data[display.data["metric"] == "Per Class Accuracy"]
+        metric_rows = display.data[
+            display.data["metric_verbose_name"] == "Per Class Accuracy"
+        ]
         assert len(metric_rows) == 2
         assert set(metric_rows["label"].values) == {0, 1}
 
@@ -493,7 +498,9 @@ class TestDictReturnValues:
 
         display = report.metrics.summarize(metric="multimetric_scorer")
 
-        metric_rows = display.data[display.data["metric"] == "Multimetric Scorer"]
+        metric_rows = display.data[
+            display.data["metric_verbose_name"] == "Multimetric Scorer"
+        ]
         # Not quite right...
         assert set(metric_rows["label"]) == {"accuracy", "precision"}
 
@@ -511,7 +518,7 @@ class TestStringScorerNames:
         # NOTE: User can pass "f1", not "f1_score" which is the name of the actual
         # metric function
         display = report.metrics.summarize(metric="f1")
-        metric_rows = display.data[display.data["metric"] == "F1"]
+        metric_rows = display.data[display.data["metric_verbose_name"] == "F1"]
 
         assert len(metric_rows) == 1
 
@@ -520,12 +527,12 @@ class TestStringScorerNames:
         report = binary_classification_report
 
         display = report.metrics.summarize()
-        metrics_before = set(display.data["metric"])
+        metrics_before = set(display.data["metric_verbose_name"])
 
         report.metrics.add("f1")
 
         display = report.metrics.summarize()
-        metrics_after = set(display.data["metric"])
+        metrics_after = set(display.data["metric_verbose_name"])
 
         assert metrics_after - metrics_before == {"F1"}
 
@@ -543,7 +550,7 @@ class TestStringScorerNames:
 
         assert row["score"] >= 0
         assert row["favorability"] == "(↘︎)"
-        assert not row["metric"].lower().startswith("neg")
+        assert not row["metric_verbose_name"].lower().startswith("neg")
 
     def test_without_neg_prefix(self, regression_report):
         """Test that metric strings passed without 'neg_' prefix can be added and
@@ -636,7 +643,7 @@ class TestSerialization:
         assert metric.kwargs == {"cost_fp": 20, "cost_fn": 3}
 
         display = report2.metrics.summarize()
-        assert "Business Loss" in display.data["metric"].values
+        assert "Business Loss" in display.data["metric_verbose_name"].values
 
     def test_serde_lambda(self, binary_classification_report):
         """Test that if added metric is a lambda, it is lost when pickling."""
