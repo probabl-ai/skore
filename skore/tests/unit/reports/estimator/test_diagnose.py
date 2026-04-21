@@ -49,7 +49,12 @@ def test_diagnose_detects_overfitting(regression_data):
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y)
     result = report.diagnose()
     assert "SKD001" in result.issues
-    assert "4/4 default predictive metrics" in result.issues["SKD001"]["explanation"]
+    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+
+    assert (
+        f"for {n_metrics}/{n_metrics} default predictive metrics"
+        in result.issues["SKD001"]["explanation"]
+    )
 
 
 def test_diagnose_detects_underfitting(regression_data):
@@ -58,7 +63,11 @@ def test_diagnose_detects_underfitting(regression_data):
     report = evaluate(DummyRegressor(), X, y)
     result = report.diagnose()
     assert "SKD002" in result.issues
-    assert "4/4 comparable metrics" in result.issues["SKD002"]["explanation"]
+    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+    assert (
+        f"for {n_metrics}/{n_metrics} comparable metrics"
+        in result.issues["SKD002"]["explanation"]
+    )
 
 
 @pytest.mark.parametrize(
@@ -273,4 +282,8 @@ def test_diagnose_custom_metric(binary_classification_data):
     report.metrics.add("f1")
     result = report.diagnose()
     assert "SKD002" in result.issues
-    assert "7/7 comparable metrics" in result.issues["SKD002"]["explanation"]
+    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+    assert (
+        f"for {n_metrics}/{n_metrics} comparable metrics"
+        in result.issues["SKD002"]["explanation"]
+    )

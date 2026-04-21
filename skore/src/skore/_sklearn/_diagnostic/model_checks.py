@@ -70,18 +70,19 @@ def _get_metrics_data(report: _BaseReport) -> tuple:
 
 
 class CheckOverfitting(Check):
+    """Check for overfitting (SKD001).
+
+    Detects significant gaps between train and test scores.
+    Raises :class:`DiagnosticNotApplicable` when train+test data is
+    unavailable.
+    """
+
     code = "SKD001"
     title = "Potential overfitting"
     report_type = "estimator"
     docs_url = "skd001-overfitting"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        """Check for overfitting (SKD001).
-
-        Detects significant gaps between train and test scores.
-        Raises :class:`DiagnosticNotApplicable` when train+test data is
-        unavailable.
-        """
         report_data, _baseline_data = _get_metrics_data(report)
 
         votes = [
@@ -106,18 +107,19 @@ class CheckOverfitting(Check):
 
 
 class CheckUnderfitting(Check):
+    """Check for underfitting (SKD002).
+
+    Detects train and test scores close to a dummy baseline.
+    Raises :class:`DiagnosticNotApplicable` when train+test data is
+    unavailable.
+    """
+
     code = "SKD002"
     title = "Potential underfitting"
     report_type = "estimator"
     docs_url = "skd002-underfitting"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        """Check for underfitting (SKD002).
-
-        Detects train and test scores close to a dummy baseline.
-        Raises :class:`DiagnosticNotApplicable` when train+test data is
-        unavailable.
-        """
         report_data, baseline_data = _get_metrics_data(report)
 
         votes = [
@@ -148,18 +150,19 @@ class CheckUnderfitting(Check):
         return None
 
 
-class CheckMetricsConsistencyAcrossFolds(Check):
+class CheckMetricsConsistencyAcrossSplits(Check):
+    """Check the consistency of metrics across splits (SKD003).
+
+    Outlier splits are identified with a modified Z-score based on the
+    Median Absolute Deviation (MAD) to be robust to extreme values.
+    """
+
     code = "SKD003"
-    title = "Inconsistent performance across folds"
+    title = "Inconsistent performance across splits"
     report_type = "cross-validation"
     docs_url = "skd003-inconsistent_performance"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        """Check the consistency of metrics across folds (SKD003).
-
-        Outlier folds are identified with a modified Z-score based on the
-        Median Absolute Deviation (MAD) to be robust to extreme values.
-        """
         from skore._sklearn._cross_validation.report import CrossValidationReport
 
         if not isinstance(report, CrossValidationReport):
@@ -188,17 +191,18 @@ class CheckMetricsConsistencyAcrossFolds(Check):
 
 
 class CheckHighClassImbalance(Check):
+    """Check for high class imbalance (SKD004) in binary classification.
+
+    Detects an issue when the most frequent class represents more than 80% of the
+    dataset.
+    """
+
     code = "SKD004"
     title = "High class imbalance"
     report_type = "estimator"
     docs_url = "skd004-high_class_imbalance"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        """Check for high class imbalance (SKD004) in binary classification.
-
-        Detects an issue when the most frequent class represents more than 80% of the
-        dataset.
-        """
         from skore._sklearn._estimator.report import EstimatorReport
 
         if (
@@ -226,16 +230,17 @@ class CheckHighClassImbalance(Check):
 
 
 class CheckUnderrepresentedClasses(Check):
+    """Check for underrepresented classes (SKD005) in multiclass classification.
+
+    Detects an issue when some classes represent less than 10% of the dataset.
+    """
+
     code = "SKD005"
     title = "Underrepresented classes"
     report_type = "estimator"
     docs_url = "skd005-underrepresented_classes"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        """Check for underrepresented classes (SKD005) in multiclass classification.
-
-        Detects an issue when some classes represent less than 10% of the dataset.
-        """
         from skore._sklearn._estimator.report import EstimatorReport
 
         if (
@@ -264,7 +269,7 @@ class CheckUnderrepresentedClasses(Check):
 _BUILTIN_CHECKS = [
     CheckOverfitting(),
     CheckUnderfitting(),
-    CheckMetricsConsistencyAcrossFolds(),
+    CheckMetricsConsistencyAcrossSplits(),
     CheckHighClassImbalance(),
     CheckUnderrepresentedClasses(),
 ]

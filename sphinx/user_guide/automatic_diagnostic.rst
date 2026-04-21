@@ -132,8 +132,8 @@ assumptions about the distribution of the data.
 A fold is flagged as an outlier for a given metric when :math:`|z_i| > 3` which is
 analogous to being outside 3 standard deviations from the mean.
 
-A fold votes as inconsistent when a **strict majority** of metrics flag it as an
-outlier. The check detects an issue when at least one fold is voted inconsistent.
+A fold is considered inconsistent when a **strict majority** of metrics flag it as an
+outlier. The check reports an issue if at least one fold is labeled inconsistent.
 
 Why it matters
 ^^^^^^^^^^^^^^
@@ -169,7 +169,7 @@ Why it matters
 ^^^^^^^^^^^^^^
 
 When one class dominates the dataset, a model can achieve high accuracy simply by
-predicting the majority class. Accuracy alone becomes a misleading performance
+constantly predicting the majority class. Accuracy alone becomes a misleading performance
 indicator, and the model may fail to detect the minority class entirely.
 
 How to reduce the risk
