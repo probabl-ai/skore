@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 def evaluate(
     estimator: BaseEstimator | list[BaseEstimator] | dict[str, BaseEstimator],
-    X: ArrayLike | list[ArrayLike] | dict[str, ArrayLike] | None = None,
+    X: ArrayLike | list[ArrayLike | None] | dict[str, ArrayLike] | None = None,
     y: ArrayLike | None = None,
     data: dict | None = None,
     *,
@@ -116,14 +116,16 @@ def evaluate(
     >>> list(report.reports_)
     ['m1', 'm2']
     """
+    if not isinstance(estimator, (list, dict)) and isinstance(X, (list, dict)):
+        raise TypeError(
+            "X must be a single array-like (or None) when estimator is not a list"
+            " or dict."
+        )
+
     if isinstance(estimator, (list, dict)):
-        if isinstance(splitter, float):
-            splitter = TrainTestSplit(test_size=splitter)
-
-        x_list: list[ArrayLike | None]
-
         if isinstance(estimator, dict):
-            names, estimator = zip(*estimator.items(), strict=True)
+            names = list(estimator.keys())
+            estimators = list(estimator.values())
             if isinstance(X, list):
                 raise TypeError(
                     "When estimator is a dict, X cannot be a list. Pass a single "
@@ -137,60 +139,54 @@ def evaluate(
                         f"same keys; got estimator keys {sorted(names)!r}"
                         f" and X keys {sorted(X)!r}."
                     )
-                x_list = [X[name] for name in names]
+
+                Xs = [X[name] for name in names]
             else:
-                x_list = [cast(ArrayLike | None, X)] * len(estimator)
-        else:
+                Xs = [cast(ArrayLike, X)] * len(estimators)
+        else:  # isinstance(estimator, list)
             names = None
+            estimators = estimator
             if isinstance(X, dict):
                 raise TypeError(
                     "When estimator is a list, X cannot be a dict. Pass a single "
                     "array-like broadcast to all estimators, or a list of "
                     "array-like with one matrix per estimator."
                 )
-            if isinstance(X, list):
-                x_list = cast(list[ArrayLike | None], X)
-            else:
-                x_list = [cast(ArrayLike | None, X)] * len(estimator)
+            Xs = cast(list, X if isinstance(X, list) else [X] * len(estimators))
 
-        reports = [
-            evaluate(
-                est,
-                x,
-                y,
-                data=data,
-                splitter=splitter,
-                pos_label=pos_label,
-                n_jobs=n_jobs,
-            )
-            for est, x in zip(estimator, x_list, strict=True)
-        ]
+        reports = cast(
+            list[EstimatorReport] | list[CrossValidationReport],
+            [
+                evaluate(
+                    est,
+                    x,
+                    y,
+                    data=data,
+                    splitter=splitter,
+                    pos_label=pos_label,
+                    n_jobs=n_jobs,
+                )
+                for est, x in zip(estimators, Xs, strict=True)
+            ],
+        )
 
         if names is not None:
             return ComparisonReport(
-                cast(
-                    dict[str, EstimatorReport] | dict[str, CrossValidationReport],
-                    dict(zip(names, reports, strict=True)),
-                ),
-                n_jobs=n_jobs,
+                dict(zip(names, reports, strict=True)), n_jobs=n_jobs
             )
-        return ComparisonReport(
-            cast(
-                list[EstimatorReport] | list[CrossValidationReport],
-                reports,
-            ),
-            n_jobs=n_jobs,
-        )
+        return ComparisonReport(reports, n_jobs=n_jobs)
+
+    X = cast(ArrayLike | None, X)
 
     if isinstance(splitter, str):
         if splitter != "prefit":
             raise ValueError(
-                f"Invalid string value for splitter: {splitter!r}. "
-                "The only supported string value is 'prefit'."
+                f"Invalid string value for splitter: {splitter!r}."
+                " The only supported string value is 'prefit'."
             )
         return EstimatorReport(
             estimator,
-            X_test=cast(ArrayLike | None, X),
+            X_test=X,
             y_test=y,
             test_data=data,
             pos_label=pos_label,
@@ -206,7 +202,7 @@ def evaluate(
         with configuration(show_progress=False):
             report = CrossValidationReport(
                 estimator,
-                cast(ArrayLike | None, X),
+                X,
                 y,
                 data=data,
                 pos_label=pos_label,
@@ -217,7 +213,7 @@ def evaluate(
 
     return CrossValidationReport(
         estimator,
-        cast(ArrayLike | None, X),
+        X,
         y,
         data=data,
         pos_label=pos_label,
