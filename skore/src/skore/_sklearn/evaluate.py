@@ -146,6 +146,9 @@ def evaluate(
         )
 
     if isinstance(splitter, float):
+        # It's easier to make a 1-split CrossValidationReport
+        # and extract an EstimatorReport from it,
+        # than to make an EstimatorReport from scratch
         splitter = TrainTestSplit(test_size=splitter)
 
     if hasattr(splitter, "get_n_splits") and splitter.get_n_splits(X, y) == 1:
