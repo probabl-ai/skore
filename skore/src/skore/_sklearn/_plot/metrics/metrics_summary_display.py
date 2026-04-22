@@ -169,24 +169,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         return MetricsSummaryDisplay(rows, report_type=report_type)
 
     @staticmethod
-    def _combine_display_column(
-        df: pd.DataFrame,
-        *,
-        primary: str,
-        secondary: str,
-        combined: str,
-    ) -> pd.DataFrame:
-        overlap = df[primary].notna() & df[secondary].notna()
-        if overlap.any():
-            raise ValueError(
-                f"Expected '{primary}' and '{secondary}' to be mutually exclusive."
-            )
-
-        df = df.copy()
-        df[combined] = df[primary].combine_first(df[secondary])
-        return df.drop(columns=[primary, secondary])
-
-    @staticmethod
     def _flatten_index(df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
 
@@ -213,21 +195,13 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         extra_index_name = None
         if {"label", "average"}.issubset(df.columns):
-            df = MetricsSummaryDisplay._combine_display_column(
-                df,
-                primary="label",
-                secondary="average",
-                combined="label_or_average",
-            )
-            extra_index_name = "label_or_average"
+            extra_index_name = "Label / Average"
+            df[extra_index_name] = df["label"].combine_first(df["average"])
+            df = df.drop(columns=["label", "average"])
         elif {"output", "average"}.issubset(df.columns):
-            df = MetricsSummaryDisplay._combine_display_column(
-                df,
-                primary="output",
-                secondary="average",
-                combined="output_or_average",
-            )
-            extra_index_name = "output_or_average"
+            extra_index_name = "Output / Average"
+            df[extra_index_name] = df["label"].combine_first(df["average"])
+            df = df.drop(columns=["label", "average"])
         elif "label" in df.columns:
             extra_index_name = "label"
         elif "output" in df.columns:
@@ -235,15 +209,11 @@ class MetricsSummaryDisplay(DisplayMixin):
         elif "average" in df.columns:
             extra_index_name = "average"
 
-        for col in df.columns.intersection(
-            ["label", "output", "average", "label_or_average", "output_or_average"]
-        ):
-            df[col] = df[col].astype("string").fillna("")
-
         estimator_name = df.pop("estimator_name").iloc[0]
 
         index = ["metric_verbose_name"]
         if extra_index_name is not None:
+            df[extra_index_name] = df[extra_index_name].astype("string").fillna("")
             index.append(extra_index_name)
         df = df.set_index(index)
 
@@ -252,8 +222,6 @@ class MetricsSummaryDisplay(DisplayMixin):
             "metric_verbose_name": "Metric",
             "label": "Label",
             "output": "Output",
-            "label_or_average": "Label / Average",
-            "output_or_average": "Output / Average",
             "average": "Average",
             "score": estimator_name,
         }
