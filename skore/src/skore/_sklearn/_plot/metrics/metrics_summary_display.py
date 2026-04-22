@@ -134,11 +134,9 @@ class MetricsSummaryDisplay(DisplayMixin):
         self,
         rows: list[MetricsSummaryRow],
         report_type: ReportType,
-        ml_task: MLTask | None = None,
     ):
         self.rows = rows
         self.report_type = report_type
-        self.ml_task = ml_task
 
     @property
     def data(self):
@@ -168,13 +166,7 @@ class MetricsSummaryDisplay(DisplayMixin):
                 [cast(MetricsSummaryRow, row | extra_data) for row in display.rows]
             )
 
-        ml_task = child_displays[0].ml_task if child_displays else None
-        if any(display.ml_task != ml_task for display in child_displays[1:]):
-            raise ValueError(
-                "Cannot concatenate metrics summaries from different tasks."
-            )
-
-        return MetricsSummaryDisplay(rows, report_type=report_type, ml_task=ml_task)
+        return MetricsSummaryDisplay(rows, report_type=report_type)
 
     @staticmethod
     def _combine_display_column(
@@ -211,50 +203,58 @@ class MetricsSummaryDisplay(DisplayMixin):
     def _frame_estimator(
         data: pd.DataFrame,
         *,
-        ml_task: MLTask | None = None,
         favorability: bool = False,
         flat_index: bool = False,
     ) -> pd.DataFrame:
         """Process estimator report data into a formatted dataframe."""
         df = data.copy()
 
-        combined_index_name = None
-        if ml_task in ("binary-classification", "multiclass-classification"):
+        df = df.dropna(axis="columns", how="all")
+
+        extra_index_name = None
+        if {"label", "average"}.issubset(df.columns):
             df = MetricsSummaryDisplay._combine_display_column(
                 df,
                 primary="label",
                 secondary="average",
                 combined="label_or_average",
             )
-            combined_index_name = "label_or_average"
-        elif ml_task == "multioutput-regression":
+            extra_index_name = "label_or_average"
+        elif {"output", "average"}.issubset(df.columns):
             df = MetricsSummaryDisplay._combine_display_column(
                 df,
                 primary="output",
                 secondary="average",
                 combined="output_or_average",
             )
-            combined_index_name = "output_or_average"
-
-        df = df.dropna(axis="columns", how="all")
+            extra_index_name = "output_or_average"
+        elif "label" in df.columns:
+            extra_index_name = "label"
+        elif "output" in df.columns:
+            extra_index_name = "output"
+        elif "average" in df.columns:
+            extra_index_name = "average"
 
         for col in df.columns.intersection(
-            ["label", "output", "average", combined_index_name]
+            ["label", "output", "average", "label_or_average", "output_or_average"]
         ):
             df[col] = df[col].astype("string").fillna("")
 
         estimator_name = df.pop("estimator_name").iloc[0]
-        index = ["metric_verbose_name"]
-        if combined_index_name is not None and combined_index_name in df.columns:
-            index.append(combined_index_name)
 
+        index = ["metric_verbose_name"]
+        if extra_index_name is not None:
+            index.append(extra_index_name)
         df = df.set_index(index)
 
         # Rename columns as well as index names
         new_columns = {
             "metric_verbose_name": "Metric",
+            "label": "Label",
+            "output": "Output",
             "label_or_average": "Label / Average",
             "output_or_average": "Output / Average",
+            "average": "Average",
             "score": estimator_name,
         }
         df = df.rename(columns=new_columns)
@@ -302,7 +302,6 @@ class MetricsSummaryDisplay(DisplayMixin):
     def _frame_cross_validation(
         data: pd.DataFrame,
         *,
-        ml_task: MLTask | None = None,
         aggregate: Aggregate | None = ("mean", "std"),
         favorability: bool = False,
         flat_index: bool = False,
@@ -312,7 +311,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         estimator_name = df["estimator_name"].iloc[0]
 
         df = MetricsSummaryDisplay._frame_estimator(
-            df, ml_task=ml_task, favorability=True, flat_index=False
+            df, favorability=True, flat_index=False
         )
         favorability_col = df.pop("Favorability")
 
@@ -376,14 +375,12 @@ class MetricsSummaryDisplay(DisplayMixin):
         if self.report_type == "estimator":
             return MetricsSummaryDisplay._frame_estimator(
                 self.data,
-                ml_task=self.ml_task,
                 favorability=favorability,
                 flat_index=flat_index,
             )
         elif self.report_type == "cross-validation":
             return MetricsSummaryDisplay._frame_cross_validation(
                 self.data,
-                ml_task=self.ml_task,
                 aggregate=aggregate,
                 favorability=favorability,
                 flat_index=flat_index,
@@ -395,7 +392,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             df = pd.concat(
                 [
                     MetricsSummaryDisplay._frame_estimator(
-                        est, ml_task=self.ml_task, favorability=True, flat_index=False
+                        est, favorability=True, flat_index=False
                     )
                     for _, est in df.groupby("estimator_name", sort=False)
                 ],
@@ -422,7 +419,6 @@ class MetricsSummaryDisplay(DisplayMixin):
                 [
                     MetricsSummaryDisplay._frame_cross_validation(
                         est,
-                        ml_task=self.ml_task,
                         aggregate=aggregate,
                         favorability=True,
                         flat_index=False,

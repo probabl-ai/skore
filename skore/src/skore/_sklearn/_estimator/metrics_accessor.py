@@ -129,7 +129,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             return MetricsSummaryDisplay(
                 rows=combined,
                 report_type="estimator",
-                ml_task=self._parent._ml_task,
             )
 
         registry = self._parent._metric_registry
@@ -162,7 +161,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         return MetricsSummaryDisplay(
             rows=rows,
             report_type="estimator",
-            ml_task=self._parent._ml_task,
         )
 
     def _metric(
@@ -182,7 +180,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         return MetricsSummaryDisplay(
             rows=rows,
             report_type="estimator",
-            ml_task=self._parent._ml_task,
         )
 
     def add(

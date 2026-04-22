@@ -13,7 +13,7 @@ def test_aggregate_none(comparison_cross_validation_reports_binary_classificatio
     result = report.metrics.summarize().frame(aggregate=None)
 
     assert result.columns.to_list() == ["Value"]
-    assert result.index.names == ["Metric", "Label / Average", "Estimator", "Split"]
+    assert result.index.names == ["Metric", "Label", "Estimator", "Split"]
     assert len(result) == 40
 
 
