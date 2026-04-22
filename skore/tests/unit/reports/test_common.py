@@ -55,7 +55,7 @@ def test_metrics_add_scorer(report):
     report.metrics.add(scorer)
 
     display = report.metrics.summarize()
-    assert "Mean Squared Error" in display.data["metric"].values
+    assert "Mean Squared Error" in display.data["metric_verbose_name"].values
 
 
 @pytest.mark.parametrize("response_method", ["predict", ["predict", "predict_proba"]])

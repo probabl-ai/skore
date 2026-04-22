@@ -29,7 +29,7 @@ def check_display_structure(
     expected_metrics,
     expected_estimator_name=None,
     expected_data_source="test",
-    expected_favorability=None,
+    expected_greater_is_better=None,
     expected_average=None,
 ):
     """Check the full structure of a MetricsSummaryDisplay.data DataFrame."""
@@ -37,26 +37,26 @@ def check_display_structure(
     data = display.data
 
     assert set(data.columns) == {
-        "metric",
+        "metric_verbose_name",
         "estimator_name",
         "data_source",
         "label",
         "average",
         "output",
         "score",
-        "favorability",
+        "greater_is_better",
     }
     assert pd.api.types.is_numeric_dtype(data["score"])
-    assert set(data["metric"]) == expected_metrics
+    assert set(data["metric_verbose_name"]) == expected_metrics
     assert set(data["estimator_name"]) == {expected_estimator_name}
     assert set(data["data_source"]) == {expected_data_source}
     if expected_average is None:
         assert data["average"].isna().all()
     else:
         assert set(data["average"]) == expected_average
-    if expected_favorability is None:
-        expected_favorability = {"(↗︎)", "(↘︎)"}
-    assert set(data["favorability"]) == expected_favorability
+    if expected_greater_is_better is None:
+        expected_greater_is_better = {True, False}
+    assert set(data["greater_is_better"]) == expected_greater_is_better
 
 
 # Default metrics
@@ -130,7 +130,7 @@ def test_default_multiclass_classification_forest(
     )
 
     assert display.data["output"].isna().all()
-    data = display.data.set_index("metric")
+    data = display.data.set_index("metric_verbose_name")
     assert len(data.loc["Precision"]) == 3
     assert len(data.loc["Recall"]) == 3
     assert set(data.loc["Precision", "label"]) == {0, 1, 2}
@@ -155,7 +155,7 @@ def test_default_multiclass_classification_svc(svc_multiclass_classification_wit
     )
 
     assert display.data["output"].isna().all()
-    data = display.data.set_index("metric")
+    data = display.data.set_index("metric_verbose_name")
     assert len(data.loc["Precision"]) == 3
     assert len(data.loc["Recall"]) == 3
     assert set(data.loc["Precision", "label"]) == {0, 1, 2}
@@ -169,7 +169,14 @@ def test_default_regression(linear_regression_with_test):
 
     check_display_structure(
         display,
-        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={
+            "R²",
+            "RMSE",
+            "MAE",
+            "MAPE",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
         expected_estimator_name="LinearRegression",
     )
 
@@ -185,12 +192,19 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
 
     check_display_structure(
         display,
-        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={
+            "R²",
+            "RMSE",
+            "MAE",
+            "MAPE",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
         expected_estimator_name="LinearRegression",
     )
 
     assert display.data["label"].isna().all()
-    data = display.data.set_index("metric")
+    data = display.data.set_index("metric_verbose_name")
     assert len(data.loc["R²", "output"]) == 2
     assert len(data.loc["RMSE", "output"]) == 2
     assert set(data.loc["R²", "output"]) == {0, 1}
@@ -256,8 +270,8 @@ def test_pos_label(forest_binary_classification_with_test):
         expected_estimator_name="RandomForestClassifier",
     )
 
-    assert len(display.data[display.data["metric"] == "Precision"]) == 1
-    assert len(display.data[display.data["metric"] == "Recall"]) == 1
+    assert len(display.data[display.data["metric_verbose_name"] == "Precision"]) == 1
+    assert len(display.data[display.data["metric_verbose_name"] == "Recall"]) == 1
     assert display.data["label"].isna().all()
     assert display.data["output"].isna().all()
 
@@ -274,7 +288,7 @@ def test_pos_label_strings(forest_binary_classification_with_test):
 
     display = report.metrics.summarize()
     assert isinstance(display.data, pd.DataFrame)
-    assert set(display.data["metric"]) == {
+    assert set(display.data["metric_verbose_name"]) == {
         "Accuracy",
         "Precision",
         "Recall",
@@ -285,7 +299,7 @@ def test_pos_label_strings(forest_binary_classification_with_test):
         "Predict time (s)",
     }
 
-    labels = display.data.set_index("metric").loc["Precision", "label"]
+    labels = display.data.set_index("metric_verbose_name").loc["Precision", "label"]
     assert set(labels) == {"neg", "pos"}
 
 
@@ -301,7 +315,7 @@ def test_pos_label_bool(forest_binary_classification_with_test):
 
     display = report.metrics.summarize()
     assert isinstance(display.data, pd.DataFrame)
-    assert set(display.data["metric"]) == {
+    assert set(display.data["metric_verbose_name"]) == {
         "Accuracy",
         "Precision",
         "Recall",
@@ -312,7 +326,7 @@ def test_pos_label_bool(forest_binary_classification_with_test):
         "Predict time (s)",
     }
 
-    labels = display.data.set_index("metric").loc["Precision", "label"]
+    labels = display.data.set_index("metric_verbose_name").loc["Precision", "label"]
     assert any(label is np.False_ for label in labels)
     assert any(label is np.True_ for label in labels)
 
