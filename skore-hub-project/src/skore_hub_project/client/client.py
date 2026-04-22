@@ -32,12 +32,12 @@ JUPYTERLITE = find_spec("pyodide") is not None
 if JUPYTERLITE:
     from functools import partialmethod
 
-    from httpx import BaseTransport
-    from js import XMLHttpRequest  # type: ignore[import-not-found]
-    from pyodide.http.pyxhr import XHRResponse  # type: ignore[import-not-found]
+    from httpx import BaseTransport, Request
+    from js import XMLHttpRequest
+    from pyodide.http.pyxhr import XHRResponse
 
     class __JupyterliteTransport(BaseTransport):
-        def handle_request(self, request):  # type: ignore[no-untyped-def]
+        def handle_request(self, request: Request) -> Response:
             req = XMLHttpRequest.new()
             req.open(request.method.upper(), str(request.url), False)
             req.withCredentials = True
