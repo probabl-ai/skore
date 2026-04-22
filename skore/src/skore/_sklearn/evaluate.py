@@ -113,7 +113,7 @@ def evaluate(
     ...     y,
     ...     splitter=0.2,
     ... )
-    >>> report.reports_
+    >>> list(report.reports_)
     ['m1', 'm2']
     """
     if isinstance(estimator, (list, dict)):
@@ -206,7 +206,7 @@ def evaluate(
         with configuration(show_progress=False):
             report = CrossValidationReport(
                 estimator,
-                X,
+                cast(ArrayLike | None, X),
                 y,
                 data=data,
                 pos_label=pos_label,
