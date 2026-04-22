@@ -134,7 +134,7 @@ def test_multioutput_with_flat_index(linear_regression_multioutput_data):
 
     result_multi = display.frame(aggregate=["mean", "std"], flat_index=False)
     assert isinstance(result_multi.index, pd.MultiIndex)
-    assert result_multi.index.names == ["Metric", "Output"]
+    assert result_multi.index.names == ["Metric", "Output / Average"]
 
     result_flat = display.frame(aggregate=["mean", "std"], flat_index=True)
     assert isinstance(result_flat.index, pd.Index)

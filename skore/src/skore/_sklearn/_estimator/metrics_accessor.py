@@ -126,7 +126,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             test_summary = self.summarize(data_source="test", metric=metric)
 
             combined = train_summary.rows + test_summary.rows
-            return MetricsSummaryDisplay(rows=combined, report_type="estimator")
+            return MetricsSummaryDisplay(
+                rows=combined,
+                report_type="estimator",
+                ml_task=self._parent._ml_task,
+            )
 
         registry = self._parent._metric_registry
         parsed_metrics: list[Metric]
@@ -155,7 +159,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 )
             )
 
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        return MetricsSummaryDisplay(
+            rows=rows,
+            report_type="estimator",
+            ml_task=self._parent._ml_task,
+        )
 
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
@@ -171,7 +179,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             pos_label=self._parent.pos_label,
             kwargs=kwargs or None,
         )
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        return MetricsSummaryDisplay(
+            rows=rows,
+            report_type="estimator",
+            ml_task=self._parent._ml_task,
+        )
 
     def add(
         self,

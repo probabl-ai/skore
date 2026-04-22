@@ -1,6 +1,7 @@
 """Tests for MetricsSummaryDisplay.frame() method."""
 
 import pandas as pd
+from sklearn.metrics import mean_absolute_error, precision_score
 from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport
@@ -76,7 +77,7 @@ def test_flat_index_multioutput(linear_regression_multioutput_with_test):
 
     result_multi = display.frame(favorability=False, flat_index=False)
     assert isinstance(result_multi.index, pd.MultiIndex)
-    assert result_multi.index.names == ["Metric", "Output"]
+    assert result_multi.index.names == ["Metric", "Output / Average"]
     assert result_multi.shape == (10, 1)
     assert result_multi.loc[("R²", "0"), "LinearRegression"] == 1
     assert result_multi.loc[("R²", "1"), "LinearRegression"] == 1
@@ -96,6 +97,37 @@ def test_flat_index_multioutput(linear_regression_multioutput_with_test):
         "fit_time_s",
         "predict_time_s",
     ]
+
+
+def test_custom_macro_metric_uses_label_average(forest_binary_classification_with_test):
+    """Custom classification metrics should render averages in `Label / Average`."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.add(precision_score, average="macro", name="Precision (Macro)")
+
+    result = report.metrics.summarize().frame().reset_index()
+
+    assert "Average" not in result.columns
+    macro_row = result[result["Metric"] == "Precision (Macro)"]
+    assert macro_row["Label / Average"].tolist() == ["macro"]
+
+
+def test_multioutput_average_uses_output_average(
+    linear_regression_multioutput_with_test,
+):
+    """Multioutput regression should render averages in `Output / Average`."""
+    estimator, X_test, y_test = linear_regression_multioutput_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.add(
+        mean_absolute_error,
+        multioutput="uniform_average",
+        name="MAE (Average)",
+    )
+
+    result = report.metrics.summarize().frame().reset_index()
+
+    assert "Average" not in result.columns
+    assert result["Output / Average"].tolist().count("uniform_average") == 1
 
 
 def test_flat_index_with_favorability(forest_binary_classification_with_test):
