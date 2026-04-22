@@ -75,6 +75,7 @@ if os.environ.get("SPHINX_BUILD"):
     tmp_path = Path(tmp_dir.name)
     TRACKING_URI = f"sqlite:///{tmp_path / 'mlflow.db'}"
     PROJECT = "example-skore-mlflow-project"
+    os.environ["MLFLOW_RECORD_ENV_VARS_IN_MODEL_LOGGING"] = "false"
 else:
     assert (TRACKING_URI := os.environ.get("TRACKING_URI")), (
         "`TRACKING_URI` must be defined."
