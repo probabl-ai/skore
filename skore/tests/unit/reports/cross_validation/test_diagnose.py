@@ -1,6 +1,8 @@
+import numpy as np
 import pytest
+from sklearn.datasets import make_classification
 from sklearn.dummy import DummyRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import Check, evaluate
@@ -24,6 +26,32 @@ class EstimatorCheck(Check):
 
     def check_function(self, report):
         return "Detected on a single split."
+
+
+def test_diagnose_detects_inconsistent_splits():
+    """Check that the inconsistent performance across splits issue is detected."""
+    X, y = make_classification(n_samples=400, n_features=5, random_state=0)
+    report = evaluate(LogisticRegression(random_state=0), X, y, splitter=5)
+    result = report.diagnose()
+    assert "SKD003" not in result.issues
+
+    # Corrupt the first split
+    y[0 : len(y) // 5] = np.random.RandomState(0).randint(0, 2, len(y) // 5)
+    report = evaluate(LogisticRegression(random_state=0), X, y, splitter=5)
+    result = report.diagnose()
+    assert "SKD003" in result.issues
+    assert "split #0" in result.issues["SKD003"]["explanation"]
+    n_metrics = (
+        len(
+            report.metrics.summarize(data_source="test").frame(
+                aggregate=None, flat_index=True
+            )
+        )
+        - 2  # -2 for the timing metrics
+    )
+    assert (
+        f"for {n_metrics}/{n_metrics} metrics" in result.issues["SKD003"]["explanation"]
+    )
 
 
 def test_diagnose_aggregates_overfitting_across_splits(regression_data):
