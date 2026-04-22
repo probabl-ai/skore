@@ -466,23 +466,25 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _compute_diagnostics(self) -> tuple[dict[str, dict], set[str]]:
-        diagnostics: dict[str, dict] = {}
-        all_checked: set[str] = set()
+    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
+        comparison_issues: dict[str, dict] = {}
+        all_checked_codes: set[str] = set()
         for report_name, report in self.reports_.items():
-            results, checked = report._get_diagnostics()
-            all_checked |= checked
-            for code, diagnostic in results.items():
-                entry = f"[{report_name}] {diagnostic['explanation']}"
-                if code in diagnostics:
-                    diagnostics[code]["explanation"] += f" {entry}"
+            report.add_checks(self._checks_registry)
+            report_issues, checked_codes = report._get_issues()
+            all_checked_codes |= checked_codes
+            for code, issue in report_issues.items():
+                if code in comparison_issues:
+                    comparison_issues[code]["explanation"] = (
+                        f"[{report_name}] " + comparison_issues[code]["explanation"]
+                    )
                 else:
-                    diagnostics[code] = {
-                        "title": diagnostic["title"],
-                        "docs_anchor": diagnostic["docs_anchor"],
-                        "explanation": entry,
+                    comparison_issues[code] = {
+                        "title": issue["title"],
+                        "docs_url": issue.get("docs_url"),
+                        "explanation": f"[{report_name}] {issue['explanation']}",
                     }
-        return diagnostics, all_checked
+        return comparison_issues, all_checked_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"
@@ -498,7 +500,17 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def _repr_html_(self) -> str:
         """HTML representation with a selector to inspect one compared report."""
-        metrics_html = self.metrics.summarize(data_source="test").frame()._repr_html_()
+        metrics_frame = (
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .rename_axis(
+                None if self._report_type == "comparison-estimator" else [None, None],
+                axis="columns",
+            )
+        )
+        if self._report_type == "comparison-cross-validation":
+            metrics_frame = metrics_frame.swaplevel(axis="columns")
+        metrics_html = metrics_frame.reset_index().to_html(index=False)
 
         comparison_reports = []
         for label, report in self.reports_.items():
@@ -508,7 +520,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "label": label,
                     "estimator_display": fragments["estimator_display"],
                     "table_report": fragments["table_report"],
-                    "diagnostics": fragments["diagnostics"],
+                    "diagnostic": fragments["diagnostic"],
                 }
             )
 
@@ -521,7 +533,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         inspection_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="inspection"
         )
-        diagnostics_documentation_url = get_documentation_url(
+        diagnose_documentation_url = get_documentation_url(
             obj=self, method_name="diagnose"
         )
         return render_template(
@@ -532,9 +544,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 "comparison_reports": comparison_reports,
                 "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
+                "report_title": "Model comparison",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
-                "diagnostics_documentation_url": diagnostics_documentation_url,
+                "diagnose_documentation_url": diagnose_documentation_url,
             },
         )
 

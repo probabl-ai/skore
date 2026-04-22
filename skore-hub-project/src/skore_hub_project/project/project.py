@@ -302,6 +302,13 @@ class Project:
             )
 
             payload_dict = payload.model_dump()
+            # NOTE: `model_dump()` does more than serializing the payload to a
+            # JSON-like dict. It also evaluates computed fields with side effects:
+            # - `metrics`: computes the metrics
+            # - `medias`: computes and uploads displays/artifacts to artifact storage
+            # - `pickle`: pickles and uploads the report to artifact storage
+            # `payload_dict` does not contain artifact bytes; it contains artifact
+            # metadata including the bytes' checksum, which is used as identifier.
             payload_json_bytes = dumps(payload_dict)
 
             with HUBClient() as hub_client:

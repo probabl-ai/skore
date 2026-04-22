@@ -90,8 +90,8 @@ class MockReport(_BaseReport):
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {}
 
-    def _compute_diagnostics(self):
-        return [], set()
+    def _run_checks(self):
+        return {}, set()
 
     def __init__(
         self,
@@ -101,6 +101,7 @@ class MockReport(_BaseReport):
         X_test=None,
         y_test=None,
     ):
+        super().__init__()
         self._raw_estimator = estimator
         self._estimator = to_learner(estimator)
         if X_train is not None:

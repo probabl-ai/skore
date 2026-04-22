@@ -22,7 +22,8 @@ from skore._sklearn._plot.inspection.utils import (
     sort_features,
 )
 from skore._sklearn.feature_names import _get_feature_names
-from skore._sklearn.types import Aggregate, DataSource, Metric, ReportType
+from skore._sklearn.types import Aggregate, DataSource, MetricLike, ReportType
+from skore._utils._callable_name import _callable_name
 from skore._utils._index import flatten_multi_index
 
 
@@ -72,7 +73,7 @@ class PermutationImportanceDisplay(DisplayMixin):
         X: ArrayLike,
         y: ArrayLike,
         at_step: int | str,
-        metric: Metric | list[Metric] | dict[str, Metric] | None,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None,
         n_repeats: int,
         max_samples: float,
         n_jobs: int | None,
@@ -134,9 +135,9 @@ class PermutationImportanceDisplay(DisplayMixin):
             elif isinstance(metric_obj, str):
                 metric_name = metric_obj
             elif isinstance(metric_obj, _BaseScorer):
-                metric_name = metric_obj._score_func.__name__.replace("_", " ")
+                metric_name = _callable_name(metric_obj._score_func).replace("_", " ")
             else:
-                metric_name = metric_obj.__name__.replace("_", " ")
+                metric_name = _callable_name(metric_obj).replace("_", " ")
             scores = {metric_name: scores}
 
         df_importances = []

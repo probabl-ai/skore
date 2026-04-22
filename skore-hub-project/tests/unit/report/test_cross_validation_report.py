@@ -186,15 +186,11 @@ class TestCrossValidationReportPayload:
         self, project, splitter, metadata, expected_splits, monkeypatch
     ):
         monkeypatch.setattr(
-            "skore_hub_project.report.cross_validation_report.SPLITTING_STRATEGY_REPR_SAMPLE_COUNT",
-            8,
-        )
-        monkeypatch.setattr(
             "skore_hub_project.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
             10,
         )
 
-        X, y = make_regression(random_state=42, n_samples=10)
+        X, y = make_regression(random_state=42, n_samples=8)
         estimator = LinearRegression()
 
         report = CrossValidationReport(estimator, X, y, splitter=splitter)
@@ -284,8 +280,8 @@ class TestCrossValidationReportPayload:
                     "random_state": 0,
                 },
                 [
-                    [0, 0, 0, 0, 1, 0, 1, 0],
-                    [0, 0, 0, 0, 1, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 0, 1, 0],
                 ],
                 id="StratifiedShuffleSplit",
             ),
@@ -299,11 +295,7 @@ class TestCrossValidationReportPayload:
         expected_splits,
         monkeypatch,
     ):
-        monkeypatch.setattr(
-            "skore_hub_project.report.cross_validation_report.SPLITTING_STRATEGY_REPR_SAMPLE_COUNT",
-            8,
-        )
-        X, y = make_classification(random_state=42, n_samples=10, n_classes=2)
+        X, y = make_classification(random_state=42, n_samples=8, n_classes=2)
         estimator = LogisticRegression(random_state=42)
 
         report = CrossValidationReport(estimator, X, y, splitter=splitter)
@@ -371,6 +363,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.respx()
     def test_estimators(self, project, payload, upload_mock):
+        payload.report.cache_predictions()
         assert len(payload.estimators) == len(payload.report.estimator_reports_)
 
         for i, estimator in enumerate(payload.estimators):

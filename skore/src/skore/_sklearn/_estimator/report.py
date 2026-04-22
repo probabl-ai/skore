@@ -5,7 +5,7 @@ import html
 import uuid
 import warnings
 from functools import cached_property
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import skrub
@@ -21,11 +21,8 @@ from sklearn.utils.validation import _num_samples, check_is_fitted
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._diagnostics import (
-    DiagnosticNotApplicable,
-    check_overfitting_underfitting,
-)
 from skore._sklearn.find_ml_task import _find_ml_task
+from skore._sklearn.metrics import MetricRegistry
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache import Cache
 from skore._utils._cache_key import make_cache_key
@@ -36,10 +33,11 @@ from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
-    from skore._sklearn._estimator.inspection_accessor import (
-        _InspectionAccessor,
-    )
+    from skore._sklearn._estimator.inspection_accessor import _InspectionAccessor
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
+
+
+_STATE_VERSION = 1
 
 
 def _check_estimator_and_data(
@@ -241,6 +239,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self.fit_time_ = self._fit_time
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
         self._cache = Cache()
+        # NOTE: Reports are immutable so we don't need cache invalidation
+
+        self._metric_registry = MetricRegistry(self)
+
         if pos_label is None:
             return
         if self._ml_task != "binary-classification":
@@ -254,7 +256,95 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 f"It should be one of: {labels!r}."
             )
 
-        # NOTE: Reports are immutable so we don't need cache invalidation
+    def get_state(self) -> dict[str, Any]:
+        """Return a serializable representation of the report state.
+
+        This state is meant to ease serialization/deserialization of
+        reports while preserving some backward compatibility across skore
+        versions. In particular, this is more stable than pickling a report
+        object directly, which can break when internal implementations change.
+        """
+        # split the cache between predictions and results:
+        pred_key_names = {
+            "predict",
+            "predict_time",
+            "decision_function",
+            "predict_proba",
+            "predict_log_proba",
+        }
+
+        predictions = {}
+        cached_results = {}
+
+        for key, val in self._cache.items():
+            data_source, name, kwargs = key
+            if name in pred_key_names:
+                assert kwargs is None
+                predictions[(data_source, name)] = val
+            else:
+                cached_results[key] = val
+
+        return {
+            "version": _STATE_VERSION,
+            # -------- CORE STATE ---------
+            "metadata": self._metadata,
+            "initialized_with_data_op": self._initialized_with_data_op,
+            "raw_estimator": self._raw_estimator,
+            "ml_task": self._ml_task,
+            "fit": self._fit,
+            "fit_time": self.fit_time_,
+            "pos_label": self._pos_label,
+            "estimator": self._estimator,
+            "data": {
+                "train_data": self._train_data,
+                "test_data": self._test_data,
+            },
+            "predictions": predictions,
+            "metric_registry": self._metric_registry,
+            # ---------- OPTIONAL STATE ------------
+            # this part is less structured and not crucial for reconstructing a report
+            # so we won't try ensuring backward compatibility.
+            "optional": {
+                "cache": cached_results,
+            },
+        }
+
+    @classmethod
+    def from_state(cls, state: dict[str, Any]) -> EstimatorReport:
+        """Rebuild a report from :meth:`get_state` output."""
+        version = state.get("version")
+        if version != _STATE_VERSION:
+            # in the future, we could support some BW compatibility instead of crashing
+            raise ValueError(f"Unexpected state version: {version!r}")
+
+        report_type = state["metadata"]["report_type"]
+        if report_type != cls._report_type:
+            raise ValueError(f"Unexpected report_type in state: {report_type}")
+
+        report = cls.__new__(cls)
+
+        report._metadata = state["metadata"]
+        report._initialized_with_data_op = state["initialized_with_data_op"]
+        report._ml_task = state["ml_task"]
+        report._fit = state["fit"]
+        report.fit_time_ = state["fit_time"]
+        report._pos_label = state["pos_label"]
+        report._estimator = state["estimator"]
+        report._raw_estimator = state["raw_estimator"]
+        data = state["data"]
+        report._train_data = data["train_data"]
+        report._test_data = data["test_data"]
+        report._cache = Cache()
+        report._cache.update(state["optional"]["cache"])
+        report._cache.update(
+            {
+                make_cache_key(data_source, name): val
+                for (data_source, name), val in state["predictions"].items()
+            }
+        )
+        report._metric_registry = state["metric_registry"]
+
+        return report
 
     def clear_cache(self) -> None:
         """Clear the cache.
@@ -592,23 +682,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         col_idx = np.flatnonzero(self.estimator_.classes_ == pos_label)[0]
         return predictions[:, col_idx]
 
-    def _compute_diagnostics(
-        self,
-    ) -> tuple[dict[str, dict], set[str]]:
-        """Run all registered diagnostic checks against `report`.
-
-        Returns a tuple of (detected issues, set of check codes that were evaluated).
-        """
-        results: dict[str, dict] = {}
-        checked_codes: set[str] = set()
-        for codes, check_fn in [({"SKD001", "SKD002"}, check_overfitting_underfitting)]:
-            try:
-                results.update(check_fn(self))
-                checked_codes |= codes
-            except DiagnosticNotApplicable:
-                pass
-        return results, checked_codes
-
     @property
     def ml_task(self):
         return self._ml_task
@@ -652,16 +725,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return self._pos_label
 
     @property
+    def fit(self) -> str | bool:
+        return self._fit
+
+    @property
     def estimator_name_(self) -> str:
         if isinstance(self._raw_estimator, Pipeline):
             name = self._raw_estimator[-1].__class__.__name__
         else:
             name = self._raw_estimator.__class__.__name__
         return name
-
-    @property
-    def fit(self) -> str | bool:
-        return self._fit
 
     ####################################################################################
     # Methods related to the help and repr
@@ -720,24 +793,25 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     data_source="train" if data_source == "train" else "test"
                 )
                 .frame()
-                ._repr_html_()
+                .reset_index()
+                .to_html(index=False)
             )
         try:
             estimator_html = self.estimator_._repr_html_()
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostics, checked_codes = self._get_diagnostics()
-        diagnostics_html = (
-            f"<div class='report-diagnostics-details'>{len(diagnostics)} "
-            f"issue(s) across {len(checked_codes)} check(s).</div>"
+        issues, checked_codes = self._get_issues()
+        diagnostic_html = (
+            f"<div class='report-diagnostic-details'>{len(issues)} "
+            f"issue(s) detected, {len(checked_codes)} check(s) ran.</div>"
         )
 
         return {
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
-            "diagnostics": diagnostics_html,
+            "diagnostic": diagnostic_html,
         }
 
     def _repr_html_(self) -> str:
@@ -758,7 +832,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
-        diagnostics_documentation_url = get_documentation_url(
+        diagnose_documentation_url = get_documentation_url(
             obj=self, method_name="diagnose"
         )
         return render_template(
@@ -767,10 +841,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "container_id": container_id,
                 "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
+                "report_title": f"Report for {self.estimator_name_}",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "diagnostics_documentation_url": diagnostics_documentation_url,
+                "diagnose_documentation_url": diagnose_documentation_url,
                 **fragments,
             },
         )

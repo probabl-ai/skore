@@ -23,7 +23,7 @@ function skoreInitComparisonReport(containerId) {
         applyThemeToReportContainer(root, containerId + "-wrapper");
     }
 
-    shadowRoot.querySelectorAll(".report-disclosure .tooltip-text a").forEach((a) => {
+    shadowRoot.querySelectorAll(".report-tabset .tooltip-text a").forEach((a) => {
         a.addEventListener("click", (e) => {
             e.stopPropagation();
         });
@@ -57,9 +57,9 @@ function skoreInitComparisonReport(containerId) {
             }
         });
 
-        host.querySelectorAll(".skore-cmp-diagnostics-slot").forEach((el) => {
+        host.querySelectorAll(".skore-cmp-diagnostic-slot").forEach((el) => {
             if (el.dataset.comparisonIndex === idx) {
-                el.setAttribute("slot", "diagnostics");
+                el.setAttribute("slot", "diagnostic");
             } else {
                 el.removeAttribute("slot");
             }

@@ -17,120 +17,7 @@ from skore import (
     ComparisonReport,
     CrossValidationReport,
     EstimatorReport,
-    configuration,
 )
-from skore._sklearn._diagnostics import DiagnosticsDisplay
-
-
-@pytest.fixture(
-    params=[
-        "comparison_estimator_reports_binary_classification",
-        "comparison_cross_validation_reports_binary_classification",
-    ]
-)
-def report(request):
-    return request.getfixturevalue(request.param)
-
-
-def test_diagnose_collects_component_diagnostics(report, monkeypatch):
-    """Check the diagnostics are collected from the component reports."""
-    mock_diagnostics = {
-        "SKD001": {
-            "title": "Mock overfitting",
-            "docs_anchor": "skd001-overfitting",
-            "explanation": "Mock overfitting detected.",
-        }
-    }
-    for sub_report in report.reports_.values():
-        monkeypatch.setattr(
-            sub_report,
-            "_compute_diagnostics",
-            lambda: (mock_diagnostics, {"SKD001"}),
-        )
-        if hasattr(sub_report, "_diagnostics_cache"):
-            delattr(sub_report, "_diagnostics_cache")
-    if hasattr(report, "_diagnostics_cache"):
-        delattr(report, "_diagnostics_cache")
-    results = report.diagnose()
-    assert isinstance(results, DiagnosticsDisplay)
-    for name in report.reports_:
-        assert f"[{name}]" in results.diagnostics["SKD001"]["explanation"]
-
-
-def test_diagnose_uses_component_cache(report, monkeypatch):
-    """Check the diagnostics are cached and reused."""
-    sub_report = next(iter(report.reports_.values()))
-    calls = 0
-    original = sub_report._compute_diagnostics
-
-    def wrapped():
-        nonlocal calls
-        calls += 1
-        return original()
-
-    monkeypatch.setattr(sub_report, "_compute_diagnostics", wrapped)
-
-    report.diagnose()
-    report.diagnose()
-
-    assert calls == 1
-
-
-def test_diagnose_result_has_repr(report):
-    """Check the diagnostics result has a repr."""
-    results = report.diagnose()
-    assert isinstance(results, DiagnosticsDisplay)
-    assert "Diagnostics:" in repr(results)
-    bundle = results._repr_mimebundle_()
-    assert "text/plain" in bundle
-    assert "text/html" in bundle
-
-
-def test_diagnose_ignore(report, monkeypatch):
-    """Check the diagnostics are ignored when ignore is passed."""
-    mock_diagnostics = {
-        "SKD001": {
-            "title": "Mock overfitting",
-            "docs_anchor": "skd001-overfitting",
-            "explanation": "Mock overfitting detected.",
-        }
-    }
-    for sub_report in report.reports_.values():
-        monkeypatch.setattr(
-            sub_report,
-            "_compute_diagnostics",
-            lambda: (mock_diagnostics, {"SKD001", "SKD002"}),
-        )
-        if hasattr(sub_report, "_diagnostics_cache"):
-            delattr(sub_report, "_diagnostics_cache")
-    if hasattr(report, "_diagnostics_cache"):
-        delattr(report, "_diagnostics_cache")
-    results = report.diagnose(ignore=["SKD001"])
-    assert "SKD001" not in results.diagnostics
-
-
-def test_diagnose_uses_global_ignore(report, monkeypatch):
-    """Check the diagnostics are ignored when global ignore is set."""
-    mock_diagnostics = {
-        "SKD001": {
-            "title": "Mock overfitting",
-            "docs_anchor": "skd001-overfitting",
-            "explanation": "Mock overfitting detected.",
-        }
-    }
-    for sub_report in report.reports_.values():
-        monkeypatch.setattr(
-            sub_report,
-            "_compute_diagnostics",
-            lambda: (mock_diagnostics, {"SKD001", "SKD002"}),
-        )
-        if hasattr(sub_report, "_diagnostics_cache"):
-            delattr(sub_report, "_diagnostics_cache")
-    if hasattr(report, "_diagnostics_cache"):
-        delattr(report, "_diagnostics_cache")
-    assert "SKD001" in report.diagnose().diagnostics
-    with configuration(ignore_diagnostics=["SKD001"]):
-        assert "SKD001" not in report.diagnose().diagnostics
 
 
 def test_pickle(tmp_path, report):
@@ -278,17 +165,25 @@ def test_create_estimator_report_invalid_name(
     [
         "comparison_estimator_reports_binary_classification",
         "comparison_cross_validation_reports_binary_classification",
+        "comparison_estimator_reports_multiclass_classification",
+        "comparison_cross_validation_reports_multiclass_classification",
+        "comparison_estimator_reports_regression",
+        "comparison_cross_validation_reports_regression",
+        "comparison_estimator_reports_multioutput_regression",
+        "comparison_cross_validation_reports_multioutput_regression",
     ],
 )
 def test_report_repr_html(comparison_fixture, request):
     report = request.getfixturevalue(comparison_fixture)
+    sub_report = next(iter(report.reports_.values()))
+    expected_estimator_name = sub_report.estimator_.__class__.__name__
     html_out = report._repr_html_()
     assert "skore-comparison-report-" in html_out
-    assert "ComparisonReport" in html_out
-    assert "DummyClassifier" in html_out
+    assert "Model comparison" in html_out
+    assert expected_estimator_name in html_out
     assert "skoreInitComparisonReport" in html_out
     assert "report-hint-note" in html_out
     assert "docs.skore.probabl.ai" in html_out
-    assert "report-disclosure-title" in html_out
+    assert "report-tabset" in html_out
     assert "ComparisonReport.metrics" in html_out
     assert "skore-comparison-report-select" in html_out

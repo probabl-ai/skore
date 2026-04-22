@@ -3,7 +3,7 @@ from __future__ import annotations
 import html
 import uuid
 from collections.abc import Generator
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import skrub
 from joblib import Parallel
@@ -32,6 +32,9 @@ if TYPE_CHECKING:
         _InspectionAccessor,
     )
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
+
+
+_STATE_VERSION = 1
 
 
 def _generate_estimator_report(
@@ -258,6 +261,102 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 )
             )
 
+    def get_state(self) -> dict[str, Any]:
+        """Return a serializable representation of the report state.
+
+        This state is meant to ease serialization/deserialization of
+        reports while preserving some backward compatibility across skore
+        versions. In particular, this is more stable than pickling a report
+        object directly, which can break when internal implementations change.
+        """
+        sub_states = [report.get_state() for report in self.estimator_reports_]
+        for state in sub_states:
+            # data can be reconstructed from X, y and split_indices
+            state.pop("data")
+
+        return {
+            "version": _STATE_VERSION,
+            "metadata": self._metadata,
+            "initialized_with_data_op": self._initialized_with_data_op,
+            "raw_estimator": self._raw_estimator,
+            "ml_task": self.ml_task,
+            "pos_label": self.pos_label,
+            "estimator": self._estimator,
+            "data": self._data,
+            "split_indices": self._split_indices,
+            "estimator_reports": sub_states,
+        }
+
+    @classmethod
+    def from_state(cls, state: dict[str, Any]) -> CrossValidationReport:
+        """Rebuild a report from :meth:`get_state` output."""
+        version = state.get("version", 0)
+        if version != _STATE_VERSION:
+            # in the future, we could support some BW compatibility instead of crashing
+            raise ValueError(f"Unexpected state version: {version!r}")
+
+        report_type = state["metadata"]["report_type"]
+        if report_type != cls._report_type:
+            raise ValueError(f"Unexpected report_type in state: {report_type}")
+
+        report = cls.__new__(cls)
+
+        report._metadata = state["metadata"]
+        report._initialized_with_data_op = state["initialized_with_data_op"]
+        report._ml_task = state["ml_task"]
+        report._pos_label = state["pos_label"]
+        report._estimator = state["estimator"]
+        report._raw_estimator = state["raw_estimator"]
+        report._data = state["data"]
+        report._split_indices = state["split_indices"]
+        # TODO? Include splitter in state?
+        report._splitter = None
+        report.n_jobs = None
+
+        report.estimator_reports_ = []
+        if report._initialized_with_data_op:
+            split_data_iterator = report._estimator.data_op.skb.iter_cv_splits(
+                environment=report._data,
+                cv=report._split_indices,
+            )
+        else:
+            split_data_iterator = (
+                {
+                    "train": {
+                        "_skrub_X": _safe_indexing(report.X, train_indices),
+                        "_skrub_y": (
+                            None
+                            if report.y is None
+                            else _safe_indexing(report.y, train_indices)
+                        ),
+                    },
+                    "test": {
+                        "_skrub_X": _safe_indexing(report.X, test_indices),
+                        "_skrub_y": (
+                            None
+                            if report.y is None
+                            else _safe_indexing(report.y, test_indices)
+                        ),
+                    },
+                }
+                for train_indices, test_indices in report._split_indices
+            )
+
+        for sub_state, split_data in zip(
+            state["estimator_reports"], split_data_iterator, strict=True
+        ):
+            sub_state_with_data = sub_state | {
+                "initialized_with_data_op": report._initialized_with_data_op,
+                "data": {
+                    "train_data": split_data["train"],
+                    "test_data": split_data["test"],
+                },
+            }
+            sub_report = EstimatorReport.from_state(sub_state_with_data)
+            report.estimator_reports_.append(sub_report)
+
+        return report
+
     def clear_cache(self) -> None:
         """Clear the cache.
 
@@ -429,32 +528,31 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
         return report
 
-    def _compute_diagnostics(
-        self,
-    ) -> tuple[dict[str, dict], set[str]]:
+    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
         total_splits = len(self.estimator_reports_)
         all_checked_codes: set[str] = set()
         positives_by_code: dict[str, list[dict]] = {}
 
         for estimator_report in self.estimator_reports_:
-            results, checked_codes = estimator_report._get_diagnostics()
+            estimator_report.add_checks(self._checks_registry)
+            results, checked_codes = estimator_report._get_issues()
             all_checked_codes |= checked_codes
             for code, diagnostic in results.items():
                 positives_by_code.setdefault(code, []).append(diagnostic)
 
-        aggregated: dict[str, dict] = {}
+        issues: dict[str, dict] = {}
         for code in all_checked_codes:
             positives = positives_by_code.get(code, [])
             if len(positives) > total_splits / 2:
                 ref = positives[0]
-                aggregated[code] = {
+                issues[code] = {
                     "title": ref["title"],
-                    "docs_anchor": ref["docs_anchor"],
+                    "docs_url": ref.get("docs_url"),
                     "explanation": (
                         f"Detected in {len(positives)}/{total_splits} evaluated splits."
                     ),
                 }
-        return aggregated, all_checked_codes
+        return issues, all_checked_codes
 
     @property
     def ml_task(self) -> str:
@@ -528,7 +626,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         metrics_html = (
             self.metrics.summarize(data_source="test")
             .frame(aggregate=("mean", "std"), favorability=False)
-            ._repr_html_()
+            .droplevel(level=0, axis="columns")
+            .reset_index()
+            .to_html(index=False)
         )
 
         df = self.data._prepare_dataframe_for_display(
@@ -548,17 +648,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostics, checked_codes = self._get_diagnostics()
-        diagnostics_html = (
-            f"<div class='report-diagnostics-details'>{len(diagnostics)} "
-            f"issue(s) across {len(checked_codes)} check(s).</div>"
+        issues, checked_codes = self._get_issues()
+        diagnostic_html = (
+            f"<div class='report-diagnostic-details'>{len(issues)} "
+            f"issue(s) detected, {len(checked_codes)} check(s) ran.</div>"
         )
 
         return {
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
-            "diagnostics": diagnostics_html,
+            "diagnostic": diagnostic_html,
         }
 
     def _repr_html_(self) -> str:
@@ -574,7 +674,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
-        diagnostics_documentation_url = get_documentation_url(
+        diagnose_documentation_url = get_documentation_url(
             obj=self, method_name="diagnose"
         )
         return render_template(
@@ -583,10 +683,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "container_id": container_id,
                 "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
+                "report_title": f"Report for {self.estimator_name_}",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "diagnostics_documentation_url": diagnostics_documentation_url,
+                "diagnose_documentation_url": diagnose_documentation_url,
                 **fragments,
             },
         )
