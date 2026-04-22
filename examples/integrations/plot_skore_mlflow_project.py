@@ -39,11 +39,13 @@ To try it locally, start an MLflow server with ``uvx mlflow server`` and set
 # on the iris dataset using some cross-validation.
 from sklearn.datasets import load_iris
 from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from skore import evaluate
 
 X, y = load_iris(return_X_y=True, as_frame=True)
 
-estimator = LogisticRegression()
+estimator = make_pipeline(StandardScaler(), LogisticRegression())
 report = evaluate(estimator, X, y, splitter=5)
 
 # %%
