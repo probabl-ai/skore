@@ -190,7 +190,6 @@ class MetricsSummaryDisplay(DisplayMixin):
     ) -> pd.DataFrame:
         """Process estimator report data into a formatted dataframe."""
         df = data.copy()
-
         df = df.dropna(axis="columns", how="all")
 
         extra_index_name = None
