@@ -312,6 +312,8 @@ def _log_model(model: BaseEstimator, input_example: Any, **kwargs: Any) -> None:
             # MLflow 2.20->3.0 can trigger those from pydantic internals.
             _filterwarnings(Warning, ".*@model_validator.*deprecated.*"),
             _filterwarnings(Warning, r".*`min_items` is deprecated.*"),
+            # ignore the pickling warning and use cloudpickle
+            _filterwarnings(Warning, r".*Saving scikit-learn models in the pickle.*"),
         ):
             mlflow.sklearn.log_model(
                 model,
