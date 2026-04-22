@@ -7,7 +7,7 @@ from importlib.util import find_spec
 from json import dumps
 from logging import getLogger
 from time import sleep
-from typing import Any, Final, cast
+from typing import Any, Final
 from urllib.parse import urljoin
 
 from httpx import (
@@ -58,8 +58,7 @@ if JUPYTERLITE:
                 request=request,
             )
 
-    HTTPXClient.__init__ = cast(  # type: ignore[method-assign]
-        Any,
+    HTTPXClient.__init__ = (  # type: ignore[method-assign, assignment]
         partialmethod(HTTPXClient.__init__, transport=__JupyterliteTransport()),
     )
 
