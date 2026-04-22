@@ -107,11 +107,11 @@ class _BaseReport(ReportHelpMixin):
         >>> X, y = make_classification(random_state=42)
         >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
         >>> report.diagnose()
-        Diagnostic: 1 issue(s) detected, 2 check(s) ran, 0 ignored.
+        Diagnostic: 1 issue(s) detected, ...
         - [SKD002] Potential underfitting.
         ...
         >>> report.diagnose(ignore=["SKD002"])
-        Diagnostic: 0 issue(s) detected, 1 check(s) ran, 1 ignored.
+        Diagnostic: 0 issue(s) detected, ..., 1 ignored.
         - No issues were detected in your report!
         """
         ignored: set[str] = set()

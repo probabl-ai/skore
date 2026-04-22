@@ -2,8 +2,9 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import pytest
+from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier, DummyRegressor
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import Check, EstimatorReport, configuration, evaluate
@@ -48,7 +49,12 @@ def test_diagnose_detects_overfitting(regression_data):
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y)
     result = report.diagnose()
     assert "SKD001" in result.issues
-    assert "4/4 default predictive metrics" in result.issues["SKD001"]["explanation"]
+    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+
+    assert (
+        f"for {n_metrics}/{n_metrics} default predictive metrics"
+        in result.issues["SKD001"]["explanation"]
+    )
 
 
 def test_diagnose_detects_underfitting(regression_data):
@@ -57,7 +63,41 @@ def test_diagnose_detects_underfitting(regression_data):
     report = evaluate(DummyRegressor(), X, y)
     result = report.diagnose()
     assert "SKD002" in result.issues
-    assert "4/4 comparable metrics" in result.issues["SKD002"]["explanation"]
+    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+    assert (
+        f"for {n_metrics}/{n_metrics} comparable metrics"
+        in result.issues["SKD002"]["explanation"]
+    )
+
+
+@pytest.mark.parametrize(
+    "weights, code", [([0.9, 0.1], "SKD004"), ([0.9, 0.05, 0.05], "SKD005")]
+)
+def test_diagnose_detects_high_class_imbalance(weights, code):
+    """Check that the high class imbalance issue is detected."""
+    X, y = make_classification(
+        n_samples=400,
+        n_features=6,
+        n_informative=3,
+        n_classes=len(weights),
+        random_state=0,
+    )
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    result = report.diagnose()
+    assert code not in result.issues
+
+    X, y = make_classification(
+        n_samples=400,
+        n_features=6,
+        n_informative=3,
+        n_classes=len(weights),
+        weights=weights,
+        random_state=0,
+    )
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    result = report.diagnose()
+    assert code in result.issues
+    assert "Accuracy should not be used alone" in result.issues[code]["explanation"]
 
 
 def test_diagnose_ignore(monkeypatch, regression_data):
@@ -242,4 +282,8 @@ def test_diagnose_custom_metric(binary_classification_data):
     report.metrics.add("f1")
     result = report.diagnose()
     assert "SKD002" in result.issues
-    assert "7/7 comparable metrics" in result.issues["SKD002"]["explanation"]
+    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+    assert (
+        f"for {n_metrics}/{n_metrics} comparable metrics"
+        in result.issues["SKD002"]["explanation"]
+    )
