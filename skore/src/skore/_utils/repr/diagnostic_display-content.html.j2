@@ -18,6 +18,9 @@
             <div class="report-tab-panel">
                 <div class="report-section report-diagnostic">
 {% if bucket.entries %}
+{% if bucket.intro %}
+                    <p class="report-diagnostic-intro">{{ bucket.intro }}</p>
+{% endif %}
                     <ul class="report-diagnostic-list">
 {% for entry in bucket.entries %}
                         <li>{{ entry | safe }}</li>

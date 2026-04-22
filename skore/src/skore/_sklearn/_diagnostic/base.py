@@ -168,6 +168,9 @@ class DiagnosticDisplay(DisplayHelpMixin):
             },
             {
                 "label": "Passed",
+                "intro": (
+                    "The following checks ran on your report without finding any issue:"
+                ),
                 "entries": [
                     _format_finding_html(code, entry)
                     for code, entry in self._passed.items()
