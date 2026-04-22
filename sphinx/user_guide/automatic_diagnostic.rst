@@ -6,8 +6,13 @@ Automatic diagnostic
 
 `skore` provides automated checks for common model quality pitfalls.
 Use :meth:`~skore.EstimatorReport.diagnose` to run checks and get a diagnostic that
-summarizes detected issues.
-Each issue has:
+summarizes the findings. Findings come in two severities:
+
+- **issues** flag a concrete modeling problem to fix (e.g. overfitting);
+- **tips** do not signal a defect on their own but invite caution, typically on
+  the interpretation of a result (e.g. feature importance).
+
+Each finding has:
 
 - a short explanation,
 - a stable check code,
@@ -209,3 +214,41 @@ How to reduce the risk
 - resample the dataset (oversampling rare classes or undersampling frequent ones),
 - use class weights in the estimator,
 - collect more data for the underrepresented classes if possible.
+
+
+.. _skd006-unscaled_coefficients:
+
+SKD006 - Unscaled coefficients
+------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+This check applies only to linear estimators that expose a ``coef_`` attribute.
+
+`skore` concatenates the train and test inputs and inspects the per-feature mean
+and standard deviation. The tip is emitted when the features do not appear to be
+standardized, i.e. when either of the following holds:
+
+- column means are not close to 0,
+- column standard deviations are not close to 1.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+The magnitude of a linear model's coefficients depends on the scale of each input
+feature. When features live on different scales, comparing raw coefficients as a
+measure of feature importance is misleading: a large coefficient may only reflect
+a small-scale feature, not a strong effect. Standardizing the inputs puts all
+coefficients on a common footing and makes them directly comparable.
+Read more about this in `the scikit-learn documentation
+<https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html>`_.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- standardize the inputs (e.g. wrap the estimator in a pipeline with
+  :class:`~sklearn.preprocessing.StandardScaler`),
+- otherwise, interpret coefficient magnitudes only relative to the feature's own
+  scale, or rely on scale-invariant feature-importance methods such as
+  :class:`~skore.PermutationImportanceDisplay`.

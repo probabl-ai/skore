@@ -25,6 +25,9 @@ with a report via :meth:`~skore.EstimatorReport.add_checks`.
 # with ``"https"``), it is used as-is. When it is a plain anchor string
 # it points to the skore diagnostic user guide. When omitted entirely,
 # no documentation link is shown.
+#
+# We set the severity to "tip" to indicate that this is not an issue to fix,
+# but a cautionary note about the dataset.
 
 import numpy as np
 from skore import Check, DiagnosticNotApplicable
@@ -34,6 +37,7 @@ class CustomCheck1(Check):
     code = "CSTM001"
     title = "High feature count"
     report_type = "estimator"
+    severity = "tip"
     docs_url = "https://scikit-learn.org/stable/modules/feature_selection.html#feature-selection"
 
     def check_function(self, report):
@@ -57,6 +61,9 @@ class CustomCheck1(Check):
 # :meth:`~skore.EstimatorReport.add_checks` accepts a list of ``Check`` instances,
 # and registers them. The next call to :meth:`~skore.EstimatorReport.diagnose` runs
 # any newly added checks on top of the built-in checks.
+#
+# We can then find the new check in the Tips tab of the diagnostic, along another tip
+# information us that the dataset is not standardized.
 from sklearn.linear_model import LinearRegression
 from skore import evaluate
 
@@ -78,7 +85,8 @@ report.diagnose()
 #
 # The `report_type` argument of :class:`~skore.Check` controls the scope of the check.
 # Let's write a check that is specific to cross-validation reports: it flags metrics
-# with high variance across splits.
+# with high variance across splits. We set the severity to "issue" to indicate that
+# this is an issue to fix.
 #
 # We will corrupt the first fold of the target to illustrate the check.
 import pandas as pd
@@ -93,6 +101,7 @@ class CustomCheck2(Check):
     title = "High score variance across CV splits"
     report_type = "cross-validation"
     docs_url = None
+    severity = "issue"
 
     def check_function(self, report):
         """Flag high score variance across CV splits."""

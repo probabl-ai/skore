@@ -101,6 +101,14 @@ def test_diagnose_detects_high_class_imbalance(weights, code):
     assert "Accuracy should not be used alone" in result.issues[code]["explanation"]
 
 
+def test_diagnose_detects_unscaled_coefficients(regression_data):
+    """Check that the unscaled coefficients issue is detected."""
+    X, y = regression_data
+    result = evaluate(LinearRegression(), X, y).diagnose()
+    assert "SKD006" in result.tips
+    assert "coefficients" in result.tips["SKD006"]["explanation"]
+
+
 def test_diagnose_ignore(monkeypatch, regression_data):
     """Check that checks are ignored when ignore is passed."""
     monkeypatch.setattr(EstimatorReport, "_get_findings", mock_issue)

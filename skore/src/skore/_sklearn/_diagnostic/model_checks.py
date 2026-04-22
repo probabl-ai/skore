@@ -267,17 +267,19 @@ class CheckUnderrepresentedClasses(Check):
 
 
 class CheckUnscaledCoefficients(Check):
+    """Check for unscaled coefficients (SKD006).
+
+    Warns that when using a linear model, the input features should be scaled
+    so that their coefficient values can be used as a measure of feature importance.
+    """
+
     code = "SKD006"
     title = "Unscaled coefficients"
     report_type = "estimator"
     docs_url = "skd006-unscaled_coefficients"
+    severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        """Check for unscaled coefficients (SKD006).
-
-        When using a linear model, the input features should be scaled so that their
-        coefficient values can be used as a measure of feature importance.
-        """
         from skore._sklearn._estimator.report import EstimatorReport
 
         if not (
@@ -291,9 +293,10 @@ class CheckUnscaledCoefficients(Check):
         X = np.concatenate([report.X_train, report.X_test])
         if not np.allclose(X.mean(axis=0), 0) and not np.allclose(X.std(axis=0), 1):
             return (
-                "The input features are not scaled. When using a linear "
-                "model, the input features should be scaled so that their coefficient "
-                "values can be used as a measure of feature importance."
+                "The input features do not appear to be standardized. Be careful "
+                "when interpreting the magnitudes of a linear model's coefficients "
+                "as feature importance: they depend on the scale of each feature "
+                "and are not directly comparable across features."
             )
         return None
 
