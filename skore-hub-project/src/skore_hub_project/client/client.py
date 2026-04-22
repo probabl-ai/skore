@@ -7,7 +7,7 @@ from importlib.util import find_spec
 from json import dumps
 from logging import getLogger
 from time import sleep
-from typing import Any, Final
+from typing import Any, Final, cast
 from urllib.parse import urljoin
 
 from httpx import (
@@ -33,11 +33,11 @@ if JUPYTERLITE:
     from functools import partialmethod
 
     from httpx import BaseTransport
-    from js import XMLHttpRequest
-    from pyodide.http.pyxhr import XHRResponse
+    from js import XMLHttpRequest  # type: ignore[import-not-found]
+    from pyodide.http.pyxhr import XHRResponse  # type: ignore[import-not-found]
 
     class __JupyterliteTransport(BaseTransport):
-        def handle_request(self, request):
+        def handle_request(self, request):  # type: ignore[no-untyped-def]
             req = XMLHttpRequest.new()
             req.open(request.method.upper(), str(request.url), False)
             req.withCredentials = True
@@ -58,9 +58,9 @@ if JUPYTERLITE:
                 request=request,
             )
 
-    HTTPXClient.__init__ = partialmethod(
-        HTTPXClient.__init__,
-        transport=__JupyterliteTransport(),
+    HTTPXClient.__init__ = cast(  # type: ignore[method-assign]
+        Any,
+        partialmethod(HTTPXClient.__init__, transport=__JupyterliteTransport()),
     )
 
 
