@@ -292,12 +292,9 @@ comparator.metrics.summarize().frame(favorability=True)
 # This allows us to save some potentially huge computation time.
 
 # %%
-from sklearn.metrics import get_scorer
+comparator.metrics.add(metric="neg_mean_absolute_error", name="MAE")
 
-metric = {"R²": "r2", "RMSE": "rmse", "MAE": get_scorer("neg_mean_absolute_error")}
-metric_kwargs = {"response_method": "predict"}
-
-comparator.metrics.summarize(metric=metric, metric_kwargs=metric_kwargs).frame()
+comparator.metrics.summarize().frame()
 
 # %%
 # Finally, we can even get a deeper understanding by analyzing each split in the

@@ -11,6 +11,7 @@ from sklearn.metrics import average_precision_score, precision_recall_curve
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _build_custom_legend_with_stats,
+    _check_label,
     _ClassifierDisplayMixin,
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
@@ -19,6 +20,7 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
 )
 from skore._sklearn.types import (
+    _DEFAULT,
     DataSource,
     MLTask,
     PositiveLabel,
@@ -54,9 +56,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         - `label`
         - `average_precision`.
 
-    pos_label : int, float, bool, str or None
-        The class considered as the positive class. If `None`, the display is built
-        in one-vs-rest mode and includes one curve per class.
+    report_pos_label : int, float, bool, str or None
+        Default positive label used when `plot(label=...)` is not specified.
 
     data_source : {"train", "test", "both"}
         The data source used to compute the precision recall curve.
@@ -99,17 +100,21 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         precision_recall: DataFrame,
         average_precision: DataFrame,
-        pos_label: PositiveLabel | None,
+        report_pos_label: PositiveLabel | None,
         data_source: DataSource | Literal["both"],
         ml_task: MLTask,
         report_type: ReportType,
     ) -> None:
         self.precision_recall = precision_recall
         self.average_precision = average_precision
-        self.pos_label = pos_label
+        self.report_pos_label = report_pos_label
         self.data_source = data_source
         self.ml_task = ml_task
         self.report_type = report_type
+
+    @property
+    def labels(self):
+        return self.precision_recall["label"].cat.categories.to_list()
 
     @classmethod
     def _concatenate(
@@ -131,7 +136,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 [display.average_precision for display in child_displays],
                 column_data,
             ),
-            pos_label=first_display.pos_label,
+            report_pos_label=first_display.report_pos_label,
             data_source=data_source or first_display.data_source,
             ml_task=first_display.ml_task,
             report_type=report_type,
@@ -144,6 +149,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         subplot_by: Literal["auto", "label", "estimator", "data_source"]
         | None = "auto",
         despine: bool = True,
+        label: PositiveLabel = _DEFAULT,
     ) -> Figure:
         """Plot visualization.
 
@@ -160,10 +166,16 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             - "data_source": one subplot per data source (EstimatorReport with both \
                 data sources only)
             - None: no subplots (Not available for comparison in classification \
-                with no specified pos_label)
+                with no specified label)
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.
+
+        label : int, float, bool, str or None, default=report pos_label
+            The class whose curve to select. We always compute one curve per class,
+            in a one-vs-rest fashion in multiclass classification and by alternating
+            the positive class in binary classification. This lets you display only
+            the curve of the desired class. Use `None` to show them all.
 
         Returns
         -------
@@ -189,22 +201,23 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display.set_style(relplot_kwargs={"palette": "Set2", "alpha": 0.8})
         >>> display.plot()
         """
-        return self._plot(subplot_by=subplot_by, despine=despine)
+        label = _check_label(self.labels, label, self.report_pos_label)
+        return self._plot(subplot_by=subplot_by, despine=despine, label=label)
 
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: Literal["auto", "label", "estimator", "data_source"]
-        | None = "auto",
-        despine: bool = True,
+        subplot_by: Literal["auto", "label", "estimator", "data_source"] | None,
+        despine: bool,
+        label: PositiveLabel,
     ) -> Figure:
         """Matplotlib implementation of the `plot` method."""
-        plot_data = self.frame(with_average_precision=True)
+        plot_data = self.frame(label=label, with_average_precision=True)
 
         col, hue, style = _get_curve_plot_columns(
             plot_data=plot_data,
             report_type=self.report_type,
-            pos_label=self.pos_label,
+            label=label,
             data_source=self.data_source,
             subplot_by=subplot_by,
         )
@@ -270,14 +283,14 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 statistic_acronym="AP",
             )
 
-        if self.ml_task == "binary-classification":
-            info_pos_label = (
-                f"Positive label: {self.pos_label}"
-                if self.pos_label is not None
-                else None
+        if label is not None:
+            info_label = (
+                f"Positive label: {label}"
+                if self.ml_task == "binary-classification"
+                else f"Label: {label}"
             )
         else:
-            info_pos_label = None
+            info_label = None
 
         info_data_source = (
             f"Data source: {self.data_source.capitalize()} set"
@@ -288,9 +301,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         title = "Precision-Recall Curve"
         if "comparison" not in self.report_type:
             title += f" for {self.precision_recall['estimator'].cat.categories.item()}"
-        figure.suptitle(
-            "\n".join(filter(None, [title, info_pos_label, info_data_source]))
-        )
+        figure.suptitle("\n".join(filter(None, [title, info_label, info_data_source])))
 
         if despine:
             for ax in axes:
@@ -309,7 +320,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource,
-        pos_label: PositiveLabel | None,
+        report_pos_label: PositiveLabel = None,
         drop_intermediate: bool = True,
     ) -> "PrecisionRecallCurveDisplay":
         """Plot precision-recall curve given binary class predictions.
@@ -319,10 +330,9 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         y_true : array-like of shape (n_samples,)
             True binary labels.
 
-        y_pred : array-like of shape (n_samples,) or (n_samples, n_classes)
-            Target scores, can either be probability estimates of the positive class,
-            confidence values, or non-thresholded measure of decisions (as returned by
-            "decision_function" on some classifiers).
+        y_pred : array-like of shape (n_samples, n_classes)
+            Target scores, can either be probability estimates or non-thresholded
+            measure of decisions (as returned by "decision_function").
 
         report_type : {"comparison-cross-validation", "comparison-estimator", \
                 "cross-validation", "estimator"}
@@ -340,10 +350,6 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         data_source : {"train", "test"}
             The data source used to compute the precision recall curve.
 
-        pos_label : int, float, bool, str or none
-            The class considered as the positive class when computing the
-            precision and recall metrics.
-
         drop_intermediate : bool, default=True
             Whether to drop some suboptimal thresholds which would not appear
             on a plotted precision-recall curve. This is useful in order to
@@ -353,50 +359,44 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         -------
         display : PrecisionRecallCurveDisplay
         """
-        if pos_label is None:
-            classes = estimator.classes_
-            y_true_onehot = _one_hot_encode(y_true, classes)
-            y_pred_arr = cast(NDArray, y_pred)
-            displays = [
-                cls._compute_data_for_display(
-                    y_true=y_true_onehot[:, class_idx],
-                    y_pred=y_pred_arr[:, class_idx],
-                    report_type=report_type,
-                    estimator=estimator,
-                    estimator_name=estimator_name,
-                    ml_task="binary-classification",
-                    data_source=data_source,
-                    pos_label=1,
-                    drop_intermediate=drop_intermediate,
-                )
-                for class_idx in range(len(classes))
-            ]
+        classes = estimator.classes_
+        y_true_onehot = _one_hot_encode(y_true, classes)
+        y_pred_arr = cast(NDArray, y_pred)
 
-            display = cls._concatenate(
-                displays,
-                report_type=report_type,
-                column_data={"label": classes.tolist()},
+        curve_dfs = []
+        ap_dfs = []
+        for class_idx, label in enumerate(classes):
+            curve_df, ap_df = cls._compute_data_ovr(
+                y_true=y_true_onehot[:, class_idx],
+                y_pred=y_pred_arr[:, class_idx],
+                drop_intermediate=drop_intermediate,
+                # metadata:
+                estimator=estimator_name,
+                data_source=data_source,
+                split=None,
+                label=label,
             )
-            display.ml_task = ml_task
-            display.pos_label = None
-            return display
+            curve_dfs.append(curve_df)
+            ap_dfs.append(ap_df)
 
-        # binary-classification with pos_label set:
+        return cls(
+            precision_recall=_concat_frames_with_column_data(curve_dfs),
+            average_precision=_concat_frames_with_column_data(ap_dfs),
+            report_pos_label=report_pos_label,
+            data_source=data_source,
+            ml_task=ml_task,
+            report_type=report_type,
+        )
 
+    @staticmethod
+    def _compute_data_ovr(y_true, y_pred, drop_intermediate, **metadata):
         precision, recall, thresholds = precision_recall_curve(
             y_true,
             y_pred,
-            pos_label=pos_label,
+            pos_label=1,
             drop_intermediate=drop_intermediate,
         )
-        average_precision = average_precision_score(y_true, y_pred, pos_label=pos_label)
-
-        metadata = {
-            "estimator": estimator_name,
-            "data_source": data_source,
-            "split": None,
-            "label": pos_label,
-        }
+        average_precision = average_precision_score(y_true, y_pred, pos_label=1)
 
         curve_data = {
             **metadata,
@@ -415,22 +415,25 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             }
         ).astype(dict.fromkeys(metadata, "category"))
 
-        return cls(
-            precision_recall=DataFrame(curve_data),
-            average_precision=average_precision_df,
-            pos_label=pos_label,
-            data_source=data_source,
-            ml_task=ml_task,
-            report_type=report_type,
-        )
+        return DataFrame(curve_data), average_precision_df
 
-    def frame(self, with_average_precision: bool = False) -> DataFrame:
+    def frame(
+        self,
+        with_average_precision: bool = False,
+        label: PositiveLabel = _DEFAULT,
+    ) -> DataFrame:
         """Get the data used to create the precision-recall curve plot.
 
         Parameters
         ----------
         with_average_precision : bool, default=False
             Whether to include the average precision column in the returned DataFrame.
+
+        label : int, float, bool, str or None, default=report pos_label
+            The class whose curve to select. We always compute one curve per class,
+            in a one-vs-rest fashion in multiclass classification and by alternating
+            the positive class in binary classification. This lets you display only
+            the curve of the desired class. Use `None` to show them all.
 
         Returns
         -------
@@ -459,6 +462,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         >>> display = report.metrics.precision_recall()
         >>> df = display.frame()
         """
+        label = _check_label(self.labels, label, self.report_pos_label)
+
         if with_average_precision:
             # The merge between the precision-recall curve and the average precision is
             # done without specifying the columns to merge on, hence done on all column
@@ -485,7 +490,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if self.data_source == "both":
             indexing_columns += ["data_source"]
 
-        if self.pos_label is not None:
+        if label is not None:
+            df = df.query("label == @label").reset_index(drop=True)
             columns = indexing_columns + statistical_columns
         else:
             columns = indexing_columns + ["label"] + statistical_columns

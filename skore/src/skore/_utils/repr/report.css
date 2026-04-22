@@ -37,33 +37,178 @@
     border-radius: 2px;
 }
 
-.report-inline-note {
-    margin: 0.5em 0 0;
+.report-tabset {
+    position: relative;
     color: var(--color-text);
-    font-size: 11px;
+}
+
+.report-tab-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.report-tablist-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    width: 100%;
+    box-sizing: border-box;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-text) 25%, transparent);
+}
+
+.report-tablist {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.15em;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 0;
+    padding: 0;
+    border-bottom: none;
+}
+
+.report-tablist-help {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    align-self: center;
+    padding: 0 0.15em 0 0.65em;
+    margin: 0.15em 0;
+    border-left: 1px solid color-mix(in srgb, var(--color-text) 22%, transparent);
+}
+
+.report-tab-item {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.report-tab-help {
+    position: relative;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+    width: 1.35em;
+    height: 1.35em;
+    min-width: 1.35em;
+    min-height: 1.35em;
+    border: 1px solid color-mix(in srgb, var(--color-blue) 50%, transparent);
+    border-radius: 50%;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-blue);
+    background-color: var(--color-background);
+    cursor: help;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.report-tab-help:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.report-tab-help:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+}
+
+/* Single global "?": show only the tooltip for the checked tab */
+.report-tab-help-global:hover .report-tab-help-tip,
+.report-tab-help-global:focus-within .report-tab-help-tip {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.report-tabset:has(> .report-tab-input:nth-child(1):checked) .report-tab-help-global:hover .report-tab-help-tip-0,
+.report-tabset:has(> .report-tab-input:nth-child(1):checked) .report-tab-help-global:focus-within .report-tab-help-tip-0,
+.report-tabset:has(> .report-tab-input:nth-child(2):checked) .report-tab-help-global:hover .report-tab-help-tip-1,
+.report-tabset:has(> .report-tab-input:nth-child(2):checked) .report-tab-help-global:focus-within .report-tab-help-tip-1,
+.report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tab-help-global:hover .report-tab-help-tip-2,
+.report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tab-help-global:focus-within .report-tab-help-tip-2,
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-help-global:hover .report-tab-help-tip-3,
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-help-global:focus-within .report-tab-help-tip-3 {
+    visibility: visible;
+    opacity: 1;
+}
+
+.report-tab-help-global .report-tab-help-tip {
     font-style: italic;
     font-weight: 400;
-    line-height: 1.4;
-    opacity: 0.88;
-    white-space: nowrap;
+    opacity: 0.95;
+    max-width: min(280px, 90vw);
+    width: max-content;
+    top: 50%;
+    left: auto;
+    right: 100%;
+    margin-left: 0;
+    margin-right: 8px;
+    transform: translateY(-50%);
 }
 
-.report-disclosure {
-    color: var(--color-text);
+.report-tab-help-global .report-tab-help-tip::before {
+    right: auto;
+    left: 100%;
+    border-right-color: transparent;
+    border-left-color: var(--color-orange);
 }
 
-.report-disclosure > summary {
+.report-tab-label {
     cursor: pointer;
     user-select: none;
     color: var(--color-blue);
     font-weight: bold;
     line-height: 1.5em;
-    display: flex;
-    align-items: center;
-    gap: 0.45em;
-    list-style: none;
-    padding: 0.2em 0.15em;
+    padding: 0.35em 0.65em;
     margin: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    flex-shrink: 0;
+    border-radius: 4px 4px 0 0;
+}
+
+.report-tab-label:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.report-tabset:has(> .report-tab-input:nth-child(1):checked) .report-tablist .report-tab-item:nth-child(1) .report-tab-label,
+.report-tabset:has(> .report-tab-input:nth-child(2):checked) .report-tablist .report-tab-item:nth-child(2) .report-tab-label,
+.report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tablist .report-tab-item:nth-child(3) .report-tab-label,
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tablist .report-tab-item:nth-child(4) .report-tab-label {
+    border-bottom-color: var(--color-blue);
+}
+
+.report-tab-panels {
+    margin-top: 0.35em;
+}
+
+.report-tab-panels .report-tab-panel {
+    display: none;
+}
+
+.report-tabset:has(> .report-tab-input:nth-child(1):checked) .report-tab-panels .report-tab-panel:nth-child(1),
+.report-tabset:has(> .report-tab-input:nth-child(2):checked) .report-tab-panels .report-tab-panel:nth-child(2),
+.report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tab-panels .report-tab-panel:nth-child(3),
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-panels .report-tab-panel:nth-child(4) {
+    display: block;
+}
+
+.report-tab-panel .report-section {
+    overflow-x: auto;
+    max-width: 100%;
 }
 
 .report-disclosure-title {
@@ -118,36 +263,6 @@
 
 .report-tooltip-accessor-link:hover {
     text-decoration-thickness: 2px;
-}
-
-.report-disclosure > summary::-webkit-details-marker {
-    display: none;
-}
-
-.report-disclosure > summary::before {
-    content: "";
-    display: block;
-    width: 0.45em;
-    height: 0.45em;
-    flex-shrink: 0;
-    border-right: 2px solid var(--color-blue);
-    border-bottom: 2px solid var(--color-blue);
-    transform: rotate(-45deg);
-    transition: transform 0.12s ease;
-}
-
-.report-disclosure[open] > summary::before {
-    transform: rotate(45deg);
-}
-
-.report-disclosure > summary:hover {
-    background-color: var(--color-blue-hover);
-    border-radius: 4px;
-}
-
-.report-disclosure > .report-section {
-    overflow-x: auto;
-    max-width: 100%;
 }
 
 .report-metrics table.dataframe {

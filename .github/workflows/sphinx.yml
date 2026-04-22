@@ -67,9 +67,9 @@ defaults:
     shell: bash
 
 env:
-  PYTHON: '3.13'
+  PYTHON: '3.14'
   SCIKIT_LEARN: '1.8'
-  LOCKFILE: 'ci/requirements/skore/python-3.13/scikit-learn-1.8/sphinx-requirements.txt'
+  LOCKFILE: 'ci/requirements/skore/python-3.14/scikit-learn-1.8/sphinx-requirements.txt'
 
 jobs:
   sphinx-changes:

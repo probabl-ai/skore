@@ -130,7 +130,7 @@ def test_multioutput_with_flat_index(linear_regression_multioutput_data):
     """Test flat_index with multioutput regression cross-validation data."""
     estimator, X, y = linear_regression_multioutput_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    display = report.metrics.summarize(metric_kwargs={"multioutput": "raw_values"})
+    display = report.metrics.summarize()
 
     result_multi = display.frame(aggregate=["mean", "std"], flat_index=False)
     assert isinstance(result_multi.index, pd.MultiIndex)
@@ -144,6 +144,10 @@ def test_multioutput_with_flat_index(linear_regression_multioutput_data):
         "r²_1",
         "rmse_0",
         "rmse_1",
+        "mae_0",
+        "mae_1",
+        "mape_0",
+        "mape_1",
         "fit_time_s",
         "predict_time_s",
     ]

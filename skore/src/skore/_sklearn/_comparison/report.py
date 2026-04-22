@@ -466,10 +466,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
+    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
         comparison_issues: dict[str, dict] = {}
         all_checked_codes: set[str] = set()
         for report_name, report in self.reports_.items():
+            report.add_checks(self._checks_registry)
             report_issues, checked_codes = report._get_issues()
             all_checked_codes |= checked_codes
             for code, issue in report_issues.items():
@@ -480,7 +481,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 else:
                     comparison_issues[code] = {
                         "title": issue["title"],
-                        "docs_anchor": issue["docs_anchor"],
+                        "docs_url": issue.get("docs_url"),
                         "explanation": f"[{report_name}] {issue['explanation']}",
                     }
         return comparison_issues, all_checked_codes
@@ -499,7 +500,17 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def _repr_html_(self) -> str:
         """HTML representation with a selector to inspect one compared report."""
-        metrics_html = self.metrics.summarize(data_source="test").frame()._repr_html_()
+        metrics_frame = (
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .rename_axis(
+                None if self._report_type == "comparison-estimator" else [None, None],
+                axis="columns",
+            )
+        )
+        if self._report_type == "comparison-cross-validation":
+            metrics_frame = metrics_frame.swaplevel(axis="columns")
+        metrics_html = metrics_frame.reset_index().to_html(index=False)
 
         comparison_reports = []
         for label, report in self.reports_.items():
@@ -533,6 +544,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 "comparison_reports": comparison_reports,
                 "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
+                "report_title": "Model comparison",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "diagnose_documentation_url": diagnose_documentation_url,

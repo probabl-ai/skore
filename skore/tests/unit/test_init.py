@@ -1,8 +1,11 @@
 from importlib import import_module
+from importlib.metadata import version
 from sys import modules
 from unittest.mock import Mock
 
 from pytest import warns
+
+import skore
 
 
 def test_warning_old_joblib(monkeypatch):
@@ -17,3 +20,7 @@ def test_warning_old_joblib(monkeypatch):
 
     assert hasattr(configuration, "show_progress") is True
     assert configuration.show_progress is False
+
+
+def test__version__returns_version():
+    assert skore.__version__ == version("skore")

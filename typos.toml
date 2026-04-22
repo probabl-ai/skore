@@ -12,6 +12,8 @@ extend-ignore-re = [
 [default.extend-words]
 # acronym for "False Positive Rate"
 fpr = "fpr"
+# acronym for "Mean Absolute Percentage Error"
+mape = "mape"
 
 # For "words" made up of other words
 # https://github.com/crate-ci/typos/blob/master/docs/design.md#identifiers-and-words

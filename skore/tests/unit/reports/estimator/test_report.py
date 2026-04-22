@@ -4,11 +4,12 @@ from io import BytesIO
 
 import joblib
 import numpy as np
+import pandas as pd
 import pytest
 import skrub
 from sklearn.cluster import KMeans
 from sklearn.datasets import make_classification, make_regression
-from sklearn.dummy import DummyClassifier
+from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import FixedThresholdClassifier, train_test_split
@@ -227,6 +228,33 @@ def test_pickle(forest_binary_classification_with_test):
         joblib.dump(report, stream)
 
 
+def test_flat_index(forest_binary_classification_with_test):
+    """Check that the index is flattened when `flat_index` is True.
+
+    Since `pos_label` is None, then by default a MultiIndex would be returned.
+    Here, we force to have a single-index by passing `flat_index=True`.
+    """
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result = report.metrics.summarize().frame(flat_index=True)
+    assert result.shape == (10, 1)
+    assert isinstance(result.index, pd.Index)
+    assert result.index.tolist() == [
+        "accuracy",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "log_loss",
+        "brier_score",
+        "fit_time_s",
+        "predict_time_s",
+    ]
+
+    assert result.columns.tolist() == ["RandomForestClassifier"]
+
+
 def test_get_predictions():
     """Check the behaviour of the `get_predictions` method.
 
@@ -354,31 +382,95 @@ def test_has_no_deep_copy():
         )
 
 
+class _DummyClassifierBadRepr(DummyClassifier):
+    def _repr_html_(self):
+        raise TypeError("error")
+
+
+def _assert_estimator_report_repr_html(
+    html_out: str, expected_estimator_name: str
+) -> None:
+    assert "skore-estimator-report-" in html_out
+    assert expected_estimator_name in html_out
+    assert "skoreInitEstimatorReport" in html_out
+    assert "report-hint-note" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-tabset" in html_out
+    assert "Report for" in html_out
+    assert "EstimatorReport.metrics" in html_out
+
+
 @pytest.mark.parametrize("with_train", [False, True])
-@pytest.mark.parametrize("bad_estimator", [False, True])
-def test_report_repr_html(with_train, bad_estimator):
+def test_report_repr_html_binary_classification(with_train):
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-    class DummyClassifierBadRepr(DummyClassifier):
-        def _repr_html_(self):
-            raise TypeError("error")
-
-    estimator = DummyClassifierBadRepr() if bad_estimator else DummyClassifier()
+    estimator = DummyClassifier()
     estimator.fit(X_train, y_train)
     kwargs = {}
     if with_train:
         kwargs.update(X_train=X_train, y_train=y_train)
     kwargs.update(X_test=X_test, y_test=y_test)
     report = EstimatorReport(estimator, fit=False, **kwargs)
-    html_out = report._repr_html_()
-    assert "skore-estimator-report-" in html_out
-    assert "DummyClassifier" in html_out
-    assert "skoreInitEstimatorReport" in html_out
-    assert "report-hint-note" in html_out
-    assert "docs.skore.probabl.ai" in html_out
-    assert "report-disclosure-title" in html_out
-    assert "EstimatorReport.metrics" in html_out
+    _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+def test_report_repr_html_multiclass_classification(
+    with_train, multiclass_classification_train_test_split
+):
+    X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
+    estimator = DummyClassifier(strategy="uniform", random_state=0)
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+def test_report_repr_html_regression(with_train, regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    estimator = DummyRegressor()
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    _assert_estimator_report_repr_html(report._repr_html_(), "DummyRegressor")
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+def test_report_repr_html_multioutput_regression(
+    with_train, regression_multioutput_train_test_split
+):
+    X_train, X_test, y_train, y_test = regression_multioutput_train_test_split
+    estimator = DummyRegressor()
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    _assert_estimator_report_repr_html(report._repr_html_(), "DummyRegressor")
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
+    """HTML repr must still work when the underlying estimator rejects
+    ``_repr_html_``."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = _DummyClassifierBadRepr()
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
 
 
 def test_report_get_data_and_y_true_error():
@@ -434,3 +526,50 @@ def test_report_with_data_op():
 
     report = EstimatorReport(data_op)
     assert isinstance(report.metrics.accuracy(), float)
+
+
+def test_from_state_bypasses_init_and_restores_state(
+    monkeypatch, logistic_binary_classification_with_test
+):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(
+        estimator,
+        X_test=X_test,
+        y_test=y_test,
+        pos_label=1,
+    )
+    expected_accuracy = report.metrics.accuracy()
+    report.cache_predictions()
+    report.metrics.add("f1", name="F1")
+    state = report.get_state()
+    assert state["metadata"]["report_type"] == report._report_type
+
+    def _unexpected_init(self, *args, **kwargs):
+        raise AssertionError("__init__ should not be called by from_state")
+
+    monkeypatch.setattr(EstimatorReport, "__init__", _unexpected_init)
+
+    restored = EstimatorReport.from_state(state)
+
+    assert restored.id == report.id
+    assert restored.fit == report.fit
+    assert restored.fit_time_ == report.fit_time_
+    assert restored.X_test is report.X_test
+    assert restored.ml_task == report.ml_task
+    assert restored.pos_label == report.pos_label
+    assert restored._cache == report._cache
+    assert restored.metrics.accuracy() == expected_accuracy
+
+    # check new metrics can be computed, including custom metrics:
+    restored.metrics.roc_auc()
+    df = restored.metrics.summarize().frame()
+    assert "F1" in df.index
+
+
+def test_from_state_rejects_unknown_version(logistic_binary_classification_with_test):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    state = report.get_state() | {"version": 999}
+
+    with pytest.raises(ValueError, match="Unexpected state version"):
+        EstimatorReport.from_state(state)
