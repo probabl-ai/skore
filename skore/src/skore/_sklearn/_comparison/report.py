@@ -468,11 +468,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
         comparison_issues: dict[str, dict] = {}
-        all_checked_codes: set[str] = set()
+        all_applicable_codes: set[str] = set()
         for report_name, report in self.reports_.items():
             report.add_checks(self._checks_registry)
-            report_issues, checked_codes = report._get_issues()
-            all_checked_codes |= checked_codes
+            report_issues, applicable_codes = report._get_findings()
+            all_applicable_codes |= applicable_codes
             for code, issue in report_issues.items():
                 if code in comparison_issues:
                     comparison_issues[code]["explanation"] = (
@@ -483,8 +483,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                         "title": issue["title"],
                         "docs_url": issue.get("docs_url"),
                         "explanation": f"[{report_name}] {issue['explanation']}",
+                        "severity": issue.get("severity", "issue"),
                     }
-        return comparison_issues, all_checked_codes
+        return comparison_issues, all_applicable_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

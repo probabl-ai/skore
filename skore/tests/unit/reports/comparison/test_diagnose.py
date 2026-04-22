@@ -12,6 +12,7 @@ def test_diagnose_collects_component_issues(report, monkeypatch):
                 "title": f"Mock issue {i}",
                 "docs_url": f"skd{i:03d}-mock",
                 "explanation": f"Issue {i} detected.",
+                "severity": "issue",
             }
         }
         for i, _ in enumerate(report_names, start=1)
@@ -21,10 +22,10 @@ def test_diagnose_collects_component_issues(report, monkeypatch):
     ):
         monkeypatch.setattr(
             sub_report,
-            "_get_issues",
+            "_get_findings",
             lambda iss=issues: (iss, set(iss)),
         )
-    for attr in ("_issues_cache", "_checked_codes"):
+    for attr in ("_issues_cache", "_applicable_codes", "_not_applicable_codes"):
         if hasattr(report, attr):
             delattr(report, attr)
 

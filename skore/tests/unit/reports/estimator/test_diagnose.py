@@ -20,6 +20,7 @@ def mock_issue(report):
                 "title": "Mock title",
                 "docs_url": "skd001-overfitting",
                 "explanation": "Mock overfitting detected.",
+                "severity": "issue",
             }
         },
         {"SKD001"},
@@ -102,7 +103,7 @@ def test_diagnose_detects_high_class_imbalance(weights, code):
 
 def test_diagnose_ignore(monkeypatch, regression_data):
     """Check that checks are ignored when ignore is passed."""
-    monkeypatch.setattr(EstimatorReport, "_get_issues", mock_issue)
+    monkeypatch.setattr(EstimatorReport, "_get_findings", mock_issue)
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
     result = report.diagnose(ignore=["SKD001"])
@@ -126,7 +127,7 @@ def test_diagnose_no_issues(monkeypatch, regression_data):
     X, y = regression_data
     monkeypatch.setattr(
         EstimatorReport,
-        "_get_issues",
+        "_get_findings",
         lambda report: ({}, {"SKD001", "SKD002"}),
     )
     report = evaluate(LinearRegression(), X, y)
@@ -136,7 +137,7 @@ def test_diagnose_no_issues(monkeypatch, regression_data):
 
 def test_diagnose_result_repr(monkeypatch, regression_data):
     """Check that the diagnostic result has a repr."""
-    monkeypatch.setattr(EstimatorReport, "_get_issues", mock_issue)
+    monkeypatch.setattr(EstimatorReport, "_get_findings", mock_issue)
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=0.2)
     results = report.diagnose()
@@ -158,7 +159,7 @@ def test_diagnose_result_repr(monkeypatch, regression_data):
 
 def test_diagnose_uses_global_ignore(monkeypatch, regression_data):
     """Check that checks are ignored when global ignore is set."""
-    monkeypatch.setattr(EstimatorReport, "_get_issues", mock_issue)
+    monkeypatch.setattr(EstimatorReport, "_get_findings", mock_issue)
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=0.2)
     assert "SKD001" in report.diagnose().issues
@@ -247,7 +248,7 @@ def test_add_checks_docs_url_absent(regression_data):
     result = report.diagnose()
     frame = result.frame()
     row = frame[frame["code"] == "TST001"]
-    assert row["documentation_url"].iloc[0] is None
+    assert row["documentation_url"].isna().all()
 
 
 def test_check_invalid_report_type(regression_data):
@@ -287,3 +288,93 @@ def test_diagnose_custom_metric(binary_classification_data):
         f"for {n_metrics}/{n_metrics} comparable metrics"
         in result.issues["SKD002"]["explanation"]
     )
+
+
+class TipCheck(Check):
+    code = "TST002"
+    title = "Tip check"
+    report_type = "estimator"
+    docs_url = "tst_tip"
+    severity = "tip"
+
+    def check_function(self, report):
+        return "Be careful about this."
+
+
+def test_diagnose_tip_goes_to_tips_not_issues(regression_data):
+    """A check with severity='tip' is routed to `.tips`, not `.issues`."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    report.add_checks([TipCheck()])
+    result = report.diagnose()
+    assert "TST002" in result.tips
+    assert "TST002" not in result.issues
+    assert result.tips["TST002"]["severity"] == "tip"
+
+
+def test_diagnose_passed_contains_applicable_checks_with_no_finding(regression_data):
+    """Checks that ran without reporting anything show up in `.passed`."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    report.add_checks([MockCheck(has_issue=False)])
+    result = report.diagnose()
+    assert "TST001" in result.passed
+    assert "TST001" not in result.issues
+    assert "TST001" not in result.tips
+
+
+def test_diagnose_passed_excludes_ignored(regression_data):
+    """Ignored codes are not listed as passed."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    report.add_checks([MockCheck(has_issue=False)])
+    result = report.diagnose(ignore=["TST001"])
+    assert "TST001" not in result.passed
+    assert "TST001" not in result.issues
+
+
+def test_diagnose_frame_severity_filter(regression_data):
+    """`frame(severity=...)` returns only rows of the requested bucket."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    report.add_checks([MockCheck(has_issue=True), TipCheck()])
+    result = report.diagnose()
+
+    issues_frame = result.frame(severity="issue")
+    assert set(issues_frame["code"]) >= {"TST001"}
+    assert all(issues_frame["severity"] == "issue")
+
+    tips_frame = result.frame(severity="tip")
+    assert set(tips_frame["code"]) >= {"TST002"}
+    assert all(tips_frame["severity"] == "tip")
+
+    passed_frame = result.frame(severity="passed")
+    assert "TST001" not in set(passed_frame["code"])
+    assert "TST002" not in set(passed_frame["code"])
+    assert passed_frame["explanation"].isna().all()
+
+    all_frame = result.frame()
+    assert set(all_frame["code"]) >= {"TST001", "TST002"}
+
+
+def test_diagnose_header_reports_all_counts(regression_data):
+    """The header string reports issue, tip, passed and ignored counts."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    report.add_checks([MockCheck(has_issue=True), TipCheck()])
+    result = report.diagnose(ignore=["SKD001"])
+    assert "issue(s)" in result.header
+    assert "tip(s)" in result.header
+    assert "passed" in result.header
+    assert "1 ignored" in result.header
+
+
+def test_diagnose_html_has_three_tabs(regression_data):
+    """The HTML repr contains one label per bucket with its count."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    report.add_checks([MockCheck(has_issue=True), TipCheck()])
+    html = report.diagnose()._repr_html_()
+    assert "Issues (" in html
+    assert "Tips (" in html
+    assert "Passed (" in html

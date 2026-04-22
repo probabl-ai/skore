@@ -530,18 +530,18 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
         total_splits = len(self.estimator_reports_)
-        all_checked_codes: set[str] = set()
+        all_applicable_codes: set[str] = set()
         positives_by_code: dict[str, list[dict]] = {}
 
         for estimator_report in self.estimator_reports_:
             estimator_report.add_checks(self._checks_registry)
-            results, checked_codes = estimator_report._get_issues()
-            all_checked_codes |= checked_codes
+            results, applicable_codes = estimator_report._get_findings()
+            all_applicable_codes |= applicable_codes
             for code, diagnostic in results.items():
                 positives_by_code.setdefault(code, []).append(diagnostic)
 
         issues: dict[str, dict] = {}
-        for code in all_checked_codes:
+        for code in all_applicable_codes:
             positives = positives_by_code.get(code, [])
             if len(positives) > total_splits / 2:
                 ref = positives[0]
@@ -551,8 +551,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "explanation": (
                         f"Detected in {len(positives)}/{total_splits} evaluated splits."
                     ),
+                    "severity": ref.get("severity", "issue"),
                 }
-        return issues, all_checked_codes
+        return issues, all_applicable_codes
 
     @property
     def ml_task(self) -> str:
@@ -648,10 +649,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        issues, checked_codes = self._get_issues()
+        issues, applicable_codes = self._get_findings()
         diagnostic_html = (
             f"<div class='report-diagnostic-details'>{len(issues)} "
-            f"issue(s) detected, {len(checked_codes)} check(s) ran.</div>"
+            f"issue(s) detected, {len(applicable_codes)} check(s) ran.</div>"
         )
 
         return {

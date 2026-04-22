@@ -1,0 +1,34 @@
+<div class="container">
+    <header class="title">{{ header }}</header>
+    <div class="report-tabset">
+{% for bucket in buckets %}
+        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-{{ loop.index0 }}" class="report-tab-input"{% if loop.index0 == first_non_empty %} checked{% endif %}>
+{% endfor %}
+        <div class="report-tablist-row">
+            <div class="report-tablist" role="tablist">
+{% for bucket in buckets %}
+                <div class="report-tab-item">
+                    <label class="report-tab-label" for="{{ container_id }}-report-tab-{{ loop.index0 }}" role="presentation">{{ bucket.label }} ({{ bucket.entries | length }})</label>
+                </div>
+{% endfor %}
+            </div>
+        </div>
+        <div class="report-tab-panels">
+{% for bucket in buckets %}
+            <div class="report-tab-panel">
+                <div class="report-section report-diagnostic">
+{% if bucket.entries %}
+                    <ul class="report-diagnostic-list">
+{% for entry in bucket.entries %}
+                        <li>{{ entry | safe }}</li>
+{% endfor %}
+                    </ul>
+{% else %}
+                    <p class="report-diagnostic-empty">{{ bucket.empty_message }}</p>
+{% endif %}
+                </div>
+            </div>
+{% endfor %}
+        </div>
+    </div>
+</div>

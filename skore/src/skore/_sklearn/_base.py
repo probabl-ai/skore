@@ -36,45 +36,53 @@ class _BaseReport(ReportHelpMixin):
         """Aggregate EstimatorReport checks.
 
         Overwritten in CrossValidation and Comparison reports.
+
+        Returns ``(findings, applicable_codes)``.
         """
         return ({}, set())
 
-    def _get_issues(self) -> tuple[dict[str, dict], set[str]]:
-        """Get the issues from the cache or compute them."""
+    def _get_findings(self) -> tuple[dict[str, dict], set[str]]:
+        """Get the findings from the cache or compute them.
+
+        Returns ``(findings, applicable_codes)`` where ``applicable_codes``
+        contains the codes of the checks that actually ran on the report,
+        i.e. those that did not raise :class:`DiagnosticNotApplicable`.
+        """
         if not hasattr(self, "_issues_cache"):
             self._issues_cache: dict[str, dict] = {}
-        if not hasattr(self, "_checked_codes"):
-            self._checked_codes: set[str] = set()
+        if not hasattr(self, "_applicable_codes"):
+            self._applicable_codes: set[str] = set()
+        if not hasattr(self, "_not_applicable_codes"):
+            self._not_applicable_codes: set[str] = set()
 
         for check in self._checks_registry:
             if (
-                check.code not in self._checked_codes
-                and check.report_type == self._report_type
+                check.report_type == self._report_type
+                and check.code not in self._applicable_codes
+                and check.code not in self._not_applicable_codes
             ):
                 try:
                     explanation = check.check_function(self)
-                    if explanation:
-                        self._issues_cache.update(
-                            {
-                                check.code: {
-                                    "title": check.title,
-                                    "docs_url": check.docs_url,
-                                    "explanation": explanation,
-                                }
-                            }
-                        )
-                    self._checked_codes.add(check.code)
                 except DiagnosticNotApplicable:
-                    self._checked_codes |= {check.code}
+                    self._not_applicable_codes.add(check.code)
+                    continue
+                if explanation:
+                    self._issues_cache[check.code] = {
+                        "title": check.title,
+                        "docs_url": check.docs_url,
+                        "explanation": explanation,
+                        "severity": getattr(check, "severity", "issue"),
+                    }
+                self._applicable_codes.add(check.code)
 
         if "cross-validation" in self._report_type or "comparison" in self._report_type:
-            aggregated = self._aggregate_checks()
+            agg_findings, agg_applicable = self._aggregate_checks()
             return (
-                self._issues_cache | aggregated[0],
-                self._checked_codes | aggregated[1],
+                self._issues_cache | agg_findings,
+                self._applicable_codes | agg_applicable,
             )
 
-        return self._issues_cache, self._checked_codes
+        return self._issues_cache, self._applicable_codes
 
     def diagnose(
         self,
@@ -95,9 +103,9 @@ class _BaseReport(ReportHelpMixin):
         Returns
         -------
         DiagnosticDisplay
-            A display object with an HTML representation, with the full list of
-            detected issues accessible via the :meth:`~DiagnosticDisplay.frame`
-            method.
+            A display object with an HTML representation organized as three
+            tabs (``Issues``, ``Tips``, ``Passed``). The full list of findings
+            is accessible via the :meth:`~DiagnosticDisplay.frame` method.
 
         Examples
         --------
@@ -107,12 +115,13 @@ class _BaseReport(ReportHelpMixin):
         >>> X, y = make_classification(random_state=42)
         >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
         >>> report.diagnose()
-        Diagnostic: 1 issue(s) detected, ...
-        - [SKD002] Potential underfitting.
+        Diagnostic: 1 issue(s), ...
+        Issues:
+        - [SKD002] Potential underfitting...
         ...
         >>> report.diagnose(ignore=["SKD002"])
-        Diagnostic: 0 issue(s) detected, ..., 1 ignored.
-        - No issues were detected in your report!
+        Diagnostic: 0 issue(s), ... 1 ignored.
+        ...
         """
         ignored: set[str] = set()
         if ignore:
@@ -123,12 +132,24 @@ class _BaseReport(ReportHelpMixin):
                 for code in configuration.ignore_checks
                 if code.strip()
             )
-        issues, checked_codes = self._get_issues()
+        findings, applicable_codes = self._get_findings()
         filtered = {
-            code: issue for code, issue in issues.items() if code not in ignored
+            code: finding for code, finding in findings.items() if code not in ignored
         }
-        checks_ran = len(checked_codes - ignored)
-        return DiagnosticDisplay(filtered, checks_ran, n_ignored=len(ignored))
+        checks_metadata: dict[str, dict] = {
+            check.code: {
+                "title": check.title,
+                "docs_url": check.docs_url,
+                "severity": getattr(check, "severity", "issue"),
+            }
+            for check in self._checks_registry
+        }
+        return DiagnosticDisplay(
+            findings=filtered,
+            checks_metadata=checks_metadata,
+            applicable_codes=applicable_codes,
+            ignored_codes=ignored,
+        )
 
     def add_checks(
         self,
