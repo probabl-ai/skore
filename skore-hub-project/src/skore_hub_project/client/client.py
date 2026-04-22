@@ -36,7 +36,7 @@ if JUPYTERLITE:
     from js import XMLHttpRequest
     from pyodide.http.pyxhr import XHRResponse
 
-    class JupyterliteTransport(BaseTransport):
+    class __JupyterliteTransport(BaseTransport):
         def handle_request(self, request):
             req = XMLHttpRequest.new()
             req.open(request.method.upper(), str(request.url), False)
@@ -59,7 +59,8 @@ if JUPYTERLITE:
             )
 
     HTTPXClient.__init__ = partialmethod(
-        HTTPXClient.__init__, transport=JupyterliteTransport()
+        HTTPXClient.__init__,
+        transport=__JupyterliteTransport(),
     )
 
 
