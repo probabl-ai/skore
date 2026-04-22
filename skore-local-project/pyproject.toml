@@ -5,6 +5,7 @@ requires-python = ">=3.10"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 license = "MIT"
 dependencies = [
+  "cloudpickle",
   "diskcache",
   "joblib",
   "platformdirs",
@@ -110,6 +111,7 @@ module = ["skore.*"]
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
+  "cloudpickle.*",
   "diskcache.*",
   "joblib.*",
 ]

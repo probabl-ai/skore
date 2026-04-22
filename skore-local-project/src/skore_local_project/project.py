@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import io
 import os
 from functools import wraps
 from pathlib import Path
 from typing import TYPE_CHECKING, ParamSpec, Protocol, TypeVar, cast, runtime_checkable
 from uuid import uuid4
 
-import joblib
+import cloudpickle
 import platformdirs
 
 from .metadata import CrossValidationReportMetadata, EstimatorReportMetadata
@@ -210,9 +209,7 @@ class Project:
         artifact_id = str(report.id)
 
         if artifact_id not in self.__artifacts_storage:
-            with io.BytesIO() as stream:
-                joblib.dump(report, stream)
-                self.__artifacts_storage[artifact_id] = stream.getvalue()
+            self.__artifacts_storage[artifact_id] = cloudpickle.dumps(report)
 
         self.__metadata_storage[uuid4().hex] = dict(
             Metadata(
@@ -227,10 +224,10 @@ class Project:
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its id."""
         if id in self.__artifacts_storage:
-            with io.BytesIO(self.__artifacts_storage[id]) as stream:
-                return cast(
-                    "EstimatorReport | CrossValidationReport", joblib.load(stream)
-                )
+            return cast(
+                "EstimatorReport | CrossValidationReport",
+                cloudpickle.loads(self.__artifacts_storage[id]),
+            )
 
         raise KeyError(id)
 

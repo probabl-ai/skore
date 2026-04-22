@@ -1,5 +1,4 @@
-from io import BytesIO
-
+import cloudpickle
 import joblib
 from pandas import DataFrame
 from pytest import fixture, raises
@@ -203,8 +202,7 @@ class TestProject:
         # Ensure artifacts are persisted
         assert len(project._Project__artifacts_storage) == 1
 
-        with BytesIO(next(project._Project__artifacts_storage.values())) as stream:
-            artifact = joblib.load(stream)
+        artifact = cloudpickle.loads(next(project._Project__artifacts_storage.values()))
 
         assert isinstance(artifact, EstimatorReport)
         assert artifact.estimator_name_ == "Ridge"
@@ -243,8 +241,7 @@ class TestProject:
         # Ensure artifacts are persisted
         assert len(project._Project__artifacts_storage) == 1
 
-        with BytesIO(next(project._Project__artifacts_storage.values())) as stream:
-            artifact = joblib.load(stream)
+        artifact = cloudpickle.loads(next(project._Project__artifacts_storage.values()))
 
         assert isinstance(artifact, CrossValidationReport)
         assert artifact.estimator_name_ == cv_regression.estimator_name_
