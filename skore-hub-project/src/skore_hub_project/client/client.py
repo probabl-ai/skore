@@ -1,10 +1,10 @@
 """Client exchanging with ``skore hub``."""
 
-import importlib.metadata
-import importlib.util
-import json
 from contextlib import suppress
 from http import HTTPStatus
+from importlib.metadata import version
+from importlib.util import find_spec
+from json import dumps
 from logging import getLogger
 from time import sleep
 from typing import Any, Final
@@ -26,34 +26,40 @@ from httpx._types import HeaderTypes
 from skore_hub_project.authentication.uri import URI
 
 logger = getLogger(__name__)
-JUPYTERLITE = importlib.util.find_spec("pyodide") is not None
+JUPYTERLITE = find_spec("pyodide") is not None
 
 
 if JUPYTERLITE:
     from functools import partialmethod
 
-    from httpx import BaseTransport, Response
-    from pyodide.http import pyxhr
+    from httpx import BaseTransport
+    from js import XMLHttpRequest
+    from pyodide.http.pyxhr import XHRResponse
 
     class JupyterliteTransport(BaseTransport):
         def handle_request(self, request):
-            send = getattr(pyxhr, request.method.lower())
-            response = send(
-                request.url,
-                headers=request.headers,
-                data=request.content,
-            )
+            req = XMLHttpRequest.new()
+            req.open(request.method.upper(), str(request.url), False)
+            req.withCredentials = True
+
+            for name, value in request.headers.items():
+                if name.lower() == "host":
+                    continue
+                req.setRequestHeader(name, value)
+
+            req.send(request.content)
+
+            xhr = XHRResponse(req)
 
             return Response(
-                status_code=response.status_code,
-                headers=response.headers,
-                content=response.content,
+                status_code=xhr.status_code,
+                headers=xhr.headers,
+                content=xhr.content,
                 request=request,
             )
 
     HTTPXClient.__init__ = partialmethod(
-        HTTPXClient.__init__,
-        transport=JupyterliteTransport(),
+        HTTPXClient.__init__, transport=JupyterliteTransport()
     )
 
 
@@ -157,7 +163,7 @@ class Client(HTTPXClient):
         )
 
         with suppress(Exception):
-            logger.debug(f"{message}\n{json.dumps(response.json(), indent=4)}")
+            logger.debug(f"{message}\n{dumps(response.json(), indent=4)}")
             message += f": {response.json()['message']}"
 
         raise HTTPStatusError(message, request=response.request, response=response)
@@ -181,7 +187,7 @@ def __semver(version: str) -> str | None:
     return version.replace("rc", "-rc.")
 
 
-PACKAGE_SEMVER = __semver(importlib.metadata.version("skore-hub-project"))
+PACKAGE_SEMVER = __semver(version("skore-hub-project"))
 
 
 class HUBClient(Client):
