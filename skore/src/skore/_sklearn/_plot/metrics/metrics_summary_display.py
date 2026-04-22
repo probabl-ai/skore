@@ -418,10 +418,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             df = pd.concat(
                 [
                     MetricsSummaryDisplay._frame_cross_validation(
-                        est,
-                        aggregate=aggregate,
-                        favorability=True,
-                        flat_index=False,
+                        est, aggregate=aggregate, favorability=True, flat_index=False
                     )
                     for _, est in df.groupby("estimator_name", sort=False)
                 ],
