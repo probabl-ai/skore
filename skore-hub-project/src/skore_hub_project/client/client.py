@@ -1,6 +1,7 @@
 """Client exchanging with ``skore hub``."""
 
 import importlib.metadata
+import importlib.util
 import json
 from contextlib import suppress
 from http import HTTPStatus
@@ -25,6 +26,35 @@ from httpx._types import HeaderTypes
 from skore_hub_project.authentication.uri import URI
 
 logger = getLogger(__name__)
+JUPYTERLITE = importlib.util.find_spec("pyodide") is not None
+
+
+if JUPYTERLITE:
+    from functools import partialmethod
+
+    from httpx import BaseTransport, Response
+    from pyodide.http import pyxhr
+
+    class JupyterliteTransport(BaseTransport):
+        def handle_request(self, request):
+            send = getattr(pyxhr, request.method.lower())
+            response = send(
+                request.url,
+                headers=request.headers,
+                data=request.content,
+            )
+
+            return Response(
+                status_code=response.status_code,
+                headers=response.headers,
+                content=response.content,
+                request=request,
+            )
+
+    HTTPXClient.__init__ = partialmethod(
+        HTTPXClient.__init__,
+        transport=JupyterliteTransport(),
+    )
 
 
 class Client(HTTPXClient):
@@ -167,16 +197,17 @@ class HUBClient(Client):
         """Execute request with authorization."""
         from skore_hub_project.authentication.login import credentials
 
-        if credentials is None:
+        headers = Headers(headers)
+
+        if credentials is not None:  # User is authenticated via API key or bearer token
+            headers.update(credentials())
+        elif JUPYTERLITE:  # User is authenticated via cookies
+            pass
+        else:  # User is not authenticated
             raise RuntimeError(
                 "You are not logged in. "
                 "Please call the `skore.login()` function at the top of your script."
             )
-
-        headers = Headers(headers)
-
-        # Overload headers with credentials
-        headers.update(credentials())
 
         # Overload headers with package semantic versioning
         if PACKAGE_SEMVER:
