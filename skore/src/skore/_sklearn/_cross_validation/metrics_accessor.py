@@ -370,11 +370,11 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.precision()
-                                LogisticRegression
-                                                mean       std
-        Metric    Label / Average
-        Precision 0                         0.93...  0.04...
-                  1                         0.94...  0.02...
+                LogisticRegression
+                              mean       std
+        Metric    Label
+        Precision 0               0.93...  0.04...
+                  1               0.94...  0.02...
         """
         return self._metric(
             "precision", data_source=data_source, average=average
@@ -449,11 +449,11 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.recall()
-                            LogisticRegression
-                                            mean       std
-        Metric Label / Average
-        Recall 0                         0.91...  0.04...
-               1                         0.96...  0.02...
+             LogisticRegression
+                           mean       std
+        Metric Label
+        Recall 0               0.91...  0.04...
+               1               0.96...  0.02...
         """
         return self._metric("recall", data_source=data_source, average=average).frame(
             aggregate=aggregate, flat_index=flat_index

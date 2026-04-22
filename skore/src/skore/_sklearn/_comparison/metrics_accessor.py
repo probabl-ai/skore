@@ -172,10 +172,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
         >>> report.metrics.summarize().frame()
-        Estimator                            LogisticRegression_1  LogisticRegression_2
-        Metric              Label / Average
+        Estimator                  LogisticRegression_1  LogisticRegression_2
+        Metric              Label
         ...
-        Mean Absolute Error                                   ...                   ...
+        Mean Absolute Error                    ...                   ...
         """
         for report in self._parent.reports_.values():
             report.metrics.add(
@@ -371,10 +371,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
         >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.precision()
-        Estimator                    LogisticRegression_1  LogisticRegression_2
-        Metric      Label / Average
-        Precision                 0               0.90...               0.90...
-                                  1               0.98...               0.98...
+        Estimator        LogisticRegression_1  LogisticRegression_2
+        Metric    Label
+        Precision 0                  0.90...              0.90...
+                  1                  0.98...              0.98...
         """
         return self._metric(
             "precision", data_source=data_source, average=average
@@ -449,10 +449,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
         >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.recall()
-        Estimator                    LogisticRegression_1  LogisticRegression_2
-        Metric      Label / Average
-        Recall                    0              0.978...              0.978...
-                                  1              0.925...              0.925...
+        Estimator     LogisticRegression_1  LogisticRegression_2
+        Metric Label
+        Recall 0                  0.978...              0.978...
+               1                  0.925...              0.925...
         """
         return self._metric("recall", data_source=data_source, average=average).frame(
             aggregate=aggregate,
