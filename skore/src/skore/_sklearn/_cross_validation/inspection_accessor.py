@@ -53,7 +53,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         3  Feature #2            17.1...            0.0...
         >>> display.plot() # shows plot
         """
-        self._parent._inspection_accessed = True
         return CoefficientsDisplay(
             coefficients=pd.concat(
                 [
@@ -240,7 +239,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """  # noqa: E501
-        self._parent._inspection_accessed = True
         if seed is not None and not isinstance(seed, int):
             raise ValueError(f"seed must be an integer or None; got {type(seed)}")
 
@@ -298,7 +296,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         ...
         >>> display.plot() # shows plot
         """
-        self._parent._inspection_accessed = True
         return ImpurityDecreaseDisplay(
             importances=pd.concat(
                 [

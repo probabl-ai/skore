@@ -61,7 +61,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         10  Feature #9      102.2...
         >>> display.plot() # shows plot
         """
-        self._parent._inspection_accessed = True
         return CoefficientsDisplay._compute_data_for_display(
             estimator=self._parent.estimator_,
             name=self._parent.estimator_name_,
@@ -101,7 +100,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         3  Feature #3     0.48...
         4  Feature #4     0.00...
         """
-        self._parent._inspection_accessed = True
         return ImpurityDecreaseDisplay._compute_data_for_display(
             estimator=self._parent.estimator_,
             name=self._parent.estimator_name_,
@@ -275,7 +273,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -----
         Even if pipeline components output sparse arrays, these will be made dense.
         """
-        self._parent._inspection_accessed = True
         if self._parent._initialized_with_data_op:
             raise TypeError(
                 "Permutation importance is not yet supported for skrub dataops."
