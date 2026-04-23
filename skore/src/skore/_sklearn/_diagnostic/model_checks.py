@@ -81,6 +81,7 @@ class CheckOverfitting(Check):
     title = "Potential overfitting"
     report_type = "estimator"
     docs_url = "skd001-overfitting"
+    severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         report_data, _baseline_data = _get_metrics_data(report)
@@ -118,6 +119,7 @@ class CheckUnderfitting(Check):
     title = "Potential underfitting"
     report_type = "estimator"
     docs_url = "skd002-underfitting"
+    severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         report_data, baseline_data = _get_metrics_data(report)
@@ -161,6 +163,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
     title = "Inconsistent performance across splits"
     report_type = "cross-validation"
     docs_url = "skd003-inconsistent_performance"
+    severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._cross_validation.report import CrossValidationReport
@@ -201,6 +204,7 @@ class CheckHighClassImbalance(Check):
     title = "High class imbalance"
     report_type = "estimator"
     docs_url = "skd004-high_class_imbalance"
+    severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
@@ -239,6 +243,7 @@ class CheckUnderrepresentedClasses(Check):
     title = "Underrepresented classes"
     report_type = "estimator"
     docs_url = "skd005-underrepresented_classes"
+    severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport

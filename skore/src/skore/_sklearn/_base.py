@@ -32,57 +32,64 @@ class _BaseReport(ReportHelpMixin):
         "comparison-cross-validation",
     ]
 
-    def _aggregate_checks(self) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+    def _aggregate_checks(
+        self, ignored_codes: set[CheckCode]
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
         """Aggregate EstimatorReport checks.
 
         Overwritten in CrossValidation and Comparison reports.
 
-        Returns ``(findings, applicable_codes)``.
+        Returns ``(check_results, applicable_codes)``.
         """
         return ({}, set())
 
-    def _get_findings(self) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
-        """Get the findings from the cache or compute them.
+    def _get_results(
+        self, ignored_codes: set[CheckCode]
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+        """Get the check results from the cache or compute them.
 
-        Returns ``(findings, applicable_codes)`` where ``applicable_codes``
+        Parameters
+        ----------
+        ignored_codes : set of CheckCode
+            Check codes to exclude from the results, e.g. ``{"SKD001"}``.
+
+        Returns ``(check_results, applicable_codes)`` where ``applicable_codes``
         contains the codes of the checks that actually ran on the report,
-        i.e. those that did not raise :class:`CheckNotApplicable`.
+        i.e. those that did not raise :class:`CheckNotApplicable` and are not
+        in the ``ignored_codes`` set.
         """
-        if not hasattr(self, "_findings_cache"):
-            self._findings_cache: dict[CheckCode, dict] = {}
+        if not hasattr(self, "_check_results_cache"):
+            self._check_results_cache: dict[CheckCode, dict] = {}
         if not hasattr(self, "_applicable_codes"):
             self._applicable_codes: set[CheckCode] = set()
-        if not hasattr(self, "_not_applicable_codes"):
-            self._not_applicable_codes: set[CheckCode] = set()
 
         for check in self._checks_registry:
             if (
-                check.report_type == self._report_type
-                and check.code not in self._applicable_codes
-                and check.code not in self._not_applicable_codes
+                check.report_type != self._report_type
+                or check.code in self._check_results_cache
+                or check.code in ignored_codes
             ):
-                try:
-                    explanation = check.check_function(self)
-                except CheckNotApplicable:
-                    self._not_applicable_codes.add(check.code)
-                    continue
-                if explanation:
-                    self._findings_cache[check.code] = {
-                        "title": check.title,
-                        "docs_url": check.docs_url,
-                        "explanation": explanation,
-                        "severity": getattr(check, "severity", "issue"),
-                    }
+                continue
+            try:
+                explanation = check.check_function(self)
                 self._applicable_codes.add(check.code)
+            except CheckNotApplicable:
+                explanation = None
+            self._check_results_cache[check.code] = {
+                "title": check.title,
+                "docs_url": check.docs_url,
+                "explanation": explanation,
+                "severity": getattr(check, "severity", "issue"),
+            }
 
         if "cross-validation" in self._report_type or "comparison" in self._report_type:
-            agg_findings, agg_applicable = self._aggregate_checks()
+            agg_check_results, agg_applicable = self._aggregate_checks(ignored_codes)
             return (
-                self._findings_cache | agg_findings,
+                self._check_results_cache | agg_check_results,
                 self._applicable_codes | agg_applicable,
             )
 
-        return self._findings_cache, self._applicable_codes
+        return self._check_results_cache, self._applicable_codes
 
     def diagnose(
         self,
@@ -104,7 +111,7 @@ class _BaseReport(ReportHelpMixin):
         -------
         DiagnosticDisplay
             A display object with an HTML representation organized as three
-            tabs (``Issues``, ``Tips``, ``Passed``). The full list of findings
+            tabs (``Issues``, ``Tips``, ``Passed``). The full list of results
             is accessible via the :meth:`~DiagnosticDisplay.frame` method.
 
         Examples
@@ -123,32 +130,25 @@ class _BaseReport(ReportHelpMixin):
         Diagnostic: 0 issue(s), ... 1 ignored.
         ...
         """
-        ignored: set[CheckCode] = set()
+        ignored_codes: set[CheckCode] = set()
         if ignore:
-            ignored.update(code.strip().upper() for code in ignore if code.strip())
+            ignored_codes.update(
+                code.strip().upper() for code in ignore if code.strip()
+            )
         if configuration.ignore_checks:
-            ignored.update(
+            ignored_codes.update(
                 code.strip().upper()
                 for code in configuration.ignore_checks
                 if code.strip()
             )
-        findings, applicable_codes = self._get_findings()
-        filtered = {
-            code: finding for code, finding in findings.items() if code not in ignored
-        }
-        checks_metadata: dict[CheckCode, dict] = {
-            check.code: {
-                "title": check.title,
-                "docs_url": check.docs_url,
-                "severity": getattr(check, "severity", "issue"),
-            }
-            for check in self._checks_registry
-        }
+        check_results, applicable_codes = self._get_results(ignored_codes)
         return DiagnosticDisplay(
-            findings=filtered,
-            checks_metadata=checks_metadata,
-            applicable_codes=applicable_codes,
-            ignored_codes=ignored,
+            check_results={
+                code: check_result
+                for code, check_result in check_results.items()
+                if code in applicable_codes and code not in ignored_codes
+            },
+            n_ignored_codes=len(ignored_codes),
         )
 
     def add_checks(

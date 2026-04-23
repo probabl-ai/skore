@@ -529,17 +529,20 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
         return report
 
-    def _aggregate_checks(self) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+    def _aggregate_checks(
+        self, ignored_codes: set[CheckCode]
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
         total_splits = len(self.estimator_reports_)
         all_applicable_codes: set[CheckCode] = set()
         positives_by_code: dict[CheckCode, list[dict]] = {}
 
         for estimator_report in self.estimator_reports_:
             estimator_report.add_checks(self._checks_registry)
-            results, applicable_codes = estimator_report._get_findings()
+            results, applicable_codes = estimator_report._get_results(ignored_codes)
             all_applicable_codes |= applicable_codes
             for code, diagnostic in results.items():
-                positives_by_code.setdefault(code, []).append(diagnostic)
+                if diagnostic["explanation"] is not None:
+                    positives_by_code.setdefault(code, []).append(diagnostic)
 
         issues: dict[CheckCode, dict] = {}
         for code in all_applicable_codes:
@@ -552,7 +555,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "explanation": (
                         f"Detected in {len(positives)}/{total_splits} evaluated splits."
                     ),
-                    "severity": ref.get("severity", "issue"),
+                    "severity": ref.get("severity"),
                 }
         return issues, all_applicable_codes
 
@@ -650,10 +653,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        issues, applicable_codes = self._get_findings()
+        diagnostic = self.diagnose()
         diagnostic_html = (
-            f"<div class='report-diagnostic-details'>{len(issues)} "
-            f"issue(s) detected, {len(applicable_codes)} check(s) ran.</div>"
+            "<div class='report-diagnostic-details'>"
+            f"{len(diagnostic.frame(severity='issue'))} issue(s), "
+            f"{len(diagnostic.frame(severity='tip'))} tip(s), "
+            f"{len(diagnostic.frame(severity='passed'))} passed, "
+            f"{diagnostic.n_ignored_codes} ignored."
+            "</div>"
         )
 
         return {

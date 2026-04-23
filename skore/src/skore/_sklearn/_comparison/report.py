@@ -467,26 +467,35 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _aggregate_checks(self) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
-        comparison_issues: dict[CheckCode, dict] = {}
+    def _aggregate_checks(
+        self, ignored_codes: set[CheckCode]
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+        comparison_results: dict[CheckCode, dict] = {}
+        reports_by_code: dict[CheckCode, list[str]] = {}
         all_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
             report.add_checks(self._checks_registry)
-            report_issues, applicable_codes = report._get_findings()
+            report_results, applicable_codes = report._get_results(ignored_codes)
             all_applicable_codes |= applicable_codes
-            for code, issue in report_issues.items():
-                if code in comparison_issues:
-                    comparison_issues[code]["explanation"] = (
-                        f"[{report_name}] " + comparison_issues[code]["explanation"]
-                    )
-                else:
-                    comparison_issues[code] = {
-                        "title": issue["title"],
-                        "docs_url": issue.get("docs_url"),
-                        "explanation": f"[{report_name}] {issue['explanation']}",
-                        "severity": issue.get("severity", "issue"),
-                    }
-        return comparison_issues, all_applicable_codes
+
+            for code, result in report_results.items():
+                comparison_results.setdefault(
+                    code,
+                    {
+                        "title": result["title"],
+                        "docs_url": result.get("docs_url"),
+                        "explanation": None,
+                        "severity": result.get("severity"),
+                    },
+                )
+                if result["explanation"] is not None:
+                    reports_by_code.setdefault(code, []).append(report_name)
+
+        for code, reports in reports_by_code.items():
+            comparison_results[code]["explanation"] = (
+                f"Detected in: {', '.join(f'[{r}]' for r in reports)}."
+            )
+        return comparison_results, all_applicable_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

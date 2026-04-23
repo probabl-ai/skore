@@ -801,10 +801,14 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        issues, applicable_codes = self._get_findings()
+        diagnostic = self.diagnose()
         diagnostic_html = (
-            f"<div class='report-diagnostic-details'>{len(issues)} "
-            f"issue(s) detected, {len(applicable_codes)} check(s) ran.</div>"
+            "<div class='report-diagnostic-details'>"
+            f"{len(diagnostic.frame(severity='issue'))} issue(s), "
+            f"{len(diagnostic.frame(severity='tip'))} tip(s), "
+            f"{len(diagnostic.frame(severity='passed'))} passed, "
+            f"{diagnostic.n_ignored_codes} ignored."
+            "</div>"
         )
 
         return {

@@ -22,19 +22,20 @@ def test_collects_component_issues(report, monkeypatch):
     ):
         monkeypatch.setattr(
             sub_report,
-            "_get_findings",
-            lambda iss=issues: (iss, set(iss)),
+            "_get_results",
+            lambda ignored_codes, iss=issues: (iss, set(iss)),
         )
-    for attr in ("_findings_cache", "_applicable_codes", "_not_applicable_codes"):
+    for attr in ("_check_results_cache", "_applicable_codes"):
         if hasattr(report, attr):
             delattr(report, attr)
 
     results = report.diagnose()
     assert isinstance(results, DiagnosticDisplay)
-    for name, issues in zip(report_names, per_report_issues, strict=True):
-        for code in issues:
-            assert code in results.issues
-            assert f"[{name}]" in results.issues[code]["explanation"]
+    issues = results.frame(severity="issue").set_index("code")
+    for name, per_issues in zip(report_names, per_report_issues, strict=True):
+        for code in per_issues:
+            assert code in issues.index
+            assert f"[{name}]" in issues.loc[code, "explanation"]
 
 
 def test_reuses_component_cached_results(report, monkeypatch):
