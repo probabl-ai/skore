@@ -121,6 +121,8 @@ module = ["skore.*"]
 ignore_missing_imports = true
 module = [
   "joblib.*",
+  "js.*",
+  "pyodide.*",
   "scipy.*",
   "sklearn.*",
 ]
