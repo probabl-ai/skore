@@ -41,7 +41,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
 
     applicable_codes : set of str
         Codes of the checks that were applicable and ran on the report, i.e.
-        those that did not raise :class:`DiagnosticNotApplicable`.
+        those that did not raise :class:`CheckNotApplicable`.
 
     ignored_codes : set of str
         Codes of the checks that were muted via ``ignore=`` or the global

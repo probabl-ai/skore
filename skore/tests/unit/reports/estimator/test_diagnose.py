@@ -10,7 +10,7 @@ from sklearn.tree import DecisionTreeRegressor
 from skore import Check, EstimatorReport, configuration, evaluate
 from skore._sklearn._diagnostic import DiagnosticDisplay
 from skore._sklearn._diagnostic.base import _get_issue_documentation_url
-from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
+from skore._sklearn._diagnostic.utils import CheckNotApplicable
 
 
 def mock_issue(report):
@@ -126,7 +126,7 @@ def test_exception_when_train_data_missing(regression_train_test_split):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     for check in report._checks_registry:
         if check.code in ["SKD001", "SKD002"]:
-            with pytest.raises(DiagnosticNotApplicable):
+            with pytest.raises(CheckNotApplicable):
                 check.check_function(report)
 
 

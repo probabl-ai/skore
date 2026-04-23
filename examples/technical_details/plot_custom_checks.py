@@ -30,7 +30,7 @@ with a report via :meth:`~skore.EstimatorReport.add_checks`.
 # but a cautionary note about the dataset.
 
 import numpy as np
-from skore import Check, DiagnosticNotApplicable
+from skore import Check, CheckNotApplicable
 
 
 class CustomCheck1(Check):
@@ -43,7 +43,7 @@ class CustomCheck1(Check):
     def check_function(self, report):
         """Flag when the number of features exceeds a threshold."""
         if report.X_test is None:
-            raise DiagnosticNotApplicable()
+            raise CheckNotApplicable()
 
         n_features = X.shape[1]
         if n_features > 50:

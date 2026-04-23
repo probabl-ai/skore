@@ -12,7 +12,7 @@ from rich.panel import Panel
 from skore._config import configuration
 from skore._sklearn._diagnostic.base import Check, DiagnosticDisplay
 from skore._sklearn._diagnostic.model_checks import _BUILTIN_CHECKS
-from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
+from skore._sklearn._diagnostic.utils import CheckNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
@@ -46,7 +46,7 @@ class _BaseReport(ReportHelpMixin):
 
         Returns ``(findings, applicable_codes)`` where ``applicable_codes``
         contains the codes of the checks that actually ran on the report,
-        i.e. those that did not raise :class:`DiagnosticNotApplicable`.
+        i.e. those that did not raise :class:`CheckNotApplicable`.
         """
         if not hasattr(self, "_issues_cache"):
             self._issues_cache: dict[str, dict] = {}
@@ -63,7 +63,7 @@ class _BaseReport(ReportHelpMixin):
             ):
                 try:
                     explanation = check.check_function(self)
-                except DiagnosticNotApplicable:
+                except CheckNotApplicable:
                     self._not_applicable_codes.add(check.code)
                     continue
                 if explanation:
