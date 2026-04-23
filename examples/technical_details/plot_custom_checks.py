@@ -22,13 +22,13 @@ with a report via :meth:`~skore.EstimatorReport.add_checks`.
 # :meth:`~skore.EstimatorReport.add_checks`.
 #
 # The `docs_url` argument is optional. When provided as a full URL (starting
-# with ``"https"``), it is used as-is. When it is a plain anchor string
+# with ``"http"``), it is used as-is. When it is a plain anchor string
 # it points to the skore diagnostic user guide. When omitted entirely,
 # no documentation link is shown.
 #
 # We set the severity to "tip" to indicate that this is not an issue to fix,
-# but a cautionary note about the dataset.
-
+# but a cautionary note about the dataset. Severity can also be set to "issue" to
+# indicate when there is an issue to fix.
 import numpy as np
 from skore import Check, CheckNotApplicable
 
@@ -63,7 +63,7 @@ class CustomCheck1(Check):
 # any newly added checks on top of the built-in checks.
 #
 # We can then find the new check in the Tips tab of the diagnostic, along another tip
-# information us that the dataset is not standardized.
+# informing us that the dataset is not standardized.
 from sklearn.linear_model import LinearRegression
 from skore import evaluate
 

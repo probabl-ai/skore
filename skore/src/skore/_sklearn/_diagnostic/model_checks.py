@@ -291,7 +291,7 @@ class CheckUnscaledCoefficients(Check):
             raise CheckNotApplicable()
 
         X = np.concatenate([report.X_train, report.X_test])
-        if not np.allclose(X.mean(axis=0), 0) and not np.allclose(X.std(axis=0), 1):
+        if not (np.allclose(X.mean(axis=0), 0) and np.allclose(X.std(axis=0), 1)):
             return (
                 "The input features do not appear to be standardized. Be careful "
                 "when interpreting the magnitudes of a linear model's coefficients "

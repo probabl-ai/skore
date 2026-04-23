@@ -25,7 +25,7 @@ def test_diagnose_collects_component_issues(report, monkeypatch):
             "_get_findings",
             lambda iss=issues: (iss, set(iss)),
         )
-    for attr in ("_issues_cache", "_applicable_codes", "_not_applicable_codes"):
+    for attr in ("_findings_cache", "_applicable_codes", "_not_applicable_codes"):
         if hasattr(report, attr):
             delattr(report, attr)
 

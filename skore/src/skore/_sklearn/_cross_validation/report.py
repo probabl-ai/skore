@@ -15,6 +15,7 @@ from sklearn.pipeline import Pipeline
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._diagnostic.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -528,10 +529,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
         return report
 
-    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
+    def _aggregate_checks(self) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
         total_splits = len(self.estimator_reports_)
-        all_applicable_codes: set[str] = set()
-        positives_by_code: dict[str, list[dict]] = {}
+        all_applicable_codes: set[CheckCode] = set()
+        positives_by_code: dict[CheckCode, list[dict]] = {}
 
         for estimator_report in self.estimator_reports_:
             estimator_report.add_checks(self._checks_registry)
@@ -540,7 +541,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             for code, diagnostic in results.items():
                 positives_by_code.setdefault(code, []).append(diagnostic)
 
-        issues: dict[str, dict] = {}
+        issues: dict[CheckCode, dict] = {}
         for code in all_applicable_codes:
             positives = positives_by_code.get(code, [])
             if len(positives) > total_splits / 2:

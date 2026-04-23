@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from skore._config import configuration
-from skore._sklearn._diagnostic.base import Check, DiagnosticDisplay
+from skore._sklearn._diagnostic.base import Check, CheckCode, DiagnosticDisplay
 from skore._sklearn._diagnostic.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._diagnostic.utils import CheckNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
@@ -32,7 +32,7 @@ class _BaseReport(ReportHelpMixin):
         "comparison-cross-validation",
     ]
 
-    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
+    def _aggregate_checks(self) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
         """Aggregate EstimatorReport checks.
 
         Overwritten in CrossValidation and Comparison reports.
@@ -41,19 +41,19 @@ class _BaseReport(ReportHelpMixin):
         """
         return ({}, set())
 
-    def _get_findings(self) -> tuple[dict[str, dict], set[str]]:
+    def _get_findings(self) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
         """Get the findings from the cache or compute them.
 
         Returns ``(findings, applicable_codes)`` where ``applicable_codes``
         contains the codes of the checks that actually ran on the report,
         i.e. those that did not raise :class:`CheckNotApplicable`.
         """
-        if not hasattr(self, "_issues_cache"):
-            self._issues_cache: dict[str, dict] = {}
+        if not hasattr(self, "_findings_cache"):
+            self._findings_cache: dict[CheckCode, dict] = {}
         if not hasattr(self, "_applicable_codes"):
-            self._applicable_codes: set[str] = set()
+            self._applicable_codes: set[CheckCode] = set()
         if not hasattr(self, "_not_applicable_codes"):
-            self._not_applicable_codes: set[str] = set()
+            self._not_applicable_codes: set[CheckCode] = set()
 
         for check in self._checks_registry:
             if (
@@ -67,7 +67,7 @@ class _BaseReport(ReportHelpMixin):
                     self._not_applicable_codes.add(check.code)
                     continue
                 if explanation:
-                    self._issues_cache[check.code] = {
+                    self._findings_cache[check.code] = {
                         "title": check.title,
                         "docs_url": check.docs_url,
                         "explanation": explanation,
@@ -78,16 +78,16 @@ class _BaseReport(ReportHelpMixin):
         if "cross-validation" in self._report_type or "comparison" in self._report_type:
             agg_findings, agg_applicable = self._aggregate_checks()
             return (
-                self._issues_cache | agg_findings,
+                self._findings_cache | agg_findings,
                 self._applicable_codes | agg_applicable,
             )
 
-        return self._issues_cache, self._applicable_codes
+        return self._findings_cache, self._applicable_codes
 
     def diagnose(
         self,
         *,
-        ignore: list[str] | tuple[str, ...] | None = None,
+        ignore: list[CheckCode] | tuple[CheckCode, ...] | None = None,
     ) -> DiagnosticDisplay:
         """Run checks and return a diagnostic with detected issues.
 
@@ -123,7 +123,7 @@ class _BaseReport(ReportHelpMixin):
         Diagnostic: 0 issue(s), ... 1 ignored.
         ...
         """
-        ignored: set[str] = set()
+        ignored: set[CheckCode] = set()
         if ignore:
             ignored.update(code.strip().upper() for code in ignore if code.strip())
         if configuration.ignore_checks:
@@ -136,7 +136,7 @@ class _BaseReport(ReportHelpMixin):
         filtered = {
             code: finding for code, finding in findings.items() if code not in ignored
         }
-        checks_metadata: dict[str, dict] = {
+        checks_metadata: dict[CheckCode, dict] = {
             check.code: {
                 "title": check.title,
                 "docs_url": check.docs_url,

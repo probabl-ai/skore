@@ -13,6 +13,7 @@ from numpy.typing import ArrayLike
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
+from skore._sklearn._diagnostic.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
@@ -466,9 +467,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
-        comparison_issues: dict[str, dict] = {}
-        all_applicable_codes: set[str] = set()
+    def _aggregate_checks(self) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+        comparison_issues: dict[CheckCode, dict] = {}
+        all_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
             report.add_checks(self._checks_registry)
             report_issues, applicable_codes = report._get_findings()

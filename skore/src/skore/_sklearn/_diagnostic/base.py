@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 
 Severity = Literal["issue", "tip"]
+CheckCode = str
 
 
 class DiagnosticDisplay(DisplayHelpMixin):
@@ -50,15 +51,15 @@ class DiagnosticDisplay(DisplayHelpMixin):
 
     def __init__(
         self,
-        findings: dict[str, dict],
-        checks_metadata: dict[str, dict],
-        applicable_codes: set[str],
-        ignored_codes: set[str],
+        findings: dict[CheckCode, dict],
+        checks_metadata: dict[CheckCode, dict],
+        applicable_codes: set[CheckCode],
+        ignored_codes: set[CheckCode],
     ) -> None:
-        self._findings = findings
+        self.findings = findings
         self._checks_metadata = checks_metadata
-        self._ignored_codes = set(ignored_codes)
-        self._issues = {
+        self.ignored_codes = set(ignored_codes)
+        self.issues = {
             code: finding
             for code, finding in findings.items()
             if finding.get("severity", "issue") == "issue"
@@ -75,32 +76,14 @@ class DiagnosticDisplay(DisplayHelpMixin):
                 "severity": checks_metadata.get(code, {}).get("severity", "issue"),
             }
             for code in sorted(
-                set(applicable_codes) - set(findings) - self._ignored_codes
+                set(applicable_codes) - set(findings) - self.ignored_codes
             )
         }
         self.header = (
-            f"Diagnostic: {len(self._issues)} issue(s), "
+            f"Diagnostic: {len(self.issues)} issue(s), "
             f"{len(self._tips)} tip(s), {len(self._passed)} passed, "
-            f"{len(self._ignored_codes)} ignored."
+            f"{len(self.ignored_codes)} ignored."
         )
-
-    @property
-    def issues(self) -> dict[str, dict]:
-        """All detected issues, keyed by check code."""
-        return self._issues
-
-    @property
-    def tips(self) -> dict[str, dict]:
-        """All emitted tips, keyed by check code."""
-        return self._tips
-
-    @property
-    def passed(self) -> dict[str, dict]:
-        """Checks that ran, were applicable, and did not report anything.
-
-        Ignored checks are excluded.
-        """
-        return self._passed
 
     def frame(
         self,
@@ -125,7 +108,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
         """
         records: list[dict] = []
         if severity in ("issue", "all"):
-            records.extend(self._records_from(self._issues))
+            records.extend(self._records_from(self.issues))
         if severity in ("tip", "all"):
             records.extend(self._records_from(self._tips))
         if severity in ("passed", "all"):
@@ -136,7 +119,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
         )
 
     @staticmethod
-    def _records_from(findings: dict[str, dict]) -> list[dict]:
+    def _records_from(findings: dict[CheckCode, dict]) -> list[dict]:
         return [
             {
                 "code": code,
@@ -154,7 +137,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
                 "label": "Issues",
                 "entries": [
                     _format_finding_html(code, entry)
-                    for code, entry in self._issues.items()
+                    for code, entry in self.issues.items()
                 ],
                 "empty_message": "No issues were detected in your report!",
             },
@@ -197,7 +180,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
     def __repr__(self) -> str:
         lines = [self.header]
         for label, entries in (
-            ("Issues", self._issues),
+            ("Issues", self.issues),
             ("Tips", self._tips),
             ("Passed", self._passed),
         ):
@@ -213,7 +196,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
                     f"- {_format_finding_message(code, entry)}"
                     for code, entry in entries.items()
                 )
-        if not (self._issues or self._tips or self._passed):
+        if not (self.issues or self._tips or self._passed):
             lines.append("- No checks were run on your report.")
         return "\n".join(lines)
 
@@ -251,7 +234,7 @@ class Check(Protocol):
         without signaling a defect.
     """
 
-    code: str
+    code: CheckCode
     title: str
     report_type: ReportType
     docs_url: str | None
@@ -293,7 +276,7 @@ def _get_issue_documentation_url(issue: dict) -> str | None:
     return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automatic_diagnostic.html#{docs_url}"
 
 
-def _format_finding_message(code: str, finding: dict) -> str:
+def _format_finding_message(code: CheckCode, finding: dict) -> str:
     msg = f"[{code}] {finding['title']}. {finding['explanation']}"
     docs_url = _get_issue_documentation_url(finding)
     if docs_url is not None:
@@ -302,7 +285,7 @@ def _format_finding_message(code: str, finding: dict) -> str:
     return msg
 
 
-def _format_finding_html(code: str, finding: dict) -> str:
+def _format_finding_html(code: CheckCode, finding: dict) -> str:
     escaped_code = escape(code)
     title = escape(finding["title"])
     severity = finding.get("severity", "issue")
