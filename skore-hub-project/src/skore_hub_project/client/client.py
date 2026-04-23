@@ -1,9 +1,12 @@
 """Client exchanging with ``skore hub``."""
 
-import importlib.metadata
-import json
+from __future__ import annotations
+
 from contextlib import suppress
 from http import HTTPStatus
+from importlib.metadata import version
+from importlib.util import find_spec
+from json import dumps
 from logging import getLogger
 from time import sleep
 from typing import Any, Final
@@ -11,6 +14,7 @@ from urllib.parse import urljoin
 
 from httpx import (
     URL,
+    BaseTransport,
     Headers,
     HTTPError,
     HTTPStatusError,
@@ -75,8 +79,13 @@ class Client(HTTPXClient):
         retry_total: int | None = 10,
         retry_backoff_factor: float = 0.25,
         retry_backoff_max: float = 120,
+        transport: BaseTransport | None = None,
     ):
-        super().__init__(follow_redirects=True, timeout=30)
+        super().__init__(
+            follow_redirects=True,
+            timeout=30,
+            transport=transport,
+        )
 
         self.retry = retry
         self.retry_total = retry_total if retry_total is not None else float("inf")
@@ -127,7 +136,7 @@ class Client(HTTPXClient):
         )
 
         with suppress(Exception):
-            logger.debug(f"{message}\n{json.dumps(response.json(), indent=4)}")
+            logger.debug(f"{message}\n{dumps(response.json(), indent=4)}")
             message += f": {response.json()['message']}"
 
         raise HTTPStatusError(message, request=response.request, response=response)
@@ -151,11 +160,58 @@ def __semver(version: str) -> str | None:
     return version.replace("rc", "-rc.")
 
 
-PACKAGE_SEMVER = __semver(importlib.metadata.version("skore-hub-project"))
+PACKAGE_SEMVER = __semver(version("skore-hub-project"))
+JUPYTERLITE = find_spec("pyodide") is not None
 
 
 class HUBClient(Client):
     """Client exchanging with ``skore hub``."""
+
+    def __init__(
+        self,
+        *,
+        retry: bool = True,
+        retry_total: int | None = 10,
+        retry_backoff_factor: float = 0.25,
+        retry_backoff_max: float = 120,
+        transport: BaseTransport | None = None,
+    ):
+        if JUPYTERLITE and (transport is None):
+            from httpx import Request
+            from js import XMLHttpRequest
+            from pyodide.http.pyxhr import XHRResponse
+
+            class JupyterliteTransport(BaseTransport):
+                def handle_request(self, request: Request) -> Response:
+                    req = XMLHttpRequest.new()
+                    req.open(request.method.upper(), str(request.url), False)
+                    req.withCredentials = True
+
+                    for name, value in request.headers.items():
+                        if name.lower() == "host":
+                            continue
+                        req.setRequestHeader(name, value)
+
+                    req.send(request.content)
+
+                    xhr = XHRResponse(req)
+
+                    return Response(
+                        status_code=xhr.status_code,
+                        headers=xhr.headers,
+                        content=xhr.content,
+                        request=request,
+                    )
+
+            transport = JupyterliteTransport()
+
+        super().__init__(
+            retry=retry,
+            retry_total=retry_total,
+            retry_backoff_factor=retry_backoff_factor,
+            retry_backoff_max=retry_backoff_max,
+            transport=transport,
+        )
 
     def request(
         self,
@@ -167,16 +223,17 @@ class HUBClient(Client):
         """Execute request with authorization."""
         from skore_hub_project.authentication.login import credentials
 
-        if credentials is None:
+        headers = Headers(headers)
+
+        if credentials is not None:  # User is authenticated via API key or bearer token
+            headers.update(credentials())
+        elif JUPYTERLITE:  # User is authenticated via cookies
+            pass
+        else:  # User is not authenticated
             raise RuntimeError(
                 "You are not logged in. "
                 "Please call the `skore.login()` function at the top of your script."
             )
-
-        headers = Headers(headers)
-
-        # Overload headers with credentials
-        headers.update(credentials())
 
         # Overload headers with package semantic versioning
         if PACKAGE_SEMVER:
