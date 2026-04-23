@@ -230,3 +230,16 @@ class TestHUBClient:
             respx_mock.calls.last.request.headers["X-Skore-Client"]
             == "skore-hub-project/1.0.0"
         )
+
+    def test_jupyterlite(self, monkeypatch):
+        from sys import modules
+        from unittest.mock import Mock
+
+        monkeypatch.setattr("skore_hub_project.client.client.JUPYTERLITE", True)
+        monkeypatch.setitem(modules, "js", Mock())
+        monkeypatch.setitem(modules, "pyodide", Mock())
+        monkeypatch.setitem(modules, "pyodide.http", Mock())
+        monkeypatch.setitem(modules, "pyodide.http.pyxhr", Mock())
+
+        with HUBClient() as client:
+            assert client._transport.__class__.__name__ == "JupyterliteTransport"
