@@ -9,11 +9,12 @@ from importlib.util import find_spec
 from json import dumps
 from logging import getLogger
 from time import sleep
-from typing import Any, Final, cast
+from typing import Any, Final
 from urllib.parse import urljoin
 
 from httpx import (
     URL,
+    BaseTransport,
     Headers,
     HTTPError,
     HTTPStatusError,
@@ -21,7 +22,6 @@ from httpx import (
     RemoteProtocolError,
     Response,
     TimeoutException,
-    BaseTransport,
 )
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
