@@ -1,15 +1,17 @@
 """Interface definition of the payload used to associate an artifact with a project."""
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from contextlib import AbstractContextManager, nullcontext
 from functools import cached_property
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from skore_hub_project.artifact.upload import upload
+from skore_hub_project.artifact.upload import upload, uploaded
 from skore_hub_project.project.project import Project
-
-Content = str | bytes | None
 
 
 class Artifact(BaseModel, ABC):
@@ -22,54 +24,66 @@ class Artifact(BaseModel, ABC):
         The project to which the artifact's payload must be associated.
     content_type : str
         The content-type of the artifact content.
-
-    Notes
-    -----
-    It triggers the upload of the content of the artifact, in a lazy way. It is uploaded
-    as a file to the ``hub`` artifacts storage.
+    computed : bool
+        True when the artifact content is computed, False otherwise.
+    uploaded : bool
+        True when the artifact is uploaded, False otherwise.
     """
 
-    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     project: Project = Field(repr=False, exclude=True)
     content_type: str = Field(init=False)
-
-    @abstractmethod
-    def content_to_upload(self) -> Content | AbstractContextManager[Content]:
-        """
-        Content of the artifact to upload.
-
-        Example
-        -------
-        You can implement this ``abstractmethod`` to return directly the content:
-
-            def content_to_upload(self) -> str:
-                return "<str>"
-
-        or to yield the content, as a ``contextmanager`` would:
-
-            from contextlib import contextmanager
-
-            @contextmanager
-            def content_to_upload(self) -> Generator[str, None, None]:
-                yield "<str>"
-        """
+    computed: bool = Field(init=False, repr=False, exclude=True, default=False)
 
     @computed_field  # type: ignore[prop-decorator]
-    @cached_property
+    @property
+    @abstractmethod
     def checksum(self) -> str | None:
-        """Checksum used to identify the content of the artifact."""
-        contextmanager = self.content_to_upload()
+        """The checksum used to identify the content of the artifact."""
 
-        if not isinstance(contextmanager, AbstractContextManager):
-            contextmanager = nullcontext(contextmanager)
+    def __del__(self) -> None:  # noqa: D105
+        self.filepath.unlink(True)
 
-        with contextmanager as content:
-            if content is not None:
-                return upload(
-                    project=self.project,
-                    content=content,
-                    content_type=self.content_type,
-                )
+    @cached_property
+    def filepath(self) -> Path:
+        """The temporary filepath used to store the content of the artifact."""
+        with NamedTemporaryFile(mode="w+b", delete=False) as file:
+            return Path(file.name)
 
-        return None
+    @abstractmethod
+    def compute(self) -> None:
+        """Compute and write the content of the artifact in ``artifact.filepath``."""
+
+    @property
+    def uploaded(self) -> bool:
+        assert self.checksum is not None, "`checksum` must not be None"
+
+        if not hasattr(self, "_Artifact__uploaded"):
+            self.__uploaded = uploaded(self.project, self.checksum)
+
+        return self.__uploaded
+
+    def upload(self) -> None:
+        """Upload the artifact."""
+        assert self.checksum is not None, "`checksum` must not be None"
+
+        if not self.uploaded:
+            assert self.computed, "`artifact` must be computed"
+            assert not self.uploaded, "`artifact` must not be uploaded"
+
+            upload(
+                project=self.project,
+                checksum=self.checksum,
+                filepath=self.filepath,
+                content_type=self.content_type,
+            )
+
+        self.__uploaded = True
+
+    def model_dump(self, **kwargs: Any) -> dict[str, Any]:  # noqa: D102
+        assert self.checksum is not None, "`checksum` must not be None"
+        assert self.computed, "`artifact` must be computed"
+        assert self.uploaded, "`artifact` must be uploaded"
+
+        return super().model_dump(**kwargs)

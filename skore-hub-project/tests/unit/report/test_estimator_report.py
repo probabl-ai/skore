@@ -1,7 +1,9 @@
+from unittest.mock import Mock
+
+from httpx import Response
 from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
-from skore import CrossValidationReport, EstimatorReport
 
 from skore_hub_project.artifact.media import (
     ConfusionMatrixDataFrameTest,
@@ -23,7 +25,7 @@ from skore_hub_project.artifact.media import (
     TableReportTest,
     TableReportTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
+from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric import (
     AccuracyTest,
     AccuracyTrain,
@@ -44,31 +46,6 @@ from skore_hub_project.metric import (
 from skore_hub_project.report import EstimatorReportPayload
 
 
-def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
-    import io
-
-    import joblib
-
-    reports = [object] + getattr(object, "estimator_reports_", [])
-    reports_with_cache = [
-        (report, report._cache) for report in reports if hasattr(report, "_cache")
-    ]
-    object.clear_cache()
-
-    try:
-        with io.BytesIO() as stream:
-            joblib.dump(object, stream)
-            pickle_bytes = stream.getvalue()
-    finally:
-        for report, cache in reports_with_cache:
-            report._cache = cache
-
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
-    return pickle_bytes, checksum
-
-
 @fixture
 def payload(project, binary_classification):
     # Force the compute of the permutations
@@ -86,25 +63,38 @@ def payload(project, binary_classification):
 
 class TestEstimatorReportPayload:
     @mark.respx()
-    def test_pickle(
-        self, binary_classification, project, payload, upload_mock, respx_mock
+    def test_pickle(self, tmp_path, payload, project, binary_classification):
+        pickle = payload.pickle
+
+        assert type(pickle) is Pickle
+        assert pickle.project == project
+        assert pickle.report == binary_classification
+        assert pickle.computed
+        assert pickle.uploaded
+
+        # ensure that there is no residual file
+        assert not len(list(tmp_path.iterdir()))
+
+    @mark.respx(assert_all_called=False)
+    def test_pickle_uploaded(
+        self, monkeypatch, payload, project, binary_classification, respx_mock
     ):
-        pickle, checksum = serialize(binary_classification)
+        uploaded = respx_mock.get("/projects/workspace/name/artifacts").mock(
+            Response(201, json=True)
+        )
 
-        # Ensure payload is well constructed
-        assert payload.pickle.checksum == checksum
+        compute, upload = Mock(), Mock()
+        monkeypatch.setattr("skore_hub_project.artifact.pickle.Pickle.compute", compute)
+        monkeypatch.setattr("skore_hub_project.artifact.pickle.Pickle.upload", upload)
 
-        # Ensure payload is well constructed
-        assert payload.pickle.checksum == checksum
+        pickle = payload.pickle
 
-        # ensure `upload` is well called
-        assert upload_mock.called
-        assert not upload_mock.call_args.args
-        assert upload_mock.call_args.kwargs == {
-            "project": project,
-            "content": pickle,
-            "content_type": "application/octet-stream",
-        }
+        assert type(pickle) is Pickle
+        assert pickle.project == project
+        assert pickle.report == binary_classification
+        assert uploaded.called
+        assert not compute.called
+        assert not upload.called
 
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
@@ -148,8 +138,8 @@ class TestEstimatorReportPayload:
             list(map(type, payload.metrics))
 
     @mark.respx()
-    def test_medias(self, payload):
-        assert list(map(type, payload.medias)) == [
+    def test_medias(self, tmp_path, payload, project, binary_classification):
+        types = [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
             ConfusionMatrixSVGTest,
@@ -170,9 +160,110 @@ class TestEstimatorReportPayload:
             TableReportTrain,
         ]
 
+        medias = payload.medias
+
+        assert isinstance(medias, list)
+        assert len(medias) == len(types)
+
+        for i, media in enumerate(medias):
+            assert type(media) is types[i]
+            assert media.project == project
+            assert media.report == binary_classification
+            assert media.computed
+            assert media.uploaded
+
+        # ensure that there is no residual file
+        assert not len(list(tmp_path.iterdir()))
+
+    @mark.respx(assert_all_called=False)
+    def test_medias_none(self, monkeypatch, payload):
+        types = [
+            ConfusionMatrixDataFrameTest,
+            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixSVGTest,
+            ConfusionMatrixSVGTrain,
+            EstimatorHtmlRepr,
+            ImpurityDecrease,
+            PermutationImportanceTest,
+            PermutationImportanceTrain,
+            PrecisionRecallDataFrameTest,
+            PrecisionRecallDataFrameTrain,
+            PrecisionRecallSVGTest,
+            PrecisionRecallSVGTrain,
+            RocDataFrameTest,
+            RocDataFrameTrain,
+            RocSVGTest,
+            RocSVGTrain,
+            TableReportTest,
+            TableReportTrain,
+        ]
+
+        compute, upload = Mock(), Mock()
+
+        for cls in types:
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.checksum", None)
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.compute", compute)
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.upload", upload)
+
+        medias = payload.medias
+
+        assert isinstance(medias, list)
+        assert not medias
+        assert not compute.called
+        assert not upload.called
+
+    @mark.respx(assert_all_called=False)
+    def test_medias_uploaded(
+        self, monkeypatch, payload, project, binary_classification, respx_mock
+    ):
+        uploaded = respx_mock.get("/projects/workspace/name/artifacts").mock(
+            Response(201, json=True)
+        )
+
+        types = [
+            ConfusionMatrixDataFrameTest,
+            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixSVGTest,
+            ConfusionMatrixSVGTrain,
+            EstimatorHtmlRepr,
+            ImpurityDecrease,
+            PermutationImportanceTest,
+            PermutationImportanceTrain,
+            PrecisionRecallDataFrameTest,
+            PrecisionRecallDataFrameTrain,
+            PrecisionRecallSVGTest,
+            PrecisionRecallSVGTrain,
+            RocDataFrameTest,
+            RocDataFrameTrain,
+            RocSVGTest,
+            RocSVGTrain,
+            TableReportTest,
+            TableReportTrain,
+        ]
+
+        compute, upload = Mock(), Mock()
+
+        for cls in types:
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.checksum", "checksum")
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.compute", compute)
+            monkeypatch.setattr(f"{cls.__module__}.{cls.__name__}.upload", upload)
+
+        medias = payload.medias
+
+        assert isinstance(medias, list)
+        assert len(medias) == len(types)
+        assert uploaded.called
+        assert not compute.called
+        assert not upload.called
+
+        for i, media in enumerate(medias):
+            assert type(media) is types[i]
+            assert media.project == project
+            assert media.report == binary_classification
+
     @mark.respx()
     def test_model_dump(self, binary_classification, payload):
-        _, checksum = serialize(binary_classification)
+        checksum = f"skore-EstimatorReport-{binary_classification.id}"
 
         payload_dict = payload.model_dump()
 

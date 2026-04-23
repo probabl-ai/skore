@@ -3,6 +3,7 @@ from io import BytesIO
 from matplotlib import pyplot as plt
 from pydantic import ValidationError
 from pytest import mark, param, raises
+from skore_hub_project.artifact.serializer import Serializer
 
 from skore_hub_project.artifact.media import (
     ConfusionMatrixDataFrameTest,
@@ -23,7 +24,6 @@ from skore_hub_project.artifact.media import (
     RocSVGTrain,
 )
 from skore_hub_project.artifact.media.performance import PerformanceDataFrame
-from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.json import dumps
 
 

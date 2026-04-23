@@ -20,14 +20,19 @@ class PerformanceSVG(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["image/svg+xml"] = "image/svg+xml"
 
-    def content_to_upload(self) -> bytes | None:  # noqa: D102
+    def compute(self) -> None:  # noqa: D102
+        if self.computed:
+            return
+
+        self.computed = True
+
         try:
             function = cast(
                 "Callable[..., Display]",
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
-            return None
+            return
 
         display = (
             function()
@@ -37,30 +42,35 @@ class PerformanceSVG(Media[Report], ABC):  # noqa: D101
 
         with BytesIO() as stream:
             fig = display.plot()
+
             if fig is None:
                 # NOTE: backward compatibility for when `figure_` was stored as an
                 # attribute in the display object instead of being returned by `plot`.
                 fig = display.figure_
+
             fig.savefig(stream, format="svg", bbox_inches="tight")
             plt.close(fig)
 
-            figure_bytes = stream.getvalue()
-
-        return figure_bytes
+            self.filepath.write_bytes(stream.getvalue())
 
 
 class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
     accessor: ClassVar[str]
     content_type: Literal["application/vnd.dataframe"] = "application/vnd.dataframe"
 
-    def content_to_upload(self) -> bytes | None:  # noqa: D102
+    def compute(self) -> None:  # noqa: D102
+        if self.computed:
+            return
+
+        self.computed = True
+
         try:
             function = cast(
                 "Callable[..., Display]",
                 reduce(getattr, self.accessor.split("."), self.report),
             )
         except AttributeError:
-            return None
+            return
 
         display = (
             function()
@@ -70,8 +80,10 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
 
         frame = display.frame(**self.get_frame_kwargs(display))
 
-        return dumps(
-            frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+        self.filepath.write_bytes(
+            dumps(
+                frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+            )
         )
 
     @staticmethod

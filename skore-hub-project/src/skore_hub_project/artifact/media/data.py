@@ -14,7 +14,12 @@ class TableReport(Media[Report]):  # noqa: D101
         "application/vnd.skrub.table-report.v1+json"
     )
 
-    def content_to_upload(self) -> bytes:  # noqa: D102
+    def compute(self) -> None:  # noqa: D102
+        if self.computed:
+            return
+
+        self.computed = True
+
         display = (
             self.report.data.analyze()
             if self.data_source is None
@@ -31,7 +36,7 @@ class TableReport(Media[Report]):  # noqa: D101
         # Remove irrelevant information
         del table_report["sample_table"]
 
-        return dumps(table_report)
+        self.filepath.write_bytes(dumps(table_report))
 
 
 class TableReportTrain(TableReport[EstimatorReport]):  # noqa: D101

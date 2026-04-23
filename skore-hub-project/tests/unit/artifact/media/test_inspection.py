@@ -3,6 +3,7 @@ from functools import partialmethod
 
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
+from skore_hub_project.artifact.serializer import Serializer
 
 from skore_hub_project.artifact.media import (
     Coefficients,
@@ -10,7 +11,6 @@ from skore_hub_project.artifact.media import (
     PermutationImportanceTest,
     PermutationImportanceTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
 from skore_hub_project.json import dumps
 
 

@@ -152,11 +152,17 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
                 ),
                 total=len(self.MEDIAS),
             ):
-                payload = media_cls(project=self.project, report=self.report)
+                media = media_cls(project=self.project, report=self.report)
 
-                # NOTE: Accessing `payload.checksum` lazily uploads the artifact.
-                if payload.checksum is not None:
-                    payloads.append(payload)
+                try:
+                    if media.checksum is not None:
+                        if not media.uploaded:
+                            media.compute()
+                            media.upload()
+
+                        payloads.append(media)
+                finally:
+                    media.filepath.unlink(missing_ok=True)
 
                 progress.refresh()
 
@@ -172,4 +178,13 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         artifact storage. It is based on its ``joblib`` serialization and mainly used to
         retrieve it from the artifacts storage.
         """
-        return Pickle(project=self.project, report=self.report)
+        pickle = Pickle(project=self.project, report=self.report)
+
+        try:
+            if not pickle.uploaded:
+                pickle.compute()
+                pickle.upload()
+        finally:
+            pickle.filepath.unlink(missing_ok=True)
+
+        return pickle
