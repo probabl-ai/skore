@@ -1,5 +1,7 @@
 """Client exchanging with ``skore hub``."""
 
+from __future__ import annotations
+
 from contextlib import suppress
 from http import HTTPStatus
 from importlib.metadata import version
@@ -7,7 +9,7 @@ from importlib.util import find_spec
 from json import dumps
 from logging import getLogger
 from time import sleep
-from typing import Any, Final
+from typing import Any, Final, cast
 from urllib.parse import urljoin
 
 from httpx import (
@@ -165,6 +167,52 @@ JUPYTERLITE = find_spec("pyodide") is not None
 class HUBClient(Client):
     """Client exchanging with ``skore hub``."""
 
+    def __init__(
+        self,
+        *,
+        retry: bool = True,
+        retry_total: int | None = 10,
+        retry_backoff_factor: float = 0.25,
+        retry_backoff_max: float = 120,
+        transport: BaseTransport | None = None,
+    ):
+        if JUPYTERLITE and (transport is None):
+            from httpx import Request
+            from js import XMLHttpRequest
+            from pyodide.http.pyxhr import XHRResponse
+
+            class JupyterliteTransport(BaseTransport):
+                def handle_request(self, request: Request) -> Response:
+                    req = XMLHttpRequest.new()
+                    req.open(request.method.upper(), str(request.url), False)
+                    req.withCredentials = True
+
+                    for name, value in request.headers.items():
+                        if name.lower() == "host":
+                            continue
+                        req.setRequestHeader(name, value)
+
+                    req.send(request.content)
+
+                    xhr = XHRResponse(req)
+
+                    return Response(
+                        status_code=xhr.status_code,
+                        headers=xhr.headers,
+                        content=xhr.content,
+                        request=request,
+                    )
+
+            transport = JupyterliteTransport()
+
+        super().__init__(
+            retry=retry,
+            retry_total=retry_total,
+            retry_backoff_factor=retry_backoff_factor,
+            retry_backoff_max=retry_backoff_max,
+            transport=transport,
+        )
+
     def request(
         self,
         method: str,
@@ -195,35 +243,3 @@ class HUBClient(Client):
         url = urljoin(URI(), str(url))
 
         return super().request(method=method, url=url, headers=headers, **kwargs)
-
-
-if JUPYTERLITE:
-    from functools import partial
-
-    from httpx import Request
-    from js import XMLHttpRequest
-    from pyodide.http.pyxhr import XHRResponse
-
-    class __JupyterliteTransport(BaseTransport):
-        def handle_request(self, request: Request) -> Response:
-            req = XMLHttpRequest.new()
-            req.open(request.method.upper(), str(request.url), False)
-            req.withCredentials = True
-
-            for name, value in request.headers.items():
-                if name.lower() == "host":
-                    continue
-                req.setRequestHeader(name, value)
-
-            req.send(request.content)
-
-            xhr = XHRResponse(req)
-
-            return Response(
-                status_code=xhr.status_code,
-                headers=xhr.headers,
-                content=xhr.content,
-                request=request,
-            )
-
-    HUBClient = partial(HUBClient, transport=__JupyterliteTransport())
