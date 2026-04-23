@@ -1,37 +1,26 @@
+{% set report_tabs = [
+    {"label": issue_label, "help_variant": "text", "help_text": "Modeling problems flagged by applicable checks."},
+    {"label": tip_label, "help_variant": "text", "help_text": "Cautions to keep in mind when interpreting the results."},
+    {"label": passed_label, "help_variant": "text", "help_text": "Checks that ran on your report without flagging anything."},
+] %}
 <div class="container">
-    <header class="title">{{ header }}</header>
+    <header class="title">{{ header | e }}</header>
     <div class="report-tabset">
-{% for bucket in buckets %}
-        <input type="radio" name="{{ container_id }}-report-tab" id="{{ container_id }}-report-tab-{{ loop.index0 }}" class="report-tab-input"{% if loop.index0 == first_non_empty %} checked{% endif %}>
-{% endfor %}
-        <div class="report-tablist-row">
-            <div class="report-tablist" role="tablist">
-{% for bucket in buckets %}
-                <div class="report-tab-item">
-                    <label class="report-tab-label" for="{{ container_id }}-report-tab-{{ loop.index0 }}" role="presentation">{{ bucket.label }} ({{ bucket.entries | length }})</label>
-                </div>
-{% endfor %}
-            </div>
-        </div>
+        {% include "_report_tabset_chrome.html.j2" %}
         <div class="report-tab-panels">
-{% for bucket in buckets %}
             <div class="report-tab-panel">
-                <div class="report-section report-diagnostic">
-{% if bucket.entries %}
-{% if bucket.intro %}
-                    <p class="report-diagnostic-intro">{{ bucket.intro }}</p>
-{% endif %}
-                    <ul class="report-diagnostic-list">
-{% for entry in bucket.entries %}
-                        <li>{{ entry | safe }}</li>
-{% endfor %}
-                    </ul>
-{% else %}
-                    <p class="report-diagnostic-empty">{{ bucket.empty_message }}</p>
-{% endif %}
-                </div>
+                <div class="report-section report-diagnostic">{{ issue_html | safe }}</div>
             </div>
-{% endfor %}
+            <div class="report-tab-panel">
+                <div class="report-section report-diagnostic">{{ tip_html | safe }}</div>
+            </div>
+            <div class="report-tab-panel">
+                <div class="report-section report-diagnostic">{{ passed_html | safe }}</div>
+            </div>
         </div>
     </div>
+    <p class="report-hint-note" role="note">
+        Mute a check by passing its code to <code>ignore</code>,
+        e.g. <code>.diagnose(ignore=['SKD001'])</code>.
+    </p>
 </div>

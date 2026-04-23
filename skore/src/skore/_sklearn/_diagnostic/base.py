@@ -20,6 +20,13 @@ if TYPE_CHECKING:
 CheckCode = str
 
 
+_TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str]] = [
+    ("Issues", "issue", "No issues were detected in your report!"),
+    ("Tips", "tip", "No tips were emitted for your report."),
+    ("Passed", "passed", "No checks ran on your report."),
+]
+
+
 class DiagnosticDisplay(DisplayHelpMixin):
     """Display for the diagnostic returned by :meth:`Report.diagnose`.
 
@@ -104,45 +111,36 @@ class DiagnosticDisplay(DisplayHelpMixin):
                 raise ValueError(f"Invalid severity: {severity}")
 
     def _repr_html_(self) -> str:
-        buckets = [
-            {
-                "label": "Issues",
-                "entries": [
-                    _format_finding_html(row)
-                    for row in _records(self.frame(severity="issue"))
-                ],
-                "empty_message": "No issues were detected in your report!",
-            },
-            {
-                "label": "Tips",
-                "entries": [
-                    _format_finding_html(row)
-                    for row in _records(self.frame(severity="tip"))
-                ],
-                "empty_message": "No tips were emitted for your report.",
-            },
-            {
-                "label": "Passed",
-                "intro": (
-                    "The following checks ran on your report without finding any issue:"
-                ),
-                "entries": [
-                    _format_finding_html(row)
-                    for row in _records(self.frame(severity="passed"))
-                ],
-                "empty_message": "No checks ran on your report.",
-            },
-        ]
-        first_non_empty = next(
-            (i for i, bucket in enumerate(buckets) if bucket["entries"]), 0
-        )
+        fragments: dict[str, str] = {}
+        for label, severity, empty_message in _TAB_SPECS:
+            df = self.frame(severity=severity)
+            fragments[f"{severity}_label"] = f"{label} ({len(df)})"
+            if len(df):
+                items = []
+                for row in df.itertuples():
+                    line = f"[{escape(row.code)}] {escape(row.title)}."
+                    if pd.notna(row.explanation):
+                        line += f" {escape(row.explanation)}"
+                    if pd.notna(row.documentation_url):
+                        line += (
+                            f" Read more about this"
+                            f' <a href="{escape(row.documentation_url, quote=True)}"'
+                            ' target="_blank" rel="noopener noreferrer">here</a>.'
+                        )
+                    items.append(f"<li>{line}</li>")
+                fragments[f"{severity}_html"] = (
+                    "<ul class='report-diagnostic-list'>" + "".join(items) + "</ul>"
+                )
+            else:
+                fragments[f"{severity}_html"] = (
+                    f"<p class='report-diagnostic-empty'>{escape(empty_message)}</p>"
+                )
         return render_template(
             "diagnostic_display.html.j2",
             {
                 "container_id": f"skore-diagnostic-{uuid4().hex[:8]}",
                 "header": self.header,
-                "buckets": buckets,
-                "first_non_empty": first_non_empty,
+                **fragments,
             },
         )
 
@@ -150,24 +148,23 @@ class DiagnosticDisplay(DisplayHelpMixin):
         return {"text/plain": self.__repr__(), "text/html": self._repr_html_()}
 
     def __repr__(self) -> str:
+        if self._check_results.empty:
+            return self.header + "\nAll checks were either ignored or not applicable."
         lines = [self.header]
-        for label, severity in (
-            ("Issues", "issue"),
-            ("Tips", "tip"),
-            ("Passed", "passed"),
-        ):
-            rows = _records(
-                self.frame(severity=cast(Literal["issue", "tip", "passed"], severity))
-            )
-            if not rows:
+        for label, severity, _ in _TAB_SPECS:
+            df = self.frame(severity=cast(Literal["issue", "tip", "passed"], severity))
+            if df.empty:
                 continue
             lines.append(f"{label}:")
-            if label == "Passed":
-                lines.extend(f"- [{row['code']}] {row['title']}" for row in rows)
+            if severity == "passed":
+                lines.extend(f"- [{row.code}] {row.title}" for row in df.itertuples())
             else:
-                lines.extend(f"- {_format_finding_message(row)}" for row in rows)
-        if self._check_results.empty:
-            lines.append("- No checks were run on your report.")
+                for row in df.itertuples():
+                    msg = f"- [{row.code}] {row.title}. {row.explanation}"
+                    if pd.notna(row.documentation_url):
+                        msg += f" Read more about this here: {row.documentation_url}."
+                    lines.append(msg)
+        lines.append("Mute a check with .diagnose(ignore=['<code>']).")
         return "\n".join(lines)
 
 
@@ -226,14 +223,6 @@ class Check(Protocol):
         """
 
 
-def _records(df: pd.DataFrame) -> list[dict]:
-    """Return DataFrame rows as dicts, restoring ``None`` in place of ``NaN``."""
-    return [
-        {k: (None if pd.isna(v) else v) for k, v in row.items()}
-        for row in df.to_dict("records")
-    ]
-
-
 def _get_issue_documentation_url(issue: dict) -> str | None:
     docs_url = issue.get("docs_url")
     if docs_url is None:
@@ -251,30 +240,3 @@ def _get_issue_documentation_url(issue: dict) -> str | None:
     except PackageNotFoundError:
         url_version = "dev"
     return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automatic_diagnostic.html#{docs_url}"
-
-
-def _format_finding_message(row: dict) -> str:
-    msg = f"[{row['code']}] {row['title']}. {row['explanation']}"
-    if row["documentation_url"] is not None:
-        msg += f" Read more about this here: {row['documentation_url']}."
-    msg += f" Mute with `ignore=['{row['code']}']`."
-    return msg
-
-
-def _format_finding_html(row: dict) -> str:
-    escaped_code = escape(row["code"])
-    title = escape(row["title"])
-    if row["explanation"]:
-        explanation = escape(row["explanation"])
-        msg = f"[{escaped_code}] {title}. {explanation}"
-    else:
-        msg = f"[{escaped_code}] {title}."
-    if row["documentation_url"] is not None:
-        escaped_url = escape(row["documentation_url"], quote=True)
-        msg += (
-            f' Read more about this <a href="{escaped_url}" target="_blank"'
-            ' rel="noopener noreferrer">here</a>.'
-        )
-    if row["severity"] in ("issue", "tip"):
-        msg += f" Mute with <code>ignore=['{escaped_code}']</code>."
-    return msg

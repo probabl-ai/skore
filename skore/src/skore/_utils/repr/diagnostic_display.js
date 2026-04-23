@@ -17,4 +17,10 @@ function skoreInitDiagnosticDisplay(containerId) {
     if (root) {
         applyThemeToReportContainer(root, containerId + "-wrapper");
     }
+
+    shadowRoot.querySelectorAll(".report-tabset .tooltip-text a").forEach((a) => {
+        a.addEventListener("click", (e) => {
+            e.stopPropagation();
+        });
+    });
 }
