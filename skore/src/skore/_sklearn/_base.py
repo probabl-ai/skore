@@ -12,7 +12,7 @@ from rich.panel import Panel
 from skore._config import configuration
 from skore._sklearn._diagnostic.base import Check, DiagnosticDisplay
 from skore._sklearn._diagnostic.model_checks import _BUILTIN_CHECKS
-from skore._sklearn._diagnostic.utils import DiagnosticNotApplicable
+from skore._sklearn._diagnostic.utils import CheckNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
@@ -64,7 +64,7 @@ class _BaseReport(ReportHelpMixin):
                             }
                         )
                     self._checked_codes.add(check.code)
-                except DiagnosticNotApplicable:
+                except CheckNotApplicable:
                     self._checked_codes |= {check.code}
 
         if "cross-validation" in self._report_type or "comparison" in self._report_type:

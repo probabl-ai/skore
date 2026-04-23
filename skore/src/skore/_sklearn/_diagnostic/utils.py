@@ -75,5 +75,5 @@ def detect_outliers_modified_zscore(scores, threshold=3):
     return np.abs(modified_z_scores) > threshold
 
 
-class DiagnosticNotApplicable(Exception):
+class CheckNotApplicable(Exception):
     """Raised when a check cannot run on the given report."""

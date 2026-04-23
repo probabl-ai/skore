@@ -11,7 +11,7 @@ from sklearn.exceptions import UndefinedMetricWarning
 from skore._sklearn._diagnostic.base import Check
 from skore._sklearn._diagnostic.utils import (
     _TIMING_METRICS,
-    DiagnosticNotApplicable,
+    CheckNotApplicable,
     check_score_gap_to_baseline,
     detect_outliers_modified_zscore,
     majority_vote,
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 def _get_metrics_data(report: _BaseReport) -> tuple:
     """Compute report/baseline metrics data for SKD001 and SKD002.
 
-    Raises :class:`DiagnosticNotApplicable` when train+test data is
+    Raises :class:`CheckNotApplicable` when train+test data is
     unavailable.
     """
     # Avoid circular import
@@ -37,7 +37,7 @@ def _get_metrics_data(report: _BaseReport) -> tuple:
         or report.X_test is None
         or report.y_test is None
     ):
-        raise DiagnosticNotApplicable()
+        raise CheckNotApplicable()
 
     baseline_report = EstimatorReport(
         DummyClassifier(strategy="prior")
@@ -73,7 +73,7 @@ class CheckOverfitting(Check):
     """Check for overfitting (SKD001).
 
     Detects significant gaps between train and test scores.
-    Raises :class:`DiagnosticNotApplicable` when train+test data is
+    Raises :class:`CheckNotApplicable` when train+test data is
     unavailable.
     """
 
@@ -110,7 +110,7 @@ class CheckUnderfitting(Check):
     """Check for underfitting (SKD002).
 
     Detects train and test scores close to a dummy baseline.
-    Raises :class:`DiagnosticNotApplicable` when train+test data is
+    Raises :class:`CheckNotApplicable` when train+test data is
     unavailable.
     """
 
@@ -166,7 +166,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
         from skore._sklearn._cross_validation.report import CrossValidationReport
 
         if not isinstance(report, CrossValidationReport):
-            raise DiagnosticNotApplicable()
+            raise CheckNotApplicable()
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UndefinedMetricWarning)
@@ -211,7 +211,7 @@ class CheckHighClassImbalance(Check):
             or report.y_train is None
             or report.y_test is None
         ):
-            raise DiagnosticNotApplicable()
+            raise CheckNotApplicable()
 
         values, counts = np.unique_counts(
             np.concatenate([report.y_train, report.y_test])
@@ -249,7 +249,7 @@ class CheckUnderrepresentedClasses(Check):
             or report.y_train is None
             or report.y_test is None
         ):
-            raise DiagnosticNotApplicable()
+            raise CheckNotApplicable()
 
         values, counts = np.unique_counts(
             np.concatenate([report.y_train, report.y_test])
