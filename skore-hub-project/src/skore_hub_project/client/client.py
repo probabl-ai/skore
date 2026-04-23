@@ -19,6 +19,7 @@ from httpx import (
     RemoteProtocolError,
     Response,
     TimeoutException,
+    BaseTransport,
 )
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
@@ -26,41 +27,6 @@ from httpx._types import HeaderTypes
 from skore_hub_project.authentication.uri import URI
 
 logger = getLogger(__name__)
-JUPYTERLITE = find_spec("pyodide") is not None
-
-
-if JUPYTERLITE:
-    from functools import partialmethod
-
-    from httpx import BaseTransport, Request
-    from js import XMLHttpRequest
-    from pyodide.http.pyxhr import XHRResponse
-
-    class __JupyterliteTransport(BaseTransport):
-        def handle_request(self, request: Request) -> Response:
-            req = XMLHttpRequest.new()
-            req.open(request.method.upper(), str(request.url), False)
-            req.withCredentials = True
-
-            for name, value in request.headers.items():
-                if name.lower() == "host":
-                    continue
-                req.setRequestHeader(name, value)
-
-            req.send(request.content)
-
-            xhr = XHRResponse(req)
-
-            return Response(
-                status_code=xhr.status_code,
-                headers=xhr.headers,
-                content=xhr.content,
-                request=request,
-            )
-
-    HTTPXClient.__init__ = (  # type: ignore[method-assign, assignment]
-        partialmethod(HTTPXClient.__init__, transport=__JupyterliteTransport()),
-    )
 
 
 class Client(HTTPXClient):
@@ -111,8 +77,13 @@ class Client(HTTPXClient):
         retry_total: int | None = 10,
         retry_backoff_factor: float = 0.25,
         retry_backoff_max: float = 120,
+        transport: BaseTransport | None = None,
     ):
-        super().__init__(follow_redirects=True, timeout=30)
+        super().__init__(
+            follow_redirects=True,
+            timeout=30,
+            transport=transport,
+        )
 
         self.retry = retry
         self.retry_total = retry_total if retry_total is not None else float("inf")
@@ -188,6 +159,7 @@ def __semver(version: str) -> str | None:
 
 
 PACKAGE_SEMVER = __semver(version("skore-hub-project"))
+JUPYTERLITE = find_spec("pyodide") is not None
 
 
 class HUBClient(Client):
@@ -223,3 +195,35 @@ class HUBClient(Client):
         url = urljoin(URI(), str(url))
 
         return super().request(method=method, url=url, headers=headers, **kwargs)
+
+
+if JUPYTERLITE:
+    from functools import partial
+
+    from httpx import Request
+    from js import XMLHttpRequest
+    from pyodide.http.pyxhr import XHRResponse
+
+    class __JupyterliteTransport(BaseTransport):
+        def handle_request(self, request: Request) -> Response:
+            req = XMLHttpRequest.new()
+            req.open(request.method.upper(), str(request.url), False)
+            req.withCredentials = True
+
+            for name, value in request.headers.items():
+                if name.lower() == "host":
+                    continue
+                req.setRequestHeader(name, value)
+
+            req.send(request.content)
+
+            xhr = XHRResponse(req)
+
+            return Response(
+                status_code=xhr.status_code,
+                headers=xhr.headers,
+                content=xhr.content,
+                request=request,
+            )
+
+    HUBClient = partial(HUBClient, transport=__JupyterliteTransport())
