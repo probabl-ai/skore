@@ -3,7 +3,7 @@ import pytest
 from skore._sklearn._diagnostic import DiagnosticDisplay
 
 
-def test_diagnose_collects_component_issues(report, monkeypatch):
+def test_collects_component_issues(report, monkeypatch):
     """Check that issues from all component reports are collected."""
     report_names = list(report.reports_)
     per_report_issues = [
@@ -37,7 +37,7 @@ def test_diagnose_collects_component_issues(report, monkeypatch):
             assert f"[{name}]" in results.issues[code]["explanation"]
 
 
-def test_diagnose_reuses_component_cached_results(report, monkeypatch):
+def test_reuses_component_cached_results(report, monkeypatch):
     """Check that check results are cached and reused."""
     report.diagnose()
 

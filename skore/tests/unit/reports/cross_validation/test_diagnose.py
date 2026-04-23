@@ -8,6 +8,12 @@ from sklearn.tree import DecisionTreeRegressor
 from skore import Check, evaluate
 
 
+@pytest.fixture
+def regression_report(regression_data):
+    X, y = regression_data
+    return evaluate(LinearRegression(), X, y, splitter=3)
+
+
 class CVCheck(Check):
     code = "CVCUSTOM"
     title = "CV-level check"
@@ -28,7 +34,7 @@ class EstimatorCheck(Check):
         return "Detected on a single split."
 
 
-def test_diagnose_detects_inconsistent_splits():
+def test_skd003_detects_inconsistent_splits():
     """Check that the inconsistent performance across splits issue is detected."""
     X, y = make_classification(n_samples=400, n_features=5, random_state=0)
     report = evaluate(LogisticRegression(random_state=0), X, y, splitter=5)
@@ -54,7 +60,7 @@ def test_diagnose_detects_inconsistent_splits():
     )
 
 
-def test_diagnose_aggregates_overfitting_across_splits(regression_data):
+def test_skd001_aggregates_overfitting_across_splits(regression_data):
     """Check that the overfitting issue is aggregated across splits."""
     X, y = regression_data
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y, splitter=3)
@@ -63,7 +69,7 @@ def test_diagnose_aggregates_overfitting_across_splits(regression_data):
     assert "3/3 evaluated splits" in result.issues["SKD001"]["explanation"]
 
 
-def test_diagnose_aggregates_underfitting_across_splits(regression_data):
+def test_skd002_aggregates_underfitting_across_splits(regression_data):
     """Check that the underfitting issue is aggregated across splits."""
     X, y = regression_data
     report = evaluate(DummyRegressor(), X, y, splitter=3)
@@ -72,13 +78,11 @@ def test_diagnose_aggregates_underfitting_across_splits(regression_data):
     assert "3/3 evaluated splits" in result.issues["SKD002"]["explanation"]
 
 
-def test_diagnose_reuses_split_cached_results(monkeypatch, regression_data):
+def test_reuses_split_cached_results(monkeypatch, regression_report):
     """Check that check results are cached and reused across splits."""
-    X, y = regression_data
-    report = evaluate(LinearRegression(), X, y, splitter=3)
-    report.diagnose()
+    regression_report.diagnose()
 
-    for sub_report in report.estimator_reports_:
+    for sub_report in regression_report.estimator_reports_:
         for check in sub_report._checks_registry:
             monkeypatch.setattr(
                 check,
@@ -86,29 +90,23 @@ def test_diagnose_reuses_split_cached_results(monkeypatch, regression_data):
                 lambda rpt: pytest.fail("re-ran cached check"),
             )
 
-    report.diagnose()
+    regression_report.diagnose()
 
 
-def test_add_checks_cv_level(regression_data):
+def test_add_checks_cv_level(regression_report):
     """Check that add_checks registers a CV-level check."""
-    X, y = regression_data
-    report = evaluate(LinearRegression(), X, y, splitter=3)
-
-    report.add_checks([CVCheck()])
-    result = report.diagnose()
+    regression_report.add_checks([CVCheck()])
+    result = regression_report.diagnose()
     assert "CVCUSTOM" in result.issues
     assert result.issues["CVCUSTOM"]["title"] == "CV-level check"
     assert result.issues["CVCUSTOM"]["docs_url"] == "cvcustom"
     assert result.issues["CVCUSTOM"]["explanation"] == "Ran on 3 splits."
 
 
-def test_add_checks_estimator_level(regression_data):
+def test_add_checks_estimator_level(regression_report):
     """Check that add_checks with estimator report_type propagates and aggregates."""
-    X, y = regression_data
-    report = evaluate(LinearRegression(), X, y, splitter=3)
-
-    report.add_checks([EstimatorCheck()])
-    result = report.diagnose()
+    regression_report.add_checks([EstimatorCheck()])
+    result = regression_report.diagnose()
     assert "ESTCUSTOM" in result.issues
     assert "3/3 evaluated splits" in result.issues["ESTCUSTOM"]["explanation"]
     assert "single split" not in result.issues["ESTCUSTOM"]["explanation"]

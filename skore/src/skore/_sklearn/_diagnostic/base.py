@@ -56,33 +56,33 @@ class DiagnosticDisplay(DisplayHelpMixin):
         applicable_codes: set[CheckCode],
         ignored_codes: set[CheckCode],
     ) -> None:
-        self.findings = findings
+        self._findings = findings
         self._checks_metadata = checks_metadata
-        self.ignored_codes = set(ignored_codes)
+        self._ignored_codes = set(ignored_codes)
         self.issues = {
             code: finding
             for code, finding in findings.items()
             if finding.get("severity", "issue") == "issue"
         }
-        self._tips = {
+        self.tips = {
             code: finding
             for code, finding in findings.items()
             if finding.get("severity") == "tip"
         }
-        self._passed = {
+        self.passed = {
             code: {
                 "title": checks_metadata.get(code, {}).get("title", code),
                 "docs_url": checks_metadata.get(code, {}).get("docs_url"),
                 "severity": checks_metadata.get(code, {}).get("severity", "issue"),
             }
             for code in sorted(
-                set(applicable_codes) - set(findings) - self.ignored_codes
+                set(applicable_codes) - set(findings) - self._ignored_codes
             )
         }
         self.header = (
             f"Diagnostic: {len(self.issues)} issue(s), "
-            f"{len(self._tips)} tip(s), {len(self._passed)} passed, "
-            f"{len(self.ignored_codes)} ignored."
+            f"{len(self.tips)} tip(s), {len(self.passed)} passed, "
+            f"{len(self._ignored_codes)} ignored."
         )
 
     def frame(
@@ -110,9 +110,9 @@ class DiagnosticDisplay(DisplayHelpMixin):
         if severity in ("issue", "all"):
             records.extend(self._records_from(self.issues))
         if severity in ("tip", "all"):
-            records.extend(self._records_from(self._tips))
+            records.extend(self._records_from(self.tips))
         if severity in ("passed", "all"):
-            records.extend(self._records_from(self._passed))
+            records.extend(self._records_from(self.passed))
         return pd.DataFrame(
             records,
             columns=["code", "title", "severity", "explanation", "documentation_url"],
@@ -145,7 +145,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
                 "label": "Tips",
                 "entries": [
                     _format_finding_html(code, entry)
-                    for code, entry in self._tips.items()
+                    for code, entry in self.tips.items()
                 ],
                 "empty_message": "No tips were emitted for your report.",
             },
@@ -156,7 +156,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
                 ),
                 "entries": [
                     _format_finding_html(code, entry)
-                    for code, entry in self._passed.items()
+                    for code, entry in self.passed.items()
                 ],
                 "empty_message": "No checks ran on your report.",
             },
@@ -181,8 +181,8 @@ class DiagnosticDisplay(DisplayHelpMixin):
         lines = [self.header]
         for label, entries in (
             ("Issues", self.issues),
-            ("Tips", self._tips),
-            ("Passed", self._passed),
+            ("Tips", self.tips),
+            ("Passed", self.passed),
         ):
             if not entries:
                 continue
@@ -196,7 +196,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
                     f"- {_format_finding_message(code, entry)}"
                     for code, entry in entries.items()
                 )
-        if not (self.issues or self._tips or self._passed):
+        if not (self.issues or self.tips or self.passed):
             lines.append("- No checks were run on your report.")
         return "\n".join(lines)
 
@@ -208,7 +208,7 @@ class Check(Protocol):
     Each check wraps a callable that inspects a report. If the callable returns a
     non-empty string, that text is recorded as a finding under :attr:`code` with the
     given :attr:`title` and :attr:`severity`. Checks are scoped to a single report
-    kind via :attr:`report_type` so they only run on matching reports.
+    type via :attr:`report_type` so they only run on matching reports.
 
     Parameters
     ----------
@@ -252,8 +252,7 @@ class Check(Protocol):
         Returns
         -------
         str or None
-            An explanation string, or None if the check did not find any
-            finding.
+            An explanation string, or None if the check did not find anything.
         """
 
 
