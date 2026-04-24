@@ -21,9 +21,9 @@ CheckCode = str
 
 
 _TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str]] = [
-    ("Issues", "issue", "No issues were detected in your report!"),
+    ("Issues", "issue", "No issues were detected in your report."),
     ("Tips", "tip", "No tips were emitted for your report."),
-    ("Passed", "passed", "No checks ran on your report."),
+    ("Passed", "passed", "No checks passed without reporting anything."),
 ]
 
 
