@@ -18,7 +18,7 @@ from joblib import load as joblib_load
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from sklearn.utils.validation import _check_pos_label_consistency
 
-from skore_hub_project import console, switch_plt_backend
+from skore_hub_project import THREADABLE, console, switch_plt_backend
 from skore_hub_project.client.client import Client, HUBClient
 from skore_hub_project.exception import ForbiddenException, NotFoundException
 from skore_hub_project.json import dumps
@@ -294,7 +294,7 @@ class Project:
                 TextColumn("{task.description}"),
                 TimeElapsedColumn(),
                 console=console,
-                auto_refresh=False,
+                auto_refresh=THREADABLE,
             ) as progress,
         ):
             task = progress.add_task(

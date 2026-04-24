@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from skore_hub_project import console
+from skore_hub_project import THREADABLE, console
 from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
@@ -30,7 +30,7 @@ SkinnedProgress = partial(
     TimeElapsedColumn(),
     console=console,
     transient=True,
-    auto_refresh=False,
+    auto_refresh=THREADABLE,
 )
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
