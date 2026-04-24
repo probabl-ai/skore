@@ -80,6 +80,7 @@ estimator
 from skore import EstimatorReport
 
 report = EstimatorReport(estimator, **split_data, pos_label=pos_label)
+report
 
 # %%
 #
@@ -141,10 +142,8 @@ report.metrics.timings()
 #
 # Since we obtain a pandas dataframe, we can also use the plotting interface of
 # pandas.
-import matplotlib.pyplot as plt
-
 ax = metric_report.plot.barh()
-ax.set_title("Metrics report")
+_ = ax.set_title("Metrics report")
 
 # %%
 #
@@ -218,7 +217,7 @@ report.metrics.add(
 )
 
 cost = report.metrics.summarize(metric="operational_decision_cost")
-cost
+cost.frame()
 
 # %%
 #
@@ -251,14 +250,12 @@ display.plot()
 # those display (slightly modified to improve the UI) in case we want to tweak some
 # of the plot properties. We can have quick look at the available attributes and
 # methods by calling the ``help`` method or simply by printing the display.
-display
-
-# %%
 display.help()
 
 # %%
 fig = display.plot()
-_ = fig.axes[0].set_title("Example of a ROC curve")
+fig.axes[0].set_title("Example of a ROC curve")
+fig
 
 # %%
 #
@@ -269,8 +266,9 @@ _ = fig.axes[0].set_title("Example of a ROC curve")
 start = time.time()
 # we already trigger the computation of the predictions in a previous call
 display = report.metrics.roc()
-display.plot()
+fig = display.plot()
 end = time.time()
+fig
 
 # %%
 print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
@@ -283,8 +281,9 @@ report.clear_cache()
 # %%
 start = time.time()
 display = report.metrics.roc()
-display.plot()
+fig = display.plot()
 end = time.time()
+fig
 
 # %%
 print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
@@ -303,7 +302,6 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 # Let's first start with a basic confusion matrix:
 cm_display = report.metrics.confusion_matrix()
 cm_display.plot()
-plt.show(block=True)
 
 # %%
 # In binary classification, a confusion matrix depends on the decision threshold used
@@ -311,29 +309,27 @@ plt.show(block=True)
 # threshold of 0.5, but confusion matrices are actually computed at every threshold
 # internally.
 
-# To visualize the confusion matrix at a different threshold, use the ``threshold_value``
-# parameter. For example, a threshold of 0.3 will classify more samples as positive:
+# To visualize the confusion matrix at a different threshold, use the
+# ``threshold_value`` parameter. For example, a threshold of 0.3 will classify
+# more samples as positive:
 cm_display.plot(threshold_value=0.3)
-plt.show(block=True)
 
 # %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.
 # Here we normalize by true labels (rows):
 cm_display.plot(normalize="true")
-plt.show(block=True)
 
 # %%
 # More plotting options are available via ``heatmap_kwargs``, which are passed to
 # seaborn's heatmap. For example, we can customize the colormap and number format:
 cm_display.set_style(heatmap_kwargs={"cmap": "Greens", "fmt": ".2e"})
 cm_display.plot()
-plt.show(block=True)
 
 # %%
 # Finally, the confusion matrix can also be exported as a pandas DataFrame for further
 # analysis:
-cm_frame = cm_display.frame()
-cm_frame
+cm_display.frame()
+
 
 # %%
 # .. seealso::
