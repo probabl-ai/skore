@@ -106,11 +106,19 @@ def test_skd004_skd005_detects_high_class_imbalance(weights, code):
     assert "Accuracy should not be used alone" in issues.loc[code, "explanation"]
 
 
-def test_skd006_detects_unscaled_coefficients(regression_report):
-    """Check that the unscaled coefficients issue is detected."""
-    tips = regression_report.diagnose().frame(severity="tip").set_index("code")
+def test_skd006_detects_coefficient_interpretation(regression_data):
+    """Check that the coefficient interpretation tip is emitted."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    tips = report.diagnose().frame(severity="tip").set_index("code")
     assert "SKD006" in tips.index
-    assert "coefficients" in tips.loc["SKD006", "explanation"]
+    assert "Features are not on the same scale" in tips.loc["SKD006", "explanation"]
+
+    X /= X.std(axis=0)
+    report = evaluate(LinearRegression(), X, y)
+    tips = report.diagnose().frame(severity="tip").set_index("code")
+    assert "SKD006" in tips.index
+    assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
 
 
 def test_ignore_checks(monkeypatch, regression_report):

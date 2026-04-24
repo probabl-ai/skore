@@ -218,7 +218,7 @@ How to reduce the risk
 
 .. _skd006-unscaled_coefficients:
 
-SKD006 - Unscaled coefficients
+SKD006 - Coefficient interpretation
 ------------------------------------
 
 How it is detected
@@ -226,12 +226,15 @@ How it is detected
 
 This check applies only to linear estimators that expose a ``coef_`` attribute.
 
-`skore` concatenates the train and test inputs and inspects the per-feature mean
-and standard deviation. The tip is emitted when the features do not appear to be
-standardized, i.e. when either of the following holds:
+`skore` concatenates the train and test inputs and computes the per-feature
+standard deviation. The check emits one of two tips depending on the result:
 
-- column means are not close to 0,
-- column standard deviations are not close to 1.
+- **Features are on different scales** (standard deviations are not close to
+  each other): coefficient magnitudes are not directly comparable across
+  features.
+- **Features are on the same scale**: coefficient magnitudes are comparable
+  as feature importance, but they are no longer interpretable in the original
+  feature units.
 
 Why it matters
 ^^^^^^^^^^^^^^
@@ -241,14 +244,23 @@ feature. When features live on different scales, comparing raw coefficients as a
 measure of feature importance is misleading: a large coefficient may only reflect
 a small-scale feature, not a strong effect. Standardizing the inputs puts all
 coefficients on a common footing and makes them directly comparable.
+
+Conversely, when features have been standardized, coefficients express changes per
+standard deviation rather than per original unit. Statements like "an increase of
+1 year in AGE means a decrease of 0.03 $/hour" lose their meaning because the
+natural units have been scaled away.
+
 Read more about this in `the scikit-learn documentation
-<https://scikit-learn.org/stable/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html>`_.
+<https://scikit-learn.org/dev/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`_.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - standardize the inputs (e.g. wrap the estimator in a pipeline with
-  :class:`~sklearn.preprocessing.StandardScaler`),
+  :class:`~sklearn.preprocessing.StandardScaler`) to make coefficients
+  comparable,
+- when features are not standardized, multiply each coefficient by the feature's
+  standard deviation to make them comparable,
 - otherwise, interpret coefficient magnitudes only relative to the feature's own
   scale, or rely on scale-invariant feature-importance methods such as
   :class:`~skore.PermutationImportanceDisplay`.

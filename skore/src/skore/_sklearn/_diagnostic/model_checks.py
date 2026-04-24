@@ -271,15 +271,15 @@ class CheckUnderrepresentedClasses(Check):
         return None
 
 
-class CheckUnscaledCoefficients(Check):
-    """Check for unscaled coefficients (SKD006).
+class CheckCoefficientsInterpretation(Check):
+    """Check coefficient interpretability for linear models (SKD006).
 
-    Warns that when using a linear model, the input features should be scaled
-    so that their coefficient values can be used as a measure of feature importance.
+    Tips about whether coefficients can be compared across features and
+    whether they retain their original-unit interpretation.
     """
 
     code = "SKD006"
-    title = "Unscaled coefficients"
+    title = "Coefficient interpretation"
     report_type = "estimator"
     docs_url = "skd006-unscaled_coefficients"
     severity = "tip"
@@ -296,14 +296,16 @@ class CheckUnscaledCoefficients(Check):
             raise CheckNotApplicable()
 
         X = np.concatenate([report.X_train, report.X_test])
-        if not (np.allclose(X.mean(axis=0), 0) and np.allclose(X.std(axis=0), 1)):
+        stds = X.std(axis=0)
+        if not np.all(np.isclose(stds, stds[0])):
             return (
-                "The input features do not appear to be standardized. Be careful "
-                "when interpreting the magnitudes of a linear model's coefficients "
-                "as feature importance: they depend on the scale of each feature "
-                "and are not directly comparable across features."
+                "Features are not on the same scale: coefficient magnitudes "
+                "are not directly comparable as feature importance."
             )
-        return None
+        return (
+            "Features appear to be standardized: coefficients are comparable "
+            "but no longer interpretable in the original feature units."
+        )
 
 
 _BUILTIN_CHECKS = [
@@ -312,5 +314,5 @@ _BUILTIN_CHECKS = [
     CheckMetricsConsistencyAcrossSplits(),
     CheckHighClassImbalance(),
     CheckUnderrepresentedClasses(),
-    CheckUnscaledCoefficients(),
+    CheckCoefficientsInterpretation(),
 ]
