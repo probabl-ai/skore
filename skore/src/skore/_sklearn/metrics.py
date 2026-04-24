@@ -635,7 +635,10 @@ class MetricRegistry(UserDict[str, Metric]):
         self.data[metric.name] = metric
 
     def remove(self, name: str) -> None:
-        """Remove a custom metric from the registry.
+        """Remove a metric from the registry.
+
+        Built-in metrics may be removed; they stay absent for the lifetime of this
+        registry (the same instance is kept for the parent report).
 
         Parameters
         ----------
@@ -644,14 +647,9 @@ class MetricRegistry(UserDict[str, Metric]):
 
         Raises
         ------
-        ValueError
-            If *name* is a built-in metric name.
         KeyError
             If *name* is not registered.
         """
-        if name in [m.name for m in BUILTIN_METRICS]:
-            raise ValueError(f"Cannot remove {name!r}: it is a built-in metric name.")
-
         if name not in self.data:
             raise KeyError(name)
 

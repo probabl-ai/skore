@@ -169,7 +169,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             )
 
     def remove(self, name: str) -> None:
-        """Remove a custom metric from each underlying estimator report.
+        """Remove a metric from each underlying estimator report.
 
         Parameters
         ----------
@@ -178,8 +178,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         Raises
         ------
-        ValueError
-            If *name* is a built-in metric name.
         KeyError
             If *name* is not registered on an underlying report.
 

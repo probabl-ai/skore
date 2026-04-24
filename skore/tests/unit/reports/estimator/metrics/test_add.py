@@ -194,12 +194,16 @@ class TestRemove:
             report.metrics.remove("no_such_metric")
         assert exc_info.value.args[0] == "no_such_metric"
 
-    def test_cannot_remove_builtin_metric(self, binary_classification_report):
-        """Built-in metric names cannot be removed."""
+    def test_remove_builtin_metric(self, binary_classification_report):
+        """Built-in metrics can be removed from the registry."""
         report = binary_classification_report
-        err_msg = "Cannot remove 'accuracy': it is a built-in metric name."
-        with pytest.raises(ValueError, match=re.escape(err_msg)):
-            report.metrics.remove("accuracy")
+        assert "accuracy" in report._metric_registry
+
+        report.metrics.remove("accuracy")
+
+        assert "accuracy" not in report._metric_registry
+        frame = report.metrics.summarize().frame()
+        assert "Accuracy" not in frame.index
 
     def test_remove_invalidates_cache_only_for_removed_metric(
         self, binary_classification_report
