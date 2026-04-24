@@ -29,6 +29,7 @@ class ProgressBar:
             TextColumn("[orange1]{task.percentage:>3.0f}%"),
             expand=False,
             transient=True,
+            auto_refresh=False,
             disable=(not configuration.show_progress),
         )
 
