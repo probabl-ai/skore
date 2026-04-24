@@ -234,7 +234,7 @@ ridge_report.metrics.summarize().frame()
 # Let us plot the prediction error:
 
 # %%
-ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
+_ = ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 
 # %%
 # We can observe that the model has issues predicting large house prices, due to the
@@ -258,7 +258,7 @@ ridge_report.inspection.coefficients().frame()
 # We can plot this pandas datafame:
 
 # %%
-ridge_report.inspection.coefficients().plot()
+_ = ridge_report.inspection.coefficients().plot()
 
 # %%
 # .. note::
@@ -402,7 +402,7 @@ comparator.metrics.summarize().frame()
 # Let us plot the prediction error:
 
 # %%
-engineered_ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
+_ = engineered_ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 
 # %%
 # About the clipping issue, compared to the prediction error of our previous model
@@ -825,7 +825,7 @@ plot_tree(
 # Now, let us look at the feature importance based on the MDI:
 
 # %%
-tree_report.inspection.impurity_decrease().plot()
+_ = tree_report.inspection.impurity_decrease().plot()
 
 # %%
 # For a decision tree, for each feature, the MDI is averaged across all splits in the
@@ -879,7 +879,7 @@ print(f"Number of trees in the forest: {n_estimators}")
 # Let us look into the MDI of our random forest:
 
 # %%
-rf_report.inspection.impurity_decrease().plot()
+_ = rf_report.inspection.impurity_decrease().plot()
 
 # %%
 # In a random forest, the MDI is computed by averaging the MDI of each feature across
