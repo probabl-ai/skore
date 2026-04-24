@@ -246,17 +246,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Parameters
         ----------
         name : str
-            The technical name of the metric to remove, as used in
-            :meth:`summarize` (e.g. ``"accuracy"`` or ``"business_loss"``).
-
-        Raises
-        ------
-        KeyError
-            If *name* is not registered.
-
-        See Also
-        --------
-        add : Add a custom metric.
+            The name of the metric to remove.
         """
         self._parent._metric_registry.remove(name)
 

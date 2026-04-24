@@ -174,16 +174,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Parameters
         ----------
         name : str
-            The technical name of the metric to remove.
-
-        Raises
-        ------
-        KeyError
-            If *name* is not registered on an underlying report.
-
-        See Also
-        --------
-        add : Add a custom metric.
+            The name of the metric to remove.
         """
         for report in self._parent.estimator_reports_:
             report.metrics.remove(name)
