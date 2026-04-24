@@ -160,7 +160,7 @@ len(reports.reports_)
 reports.metrics.summarize().frame()
 
 # %%
-reports.metrics.roc().plot(subplot_by=None)
+_ = reports.metrics.roc().plot(subplot_by=None)
 
 # %%
 # Conclusion

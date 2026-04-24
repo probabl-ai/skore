@@ -87,13 +87,13 @@ xgb_report.metrics.summarize().frame()
 # We can easily get the summary of metrics, and also a ROC curve plot for example:
 
 # %%
-xgb_report.metrics.roc().plot()
+_ = xgb_report.metrics.roc().plot()
 
 # %%
 # We can also inspect our model:
 
 # %%
-xgb_report.inspection.permutation_importance().plot()
+_ = xgb_report.inspection.permutation_importance().plot()
 
 # %%
 # Custom model
