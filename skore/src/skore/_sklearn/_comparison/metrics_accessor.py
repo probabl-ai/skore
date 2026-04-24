@@ -186,6 +186,28 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
                 **kwargs,
             )
 
+    def remove(self, name: str) -> None:
+        """Remove a custom metric from each underlying estimator report.
+
+        Parameters
+        ----------
+        name : str
+            The technical name of the metric to remove.
+
+        Raises
+        ------
+        ValueError
+            If *name* is a built-in metric name.
+        KeyError
+            If *name* is not registered on an underlying report.
+
+        See Also
+        --------
+        add : Add a custom metric.
+        """
+        for report in self._parent.reports_.values():
+            report.metrics.remove(name)
+
     def timings(
         self,
         aggregate: Aggregate | None = ("mean", "std"),

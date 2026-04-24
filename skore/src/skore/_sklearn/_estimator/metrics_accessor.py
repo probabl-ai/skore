@@ -240,6 +240,28 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
         )
 
+    def remove(self, name: str) -> None:
+        """Remove a custom metric from the registry.
+
+        Parameters
+        ----------
+        name : str
+            The technical name of the metric to remove, as used in
+            :meth:`summarize` (e.g. ``"business_loss"``).
+
+        Raises
+        ------
+        ValueError
+            If *name* is a built-in metric name.
+        KeyError
+            If *name* is not registered.
+
+        See Also
+        --------
+        add : Add a custom metric.
+        """
+        self._parent._metric_registry.remove(name)
+
     def fit_time(self, cast: bool = True) -> float | None:
         """Get time to fit the estimator.
 

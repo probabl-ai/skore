@@ -633,3 +633,30 @@ class MetricRegistry(UserDict[str, Metric]):
                 del self._report._cache[k]
 
         self.data[metric.name] = metric
+
+    def remove(self, name: str) -> None:
+        """Remove a custom metric from the registry.
+
+        Parameters
+        ----------
+        name : str
+            The technical name of the metric to remove.
+
+        Raises
+        ------
+        ValueError
+            If *name* is a built-in metric name.
+        KeyError
+            If *name* is not registered.
+        """
+        if name in [m.name for m in BUILTIN_METRICS]:
+            raise ValueError(f"Cannot remove {name!r}: it is a built-in metric name.")
+
+        if name not in self.data:
+            raise KeyError(name)
+
+        keys_to_delete = [k for k in self._report._cache if k[1] == name]
+        for k in keys_to_delete:
+            del self._report._cache[k]
+
+        del self.data[name]
