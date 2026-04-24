@@ -1,9 +1,9 @@
 """
 .. _example_skore_hub_project:
 
-=================
-Hub skore Project
-=================
+=======================================
+Store and retrieve reports on Skore Hub
+=======================================
 
 This example shows how to use :class:`~skore.Project` in **hub** mode: store
 reports remotely and inspect them. A key point is that
@@ -24,6 +24,14 @@ this example with the following command:
 In this gallery, we are going to push the different reports into a public
 workspace.
 """
+
+# %%
+#
+# `skore` can communicate with Skore Hub which serves two main purposes: storing and
+# retrieving any reports that you created and a user-friendly interface for you to
+# explore and compare models.
+#
+# First, we need to login to Skore Hub such that later we can push our reports to it.
 
 # sphinx_gallery_start_ignore
 #
@@ -50,7 +58,7 @@ else:
 
 from skore import login
 
-login()
+login(mode="hub")
 
 # sphinx_gallery_start_ignore
 #
@@ -66,16 +74,30 @@ except HTTPStatusError as e:
 # sphinx_gallery_end_ignore
 
 # %%
+#
+# To illustrate the integration with Skore Hub, we use a binary classification task
+# where the goal is to predict whether a patient has a tumor or not.
+import numpy as np
+import skrub
 from sklearn.datasets import load_breast_cancer
-from sklearn.linear_model import LogisticRegression
-from skrub import tabular_pipeline
 
 X, y = load_breast_cancer(return_X_y=True, as_frame=True)
-estimator = tabular_pipeline(LogisticRegression(max_iter=1_000))
+labels = np.array(["no tumor", "tumor"], dtype=object)
+y = labels[y]
+skrub.TableReport(X)
 
 # %%
+#
+# Store reports on Skore Hub
+# ==========================
+#
+# On this problem, we use a logistic regression classifier with skrub's
+# :func:`~skrub.tabular_pipeline` to preprocess the data if needed.
+#
+# To send several reports to Skore Hub, we send models with different regularization
+# parameters.
 from numpy import logspace
-from sklearn.base import clone
+from sklearn.linear_model import LogisticRegression
 from skore import Project, evaluate
 
 project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
@@ -84,17 +106,19 @@ for regularization in logspace(-3, 3, 5):
     project.put(
         f"lr-regularization-{regularization:.1e}",
         evaluate(
-            clone(estimator).set_params(logisticregression__C=regularization),
+            skrub.tabular_pipeline(LogisticRegression(C=regularization)),
             X,
             y,
             splitter=0.2,
-            pos_label=1,
+            pos_label="tumor",
         ),
     )
 
 # %%
-# Summarize: you get a DataFrame
-# ==============================
+# Retrieve report stored on Skore Hub
+# ===================================
+#
+# Retrieving a report on Skore Hub is similar to retrieving a report in local mode.
 #
 # :meth:`~skore.Project.summarize` returns a :class:`~skore.project._summary.Summary`,
 # which subclasses :class:`pandas.DataFrame`. In a Jupyter environment it renders
@@ -102,6 +126,7 @@ for regularization in logspace(-3, 3, 5):
 summary = project.summarize()
 
 # %%
+#
 # To see the normal DataFrame table instead of the widget (e.g. in scripts or
 # when you prefer the table), wrap the summary in :class:`pandas.DataFrame`:
 import pandas as pd
@@ -110,25 +135,36 @@ pandas_summary = pd.DataFrame(summary)
 pandas_summary
 
 # %%
+#
 # Basically, our summary contains metadata related to various information that we need
 # to quickly help filtering the reports.
 summary.info()
 
 # %%
+#
 # Filter reports by metric (e.g. keep only those above a given accuracy) and
 # work with the result as a table.
 summary.query("log_loss < 0.2")["key"].tolist()
 
 # %%
+#
 # Use :meth:`~skore.project._summary.Summary.reports` to load the corresponding
 # reports from the project (optionally after filtering the summary).
 reports = summary.query("log_loss < 0.2").reports(return_as="comparison")
 len(reports.reports_)
 
 # %%
+#
 # Since we got a :class:`~skore.ComparisonReport`, we can use the metrics accessor
 # to summarize the metrics across the reports.
 reports.metrics.summarize().frame()
 
 # %%
 reports.metrics.roc().plot(subplot_by=None)
+
+# %%
+# Conclusion
+# ==========
+#
+# Skore Hub provides a user-friendly interface for you to explore and compare models.
+# You can easily store reports created using Skore.
