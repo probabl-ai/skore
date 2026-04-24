@@ -180,6 +180,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         name: str | None = None,
         response_method: str | list[str] = "predict",
         greater_is_better: bool = True,
+        position: Literal["first", "last"] = "first",
         **kwargs: Any,
     ) -> None:
         """Add a custom metric to be included in :meth:`summarize` by default.
@@ -207,6 +208,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
+
+        position : {"first", "last"}, default="first"
+            Where to place the metric in default :meth:`summarize` ordering.
+            ``"first"`` inserts at the front; repeated ``"first"`` adds stack
+            newest-first. ``"last"`` appends at the end.
 
         **kwargs : Any
             Default keyword arguments passed to the score function at call
@@ -237,7 +243,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 response_method=response_method,
                 greater_is_better=greater_is_better,
                 kwargs=kwargs,
-            )
+            ),
+            position=position,
         )
 
     def fit_time(self, cast: bool = True) -> float | None:

@@ -135,6 +135,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         name: str | None = None,
         response_method: str | list[str] = "predict",
         greater_is_better: bool = True,
+        position: Literal["first", "last"] = "first",
         **kwargs: Any,
     ) -> None:
         """Add a custom metric to be included in :meth:`summarize` by default.
@@ -153,6 +154,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
+
+        position : {"first", "last"}, default="first"
+            Where to place the metric in default :meth:`summarize` ordering
+            for each compared report. See :meth:`EstimatorReport.metrics.add`.
 
         **kwargs : Any
             Default keyword arguments passed to the score function at call
@@ -183,6 +188,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
                 name=name,
                 response_method=response_method,
                 greater_is_better=greater_is_better,
+                position=position,
                 **kwargs,
             )
 

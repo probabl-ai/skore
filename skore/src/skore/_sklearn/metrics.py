@@ -3,9 +3,9 @@ from __future__ import annotations
 import copy
 import inspect
 import pickle
-from collections import UserDict
+from collections import OrderedDict, UserDict
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import sklearn
@@ -588,13 +588,18 @@ BUILTIN_METRICS: list[Metric] = [
 class MetricRegistry(UserDict[str, Metric]):
     """Registry of metric instances for a report.
 
+    ``data`` is an :class:`collections.OrderedDict` so iteration order matches default
+    metric display order (e.g. :meth:`~skore.EstimatorReport.metrics.summarize`).
+
     Parameters
     ----------
     report : EstimatorReport
         The parent report.
     """
 
-    def __init__(self, report: EstimatorReport):
+    data: OrderedDict[str, Metric]
+
+    def __init__(self, report: EstimatorReport) -> None:
         """Construct a MetricRegistry.
 
         The report is analyzed to filter metrics depending on the report's
@@ -603,24 +608,37 @@ class MetricRegistry(UserDict[str, Metric]):
         super().__init__()
         self._report = report
 
-        # Needs to be called `data` since we inherit from UserDict
-        self.data = {
-            metric.name: metric
+        # Needs to be called ``data`` since we inherit from :class:`UserDict`.
+        self.data = OrderedDict(
+            (metric.name, metric)
             for metric in BUILTIN_METRICS
             if metric.available(report)
-        }
+        )
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({list(self.data.keys())})"
 
-    def add(self, metric: Metric) -> None:
+    def add(
+        self,
+        metric: Metric,
+        *,
+        position: Literal["first", "last"] = "first",
+    ) -> None:
         """Add a custom metric to the registry.
 
         Parameters
         ----------
         metric : Metric
             The metric instance to add.
+
+        position : {"first", "last"}, default="first"
+            Where to place the metric in iteration order (e.g. default
+            :meth:`~skore.EstimatorReport.metrics.summarize` row order).
+            ``"first"`` inserts at the front; ``"last"`` at the end.
         """
+        if position not in ("first", "last"):
+            raise ValueError(f"position must be 'first' or 'last', got {position!r}.")
+
         if metric.name in [m.name for m in BUILTIN_METRICS]:
             raise ValueError(
                 f"Cannot add {metric.name!r}: it is a built-in metric name."
@@ -633,3 +651,4 @@ class MetricRegistry(UserDict[str, Metric]):
                 del self._report._cache[k]
 
         self.data[metric.name] = metric
+        self.data.move_to_end(metric.name, last=(position == "last"))
