@@ -588,9 +588,6 @@ BUILTIN_METRICS: list[Metric] = [
 class MetricRegistry(UserDict[str, Metric]):
     """Registry of metric instances for a report.
 
-    ``data`` is an :class:`collections.OrderedDict` so iteration order matches default
-    metric display order (e.g. :meth:`~skore.EstimatorReport.metrics.summarize`).
-
     Parameters
     ----------
     report : EstimatorReport
