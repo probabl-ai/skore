@@ -294,6 +294,7 @@ class Project:
                 TextColumn("{task.description}"),
                 TimeElapsedColumn(),
                 console=console,
+                auto_refresh=False,
             ) as progress,
         ):
             task = progress.add_task(
