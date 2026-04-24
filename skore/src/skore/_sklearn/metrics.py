@@ -4,27 +4,37 @@ import copy
 import inspect
 import pickle
 from collections import UserDict
+from collections.abc import Callable
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import numpy as np
 import sklearn
 import sklearn.metrics
+from numpy.typing import ArrayLike, NDArray
+from sklearn.base import BaseEstimator
 from sklearn.metrics._scorer import _BaseScorer
 
-from skore._sklearn.types import (
-    DataSource,
-    MetricCallable,
-    MetricLike,
-    PositiveLabel,
-    ScorerCallable,
-)
+from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache_key import make_cache_key
 from skore._utils._callable_name import _callable_name
 
 if TYPE_CHECKING:
     from skore import EstimatorReport
 
+
+class SKLearnScorer(Protocol):
+    """Protocol defining the interface of scikit-learn's _BaseScorer."""
+
+    _score_func: Callable
+    _response_method: str | list[str]
+    _kwargs: dict[str, Any]
+
+
+MetricReturnValue = float | ArrayLike
+MetricCallable = Callable[[ArrayLike, ArrayLike], MetricReturnValue]
+ScorerCallable = Callable[[BaseEstimator, ArrayLike, ArrayLike], MetricReturnValue]
+MetricLike = str | ScorerCallable | SKLearnScorer
 
 _METRIC_ALIASES: dict[str, str] = {
     "mean_squared_error": "neg_mean_squared_error",
@@ -77,11 +87,11 @@ class Metric:
     verbose_name : str
         Display name shown in reports (e.g. ``"Accuracy"``).
 
-    response_method : str, list of str, or None, default="predict"
-        Estimator method to get predictions.
-
     greater_is_better : bool or None
         Whether a higher value is better.
+
+    response_method : str, list of str, or None, default="predict"
+        Estimator method to get predictions.
 
     function : callable or None
         Scoring function.
@@ -196,18 +206,23 @@ class Metric:
                 pos_label=call_kwargs.get("pos_label", None),
             )
 
-            score = self.function(y_true, y_pred, **call_kwargs)  # type: ignore
+            score = cast(MetricCallable, self.function)(y_true, y_pred, **call_kwargs)
         elif self.function_kind == FunctionKind.SCORER:
             data, y_true = report._get_data_and_y_true(data_source=data_source)
             X = data["_skrub_X"]
 
-            score = self.function(report.estimator_, X, y_true, **call_kwargs)  # type: ignore
+            score = cast(ScorerCallable, self.function)(
+                report.estimator_,
+                X,
+                y_true,
+                **call_kwargs,
+            )
 
         if isinstance(score, np.ndarray):
-            score = score.tolist()
+            score = cast(NDArray, score).tolist()
 
         if hasattr(score, "item"):
-            score = score.item()  # type: ignore
+            score = cast(NDArray, score).item()
         elif isinstance(score, list):
             if len(score) == 1:
                 score = score[0]
@@ -217,7 +232,7 @@ class Metric:
                 )
 
         report._cache[cache_key] = score
-        return score  # type: ignore
+        return cast(float | dict[PositiveLabel, float] | list[float], score)
 
     @staticmethod
     def new(

@@ -25,6 +25,7 @@ from skore._sklearn.metrics import (
     Mae,
     Mape,
     Metric,
+    MetricLike,
     MissingKwargsError,
     Precision,
     PredictTime,
@@ -32,7 +33,7 @@ from skore._sklearn.metrics import (
     Rmse,
     RocAuc,
 )
-from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
+from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
 
@@ -238,11 +239,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                     kwargs=kwargs,
                 )
             )
-        except MissingKwargsError as e:
-            args_msg = ", ".join(f"{kw}=..." for kw in e.missing_kwargs)
+        except MissingKwargsError as error:
+            args_msg = ", ".join(f"{kwarg}=..." for kwarg in error.missing_kwargs)
             raise ValueError(
-                f"{e.msg} Pass those kwargs to add: add({e.metric}, {args_msg})"
-            ) from e
+                f"{error.msg} Pass those kwargs to add: add({error.metric}, {args_msg})"
+            ) from error
 
     def fit_time(self, cast: bool = True) -> float | None:
         """Get time to fit the estimator.

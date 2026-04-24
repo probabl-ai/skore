@@ -76,7 +76,7 @@ report.metrics.summarize().frame()
 # ===============================
 #
 # If your metric needs extra data at scoring time (e.g. sample-level amounts,
-# a cost matrix, ...), they can passed as keyword arguments to
+# a cost matrix, ...), they can be passed as keyword arguments to
 # :meth:`~skore.EstimatorReport.metrics.add`; they will be forwarded to the
 # metric function when it is computed.
 # Alternatively, if the metric takes ``y_true`` and ``y_pred``, the keyword
@@ -122,8 +122,6 @@ def mean_confidence(y_true, y_proba):
     return np.where(y_true == 1, y_proba[:, 1], y_proba[:, 0]).mean()
 
 
-report.metrics.add(
-    mean_confidence, response_method="predict_proba", greater_is_better=True
-)
+report.metrics.add(make_scorer(mean_confidence, response_method="predict_proba"))
 
 report.metrics.summarize(metric="mean_confidence").frame()

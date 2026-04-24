@@ -1,10 +1,9 @@
 """Types between parts of the sklearn module."""
 
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Iterator, Sequence
 from typing import Any, Literal, Protocol
 
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator
 
 PlotBackend = Literal["matplotlib", "plotly"]
 
@@ -40,20 +39,6 @@ ReportType = Literal[
     "comparison-estimator",
     "comparison-cross-validation",
 ]
-
-
-class SKLearnScorer(Protocol):
-    """Protocol defining the interface of scikit-learn's _BaseScorer."""
-
-    _score_func: Callable
-    _response_method: str | list[str]
-    _kwargs: dict[str, Any]
-
-
-MetricCallable = Callable[[ArrayLike, ArrayLike], float]
-ScorerCallable = Callable[[BaseEstimator, ArrayLike, ArrayLike], float]
-
-MetricLike = str | MetricCallable | ScorerCallable | SKLearnScorer
 
 
 class SKLearnCrossValidator(Protocol):

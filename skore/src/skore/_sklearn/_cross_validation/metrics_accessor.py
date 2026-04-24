@@ -17,7 +17,8 @@ from skore._sklearn._plot import (
     RocCurveDisplay,
 )
 from skore._sklearn._plot.metrics.metrics_summary_display import metric_score_to_rows
-from skore._sklearn.types import Aggregate, MetricLike
+from skore._sklearn.metrics import MetricLike
+from skore._sklearn.types import Aggregate
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
@@ -123,8 +124,18 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Parameters
         ----------
         metric : str, sklearn scorer, or callable
-            The metric to add. See :meth:`EstimatorReport.metrics.add` for a
-            description of accepted inputs.
+            The metric to add.
+
+            - If a string, it will be run through :func:`sklearn.metrics.get_scorer`.
+              Metrics that require a ``neg_`` prefix (e.g. ``"neg_mean_squared_error"``)
+              may also be passed without it (e.g. ``"mean_squared_error"``); the alias
+              is resolved automatically.
+            - If a callable, it must have the signature
+              ``(estimator, X, y_true, **kw) -> float``. It may also return a ``dict``
+              mapping class labels to floats (e.g. ``{0: 0.9, 1: 0.85}``), in which case
+              :meth:`summarize` will show one row per class label under the metric name.
+              If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
+              :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
 
         name : str, optional
             Custom name for the metric. If not provided, the name is inferred
