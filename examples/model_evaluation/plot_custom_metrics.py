@@ -1,9 +1,9 @@
 """
 .. _example_custom_metrics:
 
-===========================================================
-`EstimatorReport.metrics.add`: Adapt skore to your use-case
-===========================================================
+================================
+Use a your own metric with skore
+================================
 
 By default, :meth:`~skore.EstimatorReport.metrics.summarize` reports a curated
 set of metrics for your ML task. In practice you often need domain-specific

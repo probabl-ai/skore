@@ -142,7 +142,9 @@ data_display
 # matrix of the dataset.
 
 # %%
-data_display.plot(kind="corr")
+fig = data_display.plot(kind="corr")
+fig.set_size_inches(10, 10)
+fig
 
 # %%
 # We get the results from some statistical metrics aggregated over the cross-validation
@@ -259,11 +261,7 @@ linear_model_report.help()
 # compute them on the fly (if not cached) and cache them for us.
 
 # %%
-import warnings
-
-with warnings.catch_warnings():
-    warnings.simplefilter(action="ignore", category=FutureWarning)
-    linear_model_report.cache_predictions()
+linear_model_report.cache_predictions()
 
 # %%
 # We can now have a look at the performance of the model with some standard metrics.
@@ -302,7 +300,7 @@ comparator.metrics.summarize().frame()
 # Here, we plot the actual-vs-predicted values for each split.
 
 # %%
-linear_model_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
+_ = linear_model_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 
 # %%
 # Conclusion
