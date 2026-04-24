@@ -4,7 +4,7 @@
    * - :class:`{{ class_info.name }}`
      - {{ class_info.doc }}
 
-       .. dropdown:: Report Methods
+       .. dropdown:: Report methods
           :icon: chevron-down
 
           .. list-table::
