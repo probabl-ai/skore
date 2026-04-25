@@ -48,6 +48,26 @@ def test_metrics_repr(report):
     assert "metrics" in result.lower()
 
 
+def test_metrics_available_returns_metric_keys(report):
+    metrics = report.metrics.available()
+
+    assert isinstance(metrics, list)
+    assert metrics
+    assert all(isinstance(metric, str) for metric in metrics)
+
+
+def test_metrics_available_updates_after_add(report):
+    metrics_before = set(report.metrics.available())
+    scorer = make_scorer(
+        mean_squared_error, greater_is_better=False, response_method="predict"
+    )
+    report.metrics.add(scorer)
+
+    metrics_after = set(report.metrics.available())
+    assert metrics_before.issubset(metrics_after)
+    assert "mean_squared_error" in metrics_after
+
+
 def test_metrics_add_scorer(report):
     scorer = make_scorer(
         mean_squared_error, greater_is_better=False, response_method="predict"
