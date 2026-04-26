@@ -49,7 +49,7 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
 
     # check that something was written to the children's cache
     assert all(report._cache != {} for report in report.estimator_reports_)
-    report.clear_cache()
+    report._clear_cache()
 
     _check_metrics_names(result, [metric], expected_nb_stats)
 

@@ -112,18 +112,18 @@ def test_attributes(fixture_name, request, cv, n_jobs):
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
-    """Check that calling cache_predictions fills the cache."""
+    """Check that :meth:`CrossValidationReport._cache_predictions` fills the cache."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
     for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
 
-    report.cache_predictions()
+    report._cache_predictions()
 
     for estimator_report in report.estimator_reports_:
         assert len(estimator_report._cache) == expected_n_keys
 
-    report.clear_cache()
+    report._clear_cache()
     for estimator_report in report.estimator_reports_:
         assert estimator_report._cache == {}
 
@@ -182,7 +182,7 @@ def test_pickle(tmp_path, logistic_binary_classification_data):
     """
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    report.cache_predictions()
+    report._cache_predictions()
     joblib.dump(report, tmp_path / "report.joblib")
 
 
@@ -317,7 +317,7 @@ def test_from_state_bypasses_init_and_restores_state(
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_accuracy = report.metrics.accuracy()
-    report.cache_predictions()
+    report._cache_predictions()
     state = report.get_state()
 
     def _unexpected_init(self, *args, **kwargs):
@@ -342,7 +342,7 @@ def test_from_state_bypasses_init_and_restores_state(
     # check new metrics/predictions can be computed:
     restored.metrics.roc_auc()
     _ = report.get_predictions(data_source="test")
-    report.cache_predictions()
+    report._cache_predictions()
 
 
 def test_get_from_state_with_complex_data_op():
@@ -379,7 +379,7 @@ def test_get_from_state_with_complex_data_op():
     restored = CrossValidationReport.from_state(state)
 
     # check fresh computations still work after restoring from state:
-    restored.clear_cache()
+    restored._clear_cache()
     assert restored.metrics.accuracy().equals(expected_accuracy)
     preds = restored.get_predictions(data_source="test")
     for pred, expected_pred in zip(preds, expected_preds, strict=True):

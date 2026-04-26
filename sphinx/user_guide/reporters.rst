@@ -113,13 +113,11 @@ intermediate information that is expensive to compute, such as predictions. It
 efficiently re-uses this information when recomputing the same metric or a metric
 requiring the same intermediate information.
 
-We expose three methods to interact with the cache:
-
-- :meth:`EstimatorReport.cache_predictions` to cache the predictions of the estimator
-  without awaiting the computation when calling the evaluation metrics.
-- :meth:`EstimatorReport.clear_cache` to clear the cache.
-- :meth:`EstimatorReport.get_predictions` to get the predictions from the cache or
-  compute them if they are not in the cache.
+Predictions and related outputs are stored in memory the first time they are needed
+(for example when you compute a metric or call :meth:`EstimatorReport.get_predictions`).
+Later calls that need the same values reuse them, so you typically do not need to
+think about warming or invalidating a cache. Use :meth:`EstimatorReport.get_predictions`
+when you need the raw model outputs; metrics and displays use the same path internally.
 
 .. note::
     The current implementation of the caching mechanism happens in-memory. It is
@@ -128,8 +126,8 @@ We expose three methods to interact with the cache:
     section :ref:`project` for more details.
 
 Refer to the example entitled
-:ref:`sphx_glr_auto_examples_technical_details_plot_cache_mechanism.py` to get a
-detailed view of the caching mechanism.
+:ref:`sphx_glr_auto_examples_technical_details_plot_cache_mechanism.py` for a
+concrete walkthrough of first versus repeated evaluation time.
 
 .. _cross_validation_report:
 

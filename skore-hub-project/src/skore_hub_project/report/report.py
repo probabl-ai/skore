@@ -106,7 +106,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         - int [0, inf[, to be displayed at the position,
         - None, not to be displayed.
         """
-        self.report.cache_predictions()
+        self.report._cache_predictions()
 
         metrics = [metric_cls(report=self.report) for metric_cls in self.METRICS]
 

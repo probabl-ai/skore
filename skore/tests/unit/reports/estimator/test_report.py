@@ -172,7 +172,7 @@ def test_check_support_plot(
     ],
 )
 def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_keys):
-    """Check that calling cache_predictions fills the cache."""
+    """Check that :meth:`EstimatorReport._cache_predictions` fills the cache."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     if pass_train_data:
         report = EstimatorReport(
@@ -182,11 +182,11 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
         report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     assert report._cache == {}
-    report.cache_predictions()
+    report._cache_predictions()
     assert len(report._cache) == expected_n_keys
     assert report._cache != {}
     stored_cache = deepcopy(report._cache)
-    report.cache_predictions()
+    report._cache_predictions()
     # check that the keys are exactly the same
     assert report._cache.keys() == stored_cache.keys()
 
@@ -222,7 +222,7 @@ def test_pickle(forest_binary_classification_with_test):
     """
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    report.cache_predictions()
+    report._cache_predictions()
 
     with BytesIO() as stream:
         joblib.dump(report, stream)
@@ -539,7 +539,7 @@ def test_from_state_bypasses_init_and_restores_state(
         pos_label=1,
     )
     expected_accuracy = report.metrics.accuracy()
-    report.cache_predictions()
+    report._cache_predictions()
     report.metrics.add("f1", name="F1")
     state = report.get_state()
     assert state["metadata"]["report_type"] == report._report_type

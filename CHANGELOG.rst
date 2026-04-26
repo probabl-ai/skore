@@ -48,6 +48,13 @@ Added
 Removed
 -------
 
+- **Breaking change:** The public methods ``cache_predictions`` and ``clear_cache`` on
+  :class:`~skore.EstimatorReport`, :class:`~skore.CrossValidationReport`, and
+  :class:`~skore.ComparisonReport` are removed. The library still uses
+  ``_cache_predictions`` and ``_clear_cache`` internally; in application code, rely on
+  :meth:`~skore.EstimatorReport.get_predictions` and the metrics and inspection APIs,
+  which populate and reuse the in-memory store automatically.
+
 Fixed
 -----
 

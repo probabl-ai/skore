@@ -346,31 +346,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         return report
 
-    def clear_cache(self) -> None:
-        """Clear the cache.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
-        >>> report.cache_predictions()
-        >>> report.clear_cache()
-        >>> report._cache
-        {}
-        """
+    def _clear_cache(self) -> None:
+        """Reset the in-memory cache used for predictions and timings."""
         self._cache = Cache()
 
-    def cache_predictions(
+    def _cache_predictions(
         self,
         data_source: DataSource | Literal["both"] = "both",
     ) -> None:
-        """Cache estimator's predictions.
+        """Precompute and store predictions and related outputs for a data source.
 
         Parameters
         ----------
@@ -380,25 +364,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             - "test" : cache predictions for the test set only.
             - "train" : cache predictions for the train set only.
             - "both" : cache predictions for both train and test sets when available.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
-        >>> report.cache_predictions()
-        >>> report._cache
-        {...}
         """
         if data_source == "both":
-            self.cache_predictions(data_source="test")
+            self._cache_predictions(data_source="test")
             if self.X_train is not None:
-                self.cache_predictions(data_source="train")
+                self._cache_predictions(data_source="train")
             return
 
         data = self._test_data if data_source == "test" else self._train_data
@@ -655,7 +625,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             raise ValueError(f"Cannot specify a `pos_label` for task {self.ml_task}")
 
         method_name = _check_response_method(self.estimator_, response_method).__name__
-        self.cache_predictions(data_source=data_source)
+        self._cache_predictions(data_source=data_source)
         cache_key = make_cache_key(data_source, method_name)
         predictions = self._cache[cache_key]
 

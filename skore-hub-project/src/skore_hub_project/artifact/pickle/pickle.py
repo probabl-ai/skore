@@ -51,7 +51,7 @@ class Pickle(Artifact):
         reports_with_cache = [
             (report, report._cache) for report in reports if hasattr(report, "_cache")
         ]
-        self.report.clear_cache()
+        self.report._clear_cache()
 
         try:
             with BytesIO() as stream:

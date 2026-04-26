@@ -110,17 +110,11 @@ hgbt_model_report.help()
 # %%
 # A report provides a collection of useful information. For instance, it allows to
 # compute on demand the predictions of the model and some performance metrics.
-#
-# Let's cache the predictions of the cross-validated models once and for all.
+# The first time you call a summary of metrics, the report performs the per-fold
+# work it needs; later calls in the same session can reuse a lot of that work.
 
 # %%
-hgbt_model_report.cache_predictions()
-
-# %%
-# Now that the predictions are cached, any request to compute a metric will be
-# performed using the cached predictions and will thus be fast.
-#
-# We can now have a look at the performance of the model with some standard metrics.
+# We can have a look at the performance of the model with some standard metrics.
 
 # %%
 hgbt_model_report.metrics.summarize().frame()
@@ -254,17 +248,9 @@ linear_model_report.help()
 # We observe that the cross-validation report has detected that we have a regression
 # task at hand and thus provides us with some metrics and plots that make sense with
 # regards to our specific problem at hand.
-#
-# To accelerate any future computation (e.g. of a metric), we cache the predictions of
-# our model once and for all.
-# Note that we do not necessarily need to cache the predictions as the report will
-# compute them on the fly (if not cached) and cache them for us.
 
 # %%
-linear_model_report.cache_predictions()
-
-# %%
-# We can now have a look at the performance of the model with some standard metrics.
+# We can have a look at the performance of the model with some standard metrics.
 
 # %%
 linear_model_report.metrics.summarize().frame(favorability=True)
@@ -285,9 +271,9 @@ comparator.metrics.summarize().frame(favorability=True)
 # %%
 # In addition, if we forgot to compute a specific metric
 # (e.g. :func:`~sklearn.metrics.mean_absolute_error`),
-# we can easily add it to the report, without re-training the model and even
-# without re-computing the predictions since they are cached internally in the report.
-# This allows us to save some potentially huge computation time.
+# we can easily add it to the report, without re-training the model. The
+# comparison reuses the underlying reports' stored evaluation where possible, so
+# you can avoid redundant prediction work in the same session.
 
 # %%
 comparator.metrics.add(metric="neg_mean_absolute_error", name="MAE")

@@ -156,7 +156,7 @@ def test_inspection(
     }
 
     # unavailable accessor
-    report.clear_cache()
+    report._clear_cache()
     monkeypatch.delattr(report.inspection.__class__, accessor)
     upload_mock.reset_mock()
 
