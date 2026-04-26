@@ -367,7 +367,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             more details.
 
         """
-        y_pred = self._parent.get_predictions(
+        y_pred = self._parent._get_predictions(
             data_source=data_source,
             response_method="predict_proba",
         )
