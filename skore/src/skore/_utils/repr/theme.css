@@ -15,12 +15,12 @@
 .container[data-theme="dark"],
 :host(.dark-theme),
 :host([data-theme="dark"]) {
-    --color-blue: #56B4DC;
-    --color-orange: #f97316;
+    --color-blue: #79c0ff;
+    --color-orange: #f8ab53;
     --color-text: #fff;
     --color-background: #0F0F0F;
-    --color-orange-hover: rgba(249, 115, 22, 0.2);
-    --color-blue-hover: rgba(86, 180, 220, 0.2);
+    --color-orange-hover: rgba(248, 171, 83, 0.2);
+    --color-blue-hover: rgba(121, 192, 255, 0.2);
     --color-row-stripe: rgba(255, 255, 255, 0.08);
 }
 
