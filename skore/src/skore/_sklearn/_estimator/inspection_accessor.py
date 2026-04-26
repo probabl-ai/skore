@@ -333,7 +333,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
-    )
+    @available_if(_check_estimator_has_method("predict_proba"))
+    def calibration_curve(
     def calibration_curve(
         self,
         *,
