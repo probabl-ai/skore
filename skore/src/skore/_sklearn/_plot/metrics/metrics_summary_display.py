@@ -192,28 +192,13 @@ class MetricsSummaryDisplay(DisplayMixin):
         df = data.copy()
         df = df.dropna(axis="columns", how="all")
 
-        extra_index_name = None
-        if {"label", "average"}.issubset(df.columns):
-            extra_index_name = "Label / Average"
-            df[extra_index_name] = df["label"].combine_first(df["average"])
-            df = df.drop(columns=["label", "average"])
-        elif {"output", "average"}.issubset(df.columns):
-            extra_index_name = "Output / Average"
-            df[extra_index_name] = df["label"].combine_first(df["average"])
-            df = df.drop(columns=["label", "average"])
-        elif "label" in df.columns:
-            extra_index_name = "label"
-        elif "output" in df.columns:
-            extra_index_name = "output"
-        elif "average" in df.columns:
-            extra_index_name = "average"
+        for col in df.columns.intersection(["label", "output", "average"]):
+            df[col] = df[col].astype("string").fillna("")
 
         estimator_name = df.pop("estimator_name").iloc[0]
-
-        index = ["metric_verbose_name"]
-        if extra_index_name is not None:
-            df[extra_index_name] = df[extra_index_name].astype("string").fillna("")
-            index.append(extra_index_name)
+        index = df.columns.intersection(
+            ["metric_verbose_name", "label", "output", "average"]
+        ).to_list()
         df = df.set_index(index)
 
         # Rename columns as well as index names
