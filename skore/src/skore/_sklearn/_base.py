@@ -10,7 +10,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from skore._config import configuration
-from skore._sklearn._diagnostic.base import Check, DiagnosticDisplay
+from skore._sklearn._diagnostic.base import Check, CheckCode, DiagnosticDisplay
 from skore._sklearn._diagnostic.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._diagnostic.utils import CheckNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
@@ -32,54 +32,69 @@ class _BaseReport(ReportHelpMixin):
         "comparison-cross-validation",
     ]
 
-    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
+    def _aggregate_checks(
+        self, ignored_codes: set[CheckCode]
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
         """Aggregate EstimatorReport checks.
 
         Overwritten in CrossValidation and Comparison reports.
+
+        Returns ``(check_results, applicable_codes)``.
         """
         return ({}, set())
 
-    def _get_issues(self) -> tuple[dict[str, dict], set[str]]:
-        """Get the issues from the cache or compute them."""
-        if not hasattr(self, "_issues_cache"):
-            self._issues_cache: dict[str, dict] = {}
-        if not hasattr(self, "_checked_codes"):
-            self._checked_codes: set[str] = set()
+    def _get_results(
+        self, ignored_codes: set[CheckCode]
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+        """Get the check results from the cache or compute them.
+
+        Parameters
+        ----------
+        ignored_codes : set of CheckCode
+            Check codes to exclude from the results, e.g. ``{"SKD001"}``.
+
+        Returns ``(check_results, applicable_codes)`` where ``applicable_codes``
+        contains the codes of the checks that actually ran on the report,
+        i.e. those that did not raise :class:`CheckNotApplicable` and are not
+        in the ``ignored_codes`` set.
+        """
+        if not hasattr(self, "_check_results_cache"):
+            self._check_results_cache: dict[CheckCode, dict] = {}
+        if not hasattr(self, "_applicable_codes"):
+            self._applicable_codes: set[CheckCode] = set()
 
         for check in self._checks_registry:
             if (
-                check.code not in self._checked_codes
-                and check.report_type == self._report_type
+                check.report_type != self._report_type
+                or check.code in self._check_results_cache
+                or check.code in ignored_codes
             ):
-                try:
-                    explanation = check.check_function(self)
-                    if explanation:
-                        self._issues_cache.update(
-                            {
-                                check.code: {
-                                    "title": check.title,
-                                    "docs_url": check.docs_url,
-                                    "explanation": explanation,
-                                }
-                            }
-                        )
-                    self._checked_codes.add(check.code)
-                except CheckNotApplicable:
-                    self._checked_codes |= {check.code}
+                continue
+            try:
+                explanation = check.check_function(self)
+                self._applicable_codes.add(check.code)
+            except CheckNotApplicable:
+                explanation = None
+            self._check_results_cache[check.code] = {
+                "title": check.title,
+                "docs_url": check.docs_url,
+                "explanation": explanation,
+                "severity": getattr(check, "severity", "issue"),
+            }
 
         if "cross-validation" in self._report_type or "comparison" in self._report_type:
-            aggregated = self._aggregate_checks()
+            agg_check_results, agg_applicable = self._aggregate_checks(ignored_codes)
             return (
-                self._issues_cache | aggregated[0],
-                self._checked_codes | aggregated[1],
+                self._check_results_cache | agg_check_results,
+                self._applicable_codes | agg_applicable,
             )
 
-        return self._issues_cache, self._checked_codes
+        return self._check_results_cache, self._applicable_codes
 
     def diagnose(
         self,
         *,
-        ignore: list[str] | tuple[str, ...] | None = None,
+        ignore: list[CheckCode] | tuple[CheckCode, ...] | None = None,
     ) -> DiagnosticDisplay:
         """Run checks and return a diagnostic with detected issues.
 
@@ -95,9 +110,9 @@ class _BaseReport(ReportHelpMixin):
         Returns
         -------
         DiagnosticDisplay
-            A display object with an HTML representation, with the full list of
-            detected issues accessible via the :meth:`~DiagnosticDisplay.frame`
-            method.
+            A display object with an HTML representation organized as three
+            tabs (``Issues``, ``Tips``, ``Passed``). The full list of results
+            is accessible via the :meth:`~DiagnosticDisplay.frame` method.
 
         Examples
         --------
@@ -107,28 +122,34 @@ class _BaseReport(ReportHelpMixin):
         >>> X, y = make_classification(random_state=42)
         >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
         >>> report.diagnose()
-        Diagnostic: 1 issue(s) detected, ...
-        - [SKD002] Potential underfitting.
+        Diagnostic: 1 issue(s), ...
+        Issues:
+        - [SKD002] Potential underfitting...
         ...
         >>> report.diagnose(ignore=["SKD002"])
-        Diagnostic: 0 issue(s) detected, ..., 1 ignored.
-        - No issues were detected in your report!
+        Diagnostic: 0 issue(s), ... 1 ignored.
+        ...
         """
-        ignored: set[str] = set()
+        ignored_codes: set[CheckCode] = set()
         if ignore:
-            ignored.update(code.strip().upper() for code in ignore if code.strip())
+            ignored_codes.update(
+                code.strip().upper() for code in ignore if code.strip()
+            )
         if configuration.ignore_checks:
-            ignored.update(
+            ignored_codes.update(
                 code.strip().upper()
                 for code in configuration.ignore_checks
                 if code.strip()
             )
-        issues, checked_codes = self._get_issues()
-        filtered = {
-            code: issue for code, issue in issues.items() if code not in ignored
-        }
-        checks_ran = len(checked_codes - ignored)
-        return DiagnosticDisplay(filtered, checks_ran, n_ignored=len(ignored))
+        check_results, applicable_codes = self._get_results(ignored_codes)
+        return DiagnosticDisplay(
+            check_results={
+                code: check_result
+                for code, check_result in check_results.items()
+                if code in applicable_codes and code not in ignored_codes
+            },
+            n_ignored_codes=len(ignored_codes),
+        )
 
     def add_checks(
         self,
