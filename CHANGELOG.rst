@@ -42,6 +42,13 @@ Release highlights
 Changed
 -------
 
+- **Breaking change:** :meth:`EstimatorReport.metrics.add` now supports *scorers*, in
+  the scikit-learn sense, i.e. callables with the signature
+  ``(estimator, X, y_true, **kw) -> score``. Callables with the signature
+  ``(y_true, y_pred, **kw) -> score`` are no longer supported directly: users should
+  convert those to scorers using :func:`sklearn.metrics.make_scorer`. See :pr:`2814` by
+  :user:`auguste-probabl`.
+
 Added
 -----
 

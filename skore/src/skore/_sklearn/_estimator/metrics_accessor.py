@@ -27,13 +27,15 @@ from skore._sklearn.metrics import (
     Mae,
     Mape,
     Metric,
+    MetricLike,
+    MissingKwargsError,
     Precision,
     PredictTime,
     Recall,
     Rmse,
     RocAuc,
 )
-from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
+from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
 
@@ -131,13 +133,13 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             return MetricsSummaryDisplay(rows=combined, report_type="estimator")
 
         registry = self._parent._metric_registry
-        parsed_metrics: list[Metric]
         if isinstance(metric, str):
             parsed_metrics = [registry[metric]]
         elif isinstance(metric, Iterable) and metric:
             parsed_metrics = [registry[m] for m in metric]
         else:
             parsed_metrics = list(registry.values())
+        parsed_metrics = cast(list[Metric], parsed_metrics)
 
         rows = []
         for parsed_metric in parsed_metrics:
@@ -190,7 +192,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         metric: MetricLike,
         *,
         name: str | None = None,
-        response_method: str | list[str] = "predict",
         greater_is_better: bool = True,
         **kwargs: Any,
     ) -> None:
@@ -206,16 +207,15 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
               may also be passed without it (e.g. ``"mean_squared_error"``); the alias
               is resolved automatically.
             - If a callable, it must have the signature
-              ``(y_true, y_pred, **kw) -> float``. It may also return a ``dict`` mapping
-              class labels to floats (e.g. ``{0: 0.9, 1: 0.85}``), in which case
+              ``(estimator, X, y_true, **kw) -> float``. It may also return a ``dict``
+              mapping class labels to floats (e.g. ``{0: 0.9, 1: 0.85}``), in which case
               :meth:`summarize` will show one row per class label under the metric name.
+              If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
+              :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
 
         name : str, optional
             Custom name for the metric. If not provided, the name is inferred
             from the metric (e.g. the function's ``__name__``).
-
-        response_method : str or list of str, default="predict"
-            Estimator method to get predictions (only for callables).
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -242,15 +242,20 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                                            ...
         Mean Absolute Error                ...
         """
-        self._parent._metric_registry.add(
-            Metric.new(
-                metric,
-                name=name,
-                response_method=response_method,
-                greater_is_better=greater_is_better,
-                kwargs=kwargs,
+        try:
+            self._parent._metric_registry.add(
+                Metric.new(
+                    metric,
+                    name=name,
+                    greater_is_better=greater_is_better,
+                    kwargs=kwargs,
+                )
             )
-        )
+        except MissingKwargsError as error:
+            args_msg = ", ".join(f"{kwarg}=..." for kwarg in error.missing_kwargs)
+            raise ValueError(
+                f"{error.msg} Pass those kwargs to add: add({error.metric}, {args_msg})"
+            ) from error
 
     def remove(self, name: str) -> None:
         """Remove a metric from the registry.
