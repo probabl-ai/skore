@@ -45,7 +45,7 @@ def evaluate(
         Feature matrix. When ``estimator`` is a list, ``X`` can be a list of
         feature matrices (one per estimator) to compare models with different
         preprocessing pipelines. When ``estimator`` is a dict, ``X`` can be a
-        dict with the **same keys** mapping each name to its feature matrix, or
+        dict with the same keys, mapping each name to its feature matrix, or
         a single matrix broadcast to every estimator. When comparing prefit
         estimators and no test features are needed, pass ``X=None``. A list of
         ``X`` is not supported when ``estimator`` is a dict; use a dict aligned on
@@ -181,8 +181,8 @@ def evaluate(
     if isinstance(splitter, str):
         if splitter != "prefit":
             raise ValueError(
-                f"Invalid string value for splitter: {splitter!r}."
-                " The only supported string value is 'prefit'."
+                f"Invalid string value for splitter: {splitter!r}. "
+                "The only supported string value is 'prefit'."
             )
         return EstimatorReport(
             estimator,
