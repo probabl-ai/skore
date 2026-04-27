@@ -21,6 +21,7 @@ functionalities of the report are exposed through accessors.
 
    CrossValidationReport.help
    CrossValidationReport.diagnose
+   CrossValidationReport.add_checks
    CrossValidationReport.cache_predictions
    CrossValidationReport.clear_cache
    CrossValidationReport.create_estimator_report

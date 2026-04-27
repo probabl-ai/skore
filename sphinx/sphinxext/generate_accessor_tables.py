@@ -1,12 +1,14 @@
 """
-Sphinx extension to automatically generate accessor method tables using Jinja templates,
-and to generate autosummary .inc files for accessor methods in report classes.
+Sphinx extension to automatically generate accessor and report-method tables using
+Jinja templates, and to generate autosummary .inc files for accessor methods in report
+classes.
 
-This extension adds a config value ``accessor_summary_classes`` which should be a
-list of class paths to generate accessor summaries for. For each accessor in each
-report class, a file is generated at ``reference/api/<ClassName>.<accessor_name>.inc``
-containing the autosummary directive. The report RST files should include these
-with ``.. include::``.
+This extension adds ``accessor_summary_classes`` (list of class paths) and optional
+``accessor_summary_exclude_methods`` (names omitted from the report-method table).
+
+For each accessor in each report class, a file is generated at
+``reference/api/<ClassName>.<accessor_name>.inc`` containing the autosummary directive.
+The report RST files should include these with ``.. include::``.
 """
 
 import inspect
@@ -71,27 +73,53 @@ def get_accessor_methods(cls: type, accessor_name: str) -> list[tuple[str, str]]
         attr = getattr(accessor_cls, name)
         if not callable(attr):
             continue
-        doc = get_doc_first_line(attr)
-        methods.append((name, doc))
+        methods.append((name, get_doc_first_line(attr)))
     return sorted(methods)
 
 
-def get_accessor_data(cls: type) -> dict[str, Any]:
+def get_report_methods(
+    cls: type,
+    accessor_names: set[str],
+    exclude_names: set[str] | frozenset[str],
+) -> list[tuple[str, str]]:
+    """Get public callables on the report class excluding accessors and exclusions."""
+    methods: list[tuple[str, str]] = []
+    for name in dir(cls):
+        if name.startswith("_"):
+            continue
+        if name in accessor_names or name in exclude_names:
+            continue
+        attr = getattr(cls, name)
+        if isinstance(attr, property) or not callable(attr):
+            continue
+        methods.append((name, get_doc_first_line(attr)))
+    return sorted(methods)
+
+
+def get_accessor_data(
+    cls: type,
+    exclude_report_methods: set[str] | frozenset[str] | None = None,
+) -> dict[str, Any]:
     """Get accessor data for template rendering.
 
     Parameters
     ----------
     cls : type
         The class object.
+    exclude_report_methods : set of str or frozenset of str or None, default=None
+        Names of callables to omit from the report-method list (e.g. serialization).
 
     Returns
     -------
     dict
-        Dictionary with accessor data for template.
+        Dictionary with ``name``, ``doc``, ``methods``, and ``accessors`` for the
+        template.
     """
     if not hasattr(cls, "_ACCESSOR_CONFIG"):
         raise ValueError(f"{cls} has no attribute '_ACCESSOR_CONFIG'.")
     accessor_config: dict = cls._ACCESSOR_CONFIG
+    accessor_names = {info["name"] for info in accessor_config.values()}
+    exclude = frozenset(exclude_report_methods or ())
     accessors = {}
     for accessor_info in accessor_config.values():
         accessor_name = accessor_info["name"]
@@ -102,6 +130,7 @@ def get_accessor_data(cls: type) -> dict[str, Any]:
     return {
         "name": cls.__name__,
         "doc": get_doc_first_line(cls),
+        "methods": get_report_methods(cls, accessor_names, exclude),
         "accessors": accessors,
     }
 
@@ -168,7 +197,9 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
         module_name, class_name = class_path.rsplit(".", 1)
         module = __import__(module_name, fromlist=[class_name])
         cls = getattr(module, class_name)
-        class_data = get_accessor_data(cls)
+        class_data = get_accessor_data(
+            cls, exclude_report_methods=set(config.accessor_summary_exclude_methods)
+        )
         classes_data.append((class_path, class_data))
         logger.info(f"Collected accessor data for {class_name}")
 
@@ -254,6 +285,11 @@ def setup(app: Sphinx) -> dict[str, Any]:
         Extension metadata including version and parallel safety flags.
     """
     app.add_config_value("accessor_summary_classes", [], "html")
+    app.add_config_value(
+        "accessor_summary_exclude_methods",
+        ["get_state", "from_state"],
+        "html",
+    )
     app.connect("config-inited", generate_accessor_tables)
     return {
         "version": "0.1",

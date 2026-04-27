@@ -189,6 +189,7 @@ sphinx/reference/api/
 sphinx/sg_execution_times.rst
 examples/plot_*.png
 sphinx/_templates/generated_*
+examples/integrations/mlruns/
 
 # Include excluded directories from github-actions
 !/.github/**/build/
