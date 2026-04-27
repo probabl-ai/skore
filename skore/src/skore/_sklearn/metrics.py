@@ -648,7 +648,7 @@ class MetricRegistry(UserDict[str, Metric]):
         Raises
         ------
         KeyError
-            If *name* is not registered.
+            If `name` is not registered.
         """
         if name not in self.data:
             raise KeyError(name)
