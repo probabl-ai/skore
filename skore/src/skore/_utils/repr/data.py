@@ -34,10 +34,18 @@ class AttributeHelp:
 
 
 @dataclass
+class MethodGroupHelp:
+    branch_id: str
+    name: str
+    methods: list[MethodHelp]
+
+
+@dataclass
 class AccessorBranchHelp:
     branch_id: str
     name: str
     methods: list[MethodHelp]
+    groups: list[MethodGroupHelp] | None = None
 
 
 @dataclass
@@ -59,6 +67,7 @@ class AccessorHelpData:
     accessor_name: str
     accessor_branch_id: str
     methods: list[MethodHelp]
+    groups: list[MethodGroupHelp] | None = None
 
 
 @dataclass
@@ -393,6 +402,66 @@ class _BaseHelpDataMixin(ABC):
         return items, section
 
 
+def _build_method_groups(
+    accessor: Any, methods: list[MethodHelp]
+) -> list[MethodGroupHelp] | None:
+    """Partition ``methods`` according to ``accessor._HELP_METHOD_GROUPS``.
+
+    Returns ``None`` when the accessor's class does not declare
+    ``_HELP_METHOD_GROUPS``. Otherwise iterates groups in declared order,
+    keeping only methods that are present in ``methods`` and preserving the
+    order specified by ``_HELP_METHOD_GROUPS``. Empty groups are skipped.
+    Methods present on the accessor but not listed in any group are appended
+    to a final ``"Other"`` group; if no such method exists, no extra group
+    is added.
+
+    Parameters
+    ----------
+    accessor : object
+        The accessor instance whose class may declare ``_HELP_METHOD_GROUPS``.
+    methods : list of MethodHelp
+        The full list of method help entries already built for the accessor.
+
+    Returns
+    -------
+    list of MethodGroupHelp or None
+    """
+    group_spec: dict[str, tuple[str, ...]] | None = getattr(
+        type(accessor), "_HELP_METHOD_GROUPS", None
+    )
+    if not group_spec:
+        return None
+
+    method_by_name = {m.name: m for m in methods}
+    declared = {n for names in group_spec.values() for n in names}
+
+    groups: list[MethodGroupHelp] = []
+    for group_name, method_names in group_spec.items():
+        group_methods = [
+            method_by_name[name] for name in method_names if name in method_by_name
+        ]
+        if group_methods:
+            groups.append(
+                MethodGroupHelp(
+                    branch_id=str(uuid.uuid4()),
+                    name=group_name,
+                    methods=group_methods,
+                )
+            )
+
+    other_methods = [m for m in methods if m.name not in declared]
+    if other_methods:
+        groups.append(
+            MethodGroupHelp(
+                branch_id=str(uuid.uuid4()),
+                name="Other",
+                methods=other_methods,
+            )
+        )
+
+    return groups or None
+
+
 class _ReportHelpDataMixin(_BaseHelpDataMixin):
     """Mixin responsible for building help data structures for reports.
 
@@ -426,6 +495,7 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
                         branch_id=str(uuid.uuid4()),
                         name=config["name"],
                         methods=methods,
+                        groups=_build_method_groups(accessor, methods),
                     )
                 )
 
@@ -487,6 +557,7 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
             accessor_name=accessor_name,
             accessor_branch_id=str(uuid.uuid4()),
             methods=methods,
+            groups=_build_method_groups(self, methods),
         )
 
 
