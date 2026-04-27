@@ -180,6 +180,17 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 **kwargs,
             )
 
+    def remove(self, name: str) -> None:
+        """Remove a metric from each underlying estimator report.
+
+        Parameters
+        ----------
+        name : str
+            The name of the metric to remove.
+        """
+        for report in self._parent.estimator_reports_:
+            report.metrics.remove(name)
+
     def timings(
         self,
         aggregate: Aggregate | None = ("mean", "std"),

@@ -252,6 +252,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             )
         )
 
+    def remove(self, name: str) -> None:
+        """Remove a metric from the registry.
+
+        Parameters
+        ----------
+        name : str
+            The name of the metric to remove.
+        """
+        self._parent._metric_registry.remove(name)
+
     def fit_time(self, cast: bool = True) -> float | None:
         """Get time to fit the estimator.
 
