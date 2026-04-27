@@ -96,7 +96,7 @@ console = Console(
     width=88,
     theme=Theme({"repr.str": "cyan", "rule.line": "orange1", "repr.url": "orange1"}),
     # ...
-    force_jupyter=is_environment_notebook_like(),
+    force_jupyter=(is_environment_notebook_like() or None),
 )
 
 
