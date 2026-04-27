@@ -6,7 +6,7 @@ Automatic detection of modelling issues
 =======================================
 
 `skore` can automatically detect common modeling pitfalls such as overfitting
-and underfitting. This example walks through the ``.diagnosis`` namespace: how to
+and underfitting. This example walks through the ``.diagnosis`` accessor: how to
 run checks, how to read the detected issues, and how to mute specific checks.
 
 We use a purely non-linear regression target and deliberately pick models that
@@ -41,9 +41,9 @@ deep_tree = DecisionTreeRegressor(random_state=42)
 
 # %%
 # Calling :meth:`~skore.EstimatorReport.diagnosis` explicitly
-# ==========================================================
+# ===========================================================
 #
-# Every report exposes a callable :meth:`~skore.EstimatorReport.diagnosis` namespace.
+# Every report exposes a callable :meth:`~skore.EstimatorReport.diagnosis` accessor.
 # Checks are computed lazily and cached, so calling
 # :meth:`~skore.EstimatorReport.diagnosis` is always cheap after the first call.
 

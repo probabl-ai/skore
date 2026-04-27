@@ -7,7 +7,7 @@ Adding custom diagnostic checks
 
 `skore` lets you extend the built-in diagnostic checks with your own.
 This example shows how to write a custom check function and register it
-with a report via :meth:`~skore.EstimatorReport.diagnosis`.
+with a report via :meth:`~skore.EstimatorReport.diagnosis.add`.
 """
 
 # %%
@@ -19,7 +19,7 @@ with a report via :meth:`~skore.EstimatorReport.diagnosis`.
 # report. We throw an exception when the test data is not available to avoid
 # running the check when it is not applicable. The check function is wrapped in a
 # :class:`~skore.Check` instance and registered with the report via
-# :meth:`~skore.EstimatorReport.diagnosis`.
+# :meth:`~skore.EstimatorReport.diagnosis.add`.
 #
 # The `docs_url` argument is optional. When provided as a full URL (starting
 # with ``"http"``), it is used as-is. When it is a plain anchor string
