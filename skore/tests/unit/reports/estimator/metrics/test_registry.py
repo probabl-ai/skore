@@ -326,7 +326,8 @@ class TestCacheBehavior:
 
         scorer1_v2 = make_scorer(metric1, response_method="predict")
         err_msg = re.escape(
-            "Cannot add 'metric1': it already exists. Remove it before adding it again."
+            "Cannot add 'metric1': it already exists. Remove it first using the "
+            "`remove` method."
         )
         with pytest.raises(ValueError, match=err_msg):
             report.metrics.add(scorer1_v2)
@@ -406,7 +407,8 @@ class TestEdgeCases:
             return 1
 
         err_msg = re.escape(
-            "Cannot add 'score': it already exists. Remove it before adding it again."
+            "Cannot add 'score': it already exists. "
+            "Remove it first using the `remove` method."
         )
         with pytest.raises(ValueError, match=err_msg):
             report.metrics.add(make_scorer(score, response_method="predict"))
@@ -608,8 +610,8 @@ class TestStringScorerNames:
         assert "mean_squared_error" in report._metric_registry
 
         err_msg = re.escape(
-            "Cannot add 'mean_squared_error': it already exists. Remove it before "
-            "adding it again."
+            "Cannot add 'mean_squared_error': it already exists. "
+            "Remove it first using the `remove` method."
         )
         with pytest.raises(ValueError, match=err_msg):
             report.metrics.add("neg_mean_squared_error")

@@ -701,7 +701,7 @@ class MetricRegistry(UserDict[str, Metric]):
         if metric.name in self.data:
             raise ValueError(
                 f"Cannot add {metric.name!r}: it already exists. "
-                "Remove it before adding it again."
+                "Remove it first using the `remove` method."
             )
 
         self.data[metric.name] = metric
