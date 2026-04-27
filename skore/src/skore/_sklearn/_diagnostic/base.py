@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from html import escape
 from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, Literal, Protocol, cast, runtime_checkable
 from uuid import uuid4
@@ -20,10 +19,25 @@ if TYPE_CHECKING:
 CheckCode = str
 
 
-_TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str]] = [
-    ("Issues", "issue", "No issues were detected in your report."),
-    ("Tips", "tip", "No tips were emitted for your report."),
-    ("Passed", "passed", "No checks passed without reporting anything."),
+_TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str, str]] = [
+    (
+        "Issues",
+        "issue",
+        "No issues were detected in your report.",
+        "Modeling problems flagged by applicable checks.",
+    ),
+    (
+        "Tips",
+        "tip",
+        "No tips were emitted for your report.",
+        "Cautions to keep in mind when interpreting the results.",
+    ),
+    (
+        "Passed",
+        "passed",
+        "No checks passed without reporting anything.",
+        "Checks that ran on your report without flagging anything.",
+    ),
 ]
 
 
@@ -111,36 +125,35 @@ class DiagnosticDisplay(DisplayHelpMixin):
                 raise ValueError(f"Invalid severity: {severity}")
 
     def _repr_html_(self) -> str:
-        fragments: dict[str, str] = {}
-        for label, severity, empty_message in _TAB_SPECS:
+        tabs = []
+        for label, severity, empty_message, help_text in _TAB_SPECS:
             df = self.frame(severity=severity)
-            fragments[f"{severity}_label"] = f"{label} ({len(df)})"
-            if len(df):
-                items = []
-                for row in df.itertuples():
-                    line = f"[{escape(row.code)}] {escape(row.title)}."
-                    if pd.notna(row.explanation):
-                        line += f" {escape(row.explanation)}"
-                    if pd.notna(row.documentation_url):
-                        line += (
-                            f" Read more about this"
-                            f' <a href="{escape(row.documentation_url, quote=True)}"'
-                            ' target="_blank" rel="noopener noreferrer">here</a>.'
-                        )
-                    items.append(f"<li>{line}</li>")
-                fragments[f"{severity}_html"] = (
-                    "<ul class='report-diagnostic-list'>" + "".join(items) + "</ul>"
-                )
-            else:
-                fragments[f"{severity}_html"] = (
-                    f"<p class='report-diagnostic-empty'>{escape(empty_message)}</p>"
-                )
+            tabs.append(
+                {
+                    "label": label,
+                    "empty_message": empty_message,
+                    "help_text": help_text,
+                    "rows": [
+                        {
+                            "code": row.code,
+                            "title": row.title,
+                            "explanation": row.explanation
+                            if pd.notna(row.explanation)
+                            else None,
+                            "documentation_url": row.documentation_url
+                            if pd.notna(row.documentation_url)
+                            else None,
+                        }
+                        for row in df.itertuples()
+                    ],
+                }
+            )
         return render_template(
             "diagnostic_display.html.j2",
             {
                 "container_id": f"skore-diagnostic-{uuid4().hex[:8]}",
                 "header": self.header,
-                **fragments,
+                "tabs": tabs,
             },
         )
 
@@ -151,7 +164,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
         if self._check_results.empty:
             return self.header + "\nAll checks were either ignored or not applicable."
         lines = [self.header]
-        for label, severity, _ in _TAB_SPECS:
+        for label, severity, _, _ in _TAB_SPECS:
             df = self.frame(severity=cast(Literal["issue", "tip", "passed"], severity))
             if df.empty:
                 continue

@@ -1,22 +1,31 @@
-{% set report_tabs = [
-    {"label": issue_label, "help_variant": "text", "help_text": "Modeling problems flagged by applicable checks."},
-    {"label": tip_label, "help_variant": "text", "help_text": "Cautions to keep in mind when interpreting the results."},
-    {"label": passed_label, "help_variant": "text", "help_text": "Checks that ran on your report without flagging anything."},
-] %}
+{% set report_tabs = [] %}
+{% for tab in tabs %}
+    {% set _ = report_tabs.append({"label": tab.label ~ " (" ~ tab.rows|length ~ ")", "help_variant": "text", "help_text": tab.help_text}) %}
+{% endfor %}
 <div class="container">
     <header class="title">{{ header | e }}</header>
     <div class="report-tabset">
         {% include "_report_tabset_chrome.html.j2" %}
         <div class="report-tab-panels">
+            {% for tab in tabs %}
             <div class="report-tab-panel">
-                <div class="report-section report-diagnostic">{{ issue_html | safe }}</div>
+                <div class="report-section report-diagnostic">
+                    {% if tab.rows %}
+                    <ul class="report-diagnostic-list">
+                        {% for row in tab.rows %}
+                        <li>
+                            [{{ row.code }}] {{ row.title }}.
+                            {%- if row.explanation %} {{ row.explanation }}{% endif %}
+                            {%- if row.documentation_url %} Read more about this <a href="{{ row.documentation_url }}" target="_blank" rel="noopener noreferrer">here</a>.{% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="report-diagnostic-empty">{{ tab.empty_message }}</p>
+                    {% endif %}
+                </div>
             </div>
-            <div class="report-tab-panel">
-                <div class="report-section report-diagnostic">{{ tip_html | safe }}</div>
-            </div>
-            <div class="report-tab-panel">
-                <div class="report-section report-diagnostic">{{ passed_html | safe }}</div>
-            </div>
+            {% endfor %}
         </div>
     </div>
     <p class="report-hint-note" role="note">
