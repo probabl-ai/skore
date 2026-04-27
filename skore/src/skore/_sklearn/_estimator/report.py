@@ -180,9 +180,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def _fit_estimator(
         self,
-        estimator: BaseEstimator,
-        data,
-    ) -> tuple[BaseEstimator, float]:
+        estimator: EstimatorLike,
+        data: dict | None,
+    ) -> tuple[EstimatorLike, float]:
+        """Fit the estimator on the training data."""
         if data is None:
             raise ValueError(
                 "The training data is required to fit the estimator. "
@@ -194,7 +195,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return estimator_, fit_time()
 
     @classmethod
-    def _copy_estimator(cls, estimator: BaseEstimator) -> BaseEstimator:
+    def _copy_estimator(cls, estimator: EstimatorLike) -> EstimatorLike:
+        """Copy the estimator."""
         try:
             return copy.deepcopy(estimator)
         except Exception as e:
@@ -482,8 +484,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 self._cache[time_key] = pred_time
                 self._cache[pred_key] = predictions
 
-    def _get_response_and_derived_predictions(self, data, response_method):
+    def _get_response_and_derived_predictions(
+        self,
+        data: dict,
+        response_method: Literal["predict", "predict_proba", "decision_function"],
+    ) -> tuple[ArrayLike, ArrayLike | None, float]:
         """Compute a response array and derive class predictions.
+
+        Parameters
+        ----------
+        data : dict
+            The data to use to compute the response and derive predictions.
+        response_method : str
+            The response method to use to compute the response and derive predictions.
+            Can be "decision_function" or "predict_proba".
 
         Returns
         -------
