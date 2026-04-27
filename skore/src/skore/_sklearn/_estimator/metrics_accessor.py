@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 from typing import Any, Literal, cast
 
@@ -172,6 +174,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             kwargs=kwargs or None,
         )
         return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+
+    def available(self) -> list[str]:
+        """List available metric names in the registry.
+
+        Returns
+        -------
+        list[str]
+            The list of available metric names.
+        """
+        return list(self._parent._metric_registry)
 
     def add(
         self,

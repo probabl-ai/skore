@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numbers
 from typing import Any, Literal
 
@@ -109,6 +111,16 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             report_type="cross-validation",
             extra_rows_data=[{"split": i} for i in range(len(summaries))],
         )
+
+    def available(self) -> list[str]:
+        """List available metric names in the registry.
+
+        Returns
+        -------
+        list[str]
+            The list of available metric names.
+        """
+        return self._parent.estimator_reports_[0].metrics.available()
 
     def add(
         self,

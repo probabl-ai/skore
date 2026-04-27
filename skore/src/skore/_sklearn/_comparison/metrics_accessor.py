@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numbers
 import warnings
 from typing import Any, Literal
@@ -127,6 +129,37 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
                 for estimator_name in self._parent.reports_
             ],
         )
+
+    def available(self, report_name: str | None = None) -> list[str]:
+        """List available metric names in the registry.
+
+        Parameters
+        ----------
+        report_name : str, default=None
+            Name of the sub-report to list metrics from. If `None`, returns the
+            union of metric names across all sub-reports.
+
+        Returns
+        -------
+        list[str]
+            The list of available metric names.
+        """
+        reports = self._parent.reports_
+        if report_name is not None:
+            if report_name not in reports:
+                valid_names = ", ".join(reports)
+                raise ValueError(
+                    f"Unknown report name: {report_name!r}. "
+                    f"Available report names are: {valid_names}."
+                )
+            return reports[report_name].metrics.available()
+
+        keys = dict.fromkeys(
+            metric
+            for report in reports.values()
+            for metric in report.metrics.available()
+        )
+        return list(keys)
 
     def add(
         self,
