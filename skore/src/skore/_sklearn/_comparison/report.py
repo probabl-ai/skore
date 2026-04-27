@@ -13,6 +13,7 @@ from numpy.typing import ArrayLike
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
+from skore._sklearn._diagnostic.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
@@ -466,25 +467,35 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _aggregate_checks(self) -> tuple[dict[str, dict], set[str]]:
-        comparison_issues: dict[str, dict] = {}
-        all_checked_codes: set[str] = set()
+    def _aggregate_checks(
+        self, ignored_codes: set[CheckCode]
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+        comparison_results: dict[CheckCode, dict] = {}
+        reports_by_code: dict[CheckCode, list[str]] = {}
+        all_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
             report.add_checks(self._checks_registry)
-            report_issues, checked_codes = report._get_issues()
-            all_checked_codes |= checked_codes
-            for code, issue in report_issues.items():
-                if code in comparison_issues:
-                    comparison_issues[code]["explanation"] = (
-                        f"[{report_name}] " + comparison_issues[code]["explanation"]
-                    )
-                else:
-                    comparison_issues[code] = {
-                        "title": issue["title"],
-                        "docs_url": issue.get("docs_url"),
-                        "explanation": f"[{report_name}] {issue['explanation']}",
-                    }
-        return comparison_issues, all_checked_codes
+            report_results, applicable_codes = report._get_results(ignored_codes)
+            all_applicable_codes |= applicable_codes
+
+            for code, result in report_results.items():
+                comparison_results.setdefault(
+                    code,
+                    {
+                        "title": result["title"],
+                        "docs_url": result.get("docs_url"),
+                        "explanation": None,
+                        "severity": result.get("severity"),
+                    },
+                )
+                if result["explanation"] is not None:
+                    reports_by_code.setdefault(code, []).append(report_name)
+
+        for code, reports in reports_by_code.items():
+            comparison_results[code]["explanation"] = (
+                f"Detected in: {', '.join(f'[{r}]' for r in reports)}."
+            )
+        return comparison_results, all_applicable_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

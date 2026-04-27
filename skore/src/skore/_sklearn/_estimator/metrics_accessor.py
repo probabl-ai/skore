@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 from typing import Any, Literal, cast
 
@@ -175,6 +177,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         )
         return MetricsSummaryDisplay(rows=rows, report_type="estimator")
 
+    def available(self) -> list[str]:
+        """List available metric names in the registry.
+
+        Returns
+        -------
+        list[str]
+            The list of available metric names.
+        """
+        return list(self._parent._metric_registry)
+
     def add(
         self,
         metric: MetricLike,
@@ -244,6 +256,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             raise ValueError(
                 f"{error.msg} Pass those kwargs to add: add({error.metric}, {args_msg})"
             ) from error
+
+    def remove(self, name: str) -> None:
+        """Remove a metric from the registry.
+
+        Parameters
+        ----------
+        name : str
+            The name of the metric to remove.
+        """
+        self._parent._metric_registry.remove(name)
 
     def fit_time(self, cast: bool = True) -> float | None:
         """Get time to fit the estimator.

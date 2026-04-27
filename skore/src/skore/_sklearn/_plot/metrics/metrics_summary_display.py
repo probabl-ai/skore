@@ -193,7 +193,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         df = df.dropna(axis="columns", how="all")
 
         for col in df.columns.intersection(["label", "output", "average"]):
-            df[col] = df[col].astype("str").replace("<NA>", "").fillna("")
+            df[col] = df[col].astype("string").fillna("")
 
         estimator_name = df.pop("estimator_name").iloc[0]
         index = df.columns.intersection(
@@ -204,7 +204,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         # Rename columns as well as index names
         new_columns = {
             "metric_verbose_name": "Metric",
-            "label": "Label / Average",
+            "label": "Label",
             "output": "Output",
             "average": "Average",
             "score": estimator_name,

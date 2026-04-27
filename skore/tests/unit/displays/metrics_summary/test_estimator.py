@@ -1,6 +1,7 @@
 """Tests for MetricsSummaryDisplay.frame() method."""
 
 import pandas as pd
+from sklearn.metrics import make_scorer, mean_absolute_error, precision_score
 from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport
@@ -47,7 +48,7 @@ def test_flat_index_multiclass(forest_multiclass_classification_with_test):
 
     result_multi = display.frame(favorability=False, flat_index=False)
     assert isinstance(result_multi.index, pd.MultiIndex)
-    assert result_multi.index.names == ["Metric", "Label / Average"]
+    assert result_multi.index.names == ["Metric", "Label"]
 
     result_flat = display.frame(favorability=False, flat_index=True)
     assert isinstance(result_flat.index, pd.Index)
@@ -96,6 +97,30 @@ def test_flat_index_multioutput(linear_regression_multioutput_with_test):
         "fit_time_s",
         "predict_time_s",
     ]
+
+
+def test_custom_macro_metric_uses_average(forest_binary_classification_with_test):
+    """Average-only classification metrics should render in `Average`."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    name = "Precision (Macro)"
+    report.metrics.add(make_scorer(precision_score, average="macro"), name=name)
+    result = report.metrics.summarize(metric=[name]).frame()
+    assert result.reset_index()["Average"].tolist() == ["macro"]
+
+
+def test_multioutput_average_uses_output_average(
+    linear_regression_multioutput_with_test,
+):
+    """Average-only multioutput regression metrics should render in `Average`."""
+    estimator, X_test, y_test = linear_regression_multioutput_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    name = "MAE (Average)"
+    report.metrics.add(
+        make_scorer(mean_absolute_error, multioutput="uniform_average"), name=name
+    )
+    result = report.metrics.summarize(metric=[name]).frame()
+    assert result.reset_index()["Average"].tolist().count("uniform_average") == 1
 
 
 def test_flat_index_with_favorability(forest_binary_classification_with_test):

@@ -167,12 +167,12 @@ def test_precision_recall_pos_label_overwrite(
 
     report = CrossValidationReport(classifier, X, y)
     result_both_labels = getattr(report.metrics, metric)().reset_index()
-    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
-    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+    assert result_both_labels["Label"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label"])
 
     report = CrossValidationReport(classifier, X, y, pos_label="B")
     result = getattr(report.metrics, metric)().reset_index()
-    assert "Label / Average" not in result.columns
+    assert "Label" not in result.columns
     result = result.set_index("Metric")
     assert (
         result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
@@ -183,7 +183,7 @@ def test_precision_recall_pos_label_overwrite(
 
     report = CrossValidationReport(classifier, X, y, pos_label="A")
     result = getattr(report.metrics, metric)().reset_index()
-    assert "Label / Average" not in result.columns
+    assert "Label" not in result.columns
     result = result.set_index("Metric")
     assert (
         result.loc[metric.capitalize(), (report.estimator_name_, "mean")]

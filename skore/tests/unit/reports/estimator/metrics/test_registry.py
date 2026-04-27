@@ -165,6 +165,60 @@ class TestBasicAdd:
             report.metrics.add(make_scorer(accuracy))
 
 
+class TestRemove:
+    """Test metric remove functionality."""
+
+    def test_remove_custom_metric(self, binary_classification_report):
+        """Removing a custom metric drops it from the registry."""
+        report = binary_classification_report
+        report.metrics.add(custom_scorer)
+        assert "business_loss" in report._metric_registry
+
+        report.metrics.remove("business_loss")
+
+        assert "business_loss" not in report._metric_registry
+
+    def test_remove_unknown_metric_raises(self, binary_classification_report):
+        """Removing a name that was never added raises KeyError."""
+        report = binary_classification_report
+        with pytest.raises(KeyError) as exc_info:
+            report.metrics.remove("no_such_metric")
+        assert exc_info.value.args[0] == "no_such_metric"
+
+    def test_remove_builtin_metric(self, binary_classification_report):
+        """Built-in metrics can be removed from the registry."""
+        report = binary_classification_report
+        assert "accuracy" in report._metric_registry
+
+        report.metrics.remove("accuracy")
+
+        assert "accuracy" not in report._metric_registry
+        frame = report.metrics.summarize().frame()
+        assert "Accuracy" not in frame.index
+
+    def test_remove_invalidates_cache_only_for_removed_metric(
+        self, binary_classification_report
+    ):
+        """Removing a metric clears its cache entries only."""
+        report = binary_classification_report
+
+        def metric1(y_true, y_pred):
+            return 0.1
+
+        def metric2(y_true, y_pred):
+            return 0.2
+
+        report.metrics.add(make_scorer(metric1, response_method="predict"))
+        report.metrics.add(make_scorer(metric2, response_method="predict"))
+        report.metrics.summarize(metric="metric1")
+        report.metrics.summarize(metric="metric2")
+
+        report.metrics.remove("metric1")
+
+        assert not any(k[1] == "metric1" for k in report._cache)
+        assert any(k[1] == "metric2" for k in report._cache)
+
+
 class TestSummarizeIntegration:
     """Test integration with the summarize() method."""
 
