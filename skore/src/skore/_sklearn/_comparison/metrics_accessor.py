@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numbers
 import warnings
 from typing import Any, Literal
@@ -17,7 +19,8 @@ from skore._sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.types import Aggregate, MetricLike
+from skore._sklearn.metrics import MetricLike
+from skore._sklearn.types import Aggregate
 from skore._utils._accessor import (
     _check_any_sub_report_has_metric,
     _check_supported_ml_task,
@@ -128,12 +131,42 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             ],
         )
 
+    def available(self, report_name: str | None = None) -> list[str]:
+        """List available metric names in the registry.
+
+        Parameters
+        ----------
+        report_name : str, default=None
+            Name of the sub-report to list metrics from. If `None`, returns the
+            union of metric names across all sub-reports.
+
+        Returns
+        -------
+        list[str]
+            The list of available metric names.
+        """
+        reports = self._parent.reports_
+        if report_name is not None:
+            if report_name not in reports:
+                valid_names = ", ".join(reports)
+                raise ValueError(
+                    f"Unknown report name: {report_name!r}. "
+                    f"Available report names are: {valid_names}."
+                )
+            return reports[report_name].metrics.available()
+
+        keys = dict.fromkeys(
+            metric
+            for report in reports.values()
+            for metric in report.metrics.available()
+        )
+        return list(keys)
+
     def add(
         self,
         metric: MetricLike,
         *,
         name: str | None = None,
-        response_method: str | list[str] = "predict",
         greater_is_better: bool = True,
         position: Literal["first", "last"] = "first",
         **kwargs: Any,
@@ -145,12 +178,20 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         metric : str, sklearn scorer, or callable
             The metric to add.
 
+            - If a string, it will be run through :func:`sklearn.metrics.get_scorer`.
+              Metrics that require a ``neg_`` prefix (e.g. ``"neg_mean_squared_error"``)
+              may also be passed without it (e.g. ``"mean_squared_error"``); the alias
+              is resolved automatically.
+            - If a callable, it must have the signature
+              ``(estimator, X, y_true, **kw) -> float``. It may also return a ``dict``
+              mapping class labels to floats (e.g. ``{0: 0.9, 1: 0.85}``), in which case
+              :meth:`summarize` will show one row per class label under the metric name.
+              If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
+              :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
+
         name : str, optional
             Custom name for the metric. If not provided, the name is inferred
             from the metric (e.g. the function's ``__name__``).
-
-        response_method : str or list of str, default="predict"
-            Estimator method to get predictions (only for callables).
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -177,20 +218,39 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
         >>> report.metrics.summarize().frame()
-        Estimator                            LogisticRegression_1  LogisticRegression_2
-        Metric              Label / Average
+        Estimator                  LogisticRegression_1  LogisticRegression_2
+        Metric              Label
         ...
-        Mean Absolute Error                                   ...                   ...
+        Mean Absolute Error                    ...                   ...
         """
         for report in self._parent.reports_.values():
             report.metrics.add(
                 metric,
                 name=name,
-                response_method=response_method,
                 greater_is_better=greater_is_better,
                 position=position,
                 **kwargs,
             )
+
+    def remove(self, name: str) -> None:
+        """Remove a metric from each underlying estimator report.
+
+        Parameters
+        ----------
+        name : str
+            The technical name of the metric to remove.
+
+        Raises
+        ------
+        KeyError
+            If *name* is not registered on an underlying report.
+
+        See Also
+        --------
+        add : Add a custom metric.
+        """
+        for report in self._parent.reports_.values():
+            report.metrics.remove(name)
 
     def timings(
         self,
@@ -377,10 +437,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
         >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.precision()
-        Estimator                    LogisticRegression_1  LogisticRegression_2
-        Metric      Label / Average
-        Precision                 0               0.90...               0.90...
-                                  1               0.98...               0.98...
+        Estimator        LogisticRegression_1  LogisticRegression_2
+        Metric    Label
+        Precision 0                  0.90...              0.90...
+                  1                  0.98...              0.98...
         """
         return self._metric(
             "precision", data_source=data_source, average=average
@@ -455,10 +515,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
         >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> comparison_report.metrics.recall()
-        Estimator                    LogisticRegression_1  LogisticRegression_2
-        Metric      Label / Average
-        Recall                    0              0.978...              0.978...
-                                  1              0.925...              0.925...
+        Estimator     LogisticRegression_1  LogisticRegression_2
+        Metric Label
+        Recall 0                  0.978...              0.978...
+               1                  0.925...              0.925...
         """
         return self._metric("recall", data_source=data_source, average=average).frame(
             aggregate=aggregate,

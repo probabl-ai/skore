@@ -1,107 +1,184 @@
 from __future__ import annotations
 
 from abc import abstractmethod
-from html import escape
 from importlib.metadata import PackageNotFoundError, version
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, cast, runtime_checkable
+from uuid import uuid4
 
 import pandas as pd
 
 from skore._externals._sklearn_compat import parse_version
 from skore._sklearn.types import ReportType
 from skore._utils.repr.base import DisplayHelpMixin
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
 
 
+CheckCode = str
+
+
+_TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str, str]] = [
+    (
+        "Issues",  # Title of the tab
+        "issue",  # Severity of the checks collected in the tab
+        "No issues were detected in your report.",  # Message when tab is empty
+        "Modeling problems flagged by applicable checks.",  # Help text
+    ),
+    (
+        "Tips",
+        "tip",
+        "No tips were emitted for your report.",
+        "Advice to keep in mind when interpreting the results.",
+    ),
+    (
+        "Passed",
+        "passed",
+        "No checks passed without reporting anything.",
+        "Checks that ran on your report without flagging anything.",
+    ),
+]
+
+
 class DiagnosticDisplay(DisplayHelpMixin):
     """Display for the diagnostic returned by :meth:`Report.diagnose`.
 
-    A display object with an HTML representation, with the full list of
-    detected issues accessible via the :meth:`~DiagnosticDisplay.frame` method.
+    A display object with an HTML representation organized in three tabs
+    (``Issues``, ``Tips``, ``Passed``). The full list of check results is
+    accessible via the :meth:`~DiagnosticDisplay.frame` method.
 
     Parameters
     ----------
-    issues : dict of str to dict
-        Detected issues produced by the report, keyed by check code
+    check_results : dict of str to dict
+        Results of applicable checks keyed by check code
         (e.g. ``"SKD001"``). Each value is a dict with keys ``"title"``,
-        ``"explanation"``, and optionally ``"docs_url"``.
+        ``"explanation"``, ``"severity"`` (``"issue"`` or ``"tip"``), and
+        optionally ``"docs_url"``.
 
-    checks_ran : int
-        Total number of checks that were executed.
-
-    n_ignored : int
-        Total number of checks that were ignored.
+    n_ignored_codes : int
+        Number of the checks that were muted via ``ignore=`` or the global
+        ``ignore_checks`` configuration.
     """
 
     def __init__(
-        self, issues: dict[str, dict], checks_ran: int, n_ignored: int
+        self,
+        check_results: dict[CheckCode, dict],
+        n_ignored_codes: int,
     ) -> None:
-        self._issues = issues
-        self._checks_ran = checks_ran
-        if issues:
-            self._messages = [
-                _format_issue_message(code, d) for code, d in issues.items()
-            ]
-        else:
-            self._messages = ["No issues were detected in your report!"]
-        self.header = (
-            f"Diagnostic: {len(self._issues)} issue(s) detected, "
-            f"{self._checks_ran} check(s) ran, {n_ignored} ignored."
+        self._check_results = pd.DataFrame(
+            [
+                {
+                    "code": code,
+                    "title": check_result["title"],
+                    "severity": check_result["severity"],
+                    "explanation": check_result["explanation"],
+                    "documentation_url": _get_issue_documentation_url(check_result),
+                }
+                for code, check_result in check_results.items()
+            ],
+            columns=["code", "title", "severity", "explanation", "documentation_url"],
         )
+        self.n_ignored_codes = n_ignored_codes
 
     @property
-    def issues(self) -> dict[str, dict]:
-        """All detected issues, keyed by check code."""
-        return self._issues
+    def header(self) -> str:
+        return (
+            f"Diagnostic: {len(self.frame(severity='issue'))} issue(s), "
+            f"{len(self.frame(severity='tip'))} tip(s), "
+            f"{len(self.frame(severity='passed'))} passed, "
+            f"{self.n_ignored_codes} ignored."
+        )
 
-    def frame(self) -> pd.DataFrame:
-        """Return detected issues as a DataFrame.
+    def frame(
+        self,
+        severity: Literal["issue", "tip", "passed", "all"] = "all",
+    ) -> pd.DataFrame:
+        """Return check results as a DataFrame.
+
+        Parameters
+        ----------
+        severity : {"issue", "tip", "passed", "all"}, default="all"
+            Which results to include. ``"issue"`` / ``"tip"`` return only
+            the matching findings (explanation is not ``None``); ``"passed"``
+            returns the checks that ran without reporting anything; ``"all"``
+            returns every applicable check result.
 
         Returns
         -------
         pandas.DataFrame
-            A DataFrame with one row per detected issue and columns
-            ``"code"``, ``"title"``, ``"explanation"``, and
-            ``"documentation_url"``.
+            A DataFrame with one row per check and columns ``"code"``,
+            ``"title"``, ``"severity"``, ``"explanation"``, and
+            ``"documentation_url"``. The ``"explanation"`` column is ``None``
+            for checks that passed without reporting anything.
         """
-        records = [
-            {
-                "code": code,
-                "title": issue["title"],
-                "explanation": issue["explanation"],
-                "documentation_url": _get_issue_documentation_url(issue),
-            }
-            for code, issue in self._issues.items()
-        ]
-        return pd.DataFrame(
-            records, columns=["code", "title", "explanation", "documentation_url"]
-        )
+        match severity:
+            case "issue" | "tip":
+                return self._check_results.query(
+                    f"severity == '{severity}' and explanation.notna()"
+                )
+            case "passed":
+                return self._check_results.query("explanation.isna()")
+            case "all":
+                return self._check_results.copy()
+            case _:
+                raise ValueError(f"Invalid severity: {severity}")
 
     def _repr_html_(self) -> str:
-        if self._issues:
-            items_html = "".join(
-                f"<li>{_format_issue_message_html(code, issue)}</li>"
-                for code, issue in self._issues.items()
+        tabs = []
+        for label, severity, empty_message, help_text in _TAB_SPECS:
+            df = self.frame(severity=severity)
+            tabs.append(
+                {
+                    "label": label,
+                    "empty_message": empty_message,
+                    "help_text": help_text,
+                    "rows": [
+                        {
+                            "code": row.code,
+                            "title": row.title,
+                            "explanation": row.explanation
+                            if pd.notna(row.explanation)
+                            else None,
+                            "documentation_url": row.documentation_url
+                            if pd.notna(row.documentation_url)
+                            else None,
+                        }
+                        for row in df.itertuples()
+                    ],
+                }
             )
-        else:
-            items_html = f"<li>{escape(self._messages[0])}</li>"
-        items_html = f'<ul style="margin:8px 0 0 18px;padding:0;">{items_html}</ul>'
-        return (
-            '<div style="margin:8px 0;padding:10px;border:1px solid #f97316;'
-            "border-radius:4px;display:inline-block;"
-            'font-family:monospace;font-size:13px;line-height:1.5;">'
-            f'<div style="font-weight:700;">{escape(self.header)}</div>'
-            f"{items_html}"
-            "</div>"
+        return render_template(
+            "diagnostic_display.html.j2",
+            {
+                "container_id": f"skore-diagnostic-{uuid4().hex[:8]}",
+                "header": self.header,
+                "tabs": tabs,
+            },
         )
 
     def _repr_mimebundle_(self, **kwargs: object) -> dict[str, str]:
         return {"text/plain": self.__repr__(), "text/html": self._repr_html_()}
 
     def __repr__(self) -> str:
-        return "\n".join([self.header, *[f"- {message}" for message in self._messages]])
+        if self._check_results.empty:
+            return self.header + "\nAll checks were either ignored or not applicable."
+        lines = [self.header]
+        for label, severity, _, _ in _TAB_SPECS:
+            df = self.frame(severity=cast(Literal["issue", "tip", "passed"], severity))
+            if df.empty:
+                continue
+            lines.append(f"{label}:")
+            if severity == "passed":
+                lines.extend(f"- [{row.code}] {row.title}" for row in df.itertuples())
+            else:
+                for row in df.itertuples():
+                    msg = f"- [{row.code}] {row.title}. {row.explanation}"
+                    if pd.notna(row.documentation_url):
+                        msg += f" Read more about this here: {row.documentation_url}."
+                    lines.append(msg)
+        lines.append("Mute a check with .diagnose(ignore=['<code>']).")
+        return "\n".join(lines)
 
 
 @runtime_checkable
@@ -109,9 +186,9 @@ class Check(Protocol):
     """Protocol for defining diagnostic checks.
 
     Each check wraps a callable that inspects a report. If the callable returns a
-    non-empty string, that text is recorded as an issue under :attr:`code` with the
-    given :attr:`title`. Checks are scoped to a single report kind via
-    :attr:`report_type` so they only run on matching reports.
+    non-empty string, that text is recorded as a finding under :attr:`code` with the
+    given :attr:`title` and :attr:`severity`. Checks are scoped to a single report
+    type via :attr:`report_type` so they only run on matching reports.
 
     Parameters
     ----------
@@ -120,7 +197,7 @@ class Check(Protocol):
         :meth:`~skore.EstimatorReport.diagnose` and `ignore` lists.
 
     title : str
-        Short label shown for the issue when one is reported.
+        Short label shown for the finding when one is reported.
 
     report_type : str
         Must be one of `"cross-validation"`, `"estimator"`,
@@ -130,12 +207,18 @@ class Check(Protocol):
         Optional link or documentation anchor: a string starting with `"http"`
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
         the automatic diagnostic user guide.
+
+    severity : {"issue", "tip"}
+        Severity of the finding. ``"issue"`` flags a modeling problem to fix;
+        ``"tip"`` invites caution (e.g. on the interpretation of a result)
+        without signaling a defect.
     """
 
-    code: str
+    code: CheckCode
     title: str
     report_type: ReportType
     docs_url: str | None
+    severity: Literal["issue", "tip"]
 
     @abstractmethod
     def check_function(self, report: _BaseReport) -> str | None:
@@ -149,7 +232,7 @@ class Check(Protocol):
         Returns
         -------
         str or None
-            An explanation string, or None if the check did not find any issues.
+            An explanation string, or None if the check did not find anything.
         """
 
 
@@ -170,28 +253,3 @@ def _get_issue_documentation_url(issue: dict) -> str | None:
     except PackageNotFoundError:
         url_version = "dev"
     return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automatic_diagnostic.html#{docs_url}"
-
-
-def _format_issue_message(code: str, issue: dict) -> str:
-    msg = f"[{code}] {issue['title']}. {issue['explanation']}"
-    docs_url = _get_issue_documentation_url(issue)
-    if docs_url is not None:
-        msg += f" Read more about this here: {docs_url}."
-    msg += f" Mute with `ignore=['{code}']`."
-    return msg
-
-
-def _format_issue_message_html(code: str, issue: dict) -> str:
-    escaped_code = escape(code)
-    title = escape(issue["title"])
-    explanation = escape(issue["explanation"])
-    msg = f"[{escaped_code}] {title}. {explanation}"
-    docs_url = _get_issue_documentation_url(issue)
-    if docs_url is not None:
-        escaped_url = escape(docs_url, quote=True)
-        msg += (
-            f' Read more about this <a href="{escaped_url}" target="_blank"'
-            ' rel="noopener noreferrer">here</a>.'
-        )
-    msg += f" Mute with <code>ignore=['{escaped_code}']</code>."
-    return msg

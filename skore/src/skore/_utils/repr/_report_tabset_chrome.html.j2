@@ -19,6 +19,8 @@
 {% if tab.help_variant == "comparison_data" %}
                         Explore the data for each compared report via that report's
                         <code>.data</code> accessor.
+{% elif tab.help_variant == "text" %}
+                        {{ tab.help_text }}
 {% else %}
                         Investigate more with
                         <a

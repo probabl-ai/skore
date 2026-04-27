@@ -21,6 +21,7 @@ way. The functionalities of the report are accessible through accessors.
 
     ComparisonReport.help
     ComparisonReport.diagnose
+    ComparisonReport.add_checks
     ComparisonReport.cache_predictions
     ComparisonReport.clear_cache
     ComparisonReport.create_estimator_report

@@ -65,8 +65,12 @@ def case_accuracy(comparison_cross_validation_reports_binary_classification):
 
 @pytest.fixture
 def case_precision(comparison_cross_validation_reports_binary_classification):
-    expected_index = pd.MultiIndex.from_tuples(
-        [("Precision", "0"), ("Precision", "1")], names=["Metric", "Label / Average"]
+    expected_index = pd.MultiIndex.from_arrays(
+        [
+            ["Precision", "Precision"],
+            pd.Index(["0", "1"], dtype="string", name="Label"),
+        ],
+        names=["Metric", "Label"],
     )
     return (
         comparison_cross_validation_reports_binary_classification,
@@ -78,8 +82,12 @@ def case_precision(comparison_cross_validation_reports_binary_classification):
 
 @pytest.fixture
 def case_recall(comparison_cross_validation_reports_binary_classification):
-    expected_index = pd.MultiIndex.from_tuples(
-        [("Recall", "0"), ("Recall", "1")], names=["Metric", "Label / Average"]
+    expected_index = pd.MultiIndex.from_arrays(
+        [
+            ["Recall", "Recall"],
+            pd.Index(["0", "1"], dtype="string", name="Label"),
+        ],
+        names=["Metric", "Label"],
     )
     return (
         comparison_cross_validation_reports_binary_classification,
@@ -258,8 +266,8 @@ def test_pos_label_default(metric):
     report_2 = CrossValidationReport(LogisticRegression(), X, y)
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result_both_labels = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
-    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+    assert result_both_labels["Label"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label"])
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
@@ -274,4 +282,4 @@ def test_precision_recall_pos_label_default(metric):
     report_2 = CrossValidationReport(LogisticRegression(), X, y)
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result_both_labels = getattr(report.metrics, metric)().reset_index()
-    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+    assert result_both_labels["Label"].to_list() == ["A", "B"]
