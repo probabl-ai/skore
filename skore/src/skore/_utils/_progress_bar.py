@@ -1,39 +1,19 @@
 from collections.abc import Iterable
 from operator import length_hint
-from threading import Thread
 from typing import Any, TypeVar
 
-from rich.progress import (
-    BarColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-)
-
-from skore import console
-from skore._config import configuration
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 T = TypeVar("T")
-
-
-def threadable() -> bool:
-    try:
-        thread = Thread()
-        thread.start()
-        thread.join()
-    except Exception:
-        return False
-    else:
-        return True
-
-
-THREADABLE = threadable()
 
 
 class ProgressBar:
     """Simplified progress bar based on ``rich.Progress``."""
 
     def __init__(self, description: str, total: float | None):
+        from skore import THREADABLE, console
+        from skore._config import configuration
+
         progress = Progress(
             SpinnerColumn(),
             TextColumn("[bold cyan]{task.description}"),

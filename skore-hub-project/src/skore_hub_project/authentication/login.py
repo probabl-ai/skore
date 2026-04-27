@@ -6,8 +6,8 @@ from logging import getLogger
 from rich.align import Align
 from rich.live import Live
 from rich.panel import Panel
+from skore import THREADABLE, console
 
-from skore_hub_project import console
 from skore_hub_project.authentication.apikey import APIKey
 from skore_hub_project.authentication.token import Token
 from skore_hub_project.authentication.uri import URI
@@ -44,7 +44,7 @@ def login(*, timeout: int = 600) -> None:
     try:
         credentials = APIKey()
     except KeyError:
-        with Live(console=console, auto_refresh=False) as live:
+        with Live(console=console, auto_refresh=THREADABLE) as live:
             credentials = Token(timeout=timeout, live=live)
 
             live.update(
