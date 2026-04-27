@@ -229,9 +229,13 @@ class Project:
     @ensure_project_is_not_deleted
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its id."""
-        with io.BytesIO(self.__artifacts_storage[id]) as stream:
-            report = joblib.load(stream)
-            return cast("EstimatorReport | CrossValidationReport", report)
+        if id in self.__artifacts_storage:
+            with io.BytesIO(self.__artifacts_storage[id]) as stream:
+                return cast(
+                    "EstimatorReport | CrossValidationReport", joblib.load(stream)
+                )
+
+        raise KeyError(id)
 
     @ensure_project_is_not_deleted
     def summarize(self) -> list[Metadata]:
@@ -266,7 +270,7 @@ class Project:
         )
 
     @staticmethod
-    def delete(name: str, *, workspace: Path | None = None) -> None:
+    def delete(name: str, *, workspace: str | Path | None = None) -> None:
         r"""
         Delete a local project.
 
@@ -274,7 +278,7 @@ class Project:
         ----------
         name : str
             The name of the project.
-        workspace : Path, optional
+        workspace : Path-like, optional
             The directory where the project (metadata and artifacts) are persisted.
 
             | The workspace can be shared between all the projects.
