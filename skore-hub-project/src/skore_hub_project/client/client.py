@@ -179,6 +179,7 @@ class HUBClient(Client):
         if JUPYTERLITE and (transport is None):
             from httpx import Request
             from js import XMLHttpRequest
+            from pyodide.ffi import to_js
             from pyodide.http.pyxhr import XHRResponse
 
             class JupyterliteTransport(BaseTransport):
@@ -188,11 +189,9 @@ class HUBClient(Client):
                     req.withCredentials = True
 
                     for name, value in request.headers.items():
-                        if name.lower() == "host":
-                            continue
                         req.setRequestHeader(name, value)
 
-                    req.send(request.content)
+                    req.send(to_js(request.read()))
 
                     xhr = XHRResponse(req)
 
