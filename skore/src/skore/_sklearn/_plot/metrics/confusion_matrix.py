@@ -34,8 +34,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     ----------
     confusion_matrix_predict : pd.DataFrame
         Predict-based n x n confusion matrix in long format with columns:
-        "true_label", "predicted_label", "count", "split", "estimator",
-        "data_source". Always available.
+        "true_label", "predicted_label", "count" and if meaningful:
+        "split", "estimator".
 
     confusion_matrix_thresholded : pd.DataFrame or None
         Per-class OvR thresholded 2x2 confusion matrix in long format.
@@ -449,9 +449,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             ],
             thresholds=np.array([np.nan]),
             labels=classes,
-            # metadata:
-            split=None,
-            estimator=estimator_name,
         ).drop(columns=["threshold"])
 
         confusion_matrix_thresholded = None
@@ -466,24 +463,20 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     y_score=y_scores_arr[:, class_idx],
                     pos_label=1,
                 )
-                ovr_dfs.append(
-                    cls._build_confusion_frame(
-                        cm=np.column_stack([tns, fps, fns, tps])
-                        .reshape(-1, 2, 2)
-                        .astype(int),
-                        thresholds=thresholds,
-                        labels=[
-                            next(clss for clss in classes if clss != label)
-                            if ml_task == "binary-classification"
-                            else f"not {label}",
-                            label,
-                        ],
-                        # metadata:
-                        label=label,
-                        split=None,
-                        estimator=estimator_name,
-                    )
+                cm = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
+                df = cls._build_confusion_frame(
+                    cm=cm,
+                    thresholds=thresholds,
+                    labels=[
+                        next(clss for clss in classes if clss != label)
+                        if ml_task == "binary-classification"
+                        else f"not {label}",
+                        label,
+                    ],
                 )
+                df["label"] = label
+                df["label"] = df["label"].astype("category")
+                ovr_dfs.append(df)
             confusion_matrix_thresholded = _concat_frames_with_column_data(ovr_dfs)
 
         return cls(
@@ -496,38 +489,34 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         )
 
     @staticmethod
-    def _build_confusion_frame(cm, thresholds, labels, **metadata):
-        """Compute per-class OvR confusion matrix at all thresholds."""
+    def _build_confusion_frame(cm, thresholds, labels):
+        """TODO: update docstring."""
         counts = cm.reshape(-1)
 
-        data = {
-            "true_label": pd.Series(
-                np.tile(np.repeat(labels, len(labels)), len(thresholds)),
-                dtype="category",
-            ),
-            "predicted_label": pd.Series(
-                np.tile(np.tile(labels, len(labels)), len(thresholds)),
-                dtype="category",
-            ),
-            "count": counts,
-            "threshold": np.repeat(thresholds, len(labels) ** 2),
-        }
-        for col, value in metadata.items():
-            data[col] = pd.Series(
-                np.array(value).repeat(len(thresholds) * len(labels) ** 2),
-                dtype="category",
-            )
-
-        return pd.DataFrame(data)
+        return pd.DataFrame(
+            {
+                "true_label": pd.Series(
+                    np.tile(np.repeat(labels, len(labels)), len(thresholds)),
+                    dtype="category",
+                ),
+                "predicted_label": pd.Series(
+                    np.tile(np.tile(labels, len(labels)), len(thresholds)),
+                    dtype="category",
+                ),
+                "count": counts,
+                "threshold": np.repeat(thresholds, len(labels) ** 2),
+            }
+        )
 
     @staticmethod
     def _apply_normalization(
         df: pd.DataFrame,
         normalize: Literal["true", "pred", "all"] | None,
     ) -> pd.DataFrame:
+        """TODO: write a short docstring."""
         if normalize is None:
             return df.rename(columns={"count": "value"})
-        groupby_cols = ["threshold", "label", "split", "estimator", "data_source"]
+        groupby_cols = ["threshold", "label", "split", "estimator"]
         if normalize == "pred":
             groupby_cols.append("predicted_label")
         elif normalize == "true":
@@ -610,10 +599,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if label is not None:
             df = df.query("label == @label").reset_index(drop=True)
             df = df.drop(columns=["label"])
-        if "cross-validation" not in self.report_type:
-            df = df.drop(columns=["split"])
-        if "comparison" not in self.report_type:
-            df = df.drop(columns=["estimator"])
 
         if threshold_value == "all":
             return self._apply_normalization(df, normalize)
