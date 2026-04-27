@@ -207,3 +207,4 @@ uv.lock
 
 # mlflow
 mlflow.db
+mlruns

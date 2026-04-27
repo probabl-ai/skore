@@ -1,7 +1,7 @@
 """Tests for MetricsSummaryDisplay.frame() method."""
 
 import pandas as pd
-from sklearn.metrics import mean_absolute_error, precision_score
+from sklearn.metrics import make_scorer, mean_absolute_error, precision_score
 from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport
@@ -104,7 +104,7 @@ def test_custom_macro_metric_uses_average(forest_binary_classification_with_test
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     name = "Precision (Macro)"
-    report.metrics.add(precision_score, average="macro", name=name)
+    report.metrics.add(make_scorer(precision_score, average="macro"), name=name)
     result = report.metrics.summarize(metric=[name]).frame()
     assert result.reset_index()["Average"].tolist() == ["macro"]
 
@@ -116,7 +116,9 @@ def test_multioutput_average_uses_output_average(
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     name = "MAE (Average)"
-    report.metrics.add(mean_absolute_error, multioutput="uniform_average", name=name)
+    report.metrics.add(
+        make_scorer(mean_absolute_error, multioutput="uniform_average"), name=name
+    )
     result = report.metrics.summarize(metric=[name]).frame()
     assert result.reset_index()["Average"].tolist().count("uniform_average") == 1
 

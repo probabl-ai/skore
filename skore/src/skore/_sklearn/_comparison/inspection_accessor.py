@@ -12,7 +12,8 @@ from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDi
 from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
-from skore._sklearn.types import DataSource, MetricLike
+from skore._sklearn.metrics import MetricLike
+from skore._sklearn.types import DataSource
 from skore._utils._accessor import (
     _check_comparison_report_sub_estimators_have_coef,
     _check_comparison_report_sub_estimators_have_feature_importances,
