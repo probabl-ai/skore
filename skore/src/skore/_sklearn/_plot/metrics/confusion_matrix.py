@@ -166,8 +166,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         label : int, float, bool, str or None, default=report pos_label
             The class to consider as positive when using the thresholded view.
-            Required when `threshold_value` is not None. Ignored when `threshold_value`
-            is None.
 
         Returns
         -------
@@ -179,11 +177,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             raise ValueError(
                 "threshold_value='all' is not supported for the plot method."
             )
-        if label is None and threshold_value is not None:
-            raise ValueError(
-                "Please indicate the class to consider as positive to show the "
-                "thresholded confusion matrix."
-            )
+
         return self._plot(
             normalize=normalize,
             threshold_value=threshold_value,
@@ -211,9 +205,12 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 threshold_value=threshold_value,
                 label=label,
             )
+            groupby_cols = frame.columns.intersection(
+                ["true_label", "predicted_label", "estimator"]
+            ).to_list()
             aggregated = (
                 frame.groupby(
-                    ["true_label", "predicted_label", "estimator", "data_source"],
+                    groupby_cols,
                     observed=True,
                 )["value"]
                 .agg(["mean", "std"])
@@ -249,17 +246,14 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         # The positive label is set in second position (which
         # means true-positive counts is the bottom-right cell in the matrix).
         # Usually, TP is the top-left cell, but we align with sklearn.
-        if (
-            self.ml_task == "multiclass-classification"
-            and label is not None
-            and threshold_value is not None
-        ):
-            display_labels = [f"not {label}", str(label)]
-        elif self.ml_task == "binary-classification" and label is not None:
-            display_labels = [
-                next(clss for clss in display_labels if clss != label),
-                label,
-            ]
+        if label is not None:
+            if self.ml_task == "multiclass-classification":
+                display_labels = [f"not {label}", str(label)]
+            else:
+                display_labels = [
+                    next(clss for clss in display_labels if clss != label),
+                    label,
+                ]
 
         def plot_heatmap(data, **kwargs):
             """Plot heatmap for each facet."""
@@ -458,7 +452,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             # metadata:
             split=None,
             estimator=estimator_name,
-            data_source=data_source,
         ).drop(columns=["threshold"])
 
         confusion_matrix_thresholded = None
@@ -489,7 +482,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                         label=label,
                         split=None,
                         estimator=estimator_name,
-                        data_source=data_source,
                     )
                 )
             confusion_matrix_thresholded = _concat_frames_with_column_data(ovr_dfs)
@@ -519,11 +511,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             ),
             "count": counts,
             "threshold": np.repeat(thresholds, len(labels) ** 2),
-            **metadata,
         }
-        for col in metadata:
+        for col, value in metadata.items():
             data[col] = pd.Series(
-                np.array(data[col]).repeat(len(thresholds) * len(labels) ** 2),
+                np.array(value).repeat(len(thresholds) * len(labels) ** 2),
                 dtype="category",
             )
 
@@ -543,8 +534,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             groupby_cols.append("true_label")
 
         df = df.copy(deep=False)
-        columns = df.dropna(axis=1, how="all").columns
-        groupby_cols = columns.intersection(groupby_cols).to_list()
+        groupby_cols = df.columns.intersection(groupby_cols).to_list()
 
         if groupby_cols:
             denominator = df.groupby(groupby_cols)["count"].transform("sum")
@@ -597,12 +587,14 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             df = self.confusion_matrix_predict
 
             if label is not None and self.ml_task != "binary-classification":
-                mapping = {True: label, False: f"not {label}"}
+                mapping = {True: str(label), False: f"not {label}"}
                 df = df.copy(deep=False).dropna(axis=1, how="all")
                 df["true_label"] = (df["true_label"] == label).map(mapping)
                 df["predicted_label"] = (df["predicted_label"] == label).map(mapping)
                 groupby_cols = df.columns.difference(["count"]).to_list()
-                df = df.groupby(groupby_cols)["count"].sum().reset_index()
+                df = (
+                    df.groupby(groupby_cols, observed=True)["count"].sum().reset_index()
+                )
 
             return self._apply_normalization(df, normalize)
 
@@ -617,48 +609,28 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         df = self.confusion_matrix_thresholded
         if label is not None:
             df = df.query("label == @label").reset_index(drop=True)
-
-        df = self._apply_normalization(df, normalize)
-
-        if label is not None:
             df = df.drop(columns=["label"])
+        if "cross-validation" not in self.report_type:
+            df = df.drop(columns=["split"])
+        if "comparison" not in self.report_type:
+            df = df.drop(columns=["estimator"])
 
         if threshold_value == "all":
-            return df
+            return self._apply_normalization(df, normalize)
 
-        # Snap to closest threshold per group
-        def select_threshold(group):
-            thresholds = np.sort(group["threshold"].unique())
-            index_right = int(np.searchsorted(thresholds, threshold_value))
-            if index_right == len(thresholds):
-                index_right -= 1
-            elif index_right == 0 and len(thresholds) > 1:
-                index_right = 1
-            index_left = index_right - 1
-            diff_right = abs(thresholds[index_right] - threshold_value)
-            diff_left = abs(thresholds[index_left] - threshold_value)
-            closest_threshold_value = thresholds[
-                index_right if diff_right < diff_left else index_left
-            ]
-            frame = group.query(f"threshold == {closest_threshold_value}")
-            return frame
-
-        groupby_cols = []
-        if "cross-validation" in self.report_type:
-            groupby_cols.append("split")
-        if "comparison" in self.report_type:
-            groupby_cols.append("estimator")
-        if label is None:
-            groupby_cols.append("label")
-
-        frames = []
+        groupby_cols = df.columns.intersection(
+            ["split", "estimator", "label"]
+        ).to_list()
+        diff = (df["threshold"] - threshold_value).abs()
         if groupby_cols:
-            for _, group in df.groupby(groupby_cols, observed=True):
-                frames.append(select_threshold(group))
+            min_diff_by_groups = diff.groupby(
+                [df[col] for col in groupby_cols]
+            ).transform("min")
+            df = df.loc[diff == min_diff_by_groups]
         else:
-            frames.append(select_threshold(df))
+            df = df.loc[diff == diff.min()]
 
-        return pd.concat(frames)
+        return self._apply_normalization(df, normalize)
 
     # ignore the type signature because we override kwargs by specifying the name of
     # the parameters for the user.
