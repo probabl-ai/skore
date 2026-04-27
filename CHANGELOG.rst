@@ -45,6 +45,9 @@ Changed
 Added
 -----
 
+- :class:`Project` now accepts strings for the `workspace` argument. See :pr:`2832` by
+  :user:`auguste-probabl`.
+
 Removed
 -------
 
