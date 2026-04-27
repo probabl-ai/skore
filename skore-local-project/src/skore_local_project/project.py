@@ -102,7 +102,7 @@ class Project:
 
     @staticmethod
     def __setup_diskcache(
-        workspace: Path | None,
+        workspace: str | Path | None,
     ) -> tuple[
         Path,
         DiskCacheStorage,
@@ -115,6 +115,9 @@ class Project:
             else:
                 workspace = Path(platformdirs.user_data_dir()) / "skore"
 
+        if not isinstance(workspace, Path):
+            workspace = Path(workspace)
+
         for directory in ("projects", "metadata", "artifacts"):
             (workspace / directory).mkdir(parents=True, exist_ok=True)
 
@@ -125,7 +128,7 @@ class Project:
             DiskCacheStorage(workspace / "artifacts"),
         )
 
-    def __init__(self, name: str, *, workspace: Path | None = None):
+    def __init__(self, name: str, *, workspace: str | Path | None = None):
         r"""
         Initialize a local project.
 
@@ -136,7 +139,7 @@ class Project:
         ----------
         name : str
             The name of the project.
-        workspace : Path, optional
+        workspace : Path-like, optional
             The directory where the project (metadata and artifacts) are persisted.
 
             | The workspace can be shared between all the projects.
@@ -203,8 +206,8 @@ class Project:
             Metadata = CrossValidationReportMetadata
         else:
             raise TypeError(
-                f"Report must be a `skore.EstimatorReport` or `skore.CrossValidationRep"
-                f"ort` (found '{type(report)}')"
+                f"Report must be a `skore.EstimatorReport` or "
+                f"`skore.CrossValidationReport` (found '{type(report)}')"
             )
 
         artifact_id = str(report.id)
@@ -267,7 +270,7 @@ class Project:
         )
 
     @staticmethod
-    def delete(name: str, *, workspace: Path | None = None) -> None:
+    def delete(name: str, *, workspace: str | Path | None = None) -> None:
         r"""
         Delete a local project.
 
@@ -275,7 +278,7 @@ class Project:
         ----------
         name : str
             The name of the project.
-        workspace : Path, optional
+        workspace : Path-like, optional
             The directory where the project (metadata and artifacts) are persisted.
 
             | The workspace can be shared between all the projects.
