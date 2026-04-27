@@ -21,16 +21,16 @@ CheckCode = str
 
 _TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str, str]] = [
     (
-        "Issues",
-        "issue",
-        "No issues were detected in your report.",
-        "Modeling problems flagged by applicable checks.",
+        "Issues",  # Title of the tab
+        "issue",  # Severity of the checks collected in the tab
+        "No issues were detected in your report.",  # Message when tab is empty
+        "Modeling problems flagged by applicable checks.",  # Help text
     ),
     (
         "Tips",
         "tip",
         "No tips were emitted for your report.",
-        "Cautions to keep in mind when interpreting the results.",
+        "Advice to keep in mind when interpreting the results.",
     ),
     (
         "Passed",
