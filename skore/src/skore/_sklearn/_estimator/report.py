@@ -32,6 +32,7 @@ from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
+    from skore._sklearn._diagnostic.accessor import _DiagnosisAccessor
     from skore._sklearn._estimator.data_accessor import _DataAccessor
     from skore._sklearn._estimator.inspection_accessor import _InspectionAccessor
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
@@ -146,6 +147,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "diagnosis": {"name": "diagnosis"},
     }
 
     _report_type: Literal["estimator"] = "estimator"
@@ -153,6 +155,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor
+    diagnosis: _DiagnosisAccessor
 
     def _fit_estimator(
         self,
@@ -801,7 +804,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostic = self.diagnose()
+        diagnostic = self.diagnosis()
         diagnostic_html = (
             "<div class='report-diagnostic-details'>"
             f"{len(diagnostic.frame(severity='issue'))} issue(s), "

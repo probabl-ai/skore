@@ -42,7 +42,7 @@ _TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str, str]] = [
 
 
 class DiagnosticDisplay(DisplayHelpMixin):
-    """Display for the diagnostic returned by :meth:`Report.diagnose`.
+    """Display for the diagnostic returned by :meth:`Report.diagnosis`.
 
     A display object with an HTML representation organized in three tabs
     (``Issues``, ``Tips``, ``Passed``). The full list of check results is
@@ -177,7 +177,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
                     if pd.notna(row.documentation_url):
                         msg += f" Read more about this here: {row.documentation_url}."
                     lines.append(msg)
-        lines.append("Mute a check with .diagnose(ignore=['<code>']).")
+        lines.append("Mute a check with .diagnosis(ignore=['<code>']).")
         return "\n".join(lines)
 
 
@@ -194,7 +194,7 @@ class Check(Protocol):
     ----------
     code : str
         Unique identifier for this check , used in
-        :meth:`~skore.EstimatorReport.diagnose` and `ignore` lists.
+        :meth:`~skore.EstimatorReport.diagnosis` and `ignore` lists.
 
     title : str
         Short label shown for the finding when one is reported.

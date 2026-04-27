@@ -25,6 +25,7 @@ if TYPE_CHECKING:
         _InspectionAccessor,
     )
     from skore._sklearn._comparison.metrics_accessor import _MetricsAccessor
+    from skore._sklearn._diagnostic.accessor import _DiagnosisAccessor
 
     ComparisonReportType = Literal[
         "comparison-estimator",
@@ -111,9 +112,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "diagnosis": {"name": "diagnosis"},
     }
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
+    diagnosis: _DiagnosisAccessor
 
     _report_type: ComparisonReportType
 
@@ -474,7 +477,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         reports_by_code: dict[CheckCode, list[str]] = {}
         all_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
-            report.add_checks(self._checks_registry)
+            report.diagnosis.add(self._checks_registry)
             report_results, applicable_codes = report._get_results(ignored_codes)
             all_applicable_codes |= applicable_codes
 

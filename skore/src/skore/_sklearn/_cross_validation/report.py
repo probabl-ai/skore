@@ -33,6 +33,7 @@ if TYPE_CHECKING:
         _InspectionAccessor,
     )
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
+    from skore._sklearn._diagnostic.accessor import _DiagnosisAccessor
 
 
 _STATE_VERSION = 1
@@ -168,6 +169,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "diagnosis": {"name": "diagnosis"},
     }
 
     _report_type: Literal["cross-validation"] = "cross-validation"
@@ -175,6 +177,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor
+    diagnosis: _DiagnosisAccessor
 
     def __init__(
         self,
@@ -537,7 +540,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         positives_by_code: dict[CheckCode, list[dict]] = {}
 
         for estimator_report in self.estimator_reports_:
-            estimator_report.add_checks(self._checks_registry)
+            estimator_report.diagnosis.add(self._checks_registry)
             results, applicable_codes = estimator_report._get_results(ignored_codes)
             all_applicable_codes |= applicable_codes
             for code, diagnostic in results.items():
@@ -653,7 +656,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostic = self.diagnose()
+        diagnostic = self.diagnosis()
         diagnostic_html = (
             "<div class='report-diagnostic-details'>"
             f"{len(diagnostic.frame(severity='issue'))} issue(s), "

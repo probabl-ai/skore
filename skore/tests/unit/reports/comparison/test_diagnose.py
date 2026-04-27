@@ -29,7 +29,7 @@ def test_collects_component_issues(report, monkeypatch):
         if hasattr(report, attr):
             delattr(report, attr)
 
-    results = report.diagnose()
+    results = report.diagnosis()
     assert isinstance(results, DiagnosticDisplay)
     issues = results.frame(severity="issue").set_index("code")
     for name, per_issues in zip(report_names, per_report_issues, strict=True):
@@ -40,7 +40,7 @@ def test_collects_component_issues(report, monkeypatch):
 
 def test_reuses_component_cached_results(report, monkeypatch):
     """Check that check results are cached and reused."""
-    report.diagnose()
+    report.diagnosis()
 
     for sub_report in report.reports_.values():
         for estimator_report in getattr(sub_report, "estimator_reports_", [sub_report]):
@@ -51,4 +51,4 @@ def test_reuses_component_cached_results(report, monkeypatch):
                     lambda rpt: pytest.fail("re-ran cached check"),
                 )
 
-    report.diagnose()
+    report.diagnosis()
