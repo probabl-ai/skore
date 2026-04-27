@@ -10,6 +10,7 @@ from rich.progress import (
     TextColumn,
 )
 
+from skore import console
 from skore._config import configuration
 
 T = TypeVar("T")
@@ -42,6 +43,7 @@ class ProgressBar:
                 pulse_style="orange1",
             ),
             TextColumn("[orange1]{task.percentage:>3.0f}%"),
+            console=console,
             expand=False,
             transient=True,
             auto_refresh=THREADABLE,

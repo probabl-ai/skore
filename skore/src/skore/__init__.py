@@ -2,6 +2,7 @@
 
 from importlib.metadata import version
 from logging import INFO, NullHandler, getLogger
+from threading import Thread
 from warnings import warn
 
 from joblib import __version__ as joblib_version
@@ -37,6 +38,7 @@ from skore._sklearn._plot.inspection.impurity_decrease import (
 from skore._sklearn._plot.inspection.permutation_importance import (
     PermutationImportanceDisplay,
 )
+from skore._utils._environment import is_environment_notebook_like
 from skore._utils._patch import setup_jupyter_display
 from skore._utils._show_versions import show_versions
 
@@ -54,28 +56,31 @@ if parse_version(joblib_version) < parse_version("1.4"):
     )
 
 
+__version__ = version("skore")
 __all__ = [
     "Check",
-    "CoefficientsDisplay",
-    "DiagnosticDisplay",
     "CheckNotApplicable",
+    "CoefficientsDisplay",
     "ComparisonReport",
-    "compare",
     "ConfusionMatrixDisplay",
     "CrossValidationReport",
+    "DiagnosticDisplay",
     "Display",
     "EstimatorReport",
-    "evaluate",
     "ImpurityDecreaseDisplay",
-    "TrainTestSplit",
     "MetricsSummaryDisplay",
     "PermutationImportanceDisplay",
     "PrecisionRecallCurveDisplay",
     "PredictionErrorDisplay",
     "Project",
     "RocCurveDisplay",
+    "THREADABLE",
     "TableReportDisplay",
+    "TrainTestSplit",
+    "compare",
     "configuration",
+    "console",
+    "evaluate",
     "login",
     "show_versions",
     "train_test_split",
@@ -87,14 +92,19 @@ logger.addHandler(NullHandler())  # Default to no output
 logger.setLevel(INFO)
 
 
-skore_console_theme = Theme(
-    {
-        "repr.str": "cyan",
-        "rule.line": "orange1",
-        "repr.url": "orange1",
-    }
+console = Console(
+    width=88,
+    theme=Theme({"repr.str": "cyan", "rule.line": "orange1", "repr.url": "orange1"}),
+    # ...
+    force_jupyter=is_environment_notebook_like(),
 )
 
 
-console = Console(theme=skore_console_theme, width=88)
-__version__ = version("skore")
+try:
+    thread = Thread()
+    thread.start()
+    thread.join()
+except Exception:
+    THREADABLE = False
+else:
+    THREADABLE = True

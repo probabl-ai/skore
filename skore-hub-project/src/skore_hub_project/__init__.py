@@ -4,34 +4,19 @@ from base64 import b64decode, b64encode
 from collections.abc import Iterator
 from contextlib import contextmanager
 from logging import basicConfig, getLogger
-from threading import Thread
 
 from matplotlib import pyplot as plt
-from rich.console import Console
-from rich.theme import Theme
 
 __all__ = [
     "Payload",
     "b64_str_to_bytes",
     "bytes_to_b64_str",
-    "console",
     "switch_plt_backend",
 ]
 
 
 basicConfig()
 logger = getLogger(__name__)
-
-console = Console(
-    width=88,
-    theme=Theme(
-        {
-            "repr.str": "cyan",
-            "rule.line": "orange1",
-            "repr.url": "orange1",
-        }
-    ),
-)
 
 
 def b64_str_to_bytes(literal: str) -> bytes:
@@ -65,17 +50,3 @@ def switch_plt_backend(backend: str = "agg") -> Iterator[None]:
     finally:
         plt.close("all")
         plt.switch_backend(original)
-
-
-def threadable() -> bool:
-    try:
-        thread = Thread()
-        thread.start()
-        thread.join()
-    except Exception:
-        return False
-    else:
-        return True
-
-
-THREADABLE = threadable()
