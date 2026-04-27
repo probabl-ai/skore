@@ -6,6 +6,7 @@ import pickle
 from collections import UserDict
 from collections.abc import Callable
 from enum import Enum, auto
+from inspect import Parameter
 from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import numpy as np
@@ -311,9 +312,25 @@ class Metric:
             name = name if name is not None else metric.removeprefix("neg_")
             return Metric.new(scorer, name=name)
         elif callable(metric):
+            # Fail fast if metric is (y_true, y_pred) -> score
+            params = list(inspect.signature(metric).parameters.values())
+            if params[0].name.startswith("y"):
+                raise TypeError(
+                    "Expected a scorer callable with an estimator as its first "
+                    f"argument; got first argument {params[0].name!r}"
+                )
+
+            positional_args = [
+                p.name for p in params if p.kind <= Parameter.POSITIONAL_OR_KEYWORD
+            ]
+            if len(positional_args) <= 2:
+                raise TypeError(
+                    "Expected a scorer callable with at least 3 positional "
+                    f"arguments (estimator, X, y); got {positional_args}"
+                )
+
             # (estimator, X, y) -> score
             resolved_kwargs = kwargs or {}
-            params = list(inspect.signature(metric).parameters.values())
             missing_kwargs = [
                 param.name
                 for param in params[3:]  # estimator, X, y

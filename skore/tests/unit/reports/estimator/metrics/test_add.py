@@ -329,20 +329,6 @@ class TestEdgeCases:
         with pytest.raises(ValueError, match="(?i)train|data"):
             report.metrics.summarize(metric="accuracy_score", data_source="train")
 
-    def test_passing_metric_callable(self, binary_classification_report):
-        """Test that adding a metric callable ``(y_true, y_pred) -> score`` succeeds
-        (we don't introspect on the callable), but ``summarize`` will fail."""
-        report = binary_classification_report
-
-        def score(y_true, y_pred):
-            return 0
-
-        report.metrics.add(score)
-
-        err_msg = "takes 2 positional arguments but 3 were given"
-        with pytest.raises(TypeError, match=err_msg):
-            report.metrics.summarize(metric="score")
-
     def test_duplicate_name_replaces(self, binary_classification_report):
         """Test that adding with duplicate name silently replaces."""
         report = binary_classification_report
@@ -687,6 +673,31 @@ class TestMetricNew:
         )
         with pytest.raises(MissingKwargsError, match=err_msg):
             Metric.new(business_loss_scorer)
+
+    def test_callable_metric_y(self):
+        """Test that Metric.new raises for callable metrics taking `y_true` as first
+        argument."""
+        err_msg = re.escape(
+            "Expected a scorer callable with an estimator as its first argument; "
+            "got first argument 'y_true'"
+        )
+        with pytest.raises(TypeError, match=err_msg):
+            Metric.new(business_loss)
+
+    def test_callable_metric_not_enough_positional_args(self):
+        """Test that Metric.new raises for callable metrics which do not take enough
+        positional parameters."""
+
+        # First argument does not start with `y`
+        def metric(true_labels, predicted_labels, *, some_kwarg):
+            pass
+
+        err_msg = re.escape(
+            "Expected a scorer callable with at least 3 positional arguments "
+            "(estimator, X, y); got ['true_labels', 'predicted_labels']"
+        )
+        with pytest.raises(TypeError, match=err_msg):
+            Metric.new(metric)
 
     def test_scorer(self):
         """Test creating a Metric from an sklearn scorer."""

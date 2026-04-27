@@ -1,13 +1,7 @@
 import jedi
-import numpy as np
 import pytest
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import make_scorer, mean_squared_error
-
-
-def custom_metric(y_true, y_pred, threshold=0.5):
-    residuals = y_true - y_pred
-    return np.mean(np.where(residuals < threshold, residuals, 1))
 
 
 @pytest.fixture(
@@ -49,16 +43,8 @@ def test_metrics_repr(report):
 
 
 def test_metrics_add_scorer(report):
-    scorer = make_scorer(
-        mean_squared_error, greater_is_better=False, response_method="predict"
-    )
+    scorer = make_scorer(mean_squared_error, greater_is_better=False)
     report.metrics.add(scorer)
 
     display = report.metrics.summarize()
     assert "Mean Squared Error" in display.data["metric_verbose_name"].values
-
-
-@pytest.mark.parametrize("response_method", ["predict", ["predict", "predict_proba"]])
-def test_metrics_add_callable(report, response_method):
-    """Check that adding a custom metric by passing the response method works."""
-    report.metrics.add(metric=custom_metric, response_method=response_method)
