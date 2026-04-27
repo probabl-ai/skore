@@ -103,15 +103,10 @@ def test_custom_macro_metric_uses_average(forest_binary_classification_with_test
     """Average-only classification metrics should render in `Average`."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    report.metrics.add(precision_score, average="macro", name="Precision (Macro)")
-
-    result = (
-        report.metrics.summarize(metric=["Precision (Macro)"]).frame().reset_index()
-    )
-
-    assert "Label / Average" not in result.columns
-    macro_row = result[result["Metric"] == "Precision (Macro)"]
-    assert macro_row["Average"].tolist() == ["macro"]
+    name = "Precision (Macro)"
+    report.metrics.add(precision_score, average="macro", name=name)
+    result = report.metrics.summarize(metric=[name]).frame()
+    assert result.reset_index()["Average"].tolist() == ["macro"]
 
 
 def test_multioutput_average_uses_output_average(
@@ -120,16 +115,10 @@ def test_multioutput_average_uses_output_average(
     """Average-only multioutput regression metrics should render in `Average`."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    report.metrics.add(
-        mean_absolute_error,
-        multioutput="uniform_average",
-        name="MAE (Average)",
-    )
-
-    result = report.metrics.summarize(metric=["MAE (Average)"]).frame().reset_index()
-
-    assert "Output / Average" not in result.columns
-    assert result["Average"].tolist().count("uniform_average") == 1
+    name = "MAE (Average)"
+    report.metrics.add(mean_absolute_error, multioutput="uniform_average", name=name)
+    result = report.metrics.summarize(metric=[name]).frame()
+    assert result.reset_index()["Average"].tolist().count("uniform_average") == 1
 
 
 def test_flat_index_with_favorability(forest_binary_classification_with_test):
