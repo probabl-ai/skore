@@ -180,7 +180,7 @@ metrics available in `skore` for comparison.
 Diagnostic
 ----------
 
-Reports expose :meth:`diagnose` to run a quality diagnostic and return
+Reports expose :meth:`~skore.EstimatorReport.diagnosis` to run a quality diagnostic and return
 human-readable findings with stable check codes and links to guidance.
 See :ref:`automatic_diagnostic` for the catalog of available checks, detection logic,
 and mitigation tips.

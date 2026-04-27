@@ -1,4 +1,5 @@
 from skore._externals._pandas_accessors import _register_accessor
+from skore._sklearn._diagnostic.accessor import _DiagnosisAccessor
 from skore._sklearn._estimator.data_accessor import _DataAccessor
 from skore._sklearn._estimator.inspection_accessor import (
     _InspectionAccessor,
@@ -11,5 +12,6 @@ _register_accessor("metrics", EstimatorReport)(_MetricsAccessor)
 _register_accessor("inspection", EstimatorReport)(_InspectionAccessor)
 
 _register_accessor("data", EstimatorReport)(_DataAccessor)
+_register_accessor("diagnosis", EstimatorReport)(_DiagnosisAccessor)
 
 __all__ = ["EstimatorReport"]

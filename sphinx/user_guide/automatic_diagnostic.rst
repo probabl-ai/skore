@@ -5,7 +5,7 @@ Automatic diagnostic
 ====================
 
 `skore` provides automated checks for common model quality pitfalls.
-Use :meth:`~skore.EstimatorReport.diagnose` to run checks and get a diagnostic that
+Use :meth:`~skore.EstimatorReport.diagnosis` to run checks and get a diagnostic that
 summarizes the findings. Findings come in two severities:
 
 - **issues** flag a concrete modeling problem to fix (e.g. overfitting);
@@ -22,7 +22,7 @@ Checks can be muted per call with `ignore=...`:
 
 .. code-block:: python
 
-    report.diagnose(ignore=["SKD001"])
+    report.diagnosis(ignore=["SKD001"])
 
 You can also set a global ignore list with `configuration.ignore_checks = ...`:
 
@@ -32,10 +32,10 @@ You can also set a global ignore list with `configuration.ignore_checks = ...`:
     configuration.ignore_checks = ["SKD001"]
 
 For cross-validation reports, checks are run per split and then aggregated
-at report level through `~skore.CrossValidationReport.diagnose`. An issue is
+at report level through `~skore.CrossValidationReport.diagnosis`. An issue is
 reported only when it appears in a strict majority of evaluated splits.
 
-For comparison reports, `~skore.ComparisonReport.diagnose` builds a global diagnostic
+For comparison reports, `~skore.ComparisonReport.diagnosis` builds a global diagnostic
 from each component report in the comparison. Issues are grouped by component
 report and emitted as a single message.
 
