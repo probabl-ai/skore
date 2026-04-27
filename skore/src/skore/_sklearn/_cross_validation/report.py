@@ -482,6 +482,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs)
             Testing target.
 
+        test_data : dict or None
+            When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
+            variables contained in the DataOp that was used to create this learner
+            (e.g. ``{"X": X_df, "other_table": df, ...}``).
+
         Examples
         --------
         >>> from sklearn.datasets import make_classification
