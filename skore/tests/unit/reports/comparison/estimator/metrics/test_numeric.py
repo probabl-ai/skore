@@ -31,9 +31,12 @@ from skore import ComparisonReport, EstimatorReport
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
                 ),
-                index=pd.MultiIndex.from_tuples(
-                    [("Precision", "0"), ("Precision", "1")],
-                    names=["Metric", "Label / Average"],
+                index=pd.MultiIndex.from_arrays(
+                    [
+                        ["Precision", "Precision"],
+                        pd.Index(["0", "1"], dtype="string", name="Label"),
+                    ],
+                    names=["Metric", "Label"],
                 ),
             ),
         ),
@@ -48,9 +51,12 @@ from skore import ComparisonReport, EstimatorReport
                     ["DummyClassifier_1", "DummyClassifier_2"],
                     name="Estimator",
                 ),
-                index=pd.MultiIndex.from_tuples(
-                    [("Recall", "0"), ("Recall", "1")],
-                    names=["Metric", "Label / Average"],
+                index=pd.MultiIndex.from_arrays(
+                    [
+                        ["Recall", "Recall"],
+                        pd.Index(["0", "1"], dtype="string", name="Label"),
+                    ],
+                    names=["Metric", "Label"],
                 ),
             ),
         ),
@@ -270,7 +276,7 @@ def test_summarize_pos_label_default(
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result_both_labels = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
+    assert result_both_labels["Label"].to_list() == ["A", "B"]
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
@@ -300,5 +306,5 @@ def test_precision_recall_pos_label_default(
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result_both_labels = getattr(report.metrics, metric)().reset_index()
-    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
-    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+    assert result_both_labels["Label"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label"])
