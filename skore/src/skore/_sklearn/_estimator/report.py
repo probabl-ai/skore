@@ -35,14 +35,22 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
     from skore._sklearn._estimator.inspection_accessor import _InspectionAccessor
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
+    from skore._sklearn.types import EstimatorLike
 
 
 _STATE_VERSION = 1
 
 
 def _check_estimator_and_data(
-    estimator, X_train, y_train, X_test, y_test, train_data, test_data
-):
+    estimator: EstimatorLike,
+    X_train: ArrayLike | None,
+    y_train: ArrayLike | None,
+    X_test: ArrayLike | None,
+    y_test: ArrayLike | None,
+    train_data: dict | None,
+    test_data: dict | None,
+) -> tuple[bool, EstimatorLike, dict | None, dict | None]:
+    """Check and validate the estimator and data."""
     if is_skrub_learner(estimator):
         initialized_with_data_op = True
         if any(v is not None for v in (X_train, y_train, X_test, y_test)):
@@ -86,6 +94,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator : estimator object
         Estimator to make the report from. When the estimator is not fitted,
         it is deep-copied to avoid side-effects. If it is fitted, it is cloned instead.
+        An estimator can be one of the following:
+
+        - a scikit-learn compatible estimator as a :class:`~sklearn.base.BaseEstimator`;
+        - a skrub :class:`~skrub.DataOp` to preprocess the data;
+        - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
+          by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
     fit : {"auto", True, False}, default="auto"
         Whether to fit the estimator on the training data. If "auto", the estimator
@@ -98,11 +112,21 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     y_train : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Training target.
 
-    X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
+    X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         Testing data. It should have the same structure as the training data.
 
-    y_test : array-like of shape (n_samples,) or (n_samples, n_outputs)
+    y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Testing target.
+
+    train_data : dict or None
+        When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
+        variables contained in the DataOp that was used to create this learner
+        (e.g. ``{"X": X_df, "other_table": df, ...}``).
+
+    test_data : dict or None
+        When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
+        variables contained in the DataOp that was used to create this learner
+        (e.g. ``{"X": X_df, "other_table": df, ...}``).
 
     pos_label : int, float, bool or str, default=None
         For binary classification, the positive class to use for metrics and displays
@@ -186,7 +210,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        estimator: BaseEstimator | skrub.DataOp,
+        estimator: EstimatorLike,
         *,
         fit: Literal["auto"] | bool = "auto",
         X_train: ArrayLike | None = None,
