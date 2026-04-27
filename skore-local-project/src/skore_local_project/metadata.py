@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from abc import ABC
 from contextlib import suppress
 from dataclasses import InitVar, dataclass, field, fields
@@ -29,6 +30,39 @@ def cast_to_float(value: Any) -> float | None:
     return None
 
 
+def working_tree_clean() -> bool:
+    """Check whether the Git working tree is clean."""
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"], capture_output=True, text=True
+        )
+    except FileNotFoundError:
+        # Git not on PATH
+        return False
+    if result.returncode != 0:
+        # e.g. not in a Git repo
+        return False
+    return result.stdout.strip() == ""
+
+
+def head_commit_hash() -> str | None:
+    """Return the hash of the HEAD commit, or None on failure."""
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip()
+
+
+def git_commit() -> str | None:
+    """Obtain the hash of the latest Git commit.
+
+    Returns None if the working tree is not clean or git is not available.
+    """
+    return head_commit_hash() if working_tree_clean() else None
+
+
 @dataclass(kw_only=True)
 class ReportMetadata(ABC):
     """
@@ -42,6 +76,8 @@ class ReportMetadata(ABC):
         ID of the artifact in the artifacts storage.
     project_name : str
         The name of the project the metadata should be associated with.
+    git_commit : str or None
+        The hash of the git commit at which the report was saved.
     date : str
         The date the metadata were created.
     key : str
@@ -61,6 +97,7 @@ class ReportMetadata(ABC):
     artifact_id: str
     project_name: str
     key: str
+    git_commit: str | None = field(init=False)
     date: str = field(init=False)
     learner: str = field(init=False)
     ml_task: str = field(init=False)
@@ -74,6 +111,7 @@ class ReportMetadata(ABC):
 
     def __post_init__(self, report: EstimatorReport | CrossValidationReport) -> None:
         """Initialize dynamic fields."""
+        self.git_commit = git_commit()
         self.date = datetime.now(timezone.utc).isoformat()
         self.learner = report.estimator_name_
         self.ml_task = report.ml_task

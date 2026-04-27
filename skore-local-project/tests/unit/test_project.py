@@ -69,6 +69,13 @@ def monkeypatch_datetime(monkeypatch, Datetime):
 
 
 @fixture(autouse=True)
+def monkeypatch_git_commit(monkeypatch, mock_git_commit):
+    monkeypatch.setattr(
+        "skore_local_project.metadata.git_commit", lambda: mock_git_commit
+    )
+
+
+@fixture(autouse=True)
 def monkeypatch_metrics(monkeypatch, Datetime):
     monkeypatch.setattr(
         "skore.EstimatorReport.metrics.rmse",
@@ -199,7 +206,7 @@ class TestProject:
         ):
             project.put("<key>", regression)
 
-    def test_put_estimator_report(self, tmp_path, nowstr, regression):
+    def test_put_estimator_report(self, tmp_path, nowstr, mock_git_commit, regression):
         project = Project("<project>", workspace=tmp_path)
         project.put("<key>", regression)
 
@@ -221,6 +228,7 @@ class TestProject:
                 "key": "<key>",
                 "artifact_id": str(regression.id),
                 "date": nowstr,
+                "git_commit": mock_git_commit,
                 "learner": "Ridge",
                 "dataset": joblib.hash(regression.y_test),
                 "ml_task": "regression",
@@ -239,7 +247,9 @@ class TestProject:
         assert len(project._Project__artifacts_storage) == 1
         assert len(project._Project__metadata_storage) == 2
 
-    def test_put_cross_validation_report(self, tmp_path, nowstr, cv_regression):
+    def test_put_cross_validation_report(
+        self, tmp_path, nowstr, mock_git_commit, cv_regression
+    ):
         project = Project("<project>", workspace=tmp_path)
         project.put("<key>", cv_regression)
 
@@ -261,6 +271,7 @@ class TestProject:
                 "key": "<key>",
                 "artifact_id": str(cv_regression.id),
                 "date": nowstr,
+                "git_commit": mock_git_commit,
                 "learner": "Ridge",
                 "dataset": joblib.hash(cv_regression.y),
                 "ml_task": "regression",
@@ -308,7 +319,9 @@ class TestProject:
         ):
             project.get(None)
 
-    def test_summarize(self, tmp_path, Datetime, regression, cv_regression):
+    def test_summarize(
+        self, tmp_path, Datetime, mock_git_commit, regression, cv_regression
+    ):
         project = Project("<project>", workspace=tmp_path)
 
         project.put("<key1>", regression)
@@ -322,6 +335,7 @@ class TestProject:
                 "id": str(regression.id),
                 "key": "<key1>",
                 "date": Datetime.nows_isoformat[0],
+                "git_commit": mock_git_commit,
                 "learner": "Ridge",
                 "ml_task": "regression",
                 "report_type": "estimator",
@@ -341,6 +355,7 @@ class TestProject:
                 "id": str(regression.id),
                 "key": "<key1>",
                 "date": Datetime.nows_isoformat[1],
+                "git_commit": mock_git_commit,
                 "learner": "Ridge",
                 "ml_task": "regression",
                 "report_type": "estimator",
@@ -360,6 +375,7 @@ class TestProject:
                 "id": str(cv_regression.id),
                 "key": "<key2>",
                 "date": Datetime.nows_isoformat[2],
+                "git_commit": mock_git_commit,
                 "learner": "Ridge",
                 "ml_task": "regression",
                 "report_type": "cross-validation",

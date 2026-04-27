@@ -14,6 +14,11 @@ def nowstr(now):
 
 
 @fixture
+def mock_git_commit():
+    return "000"
+
+
+@fixture
 def Datetime(now):
     now_from_fixture = now
 
