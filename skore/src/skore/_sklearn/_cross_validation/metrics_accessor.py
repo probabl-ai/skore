@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numbers
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 import pandas as pd
 from joblib import Parallel
@@ -34,6 +34,32 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
     You can access this accessor using the `metrics` attribute.
     """
+
+    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...]]] = {
+        "Registry": ("available", "add", "remove"),
+        "Metrics": (
+            "accuracy",
+            "precision",
+            "recall",
+            "roc_auc",
+            "log_loss",
+            "brier_score",
+            "r2",
+            "rmse",
+            "mae",
+            "mape",
+            "fit_time",
+            "predict_time",
+            "timings",
+        ),
+        "Displays": (
+            "summarize",
+            "roc",
+            "precision_recall",
+            "prediction_error",
+            "confusion_matrix",
+        ),
+    }
 
     def __init__(self, parent: CrossValidationReport) -> None:
         super().__init__(parent)
