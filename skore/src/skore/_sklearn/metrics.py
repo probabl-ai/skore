@@ -648,4 +648,6 @@ class MetricRegistry(UserDict[str, Metric]):
                 del self._report._cache[k]
 
         self.data[metric.name] = metric
-        self.data.move_to_end(metric.name, last=(position == "last"))
+        
+        if position == "first":
+            self.data.move_to_end(metric.name, last=False)
