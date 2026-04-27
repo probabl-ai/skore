@@ -180,7 +180,7 @@ precision_recall.help()
 # We can visualize the critical information as a plot, with only a few lines of code:
 
 # %%
-precision_recall.plot()
+_ = precision_recall.plot()
 
 # %%
 # Or we can access the raw information as a dataframe if additional analysis is needed:
@@ -193,7 +193,7 @@ precision_recall.frame()
 
 # %%
 confusion_matrix = simple_cv_report.metrics.confusion_matrix()
-confusion_matrix.plot()
+_ = confusion_matrix.plot()
 
 # %%
 # Skore also provides utilities to inspect models. Since our model is a linear
@@ -204,7 +204,7 @@ coefficients = simple_cv_report.inspection.coefficients()
 coefficients.frame()
 
 # %%
-coefficients.plot(select_k=15)
+_ = coefficients.plot(select_k=15)
 
 # %%
 # Model no. 2: Random forest
@@ -260,7 +260,7 @@ comparison_metrics = comparison.metrics.summarize()
 comparison_metrics.frame(favorability=True)
 
 # %%
-comparison.metrics.precision_recall().plot()
+_ = comparison.metrics.precision_recall().plot()
 
 # %%
 # Based on the previous tables and plots, it seems that the
@@ -294,7 +294,7 @@ final_metrics = final_report.metrics.summarize()
 final_metrics.frame()
 
 # %%
-final_report.metrics.confusion_matrix().plot()
+_ = final_report.metrics.confusion_matrix().plot()
 
 # %%
 # We can easily combine the results of the previous cross-validation together with
@@ -339,7 +339,7 @@ print(
 
 # %%
 final_coefficients.plot(select_k=15, sorting_order="descending")
-cv_coefficients.plot(select_k=15, sorting_order="descending")
+_ = cv_coefficients.plot(select_k=15, sorting_order="descending")
 
 # %%
 # They seem very similar, so we are done!

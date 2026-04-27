@@ -94,7 +94,7 @@ metrics_display.frame()
 
 # %%
 # Draw the confusion matrix by calling ``plot()``:
-metrics_display.plot()
+_ = metrics_display.plot()
 
 # %%
 # Inspection accessor
@@ -105,7 +105,7 @@ metrics_display.plot()
 # These also return Display objects with the same ``plot()``, ``frame()``,
 # ``set_style()``, and ``help()`` methods.
 inspection_display = report.inspection.coefficients()
-inspection_display.plot(select_k=15, sorting_order="descending")
+_ = inspection_display.plot(select_k=15, sorting_order="descending")
 
 # %%
 # Second report type: cross-validation
@@ -122,10 +122,10 @@ cv_report = evaluate(estimator, X, y, splitter=3)
 cv_report.data.analyze().plot(kind="dist", x="mean radius", y="mean texture")
 
 # %%
-cv_report.metrics.confusion_matrix().plot()
+_ = cv_report.metrics.confusion_matrix().plot()
 
 # %%
-cv_report.inspection.coefficients().plot(select_k=10, sorting_order="descending")
+_ = cv_report.inspection.coefficients().plot(select_k=10, sorting_order="descending")
 
 # %%
 # Third report type: comparison
