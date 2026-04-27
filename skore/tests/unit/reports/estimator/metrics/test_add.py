@@ -295,8 +295,8 @@ class TestAddPosition:
         assert keys[1] == "accuracy"
         assert keys[-1] == "m_last"
 
-    def test_readd_raises_without_remove(self, binary_classification_report):
-        """Re-adding the same metric name raises and asks to remove first."""
+    def test_readd_moves_to_last(self, binary_classification_report):
+        """Re-adding the same name with position updates order and summarize works."""
         report = binary_classification_report
 
         def score_v1(y_true, y_pred):
@@ -311,16 +311,16 @@ class TestAddPosition:
         def score_v2(y_true, y_pred):
             return 1.0
 
-        err_msg = re.escape(
-            "Cannot add 'reorder_me': it already exists. Remove it before adding it "
-            "again."
+        report.metrics.add(
+            make_scorer(score_v2, response_method="predict"),
+            name="reorder_me",
+            position="last",
         )
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add(
-                make_scorer(score_v2, response_method="predict"),
-                name="reorder_me",
-                position="last",
-            )
+        keys = list(report._metric_registry.keys())
+        assert keys[-1] == "reorder_me"
+
+        display = report.metrics.summarize(metric="reorder_me")
+        assert display.data["score"].iloc[0] == 1.0
 
     def test_metric_registry_add_invalid_position(self, binary_classification_report):
         """MetricRegistry.add rejects unknown position values."""
@@ -354,8 +354,8 @@ class TestCacheBehavior:
         with check_cache_unchanged(report._cache):
             report.metrics.summarize(metric="counting_metric")
 
-    def test_duplicate_add_keeps_existing_cache(self, binary_classification_report):
-        """Duplicate add fails and leaves existing metric cache untouched."""
+    def test_readd_invalidates_cache(self, binary_classification_report):
+        """Test that re-adding a metric invalidates its cache only."""
         report = binary_classification_report
 
         def metric1(y_true, y_pred):
@@ -374,26 +374,22 @@ class TestCacheBehavior:
         report.metrics.summarize(metric="metric1")
         report.metrics.summarize(metric="metric2")
 
-        # Attempt duplicate add of metric1 with a new function
+        # Re-add metric1 with a new function
         def metric1(y_true, y_pred):
             return 0.3
 
         scorer1_v2 = make_scorer(metric1, response_method="predict")
-        err_msg = re.escape(
-            "Cannot add 'metric1': it already exists. Remove it before adding it again."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add(scorer1_v2)
+        report.metrics.add(scorer1_v2)
 
         # metric2 should use cache
         with check_cache_unchanged(report._cache):
             result2 = report.metrics.summarize(metric="metric2")
 
-        # metric1 should still use cache from the original scorer
-        with check_cache_unchanged(report._cache):
+        # metric1 should compute fresh
+        with check_cache_changed(report._cache):
             result1 = report.metrics.summarize(metric="metric1")
 
-        assert result1.data["score"].iloc[0] == 0.1
+        assert result1.data["score"].iloc[0] == 0.3
         assert result2.data["score"].iloc[0] == 0.2
 
     def test_different_metrics_have_separate_cache(self, binary_classification_report):
@@ -467,8 +463,8 @@ class TestEdgeCases:
         with pytest.raises(AttributeError, match=err_msg):
             report.metrics.summarize(metric="accuracy_score")
 
-    def test_duplicate_name_raises(self, binary_classification_report):
-        """Adding with duplicate name raises and keeps the original metric."""
+    def test_duplicate_name_replaces(self, binary_classification_report):
+        """Test that adding with duplicate name silently replaces."""
         report = binary_classification_report
 
         def score(y_true, y_pred):
@@ -485,17 +481,13 @@ class TestEdgeCases:
         def score(y_true, y_pred):
             return 1
 
-        err_msg = re.escape(
-            "Cannot add 'score': it already exists. Remove it before adding it again."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add(make_scorer(score, response_method="predict"))
+        report.metrics.add(make_scorer(score, response_method="predict"))
 
         assert len(report._metric_registry) == nb_metrics_before_overwriting
 
-        # summarize still reflects the original metric
+        # `summarize` contains only the new output
         result = report.metrics.summarize(metric="score")
-        assert result.data["score"].iloc[0] == 0
+        assert result.data["score"].iloc[0] == 1
 
 
 class TestDifferentMLTasks:
@@ -679,18 +671,17 @@ class TestStringScorerNames:
 
     def test_without_neg_prefix(self, regression_report):
         """Test that metric strings passed without 'neg_' prefix can be added and
-        duplicate registration raises an explicit error."""
+        produce the same result as with it."""
         report = regression_report
 
         report.metrics.add("mean_squared_error")
-        assert "mean_squared_error" in report._metric_registry
+        registry_without = report._metric_registry.copy()
+        assert "mean_squared_error" in registry_without
 
-        err_msg = re.escape(
-            "Cannot add 'mean_squared_error': it already exists. Remove it before "
-            "adding it again."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add("neg_mean_squared_error")
+        report.metrics.add("neg_mean_squared_error")
+        registry_with = report._metric_registry
+
+        assert registry_with.keys() == registry_without.keys()
 
     def test_invalid_string_scorer_name(self, binary_classification_report):
         """Test that invalid sklearn scorer names raise an error."""
