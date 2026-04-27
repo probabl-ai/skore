@@ -260,6 +260,123 @@ class TestSummarizeIntegration:
         assert set(display.data["metric_verbose_name"]) == {"Accuracy", "Business Loss"}
 
 
+class TestAddPosition:
+    """Tests for metric registry ordering (first vs last)."""
+
+    def test_default_first_lifo_before_builtins(self, binary_classification_report):
+        """New metrics default to the front; last added is first among customs."""
+        report = binary_classification_report
+
+        def metric_a(y_true, y_pred):
+            return 0.0
+
+        def metric_b(y_true, y_pred):
+            return 1.0
+
+        report.metrics.add(
+            make_scorer(metric_a, response_method="predict"), name="metric_a"
+        )
+        report.metrics.add(
+            make_scorer(metric_b, response_method="predict"), name="metric_b"
+        )
+
+        keys = list(report._metric_registry.keys())
+        assert keys[0] == "metric_b"
+        assert keys[1] == "metric_a"
+        assert keys[2] == "accuracy"
+
+        display = report.metrics.summarize()
+        assert display.data.iloc[0]["metric_verbose_name"] == "Metric B"
+
+    def test_position_last_appends_in_order(self, binary_classification_report):
+        """Last-position adds appear after all built-ins, in insertion order."""
+        report = binary_classification_report
+
+        def metric_a(y_true, y_pred):
+            return 0.0
+
+        def metric_b(y_true, y_pred):
+            return 1.0
+
+        report.metrics.add(
+            make_scorer(metric_a, response_method="predict"),
+            name="metric_a",
+            position="last",
+        )
+        report.metrics.add(
+            make_scorer(metric_b, response_method="predict"),
+            name="metric_b",
+            position="last",
+        )
+
+        keys = list(report._metric_registry.keys())
+        assert keys[-2] == "metric_a"
+        assert keys[-1] == "metric_b"
+
+    def test_mixed_first_and_last(self, binary_classification_report):
+        """First metric at front, last metric at end, built-ins unchanged in between."""
+        report = binary_classification_report
+
+        def m_first(y_true, y_pred):
+            return 0.0
+
+        def m_last(y_true, y_pred):
+            return 1.0
+
+        report.metrics.add(
+            make_scorer(m_first, response_method="predict"), name="m_first"
+        )
+        report.metrics.add(
+            make_scorer(m_last, response_method="predict"),
+            name="m_last",
+            position="last",
+        )
+
+        keys = list(report._metric_registry.keys())
+        assert keys[0] == "m_first"
+        assert keys[1] == "accuracy"
+        assert keys[-1] == "m_last"
+
+    def test_readd_moves_to_last(self, binary_classification_report):
+        """Re-adding the same name with position updates order and summarize works."""
+        report = binary_classification_report
+
+        def score_v1(y_true, y_pred):
+            return 0.0
+
+        report.metrics.add(
+            make_scorer(score_v1, response_method="predict"), name="reorder_me"
+        )
+        keys_after_first = list(report._metric_registry.keys())
+        assert keys_after_first[0] == "reorder_me"
+
+        def score_v2(y_true, y_pred):
+            return 1.0
+
+        report.metrics.add(
+            make_scorer(score_v2, response_method="predict"),
+            name="reorder_me",
+            position="last",
+        )
+        keys = list(report._metric_registry.keys())
+        assert keys[-1] == "reorder_me"
+
+        display = report.metrics.summarize(metric="reorder_me")
+        assert display.data["score"].iloc[0] == 1.0
+
+    def test_metric_registry_add_invalid_position(self, binary_classification_report):
+        """MetricRegistry.add rejects unknown position values."""
+        report = binary_classification_report
+        m = Metric(
+            name="only_for_position_test",
+            score_func=accuracy_score,
+            response_method="predict",
+            greater_is_better=True,
+        )
+        with pytest.raises(ValueError, match="position must be 'first' or 'last'"):
+            report._metric_registry.add(m, position="middle")  # type: ignore[arg-type]
+
+
 class TestCacheBehavior:
     """Test caching behavior with added metrics."""
 
