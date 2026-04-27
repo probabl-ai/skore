@@ -34,8 +34,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     ----------
     confusion_matrix_predict : pd.DataFrame
         Predict-based n x n confusion matrix in long format with columns:
-        "true_label", "predicted_label", "count", "normalized_by_true",
-        "normalized_by_pred", "normalized_by_all", "split", "estimator",
+        "true_label", "predicted_label", "count", "split", "estimator",
         "data_source". Always available.
 
     confusion_matrix_thresholded : pd.DataFrame or None
@@ -509,18 +508,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         """Compute per-class OvR confusion matrix at all thresholds."""
         counts = cm.reshape(-1)
 
-        row_sums = cm.sum(axis=2, keepdims=True)
-        cm_true = np.zeros_like(cm, dtype=float)
-        np.divide(cm, row_sums, out=cm_true, where=row_sums != 0)
-
-        col_sums = cm.sum(axis=1, keepdims=True)
-        cm_pred = np.zeros_like(cm, dtype=float)
-        np.divide(cm, col_sums, out=cm_pred, where=col_sums != 0)
-
-        total_sums = cm.sum(axis=(1, 2), keepdims=True)
-        cm_all = np.zeros_like(cm, dtype=float)
-        np.divide(cm, total_sums, out=cm_all, where=total_sums != 0)
-
         data = {
             "true_label": pd.Series(
                 np.tile(np.repeat(labels, len(labels)), len(thresholds)),
@@ -531,9 +518,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 dtype="category",
             ),
             "count": counts,
-            "normalized_by_true": cm_true.reshape(-1),
-            "normalized_by_pred": cm_pred.reshape(-1),
-            "normalized_by_all": cm_all.reshape(-1),
             "threshold": np.repeat(thresholds, len(labels) ** 2),
             **metadata,
         }
@@ -546,10 +530,29 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         return pd.DataFrame(data)
 
     @staticmethod
-    def _format_frame(
-        df: pd.DataFrame, columns: list[str], normalize_col: str
+    def _apply_normalization(
+        df: pd.DataFrame,
+        normalize: Literal["true", "pred", "all"] | None,
     ) -> pd.DataFrame:
-        return df[columns].rename(columns={normalize_col: "value"})
+        if normalize is None:
+            return df.rename(columns={"count": "value"})
+        groupby_cols = ["threshold", "label", "split", "estimator", "data_source"]
+        if normalize == "pred":
+            groupby_cols.append("predicted_label")
+        elif normalize == "true":
+            groupby_cols.append("true_label")
+
+        df = df.copy(deep=False)
+        columns = df.dropna(axis=1, how="all").columns
+        groupby_cols = columns.intersection(groupby_cols).to_list()
+
+        if groupby_cols:
+            denominator = df.groupby(groupby_cols)["count"].transform("sum")
+        else:
+            denominator = df["count"].sum()
+
+        df["value"] = (df["count"] / denominator).fillna(0)
+        return df.drop(columns=["count"])
 
     def frame(
         self,
@@ -581,28 +584,27 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             available threshold.
 
         label : int, float, bool, str or None, default=report pos_label
-            The class to select when using the thresholded view. Use None to
-            show all classes. Ignored when `threshold_value` is None.
+            The class to select. Use None to select all classes.
 
         Returns
         -------
         frame : pandas.DataFrame
             The confusion matrix as a dataframe.
         """
-        normalize_col = "normalized_by_" + normalize if normalize else "count"
+        label = _check_label(self.labels, label, self.report_pos_label)
 
         if threshold_value is None:
-            columns = [
-                "true_label",
-                "predicted_label",
-                normalize_col,
-                "split",
-                "estimator",
-                "data_source",
-            ]
-            return self._format_frame(
-                self.confusion_matrix_predict, columns, normalize_col
-            )
+            df = self.confusion_matrix_predict
+
+            if label is not None and self.ml_task != "binary-classification":
+                mapping = {True: label, False: f"not {label}"}
+                df = df.copy(deep=False).dropna(axis=1, how="all")
+                df["true_label"] = (df["true_label"] == label).map(mapping)
+                df["predicted_label"] = (df["predicted_label"] == label).map(mapping)
+                groupby_cols = df.columns.difference(["count"]).to_list()
+                df = df.groupby(groupby_cols)["count"].sum().reset_index()
+
+            return self._apply_normalization(df, normalize)
 
         # Thresholded view
         if self.confusion_matrix_thresholded is None:
@@ -612,27 +614,20 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 "decision_function."
             )
 
-        label = _check_label(self.labels, label, self.report_pos_label)
-
         df = self.confusion_matrix_thresholded
         if label is not None:
             df = df.query("label == @label").reset_index(drop=True)
 
-        columns = [
-            "true_label",
-            "predicted_label",
-            normalize_col,
-            "threshold",
-        ]
-        if label is None:
-            columns.append("label")
-        columns.extend(["split", "estimator", "data_source"])
+        df = self._apply_normalization(df, normalize)
+
+        if label is not None:
+            df = df.drop(columns=["label"])
 
         if threshold_value == "all":
-            return self._format_frame(df, columns, normalize_col)
+            return df
 
         # Snap to closest threshold per group
-        def select_threshold_and_format(group):
+        def select_threshold(group):
             thresholds = np.sort(group["threshold"].unique())
             index_right = int(np.searchsorted(thresholds, threshold_value))
             if index_right == len(thresholds):
@@ -646,7 +641,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 index_right if diff_right < diff_left else index_left
             ]
             frame = group.query(f"threshold == {closest_threshold_value}")
-            return self._format_frame(frame, columns, normalize_col)
+            return frame
 
         groupby_cols = []
         if "cross-validation" in self.report_type:
@@ -659,9 +654,9 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         frames = []
         if groupby_cols:
             for _, group in df.groupby(groupby_cols, observed=True):
-                frames.append(select_threshold_and_format(group))
+                frames.append(select_threshold(group))
         else:
-            frames.append(select_threshold_and_format(df))
+            frames.append(select_threshold(df))
 
         return pd.concat(frames)
 
