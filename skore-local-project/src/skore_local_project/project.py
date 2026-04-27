@@ -29,6 +29,7 @@ if TYPE_CHECKING:
         id: str
         key: str
         date: str
+        git_commit: str | None
         learner: str
         ml_task: str
         report_type: str
@@ -245,6 +246,7 @@ class Project:
                 "id": value["artifact_id"],
                 "key": value["key"],
                 "date": value["date"],
+                "git_commit": value["git_commit"],
                 "learner": value["learner"],
                 "ml_task": value["ml_task"],
                 "report_type": value["report_type"],

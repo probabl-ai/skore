@@ -55,6 +55,9 @@ Added
 - :class:`Project` now accepts strings for the `workspace` argument. See :pr:`2832` by
   :user:`auguste-probabl`.
 
+- :class:`Project` now saves the latest Git commit hash when :meth:`Project.put` is run
+  in a clean working tree. See :pr:`2834` by :user:`auguste-probabl`.
+
 Removed
 -------
 
