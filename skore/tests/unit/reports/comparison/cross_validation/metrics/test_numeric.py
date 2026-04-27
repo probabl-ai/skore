@@ -43,7 +43,7 @@ def case_timings_with_predictions(
     )
 
     report = comparison_cross_validation_reports_binary_classification
-    report.cache_predictions()
+    report._cache_predictions()
     return (
         report,
         "timings",

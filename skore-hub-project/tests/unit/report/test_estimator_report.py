@@ -53,7 +53,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
     reports_with_cache = [
         (report, report._cache) for report in reports if hasattr(report, "_cache")
     ]
-    object.clear_cache()
+    object._clear_cache()
 
     try:
         with io.BytesIO() as stream:

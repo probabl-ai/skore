@@ -96,7 +96,7 @@ report.metrics.help()
 
 # %%
 #
-# Metrics computation with aggressive caching
+# Metrics computation and repeated evaluation
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # At this point, we might be interested to have a first look at the statistical
@@ -116,13 +116,10 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
 #
-# An interesting feature provided by the :class:`skore.EstimatorReport` is the
-# the caching mechanism. Indeed, when we have a large enough dataset, computing the
-# predictions for a model is not cheap anymore. For instance, on our smallish dataset,
-# it took a couple of seconds to compute the metrics. The report will cache the
-# predictions and if we are interested in computing a metric again or an alternative
-# metric that requires the same predictions, it will be faster. Let's check by
-# requesting the same metrics report again.
+# On large enough data, getting predictions is often the expensive step. The report
+# keeps intermediate results in memory for the same session, so when we ask for the
+# same :meth:`~skore.EstimatorReport.metrics.summarize` again, it can complete much
+# faster. Let's request the same summary a second time.
 
 start = time.time()
 metric_report = report.metrics.summarize().frame()
@@ -147,22 +144,8 @@ _ = ax.set_title("Metrics report")
 
 # %%
 #
-# Whenever computing a metric, we check if the predictions are available in the cache
-# and reload them if available. So for instance, let's compute the log loss.
-
-start = time.time()
-log_loss = report.metrics.log_loss()
-end = time.time()
-log_loss
-
-# %%
-print(f"Time taken to compute the log loss: {end - start:.2f} seconds")
-
-# %%
-#
-# We can show that without initial cache, it would have taken more time to compute
-# the log loss.
-report.clear_cache()
+# Another metric on the test set, such as log loss, can reuse the same underlying
+# predictions if they were already required for a previous call.
 
 start = time.time()
 log_loss = report.metrics.log_loss()
@@ -181,10 +164,9 @@ report.metrics.log_loss(data_source="train")
 
 # %%
 #
-# Be aware that we can also benefit from the caching mechanism with our own custom
-# metrics. Skore only expects that we define our own metric function to take `y_true`
-# and `y_pred` as the first two positional arguments. It can take any other arguments.
-# Let's see an example.
+# Custom metrics also go through the same path: they receive `y_true` and `y_pred`
+# as the first two arguments, and the report supplies predictions consistently with
+# built-in metrics. The callable can take any other arguments. Let's see an example.
 
 
 def operational_decision_cost(y_true, y_pred, amount):
@@ -259,10 +241,8 @@ fig
 
 # %%
 #
-# Similarly to the metrics, we aggressively use the caching to avoid recomputing the
-# predictions of the model. We also cache the plot display object by detection if the
-# input parameters are the same as the previous call. Let's demonstrate the kind of
-# performance gain we can get.
+# Similarly to the metrics, repeated calls for the same ROC display can be much
+# faster in the same session once the underlying values have been computed.
 start = time.time()
 # we already trigger the computation of the predictions in a previous call
 display = report.metrics.roc()
@@ -272,24 +252,6 @@ fig
 
 # %%
 print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
-
-# %%
-#
-# Now, let's clean the cache and check if we get a slowdown.
-report.clear_cache()
-
-# %%
-start = time.time()
-display = report.metrics.roc()
-fig = display.plot()
-end = time.time()
-fig
-
-# %%
-print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
-
-# %%
-# As expected, since we need to recompute the predictions, it takes more time.
 
 # %%
 # Visualizing the confusion matrix

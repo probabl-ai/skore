@@ -126,7 +126,7 @@ class TestProject:
         project = Project("<project>", workspace=tmp_path)
 
         project.put("<key-1>", regression)
-        regression.cache_predictions()
+        _ = regression.get_predictions(data_source="test")
         project.put("<key-2>", regression)
 
         # Ensure only one artifact was persisted:
@@ -136,7 +136,7 @@ class TestProject:
 
         # Make sure the pickle is not broken:
         report = project.get(str(regression.id))
-        report.cache_predictions()
+        _ = report.get_predictions(data_source="test")
 
     def test_put_cross_validation_report_reuses_artifact_id(
         self, tmp_path, cv_regression
@@ -144,7 +144,7 @@ class TestProject:
         project = Project("<project>", workspace=tmp_path)
 
         project.put("<key-1>", cv_regression)
-        cv_regression.cache_predictions()
+        _ = cv_regression.get_predictions(data_source="test")
         project.put("<key-2>", cv_regression)
 
         # Ensure only one artifact was persisted:
@@ -154,7 +154,7 @@ class TestProject:
 
         # Make sure the pickle is not broken:
         report = project.get(str(cv_regression.id))
-        report.cache_predictions()
+        _ = report.get_predictions(data_source="test")
 
     def test_init_with_envar(self, monkeypatch, tmp_path):
         monkeypatch.setenv("SKORE_WORKSPACE", str(tmp_path))

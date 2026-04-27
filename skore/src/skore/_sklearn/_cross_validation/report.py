@@ -357,47 +357,20 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         return report
 
-    def clear_cache(self) -> None:
-        """Clear the cache.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
-        >>> report.cache_predictions()
-        >>> report.clear_cache()
-        >>> report.estimator_reports_[0]._cache
-        {}
-        """
+    def _clear_cache(self) -> None:
+        """Reset in-memory caches on each fold's estimator report."""
         for report in self.estimator_reports_:
-            report.clear_cache()
+            report._clear_cache()
 
-    def cache_predictions(
+    def _cache_predictions(
         self,
     ) -> None:
-        """Cache the predictions for sub-estimators reports.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
-        >>> report.cache_predictions()
-        >>> report.estimator_reports_[0]._cache
-        {...}
-        """
+        """Precompute predictions for each cross-validation split report."""
         for estimator_report in track(
             self.estimator_reports_,
             description="Cross-validation predictions for split",
         ):
-            estimator_report.cache_predictions()
+            estimator_report._cache_predictions()
 
     def get_predictions(
         self,

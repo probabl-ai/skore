@@ -258,54 +258,21 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self.n_jobs = n_jobs
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
 
-    def clear_cache(self) -> None:
-        """Clear the cache.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import make_classification
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
-        >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
-        >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
-        >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
-        >>> report.cache_predictions()
-        >>> report.clear_cache()
-        """
+    def _clear_cache(self) -> None:
+        """Reset in-memory caches on each underlying report."""
         for report in self.reports_.values():
-            report.clear_cache()
+            report._clear_cache()
 
-    def cache_predictions(
+    def _cache_predictions(
         self,
     ) -> None:
-        """Cache the predictions for sub-estimators reports.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import make_classification
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
-        >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
-        >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
-        >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
-        >>> report.cache_predictions()
-        """
+        """Precompute predictions for each model in the comparison."""
         for report in track(
             self.reports_.values(),
             description="Estimator predictions",
             total=len(self.reports_),
         ):
-            report.cache_predictions()
+            report._cache_predictions()
 
     def get_predictions(
         self,
@@ -357,7 +324,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
         >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
         >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
-        >>> report.cache_predictions()
         >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(25,), (25,)]

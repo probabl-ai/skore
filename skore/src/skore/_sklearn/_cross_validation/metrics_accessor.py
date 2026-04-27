@@ -199,7 +199,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> report.metrics.timings()
                           mean       std
         Fit time (s)       ...       ...
-        >>> report.cache_predictions()
+        >>> _ = report.get_predictions(data_source="test")
         >>> report.metrics.timings()
                                     mean       std
         Fit time (s)                 ...       ...

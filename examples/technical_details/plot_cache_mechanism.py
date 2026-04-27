@@ -1,12 +1,13 @@
 """
 .. _example_cache_mechanism:
 
-===============
-Cache mechanism
-===============
+====================================
+Fast repeated metrics and evaluation
+====================================
 
-This example shows how :class:`~skore.EstimatorReport` and
-:class:`~skore.CrossValidationReport` use caching to speed up computations.
+This example shows that :class:`~skore.EstimatorReport` and
+:class:`~skore.CrossValidationReport` avoid redundant work when you compute metrics
+or displays several times, so the second call is often much faster than the first.
 """
 
 # %%
@@ -38,8 +39,8 @@ TableReport(pd.DataFrame(y))
 # Some categories are not well defined.
 
 # %%
-# Caching with :class:`~skore.EstimatorReport` and :class:`~skore.CrossValidationReport`
-# ======================================================================================
+# :class:`~skore.EstimatorReport` and repeated evaluation
+# =======================================================
 #
 # We use `skrub` to create a simple predictive model that handles our dataset's
 # challenges.
@@ -62,14 +63,11 @@ X_train, X_external, y_train, y_external = train_test_split(
 )
 
 # %%
-# Caching the predictions for fast metric computation
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# First and second calls to a metric
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# First, we focus on :class:`~skore.EstimatorReport`, as the same philosophy will
-# apply to :class:`~skore.CrossValidationReport`.
-#
-# Let's explore how :class:`~skore.EstimatorReport` uses caching to speed up
-# predictions. We start by training the model:
+# We build an :class:`~skore.EstimatorReport` and time how long successive metric
+# calls take.
 from skore import EstimatorReport
 
 report = EstimatorReport(
@@ -112,8 +110,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 #
 # Both approaches take similar time.
 #
-# Now, watch what happens when we compute the accuracy again with our skore estimator
-# report:
+# Now, we compute the accuracy again through the same report:
 start = time.time()
 result = report.metrics.accuracy()
 end = time.time()
@@ -124,13 +121,13 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# The second calculation is instant! This happens because the report saves previous
-# calculations in its cache. Let's look inside the cache:
-report._cache
+# The second calculation is much faster, because the report does not repeat the
+# expensive ``predict`` work when the same information is still available for this
+# session.
 
 # %%
-# The cache stores predictions by type and data source. This means that computing
-# metrics that use the same type of predictions will be faster.
+# A different metric that needs the same predictions
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 # Let's try the precision metric:
 start = time.time()
 result = report.metrics.precision()
@@ -141,23 +138,16 @@ result
 print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
-# We observe that it takes only a few milliseconds to compute the precision because we
-# don't need to re-compute the predictions and only have to compute the precision
-# metric itself.
-# Since the predictions are the bottleneck in terms of computation time, we observe
-# an interesting speedup.
+#
+# It typically stays fast, because the same type of test-set predictions is reused
+# where possible.
 
 # %%
-# Caching all the possible predictions at once
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+# Another data source
+# ^^^^^^^^^^^^^^^^^^^
 #
-# We can pre-compute all predictions at once:
-report.cache_predictions()
-
-# %%
-#
-# Now, all possible predictions are stored. Any metric calculation will be much faster,
-# even on different data (like the training set):
+# The first time we ask for a training-set metric, the model must be run on the
+# training set as well. Later calls on that data source also benefit from reuse.
 start = time.time()
 result = report.metrics.log_loss(data_source="train")
 end = time.time()
@@ -167,10 +157,11 @@ result
 print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
-# Caching for plotting
-# ^^^^^^^^^^^^^^^^^^^^
+# Plots
+# ^^^^^
 #
-# The cache also speeds up plots. Let's create a ROC curve:
+# Displays (for example a ROC curve) also benefit: the first request builds the
+# underlying arrays; a second request for the same display is quick.
 
 start = time.time()
 display = report.metrics.roc()
@@ -182,7 +173,6 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# The second plot is instant because it uses cached data:
 start = time.time()
 display = report.metrics.roc()
 display.plot()
@@ -193,26 +183,18 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# We only use the cache to retrieve the `display` object and not directly the matplotlib
-# figure. It means that we can still customize the cached plot before displaying it:
+# We can still customize the display (for example style) and plot again; the
+# evaluation work behind the same metric does not need to be redone in full.
 display.set_style(relplot_kwargs={"color": "tab:orange"})
 _ = display.plot()
 
 # %%
+# Cross-validation: :class:`~skore.CrossValidationReport`
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# Be aware that we can clear the cache if we want to:
-report.clear_cache()
-report._cache
-
-# %%
-#
-# It means that nothing is stored anymore in the cache.
-#
-# Caching with :class:`~skore.CrossValidationReport`
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-#
-# :class:`~skore.CrossValidationReport` uses the same caching system for each split
-# in cross-validation by leveraging the previous :class:`~skore.EstimatorReport`:
+# A :class:`~skore.CrossValidationReport` uses one
+# :class:`~skore.EstimatorReport` per split, so the same idea applies: the first
+# heavy summary of metrics walks every fold; a second run reuses work where possible.
 from skore import CrossValidationReport
 
 report = CrossValidationReport(model, X=df, y=y, splitter=5, n_jobs=4)
@@ -220,10 +202,8 @@ report.help()
 
 # %%
 #
-# Since a :class:`~skore.CrossValidationReport` uses many
-# :class:`~skore.EstimatorReport`, we will observe the same behaviour as we previously
-# exposed.
-# The first call will be slow because it computes the predictions for each split.
+# The first call to a full summary of metrics can take a while because each fold
+# is evaluated.
 start = time.time()
 result = report.metrics.summarize().frame()
 end = time.time()
@@ -234,7 +214,7 @@ print(f"Time taken: {end - start:.2f} seconds")
 
 # %%
 #
-# But the subsequent calls are fast because the predictions are cached.
+# The second call is typically much faster.
 start = time.time()
 result = report.metrics.summarize().frame()
 end = time.time()
@@ -242,7 +222,3 @@ result
 
 # %%
 print(f"Time taken: {end - start:.2f} seconds")
-
-# %%
-#
-# Hence, we observe the same type of behaviour as we previously exposed.
