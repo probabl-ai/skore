@@ -641,13 +641,13 @@ class MetricRegistry(UserDict[str, Metric]):
                 f"Cannot add {metric.name!r}: it is a built-in metric name."
             )
 
-        # Invalidate cached results when re-adding an existing metric
         if metric.name in self.data:
-            keys_to_delete = [k for k in self._report._cache if k[1] == metric.name]
-            for k in keys_to_delete:
-                del self._report._cache[k]
+            raise ValueError(
+                f"Cannot add {metric.name!r}: it already exists. "
+                "Remove it before adding it again."
+            )
 
         self.data[metric.name] = metric
-        
+
         if position == "first":
             self.data.move_to_end(metric.name, last=False)
