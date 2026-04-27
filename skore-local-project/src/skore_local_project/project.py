@@ -4,9 +4,17 @@ from __future__ import annotations
 
 import io
 import os
+from collections.abc import Generator
 from functools import wraps
 from pathlib import Path
-from typing import TYPE_CHECKING, ParamSpec, Protocol, TypeVar, cast, runtime_checkable
+from typing import (
+    TYPE_CHECKING,
+    ParamSpec,
+    Protocol,
+    TypeVar,
+    cast,
+    runtime_checkable,
+)
 from uuid import uuid4
 
 import joblib
@@ -170,6 +178,35 @@ class Project:
         """The workspace of the project."""
         return self.__workspace
 
+    @staticmethod
+    def pickle_parts(
+        report: EstimatorReport | CrossValidationReport,
+    ) -> Generator[tuple[str, bytes], None, None]:
+        """
+        Pickle ``report``, return the bytes and the corresponding hash.
+
+        Notes
+        -----
+        The report is pickled without its cache, to avoid salting the hash.
+        """
+        state = report.get_state()
+        state_hashes = {}
+
+        for key, value in state.items():
+            with io.BytesIO() as stream:
+                joblib.dump(value, stream)
+                pickle_bytes = stream.getvalue()
+            pickle_hash = joblib.hash(pickle_bytes)
+            artifact_id = f"{key}_{pickle_hash}"
+            state_hashes[key] = artifact_id
+            yield artifact_id, pickle_bytes
+
+        with io.BytesIO() as stream:
+            joblib.dump(state_hashes, stream)
+            pickle_bytes = stream.getvalue()
+        pickle_hash = joblib.hash(pickle_bytes)
+        yield pickle_hash, pickle_bytes
+
     @ensure_project_is_not_deleted
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
         """
@@ -207,12 +244,15 @@ class Project:
                 f"ort` (found '{type(report)}')"
             )
 
-        artifact_id = str(report.id)
+        # Metadata(report=report, ...) calls some metrics which mutates the
+        # report's state: we want to avoid mutation after the serialization
+        # (so that doing two `put` in a row does really nothing the second time):
+        report.metrics.summarize()
 
-        if artifact_id not in self.__artifacts_storage:
-            with io.BytesIO() as stream:
-                joblib.dump(report, stream)
-                self.__artifacts_storage[artifact_id] = stream.getvalue()
+        for artifact_id, artifact_bytes in self.pickle_parts(report):
+            if artifact_id in self.__artifacts_storage:
+                continue
+            self.__artifacts_storage[artifact_id] = artifact_bytes
 
         self.__metadata_storage[uuid4().hex] = dict(
             Metadata(
@@ -226,13 +266,27 @@ class Project:
     @ensure_project_is_not_deleted
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its id."""
-        if id in self.__artifacts_storage:
-            with io.BytesIO(self.__artifacts_storage[id]) as stream:
-                return cast(
-                    "EstimatorReport | CrossValidationReport", joblib.load(stream)
-                )
+        if id not in self.__artifacts_storage:
+            raise KeyError(id)
 
-        raise KeyError(id)
+        with io.BytesIO(self.__artifacts_storage[id]) as stream:
+            state_hashes = joblib.load(stream)
+
+        if not isinstance(state_hashes, dict):
+            # BW compatibility
+            return cast("EstimatorReport" | "CrossValidationReport", state_hashes)
+
+        state = {}
+        for key, pickle_id in state_hashes.items():
+            with io.BytesIO(self.__artifacts_storage[pickle_id]) as stream:
+                state[key] = joblib.load(stream)
+
+        from skore import CrossValidationReport, EstimatorReport
+
+        if state["metadata"]["report_type"] == "estimator":
+            return EstimatorReport.from_state(state)
+        else:
+            return CrossValidationReport.from_state(state)
 
     @ensure_project_is_not_deleted
     def summarize(self) -> list[Metadata]:
@@ -296,17 +350,36 @@ class Project:
                 f"does not exist."
             )
 
+        def collect_artifact_ids(artifact_id: str) -> set[str]:
+            """Collect all artifacts needed to restore a persisted report."""
+            if artifact_id not in artifacts:
+                return set()
+
+            kept_artifacts = {artifact_id}
+            with io.BytesIO(artifacts[artifact_id]) as stream:
+                state_hashes = joblib.load(stream)
+
+            if not isinstance(state_hashes, dict):
+                # BW compatibility: the top-level artifact is the whole report.
+                return kept_artifacts
+
+            referenced_artifacts = set(state_hashes.values())
+            if referenced_artifacts.issubset(set(artifacts)):
+                kept_artifacts |= referenced_artifacts
+
+            return kept_artifacts
+
         # Delete all metadata related to the project
         remaining_artifacts = set()
 
-        for key, value in metadata.items():
+        for key, value in list(metadata.items()):
             if value["project_name"] == name:
                 del metadata[key]
             else:
-                remaining_artifacts.add(value["artifact_id"])
+                remaining_artifacts |= collect_artifact_ids(value["artifact_id"])
 
         # Prune artifacts not related to a project
-        for artifact in artifacts:
+        for artifact in list(artifacts):
             if artifact not in remaining_artifacts:
                 del artifacts[artifact]
 
