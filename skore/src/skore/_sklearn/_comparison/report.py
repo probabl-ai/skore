@@ -547,8 +547,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         inspection_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="inspection"
         )
-        diagnose_documentation_url = get_documentation_url(
-            obj=self, method_name="diagnose"
+        diagnosis_documentation_url = get_documentation_url(
+            obj=self, accessor_name="diagnosis"
         )
         return render_template(
             "comparison_report.html.j2",
@@ -561,7 +561,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 "report_title": "Model comparison",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
-                "diagnose_documentation_url": diagnose_documentation_url,
+                "diagnosis_documentation_url": diagnosis_documentation_url,
             },
         )
 

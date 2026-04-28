@@ -59,7 +59,8 @@ class CustomCheck1(Check):
 # =====================
 #
 # :meth:`~skore.EstimatorReport.diagnosis.add` accepts a list of ``Check`` instances,
-# and registers them. The next call to :meth:`~skore.EstimatorReport.diagnosis` runs
+# and registers them. The next call to
+# :meth:`~skore.EstimatorReport.diagnosis.summarize` runs
 # any newly added checks on top of the built-in checks.
 #
 # We can then find the new check in the Tips tab of the diagnostic, along another tip
@@ -73,7 +74,7 @@ y = X[:, 0] + rng.normal(size=200)
 
 report = evaluate(LinearRegression(), X, y)
 report.diagnosis.add([CustomCheck1()])
-report.diagnosis()
+report.diagnosis.summarize()
 
 # %%
 # Cross-validation level checks
@@ -123,7 +124,7 @@ class CustomCheck2(Check):
 
 
 cv_report.diagnosis.add([CustomCheck2()])
-cv_report.diagnosis()
+cv_report.diagnosis.summarize()
 
 # %%
 # Aggregating checks across estimator reports
@@ -133,7 +134,7 @@ cv_report.diagnosis()
 # and aggregate the results across splits.
 
 cv_report.diagnosis.add([CustomCheck1()])
-cv_report.diagnosis()
+cv_report.diagnosis.summarize()
 
 # %%
 # Similarly, :class:`~skore.ComparisonReport` aggregates checks across its
@@ -144,4 +145,4 @@ comparison_report = evaluate(
     [LinearRegression(), RandomForestRegressor()], X, y, splitter=5
 )
 comparison_report.diagnosis.add([CustomCheck1(), CustomCheck2()])
-comparison_report.diagnosis()
+comparison_report.diagnosis.summarize()

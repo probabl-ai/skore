@@ -40,12 +40,13 @@ linear = LinearRegression()
 deep_tree = DecisionTreeRegressor(random_state=42)
 
 # %%
-# Calling :meth:`~skore.EstimatorReport.diagnosis` explicitly
+# Calling :meth:`~skore.EstimatorReport.diagnosis.summarize` explicitly
 # ===========================================================
 #
-# Every report exposes a callable :meth:`~skore.EstimatorReport.diagnosis` accessor.
+# Every report exposes a :meth:`~skore.EstimatorReport.diagnosis` accessor.
 # Checks are computed lazily and cached, so calling
-# :meth:`~skore.EstimatorReport.diagnosis` is always cheap after the first call.
+# :meth:`~skore.EstimatorReport.diagnosis.summarize` is always cheap after the first
+# call.
 
 from skore import evaluate
 
@@ -53,7 +54,7 @@ linear_report = evaluate(linear, X, y)
 linear_report
 
 # %%
-linear_report.diagnosis()
+linear_report.diagnosis.summarize()
 
 # %%
 linear_report.metrics.summarize(data_source="both").frame()
@@ -63,7 +64,7 @@ linear_report.metrics.summarize(data_source="both").frame()
 # train and test, and not significantly better than a dummy baseline.
 
 tree_report = evaluate(deep_tree, X, y)
-tree_report.diagnosis()
+tree_report.diagnosis.summarize()
 
 # %%
 tree_report.metrics.summarize(data_source="both").frame()
@@ -79,16 +80,16 @@ tree_report.metrics.summarize(data_source="both").frame()
 # Each check has a stable code (e.g. ``SKD001``, ``SKD002``). You can
 # mute individual checks per call:
 
-tree_report.diagnosis(ignore=["SKD001"])
+tree_report.diagnosis.summarize(ignore=["SKD001"])
 
 # %%
-# Or globally, so that every subsequent :meth:`~skore.EstimatorReport.diagnosis` call
-# skips them:
+# Or globally, so that every subsequent
+# :meth:`~skore.EstimatorReport.diagnosis.summarize` call skips them:
 
 import skore
 
 with skore.configuration(ignore_checks=["SKD001"]):
-    diagnosis = tree_report.diagnosis()
+    diagnosis = tree_report.diagnosis.summarize()
 diagnosis
 
 # %%
@@ -99,7 +100,7 @@ diagnosis
 # :class:`~skore.CrossValidationReport`. Checks aggregate issues across folds.
 
 cv_report = evaluate(deep_tree, X, y, splitter=5)
-cv_report.diagnosis()
+cv_report.diagnosis.summarize()
 
 # %%
 # Diagnostics on a :class:`~skore.ComparisonReport`
@@ -109,4 +110,4 @@ cv_report.diagnosis()
 # Issues are grouped by sub-report.
 
 comparison_report = evaluate([linear, deep_tree], X, y)
-comparison_report.diagnosis()
+comparison_report.diagnosis.summarize()

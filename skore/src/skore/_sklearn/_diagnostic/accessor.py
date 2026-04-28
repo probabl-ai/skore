@@ -15,7 +15,7 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
             class_name=f"skore.{self._parent.__class__.__name__}.diagnosis"
         )
 
-    def __call__(
+    def summarize(
         self,
         *,
         ignore: list[CheckCode] | tuple[CheckCode, ...] | None = None,
