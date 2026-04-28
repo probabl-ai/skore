@@ -417,8 +417,8 @@ class TestCacheBehavior:
         # Just the metric value, not the model predictions
         assert len(report._cache) == 1
 
-    def test_re_add_invalidates_cache(self, binary_classification_report):
-        """Test that re-adding a metric invalidates its cache only."""
+    def test_duplicate_add_keeps_existing_cache(self, binary_classification_report):
+        """Duplicate add fails and leaves existing metric cache untouched."""
         report = binary_classification_report
 
         def metric1(y_true, y_pred):
@@ -437,22 +437,27 @@ class TestCacheBehavior:
         report.metrics.summarize(metric="metric1")
         report.metrics.summarize(metric="metric2")
 
-        # Re-add metric1 with a new function
+        # Attempt duplicate add of metric1 with a new function
         def metric1(y_true, y_pred):
             return 0.3
 
         scorer1_v2 = make_scorer(metric1, response_method="predict")
-        report.metrics.add(scorer1_v2)
+        err_msg = re.escape(
+            "Cannot add 'metric1': it already exists. Remove it first using the "
+            "`remove` method."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            report.metrics.add(scorer1_v2)
 
         # metric2 should use cache
         with check_cache_unchanged(report._cache):
             result2 = report.metrics.summarize(metric="metric2")
 
-        # metric1 should compute fresh
-        with check_cache_changed(report._cache):
+        # metric1 should still use cache from the original scorer
+        with check_cache_unchanged(report._cache):
             result1 = report.metrics.summarize(metric="metric1")
 
-        assert result1.data["score"].iloc[0] == 0.3
+        assert result1.data["score"].iloc[0] == 0.1
         assert result2.data["score"].iloc[0] == 0.2
 
     def test_different_metrics_have_separate_cache(self, binary_classification_report):
@@ -500,8 +505,8 @@ class TestEdgeCases:
         with pytest.raises(ValueError, match="(?i)train|data"):
             report.metrics.summarize(metric="accuracy_score", data_source="train")
 
-    def test_duplicate_name_replaces(self, binary_classification_report):
-        """Test that adding with duplicate name silently replaces."""
+    def test_duplicate_name_raises(self, binary_classification_report):
+        """Adding with duplicate name raises and keeps the original metric."""
         report = binary_classification_report
 
         def score(y_true, y_pred):
@@ -518,13 +523,18 @@ class TestEdgeCases:
         def score(y_true, y_pred):
             return 1
 
-        report.metrics.add(make_scorer(score, response_method="predict"))
+        err_msg = re.escape(
+            "Cannot add 'score': it already exists. "
+            "Remove it first using the `remove` method."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            report.metrics.add(make_scorer(score, response_method="predict"))
 
         assert len(report._metric_registry) == nb_metrics_before_overwriting
 
-        # `summarize` contains only the new output
+        # summarize still reflects the original metric
         result = report.metrics.summarize(metric="score")
-        assert result.data["score"].iloc[0] == 1
+        assert result.data["score"].iloc[0] == 0
 
 
 class TestDifferentMLTasks:
@@ -710,17 +720,18 @@ class TestStringScorerNames:
 
     def test_without_neg_prefix(self, regression_report):
         """Test that metric strings passed without 'neg_' prefix can be added and
-        produce the same result as with it."""
+        duplicate registration raises an explicit error."""
         report = regression_report
 
         report.metrics.add("mean_squared_error")
-        registry_without = report._metric_registry.copy()
-        assert "mean_squared_error" in registry_without
+        assert "mean_squared_error" in report._metric_registry
 
-        report.metrics.add("neg_mean_squared_error")
-        registry_with = report._metric_registry
-
-        assert registry_with.keys() == registry_without.keys()
+        err_msg = re.escape(
+            "Cannot add 'mean_squared_error': it already exists. "
+            "Remove it first using the `remove` method."
+        )
+        with pytest.raises(ValueError, match=err_msg):
+            report.metrics.add("neg_mean_squared_error")
 
     def test_invalid_string_scorer_name(self, binary_classification_report):
         """Test that invalid sklearn scorer names raise an error."""
