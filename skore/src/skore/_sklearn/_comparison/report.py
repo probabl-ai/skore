@@ -468,9 +468,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             ).create_estimator_report(X_test=X_test, y_test=y_test, test_data=test_data)
 
         estimator_report = cast(EstimatorReport, self.reports_[report_key])
-        uses_skrub_data = estimator_report._initialized_with_data_op
 
-        if uses_skrub_data:
+        if estimator_report._initialized_with_data_op:
             if test_data is None:
                 raise ValueError(
                     "test_data is required when creating an estimator report from a "
@@ -481,46 +480,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "X_test and y_test must be omitted when the source report is "
                     "skrub-backed; provide test_data instead."
                 )
-        else:
-            if X_test is None or y_test is None:
-                raise ValueError(
-                    "X_test and y_test are required when the source report uses "
-                    "tabular scikit-learn data."
-                )
-            if test_data is not None:
-                raise ValueError(
-                    "test_data must be omitted when the source report uses tabular "
-                    "scikit-learn data."
-                )
-
-        if concatenate_train_and_test:
-            if uses_skrub_data:
+            if concatenate_train_and_test:
                 raise ValueError(
                     "Cannot concatenate train and test data when using a skrub "
                     "estimator. Set `concatenate_train_and_test=False` instead."
                 )
-            X_train_concat = (
-                pd.concat([estimator_report.X_train, estimator_report.X_test])
-                if isinstance(estimator_report.X_train, pd.DataFrame)
-                else np.concatenate([estimator_report.X_train, estimator_report.X_test])
-            )
-            y_train_concat = (
-                pd.concat([estimator_report.y_train, estimator_report.y_test])
-                if isinstance(estimator_report.y_train, (pd.DataFrame, pd.Series))
-                else np.concatenate([estimator_report.y_train, estimator_report.y_test])
-            )
-
-            return EstimatorReport(
-                estimator_report._raw_estimator,
-                fit=True,
-                X_train=X_train_concat,
-                y_train=y_train_concat,
-                X_test=X_test,
-                y_test=y_test,
-                pos_label=self._pos_label,
-            )
-
-        if uses_skrub_data:
             return EstimatorReport(
                 estimator_report.estimator_,
                 fit=False,
@@ -529,7 +493,31 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 pos_label=self._pos_label,
             )
 
-        X_train, y_train = estimator_report.X_train, estimator_report.y_train
+        if X_test is None or y_test is None:
+            raise ValueError(
+                "X_test and y_test are required when the source report uses "
+                "tabular scikit-learn data."
+            )
+        if test_data is not None:
+            raise ValueError(
+                "test_data must be omitted when the source report uses tabular "
+                "scikit-learn data."
+            )
+
+        if concatenate_train_and_test:
+            X_train = (
+                pd.concat([estimator_report.X_train, estimator_report.X_test])
+                if isinstance(estimator_report.X_train, pd.DataFrame)
+                else np.concatenate([estimator_report.X_train, estimator_report.X_test])
+            )
+            y_train = (
+                pd.concat([estimator_report.y_train, estimator_report.y_test])
+                if isinstance(estimator_report.y_train, (pd.DataFrame, pd.Series))
+                else np.concatenate([estimator_report.y_train, estimator_report.y_test])
+            )
+        else:
+            X_train, y_train = estimator_report.X_train, estimator_report.y_train
+
         return EstimatorReport(
             estimator_report._raw_estimator,
             fit=True,
