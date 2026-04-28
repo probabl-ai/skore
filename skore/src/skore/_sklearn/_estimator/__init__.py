@@ -8,9 +8,7 @@ from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 
 _register_accessor("metrics", EstimatorReport)(_MetricsAccessor)
-
 _register_accessor("inspection", EstimatorReport)(_InspectionAccessor)
-
 _register_accessor("data", EstimatorReport)(_DataAccessor)
 _register_accessor("diagnosis", EstimatorReport)(_DiagnosisAccessor)
 

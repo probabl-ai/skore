@@ -20,6 +20,40 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         *,
         ignore: list[CheckCode] | tuple[CheckCode, ...] | None = None,
     ) -> DiagnosticDisplay:
+        """Run checks and return a diagnostic with detected issues.
+
+        Checks look for common modeling problems such as overfitting and
+        underfitting. Check codes can be muted per-call via `ignore` or globally
+        via :func:`~skore.configuration()` with `ignore_checks=...`.
+
+        Parameters
+        ----------
+        ignore : list of str or tuple of str or None, default=None
+            Check codes to exclude from the results, e.g. `["SKD001"]`.
+
+        Returns
+        -------
+        DiagnosticDisplay
+            A display object with an HTML representation organized as three
+            tabs (``Issues``, ``Tips``, ``Passed``). The full list of results
+            is accessible via the :meth:`~DiagnosticDisplay.frame` method.
+
+        Examples
+        --------
+        >>> from skore import evaluate
+        >>> from sklearn.dummy import DummyClassifier
+        >>> from sklearn.datasets import make_classification
+        >>> X, y = make_classification(random_state=42)
+        >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
+        >>> report.diagnose()
+        Diagnostic: 1 issue(s), ...
+        Issues:
+        - [SKD002] Potential underfitting...
+        ...
+        >>> report.diagnose(ignore=["SKD002"])
+        Diagnostic: 0 issue(s), ... 1 ignored.
+        ...
+        """
         ignored_codes: set[CheckCode] = set()
         if ignore:
             ignored_codes.update(
@@ -45,6 +79,16 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         self,
         checks: list[Check],
     ) -> None:
+        """Register additional diagnostic checks for this report.
+
+        Checks are defined by implementing the :class:`~skore.Check` protocol.
+
+        Parameters
+        ----------
+        checks : list of Check
+            Additional checks to register
+
+        """
         report_types = [
             "cross-validation",
             "estimator",
@@ -61,32 +105,34 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 )
         self._parent._checks_registry.extend(checks)
 
-    def remove(self, *codes: CheckCode) -> None:
-        removed_codes = {code.strip().upper() for code in codes if code.strip()}
-        if not removed_codes:
-            return
+    def remove(self, code: CheckCode) -> None:
+        """Remove a check from the registry.
 
-        self._parent._checks_registry = [
-            check
-            for check in self._parent._checks_registry
-            if check.code.upper() not in removed_codes
-        ]
+        Parameters
+        ----------
+        code : str
+            The code of the check to remove.
+        """
+        code = code.strip().upper()
+        for i, check in enumerate(self._parent._checks_registry):
+            if check.code.upper() == code:
+                del self._parent._checks_registry[i]
+                break
         if hasattr(self._parent, "_check_results_cache"):
-            self._parent._check_results_cache = {
-                code: check_result
-                for code, check_result in self._parent._check_results_cache.items()
-                if code not in removed_codes
-            }
+            self._parent._check_results_cache.pop(code, None)
         if hasattr(self._parent, "_applicable_codes"):
-            self._parent._applicable_codes = {
-                code
-                for code in self._parent._applicable_codes
-                if code not in removed_codes
-            }
+            self._parent._applicable_codes.discard(code)
 
-    def available(self) -> list[Check]:
+    def available(self) -> list[str]:
+        """List available checks in the registry.
+
+        Returns
+        -------
+        list[str]
+            The list of available checks in the format "code - title".
+        """
         return [
-            check
+            check.code + " - " + check.title
             for check in self._parent._checks_registry
             if check.report_type == self._parent._report_type
         ]

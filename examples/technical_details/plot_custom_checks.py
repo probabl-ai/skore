@@ -59,9 +59,10 @@ class CustomCheck1(Check):
 # =====================
 #
 # :meth:`~skore.EstimatorReport.diagnosis.add` accepts a list of ``Check`` instances,
-# and registers them. The next call to
-# :meth:`~skore.EstimatorReport.diagnosis.summarize` runs
-# any newly added checks on top of the built-in checks.
+# and registers them. The next call to :meth:`~skore.EstimatorReport.diagnosis.summarize`
+# runs any newly added checks on top of the built-in checks.
+# :meth:`~skore.EstimatorReport.diagnosis.available()` lets us verify that the check
+# has been registered.
 #
 # We can then find the new check in the Tips tab of the diagnostic, along another tip
 # informing us that the dataset is not standardized.
@@ -74,6 +75,7 @@ y = X[:, 0] + rng.normal(size=200)
 
 report = evaluate(LinearRegression(), X, y)
 report.diagnosis.add([CustomCheck1()])
+print(report.diagnosis.available())
 report.diagnosis.summarize()
 
 # %%
