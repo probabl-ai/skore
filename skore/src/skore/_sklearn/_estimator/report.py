@@ -4,6 +4,7 @@ import copy
 import html
 import uuid
 import warnings
+from dataclasses import asdict
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -827,7 +828,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         fragments = self._html_repr_fragments()
         container_id = f"skore-estimator-report-{uuid.uuid4().hex[:8]}"
-        help_doc_url = get_documentation_url(obj=self, method_name="help")
         report_class_name = self.__class__.__name__
         metrics_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="metrics"
@@ -839,11 +839,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         diagnose_documentation_url = get_documentation_url(
             obj=self, method_name="diagnose"
         )
+        help_ctx = asdict(self._build_help_data())
+        help_ctx["is_report"] = True
         return render_template(
             "estimator_report.html.j2",
             {
                 "container_id": container_id,
-                "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
                 "report_title": f"Report for {self.estimator_name_}",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
@@ -851,6 +852,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "data_accessor_doc_url": data_accessor_doc_url,
                 "diagnose_documentation_url": diagnose_documentation_url,
                 **fragments,
+                **help_ctx,
             },
         )
 
