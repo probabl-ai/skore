@@ -45,12 +45,12 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         >>> from sklearn.datasets import make_classification
         >>> X, y = make_classification(random_state=42)
         >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
-        >>> report.diagnose()
+        >>> report.diagnosis.summarize()
         Diagnostic: 1 issue(s), ...
         Issues:
         - [SKD002] Potential underfitting...
         ...
-        >>> report.diagnose(ignore=["SKD002"])
+        >>> report.diagnosis.summarize(ignore=["SKD002"])
         Diagnostic: 0 issue(s), ... 1 ignored.
         ...
         """
