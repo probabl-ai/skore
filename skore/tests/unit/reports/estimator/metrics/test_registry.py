@@ -15,7 +15,7 @@ from sklearn.metrics import (
 )
 
 from skore import EstimatorReport
-from skore._sklearn.metrics import Metric, MissingKwargsError
+from skore._sklearn.metrics import FunctionKind, Metric, MissingKwargsError
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
 
@@ -337,8 +337,8 @@ class TestAddPosition:
         assert keys[1] == "accuracy"
         assert keys[-1] == "m_last"
 
-    def test_readd_moves_to_last(self, binary_classification_report):
-        """Re-adding the same name with position updates order and summarize works."""
+    def test_readd_raises_without_remove(self, binary_classification_report):
+        """Re-adding the same metric name raises and asks to remove first."""
         report = binary_classification_report
 
         def score_v1(y_true, y_pred):
@@ -353,25 +353,26 @@ class TestAddPosition:
         def score_v2(y_true, y_pred):
             return 1.0
 
-        report.metrics.add(
-            make_scorer(score_v2, response_method="predict"),
-            name="reorder_me",
-            position="last",
+        err_msg = re.escape(
+            "Cannot add 'reorder_me': it already exists. "
+            "Remove it first using the `remove` method."
         )
-        keys = list(report._metric_registry.keys())
-        assert keys[-1] == "reorder_me"
-
-        display = report.metrics.summarize(metric="reorder_me")
-        assert display.data["score"].iloc[0] == 1.0
+        with pytest.raises(ValueError, match=err_msg):
+            report.metrics.add(
+                make_scorer(score_v2, response_method="predict"),
+                name="reorder_me",
+                position="last",
+            )
 
     def test_metric_registry_add_invalid_position(self, binary_classification_report):
         """MetricRegistry.add rejects unknown position values."""
         report = binary_classification_report
         m = Metric(
             name="only_for_position_test",
-            score_func=accuracy_score,
+            function=accuracy_score,
             response_method="predict",
             greater_is_better=True,
+            function_kind=FunctionKind.METRIC,
         )
         with pytest.raises(ValueError, match="position must be 'first' or 'last'"):
             report._metric_registry.add(m, position="middle")  # type: ignore[arg-type]
