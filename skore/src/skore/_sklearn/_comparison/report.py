@@ -414,11 +414,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             held-out ``X_test`` / ``y_test`` you provide. If ``False`` (default), the
             new report is fit on the original training split only.
 
-            This option cannot be ``True`` when ``report_key`` refers to a
-            :class:`~skore.CrossValidationReport`. It cannot be ``True`` when the
-            estimator is a skrub
-            :class:`~skrub.SkrubLearner` or was built from a skrub
-            :class:`~skrub.DataOp`.
+            This option must be ``False`` if
+
+            - ``report_key`` refers to a :class:`~skore.CrossValidationReport` or
+            - the estimator is a skrub :class:`~skrub.SkrubLearner` or
+            - the estimator was built from a skrub :class:`~skrub.DataOp`.
 
         Examples
         --------
