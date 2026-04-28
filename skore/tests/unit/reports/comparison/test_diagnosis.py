@@ -1,6 +1,6 @@
 import pytest
 
-from skore._sklearn._diagnostic import DiagnosticDisplay
+from skore._sklearn._diagnosis import DiagnosticDisplay
 
 
 def test_collects_component_issues(report, monkeypatch):

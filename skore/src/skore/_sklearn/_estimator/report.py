@@ -32,7 +32,7 @@ from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
-    from skore._sklearn._diagnostic.accessor import _DiagnosisAccessor
+    from skore._sklearn._diagnosis.accessor import _DiagnosisAccessor
     from skore._sklearn._estimator.data_accessor import _DataAccessor
     from skore._sklearn._estimator.inspection_accessor import _InspectionAccessor
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor

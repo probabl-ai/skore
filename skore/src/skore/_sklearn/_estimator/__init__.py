@@ -1,5 +1,5 @@
 from skore._externals._pandas_accessors import _register_accessor
-from skore._sklearn._diagnostic.accessor import _DiagnosisAccessor
+from skore._sklearn._diagnosis.accessor import _DiagnosisAccessor
 from skore._sklearn._estimator.data_accessor import _DataAccessor
 from skore._sklearn._estimator.inspection_accessor import (
     _InspectionAccessor,

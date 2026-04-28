@@ -8,9 +8,9 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import Check, EstimatorReport, configuration, evaluate
-from skore._sklearn._diagnostic import DiagnosticDisplay
-from skore._sklearn._diagnostic.base import _get_issue_documentation_url
-from skore._sklearn._diagnostic.utils import CheckNotApplicable
+from skore._sklearn._diagnosis import DiagnosticDisplay
+from skore._sklearn._diagnosis.base import _get_issue_documentation_url
+from skore._sklearn._diagnosis.utils import CheckNotApplicable
 
 
 @pytest.fixture
@@ -142,7 +142,7 @@ def test_exception_when_train_data_missing(regression_train_test_split):
                 check.check_function(report)
 
 
-def test_diagnose_no_issues(monkeypatch, regression_report):
+def test_no_issues(monkeypatch, regression_report):
     """Check that no issues are detected when checks pass."""
     monkeypatch.setattr(
         EstimatorReport,
@@ -300,8 +300,8 @@ def test_check_invalid_protocol(regression_report):
         regression_report.diagnosis.add([InvalidCheck()])
 
 
-def test_diagnose_custom_metric(binary_classification_data):
-    """Check that diagnose works with custom metrics in the report."""
+def test_custom_metric(binary_classification_data):
+    """Check that diagnosis works with custom metrics in the report."""
     X, y = binary_classification_data
     report = evaluate(DummyClassifier(), X, y, pos_label=1)
     report.metrics.add("f1")

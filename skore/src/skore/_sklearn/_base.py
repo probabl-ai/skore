@@ -9,9 +9,9 @@ from uuid import uuid4
 from rich.console import Console
 from rich.panel import Panel
 
-from skore._sklearn._diagnostic.base import Check, CheckCode
-from skore._sklearn._diagnostic.model_checks import _BUILTIN_CHECKS
-from skore._sklearn._diagnostic.utils import CheckNotApplicable
+from skore._sklearn._diagnosis.base import Check, CheckCode
+from skore._sklearn._diagnosis.model_checks import _BUILTIN_CHECKS
+from skore._sklearn._diagnosis.utils import CheckNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 

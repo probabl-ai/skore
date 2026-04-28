@@ -7,7 +7,7 @@ from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
 from skore._sklearn._cross_validation.report import (
     CrossValidationReport,
 )
-from skore._sklearn._diagnostic.accessor import _DiagnosisAccessor
+from skore._sklearn._diagnosis.accessor import _DiagnosisAccessor
 
 _register_accessor("metrics", CrossValidationReport)(_MetricsAccessor)
 _register_accessor("data", CrossValidationReport)(_DataAccessor)

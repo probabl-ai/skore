@@ -13,7 +13,7 @@ from numpy.typing import ArrayLike
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
-from skore._sklearn._diagnostic.base import CheckCode
+from skore._sklearn._diagnosis.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
         _InspectionAccessor,
     )
     from skore._sklearn._comparison.metrics_accessor import _MetricsAccessor
-    from skore._sklearn._diagnostic.accessor import _DiagnosisAccessor
+    from skore._sklearn._diagnosis.accessor import _DiagnosisAccessor
 
     ComparisonReportType = Literal[
         "comparison-estimator",

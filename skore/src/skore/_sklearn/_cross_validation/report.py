@@ -15,7 +15,7 @@ from sklearn.pipeline import Pipeline
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._diagnostic.base import CheckCode
+from skore._sklearn._diagnosis.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -33,7 +33,7 @@ if TYPE_CHECKING:
         _InspectionAccessor,
     )
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
-    from skore._sklearn._diagnostic.accessor import _DiagnosisAccessor
+    from skore._sklearn._diagnosis.accessor import _DiagnosisAccessor
 
 
 _STATE_VERSION = 1

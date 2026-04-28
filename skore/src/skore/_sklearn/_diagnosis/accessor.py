@@ -3,7 +3,7 @@ from __future__ import annotations
 from skore._config import configuration
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor, _BaseReport
-from skore._sklearn._diagnostic.base import Check, CheckCode, DiagnosticDisplay
+from skore._sklearn._diagnosis.base import Check, CheckCode, DiagnosticDisplay
 
 
 class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
