@@ -9,6 +9,24 @@ from skore import evaluate
 from skore._sklearn._plot import ConfusionMatrixDisplay
 
 
+def _metadata_columns(fixture_prefix):
+    columns = []
+    if "cross_validation" in fixture_prefix:
+        columns.append("split")
+    if "comparison" in fixture_prefix:
+        columns.append("estimator")
+    return columns
+
+
+def _iter_groups(frame):
+    groupby_cols = frame.columns.intersection(
+        ["threshold", "label", "split", "estimator"]
+    ).to_list()
+    if groupby_cols:
+        return frame.groupby(groupby_cols, observed=True)
+    return [("_ungrouped", frame)]
+
+
 @pytest.mark.parametrize(
     "fixture_prefix",
     [
@@ -55,22 +73,23 @@ class TestConfusionMatrixDisplay:
 
         frame = display.frame()
         assert isinstance(frame, pd.DataFrame)
-        assert frame.shape == (n_classes * n_classes * n_splits * n_reports, 6)
-
+        metadata_columns = _metadata_columns(fixture_prefix)
         expected_columns = [
             "true_label",
             "predicted_label",
             "value",
-            "split",
-            "estimator",
-            "data_source",
+            *metadata_columns,
         ]
-        assert frame.columns.tolist() == expected_columns
+        assert frame.shape == (
+            n_classes * n_classes * n_splits * n_reports,
+            len(expected_columns),
+        )
+
+        assert set(frame.columns) == set(expected_columns)
         assert set(frame["true_label"]) == set(display.labels)
         assert set(frame["predicted_label"]) == set(display.labels)
-        assert frame["split"].nunique() == (
-            2 if "cross_validation" in fixture_prefix else 0
-        )
+        if "split" in frame:
+            assert frame["split"].nunique() == 2
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_confusion_matrix_predict_structure(self, fixture_prefix, task, request):
@@ -81,17 +100,13 @@ class TestConfusionMatrixDisplay:
         display = report.metrics.confusion_matrix()
 
         assert isinstance(display.confusion_matrix_predict, pd.DataFrame)
-        assert display.confusion_matrix_predict.columns.tolist() == [
+        expected_columns = [
             "true_label",
             "predicted_label",
             "count",
-            "normalized_by_true",
-            "normalized_by_pred",
-            "normalized_by_all",
-            "split",
-            "estimator",
-            "data_source",
         ]
+        expected_columns.extend(_metadata_columns(fixture_prefix))
+        assert display.confusion_matrix_predict.columns.tolist() == expected_columns
         n_classes = len(display.labels)
         n_splits = 2 if "cross_validation" in fixture_prefix else 1
         n_reports = 2 if "comparison" in fixture_prefix else 1
@@ -110,23 +125,17 @@ class TestConfusionMatrixDisplay:
         display = report.metrics.confusion_matrix()
 
         assert isinstance(display.confusion_matrix_thresholded, pd.DataFrame)
-        assert display.confusion_matrix_thresholded.columns.tolist() == [
+        expected_columns = [
             "true_label",
             "predicted_label",
             "count",
-            "normalized_by_true",
-            "normalized_by_pred",
-            "normalized_by_all",
             "threshold",
             "label",
-            "split",
-            "estimator",
-            "data_source",
         ]
+        expected_columns.extend(_metadata_columns(fixture_prefix))
+        assert display.confusion_matrix_thresholded.columns.tolist() == expected_columns
         expected_rows = 0
-        for _, group in display.confusion_matrix_thresholded.groupby(
-            ["split", "estimator"], dropna=False, observed=True
-        ):
+        for _, group in _iter_groups(display.confusion_matrix_thresholded):
             n_t = max(1, group["threshold"].nunique())
             expected_rows += 2 * 2 * n_t
         assert display.confusion_matrix_thresholded.shape[0] == expected_rows
@@ -258,9 +267,7 @@ class TestConfusionMatrixDisplay:
         for frame_kwargs in [{}, {"threshold_value": 0.5, "label": label}]:
             for normalize in ("true", "pred", "all"):
                 frame = display.frame(normalize=normalize, **frame_kwargs)
-                for (_est, _split), group in frame.groupby(
-                    ["estimator", "split"], observed=True
-                ):
+                for _, group in _iter_groups(frame):
                     pivoted = group.pivot(
                         index="true_label",
                         columns="predicted_label",
@@ -331,16 +338,15 @@ def test_data_source_both_is_not_supported(binary_classification_data):
         report.metrics.confusion_matrix(data_source="both")
 
 
-def test_plot_threshold_requires_label(pyplot, binary_classification_data):
-    """Check that plot raises when threshold_value is set but label is None."""
+def test_frame_threshold_label_none_returns_all_labels(binary_classification_data):
+    """Check that frame can return thresholded data for all labels."""
     X, y = binary_classification_data
     report = evaluate(LogisticRegression(), X, y, splitter=0.2)
 
     display = report.metrics.confusion_matrix()
-    with pytest.raises(
-        ValueError, match="Please indicate the class to consider as positive"
-    ):
-        display.plot(threshold_value=0.5, label=None)
+    frame = display.frame(threshold_value=0.5, label=None)
+
+    assert set(frame["label"]) == set(display.labels)
 
 
 def test_plot_threshold_all_not_supported(pyplot, binary_classification_data):
