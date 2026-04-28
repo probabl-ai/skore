@@ -412,7 +412,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             tabular scikit-learn data, controls whether to concatenate that report's
             train and test splits into a single training set before fitting on the
             held-out ``X_test`` / ``y_test`` you provide. If ``False`` (default), the
-            new report is fit on the original training split only.
+            new report is fit on the report's original ``X_train``.
 
             This option must be ``False`` if
 
