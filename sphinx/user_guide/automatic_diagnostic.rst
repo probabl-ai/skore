@@ -6,8 +6,7 @@ Automatic diagnostic
 
 `skore` provides automated checks for common model quality pitfalls.
 Use :meth:`~skore.EstimatorReport.diagnosis.summarize` to run checks and get a
-diagnostic that
-summarizes the findings. Findings come in two severities:
+diagnostic that summarizes the findings. Findings come in two severities:
 
 - **issues** flag a concrete modeling problem to fix (e.g. overfitting);
 - **tips** do not signal a defect on their own but invite caution, typically on

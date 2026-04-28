@@ -132,7 +132,5 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
             The list of available checks in the format "code - title".
         """
         return [
-            check.code + " - " + check.title
-            for check in self._parent._checks_registry
-            if check.report_type == self._parent._report_type
+            check.code + " - " + check.title for check in self._parent._checks_registry
         ]

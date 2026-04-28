@@ -267,17 +267,34 @@ def test_remove_checks_excludes_results(regression_report):
     regression_report.diagnosis.remove("TST001")
     result = regression_report.diagnosis.summarize()
     assert "TST001" not in set(result.frame()["code"])
-    assert "TST001" not in {
-        check.code for check in regression_report.diagnosis.available()
-    }
+    assert not any(
+        entry.startswith("TST001") for entry in regression_report.diagnosis.available()
+    )
 
 
-def test_available_checks_filters_by_report_type(regression_report):
-    """Check that available returns checks matching the report type."""
-    regression_report.diagnosis.add([MockCheck(has_issue=True), TipCheck()])
+def test_remove_clears_cache(regression_report):
+    """Check that remove invalidates cached results for the removed check."""
+    regression_report.diagnosis.add([MockCheck(has_issue=True)])
+    regression_report.diagnosis.summarize()
+    assert "TST001" in regression_report._check_results_cache
+
+    regression_report.diagnosis.remove("TST001")
+    assert "TST001" not in regression_report._check_results_cache
+
+
+def test_remove_is_case_insensitive(regression_report):
+    """Check that remove matches check codes case-insensitively."""
+    regression_report.diagnosis.add([MockCheck(has_issue=True)])
+    assert "TST001 - Test issue" in regression_report.diagnosis.available()
+    regression_report.diagnosis.remove("tst001")
+    assert "TST001 - Test issue" not in regression_report.diagnosis.available()
+
+
+def test_available_returns_code_dash_title(regression_report):
+    """Check that available returns strings in 'code - title' format."""
+    regression_report.diagnosis.add([MockCheck(has_issue=True)])
     available = regression_report.diagnosis.available()
-    assert all(check.report_type == "estimator" for check in available)
-    assert {"TST001", "TST002"} <= {check.code for check in available}
+    assert "TST001 - Test issue" in available
 
 
 def test_check_invalid_report_type(regression_report):
