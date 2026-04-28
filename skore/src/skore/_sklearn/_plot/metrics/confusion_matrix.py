@@ -33,14 +33,14 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     Parameters
     ----------
     confusion_matrix_predict : pd.DataFrame
-        Predict-based n x n confusion matrix in long format with columns:
-        "true_label", "predicted_label", "count" and if meaningful:
-        "split", "estimator".
+        Predict-based n x n confusion matrix in long format. It always contains
+        "true_label", "predicted_label", and "count"; it can also contain "split"
+        and "estimator" when those dimensions are meaningful for the report.
 
     confusion_matrix_thresholded : pd.DataFrame or None
-        Per-class OvR thresholded 2x2 confusion matrix in long format.
-        Same columns as confusion_matrix_predict plus "threshold" and "label".
-        None when the estimator only supports predict.
+        Per-class one-vs-rest thresholded 2x2 confusion matrix in long format.
+        It has the same columns as `confusion_matrix_predict`, plus "threshold"
+        and "label". None when the estimator only supports predict.
 
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
@@ -156,8 +156,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         threshold_value : float or None, default=None
             When None, plots the predict-based n x n confusion matrix.
             When a float, plots the thresholded 2x2 confusion matrix at the closest
-            available threshold for the selected label. This is obtained in multiclass
-            by creating a binary problem for the label in a one-vs-rest fashion.
+            available threshold for `label`. This is obtained in multiclass by creating
+            a binary problem for the label in a one-vs-rest fashion.
 
         subplot_by : {"split", "estimator", "auto"} or None, default="auto"
             The variable to use for subplotting. If None, the confusion matrix will not
@@ -165,7 +165,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             based on the report type.
 
         label : int, float, bool, str or None, default=report pos_label
-            The class to consider as positive when using the thresholded view.
+            The class to consider as positive. In multiclass, the predict-based and
+            thresholded views are shown in a one-vs-rest fashion for this label.
 
         Returns
         -------
@@ -411,13 +412,13 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             The estimator.
 
         estimator_name : str
-            The estimator name to attach to the display data.
+            The estimator name. Accepted for compatibility with display builders.
 
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
 
         data_source : {"test", "train"}
-            The data source to use.
+            The data source to use in the display title.
 
         report_pos_label : int, float, bool, str or None
             The default positive label for display.
@@ -490,7 +491,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     @staticmethod
     def _build_confusion_frame(cm, thresholds, labels):
-        """TODO: update docstring."""
+        """Build a long-format count dataframe from confusion matrices."""
         counts = cm.reshape(-1)
 
         return pd.DataFrame(
@@ -513,25 +514,26 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         df: pd.DataFrame,
         normalize: Literal["true", "pred", "all"] | None,
     ) -> pd.DataFrame:
-        """TODO: write a short docstring."""
-        if normalize is None:
-            return df.rename(columns={"count": "value"})
-        groupby_cols = ["threshold", "label", "split", "estimator"]
-        if normalize == "pred":
-            groupby_cols.append("predicted_label")
-        elif normalize == "true":
-            groupby_cols.append("true_label")
+        """Rename counts to values, computing normalized values when requested."""
+        if normalize:
+            groupby_cols = ["threshold", "label", "split", "estimator"]
+            if normalize == "pred":
+                groupby_cols.append("predicted_label")
+            elif normalize == "true":
+                groupby_cols.append("true_label")
 
-        df = df.copy(deep=False)
-        groupby_cols = df.columns.intersection(groupby_cols).to_list()
+            df = df.copy(deep=False)
+            groupby_cols = df.columns.intersection(groupby_cols).to_list()
 
-        if groupby_cols:
-            denominator = df.groupby(groupby_cols)["count"].transform("sum")
-        else:
-            denominator = df["count"].sum()
+            if groupby_cols:
+                denominator = df.groupby(groupby_cols)["count"].transform("sum")
+            else:
+                denominator = df["count"].sum()
 
-        df["value"] = (df["count"] / denominator).fillna(0)
-        return df.drop(columns=["count"])
+            # we replace here to preserve the position of the "value" column
+            df["count"] = (df["count"] / denominator).fillna(0)
+
+        return df.rename(columns={"count": "value"})
 
     def frame(
         self,
@@ -553,8 +555,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         ----------
         normalize : {'true', 'pred', 'all'}, default=None
             Normalizes confusion matrix over the true (rows), predicted (columns)
-            conditions or all the population. If None, the confusion matrix will not be
-            normalized.
+            conditions or all the population. Normalized values are computed lazily.
+            If None, raw counts are returned as the "value" column.
 
         threshold_value : float, "all", or None, default=None
             When None, returns the predict-based n x n confusion matrix.
@@ -568,7 +570,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         Returns
         -------
         frame : pandas.DataFrame
-            The confusion matrix as a dataframe.
+            The confusion matrix as a dataframe with a "value" column and optional
+            metadata columns such as "threshold", "label", "split", and "estimator".
         """
         label = _check_label(self.labels, label, self.report_pos_label)
 
@@ -603,14 +606,12 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if threshold_value == "all":
             return self._apply_normalization(df, normalize)
 
-        groupby_cols = df.columns.intersection(
-            ["split", "estimator", "label"]
-        ).to_list()
         diff = (df["threshold"] - threshold_value).abs()
+        groupby_cols = [
+            df[col] for col in df.columns.intersection(["split", "estimator", "label"])
+        ]
         if groupby_cols:
-            min_diff_by_groups = diff.groupby(
-                [df[col] for col in groupby_cols]
-            ).transform("min")
+            min_diff_by_groups = diff.groupby(groupby_cols).transform("min")
             df = df.loc[diff == min_diff_by_groups]
         else:
             df = df.loc[diff == diff.min()]
