@@ -5,7 +5,9 @@ from __future__ import annotations
 import re
 
 # Strip script bodies when counting <div> so strings like "</div>" in JS do not skew.
-_HTML_SCRIPT_RE = re.compile(r"<script\b[^>]*>.*?</script>", re.DOTALL | re.IGNORECASE)
+_HTML_SCRIPT_RE = re.compile(
+    r"<script\b[^>]*>.*?</script\s*[^>]*>", re.DOTALL | re.IGNORECASE
+)
 
 
 def repair_estimator_html_for_slotted_host(html: str) -> str:

@@ -8,7 +8,9 @@ import pytest
 
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
-_SCRIPT_STRIP = re.compile(r"<script\b[^>]*>.*?</script>", re.DOTALL | re.IGNORECASE)
+_SCRIPT_STRIP = re.compile(
+    r"<script\b[^>]*>.*?</script\s*[^>]*>", re.DOTALL | re.IGNORECASE
+)
 
 
 def _div_open_close_counts(html: str) -> tuple[int, int]:
