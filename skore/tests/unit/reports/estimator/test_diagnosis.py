@@ -355,10 +355,10 @@ def test_header_reports_all_counts(regression_report):
     """The header string reports issue, tip, passed and ignored counts."""
     regression_report.diagnosis.add([MockCheck(has_issue=True), TipCheck()])
     result = regression_report.diagnosis.summarize(ignore=["SKD001"])
-    assert "issue(s)" in result.header
-    assert "tip(s)" in result.header
-    assert "passed" in result.header
-    assert "1 ignored" in result.header
+    assert "issue(s)" in result._header
+    assert "tip(s)" in result._header
+    assert "passed" in result._header
+    assert "1 ignored" in result._header
 
 
 def test_html_has_three_tabs(regression_report):
