@@ -13,7 +13,7 @@ from numpy.typing import ArrayLike
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
-from skore._sklearn._diagnostic.base import CheckCode
+from skore._sklearn._diagnosis.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
@@ -25,6 +25,7 @@ if TYPE_CHECKING:
         _InspectionAccessor,
     )
     from skore._sklearn._comparison.metrics_accessor import _MetricsAccessor
+    from skore._sklearn._diagnosis.accessor import _DiagnosisAccessor
 
     ComparisonReportType = Literal[
         "comparison-estimator",
@@ -111,9 +112,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "diagnosis": {"name": "diagnosis"},
     }
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
+    diagnosis: _DiagnosisAccessor
 
     _report_type: ComparisonReportType
 
@@ -543,7 +546,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         reports_by_code: dict[CheckCode, list[str]] = {}
         all_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
-            report.add_checks(self._checks_registry)
+            report.diagnosis.add(self._checks_registry)
             report_results, applicable_codes = report._get_results(ignored_codes)
             all_applicable_codes |= applicable_codes
 
@@ -613,8 +616,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         inspection_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="inspection"
         )
-        diagnose_documentation_url = get_documentation_url(
-            obj=self, method_name="diagnose"
+        diagnosis_documentation_url = get_documentation_url(
+            obj=self, accessor_name="diagnosis"
         )
         return render_template(
             "comparison_report.html.j2",
@@ -627,7 +630,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 "report_title": "Model comparison",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
-                "diagnose_documentation_url": diagnose_documentation_url,
+                "diagnosis_documentation_url": diagnosis_documentation_url,
             },
         )
 

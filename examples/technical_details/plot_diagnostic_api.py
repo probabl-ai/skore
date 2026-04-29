@@ -6,7 +6,7 @@ Automatic detection of modelling issues
 =======================================
 
 `skore` can automatically detect common modeling pitfalls such as overfitting
-and underfitting. This example walks through the ``.diagnose`` method: how to
+and underfitting. This example walks through the ``.diagnosis`` accessor: how to
 run checks, how to read the detected issues, and how to mute specific checks.
 
 We use a purely non-linear regression target and deliberately pick models that
@@ -40,12 +40,16 @@ linear = LinearRegression()
 deep_tree = DecisionTreeRegressor(random_state=42)
 
 # %%
-# Calling :meth:`~skore.EstimatorReport.diagnose` explicitly
-# ==========================================================
+# Calling :meth:`~skore.EstimatorReport.diagnosis.summarize` explicitly
+# =====================================================================
 #
-# Every report exposes a :meth:`~skore.EstimatorReport.diagnose` method.
-# Checks are computed lazily and cached, so calling
-# :meth:`~skore.EstimatorReport.diagnose` is always cheap after the first call.
+# Every report exposes a :meth:`~skore.EstimatorReport.diagnosis` accessor which provides
+# access to several methods:
+# - `.summarize()`` to run checks and get a summary of the findings
+# - `.add()` to add custom checks
+# - `.remove()` to remove checks
+# - `.available()` to list the available checks
+# Let's use `.summarize()` to see what issues can be found for the linear model.
 
 from skore import evaluate
 
@@ -53,7 +57,7 @@ linear_report = evaluate(linear, X, y)
 linear_report
 
 # %%
-linear_report.diagnose()
+linear_report.diagnosis.summarize()
 
 # %%
 linear_report.metrics.summarize(data_source="both").frame()
@@ -63,7 +67,7 @@ linear_report.metrics.summarize(data_source="both").frame()
 # train and test, and not significantly better than a dummy baseline.
 
 tree_report = evaluate(deep_tree, X, y)
-tree_report.diagnose()
+tree_report.diagnosis.summarize()
 
 # %%
 tree_report.metrics.summarize(data_source="both").frame()
@@ -79,16 +83,16 @@ tree_report.metrics.summarize(data_source="both").frame()
 # Each check has a stable code (e.g. ``SKD001``, ``SKD002``). You can
 # mute individual checks per call:
 
-tree_report.diagnose(ignore=["SKD001"])
+tree_report.diagnosis.summarize(ignore=["SKD001"])
 
 # %%
-# Or globally, so that every subsequent :meth:`~skore.EstimatorReport.diagnose` call
-# skips them:
+# Or globally, so that every subsequent
+# :meth:`~skore.EstimatorReport.diagnosis.summarize` call skips them:
 
 import skore
 
 with skore.configuration(ignore_checks=["SKD001"]):
-    diagnosis = tree_report.diagnose()
+    diagnosis = tree_report.diagnosis.summarize()
 diagnosis
 
 # %%
@@ -99,7 +103,7 @@ diagnosis
 # :class:`~skore.CrossValidationReport`. Checks aggregate issues across folds.
 
 cv_report = evaluate(deep_tree, X, y, splitter=5)
-cv_report.diagnose()
+cv_report.diagnosis.summarize()
 
 # %%
 # Diagnostics on a :class:`~skore.ComparisonReport`
@@ -109,4 +113,4 @@ cv_report.diagnose()
 # Issues are grouped by sub-report.
 
 comparison_report = evaluate([linear, deep_tree], X, y)
-comparison_report.diagnose()
+comparison_report.diagnosis.summarize()

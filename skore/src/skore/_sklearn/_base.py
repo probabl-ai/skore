@@ -9,10 +9,9 @@ from uuid import uuid4
 from rich.console import Console
 from rich.panel import Panel
 
-from skore._config import configuration
-from skore._sklearn._diagnostic.base import Check, CheckCode, DiagnosticDisplay
-from skore._sklearn._diagnostic.model_checks import _BUILTIN_CHECKS
-from skore._sklearn._diagnostic.utils import CheckNotApplicable
+from skore._sklearn._diagnosis.base import Check, CheckCode
+from skore._sklearn._diagnosis.model_checks import _BUILTIN_CHECKS
+from skore._sklearn._diagnosis.utils import CheckNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
@@ -90,101 +89,6 @@ class _BaseReport(ReportHelpMixin):
             )
 
         return self._check_results_cache, self._applicable_codes
-
-    def diagnose(
-        self,
-        *,
-        ignore: list[CheckCode] | tuple[CheckCode, ...] | None = None,
-    ) -> DiagnosticDisplay:
-        """Run checks and return a diagnostic with detected issues.
-
-        Checks look for common modeling problems such as overfitting and
-        underfitting. Check codes can be muted per-call via `ignore` or globally
-        via :func:`~skore.configuration()` with `ignore_checks=...`.
-
-        Parameters
-        ----------
-        ignore : list of str or tuple of str or None, default=None
-            Check codes to exclude from the results, e.g. `["SKD001"]`.
-
-        Returns
-        -------
-        DiagnosticDisplay
-            A display object with an HTML representation organized as three
-            tabs (``Issues``, ``Tips``, ``Passed``). The full list of results
-            is accessible via the :meth:`~DiagnosticDisplay.frame` method.
-
-        Examples
-        --------
-        >>> from skore import evaluate
-        >>> from sklearn.dummy import DummyClassifier
-        >>> from sklearn.datasets import make_classification
-        >>> X, y = make_classification(random_state=42)
-        >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
-        >>> report.diagnose()
-        Diagnostic: 1 issue(s), ...
-        Issues:
-        - [SKD002] Potential underfitting...
-        ...
-        >>> report.diagnose(ignore=["SKD002"])
-        Diagnostic: 0 issue(s), ... 1 ignored.
-        ...
-        """
-        ignored_codes: set[CheckCode] = set()
-        if ignore:
-            ignored_codes.update(
-                code.strip().upper() for code in ignore if code.strip()
-            )
-        if configuration.ignore_checks:
-            ignored_codes.update(
-                code.strip().upper()
-                for code in configuration.ignore_checks
-                if code.strip()
-            )
-        check_results, applicable_codes = self._get_results(ignored_codes)
-        return DiagnosticDisplay(
-            check_results={
-                code: check_result
-                for code, check_result in check_results.items()
-                if code in applicable_codes and code not in ignored_codes
-            },
-            n_ignored_codes=len(ignored_codes),
-        )
-
-    def add_checks(
-        self,
-        checks: list[Check],
-    ) -> None:
-        """Register additional diagnostic checks for this report.
-
-        Checks are defined by implementing the :class:`~skore.Check` protocol.
-
-        Appends the given checks to the registry used by
-        :meth:`diagnose`. The next call to :meth:`diagnose` runs any newly added
-        checks (along with checks that have not yet been cached). Already-run
-        built-in checks are not re-executed.
-
-        Parameters
-        ----------
-        checks : list of Check
-            Additional checks to register
-
-        """
-        report_types = [
-            "cross-validation",
-            "estimator",
-            "comparison-estimator",
-            "comparison-cross-validation",
-        ]
-        for check in checks:
-            if not isinstance(check, Check):
-                raise ValueError(f"{check} does not implement the Check protocol.")
-            if check.report_type not in report_types:
-                raise ValueError(
-                    f"Check report_type should be one of: {', '.join(report_types)}. "
-                    f"Got {check.report_type} instead."
-                )
-        self._checks_registry.extend(checks)
 
     def __init__(self) -> None:
         self._metadata = {

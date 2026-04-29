@@ -15,7 +15,7 @@ from sklearn.pipeline import Pipeline
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._diagnostic.base import CheckCode
+from skore._sklearn._diagnosis.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -33,6 +33,7 @@ if TYPE_CHECKING:
         _InspectionAccessor,
     )
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
+    from skore._sklearn._diagnosis.accessor import _DiagnosisAccessor
     from skore._sklearn.types import EstimatorLike
 
 
@@ -180,6 +181,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "diagnosis": {"name": "diagnosis"},
     }
 
     _report_type: Literal["cross-validation"] = "cross-validation"
@@ -187,6 +189,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor
+    diagnosis: _DiagnosisAccessor
 
     def __init__(
         self,
@@ -554,7 +557,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         positives_by_code: dict[CheckCode, list[dict]] = {}
 
         for estimator_report in self.estimator_reports_:
-            estimator_report.add_checks(self._checks_registry)
+            estimator_report.diagnosis.add(self._checks_registry)
             results, applicable_codes = estimator_report._get_results(ignored_codes)
             all_applicable_codes |= applicable_codes
             for code, diagnostic in results.items():
@@ -670,7 +673,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostic = self.diagnose()
+        diagnostic = self.diagnosis.summarize()
         diagnostic_html = (
             "<div class='report-diagnostic-details'>"
             f"{len(diagnostic.frame(severity='issue'))} issue(s), "
@@ -700,8 +703,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
-        diagnose_documentation_url = get_documentation_url(
-            obj=self, method_name="diagnose"
+        diagnosis_documentation_url = get_documentation_url(
+            obj=self, accessor_name="diagnosis"
         )
         return render_template(
             "cross_validation_report.html.j2",
@@ -713,7 +716,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "diagnose_documentation_url": diagnose_documentation_url,
+                "diagnosis_documentation_url": diagnosis_documentation_url,
                 **fragments,
             },
         )
