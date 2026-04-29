@@ -798,10 +798,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 .to_html(index=False)
             )
         try:
-            estimator_html = self.estimator_._repr_html_()
+            estimator_html = repair_estimator_html_for_slotted_host(
+                self.estimator_._repr_html_()
+            )
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
-        estimator_html = repair_estimator_html_for_slotted_host(estimator_html)
 
         diagnostic = self.diagnose()
         diagnostic_html = (
