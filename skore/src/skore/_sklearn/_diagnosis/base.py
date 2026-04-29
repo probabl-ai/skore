@@ -79,15 +79,15 @@ class DiagnosticDisplay(DisplayHelpMixin):
             ],
             columns=["code", "title", "severity", "explanation", "documentation_url"],
         )
-        self.n_ignored_codes = n_ignored_codes
+        self._n_ignored_codes = n_ignored_codes
 
     @property
-    def header(self) -> str:
+    def _header(self) -> str:
         return (
             f"Diagnostic: {len(self.frame(severity='issue'))} issue(s), "
             f"{len(self.frame(severity='tip'))} tip(s), "
             f"{len(self.frame(severity='passed'))} passed, "
-            f"{self.n_ignored_codes} ignored."
+            f"{self._n_ignored_codes} ignored."
         )
 
     def frame(
@@ -152,7 +152,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
             "diagnostic_display.html.j2",
             {
                 "container_id": f"skore-diagnostic-{uuid4().hex[:8]}",
-                "header": self.header,
+                "header": self._header,
                 "tabs": tabs,
             },
         )
@@ -162,8 +162,8 @@ class DiagnosticDisplay(DisplayHelpMixin):
 
     def __repr__(self) -> str:
         if self._check_results.empty:
-            return self.header + "\nAll checks were either ignored or not applicable."
-        lines = [self.header]
+            return self._header + "\nAll checks were either ignored or not applicable."
+        lines = [self._header]
         for label, severity, _, _ in _TAB_SPECS:
             df = self.frame(severity=cast(Literal["issue", "tip", "passed"], severity))
             if df.empty:

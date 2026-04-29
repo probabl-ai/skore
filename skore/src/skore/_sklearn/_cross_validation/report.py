@@ -679,7 +679,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             f"{len(diagnostic.frame(severity='issue'))} issue(s), "
             f"{len(diagnostic.frame(severity='tip'))} tip(s), "
             f"{len(diagnostic.frame(severity='passed'))} passed, "
-            f"{diagnostic.n_ignored_codes} ignored."
+            f"{diagnostic._n_ignored_codes} ignored."
             "</div>"
         )
 
