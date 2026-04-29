@@ -1,6 +1,5 @@
-"""Tests for metrics registry functionality."""
+"""Tests for metrics registry functionality at the level of EstimatorReport."""
 
-import functools
 import pickle
 import re
 
@@ -15,7 +14,7 @@ from sklearn.metrics import (
 )
 
 from skore import EstimatorReport
-from skore._sklearn.metrics import FunctionKind, Metric, MissingKwargsError
+from skore._sklearn.metrics import Metric
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
 
 
@@ -363,19 +362,6 @@ class TestAddPosition:
                 name="reorder_me",
                 position="last",
             )
-
-    def test_metric_registry_add_invalid_position(self, binary_classification_report):
-        """MetricRegistry.add rejects unknown position values."""
-        report = binary_classification_report
-        m = Metric(
-            name="only_for_position_test",
-            function=accuracy_score,
-            response_method="predict",
-            greater_is_better=True,
-            function_kind=FunctionKind.METRIC,
-        )
-        with pytest.raises(ValueError, match="position must be 'first' or 'last'"):
-            report._metric_registry.add(m, position="middle")  # type: ignore[arg-type]
 
 
 class TestCacheBehavior:
@@ -742,38 +728,6 @@ class TestStringScorerNames:
             report.metrics.add("xyz")
 
 
-class TestMetric:
-    def test_repr(self):
-        """Test that Metric.__repr__ works as expected"""
-        m = Metric(name="accuracy", function=None, greater_is_better=True)
-        assert repr(m) == (
-            "Metric(name='accuracy', verbose_name='Accuracy', function=None, "
-            "greater_is_better=True, response_method=None, kwargs={})"
-        )
-
-    def test_repr_kwargs(self):
-        """Test that Metric.__repr__ works as expected when kwargs are passed."""
-        m = Metric(
-            name="accuracy",
-            function=None,
-            greater_is_better=True,
-            kwargs={"hello": 1},
-        )
-
-        assert repr(m) == (
-            "Metric(name='accuracy', verbose_name='Accuracy', function=None, "
-            "greater_is_better=True, response_method=None, kwargs={'hello': 1})"
-        )
-
-    def test_greater_is_better_none(self):
-        """Test that the metric stores an undefined direction when applicable."""
-        m = Metric(name="test", greater_is_better=None)
-        assert m.greater_is_better is None
-
-        m = Metric(name="test", greater_is_better=True)
-        assert m.greater_is_better is True
-
-
 class TestSerialization:
     """Test that added metrics survive pickling (for Project storage)."""
 
@@ -818,156 +772,3 @@ class TestSerialization:
         report.metrics.summarize()
         report3 = pickle.loads(pickle.dumps(report))
         report3.metrics.summarize()
-
-
-class TestMetricNew:
-    """Test the Metric.new method."""
-
-    def test_callable(self):
-        """Test creating a Metric from a callable."""
-        metric = Metric.new(
-            business_loss_scorer,
-            greater_is_better=False,
-            kwargs={"cost_fp": 10, "cost_fn": 5},
-        )
-
-        assert isinstance(metric, Metric)
-        assert metric.name == "business_loss_scorer"
-        assert metric.function is business_loss_scorer
-        assert metric.greater_is_better is False
-        assert metric.kwargs == {"cost_fp": 10, "cost_fn": 5}
-
-    def test_callable_with_name(self):
-        """Test creating a Metric from a callable with a custom name."""
-        metric = Metric.new(
-            business_loss_scorer, name="my_loss", kwargs={"cost_fp": 10, "cost_fn": 5}
-        )
-
-        assert metric.name == "my_loss"
-        assert metric.verbose_name == "My Loss"
-        assert metric.function is business_loss_scorer
-        assert metric.kwargs == {"cost_fp": 10, "cost_fn": 5}
-
-    def test_callable_missing_kwargs(self):
-        """Test that Metric.new raises for required params without kwargs."""
-        err_msg = re.escape(
-            "Callable 'business_loss_scorer' has required parameter(s) "
-            "('cost_fp', 'cost_fn') not covered by the provided kwargs."
-        )
-        with pytest.raises(MissingKwargsError, match=err_msg):
-            Metric.new(business_loss_scorer)
-
-    def test_callable_metric_y(self):
-        """Test that Metric.new raises for callable metrics taking `y_true` as first
-        argument."""
-        err_msg = re.escape(
-            "Expected a scorer callable with an estimator as its first argument; "
-            "got first argument 'y_true'"
-        )
-        with pytest.raises(TypeError, match=err_msg):
-            Metric.new(business_loss)
-
-    def test_callable_metric_not_enough_positional_args(self):
-        """Test that Metric.new raises for callable metrics which do not take enough
-        positional parameters."""
-
-        # First argument does not start with `y`
-        def metric(true_labels, predicted_labels, *, some_kwarg):
-            pass
-
-        err_msg = re.escape(
-            "Expected a scorer callable with at least 3 positional arguments "
-            "(estimator, X, y); got ['true_labels', 'predicted_labels']"
-        )
-        with pytest.raises(TypeError, match=err_msg):
-            Metric.new(metric)
-
-    def test_scorer(self):
-        """Test creating a Metric from an sklearn scorer."""
-        metric = Metric.new(
-            business_loss_scorer,
-            greater_is_better=False,
-            kwargs={"cost_fp": 10, "cost_fn": 5},
-        )
-
-        assert isinstance(metric, Metric)
-        assert metric.name == "business_loss_scorer"
-        assert metric.function is business_loss_scorer
-        assert metric.greater_is_better is False
-        assert metric.kwargs == {"cost_fp": 10, "cost_fn": 5}
-
-    def test_metric(self):
-        """Test creating a Metric from an existing Metric."""
-        original = Metric(name="original", function=get_scorer("accuracy"))
-        result = Metric.new(original)
-
-        assert result.name == "original"
-        assert result is original
-
-    def test_metric_with_name(self):
-        """Test creating a Metric from a Metric with name override."""
-        original = Metric(name="original", function=get_scorer("accuracy"))
-        result = Metric.new(original, name="renamed")
-
-        assert result.name == "renamed"
-        assert result.verbose_name == "Renamed"
-        assert original.name == "original"  # unchanged
-
-    def test_string(self):
-        """Test creating a Metric from an sklearn scorer string name."""
-        metric = Metric.new("f1")
-
-        assert isinstance(metric, Metric)
-        assert metric.name == "f1"  # not "f1_score"
-        assert metric.function is not None
-
-    def test_invalid_string(self):
-        """Test that an invalid string raises ValueError."""
-        with pytest.raises(ValueError, match="Invalid metric"):
-            Metric.new("xyz")
-
-    def test_invalid_type(self):
-        """Test that passing an invalid type raises an error."""
-        with pytest.raises(TypeError, match="Cannot create"):
-            Metric.new(42)
-
-    def test_functools_partial(self):
-        """Test creating a Metric from a functools.partial."""
-        partial_func = functools.partial(business_loss_scorer, cost_fp=10, cost_fn=5)
-        metric = Metric.new(partial_func)
-
-        assert metric.name == "business_loss_scorer"
-        assert metric.function is partial_func
-
-    def test_callable_object_without_name(self):
-        """Test creating a Metric from a callable without __name__."""
-
-        class MyScorer:
-            def __call__(self, estimator, X, y):
-                return get_scorer("accuracy")(estimator, X, y)
-
-        metric = Metric.new(MyScorer())
-
-        assert metric.name == "MyScorer"
-
-
-def test_available_default(binary_classification_report):
-    """Test that the default available() returns True."""
-    m = Metric(name="test")
-    assert m.available(binary_classification_report) is True
-
-
-def test_call_no_function(binary_classification_report):
-    """Test that calling a Metric with no function raises."""
-    m = Metric(name="abstract_metric", function=None)
-    err_msg = "Metric 'abstract_metric' has no scoring function."
-    with pytest.raises(ValueError, match=err_msg):
-        m(report=binary_classification_report)
-
-
-def test_metric_registry_repr(binary_classification_report):
-    """Test the MetricRegistry repr."""
-    registry = binary_classification_report._metric_registry
-    result = repr(registry)
-    assert result.startswith("MetricRegistry")
-    assert "accuracy" in result
