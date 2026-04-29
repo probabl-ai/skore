@@ -22,7 +22,7 @@ def repair_estimator_html_for_slotted_host(html: str) -> str:
     (so ``</div>`` inside ``<script>`` is ignored) and appends the deficit of closing
     ``</div>`` to the original string.
     """
-    without_scripts = _HTML_SCRIPT_RE.sub("", html)
+    without_scripts = re.sub(_HTML_SCRIPT_RE, "", html)
     n_open = len(re.findall(r"<div\b", without_scripts))
     n_close = len(re.findall(r"</div>", without_scripts))
     deficit = n_open - n_close
