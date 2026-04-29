@@ -311,6 +311,20 @@ def test_report_with_data_op():
     ]
 
 
+def test_create_estimator_report_with_data_op():
+    """Skrub/DataOp CV reports build a skrub EstimatorReport via
+    train_data/test_data."""
+    X_a, y_a = make_classification(n_samples=40, random_state=0)
+    data_op = skrub.X(X_a).skb.apply(LogisticRegression(random_state=0), y=skrub.y(y_a))
+    split = data_op.skb.train_test_split(random_state=0)
+    report = CrossValidationReport(data_op, splitter=2)
+    final_report = report.create_estimator_report(test_data=split["test"])
+    assert isinstance(final_report, EstimatorReport)
+    accuracy = final_report.metrics.accuracy()
+    assert isinstance(accuracy, (float, np.floating))
+    assert 0.0 <= float(accuracy) <= 1.0
+
+
 def test_from_state_bypasses_init_and_restores_state(
     monkeypatch, logistic_binary_classification_data
 ):
