@@ -393,7 +393,8 @@ def _assert_estimator_report_repr_html(
     assert "skore-estimator-report-" in html_out
     assert expected_estimator_name in html_out
     assert "skoreInitEstimatorReport" in html_out
-    assert "report-hint-note" in html_out
+    assert 'class="tree"' in html_out
+    assert "EstimatorReport" in html_out
     assert "docs.skore.probabl.ai" in html_out
     assert "report-tabset" in html_out
     assert "Report for" in html_out

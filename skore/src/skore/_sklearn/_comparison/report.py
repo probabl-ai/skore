@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from collections import Counter
 from collections.abc import Iterable
+from dataclasses import asdict
 from typing import TYPE_CHECKING, Literal, cast
 
 import joblib
@@ -605,7 +606,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
 
         container_id = f"skore-comparison-report-{uuid.uuid4().hex[:8]}"
-        help_doc_url = get_documentation_url(obj=self, method_name="help")
         report_class_name = self.__class__.__name__
         metrics_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="metrics"
@@ -616,18 +616,20 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         diagnose_documentation_url = get_documentation_url(
             obj=self, method_name="diagnose"
         )
+        help_ctx = asdict(self._build_help_data())
+        help_ctx["is_report"] = True
         return render_template(
             "comparison_report.html.j2",
             {
                 "container_id": container_id,
                 "metrics_summary": metrics_html,
                 "comparison_reports": comparison_reports,
-                "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
                 "report_title": "Model comparison",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "diagnose_documentation_url": diagnose_documentation_url,
+                **help_ctx,
             },
         )
 
