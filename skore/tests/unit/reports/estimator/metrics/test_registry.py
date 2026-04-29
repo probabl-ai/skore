@@ -1,12 +1,4 @@
-"""Tests for the metrics registry that are specific to ``EstimatorReport``.
-
-Behaviors that hold across every report kind live in
-``tests/unit/reports/test_metrics_registry_common.py``. This module keeps only
-tests that exercise EstimatorReport-specific surfaces such as the top-level
-``report._cache``, the ``pos_label`` constructor argument, the no-train-data
-flow, the EstimatorReport-specific accessor error message, ``summarize`` row
-count, and pickle serialization.
-"""
+"""Tests for the metrics registry that are specific to ``EstimatorReport``."""
 
 import pickle
 import re

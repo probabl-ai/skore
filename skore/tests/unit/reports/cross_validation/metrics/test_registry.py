@@ -1,10 +1,4 @@
-"""Tests for the metrics registry that are specific to ``CrossValidationReport``.
-
-Behaviors that hold across every report kind live in
-``tests/unit/reports/test_metrics_registry_common.py``. This module keeps only
-tests that depend on a CV-specific data shape: namely the ``split`` column in
-``summarize()`` output.
-"""
+"""Tests for the metrics registry that are specific to ``CrossValidationReport``."""
 
 import pytest
 from sklearn.metrics import accuracy_score, make_scorer

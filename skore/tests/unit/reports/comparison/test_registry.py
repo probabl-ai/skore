@@ -1,11 +1,4 @@
-"""Tests for the metrics registry that are specific to ``ComparisonReport``.
-
-Behaviors that hold across every report kind live in
-``tests/unit/reports/test_metrics_registry_common.py``. This module keeps only
-tests that depend on a comparison-specific data shape: namely the
-``estimator_name`` column in ``summarize()`` output, exposing the keys of
-``ComparisonReport.reports_``.
-"""
+"""Tests for the metrics registry that are specific to ``ComparisonReport``."""
 
 from sklearn.metrics import make_scorer, mean_squared_error
 
