@@ -91,6 +91,20 @@ Inspection
      - Display for visualizing feature importance via permutation importance
 
 
+Diagnosis
+^^^^^^^^^
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`DiagnosticDisplay`
+     - Display for diagnostic check results returned by the ``diagnosis`` accessor
+   * - :class:`Check`
+     - Protocol for defining custom diagnostic checks
+   * - :exc:`CheckNotApplicable`
+     - Exception raised when a check cannot run on the given report
+
+
 Utilities
 ^^^^^^^^^
 

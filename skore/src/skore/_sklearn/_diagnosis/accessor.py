@@ -87,7 +87,6 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         ----------
         checks : list of Check
             Additional checks to register
-
         """
         report_types = [
             "cross-validation",

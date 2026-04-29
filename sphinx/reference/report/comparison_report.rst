@@ -52,3 +52,13 @@ The `inspection` accessor helps you inspect your model by e.g. evaluating the im
 of the features in your model.
 
 .. include:: ../api/ComparisonReport.inspection.inc
+
+.. _comparison_diagnosis:
+
+Diagnosis
+---------
+
+The `diagnosis` accessor runs automated checks that look for common modeling problems
+such as overfitting and underfitting.
+
+.. include:: ../api/ComparisonReport.diagnosis.inc

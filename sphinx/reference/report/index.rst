@@ -69,3 +69,15 @@ the API of each display.
    :hidden:
 
    displays
+
+Diagnosis
+---------
+
+Diagnosis classes used by the ``diagnosis`` accessor on reports.
+
+.. autosummary::
+    :toctree: ../api/
+    :template: base.rst
+    DiagnosticDisplay
+    Check
+    CheckNotApplicable
