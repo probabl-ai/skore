@@ -114,10 +114,11 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
             The code of the check to remove.
         """
         code = code.strip().upper()
-        for i, check in enumerate(self._parent._checks_registry):
-            if check.code.upper() == code:
-                del self._parent._checks_registry[i]
-                break
+        self._parent._checks_registry = [
+            check
+            for check in self._parent._checks_registry
+            if check.code.upper() != code
+        ]
         if hasattr(self._parent, "_check_results_cache"):
             self._parent._check_results_cache.pop(code, None)
         if hasattr(self._parent, "_applicable_codes"):
@@ -132,5 +133,5 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
             The list of available checks in the format "code - title".
         """
         return [
-            check.code + " - " + check.title for check in self._parent._checks_registry
+            f"{check.code} - {check.title}" for check in self._parent._checks_registry
         ]
