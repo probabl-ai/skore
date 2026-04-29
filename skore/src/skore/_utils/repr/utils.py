@@ -18,7 +18,7 @@ def repair_estimator_html_for_slotted_host(html: str) -> str:
     following slotted elements inside the estimator subtree, so they no longer
     receive slot assignment and can appear under the wrong tab.
 
-    This function compares counts of ``<div`` vs ``</div>`` on a script-stripped copy
+    This function compares counts of ``<div>`` vs ``</div>`` on a script-stripped copy
     (so ``</div>`` inside ``<script>`` is ignored) and appends the deficit of closing
     ``</div>`` to the original string.
     """
