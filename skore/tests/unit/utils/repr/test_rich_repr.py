@@ -1,6 +1,7 @@
 """Unit tests for ``skore._utils.repr.rich_repr``."""
 
 from io import StringIO
+from typing import ClassVar
 
 import numpy as np
 import pytest
@@ -57,6 +58,53 @@ class _ReportWithAccessorAndRich(MockReport, _RichReportHelpMixin):
     def public_action(self):
         """A public method (enables Methods section)."""
         pass
+
+
+class _GroupedAccessorWithRich(MockAccessor, _RichAccessorHelpMixin):
+    """Accessor declaring grouped methods used to verify the rich tree layout."""
+
+    _ACCESSOR_CONFIG: dict = {}
+
+    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...]]] = {
+        "Registry": ("alpha", "beta"),
+        "Metrics": ("gamma",),
+        "Displays": ("epsilon",),
+    }
+
+    def alpha(self):
+        """Alpha method."""
+        pass
+
+    def beta(self):
+        """Beta method."""
+        pass
+
+    def gamma(self):
+        """Gamma method."""
+        pass
+
+    def epsilon(self):
+        """Epsilon method."""
+        pass
+
+    def stray(self):
+        """Stray method (orphan)."""
+        pass
+
+    def _get_help_title(self) -> str:
+        return "Grouped accessor"
+
+
+class _ReportWithGroupedRich(MockReport, _RichReportHelpMixin):
+    """Report whose accessor declares grouped methods (rich rendering)."""
+
+    _ACCESSOR_CONFIG = {"metrics": {"name": "metrics"}}
+
+    def __init__(self, estimator, X_train=None, y_train=None, X_test=None, y_test=None):
+        super().__init__(
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+        self.metrics = _GroupedAccessorWithRich(parent=self)
 
 
 class _DisplayWithRich(MockDisplay, _RichHelpDisplayMixin):
@@ -119,6 +167,53 @@ def test_rich_accessor_help_mixin_tree_and_title(accessor_with_rich):
         "mock_accessor",
         "fetch",
     ):
+        assert expected in out
+
+
+@pytest.fixture
+def grouped_accessor_with_rich():
+    """Accessor declaring `_HELP_METHOD_GROUPS` with rich help mixin."""
+    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+    y = np.array([0, 1, 1, 0])
+    estimator = LogisticRegression().fit(X, y)
+    parent = _ReportWithGroupedRich(estimator)
+    return parent.metrics
+
+
+@pytest.fixture
+def report_with_grouped_rich():
+    """Report whose accessor declares `_HELP_METHOD_GROUPS`."""
+    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+    y = np.array([0, 1, 1, 0])
+    estimator = LogisticRegression().fit(X, y)
+    return _ReportWithGroupedRich(estimator)
+
+
+def test_rich_accessor_help_mixin_renders_groups(grouped_accessor_with_rich):
+    """Accessor rich help shows group labels and method names within them, including
+    the ``Other`` orphan group.
+    """
+    panel = grouped_accessor_with_rich._create_help_panel()
+    out = _render_panel(panel)
+    for expected in (
+        "Registry",
+        "Metrics",
+        "Displays",
+        "Other",
+        "alpha",
+        "beta",
+        "gamma",
+        "epsilon",
+        "stray",
+    ):
+        assert expected in out
+
+
+def test_rich_report_help_mixin_renders_groups(report_with_grouped_rich):
+    """Report rich help shows the accessor's group labels in the tree."""
+    panel = report_with_grouped_rich._create_help_panel()
+    out = _render_panel(panel)
+    for expected in ("metrics", "Registry", "Metrics", "Displays", "Other"):
         assert expected in out
 
 

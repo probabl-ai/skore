@@ -1,6 +1,7 @@
 """Unit tests for helpers in ``skore._utils.repr.data``."""
 
 import re
+from typing import ClassVar
 from urllib.parse import quote
 
 import numpy as np
@@ -12,6 +13,7 @@ from skore._utils.repr.data import (
     AccessorHelpData,
     DisplayHelpData,
     HelpSection,
+    MethodGroupHelp,
     MethodHelp,
     ReportHelpData,
     _AccessorHelpDataMixin,
@@ -135,6 +137,60 @@ class _ReportWithEmptyAccessor(_ReportWithExplicitMethods):
             estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
         )
         self.empty = _EmptyAccessor(parent=self)
+
+
+class _GroupedAccessor(MockAccessor, _AccessorHelpDataMixin):
+    """Accessor declaring ``_HELP_METHOD_GROUPS`` for grouped-help tests.
+
+    Includes one orphan public method (``stray``) not listed in any group, which
+    should fall back into an ``"Other"`` group, and references a non-existent
+    method ``"never_existed"`` to verify it is silently skipped.
+    """
+
+    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...]]] = {
+        "Registry": ("alpha", "beta", "never_existed"),
+        "Metrics": ("gamma", "delta"),
+        "Displays": ("epsilon",),
+    }
+
+    def alpha(self):
+        """Alpha method."""
+        pass
+
+    def beta(self):
+        """Beta method."""
+        pass
+
+    def gamma(self):
+        """Gamma method."""
+        pass
+
+    def delta(self):
+        """Delta method."""
+        pass
+
+    def epsilon(self):
+        """Epsilon method."""
+        pass
+
+    def stray(self):
+        """Stray method not in any declared group."""
+        pass
+
+    def _get_help_title(self) -> str:
+        return "Grouped accessor"
+
+
+class _ReportWithGroupedAccessor(_ReportWithExplicitMethods):
+    """Report carrying a single accessor that exposes grouped methods."""
+
+    _ACCESSOR_CONFIG = {"metrics": {"name": "metrics"}}
+
+    def __init__(self, estimator, X_train=None, y_train=None, X_test=None, y_test=None):
+        super().__init__(
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+        self.metrics = _GroupedAccessor(parent=self)
 
 
 class _DisplayWithExplicitMethods(MockDisplay, _DisplayHelpDataMixin):
@@ -461,6 +517,82 @@ def test_report_build_help_data_output_excludes_empty_accessor():
     assert len(data.accessors) == 0
     assert hasattr(report, "empty")
     assert report.empty is not None
+
+
+@pytest.fixture
+def grouped_accessor():
+    """Accessor that declares `_HELP_METHOD_GROUPS`."""
+    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+    y = np.array([0, 1, 1, 0])
+    estimator = LogisticRegression().fit(X, y)
+    parent = _ReportWithGroupedAccessor(estimator)
+    return parent.metrics
+
+
+@pytest.fixture
+def report_with_grouped_accessor():
+    """Report whose accessor declares `_HELP_METHOD_GROUPS`."""
+    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+    y = np.array([0, 1, 1, 0])
+    estimator = LogisticRegression().fit(X, y)
+    return _ReportWithGroupedAccessor(estimator)
+
+
+def test_accessor_build_help_data_groups(grouped_accessor):
+    """`_AccessorHelpDataMixin._build_help_data` populates `groups` when the accessor
+    declares `_HELP_METHOD_GROUPS`.
+    """
+    data = grouped_accessor._build_help_data()
+    assert data.groups is not None
+    group_names = [g.name for g in data.groups]
+    assert group_names == ["Registry", "Metrics", "Displays", "Other"]
+    for g in data.groups:
+        assert isinstance(g, MethodGroupHelp)
+        assert g.branch_id != ""
+
+    by_name = {g.name: [m.name for m in g.methods] for g in data.groups}
+    assert by_name["Registry"] == ["alpha", "beta"]
+    assert by_name["Metrics"] == ["gamma", "delta"]
+    assert by_name["Displays"] == ["epsilon"]
+    assert by_name["Other"] == ["stray"]
+    assert data.methods is not None
+    assert {m.name for m in data.methods} == {
+        "alpha",
+        "beta",
+        "gamma",
+        "delta",
+        "epsilon",
+        "stray",
+    }
+
+
+def test_accessor_build_help_data_groups_none_when_not_declared(accessor_with_methods):
+    """`groups` is `None` when the accessor does not declare `_HELP_METHOD_GROUPS`."""
+    data = accessor_with_methods._build_help_data()
+    assert data.groups is None
+
+
+def test_report_build_help_data_groups(report_with_grouped_accessor):
+    """`_ReportHelpDataMixin._build_help_data` propagates `groups` to each accessor
+    branch.
+    """
+    data = report_with_grouped_accessor._build_help_data()
+    assert len(data.accessors) == 1
+    branch = data.accessors[0]
+    assert branch.groups is not None
+    assert [g.name for g in branch.groups] == [
+        "Registry",
+        "Metrics",
+        "Displays",
+        "Other",
+    ]
+
+
+def test_report_build_help_data_groups_none_when_not_declared(report_with_accessor):
+    """`groups` is `None` for accessors not declaring `_HELP_METHOD_GROUPS`."""
+    data = report_with_accessor._build_help_data()
+    assert len(data.accessors) == 1
+    assert data.accessors[0].groups is None
 
 
 def test_display_build_help_data_output(display_with_methods):
