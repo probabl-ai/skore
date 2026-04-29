@@ -16,7 +16,7 @@
                         <li>
                             [{{ row.code }}] {{ row.title }}.
                             {%- if row.explanation %} {{ row.explanation }}{% endif %}
-                            {%- if row.documentation_url %} Read more about this <a href="{{ row.documentation_url }}" target="_blank" rel="noopener noreferrer">here</a>.{% endif %}
+                            {%- if row.documentation_url %} Read more about this <a href="{{ row.documentation_url }}" target="_blank" rel="noopener noreferrer" class="report-hint-note-link">here</a>.{% endif %}
                         </li>
                         {% endfor %}
                     </ul>
