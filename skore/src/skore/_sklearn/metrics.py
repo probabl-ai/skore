@@ -255,7 +255,9 @@ class Metric:
               Scikit-learn metrics that require a ``neg_`` prefix (e.g.
               ``"neg_mean_squared_error"``) can also be passed without it
               (e.g. ``"mean_squared_error"``); the alias is resolved
-              automatically.
+              automatically. If the ``neg_*`` scorer name is not registered
+              (some older scikit-learn versions), the original string is tried
+              next (e.g. ``"max_error"`` when ``"neg_max_error"`` is missing).
             - If a callable, expected to be of the form
               ``(estimator, X, y, **kw) -> float``.
             - If a sklearn scorer, expected to be a _BaseScorer instance
@@ -300,15 +302,28 @@ class Metric:
             )
         elif isinstance(metric, str):
             metric_with_neg = _METRIC_ALIASES.get(metric, metric)
-
-            try:
-                scorer = sklearn.metrics.get_scorer(metric_with_neg)
-            except ValueError:
+            # Prefer the sklearn ``neg_*`` string when we have an alias, but fall back
+            # to the user-facing name for older scikit-learn (e.g. ``neg_max_error``
+            # is missing while ``max_error`` is registered).
+            candidates = (
+                (metric_with_neg, metric)
+                if metric_with_neg != metric
+                else (metric_with_neg,)
+            )
+            scorer = None
+            last_error: ValueError | None = None
+            for candidate in candidates:
+                try:
+                    scorer = sklearn.metrics.get_scorer(candidate)
+                    break
+                except ValueError as exc:
+                    last_error = exc
+            if scorer is None:
                 raise ValueError(
                     f"Invalid metric: {metric!r}. "
                     "Please use a valid scikit-learn metric string: "
                     f"{sklearn.metrics.get_scorer_names()}."
-                ) from None
+                ) from last_error
             name = name if name is not None else metric.removeprefix("neg_")
             return Metric.new(scorer, name=name)
         elif callable(metric):

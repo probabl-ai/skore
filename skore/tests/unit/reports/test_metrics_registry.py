@@ -577,13 +577,26 @@ class TestMetricNew:
 
 
 class TestMetricAliases:
-    """The aliases table maps user-friendly names to the sklearn `neg_*` form."""
+    """The aliases table maps user-friendly names to the sklearn ``neg_*`` form."""
 
     def test_aliases_resolve_via_get_scorer(self):
+        scorer_names = set(sklearn.metrics.get_scorer_names())
         for friendly, neg_form in _METRIC_ALIASES.items():
-            assert sklearn.metrics.get_scorer(neg_form) is not None
-            # The friendly name itself must NOT be a registered scorer name
-            assert friendly not in sklearn.metrics.get_scorer_names()
+            if neg_form in scorer_names:
+                assert sklearn.metrics.get_scorer(neg_form) is not None
+                if friendly in scorer_names:
+                    assert sklearn.metrics.get_scorer(friendly) is not None
+                else:
+                    assert friendly not in scorer_names
+            elif friendly in scorer_names:
+                # Older scikit-learn: e.g. ``max_error`` without ``neg_max_error``.
+                assert sklearn.metrics.get_scorer(friendly) is not None
+            else:
+                pytest.fail(
+                    f"Alias {friendly!r} -> {neg_form!r}: neither string is registered "
+                    f"in sklearn.metrics.get_scorer_names() for sklearn "
+                    f"{sklearn.__version__}."
+                )
 
     @pytest.mark.parametrize("friendly", list(_METRIC_ALIASES))
     def test_alias_via_metric_new(self, friendly):
