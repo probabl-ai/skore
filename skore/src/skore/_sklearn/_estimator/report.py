@@ -32,6 +32,7 @@ from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
+    from skore._sklearn._diagnosis.accessor import _DiagnosisAccessor
     from skore._sklearn._estimator.data_accessor import _DataAccessor
     from skore._sklearn._estimator.inspection_accessor import _InspectionAccessor
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
@@ -170,6 +171,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "diagnosis": {"name": "diagnosis"},
     }
 
     _report_type: Literal["estimator"] = "estimator"
@@ -177,6 +179,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor
+    diagnosis: _DiagnosisAccessor
 
     def _fit_estimator(
         self,
@@ -839,7 +842,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostic = self.diagnose()
+        diagnostic = self.diagnosis.summarize()
         diagnostic_html = (
             "<div class='report-diagnostic-details'>"
             f"{len(diagnostic.frame(severity='issue'))} issue(s), "
@@ -874,8 +877,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
-        diagnose_documentation_url = get_documentation_url(
-            obj=self, method_name="diagnose"
+        diagnosis_documentation_url = get_documentation_url(
+            obj=self, accessor_name="diagnosis"
         )
         return render_template(
             "estimator_report.html.j2",
@@ -887,7 +890,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "diagnose_documentation_url": diagnose_documentation_url,
+                "diagnosis_documentation_url": diagnosis_documentation_url,
                 **fragments,
             },
         )

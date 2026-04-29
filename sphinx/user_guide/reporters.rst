@@ -180,7 +180,13 @@ metrics available in `skore` for comparison.
 Diagnostic
 ----------
 
-Reports expose :meth:`diagnose` to run a quality diagnostic and return
-human-readable findings with stable check codes and links to guidance.
+:meth:`~skore.EstimatorReport.diagnosis` is the entry point to run checks that
+detect common modeling pitfalls. It provides the following methods:
+
+- :meth:`~skore.EstimatorReport.diagnosis.summarize` to run checks and get a diagnostic
+  that summarizes the findings.
+- :meth:`~skore.EstimatorReport.diagnosis.add` to add custom checks.
+- :meth:`~skore.EstimatorReport.diagnosis.available` to list the available checks.
+
 See :ref:`automatic_diagnostic` for the catalog of available checks, detection logic,
 and mitigation tips.

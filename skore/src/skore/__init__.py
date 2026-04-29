@@ -28,7 +28,7 @@ from skore._sklearn import (
     evaluate,
     train_test_split,
 )
-from skore._sklearn._diagnostic import Check, CheckNotApplicable, DiagnosticDisplay
+from skore._sklearn._diagnosis import Check, CheckNotApplicable, DiagnosticDisplay
 from skore._sklearn._plot.base import Display
 from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
 from skore._sklearn._plot.inspection.impurity_decrease import (

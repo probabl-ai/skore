@@ -20,8 +20,6 @@ report are accessible through accessors.
    :template: class_methods_no_index.rst
 
    EstimatorReport.help
-   EstimatorReport.diagnose
-   EstimatorReport.add_checks
    EstimatorReport.cache_predictions
    EstimatorReport.clear_cache
    EstimatorReport.get_predictions
@@ -33,6 +31,7 @@ report are accessible through accessors.
    :template: autosummary/accessor.rst
 
    EstimatorReport.data
+   EstimatorReport.diagnosis
    EstimatorReport.inspection
    EstimatorReport.metrics
 

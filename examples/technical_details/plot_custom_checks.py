@@ -7,7 +7,7 @@ Adding custom diagnostic checks
 
 `skore` lets you extend the built-in diagnostic checks with your own.
 This example shows how to write a custom check function and register it
-with a report via :meth:`~skore.EstimatorReport.add_checks`.
+with a report via :meth:`~skore.EstimatorReport.diagnosis.add`.
 """
 
 # %%
@@ -19,7 +19,7 @@ with a report via :meth:`~skore.EstimatorReport.add_checks`.
 # report. We throw an exception when the test data is not available to avoid
 # running the check when it is not applicable. The check function is wrapped in a
 # :class:`~skore.Check` instance and registered with the report via
-# :meth:`~skore.EstimatorReport.add_checks`.
+# :meth:`~skore.EstimatorReport.diagnosis.add`.
 #
 # The `docs_url` argument is optional. When provided as a full URL (starting
 # with ``"http"``), it is used as-is. When it is a plain anchor string
@@ -58,9 +58,11 @@ class CustomCheck1(Check):
 # Registering the check
 # =====================
 #
-# :meth:`~skore.EstimatorReport.add_checks` accepts a list of ``Check`` instances,
-# and registers them. The next call to :meth:`~skore.EstimatorReport.diagnose` runs
-# any newly added checks on top of the built-in checks.
+# :meth:`~skore.EstimatorReport.diagnosis.add` accepts a list of ``Check`` instances,
+# and registers them. The next call to :meth:`~skore.EstimatorReport.diagnosis.summarize`
+# runs any newly added checks on top of the built-in checks.
+# :meth:`~skore.EstimatorReport.diagnosis.available()` lets us verify that the check
+# has been registered.
 #
 # We can then find the new check in the Tips tab of the diagnostic, along another tip
 # informing us that the dataset is not standardized.
@@ -72,8 +74,9 @@ X = rng.normal(size=(200, 80))
 y = X[:, 0] + rng.normal(size=200)
 
 report = evaluate(LinearRegression(), X, y)
-report.add_checks([CustomCheck1()])
-report.diagnose()
+report.diagnosis.add([CustomCheck1()])
+print(report.diagnosis.available())
+report.diagnosis.summarize()
 
 # %%
 # Cross-validation level checks
@@ -122,8 +125,8 @@ class CustomCheck2(Check):
         return None
 
 
-cv_report.add_checks([CustomCheck2()])
-cv_report.diagnose()
+cv_report.diagnosis.add([CustomCheck2()])
+cv_report.diagnosis.summarize()
 
 # %%
 # Aggregating checks across estimator reports
@@ -132,8 +135,8 @@ cv_report.diagnose()
 # We can also reuse our first check to run it on the component estimator reports
 # and aggregate the results across splits.
 
-cv_report.add_checks([CustomCheck1()])
-cv_report.diagnose()
+cv_report.diagnosis.add([CustomCheck1()])
+cv_report.diagnosis.summarize()
 
 # %%
 # Similarly, :class:`~skore.ComparisonReport` aggregates checks across its
@@ -143,5 +146,5 @@ from sklearn.ensemble import RandomForestRegressor
 comparison_report = evaluate(
     [LinearRegression(), RandomForestRegressor()], X, y, splitter=5
 )
-comparison_report.add_checks([CustomCheck1(), CustomCheck2()])
-comparison_report.diagnose()
+comparison_report.diagnosis.add([CustomCheck1(), CustomCheck2()])
+comparison_report.diagnosis.summarize()
