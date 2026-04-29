@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator
 
 from skore import configuration
 from skore._sklearn._comparison.report import ComparisonReport
@@ -16,11 +15,11 @@ from skore._sklearn.train_test_split.train_test_split import TrainTestSplit
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-    from skore._sklearn.types import SKLearnCrossValidator
+    from skore._sklearn.types import EstimatorLike, SKLearnCrossValidator
 
 
 def evaluate(
-    estimator: BaseEstimator | list[BaseEstimator] | dict[str, BaseEstimator],
+    estimator: EstimatorLike | list[EstimatorLike] | dict[str, EstimatorLike],
     X: ArrayLike | list[ArrayLike | None] | dict[str, ArrayLike] | None = None,
     y: ArrayLike | None = None,
     data: dict | None = None,
@@ -38,8 +37,13 @@ def evaluate(
     Parameters
     ----------
     estimator : estimator object, list of estimators, or dict of estimators
-        A scikit-learn compatible estimator; a list of estimators to compare; or a
-        mapping of names to estimators.
+        The estimator to evaluate of several estimators to compare. An estimator can
+        be one of the following:
+
+        - a scikit-learn compatible estimator as a :class:`~sklearn.base.BaseEstimator`;
+        - a skrub :class:`~skrub.DataOp` to preprocess the data;
+        - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
+          by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
     X : array-like, list of array-like, dict of array-like, or None
         Feature matrix. When ``estimator`` is a list, ``X`` can be a list of
@@ -51,8 +55,13 @@ def evaluate(
         ``X`` is not supported when ``estimator`` is a dict; use a dict aligned on
         names or a single matrix.
 
-    y : array-like of shape (n_samples,)
+    y : array-like of shape (n_samples,), or None
         Target vector.
+
+    data : dict or None
+        When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
+        variables contained in the DataOp that was used to create this learner
+        (e.g. ``{"X": X_df, "other_table": df, ...}``).
 
     splitter : float, int, str, or cross-validation object, default=0.2
         Determines how the data is split:
