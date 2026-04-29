@@ -17,9 +17,9 @@ from httpx import HTTPStatusError, codes
 from joblib import load as joblib_load
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from sklearn.utils.validation import _check_pos_label_consistency
-from skore import THREADABLE
+from skore import THREADABLE, console
 
-from skore_hub_project import console, switch_plt_backend
+from skore_hub_project import switch_plt_backend
 from skore_hub_project.client.client import Client, HUBClient
 from skore_hub_project.exception import ForbiddenException, NotFoundException
 from skore_hub_project.json import dumps
