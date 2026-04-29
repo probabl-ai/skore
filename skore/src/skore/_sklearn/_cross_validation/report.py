@@ -24,6 +24,7 @@ from skore._utils._progress_bar import track
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -652,6 +653,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             estimator_html = self.estimator_._repr_html_()
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
+        estimator_html = repair_estimator_html_for_slotted_host(estimator_html)
 
         diagnostic = self.diagnose()
         diagnostic_html = (

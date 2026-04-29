@@ -30,6 +30,7 @@ from skore._utils._measure_time import MeasureTime
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
@@ -800,6 +801,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             estimator_html = self.estimator_._repr_html_()
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
+        estimator_html = repair_estimator_html_for_slotted_host(estimator_html)
 
         diagnostic = self.diagnose()
         diagnostic_html = (
