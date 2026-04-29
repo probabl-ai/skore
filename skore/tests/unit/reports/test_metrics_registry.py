@@ -881,7 +881,7 @@ class TestMetricRegistryAdd:
         registry = MetricRegistry(binary_classification_report)
         m = Metric(name="custom_z", function=None)
         registry.add(m, position="last")
-        assert next(reversed(registry.keys())) == "custom_z"
+        assert tuple(registry.keys())[-1] == "custom_z"
 
     def test_add_multiple_first_lifo(self, binary_classification_report):
         registry = MetricRegistry(binary_classification_report)
