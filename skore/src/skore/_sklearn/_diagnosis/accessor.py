@@ -105,24 +105,6 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 )
         self._parent._checks_registry.extend(checks)
 
-    def remove(self, code: CheckCode) -> None:
-        """Remove a check from the registry.
-
-        Parameters
-        ----------
-        code : str
-            The code of the check to remove.
-        """
-        code = code.strip().upper()
-        for i, check in enumerate(self._parent._checks_registry):
-            if check.code.upper() == code:
-                del self._parent._checks_registry[i]
-                break
-        if hasattr(self._parent, "_check_results_cache"):
-            self._parent._check_results_cache.pop(code, None)
-        if hasattr(self._parent, "_applicable_codes"):
-            self._parent._applicable_codes.discard(code)
-
     def available(self) -> list[str]:
         """List available checks in the registry.
 

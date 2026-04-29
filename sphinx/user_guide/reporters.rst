@@ -186,7 +186,6 @@ detect common modeling pitfalls. It provides the following methods:
 - :meth:`~skore.EstimatorReport.diagnosis.summarize` to run checks and get a diagnostic
   that summarizes the findings.
 - :meth:`~skore.EstimatorReport.diagnosis.add` to add custom checks.
-- :meth:`~skore.EstimatorReport.diagnosis.remove` to remove checks.
 - :meth:`~skore.EstimatorReport.diagnosis.available` to list the available checks.
 
 See :ref:`automatic_diagnostic` for the catalog of available checks, detection logic,
