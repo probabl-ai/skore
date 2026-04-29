@@ -47,8 +47,6 @@ deep_tree = DecisionTreeRegressor(random_state=42)
 # access to several methods:
 # - `.summarize()`` to run checks and get a summary of the findings
 # - `.add()` to add custom checks
-# - `.remove()` to remove checks
-# - `.available()` to list the available checks
 # Let's use `.summarize()` to see what issues can be found for the linear model.
 
 from skore import evaluate

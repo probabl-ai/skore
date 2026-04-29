@@ -259,44 +259,6 @@ def test_add_checks_docs_url_absent(regression_report):
     assert row["documentation_url"].isna().all()
 
 
-def test_remove_checks_excludes_results(regression_report):
-    """Check that remove excludes checks from results and available checks."""
-    regression_report.diagnosis.add([MockCheck(has_issue=True)])
-    assert "TST001" in set(regression_report.diagnosis.summarize().frame()["code"])
-
-    regression_report.diagnosis.remove("TST001")
-    result = regression_report.diagnosis.summarize()
-    assert "TST001" not in set(result.frame()["code"])
-    assert not any(
-        entry.startswith("TST001") for entry in regression_report.diagnosis.available()
-    )
-
-
-def test_remove_clears_cache(regression_report):
-    """Check that remove invalidates cached results for the removed check."""
-    regression_report.diagnosis.add([MockCheck(has_issue=True)])
-    regression_report.diagnosis.summarize()
-    assert "TST001" in regression_report._check_results_cache
-
-    regression_report.diagnosis.remove("TST001")
-    assert "TST001" not in regression_report._check_results_cache
-
-
-def test_remove_is_case_insensitive(regression_report):
-    """Check that remove matches check codes case-insensitively."""
-    regression_report.diagnosis.add([MockCheck(has_issue=True)])
-    assert "TST001 - Test issue" in regression_report.diagnosis.available()
-    regression_report.diagnosis.remove("tst001")
-    assert "TST001 - Test issue" not in regression_report.diagnosis.available()
-
-
-def test_available_returns_code_dash_title(regression_report):
-    """Check that available returns strings in 'code - title' format."""
-    regression_report.diagnosis.add([MockCheck(has_issue=True)])
-    available = regression_report.diagnosis.available()
-    assert "TST001 - Test issue" in available
-
-
 def test_check_invalid_report_type(regression_report):
     """Check that Check raises ValueError for unsupported report_type."""
     check = MockCheck(has_issue=False, report_type="invalid")
