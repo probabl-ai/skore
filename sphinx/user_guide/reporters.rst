@@ -177,15 +177,15 @@ The caching mechanism is also available and exposes the same methods.
 Refer to the :ref:`cross_validation_metrics` section for more details on the
 metrics available in `skore` for comparison.
 
-Diagnostic
-----------
+Checks
+------
 
-:meth:`~skore.EstimatorReport.diagnosis` is the entry point to run checks that
+:meth:`~skore.EstimatorReport.checks` is the entry point to run checks that
 detect common modeling pitfalls. It provides the following methods:
 
-- :meth:`~skore.EstimatorReport.diagnosis.summarize` to run checks and get a diagnostic
-  that summarizes the findings.
-- :meth:`~skore.EstimatorReport.diagnosis.add` to add custom checks.
+- :meth:`~skore.EstimatorReport.checks.summarize` to run checks and get a summary
+  of the findings.
+- :meth:`~skore.EstimatorReport.checks.add` to add custom checks.
 
-See :ref:`automatic_diagnostic` for the catalog of available checks, detection logic,
+See :ref:`automated_checks` for the catalog of available checks, detection logic,
 and mitigation tips.

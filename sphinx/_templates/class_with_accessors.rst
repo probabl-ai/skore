@@ -4,7 +4,7 @@
 
 .. autoclass:: {{ objname }}
    :members:
-   :exclude-members: metrics, inspection, reports, data, diagnosis
+   :exclude-members: metrics, inspection, reports, data, checks
    :inherited-members:
    :special-members: __call__
 
