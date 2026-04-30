@@ -113,7 +113,7 @@ set -eu
         echo "${PYTHON}" > "${CWD}/requirements/${PACKAGE}/python-${PYTHON}/.python-version"
 
         # Create the requirements file
-        uv python install "${PYTHON}"
+        uv python install --quiet "${PYTHON}"
         uv pip compile \
            --python-platform "linux" \
            --quiet \
