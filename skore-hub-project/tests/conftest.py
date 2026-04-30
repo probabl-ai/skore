@@ -332,7 +332,6 @@ def monkeypatch_rich(monkeypatch):
 
     monkeypatch.setattr("rich.console.Console", partial(Console, quiet=True))
     monkeypatch.setattr("skore.console.quiet", True)
-    monkeypatch.setattr("skore_hub_project.console.quiet", True)
 
 
 @fixture
