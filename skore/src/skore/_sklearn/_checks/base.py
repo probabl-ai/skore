@@ -42,9 +42,13 @@ _TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str, str]] = [
 
 
 class ChecksSummaryDisplay(DisplayHelpMixin):
-    """Display for the checks summary returned by :meth:`Report.checks.summarize`.
+    """Display for the checks summary.
 
-    A display object with an HTML representation organized in three tabs
+    An instance of this class will be created by
+    :meth:`~skore.EstimatorReport.checks.summarize`.This class should not be
+    instantiated directly.
+
+    The display object has an HTML representation organized in three tabs
     (``Issues``, ``Tips``, ``Passed``). The full list of check results is
     accessible via the :meth:`~ChecksSummaryDisplay.frame` method.
 

@@ -58,7 +58,7 @@ class CustomCheck1(Check):
 # Registering the check
 # =====================
 #
-# :meth:`~skore.EstimatorReport.checks.add` accepts a list of ``Check`` instances,
+# :meth:`~skore.EstimatorReport.checks.add` accepts a list of :class:`~skore.Check` instances,
 # and registers them. The next call to :meth:`~skore.EstimatorReport.checks.summarize`
 # runs any newly added checks on top of the built-in checks.
 #

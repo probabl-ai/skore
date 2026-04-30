@@ -6,8 +6,8 @@ Automatic detection of modelling issues
 =======================================
 
 `skore` can automatically detect common modeling pitfalls such as overfitting
-and underfitting. This example walks through the ``.checks`` accessor: how to
-run checks, how to read the detected issues, and how to mute specific checks.
+and underfitting. This example walks through the :attr:`~skore.EstimatorReport.checks` accessor:
+how to run checks, how to read the detected issues, and how to mute specific checks.
 
 We use a purely non-linear regression target and deliberately pick models that
 fail in known ways:
@@ -43,13 +43,14 @@ deep_tree = DecisionTreeRegressor(random_state=42)
 # Calling :meth:`~skore.EstimatorReport.checks.summarize` explicitly
 # ==================================================================
 #
-# Every report exposes a :meth:`~skore.EstimatorReport.checks` accessor which provides
+# Every report exposes a :attr:`~skore.EstimatorReport.checks` accessor which provides
 # access to several methods:
 #
-# - `.summarize()` to run checks and get a summary of the findings
-# - `.add()` to add custom checks
+# - :meth:`~skore.EstimatorReport.checks.summarize` to run checks and get a summary of the findings
+# - :meth:`~skore.EstimatorReport.checks.add` to add custom checks
 #
-# Let's use `.summarize()` to see what issues can be found for the linear model.
+# Let's use :meth:`~skore.EstimatorReport.checks.summarize` to see what issues can be
+# found for the linear model.
 
 from skore import evaluate
 
@@ -65,6 +66,8 @@ linear_report.metrics.summarize(data_source="both").frame()
 # %%
 # The linear model is flagged for underfitting: its scores are on par between
 # train and test, and not significantly better than a dummy baseline.
+#
+# Let's now inspect the deep tree model.
 
 tree_report = evaluate(deep_tree, X, y)
 tree_report.checks.summarize()

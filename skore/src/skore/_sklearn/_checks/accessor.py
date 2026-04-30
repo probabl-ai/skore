@@ -7,7 +7,10 @@ from skore._sklearn._checks.base import Check, CheckCode, ChecksSummaryDisplay
 
 
 class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
-    """Accessor for report checks."""
+    """Accessor for checks-related operations.
+
+    You can access this accessor using the `checks` attribute.
+    """
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
