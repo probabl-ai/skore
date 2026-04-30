@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import partial
 from importlib import reload
 from unittest.mock import Mock
@@ -218,7 +218,7 @@ def cv_binary_classification_string_labels_with_pos_label() -> CrossValidationRe
 
 @fixture
 def now():
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 @fixture

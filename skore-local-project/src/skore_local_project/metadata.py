@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC
 from contextlib import suppress
 from dataclasses import InitVar, dataclass, field, fields
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from math import isfinite
 from typing import TYPE_CHECKING
 
@@ -74,7 +74,7 @@ class ReportMetadata(ABC):
 
     def __post_init__(self, report: EstimatorReport | CrossValidationReport) -> None:
         """Initialize dynamic fields."""
-        self.date = datetime.now(timezone.utc).isoformat()
+        self.date = datetime.now(UTC).isoformat()
         self.learner = report.estimator_name_
         self.ml_task = report.ml_task
         self.report_type = report._report_type
