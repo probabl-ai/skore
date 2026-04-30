@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib.metadata import version
 from io import StringIO
 from typing import Generic, Literal, TypeVar
@@ -190,7 +190,7 @@ class _BaseReport(ReportHelpMixin):
         self._metadata = {
             "id": uuid4().int,
             "skore-version": version("skore"),
-            "creation-date": datetime.now(timezone.utc).isoformat(),
+            "creation-date": datetime.now(UTC).isoformat(),
             # comparison reports don't have a _report_type yet at init time
             # but they don't have a `get_state` anyway:
             "report_type": getattr(self, "_report_type", "comparison"),
