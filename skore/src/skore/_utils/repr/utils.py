@@ -14,7 +14,7 @@ def repair_estimator_html_for_slotted_host(html: str) -> str:
     """Append missing closing ``</div>`` tags so sibling slotted nodes stay valid.
 
     Estimator HTML from ``estimator_._repr_html_()`` is concatenated in the light DOM
-    next to ``<div slot="table-report">`` and ``<div slot="diagnostic">`` on the
+    next to ``<div slot="table-report">`` and ``<div slot="checks-summary">`` on the
     same shadow host. Named slots only consider **direct children** of that host; if
     the sklearn fragment leaves ``<div>`` elements unclosed, the HTML parser nests the
     following slotted elements inside the estimator subtree, so they no longer

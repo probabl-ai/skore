@@ -39,13 +39,13 @@ def test_skd003_detects_inconsistent_splits():
     X, y = make_classification(n_samples=400, n_features=5, random_state=0)
     report = evaluate(LogisticRegression(random_state=0), X, y, splitter=5)
     assert "SKD003" not in set(
-        report.diagnosis.summarize().frame(severity="issue")["code"]
+        report.checks.summarize().frame(severity="issue")["code"]
     )
 
     # Corrupt the first split
     y[0 : len(y) // 5] = np.random.RandomState(0).randint(0, 2, len(y) // 5)
     report = evaluate(LogisticRegression(random_state=0), X, y, splitter=5)
-    issues = report.diagnosis.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
     assert "SKD003" in issues.index
     assert "split #0" in issues.loc["SKD003", "explanation"]
     n_metrics = (
@@ -63,7 +63,7 @@ def test_skd001_aggregates_overfitting_across_splits(regression_data):
     """Check that the overfitting issue is aggregated across splits."""
     X, y = regression_data
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y, splitter=3)
-    issues = report.diagnosis.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
     assert "SKD001" in issues.index
     assert "3/3 evaluated splits" in issues.loc["SKD001", "explanation"]
 
@@ -72,14 +72,14 @@ def test_skd002_aggregates_underfitting_across_splits(regression_data):
     """Check that the underfitting issue is aggregated across splits."""
     X, y = regression_data
     report = evaluate(DummyRegressor(), X, y, splitter=3)
-    issues = report.diagnosis.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
     assert "SKD002" in issues.index
     assert "3/3 evaluated splits" in issues.loc["SKD002", "explanation"]
 
 
 def test_reuses_split_cached_results(monkeypatch, regression_report):
     """Check that check results are cached and reused across splits."""
-    regression_report.diagnosis.summarize()
+    regression_report.checks.summarize()
 
     for sub_report in regression_report.estimator_reports_:
         for check in sub_report._checks_registry:
@@ -89,16 +89,14 @@ def test_reuses_split_cached_results(monkeypatch, regression_report):
                 lambda rpt: pytest.fail("re-ran cached check"),
             )
 
-    regression_report.diagnosis.summarize()
+    regression_report.checks.summarize()
 
 
 def test_add_checks_cv_level(regression_report):
     """Check that add_checks registers a CV-level check."""
-    regression_report.diagnosis.add([CVCheck()])
+    regression_report.checks.add([CVCheck()])
     issues = (
-        regression_report.diagnosis.summarize()
-        .frame(severity="issue")
-        .set_index("code")
+        regression_report.checks.summarize().frame(severity="issue").set_index("code")
     )
     assert "CVCUSTOM" in issues.index
     assert issues.loc["CVCUSTOM", "title"] == "CV-level check"
@@ -108,11 +106,9 @@ def test_add_checks_cv_level(regression_report):
 
 def test_add_checks_estimator_level(regression_report):
     """Check that add_checks with estimator report_type propagates and aggregates."""
-    regression_report.diagnosis.add([EstimatorCheck()])
+    regression_report.checks.add([EstimatorCheck()])
     issues = (
-        regression_report.diagnosis.summarize()
-        .frame(severity="issue")
-        .set_index("code")
+        regression_report.checks.summarize().frame(severity="issue").set_index("code")
     )
     assert "ESTCUSTOM" in issues.index
     assert "3/3 evaluated splits" in issues.loc["ESTCUSTOM", "explanation"]

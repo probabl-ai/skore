@@ -31,7 +31,7 @@ report are accessible through accessors.
    :template: autosummary/accessor.rst
 
    EstimatorReport.data
-   EstimatorReport.diagnosis
+   EstimatorReport.checks
    EstimatorReport.inspection
    EstimatorReport.metrics
 
@@ -63,12 +63,12 @@ of the features in your model.
 
 .. include:: ../api/EstimatorReport.inspection.inc
 
-.. _estimator_diagnosis:
+.. _estimator_checks:
 
-Diagnosis
----------
+Checks
+------
 
-The `diagnosis` accessor runs automated checks that look for common modeling problems
+The `checks` accessor runs automated checks that look for common modeling problems
 such as overfitting and underfitting.
 
-.. include:: ../api/EstimatorReport.diagnosis.inc
+.. include:: ../api/EstimatorReport.checks.inc

@@ -50,8 +50,8 @@ Changed
   :user:`auguste-probabl`.
 
 - **Breaking change:** :meth:`EstimatorReport.diagnose` and :meth:`EstimatorReport.add_checks`
-  have been moved to the newly added :meth:`EstimatorReport.diagnosis` accessor and have been
-  renamed to :meth:`EstimatorReport.diagnosis.summarize` and :meth:`EstimatorReport.diagnosis.add`
+  have been moved to the newly added :meth:`EstimatorReport.checks` accessor and have been
+  renamed to :meth:`EstimatorReport.checks.summarize` and :meth:`EstimatorReport.checks.add`
   respectively. See :pr:`2833` by :user:`GaetandeCast`.
 
 Added

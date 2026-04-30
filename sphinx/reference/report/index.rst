@@ -70,15 +70,15 @@ the API of each display.
 
    displays
 
-Diagnosis
----------
+Checks
+------
 
-Diagnosis classes used by the ``diagnosis`` accessor on reports.
+Checks classes used by the ``checks`` accessor on reports.
 
 .. autosummary::
     :toctree: ../api/
     :template: base.rst
 
-    DiagnosticDisplay
+    ChecksSummaryDisplay
     Check
     CheckNotApplicable

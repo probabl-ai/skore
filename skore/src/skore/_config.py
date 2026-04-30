@@ -39,7 +39,7 @@ class Configuration:
         Default is ``"matplotlib"``.
 
     ignore_checks : list of str or tuple of str or None
-        Global diagnostic codes ignored by ``report.diagnosis.summarize(...)``.
+        Global check codes ignored by ``report.checks.summarize(...)``.
         Default is ``None``.
 
     Examples
@@ -61,7 +61,7 @@ class Configuration:
     >>> with configuration(plot_backend="plotly"):
     ...     report.plot()
     >>> with configuration(ignore_checks=["SKD002"]):
-    ...     report.diagnosis.summarize()
+    ...     report.checks.summarize()
     """
 
     def __init__(self):

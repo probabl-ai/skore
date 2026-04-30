@@ -3,24 +3,24 @@ from __future__ import annotations
 from skore._config import configuration
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor, _BaseReport
-from skore._sklearn._diagnosis.base import Check, CheckCode, DiagnosticDisplay
+from skore._sklearn._checks.base import Check, CheckCode, ChecksSummaryDisplay
 
 
-class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
-    """Accessor for report diagnostic checks."""
+class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
+    """Accessor for report checks."""
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
         return self._rich_repr(
-            class_name=f"skore.{self._parent.__class__.__name__}.diagnosis"
+            class_name=f"skore.{self._parent.__class__.__name__}.checks"
         )
 
     def summarize(
         self,
         *,
         ignore: list[CheckCode] | tuple[CheckCode, ...] | None = None,
-    ) -> DiagnosticDisplay:
-        """Run checks and return a diagnostic with detected issues.
+    ) -> ChecksSummaryDisplay:
+        """Run checks and return a summary with detected issues.
 
         Checks look for common modeling problems such as overfitting and
         underfitting. Check codes can be muted per-call via `ignore` or globally
@@ -33,10 +33,10 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
 
         Returns
         -------
-        DiagnosticDisplay
+        ChecksSummaryDisplay
             A display object with an HTML representation organized as three
             tabs (``Issues``, ``Tips``, ``Passed``). The full list of results
-            is accessible via the :meth:`~DiagnosticDisplay.frame` method.
+            is accessible via the :meth:`~ChecksSummaryDisplay.frame` method.
 
         Examples
         --------
@@ -45,13 +45,13 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         >>> from sklearn.datasets import make_classification
         >>> X, y = make_classification(random_state=42)
         >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
-        >>> report.diagnosis.summarize()
-        Diagnostic: 1 issue(s), ...
+        >>> report.checks.summarize()
+        Checks summary: 1 issue(s), ...
         Issues:
         - [SKD002] Potential underfitting...
         ...
-        >>> report.diagnosis.summarize(ignore=["SKD002"])
-        Diagnostic: 0 issue(s), ... 1 ignored.
+        >>> report.checks.summarize(ignore=["SKD002"])
+        Checks summary: 0 issue(s), ... 1 ignored.
         ...
         """
         ignored_codes: set[CheckCode] = set()
@@ -66,7 +66,7 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 if code.strip()
             )
         check_results, applicable_codes = self._parent._get_results(ignored_codes)
-        return DiagnosticDisplay(
+        return ChecksSummaryDisplay(
             check_results={
                 code: check_result
                 for code, check_result in check_results.items()
@@ -79,7 +79,7 @@ class _DiagnosisAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         self,
         checks: list[Check],
     ) -> None:
-        """Register additional diagnostic checks for this report.
+        """Register additional checks for this report.
 
         Checks are defined by implementing the :class:`~skore.Check` protocol.
 

@@ -1,12 +1,12 @@
-.. _automated_checks:
+.. _automatic_diagnostic:
 
-================
-Automated checks
-================
+====================
+Automatic diagnostic
+====================
 
 `skore` provides automated checks for common model quality pitfalls.
-Use :meth:`~skore.EstimatorReport.checks.summarize` to run checks and get a
-a summary of the findings. Findings come in two severities:
+Use :meth:`~skore.EstimatorReport.diagnosis.summarize` to run checks and get a
+diagnostic that summarizes the findings. Findings come in two severities:
 
 - **issues** flag a concrete modeling problem to fix (e.g. overfitting);
 - **tips** do not signal a defect on their own but invite caution, typically on
@@ -22,7 +22,7 @@ Checks can be muted per call with `ignore=...`:
 
 .. code-block:: python
 
-    report.checks.summarize(ignore=["SKD001"])
+    report.diagnosis.summarize(ignore=["SKD001"])
 
 You can also set a global ignore list with `configuration.ignore_checks = ...`:
 
@@ -32,11 +32,11 @@ You can also set a global ignore list with `configuration.ignore_checks = ...`:
     configuration.ignore_checks = ["SKD001"]
 
 For cross-validation reports, checks are run per split and then aggregated
-at report level through `~skore.CrossValidationReport.checks.summarize`. An issue is
+at report level through `~skore.CrossValidationReport.diagnosis.summarize`. An issue is
 reported only when it appears in a strict majority of evaluated splits.
 
-For comparison reports, `~skore.ComparisonReport.checks.summarize` builds a global
-summary from each component report in the comparison. Issues are grouped by
+For comparison reports, `~skore.ComparisonReport.diagnosis.summarize` builds a global
+diagnostic from each component report in the comparison. Issues are grouped by
 component report and emitted as a single message.
 
 

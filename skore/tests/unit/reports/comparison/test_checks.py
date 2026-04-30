@@ -1,6 +1,6 @@
 import pytest
 
-from skore._sklearn._diagnosis import DiagnosticDisplay
+from skore._sklearn._checks.base import ChecksSummaryDisplay
 
 
 def test_collects_component_issues(report, monkeypatch):
@@ -29,8 +29,8 @@ def test_collects_component_issues(report, monkeypatch):
         if hasattr(report, attr):
             delattr(report, attr)
 
-    results = report.diagnosis.summarize()
-    assert isinstance(results, DiagnosticDisplay)
+    results = report.checks.summarize()
+    assert isinstance(results, ChecksSummaryDisplay)
     issues = results.frame(severity="issue").set_index("code")
     for name, per_issues in zip(report_names, per_report_issues, strict=True):
         for code in per_issues:
@@ -40,7 +40,7 @@ def test_collects_component_issues(report, monkeypatch):
 
 def test_reuses_component_cached_results(report, monkeypatch):
     """Check that check results are cached and reused."""
-    report.diagnosis.summarize()
+    report.checks.summarize()
 
     for sub_report in report.reports_.values():
         for estimator_report in getattr(sub_report, "estimator_reports_", [sub_report]):
@@ -51,4 +51,4 @@ def test_reuses_component_cached_results(report, monkeypatch):
                     lambda rpt: pytest.fail("re-ran cached check"),
                 )
 
-    report.diagnosis.summarize()
+    report.checks.summarize()

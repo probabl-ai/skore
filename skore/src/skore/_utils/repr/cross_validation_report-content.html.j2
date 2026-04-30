@@ -1,6 +1,6 @@
 {% set report_tabs = [
     {"label": "Results", "help_variant": "accessor", "help_url": metrics_accessor_doc_url, "accessor_name": "metrics"},
-    {"label": "Diagnostic", "help_variant": "accessor", "help_url": diagnosis_documentation_url, "accessor_name": "diagnosis"},
+    {"label": "Checks Summary", "help_variant": "accessor", "help_url": checks_documentation_url, "accessor_name": "checks"},
     {"label": "Estimator", "help_variant": "accessor", "help_url": inspection_accessor_doc_url, "accessor_name": "inspection"},
     {"label": "Data", "help_variant": "accessor", "help_url": data_accessor_doc_url, "accessor_name": "data"},
     {"label": "Help", "help_variant": "text", "help_text": "Browse accessors, methods, and attributes for this report (same as calling .help())."},
@@ -14,7 +14,7 @@
                 <div class="report-section report-metrics">{{ metrics_summary | safe }}</div>
             </div>
             <div class="report-tab-panel">
-                <div class="report-section report-diagnostic"><slot name="diagnostic"></slot></div>
+                <div class="report-section report-checks-summary"><slot name="checks-summary"></slot></div>
             </div>
             <div class="report-tab-panel">
                 <div class="report-section report-estimator"><slot name="estimator-display"></slot></div>

@@ -32,7 +32,7 @@ functionalities of the report are exposed through accessors.
    :template: autosummary/accessor.rst
 
    CrossValidationReport.data
-   CrossValidationReport.diagnosis
+   CrossValidationReport.checks
    CrossValidationReport.inspection
    CrossValidationReport.metrics
 
@@ -66,12 +66,12 @@ of the features in your model.
 
 .. include:: ../api/CrossValidationReport.inspection.inc
 
-.. _cross_validation_diagnosis:
+.. _cross_validation_checks:
 
-Diagnosis
----------
+Checks
+------
 
-The `diagnosis` accessor runs automated checks that look for common modeling problems
+The `checks` accessor runs automated checks that look for common modeling problems
 such as overfitting and underfitting.
 
-.. include:: ../api/CrossValidationReport.diagnosis.inc
+.. include:: ../api/CrossValidationReport.checks.inc

@@ -32,7 +32,7 @@ way. The functionalities of the report are accessible through accessors.
     :nosignatures:
     :template: autosummary/accessor.rst
 
-    ComparisonReport.diagnosis
+    ComparisonReport.checks
     ComparisonReport.inspection
     ComparisonReport.metrics
 
@@ -53,12 +53,12 @@ of the features in your model.
 
 .. include:: ../api/ComparisonReport.inspection.inc
 
-.. _comparison_diagnosis:
+.. _comparison_checks:
 
-Diagnosis
----------
+Checks
+------
 
-The `diagnosis` accessor runs automated checks that look for common modeling problems
+The `checks` accessor runs automated checks that look for common modeling problems
 such as overfitting and underfitting.
 
-.. include:: ../api/ComparisonReport.diagnosis.inc
+.. include:: ../api/ComparisonReport.checks.inc

@@ -9,9 +9,9 @@
         <div class="report-tab-panels">
             {% for tab in tabs %}
             <div class="report-tab-panel">
-                <div class="report-section report-diagnostic">
+                <div class="report-section report-checks-summary">
                     {% if tab.rows %}
-                    <ul class="report-diagnostic-list">
+                    <ul class="report-checks-summary-list">
                         {% for row in tab.rows %}
                         <li>
                             [{{ row.code }}] {{ row.title }}.
@@ -21,7 +21,7 @@
                         {% endfor %}
                     </ul>
                     {% else %}
-                    <p class="report-diagnostic-empty">{{ tab.empty_message }}</p>
+                    <p class="report-checks-summary-empty">{{ tab.empty_message }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -30,6 +30,6 @@
     </div>
     <p class="report-hint-note" role="note">
         Mute a check by passing its code to <code>ignore</code>,
-        e.g. <code>.diagnosis.summarize(ignore=['SKD001'])</code>.
+        e.g. <code>.checks.summarize(ignore=['SKD001'])</code>.
     </p>
 </div>

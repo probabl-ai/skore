@@ -16,7 +16,7 @@ from sklearn.pipeline import Pipeline
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._diagnosis.base import CheckCode
+from skore._sklearn._checks.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -30,12 +30,12 @@ from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from skore._sklearn._checks.accessor import _ChecksAccessor
     from skore._sklearn._cross_validation.data_accessor import _DataAccessor
     from skore._sklearn._cross_validation.inspection_accessor import (
         _InspectionAccessor,
     )
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
-    from skore._sklearn._diagnosis.accessor import _DiagnosisAccessor
     from skore._sklearn.types import EstimatorLike
 
 
@@ -183,7 +183,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
-        "diagnosis": {"name": "diagnosis"},
+        "checks": {"name": "checks"},
     }
 
     _report_type: Literal["cross-validation"] = "cross-validation"
@@ -191,7 +191,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor
-    diagnosis: _DiagnosisAccessor
+    checks: _ChecksAccessor
 
     def __init__(
         self,
@@ -559,12 +559,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         positives_by_code: dict[CheckCode, list[dict]] = {}
 
         for estimator_report in self.estimator_reports_:
-            estimator_report.diagnosis.add(self._checks_registry)
+            estimator_report.checks.add(self._checks_registry)
             results, applicable_codes = estimator_report._get_results(ignored_codes)
             all_applicable_codes |= applicable_codes
-            for code, diagnostic in results.items():
-                if diagnostic["explanation"] is not None:
-                    positives_by_code.setdefault(code, []).append(diagnostic)
+            for code, check_result in results.items():
+                if check_result["explanation"] is not None:
+                    positives_by_code.setdefault(code, []).append(check_result)
 
         issues: dict[CheckCode, dict] = {}
         for code in all_applicable_codes:
@@ -677,13 +677,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostic = self.diagnosis.summarize()
-        diagnostic_html = (
-            "<div class='report-diagnostic-details'>"
-            f"{len(diagnostic.frame(severity='issue'))} issue(s), "
-            f"{len(diagnostic.frame(severity='tip'))} tip(s), "
-            f"{len(diagnostic.frame(severity='passed'))} passed, "
-            f"{diagnostic._n_ignored_codes} ignored."
+        checks_summary = self.checks.summarize()
+        checks_summary_html = (
+            "<div class='report-checks-summary-details'>"
+            f"{len(checks_summary.frame(severity='issue'))} issue(s), "
+            f"{len(checks_summary.frame(severity='tip'))} tip(s), "
+            f"{len(checks_summary.frame(severity='passed'))} passed, "
+            f"{checks_summary._n_ignored_codes} ignored."
             "</div>"
         )
 
@@ -691,7 +691,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
-            "diagnostic": diagnostic_html,
+            "checks_summary": checks_summary_html,
         }
 
     def _repr_html_(self) -> str:
@@ -706,8 +706,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
-        diagnosis_documentation_url = get_documentation_url(
-            obj=self, accessor_name="diagnosis"
+        checks_documentation_url = get_documentation_url(
+            obj=self, accessor_name="checks"
         )
         help_ctx = asdict(self._build_help_data())
         help_ctx["is_report"] = True
@@ -720,7 +720,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "diagnosis_documentation_url": diagnosis_documentation_url,
+                "checks_documentation_url": checks_documentation_url,
                 **fragments,
                 **help_ctx,
             },
