@@ -11,7 +11,7 @@ class ProgressBar:
     """Simplified progress bar based on ``rich.Progress``."""
 
     def __init__(self, description: str, total: float | None):
-        from skore import console
+        from skore import THREADABLE, console
         from skore._config import configuration
 
         progress = Progress(
@@ -26,6 +26,7 @@ class ProgressBar:
             console=console,
             expand=False,
             transient=True,
+            auto_refresh=THREADABLE,
             disable=(not configuration.show_progress),
         )
 

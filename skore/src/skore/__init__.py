@@ -73,6 +73,7 @@ __all__ = [
     "PredictionErrorDisplay",
     "Project",
     "RocCurveDisplay",
+    "THREADABLE",
     "TableReportDisplay",
     "TrainTestSplit",
     "compare",
@@ -98,3 +99,15 @@ console = Console(
     # Waiting for the merge of https://github.com/Textualize/rich/pull/4104.
     force_jupyter=(is_environment_notebook_like() or None),
 )
+
+
+try:
+    from threading import Thread
+
+    thread = Thread()
+    thread.start()
+    thread.join()
+except Exception:
+    THREADABLE = False
+else:
+    THREADABLE = True
