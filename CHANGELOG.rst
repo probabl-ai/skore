@@ -34,10 +34,27 @@ Changelog
 `Unreleased`_
 =============
 
-.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.16.0...HEAD
+.. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/0.17.0...HEAD
 
 Release highlights
 ------------------
+
+Changed
+-------
+
+Added
+-----
+
+Removed
+-------
+
+Fixed
+-----
+
+`0.17.0`_ (2026-04-30)
+======================
+
+.. _0.17.0: https://github.com/probabl-ai/skore/compare/skore/0.16.0...skore/0.17.0
 
 Changed
 -------
@@ -54,12 +71,6 @@ Added
 
 - :class:`Project` now accepts strings for the `workspace` argument. See :pr:`2832` by
   :user:`auguste-probabl`.
-
-Removed
--------
-
-Fixed
------
 
 `0.16.0`_ (2026-04-20)
 ======================
