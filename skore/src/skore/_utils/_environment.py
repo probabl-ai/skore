@@ -22,16 +22,21 @@ def get_environment_info() -> dict[str, Any]:
     try:
         # get_ipython() is defined when running in Jupyter or IPython
         # there is no need to import IPython here
-        shell = get_ipython().__class__.__name__  # type: ignore
-        env_info["details"]["ipython_shell"] = shell
-
-        if shell == "ZMQInteractiveShell":  # Jupyter notebook/lab
-            env_info["is_jupyter"] = True
-            env_info["environment_name"] = "jupyter"
-        elif shell == "TerminalInteractiveShell":  # IPython terminal
-            env_info["environment_name"] = "ipython_terminal"
+        ipython = get_ipython()  # type: ignore[name-defined]
     except NameError:
         pass
+    else:
+        shell = ipython.__class__.__name__
+
+        env_info["details"]["ipython_shell"] = shell
+
+        # Jupyter notebook/lab or Jupyterlite
+        if (shell == "ZMQInteractiveShell") or ("pyodide" in str(ipython.__class__)):
+            env_info["is_jupyter"] = True
+            env_info["environment_name"] = "jupyter"
+        # IPython terminal
+        elif shell == "TerminalInteractiveShell":
+            env_info["environment_name"] = "ipython_terminal"
 
     if "VSCODE_PID" in os.environ:
         env_info["is_vscode"] = True

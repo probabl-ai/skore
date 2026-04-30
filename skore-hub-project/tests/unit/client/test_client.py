@@ -237,8 +237,7 @@ class TestHUBClient:
 
         monkeypatch.setattr("skore_hub_project.client.client.JUPYTERLITE", True)
         monkeypatch.setitem(modules, "js", Mock())
-        monkeypatch.setitem(modules, "pyodide", Mock())
-        monkeypatch.setitem(modules, "pyodide.http", Mock())
+        monkeypatch.setitem(modules, "pyodide.ffi", Mock())
         monkeypatch.setitem(modules, "pyodide.http.pyxhr", Mock())
 
         with HUBClient() as client:

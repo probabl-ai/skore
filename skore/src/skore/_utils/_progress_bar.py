@@ -2,14 +2,7 @@ from collections.abc import Iterable
 from operator import length_hint
 from typing import Any, TypeVar
 
-from rich.progress import (
-    BarColumn,
-    Progress,
-    SpinnerColumn,
-    TextColumn,
-)
-
-from skore._config import configuration
+from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn
 
 T = TypeVar("T")
 
@@ -18,6 +11,9 @@ class ProgressBar:
     """Simplified progress bar based on ``rich.Progress``."""
 
     def __init__(self, description: str, total: float | None):
+        from skore import console
+        from skore._config import configuration
+
         progress = Progress(
             SpinnerColumn(),
             TextColumn("[bold cyan]{task.description}"),
@@ -27,6 +23,7 @@ class ProgressBar:
                 pulse_style="orange1",
             ),
             TextColumn("[orange1]{task.percentage:>3.0f}%"),
+            console=console,
             expand=False,
             transient=True,
             disable=(not configuration.show_progress),

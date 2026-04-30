@@ -4,6 +4,7 @@ import copy
 import html
 import uuid
 import warnings
+from dataclasses import asdict
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -30,6 +31,7 @@ from skore._utils._measure_time import MeasureTime
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
     from skore._sklearn._diagnosis.accessor import _DiagnosisAccessor
@@ -838,7 +840,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 .to_html(index=False)
             )
         try:
-            estimator_html = self.estimator_._repr_html_()
+            estimator_html = repair_estimator_html_for_slotted_host(
+                self.estimator_._repr_html_()
+            )
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
@@ -868,7 +872,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         fragments = self._html_repr_fragments()
         container_id = f"skore-estimator-report-{uuid.uuid4().hex[:8]}"
-        help_doc_url = get_documentation_url(obj=self, method_name="help")
         report_class_name = self.__class__.__name__
         metrics_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="metrics"
@@ -880,11 +883,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         diagnosis_documentation_url = get_documentation_url(
             obj=self, accessor_name="diagnosis"
         )
+        help_ctx = asdict(self._build_help_data())
+        help_ctx["is_report"] = True
         return render_template(
             "estimator_report.html.j2",
             {
                 "container_id": container_id,
-                "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
                 "report_title": f"Report for {self.estimator_name_}",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
@@ -892,6 +896,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "data_accessor_doc_url": data_accessor_doc_url,
                 "diagnosis_documentation_url": diagnosis_documentation_url,
                 **fragments,
+                **help_ctx,
             },
         )
 

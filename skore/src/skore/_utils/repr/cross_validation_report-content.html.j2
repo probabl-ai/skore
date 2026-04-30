@@ -3,6 +3,7 @@
     {"label": "Diagnostic", "help_variant": "accessor", "help_url": diagnosis_documentation_url, "accessor_name": "diagnosis"},
     {"label": "Estimator", "help_variant": "accessor", "help_url": inspection_accessor_doc_url, "accessor_name": "inspection"},
     {"label": "Data", "help_variant": "accessor", "help_url": data_accessor_doc_url, "accessor_name": "data"},
+    {"label": "Help", "help_variant": "text", "help_text": "Browse accessors, methods, and attributes for this report (same as calling .help())."},
 ] %}
 <div class="container">
     <header class="title">{{ report_title | e }}</header>
@@ -21,16 +22,11 @@
             <div class="report-tab-panel">
                 <div class="report-section report-data"><slot name="table-report"></slot></div>
             </div>
+            <div class="report-tab-panel">
+                <div class="report-section report-help">
+                    {% include "_report_help_tree.html.j2" %}
+                </div>
+            </div>
         </div>
     </div>
-    <p class="report-hint-note" role="note">
-        Use
-        <a
-            href="{{ help_doc_url }}"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="report-hint-note-link"
-        >.help()</a>
-        for information on available functionality.
-    </p>
 </div>
