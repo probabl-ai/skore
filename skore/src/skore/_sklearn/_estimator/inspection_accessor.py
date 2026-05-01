@@ -17,6 +17,7 @@ from skore._sklearn.types import DataSource, MetricLike
 from skore._utils._accessor import (
     _check_estimator_has_coef,
     _check_estimator_has_feature_importances,
+    _check_estimator_has_method,
     _check_supported_ml_task,
 )
 from skore._utils._cache_key import make_cache_key
@@ -333,8 +334,8 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     @available_if(
         _check_supported_ml_task(supported_ml_tasks=["binary-classification"])
+    )
     @available_if(_check_estimator_has_method("predict_proba"))
-    def calibration_curve(
     def calibration_curve(
         self,
         *,
