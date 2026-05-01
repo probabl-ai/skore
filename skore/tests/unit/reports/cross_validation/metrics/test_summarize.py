@@ -17,7 +17,7 @@ def check_display_structure(
     expected_metrics,
     expected_estimator_name=None,
     expected_data_source="test",
-    expected_favorability=None,
+    expected_greater_is_better=None,
 ):
     """
     Helper function to check the structure of a MetricsSummaryDisplay.data DataFrame.
@@ -32,8 +32,8 @@ def check_display_structure(
         Expected estimator name.
     expected_data_source : str, default="test"
         Expected data source value.
-    expected_favorability : set, optional
-        Expected set of favorability indicators.
+    expected_greater_is_better : set, optional
+        Expected set of greater-is-better flags.
     """
     assert isinstance(display, MetricsSummaryDisplay)
     assert isinstance(display.data, pd.DataFrame)
@@ -41,25 +41,25 @@ def check_display_structure(
 
     assert set(data.columns) == {
         "split",
-        "metric",
+        "metric_verbose_name",
         "estimator_name",
         "data_source",
         "label",
         "average",
         "output",
         "score",
-        "favorability",
+        "greater_is_better",
     }
-    assert set(data["metric"]) == expected_metrics
+    assert set(data["metric_verbose_name"]) == expected_metrics
     assert set(data["estimator_name"]) == {expected_estimator_name}
     assert set(data["data_source"]) == {expected_data_source}
     assert set(data["split"]) == {0, 1}
     assert pd.api.types.is_numeric_dtype(data["score"])
     assert pd.api.types.is_integer_dtype(data["split"])
-    if expected_favorability is None:
-        assert set(data["favorability"]) == {"(↗︎)", "(↘︎)"}
+    if expected_greater_is_better is None:
+        assert set(data["greater_is_better"]) == {True, False}
     else:
-        assert set(data["favorability"]) == expected_favorability
+        assert set(data["greater_is_better"]) == expected_greater_is_better
 
 
 # Tests for the happy path, with different ML tasks
@@ -89,11 +89,13 @@ def test_binary_classification_forest(forest_binary_classification_data):
         expected_estimator_name="RandomForestClassifier",
     )
 
-    data = display.data.set_index(["split", "metric"]).sort_index()
+    data = display.data.set_index(["split", "metric_verbose_name"]).sort_index()
     assert len(data.loc[(0, "Precision")]) == 2
     assert len(data.loc[(0, "Recall")]) == 2
 
-    assert set(display.data.set_index("metric").loc["Precision", "label"]) == {0, 1}
+    assert set(
+        display.data.set_index("metric_verbose_name").loc["Precision", "label"]
+    ) == {0, 1}
     assert display.data["output"].isna().all()
 
 
@@ -146,7 +148,7 @@ def test_multiclass_classification_forest(forest_multiclass_classification_data)
 
     assert display.data["output"].isna().all()
 
-    data = display.data.set_index(["split", "metric"]).sort_index()
+    data = display.data.set_index(["split", "metric_verbose_name"]).sort_index()
     # 3 classes
     assert (
         set(data.loc[(0, "Precision"), "label"])
@@ -176,7 +178,7 @@ def test_multiclass_classification_svc(svc_multiclass_classification_data):
 
     assert display.data["output"].isna().all()
 
-    data = display.data.set_index(["split", "metric"]).sort_index()
+    data = display.data.set_index(["split", "metric_verbose_name"]).sort_index()
     assert len(data.loc[(0, "Precision")]) == 3
     assert len(data.loc[(0, "Recall")]) == 3
 
@@ -189,7 +191,14 @@ def test_regression(linear_regression_data):
 
     check_display_structure(
         display,
-        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={
+            "R²",
+            "RMSE",
+            "MAE",
+            "MAPE",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
         expected_estimator_name="LinearRegression",
     )
 
@@ -205,13 +214,20 @@ def test_multioutput_regression(linear_regression_multioutput_data):
 
     check_display_structure(
         display,
-        expected_metrics={"R²", "RMSE", "Fit time (s)", "Predict time (s)"},
+        expected_metrics={
+            "R²",
+            "RMSE",
+            "MAE",
+            "MAPE",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
         expected_estimator_name="LinearRegression",
     )
 
     assert display.data["label"].isna().all()
 
-    data = display.data.set_index(["split", "metric"]).sort_index()
+    data = display.data.set_index(["split", "metric_verbose_name"]).sort_index()
     assert len(data.loc[(0, "R²")]) == 2
     assert set(data.loc[(0, "R²"), "output"]) == {0, 1}
 
@@ -248,7 +264,11 @@ def test_default_multioutput_regression(linear_regression_multioutput_data):
 
     # Each metric should have 2 outputs per split
     assert (
-        len(display.data.set_index(["split", "metric"]).sort_index().loc[(0, "R²")])
+        len(
+            display.data.set_index(["split", "metric_verbose_name"])
+            .sort_index()
+            .loc[(0, "R²")]
+        )
         == 2
     )
 
@@ -263,7 +283,7 @@ def test_default_multiclass_classification(forest_multiclass_classification_data
 
     assert (
         len(
-            display.data.set_index(["split", "metric"])
+            display.data.set_index(["split", "metric_verbose_name"])
             .sort_index()
             .loc[(0, "Precision")]
         )
@@ -288,7 +308,7 @@ def test_pos_label_overwrite(metric, logistic_binary_classification_data):
     report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
     display = report.metrics.summarize(metric=metric)
 
-    data = display.data.set_index(["split", "metric"]).sort_index()
+    data = display.data.set_index(["split", "metric_verbose_name"]).sort_index()
     assert data.loc[(0, metric_display_name), "label"].to_list() == ["A", "B"]
 
     # With pos_label

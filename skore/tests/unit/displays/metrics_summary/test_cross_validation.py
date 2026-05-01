@@ -108,7 +108,7 @@ def test_flat_index_binary_classification(forest_binary_classification_data):
 
     result_multi = display.frame(aggregate=["mean", "std"], flat_index=False)
     assert isinstance(result_multi.index, pd.MultiIndex)
-    assert result_multi.index.names == ["Metric", "Label / Average"]
+    assert result_multi.index.names == ["Metric", "Label"]
 
     result_flat = display.frame(aggregate=["mean", "std"], flat_index=True)
     assert isinstance(result_flat.index, pd.Index)
@@ -144,6 +144,10 @@ def test_multioutput_with_flat_index(linear_regression_multioutput_data):
         "r²_1",
         "rmse_0",
         "rmse_1",
+        "mae_0",
+        "mae_1",
+        "mape_0",
+        "mape_1",
         "fit_time_s",
         "predict_time_s",
     ]
@@ -206,7 +210,7 @@ def test_multiclass_classification(forest_multiclass_classification_data):
     result = display.frame(aggregate=["mean", "std"])
 
     assert isinstance(result.index, pd.MultiIndex)
-    assert result.index.names == ["Metric", "Label / Average"]
+    assert result.index.names == ["Metric", "Label"]
     assert result.shape == (13, 2)
 
 
@@ -219,6 +223,6 @@ def test_with_mixed_favorability(forest_binary_classification_data):
     result = display.frame(aggregate=["mean", "std"], favorability=True)
 
     assert ("Favorability", "") in result.columns
-    assert result.index.names == ["Metric", "Label / Average"]
+    assert result.index.names == ["Metric", "Label"]
     assert result.loc[("Accuracy", ""), ("Favorability", "")] == "(↗︎)"
     assert result.loc[("Brier score", ""), ("Favorability", "")] == "(↘︎)"

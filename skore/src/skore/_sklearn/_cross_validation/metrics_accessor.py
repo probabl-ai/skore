@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import numbers
 from typing import Any, Literal
 
 import pandas as pd
 from joblib import Parallel
+from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -15,10 +18,11 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.types import Aggregate, MetricLike
+from skore._sklearn._plot.metrics.metrics_summary_display import metric_score_to_rows
+from skore._sklearn.metrics import MetricLike
+from skore._sklearn.types import Aggregate
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
-from skore._utils._metric_rows import metric_score_to_rows, rows_to_dataframe
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
@@ -89,9 +93,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             )
         )
 
-        results = [
-            result.data
-            for result in track(
+        summaries = list(
+            track(
                 parallel(
                     delayed(report.metrics.summarize)(
                         data_source=data_source,
@@ -102,26 +105,31 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 description="Compute metric for each split",
                 total=len(self._parent.estimator_reports_),
             )
-        ]
-
-        return MetricsSummaryDisplay(
-            data=(
-                pd.concat(
-                    results, axis="index", keys=range(len(results)), names=["split"]
-                )
-                .reset_index()
-                .drop(columns="level_1")
-            ),
-            report_type="cross-validation",
         )
+
+        return MetricsSummaryDisplay._concatenate(
+            summaries,
+            report_type="cross-validation",
+            extra_rows_data=[{"split": i} for i in range(len(summaries))],
+        )
+
+    def available(self) -> list[str]:
+        """List available metric names in the registry.
+
+        Returns
+        -------
+        list[str]
+            The list of available metric names.
+        """
+        return self._parent.estimator_reports_[0].metrics.available()
 
     def add(
         self,
         metric: MetricLike,
         *,
         name: str | None = None,
-        response_method: str | list[str] = "predict",
         greater_is_better: bool = True,
+        position: Literal["first", "last"] = "first",
         **kwargs: Any,
     ) -> None:
         """Add a custom metric to be included in :meth:`summarize` by default.
@@ -131,15 +139,27 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         metric : str, sklearn scorer, or callable
             The metric to add.
 
+            - If a string, it will be run through :func:`sklearn.metrics.get_scorer`.
+              Metrics that require a ``neg_`` prefix (e.g. ``"neg_mean_squared_error"``)
+              may also be passed without it (e.g. ``"mean_squared_error"``); the alias
+              is resolved automatically.
+            - If a callable, it must have the signature
+              ``(estimator, X, y_true, **kw) -> float``. It may also return a ``dict``
+              mapping class labels to floats (e.g. ``{0: 0.9, 1: 0.85}``), in which case
+              :meth:`summarize` will show one row per class label under the metric name.
+              If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
+              :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
+
         name : str, optional
             Custom name for the metric. If not provided, the name is inferred
             from the metric (e.g. the function's ``__name__``).
 
-        response_method : str or list of str, default="predict"
-            Estimator method to get predictions (only for callables).
-
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
+
+        position : {"first", "last"}, default="first"
+            Where to place the metric in default :meth:`summarize` ordering
+            for each split report. See :meth:`EstimatorReport.metrics.add`.
 
         **kwargs : Any
             Default keyword arguments passed to the score function at call
@@ -168,10 +188,21 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             report.metrics.add(
                 metric,
                 name=name,
-                response_method=response_method,
                 greater_is_better=greater_is_better,
+                position=position,
                 **kwargs,
             )
+
+    def remove(self, name: str) -> None:
+        """Remove a metric from each underlying estimator report.
+
+        Parameters
+        ----------
+        name : str
+            The name of the metric to remove.
+        """
+        for report in self._parent.estimator_reports_:
+            report.metrics.remove(name)
 
     def timings(
         self,
@@ -239,7 +270,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         reports = self._parent.estimator_reports_
         metric = reports[0]._metric_registry[metric_name]
 
-        rows: list[dict] = []
+        rows = []
         for split_idx, report in enumerate(reports):
             score = getattr(report.metrics, metric_name)(
                 data_source=data_source, **kwargs
@@ -257,8 +288,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 r["split"] = split_idx
             rows.extend(split_rows)
 
-        data = rows_to_dataframe(rows)
-        return MetricsSummaryDisplay(data=data, report_type="cross-validation")
+        return MetricsSummaryDisplay(rows=rows, report_type="cross-validation")
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(
@@ -376,11 +406,11 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.precision()
-                                LogisticRegression
-                                                mean       std
-        Metric    Label / Average
-        Precision 0                         0.93...  0.04...
-                  1                         0.94...  0.02...
+                LogisticRegression
+                              mean       std
+        Metric    Label
+        Precision 0               0.93...  0.04...
+                  1               0.94...  0.02...
         """
         return self._metric(
             "precision", data_source=data_source, average=average
@@ -455,11 +485,11 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.recall()
-                            LogisticRegression
-                                            mean       std
-        Metric Label / Average
-        Recall 0                         0.91...  0.04...
-               1                         0.96...  0.02...
+             LogisticRegression
+                           mean       std
+        Metric Label
+        Recall 0               0.91...  0.04...
+               1               0.96...  0.02...
         """
         return self._metric("recall", data_source=data_source, average=average).frame(
             aggregate=aggregate, flat_index=flat_index
@@ -763,6 +793,126 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             "rmse", data_source=data_source, multioutput=multioutput
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
+    @available_if(_check_estimator_report_has_method("metrics", "mae"))
+    def mae(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
+        aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
+    ) -> pd.DataFrame:
+        """Compute the mean absolute error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        Returns
+        -------
+        pd.DataFrame
+            The mean absolute error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=2)
+        >>> report.metrics.mae()
+                    Ridge
+                    mean       std
+        Metric
+        MAE     5...       ...
+        """
+        return self._metric(
+            "mae", data_source=data_source, multioutput=multioutput
+        ).frame(aggregate=aggregate, flat_index=flat_index)
+
+    @available_if(_check_estimator_report_has_method("metrics", "mape"))
+    def mape(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: Literal["raw_values", "uniform_average"]
+        | ArrayLike = "raw_values",
+        aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
+    ) -> pd.DataFrame:
+        """Compute the mean absolute percentage error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        Returns
+        -------
+        pd.DataFrame
+            The mean absolute percentage error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=2)
+        >>> report.metrics.mape()
+                    Ridge
+                    mean       std
+        Metric
+        MAPE      0....      ...
+        """
+        return self._metric(
+            "mape", data_source=data_source, multioutput=multioutput
+        ).frame(aggregate=aggregate, flat_index=flat_index)
+
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
@@ -972,7 +1122,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         With specific threshold for binary classification:
 
         >>> display = report.metrics.confusion_matrix()
-        >>> display.plot(threshold_value=0.7)
+        >>> display.plot(threshold_value=0.7, label=1)
         """
         child_displays = [
             report.metrics.confusion_matrix(data_source=data_source)

@@ -1,7 +1,7 @@
 [project]
 name = "skore-mlflow-project"
 dynamic = ["license-files", "readme", "version"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 license = "MIT"
 dependencies = [
@@ -58,8 +58,11 @@ addopts = [
   "--durations=25",
 ]
 xfail_strict = true
-filterwarnings = ["error"]
 log_cli_level = "info"
+filterwarnings = [
+  "error",
+  'ignore:codecs\.open\(\) is deprecated.*:DeprecationWarning:mlflow',
+]
 
 [tool.coverage.run]
 branch = true

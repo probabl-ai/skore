@@ -1,11 +1,117 @@
-from typing import Literal, cast
+from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import pandas as pd
 from matplotlib.figure import Figure
 
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn.types import Aggregate, ReportType
+from skore._sklearn.metrics import Metric
+from skore._sklearn.types import (
+    Aggregate,
+    DataSource,
+    MLTask,
+    PositiveLabel,
+    ReportType,
+)
 from skore._utils._index import flatten_multi_index
+
+
+class MetricsSummaryRow(TypedDict):
+    """A single row rendered by ``MetricsSummaryDisplay``.
+
+    Parameters
+    ----------
+    metric_verbose_name : str
+        Human-readable metric name shown in the display.
+    estimator_name : str
+        Name shown in the display.
+    data_source : {"train", "test"}
+        Dataset split used to compute the metric.
+    greater_is_better : bool or None
+        Whether higher or lower values are better.
+    score : Any
+        Scalar metric value stored in the row.
+    label : label, default=None
+        Class label for per-class classification metrics.
+    average : str, default=None
+        Averaging mode when a metric is aggregated across labels or outputs.
+    output : int, default=None
+        Output index for multioutput regression metrics.
+    split : int, optional
+        Cross-validation split index.
+    """
+
+    metric_verbose_name: str
+    estimator_name: str
+    data_source: DataSource
+    greater_is_better: bool | None
+    score: Any
+    label: PositiveLabel | None
+    average: str | None
+    output: int | None
+    split: NotRequired[int]
+
+
+def metric_score_to_rows(
+    score: float | list | dict,
+    *,
+    metric: Metric,
+    ml_task: MLTask,
+    data_source: DataSource,
+    estimator_name: str,
+    pos_label: PositiveLabel = None,
+    kwargs: dict[str, Any] | None = None,
+) -> list[MetricsSummaryRow]:
+    """Expand a metric score into display rows based on the ML task.
+
+    Parameters
+    ----------
+    score : float, dict, or list
+        The metric score.
+
+    metric : Metric
+        The metric instance (provides ``verbose_name``, ``icon``,
+        and default ``kwargs``).
+
+    ml_task : str
+        The ML task (e.g. ``"binary-classification"``).
+
+    data_source : {"test", "train"}
+        The data source to use.
+
+    estimator_name : str
+        Name shown in the display.
+
+    pos_label : label, default=None
+        Positive label for binary classification.
+
+    kwargs : dict, optional
+        Keyword arguments used for the score call. Default is ``metric.kwargs``.
+    """
+    if kwargs is None:
+        kwargs = metric.kwargs
+
+    row: MetricsSummaryRow = {
+        "metric_verbose_name": metric.verbose_name,
+        "estimator_name": estimator_name,
+        "data_source": data_source,
+        "greater_is_better": metric.greater_is_better,
+        "label": None,
+        "average": None,
+        "output": None,
+        "score": score,
+    }
+
+    if ml_task == "binary-classification" and kwargs.get("average") == "binary":
+        return [{**row, "label": kwargs.get("pos_label", pos_label)}]
+    if ml_task in ("binary-classification", "multiclass-classification"):
+        if isinstance(score, dict):
+            return [{**row, "label": label, "score": score[label]} for label in score]
+        return [{**row, "average": kwargs.get("average")}]
+    if ml_task == "multioutput-regression":
+        if isinstance(score, list):
+            return [{**row, "output": idx, "score": s} for idx, s in enumerate(score)]
+        return [{**row, "average": kwargs.get("multioutput")}]
+    return [row]
 
 
 class MetricsSummaryDisplay(DisplayMixin):
@@ -16,8 +122,8 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     Parameters
     ----------
-    data : pandas.DataFrame
-        The data to display.
+    rows : list of MetricsSummaryRow
+        The rows to display.
 
     report_type : {"estimator", "comparison-estimator", "cross-validation", \
             "comparison-cross-validation"}
@@ -26,11 +132,41 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     def __init__(
         self,
-        data: pd.DataFrame,
+        rows: list[MetricsSummaryRow],
         report_type: ReportType,
     ):
-        self.data = data
+        self.rows = rows
         self.report_type = report_type
+
+    @property
+    def data(self):
+        """Return rows as a DataFrame, preserving nullable dtypes."""
+        data = pd.DataFrame(self.rows)
+
+        if any(isinstance(r["label"], bool) for r in self.rows):
+            data["label"] = data["label"].astype(pd.BooleanDtype())
+        elif any(isinstance(r["label"], int) for r in self.rows):
+            data["label"] = data["label"].astype(pd.Int64Dtype())
+
+        if any(isinstance(r["output"], int) for r in self.rows):
+            data["output"] = data["output"].astype(pd.Int64Dtype())
+
+        return data
+
+    @staticmethod
+    def _concatenate(
+        child_displays: list["MetricsSummaryDisplay"],
+        *,
+        report_type: ReportType,
+        extra_rows_data: list[dict[str, Any]],
+    ) -> "MetricsSummaryDisplay":
+        rows = []
+        for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
+            rows.extend(
+                [cast(MetricsSummaryRow, row | extra_data) for row in display.rows]
+            )
+
+        return MetricsSummaryDisplay(rows, report_type=report_type)
 
     @staticmethod
     def _flatten_index(df: pd.DataFrame) -> pd.DataFrame:
@@ -57,33 +193,33 @@ class MetricsSummaryDisplay(DisplayMixin):
         df = df.dropna(axis="columns", how="all")
 
         for col in df.columns.intersection(["label", "output", "average"]):
-            df[col] = df[col].astype("str").replace("<NA>", "").fillna("")
+            df[col] = df[col].astype("string").fillna("")
 
         estimator_name = df.pop("estimator_name").iloc[0]
         index = df.columns.intersection(
-            ["metric", "verbose_name", "label", "output", "average"]
+            ["metric_verbose_name", "label", "output", "average"]
         ).to_list()
         df = df.set_index(index)
 
-        if not favorability:
-            df = df.drop(columns="favorability")
-        else:
-            # Put favorability at the end
-            df = df[
-                [col for col in df.columns if col != "favorability"] + ["favorability"]
-            ]
-
         # Rename columns as well as index names
         new_columns = {
-            "metric": "Metric",
-            "verbose_name": "Metric",
-            "label": "Label / Average",
+            "metric_verbose_name": "Metric",
+            "label": "Label",
             "output": "Output",
             "average": "Average",
-            "favorability": "Favorability",
             "score": estimator_name,
         }
         df = df.rename(columns=new_columns)
+
+        if favorability:
+            df["Favorability"] = (
+                df["greater_is_better"]
+                .map({True: "(↗︎)", False: "(↘︎)"})
+                .fillna("")
+                .astype("string")
+            )
+        df = df.drop(columns="greater_is_better")
+
         df.index = df.index.set_names(
             [new_columns.get(name, name) for name in df.index.names]
         )
@@ -103,8 +239,8 @@ class MetricsSummaryDisplay(DisplayMixin):
             ]
 
             if favorability:
-                df_pivoted["Favorability"] = df[df["data_source"] == "test"][
-                    "Favorability"
+                df_pivoted["Favorability"] = df.loc[
+                    df["data_source"] == "test", "Favorability"
                 ]
 
             df = df_pivoted.copy()

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urljoin
 
 from httpx import (
@@ -14,7 +14,7 @@ from skore_hub_project.authentication.login import login
 from skore_hub_project.authentication.uri import URI
 from skore_hub_project.client.client import Client, HUBClient, __semver
 
-DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
+DATETIME_MAX = datetime.max.replace(tzinfo=UTC).isoformat()
 
 LOGIN_URL = "identity/oauth/device/login"
 PROBE_URL = "identity/oauth/device/code-probe"
@@ -230,3 +230,15 @@ class TestHUBClient:
             respx_mock.calls.last.request.headers["X-Skore-Client"]
             == "skore-hub-project/1.0.0"
         )
+
+    def test_jupyterlite(self, monkeypatch):
+        from sys import modules
+        from unittest.mock import Mock
+
+        monkeypatch.setattr("skore_hub_project.client.client.JUPYTERLITE", True)
+        monkeypatch.setitem(modules, "js", Mock())
+        monkeypatch.setitem(modules, "pyodide.ffi", Mock())
+        monkeypatch.setitem(modules, "pyodide.http.pyxhr", Mock())
+
+        with HUBClient() as client:
+            assert client._transport.__class__.__name__ == "JupyterliteTransport"

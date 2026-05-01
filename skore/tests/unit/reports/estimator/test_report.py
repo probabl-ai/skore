@@ -393,7 +393,8 @@ def _assert_estimator_report_repr_html(
     assert "skore-estimator-report-" in html_out
     assert expected_estimator_name in html_out
     assert "skoreInitEstimatorReport" in html_out
-    assert "report-hint-note" in html_out
+    assert 'class="tree"' in html_out
+    assert "EstimatorReport" in html_out
     assert "docs.skore.probabl.ai" in html_out
     assert "report-tabset" in html_out
     assert "Report for" in html_out
@@ -536,10 +537,13 @@ def test_from_state_bypasses_init_and_restores_state(
         estimator,
         X_test=X_test,
         y_test=y_test,
+        pos_label=1,
     )
     expected_accuracy = report.metrics.accuracy()
     report.cache_predictions()
+    report.metrics.add("f1", name="F1")
     state = report.get_state()
+    assert state["metadata"]["report_type"] == report._report_type
 
     def _unexpected_init(self, *args, **kwargs):
         raise AssertionError("__init__ should not be called by from_state")
@@ -557,8 +561,10 @@ def test_from_state_bypasses_init_and_restores_state(
     assert restored._cache == report._cache
     assert restored.metrics.accuracy() == expected_accuracy
 
-    # check new metrics can be computed:
-    report.metrics.roc_auc()
+    # check new metrics can be computed, including custom metrics:
+    restored.metrics.roc_auc()
+    df = restored.metrics.summarize().frame()
+    assert "F1" in df.index
 
 
 def test_from_state_rejects_unknown_version(logistic_binary_classification_with_test):

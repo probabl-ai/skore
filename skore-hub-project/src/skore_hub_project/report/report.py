@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 from abc import ABC
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import cached_property, partial
+from operator import methodcaller
 from typing import ClassVar, Generic, TypeVar, cast
 
+from joblib import Parallel, delayed
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
+from skore import THREADABLE, console
 
-from skore_hub_project import console
 from skore_hub_project.artifact.media.media import Media
 from skore_hub_project.artifact.pickle import Pickle
 from skore_hub_project.metric.metric import Metric
@@ -29,6 +30,7 @@ SkinnedProgress = partial(
     TimeElapsedColumn(),
     console=console,
     transient=True,
+    auto_refresh=THREADABLE,
 )
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
@@ -109,22 +111,17 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         self.report.cache_predictions()
 
         metrics = [metric_cls(report=self.report) for metric_cls in self.METRICS]
+        tasks = list(map(delayed(methodcaller("compute")), metrics))
 
-        with SkinnedProgress() as progress, ThreadPoolExecutor() as pool:
-            tasks = [
-                pool.submit(lambda metric: metric.compute(), metric)
-                for metric in metrics
-            ]
-
-            for task in progress.track(
-                as_completed(tasks),
+        with SkinnedProgress() as progress:
+            for _ in progress.track(
+                Parallel(backend="threading")(tasks),
                 description=(
                     f"Computing {self.report.__class__.__name__} "
                     f"#{self.report._hash} metrics"
                 ),
                 total=len(tasks),
             ):
-                task.result()
                 progress.refresh()
 
         return [metric for metric in metrics if metric.value is not None]

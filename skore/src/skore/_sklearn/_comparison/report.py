@@ -3,6 +3,7 @@ from __future__ import annotations
 import uuid
 from collections import Counter
 from collections.abc import Iterable
+from dataclasses import asdict
 from typing import TYPE_CHECKING, Literal, cast
 
 import joblib
@@ -13,6 +14,7 @@ from numpy.typing import ArrayLike
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
+from skore._sklearn._diagnostic.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
@@ -374,8 +376,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self,
         *,
         report_key: str,
-        X_test: ArrayLike,
-        y_test: ArrayLike,
+        X_test: ArrayLike | None = None,
+        y_test: ArrayLike | None = None,
+        test_data: dict | None = None,
+        concatenate_train_and_test: bool = False,
     ) -> EstimatorReport:
         """Create an estimator report from one of the reports in the comparison.
 
@@ -391,11 +395,31 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             the :attr:`reports_` attribute of the :class:`~skore.ComparisonReport`.
             List the available keys with `reports_.keys()`.
 
-        X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
-            Testing data. It should have the same structure as the training data.
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+            Testing data when the chosen report uses tabular scikit-learn ``X``/``y``.
+            Must be provided together with ``y_test`` unless only ``test_data`` is
+            used for a skrub-backed report.
 
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
-            Testing target.
+            Testing target for tabular scikit-learn data.
+
+        test_data : dict or None
+            When the chosen report is skrub-backed, bindings for variables contained in
+            the DataOp (e.g. ``{"X": X_df, ...}``) for the held-out evaluation set.
+            Required in that case; ``X_test`` and ``y_test`` must then be omitted.
+
+        concatenate_train_and_test : bool, default=False
+            When the chosen entry is an :class:`~skore.EstimatorReport` backed by
+            tabular scikit-learn data, controls whether to concatenate that report's
+            train and test splits into a single training set before fitting on the
+            held-out ``X_test`` / ``y_test`` you provide. If ``False`` (default), the
+            new report is fit on the report's original ``X_train``.
+
+            This option must be ``False`` if
+
+            - ``report_key`` refers to a :class:`~skore.CrossValidationReport` or
+            - the estimator is a skrub :class:`~skrub.SkrubLearner` or
+            - the estimator was built from a skrub :class:`~skrub.DataOp`.
 
         Examples
         --------
@@ -433,30 +457,77 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
 
         if isinstance(self.reports_[report_key], CrossValidationReport):
+            if concatenate_train_and_test:
+                raise ValueError(
+                    "`concatenate_train_and_test=True` is not supported when "
+                    "`report_key` refers to a CrossValidationReport. "
+                    "Set `concatenate_train_and_test=False` or select an "
+                    "EstimatorReport entry."
+                )
             return cast(
                 CrossValidationReport, self.reports_[report_key]
-            ).create_estimator_report(X_test=X_test, y_test=y_test)
+            ).create_estimator_report(X_test=X_test, y_test=y_test, test_data=test_data)
 
         estimator_report = cast(EstimatorReport, self.reports_[report_key])
-        X_concat = (
-            pd.concat([estimator_report.X_train, estimator_report.X_test])
-            if isinstance(estimator_report.X_train, pd.DataFrame)
-            else np.concatenate([estimator_report.X_train, estimator_report.X_test])
-        )
-        y_concat = (
-            pd.concat([estimator_report.y_train, estimator_report.y_test])
-            if isinstance(estimator_report.y_train, (pd.DataFrame, pd.Series))
-            else np.concatenate([estimator_report.y_train, estimator_report.y_test])
-        )
-        report = EstimatorReport(
-            estimator_report.estimator,
-            X_train=X_concat,
-            y_train=y_concat,
+
+        if estimator_report._initialized_with_data_op:
+            if test_data is None:
+                raise ValueError(
+                    "test_data is required when creating an estimator report from a "
+                    "skrub-backed EstimatorReport."
+                )
+            if X_test is not None or y_test is not None:
+                raise ValueError(
+                    "X_test and y_test must be omitted when the source report is "
+                    "skrub-backed; provide test_data instead."
+                )
+            if concatenate_train_and_test:
+                raise ValueError(
+                    "Cannot concatenate train and test data when using a skrub "
+                    "estimator. Set `concatenate_train_and_test=False` instead."
+                )
+            return EstimatorReport(
+                estimator_report.estimator_,
+                fit=False,
+                train_data=estimator_report.train_data,
+                test_data=test_data,
+                pos_label=self._pos_label,
+            )
+
+        if X_test is None or y_test is None:
+            raise ValueError(
+                "X_test and y_test are required when the source report uses "
+                "tabular scikit-learn data."
+            )
+        if test_data is not None:
+            raise ValueError(
+                "test_data must be omitted when the source report uses tabular "
+                "scikit-learn data."
+            )
+
+        if concatenate_train_and_test:
+            X_train = (
+                pd.concat([estimator_report.X_train, estimator_report.X_test])
+                if isinstance(estimator_report.X_train, pd.DataFrame)
+                else np.concatenate([estimator_report.X_train, estimator_report.X_test])
+            )
+            y_train = (
+                pd.concat([estimator_report.y_train, estimator_report.y_test])
+                if isinstance(estimator_report.y_train, (pd.DataFrame, pd.Series))
+                else np.concatenate([estimator_report.y_train, estimator_report.y_test])
+            )
+        else:
+            X_train, y_train = estimator_report.X_train, estimator_report.y_train
+
+        return EstimatorReport(
+            estimator_report._raw_estimator,
+            fit=True,
+            X_train=X_train,
+            y_train=y_train,
             X_test=X_test,
             y_test=y_test,
             pos_label=self._pos_label,
         )
-        return report
 
     @property
     def pos_label(self) -> PositiveLabel | None:
@@ -466,24 +537,35 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     # Methods related to the help and repr
     ####################################################################################
 
-    def _run_checks(self) -> tuple[dict[str, dict], set[str]]:
-        comparison_issues: dict[str, dict] = {}
-        all_checked_codes: set[str] = set()
+    def _aggregate_checks(
+        self, ignored_codes: set[CheckCode]
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+        comparison_results: dict[CheckCode, dict] = {}
+        reports_by_code: dict[CheckCode, list[str]] = {}
+        all_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
-            report_issues, checked_codes = report._get_issues()
-            all_checked_codes |= checked_codes
-            for code, issue in report_issues.items():
-                if code in comparison_issues:
-                    comparison_issues[code]["explanation"] = (
-                        f"[{report_name}] " + comparison_issues[code]["explanation"]
-                    )
-                else:
-                    comparison_issues[code] = {
-                        "title": issue["title"],
-                        "docs_anchor": issue["docs_anchor"],
-                        "explanation": f"[{report_name}] {issue['explanation']}",
-                    }
-        return comparison_issues, all_checked_codes
+            report.add_checks(self._checks_registry)
+            report_results, applicable_codes = report._get_results(ignored_codes)
+            all_applicable_codes |= applicable_codes
+
+            for code, result in report_results.items():
+                comparison_results.setdefault(
+                    code,
+                    {
+                        "title": result["title"],
+                        "docs_url": result.get("docs_url"),
+                        "explanation": None,
+                        "severity": result.get("severity"),
+                    },
+                )
+                if result["explanation"] is not None:
+                    reports_by_code.setdefault(code, []).append(report_name)
+
+        for code, reports in reports_by_code.items():
+            comparison_results[code]["explanation"] = (
+                f"Detected in: {', '.join(f'[{r}]' for r in reports)}."
+            )
+        return comparison_results, all_applicable_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"
@@ -524,7 +606,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
 
         container_id = f"skore-comparison-report-{uuid.uuid4().hex[:8]}"
-        help_doc_url = get_documentation_url(obj=self, method_name="help")
         report_class_name = self.__class__.__name__
         metrics_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="metrics"
@@ -535,18 +616,20 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         diagnose_documentation_url = get_documentation_url(
             obj=self, method_name="diagnose"
         )
+        help_ctx = asdict(self._build_help_data())
+        help_ctx["is_report"] = True
         return render_template(
             "comparison_report.html.j2",
             {
                 "container_id": container_id,
                 "metrics_summary": metrics_html,
                 "comparison_reports": comparison_reports,
-                "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
                 "report_title": "Model comparison",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "diagnose_documentation_url": diagnose_documentation_url,
+                **help_ctx,
             },
         )
 

@@ -250,7 +250,8 @@ def _assert_cross_validation_report_repr_html(
     assert "skore-cross-validation-report-" in html_out
     assert expected_estimator_name in html_out
     assert "skoreInitEstimatorReport" in html_out
-    assert "report-hint-note" in html_out
+    assert 'class="tree"' in html_out
+    assert "CrossValidationReport" in html_out
     assert "docs.skore.probabl.ai" in html_out
     assert "report-tabset" in html_out
     assert "Report for" in html_out
@@ -309,6 +310,20 @@ def test_report_with_data_op():
     assert list(report.metrics.accuracy(aggregate="mean").columns) == [
         ("SkrubLearner", "mean")
     ]
+
+
+def test_create_estimator_report_with_data_op():
+    """Skrub/DataOp CV reports build a skrub EstimatorReport via
+    train_data/test_data."""
+    X_a, y_a = make_classification(n_samples=40, random_state=0)
+    data_op = skrub.X(X_a).skb.apply(LogisticRegression(random_state=0), y=skrub.y(y_a))
+    split = data_op.skb.train_test_split(random_state=0)
+    report = CrossValidationReport(data_op, splitter=2)
+    final_report = report.create_estimator_report(test_data=split["test"])
+    assert isinstance(final_report, EstimatorReport)
+    accuracy = final_report.metrics.accuracy()
+    assert isinstance(accuracy, (float, np.floating))
+    assert 0.0 <= float(accuracy) <= 1.0
 
 
 def test_from_state_bypasses_init_and_restores_state(

@@ -84,7 +84,7 @@ report = skore.EstimatorReport(pred, pos_label=1)
 report.metrics.roc_auc()
 
 # %%
-report.metrics.precision_recall().plot()
+_ = report.metrics.precision_recall().plot()
 
 # %%
 # Note that the preprocessing operations are captured in the skrub DataOp,

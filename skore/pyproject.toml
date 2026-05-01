@@ -6,7 +6,7 @@ Skore's open-source Python library accelerates ML model development with automat
 smart methodological guidance, and comprehensive cross-validation analysis.\
 """
 dynamic = ["license-files", "readme", "version"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
 license = "MIT"
 classifiers = [

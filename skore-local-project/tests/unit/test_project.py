@@ -1,6 +1,8 @@
 from io import BytesIO
+from pathlib import Path
 
 import joblib
+import pytest
 from pandas import DataFrame
 from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
@@ -165,8 +167,9 @@ class TestProject:
         assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
         assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
-    def test_init_with_workspace(self, tmp_path):
-        project = Project("<project>", workspace=tmp_path)
+    @pytest.mark.parametrize("type", [str, Path])
+    def test_init_with_workspace(self, tmp_path, type):
+        project = Project("<project>", workspace=type(tmp_path))
 
         assert project.workspace == tmp_path
         assert project.name == "<project>"

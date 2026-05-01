@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import logging
+import re
 import warnings
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -72,7 +74,7 @@ def format_date(start_time: int | None) -> str:
     if start_time is None:
         return ""
 
-    return datetime.fromtimestamp(start_time / 1_000, tz=timezone.utc).isoformat()
+    return datetime.fromtimestamp(start_time / 1_000, tz=UTC).isoformat()
 
 
 class Project:
@@ -312,6 +314,11 @@ def _log_model(model: BaseEstimator, input_example: Any, **kwargs: Any) -> None:
             # MLflow 2.20->3.0 can trigger those from pydantic internals.
             _filterwarnings(Warning, ".*@model_validator.*deprecated.*"),
             _filterwarnings(Warning, r".*`min_items` is deprecated.*"),
+            # MLflow logs this via _logger.warning(), not warnings.warn().
+            _suppress_log_warning(
+                "mlflow.sklearn",
+                r"Saving scikit-learn models in the pickle.*",
+            ),
         ):
             mlflow.sklearn.log_model(
                 model,
@@ -336,6 +343,24 @@ def _filterwarnings(category: type[Warning], msg: str) -> Iterator[None]:
             category=category,
         )
         yield
+
+
+@contextmanager
+def _suppress_log_warning(logger_name: str, msg: str) -> Iterator[None]:
+    """Drop log records on ``logger_name`` whose message matches regex ``msg``."""
+    pattern = re.compile(msg)
+
+    class _DropMatchedLog(logging.Filter):
+        def filter(self, record: logging.LogRecord) -> bool:
+            return pattern.search(record.getMessage()) is None
+
+    filt = _DropMatchedLog()
+    logger = logging.getLogger(logger_name)
+    logger.addFilter(filt)
+    try:
+        yield
+    finally:
+        logger.removeFilter(filt)
 
 
 def _log_artifact(artifact: Artifact) -> None:

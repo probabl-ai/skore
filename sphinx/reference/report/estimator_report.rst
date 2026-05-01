@@ -21,6 +21,7 @@ report are accessible through accessors.
 
    EstimatorReport.help
    EstimatorReport.diagnose
+   EstimatorReport.add_checks
    EstimatorReport.cache_predictions
    EstimatorReport.clear_cache
    EstimatorReport.get_predictions

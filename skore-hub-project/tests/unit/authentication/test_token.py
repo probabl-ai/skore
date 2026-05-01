@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from urllib.parse import urljoin
 
 from httpx import HTTPError, Response, TimeoutException
@@ -14,8 +14,8 @@ from skore_hub_project.authentication.token import (
 )
 from skore_hub_project.authentication.uri import URI
 
-DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
-DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
+DATETIME_MIN = datetime.min.replace(tzinfo=UTC).isoformat()
+DATETIME_MAX = datetime.max.replace(tzinfo=UTC).isoformat()
 
 REFRESH_URL = "identity/oauth/token/refresh"
 LOGIN_URL = "identity/oauth/device/login"

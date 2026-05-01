@@ -108,7 +108,9 @@ def test_multiclass_classification(
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
-@pytest.mark.parametrize("metric, nb_stats", [("r2", 1), ("rmse", 1)])
+@pytest.mark.parametrize(
+    "metric, nb_stats", [("r2", 1), ("rmse", 1), ("mae", 1), ("mape", 1)]
+)
 def test_regression(linear_regression_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = linear_regression_data, 2
@@ -116,12 +118,28 @@ def test_regression(linear_regression_data, metric, nb_stats):
     _check_results_single_metric(report, metric, cv, nb_stats)
 
 
-@pytest.mark.parametrize("metric, nb_stats", [("r2", 2), ("rmse", 2)])
+@pytest.mark.parametrize(
+    "metric, nb_stats", [("r2", 2), ("rmse", 2), ("mae", 2), ("mape", 2)]
+)
 def test_regression_multioutput(linear_regression_multioutput_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
     (estimator, X, y), cv = linear_regression_multioutput_data, 2
     report = CrossValidationReport(estimator, X, y, splitter=cv)
     _check_results_single_metric(report, metric, cv, nb_stats)
+
+
+@pytest.mark.parametrize("metric", ["mae", "mape"])
+def test_regression_multioutput_array_weights(
+    linear_regression_multioutput_data, metric
+):
+    """Check that mae and mape accept an array of weights for multioutput."""
+    (estimator, X, y), cv = linear_regression_multioutput_data, 2
+    report = CrossValidationReport(estimator, X, y, splitter=cv)
+    weights = np.array([0.3, 0.7])
+    result = getattr(report.metrics, metric)(multioutput=weights)
+    assert isinstance(result, pd.DataFrame)
+    # weighted average produces a single scalar per split, so 1 row
+    assert result.shape[0] == 1
 
 
 def test_brier_score_requires_probabilities():
@@ -149,12 +167,12 @@ def test_precision_recall_pos_label_overwrite(
 
     report = CrossValidationReport(classifier, X, y)
     result_both_labels = getattr(report.metrics, metric)().reset_index()
-    assert result_both_labels["Label / Average"].to_list() == ["A", "B"]
-    result_both_labels = result_both_labels.set_index(["Metric", "Label / Average"])
+    assert result_both_labels["Label"].to_list() == ["A", "B"]
+    result_both_labels = result_both_labels.set_index(["Metric", "Label"])
 
     report = CrossValidationReport(classifier, X, y, pos_label="B")
     result = getattr(report.metrics, metric)().reset_index()
-    assert "Label / Average" not in result.columns
+    assert "Label" not in result.columns
     result = result.set_index("Metric")
     assert (
         result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
@@ -165,7 +183,7 @@ def test_precision_recall_pos_label_overwrite(
 
     report = CrossValidationReport(classifier, X, y, pos_label="A")
     result = getattr(report.metrics, metric)().reset_index()
-    assert "Label / Average" not in result.columns
+    assert "Label" not in result.columns
     result = result.set_index("Metric")
     assert (
         result.loc[metric.capitalize(), (report.estimator_name_, "mean")]

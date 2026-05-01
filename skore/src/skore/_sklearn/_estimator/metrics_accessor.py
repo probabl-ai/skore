@@ -1,7 +1,8 @@
+from __future__ import annotations
+
 from collections.abc import Iterable
 from typing import Any, Literal, cast
 
-import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
@@ -15,6 +16,7 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
+from skore._sklearn._plot.metrics.metrics_summary_display import metric_score_to_rows
 from skore._sklearn.metrics import (
     BUILTIN_METRICS,
     R2,
@@ -22,17 +24,20 @@ from skore._sklearn.metrics import (
     Brier,
     FitTime,
     LogLoss,
+    Mae,
+    Mape,
     Metric,
+    MetricLike,
+    MissingKwargsError,
     Precision,
     PredictTime,
     Recall,
     Rmse,
     RocAuc,
 )
-from skore._sklearn.types import DataSource, MetricLike, PositiveLabel
+from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
-from skore._utils._metric_rows import metric_score_to_rows, rows_to_dataframe
 
 
 class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -124,19 +129,17 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             train_summary = self.summarize(data_source="train", metric=metric)
             test_summary = self.summarize(data_source="test", metric=metric)
 
-            combined = pd.concat(
-                [train_summary.data, test_summary.data], ignore_index=True
-            )
-            return MetricsSummaryDisplay(data=combined, report_type="estimator")
+            combined = train_summary.rows + test_summary.rows
+            return MetricsSummaryDisplay(rows=combined, report_type="estimator")
 
         registry = self._parent._metric_registry
-        parsed_metrics: list[Metric]
         if isinstance(metric, str):
             parsed_metrics = [registry[metric]]
         elif isinstance(metric, Iterable) and metric:
             parsed_metrics = [registry[m] for m in metric]
         else:
             parsed_metrics = list(registry.values())
+        parsed_metrics = cast(list[Metric], parsed_metrics)
 
         rows = []
         for parsed_metric in parsed_metrics:
@@ -156,8 +159,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 )
             )
 
-        data = rows_to_dataframe(rows)
-        return MetricsSummaryDisplay(data=data, report_type="estimator")
+        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
 
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
@@ -173,16 +175,25 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             pos_label=self._parent.pos_label,
             kwargs=kwargs or None,
         )
-        data = rows_to_dataframe(rows)
-        return MetricsSummaryDisplay(data=data, report_type="estimator")
+        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+
+    def available(self) -> list[str]:
+        """List available metric names in the registry.
+
+        Returns
+        -------
+        list[str]
+            The list of available metric names.
+        """
+        return list(self._parent._metric_registry)
 
     def add(
         self,
         metric: MetricLike,
         *,
         name: str | None = None,
-        response_method: str | list[str] = "predict",
         greater_is_better: bool = True,
+        position: Literal["first", "last"] = "first",
         **kwargs: Any,
     ) -> None:
         """Add a custom metric to be included in :meth:`summarize` by default.
@@ -197,19 +208,23 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
               may also be passed without it (e.g. ``"mean_squared_error"``); the alias
               is resolved automatically.
             - If a callable, it must have the signature
-              ``(y_true, y_pred, **kw) -> float``. It may also return a ``dict`` mapping
-              class labels to floats (e.g. ``{0: 0.9, 1: 0.85}``), in which case
+              ``(estimator, X, y_true, **kw) -> float``. It may also return a ``dict``
+              mapping class labels to floats (e.g. ``{0: 0.9, 1: 0.85}``), in which case
               :meth:`summarize` will show one row per class label under the metric name.
+              If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
+              :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
 
         name : str, optional
             Custom name for the metric. If not provided, the name is inferred
             from the metric (e.g. the function's ``__name__``).
 
-        response_method : str or list of str, default="predict"
-            Estimator method to get predictions (only for callables).
-
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
+
+        position : {"first", "last"}, default="first"
+            Where to place the metric in default :meth:`summarize` ordering.
+            ``"first"`` inserts at the front; repeated ``"first"`` adds stack
+            newest-first. ``"last"`` appends at the end.
 
         **kwargs : Any
             Default keyword arguments passed to the score function at call
@@ -233,15 +248,31 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                                            ...
         Mean Absolute Error                ...
         """
-        self._parent._metric_registry.add(
-            Metric.new(
-                metric,
-                name=name,
-                response_method=response_method,
-                greater_is_better=greater_is_better,
-                kwargs=kwargs,
+        try:
+            self._parent._metric_registry.add(
+                Metric.new(
+                    metric,
+                    name=name,
+                    greater_is_better=greater_is_better,
+                    kwargs=kwargs,
+                ),
+                position=position,
             )
-        )
+        except MissingKwargsError as error:
+            args_msg = ", ".join(f"{kwarg}=..." for kwarg in error.missing_kwargs)
+            raise ValueError(
+                f"{error.msg} Pass those kwargs to add: add({error.metric}, {args_msg})"
+            ) from error
+
+    def remove(self, name: str) -> None:
+        """Remove a metric from the registry.
+
+        Parameters
+        ----------
+        name : str
+            The name of the metric to remove.
+        """
+        self._parent._metric_registry.remove(name)
 
     def fit_time(self, cast: bool = True) -> float | None:
         """Get time to fit the estimator.
@@ -705,6 +736,102 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
+    def mae(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
+    ) -> float | list:
+        """Compute the mean absolute error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        Returns
+        -------
+        float or list of ``n_outputs``
+            The mean absolute error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
+        >>> report.metrics.mae()
+        46.5...
+        """
+        return Mae()(
+            report=self._parent, data_source=data_source, multioutput=multioutput
+        )
+
+    def mape(
+        self,
+        *,
+        data_source: DataSource = "test",
+        multioutput: (
+            Literal["raw_values", "uniform_average"] | ArrayLike
+        ) = "raw_values",
+    ) -> float | list:
+        """Compute the mean absolute percentage error.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
+                (n_outputs,), default="raw_values"
+            Defines aggregating of multiple output values. Array-like value defines
+            weights used to average errors. The other possible values are:
+
+            - "raw_values": Returns a full set of errors in case of multioutput input.
+            - "uniform_average": Errors of all outputs are averaged with uniform weight.
+
+            By default, no averaging is done.
+
+        Returns
+        -------
+        float or list of ``n_outputs``
+            The mean absolute percentage error.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
+        >>> report.metrics.mape()
+        0.3...
+        """
+        return Mape()(
+            report=self._parent, data_source=data_source, multioutput=multioutput
+        )
+
     ####################################################################################
     # Methods related to the help tree
     ####################################################################################
@@ -1023,28 +1150,32 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         With specific threshold for binary classification:
 
         >>> display = report.metrics.confusion_matrix()
-        >>> display.plot(threshold_value=0.7)
+        >>> display.plot(threshold_value=0.7, label=1)
         """
         if data_source == "both":
             raise ValueError(
                 "data_source='both' is not supported for confusion_matrix."
             )
 
-        response_method: str | list[str] | tuple[str, ...]
-        if self._parent._ml_task == "binary-classification":
-            response_method = ("predict_proba", "decision_function")
+        if hasattr(self._parent._estimator, "predict_proba") or hasattr(
+            self._parent._estimator, "decision_function"
+        ):
+            y_scores = self._parent._get_predictions(
+                data_source=data_source,
+                response_method=("predict_proba", "decision_function"),
+            )
         else:
-            response_method = "predict"
+            y_scores = None
 
-        display_kwargs = {
-            "response_method": response_method,
-            "pos_label": self._parent.pos_label,
+        display_kwargs: dict = {
+            "report_pos_label": self._parent.pos_label,
+            "y_scores": y_scores,
         }
         display = cast(
             ConfusionMatrixDisplay,
             self._get_display(
                 data_source=data_source,
-                response_method=response_method,
+                response_method="predict",
                 display_class=ConfusionMatrixDisplay,
                 display_kwargs=display_kwargs,
             ),
