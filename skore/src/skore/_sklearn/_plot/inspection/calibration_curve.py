@@ -63,7 +63,12 @@ class CalibrationDisplay(DisplayMixin):
     9               0.941637               0.940048        test      1
     """
 
-    _default_line_kwargs = {"marker": "s", "linestyle": "-", "color": "blue"}
+    _default_line_kwargs = {
+        "marker": "s",
+        "linestyle": "-",
+        "color": "blue",
+        "height": 6,
+    }
     _default_ax_set_kwargs = {
         "xlabel": "Mean predicted probability",
         "ylabel": "Fraction of positives",
@@ -99,6 +104,17 @@ class CalibrationDisplay(DisplayMixin):
         Returns
         -------
         DataFrame
+        The returned frame always contains:
+        - `predicted_probability`
+        - `fraction_of_positives`
+        - `data_source`
+
+        It also contains `label` when `label=None` (one-vs-rest view).
+        When a specific label is selected, the `label` column is dropped from
+        the output to provide a single-curve table.
+
+        Depending on the report type, `estimator` and/or `split` metadata may
+        be removed from the returned frame.
         """
         label = _check_label(self.labels, label, self.report_pos_label)
 
@@ -221,7 +237,7 @@ class CalibrationDisplay(DisplayMixin):
         if "label" in frame.columns:
             # Multiple classes: let seaborn handle colours via hue
             lineplot_kwargs = {k: v for k, v in lineplot_kwargs.items() if k != "color"}
-            facet = sns.lineplot(
+            facet = sns.relplot(
                 data=frame,
                 x="predicted_probability",
                 y="fraction_of_positives",
@@ -229,7 +245,7 @@ class CalibrationDisplay(DisplayMixin):
                 **lineplot_kwargs,
             )
         else:
-            facet = sns.lineplot(
+            facet = sns.relplot(
                 data=frame,
                 x="predicted_probability",
                 y="fraction_of_positives",
@@ -239,7 +255,7 @@ class CalibrationDisplay(DisplayMixin):
             )
 
         figure = facet.figure
-        ax = facet.axes
+        ax = facet.ax
         ref_line_label = "Perfectly calibrated"
         ax.plot([0, 1], [0, 1], "k:", label=ref_line_label)
 
