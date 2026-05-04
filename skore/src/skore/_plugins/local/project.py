@@ -77,9 +77,9 @@ class Project:
     Its constructor initializes a local project by creating a new project or by
     loading an existing one from a ``workspace``.
 
-    The class main methods are :func:`~skore_local_project.Project.put`,
-    :func:`~skore_local_project.reports.metadata` and
-    :func:`~skore_local_project.reports.get`, respectively to insert a key-report pair
+    The class main methods are :func:`~skore._plugins.local.Project.put`,
+    :func:`~skore._plugins.local.Project.summarize` and
+    :func:`~skore._plugins.local.Project.get`, respectively to insert a key-report pair
     into the Project, to obtain the reports metadata and to get a specific report.
 
     Attributes

@@ -83,9 +83,12 @@ dev = [
   "nbformat",
   "ipykernel",
 ]
-local = ["skore-local-project>=0.0.4"]
+local = ["diskcache", "platformdirs"]
 hub = ["skore-hub-project>=0.0.19"]
 mlflow = ["skore-mlflow-project>=0.0.2"]
+
+[project.entry-points."skore.plugins.project"]
+local = "skore._plugins.local:Project"
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -123,6 +126,7 @@ addopts = [
   "--durations=25",
 ]
 xfail_strict = true
+filterwarnings = ["error"]  # ?!
 log_cli_level = "info"
 
 [tool.coverage.run]
@@ -167,10 +171,20 @@ convention = "numpy"
 
 [tool.mypy]
 exclude = ["src/skore/_externals/", "hatch/", "tests/"]
+strict = false
+
+[[tool.mypy.overrides]]
+follow_untyped_imports = true
+module = ["skore.*"]
+
+[[tool.mypy.overrides]]
+module = ["skore._plugins", "skore._plugins.*"]
+strict = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
+  "diskcache.*",
   "ipywidgets.*",
   "jinja2.*",
   "joblib.*",

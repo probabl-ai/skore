@@ -3,7 +3,7 @@ import shutil
 
 import pytest
 
-from skore_local_project.storage import DiskCacheStorage
+from skore._plugins.local.storage import DiskCacheStorage
 
 
 class TestDiskCacheStorage:
