@@ -34,13 +34,19 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     ----------
     confusion_matrix_predict : pd.DataFrame
         Predict-based n x n confusion matrix in long format. It always contains
-        "true_label", "predicted_label", and "count"; it can also contain "split"
+        "true_label", "predicted_label", "count", "normalized_by_true",
+        "normalized_by_pred", and "normalized_by_all"; it can also contain "split"
         and "estimator" when those dimensions are meaningful for the report.
+
+    confusion_matrix_ovr : pd.DataFrame or None
+        Predict-based one-vs-rest 2x2 confusion matrix in long format for
+        multiclass classification. It has the same columns as
+        `confusion_matrix_predict`, plus "label". None for binary classification.
 
     confusion_matrix_thresholded : pd.DataFrame or None
         Per-class one-vs-rest thresholded 2x2 confusion matrix in long format.
-        It has the same columns as `confusion_matrix_predict`, plus "threshold"
-        and "label". None when the estimator only supports predict.
+        It has the same columns as `confusion_matrix_predict`, plus "threshold" and
+        "label". None when the estimator only supports predict.
 
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
@@ -76,6 +82,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         self,
         *,
         confusion_matrix_predict: pd.DataFrame,
+        confusion_matrix_ovr: pd.DataFrame | None,
         confusion_matrix_thresholded: pd.DataFrame | None,
         report_type: ReportType,
         ml_task: MLTask,
@@ -83,6 +90,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         report_pos_label: PositiveLabel,
     ):
         self.confusion_matrix_predict = confusion_matrix_predict
+        self.confusion_matrix_ovr = confusion_matrix_ovr
         self.confusion_matrix_thresholded = confusion_matrix_thresholded
         self.report_type = report_type
         self.ml_task = ml_task
@@ -110,6 +118,14 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             column_data,
         )
 
+        if first_display.confusion_matrix_ovr is None:
+            confusion_matrix_ovr = None
+        else:
+            confusion_matrix_ovr = _concat_frames_with_column_data(
+                [d.confusion_matrix_ovr for d in child_displays],
+                column_data,
+            )
+
         if not do_thresholds or all(
             d.confusion_matrix_thresholded is None for d in child_displays
         ):
@@ -122,6 +138,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         return cls(
             confusion_matrix_predict=confusion_matrix_predict,
+            confusion_matrix_ovr=confusion_matrix_ovr,
             confusion_matrix_thresholded=confusion_matrix_thresholded,
             report_type=report_type,
             ml_task=first_display.ml_task,
@@ -444,13 +461,38 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         classes = estimator.classes_
 
+        cm = sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred, labels=classes)
         confusion_matrix_predict = cls._build_confusion_frame(
-            sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred, labels=classes)[
-                np.newaxis, ...
-            ],
+            cm[np.newaxis, ...],
             thresholds=np.array([np.nan]),
             labels=classes,
         ).drop(columns=["threshold"])
+
+        if ml_task != "binary-classification":
+            ovr_dfs = []
+            for class_idx, label in enumerate(classes):
+                pred_p = cm[:, class_idx].sum()
+                true_p = cm[class_idx, :].sum()
+                tp = cm[class_idx, class_idx]
+                tn = cm.sum() - pred_p - true_p + tp
+                cm_ovr = np.array(
+                    [
+                        [tn, pred_p - tp],
+                        [true_p - tp, tp],
+                    ]
+                )
+                ovr_dfs.append(
+                    cls._build_confusion_frame(
+                        cm_ovr[np.newaxis, ...],
+                        thresholds=np.array([np.nan]),
+                        labels=[f"not {label}", label],
+                    ).drop(columns=["threshold"])
+                )
+            confusion_matrix_ovr = _concat_frames_with_column_data(
+                ovr_dfs, {"label": classes}
+            )
+        else:
+            confusion_matrix_ovr = None
 
         confusion_matrix_thresholded = None
         if y_scores is not None:
@@ -475,13 +517,14 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                         label,
                     ],
                 )
-                df["label"] = label
-                df["label"] = df["label"].astype("category")
                 ovr_dfs.append(df)
-            confusion_matrix_thresholded = _concat_frames_with_column_data(ovr_dfs)
+            confusion_matrix_thresholded = _concat_frames_with_column_data(
+                ovr_dfs, {"label": classes}
+            )
 
         return cls(
             confusion_matrix_predict=confusion_matrix_predict,
+            confusion_matrix_ovr=confusion_matrix_ovr,
             confusion_matrix_thresholded=confusion_matrix_thresholded,
             report_type=report_type,
             ml_task=ml_task,
@@ -491,49 +534,56 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     @staticmethod
     def _build_confusion_frame(cm, thresholds, labels):
-        """Build a long-format count dataframe from confusion matrices."""
+        """Build a long-format confusion matrix with cached normalized values."""
         counts = cm.reshape(-1)
 
-        return pd.DataFrame(
-            {
-                "true_label": pd.Series(
-                    np.tile(np.repeat(labels, len(labels)), len(thresholds)),
-                    dtype="category",
-                ),
-                "predicted_label": pd.Series(
-                    np.tile(np.tile(labels, len(labels)), len(thresholds)),
-                    dtype="category",
-                ),
-                "count": counts,
-                "threshold": np.repeat(thresholds, len(labels) ** 2),
-            }
-        )
+        row_sums = cm.sum(axis=2, keepdims=True)
+        cm_true = np.zeros_like(cm, dtype=float)
+        np.divide(cm, row_sums, out=cm_true, where=row_sums != 0)
+
+        col_sums = cm.sum(axis=1, keepdims=True)
+        cm_pred = np.zeros_like(cm, dtype=float)
+        np.divide(cm, col_sums, out=cm_pred, where=col_sums != 0)
+
+        total_sums = cm.sum(axis=(1, 2), keepdims=True)
+        cm_all = np.zeros_like(cm, dtype=float)
+        np.divide(cm, total_sums, out=cm_all, where=total_sums != 0)
+
+        data = {
+            "true_label": pd.Series(
+                np.tile(np.repeat(labels, len(labels)), len(thresholds)),
+                dtype="category",
+            ),
+            "predicted_label": pd.Series(
+                np.tile(np.tile(labels, len(labels)), len(thresholds)),
+                dtype="category",
+            ),
+            "count": counts,
+            "normalized_by_true": cm_true.reshape(-1),
+            "normalized_by_pred": cm_pred.reshape(-1),
+            "normalized_by_all": cm_all.reshape(-1),
+            "threshold": np.repeat(thresholds, len(labels) ** 2),
+        }
+
+        return pd.DataFrame(data)
 
     @staticmethod
-    def _apply_normalization(
+    def _select_normalized_col(
         df: pd.DataFrame,
         normalize: Literal["true", "pred", "all"] | None,
     ) -> pd.DataFrame:
-        """Rename counts to values, computing normalized values when requested."""
-        if normalize:
-            groupby_cols = ["threshold", "label", "split", "estimator"]
-            if normalize == "pred":
-                groupby_cols.append("predicted_label")
-            elif normalize == "true":
-                groupby_cols.append("true_label")
-
-            df = df.copy(deep=False)
-            groupby_cols = df.columns.intersection(groupby_cols).to_list()
-
-            if groupby_cols:
-                denominator = df.groupby(groupby_cols)["count"].transform("sum")
-            else:
-                denominator = df["count"].sum()
-
-            # we replace here to preserve the position of the "value" column
-            df["count"] = (df["count"] / denominator).fillna(0)
-
-        return df.rename(columns={"count": "value"})
+        """Select count or cached normalized values as the public value column."""
+        value = df[f"normalized_by_{normalize}" if normalize else "count"]
+        df = df.drop(
+            columns=[
+                "count",
+                "normalized_by_true",
+                "normalized_by_pred",
+                "normalized_by_all",
+            ]
+        )
+        df["value"] = value
+        return df
 
     def frame(
         self,
@@ -555,8 +605,8 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         ----------
         normalize : {'true', 'pred', 'all'}, default=None
             Normalizes confusion matrix over the true (rows), predicted (columns)
-            conditions or all the population. Normalized values are computed lazily.
-            If None, raw counts are returned as the "value" column.
+            conditions or all the population. If None, raw counts are returned as
+            the "value" column.
 
         threshold_value : float, "all", or None, default=None
             When None, returns the predict-based n x n confusion matrix.
@@ -576,19 +626,15 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         label = _check_label(self.labels, label, self.report_pos_label)
 
         if threshold_value is None:
-            df = self.confusion_matrix_predict
-
             if label is not None and self.ml_task != "binary-classification":
-                mapping = {True: str(label), False: f"not {label}"}
-                df = df.copy(deep=False).dropna(axis=1, how="all")
-                df["true_label"] = (df["true_label"] == label).map(mapping)
-                df["predicted_label"] = (df["predicted_label"] == label).map(mapping)
-                groupby_cols = df.columns.difference(["count"]).to_list()
-                df = (
-                    df.groupby(groupby_cols, observed=True)["count"].sum().reset_index()
-                )
+                df = self.confusion_matrix_ovr
+                assert df is not None
+                df = df.query("label == @label").reset_index(drop=True)
+                df = df.drop(columns=["label"])
+            else:
+                df = self.confusion_matrix_predict
 
-            return self._apply_normalization(df, normalize)
+            return self._select_normalized_col(df, normalize)
 
         # Thresholded view
         if self.confusion_matrix_thresholded is None:
@@ -604,7 +650,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             df = df.drop(columns=["label"])
 
         if threshold_value == "all":
-            return self._apply_normalization(df, normalize)
+            return self._select_normalized_col(df, normalize)
 
         diff = (df["threshold"] - threshold_value).abs()
         groupby_cols = [
@@ -616,7 +662,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         else:
             df = df.loc[diff == diff.min()]
 
-        return self._apply_normalization(df, normalize)
+        return self._select_normalized_col(df, normalize)
 
     # ignore the type signature because we override kwargs by specifying the name of
     # the parameters for the user.

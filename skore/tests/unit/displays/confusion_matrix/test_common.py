@@ -8,6 +8,12 @@ from sklearn.svm import SVC
 from skore import evaluate
 from skore._sklearn._plot import ConfusionMatrixDisplay
 
+_NORMALIZED_COLUMNS = [
+    "normalized_by_true",
+    "normalized_by_pred",
+    "normalized_by_all",
+]
+
 
 def _metadata_columns(fixture_prefix):
     columns = []
@@ -47,6 +53,7 @@ class TestConfusionMatrixDisplay:
         assert isinstance(display, ConfusionMatrixDisplay)
 
         assert hasattr(display, "confusion_matrix_predict")
+        assert hasattr(display, "confusion_matrix_ovr")
         assert hasattr(display, "confusion_matrix_thresholded")
         assert hasattr(display, "report_type")
         assert hasattr(display, "ml_task")
@@ -104,6 +111,7 @@ class TestConfusionMatrixDisplay:
             "true_label",
             "predicted_label",
             "count",
+            *_NORMALIZED_COLUMNS,
         ]
         expected_columns.extend(_metadata_columns(fixture_prefix))
         assert display.confusion_matrix_predict.columns.tolist() == expected_columns
@@ -113,6 +121,36 @@ class TestConfusionMatrixDisplay:
         assert display.confusion_matrix_predict.shape[0] == (
             n_classes * n_classes * n_splits * n_reports
         )
+
+    @pytest.mark.parametrize("task", ["binary", "multiclass"])
+    def test_confusion_matrix_ovr_structure(self, fixture_prefix, task, request):
+        """Check the structure of the predict-based OvR cache."""
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.metrics.confusion_matrix()
+
+        if task == "binary":
+            assert display.confusion_matrix_ovr is None
+            return
+
+        assert isinstance(display.confusion_matrix_ovr, pd.DataFrame)
+        expected_columns = [
+            "true_label",
+            "predicted_label",
+            "count",
+            *_NORMALIZED_COLUMNS,
+            "label",
+        ]
+        expected_columns.extend(_metadata_columns(fixture_prefix))
+        assert display.confusion_matrix_ovr.columns.tolist() == expected_columns
+        n_classes = len(display.labels)
+        n_splits = 2 if "cross_validation" in fixture_prefix else 1
+        n_reports = 2 if "comparison" in fixture_prefix else 1
+        assert display.confusion_matrix_ovr.shape[0] == (
+            2 * 2 * n_classes * n_splits * n_reports
+        )
+        assert set(display.confusion_matrix_ovr["label"]) == set(display.labels)
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
     def test_confusion_matrix_thresholded_structure(
@@ -129,6 +167,7 @@ class TestConfusionMatrixDisplay:
             "true_label",
             "predicted_label",
             "count",
+            *_NORMALIZED_COLUMNS,
             "threshold",
             "label",
         ]
@@ -417,3 +456,34 @@ def test_missing_class_in_split(pyplot, binary_classification_data):
     display = report.metrics.confusion_matrix()
     assert display.labels == [0, 1]
     assert len(display.confusion_matrix_predict) == 2**2
+
+
+def test_normalize_all_with_zero_counts_returns_cached_zeros():
+    """Check cached normalization when all counts are zero."""
+    confusion_matrix_predict = (
+        ConfusionMatrixDisplay._build_confusion_frame(
+            np.zeros((1, 2, 2), dtype=int),
+            thresholds=np.array([np.nan]),
+            labels=[0, 1],
+        )
+        .drop(columns=["threshold"])
+        .assign(
+            split=pd.Series([None] * 4, dtype="category"),
+            estimator=pd.Series([None] * 4, dtype="category"),
+            data_source=pd.Series([None] * 4, dtype="category"),
+        )
+    )
+    display = ConfusionMatrixDisplay(
+        confusion_matrix_predict=confusion_matrix_predict,
+        confusion_matrix_ovr=None,
+        confusion_matrix_thresholded=None,
+        report_type="estimator",
+        ml_task="binary-classification",
+        data_source="test",
+        report_pos_label=None,
+    )
+
+    frame = display.frame(normalize="all")
+
+    assert not frame["value"].isna().any()
+    assert (frame["value"] == 0).all()
