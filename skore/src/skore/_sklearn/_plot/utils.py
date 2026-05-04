@@ -340,7 +340,7 @@ def _build_custom_legend_with_stats(
     legend_labels = []
     for hue_value in hue_order or [None]:
         hue_group = (
-            subplot_data[subplot_data[hue] == hue_value]
+            subplot_data.query(f"{hue} == @hue_value")
             if hue_value is not None
             else subplot_data
         )
