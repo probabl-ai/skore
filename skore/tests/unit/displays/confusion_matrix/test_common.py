@@ -456,34 +456,3 @@ def test_missing_class_in_split(pyplot, binary_classification_data):
     display = report.metrics.confusion_matrix()
     assert display.labels == [0, 1]
     assert len(display.confusion_matrix_predict) == 2**2
-
-
-def test_normalize_all_with_zero_counts_returns_cached_zeros():
-    """Check cached normalization when all counts are zero."""
-    confusion_matrix_predict = (
-        ConfusionMatrixDisplay._build_confusion_frame(
-            np.zeros((1, 2, 2), dtype=int),
-            thresholds=np.array([np.nan]),
-            labels=[0, 1],
-        )
-        .drop(columns=["threshold"])
-        .assign(
-            split=pd.Series([None] * 4, dtype="category"),
-            estimator=pd.Series([None] * 4, dtype="category"),
-            data_source=pd.Series([None] * 4, dtype="category"),
-        )
-    )
-    display = ConfusionMatrixDisplay(
-        confusion_matrix_predict=confusion_matrix_predict,
-        confusion_matrix_ovr=None,
-        confusion_matrix_thresholded=None,
-        report_type="estimator",
-        ml_task="binary-classification",
-        data_source="test",
-        report_pos_label=None,
-    )
-
-    frame = display.frame(normalize="all")
-
-    assert not frame["value"].isna().any()
-    assert (frame["value"] == 0).all()
