@@ -388,6 +388,21 @@ def test_frame_threshold_label_none_returns_all_labels(binary_classification_dat
     assert set(frame["label"]) == set(display.labels)
 
 
+def test_multiclass_thresholded_plot_preserves_numeric_labels(
+    pyplot, multiclass_classification_data
+):
+    """Check that numeric labels are used for reindexing OvR heatmaps."""
+    X, y = multiclass_classification_data
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+
+    display = report.metrics.confusion_matrix()
+    fig = display.plot(threshold_value=0.5, label=1)
+
+    heatmap_values = fig.axes[0].collections[0].get_array()
+    assert not np.ma.is_masked(heatmap_values)
+    assert np.isfinite(heatmap_values).all()
+
+
 def test_plot_threshold_all_not_supported(pyplot, binary_classification_data):
     """Check that plot raises when threshold_value='all'."""
     X, y = binary_classification_data

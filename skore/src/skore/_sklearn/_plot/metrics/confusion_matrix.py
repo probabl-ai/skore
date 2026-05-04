@@ -195,6 +195,11 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             raise ValueError(
                 "threshold_value='all' is not supported for the plot method."
             )
+        if threshold_value is not None and label is None:
+            raise ValueError(
+                "`label` cannot be None when `threshold_value` is specified for "
+                "the plot method."
+            )
 
         return self._plot(
             normalize=normalize,
@@ -266,7 +271,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         # Usually, TP is the top-left cell, but we align with sklearn.
         if label is not None:
             if self.ml_task == "multiclass-classification":
-                display_labels = [f"not {label}", str(label)]
+                display_labels = [f"not {label}", label]
             else:
                 display_labels = [
                     next(clss for clss in display_labels if clss != label),
@@ -530,6 +535,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
     def _build_confusion_frame(cm, thresholds, labels):
         """Build a long-format confusion matrix with cached normalized values."""
         counts = cm.reshape(-1)
+        labels = np.asarray(labels, dtype=object)
 
         row_sums = cm.sum(axis=2, keepdims=True)
         cm_true = np.zeros_like(cm, dtype=float)
@@ -646,16 +652,33 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         if threshold_value == "all":
             return self._select_normalized_col(df, normalize)
 
-        diff = (df["threshold"] - threshold_value).abs()
-        groupby_cols = [
-            df[col] for col in df.columns.intersection(["split", "estimator", "label"])
-        ]
-        if groupby_cols:
-            min_diff_by_groups = diff.groupby(groupby_cols).transform("min")
-            df = df.loc[diff == min_diff_by_groups]
-        else:
-            df = df.loc[diff == diff.min()]
+        # Snap to closest threshold per group
+        def select_threshold(group):
+            thresholds = np.sort(group["threshold"].unique())
+            index_right = int(np.searchsorted(thresholds, threshold_value))
+            if index_right == len(thresholds):
+                index_right -= 1
+            elif index_right == 0 and len(thresholds) > 1:
+                index_right = 1
+            index_left = index_right - 1
+            diff_right = abs(thresholds[index_right] - threshold_value)
+            diff_left = abs(thresholds[index_left] - threshold_value)
+            closest_threshold = thresholds[
+                index_right if diff_right < diff_left else index_left
+            ]
+            return group.loc[group["threshold"] == closest_threshold]
 
+        groupby_cols = df.columns.intersection(
+            ["split", "estimator", "label"]
+        ).to_list()
+        frames = []
+        if groupby_cols:
+            for _, group in df.groupby(groupby_cols, observed=True):
+                frames.append(select_threshold(group))
+        else:
+            frames.append(select_threshold(df))
+
+        df = pd.concat(frames)
         return self._select_normalized_col(df, normalize)
 
     # ignore the type signature because we override kwargs by specifying the name of
