@@ -72,6 +72,11 @@ Added
 - :class:`Project` now accepts strings for the `workspace` argument. See :pr:`2832` by
   :user:`auguste-probabl`.
 
+- :meth:`EstimatorReport.metrics.add` now accepts ``verbose_name`` as well as ``name``,
+  to allow customizing the verbose metric name shown in
+  :meth:`EstimatorReport.metrics.summarize`. The same change also applies to the other
+  report types. See :pr:`2869` by :user:`auguste-probabl`.
+
 `0.16.0`_ (2026-04-20)
 ======================
 
