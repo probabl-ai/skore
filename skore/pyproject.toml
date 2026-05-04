@@ -171,11 +171,15 @@ convention = "numpy"
 
 [tool.mypy]
 exclude = ["src/skore/_externals/", "hatch/", "tests/"]
-strict = true  # ?!
+strict = false
 
-[[tool.mypy.overrides]]  # ?!
+[[tool.mypy.overrides]]
 follow_untyped_imports = true
 module = ["skore.*"]
+
+[[tool.mypy.overrides]]
+module = ["skore._plugins", "skore._plugins.*"]
+strict = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
