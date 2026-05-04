@@ -115,7 +115,7 @@ class DiagnosticDisplay(DisplayHelpMixin):
         match severity:
             case "issue" | "tip":
                 return self._check_results.query(
-                    f"severity == '{severity}' and explanation.notna()"
+                    "severity == @severity and explanation.notna()"
                 )
             case "passed":
                 return self._check_results.query("explanation.isna()")
