@@ -195,10 +195,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             raise ValueError(
                 "threshold_value='all' is not supported for the plot method."
             )
-        if threshold_value is not None and label is None:
+        if label is None and threshold_value is not None:
             raise ValueError(
-                "`label` cannot be None when `threshold_value` is specified for "
-                "the plot method."
+                "Please indicate the class to consider as positive to show the "
+                "thresholded confusion matrix."
             )
 
         return self._plot(
