@@ -388,10 +388,10 @@ def test_frame_threshold_label_none_returns_all_labels(binary_classification_dat
     assert set(frame["label"]) == set(display.labels)
 
 
-def test_multiclass_thresholded_plot_preserves_numeric_labels(
+def test_multiclass_thresholded_plot_with_numeric_label(
     pyplot, multiclass_classification_data
 ):
-    """Check that numeric labels are used for reindexing OvR heatmaps."""
+    """Check that numeric labels can select OvR heatmaps."""
     X, y = multiclass_classification_data
     report = evaluate(LogisticRegression(), X, y, splitter=0.2)
 

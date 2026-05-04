@@ -270,13 +270,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         # means true-positive counts is the bottom-right cell in the matrix).
         # Usually, TP is the top-left cell, but we align with sklearn.
         if label is not None:
-            if self.ml_task == "multiclass-classification":
-                display_labels = [f"not {label}", label]
-            else:
-                display_labels = [
-                    next(clss for clss in display_labels if clss != label),
-                    label,
-                ]
+            display_labels = self._get_ovr_labels(self.ml_task, self.labels, label)
 
         def plot_heatmap(data, **kwargs):
             """Plot heatmap for each facet."""
@@ -484,7 +478,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     cls._build_confusion_frame(
                         cm_ovr[np.newaxis, ...],
                         thresholds=np.array([np.nan]),
-                        labels=[f"not {label}", label],
+                        labels=cls._get_ovr_labels(ml_task, classes, label),
                     ).drop(columns=["threshold"])
                 )
             confusion_matrix_ovr = _concat_frames_with_column_data(
@@ -509,12 +503,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 df = cls._build_confusion_frame(
                     cm=cm,
                     thresholds=thresholds,
-                    labels=[
-                        next(clss for clss in classes if clss != label)
-                        if ml_task == "binary-classification"
-                        else f"not {label}",
-                        label,
-                    ],
+                    labels=cls._get_ovr_labels(ml_task, classes, label),
                 )
                 ovr_dfs.append(df)
             confusion_matrix_thresholded = _concat_frames_with_column_data(
@@ -530,6 +519,13 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             data_source=data_source,
             report_pos_label=report_pos_label,
         )
+
+    @staticmethod
+    def _get_ovr_labels(ml_task, labels, label):
+        if ml_task == "multiclass-classification":
+            return [f"not {label}", str(label)]
+        else:
+            return [next(clss for clss in labels if clss != label), label]
 
     @staticmethod
     def _build_confusion_frame(cm, thresholds, labels):
