@@ -3,6 +3,7 @@ from __future__ import annotations
 import html
 import uuid
 from collections.abc import Generator
+from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
 
 import skrub
@@ -24,6 +25,7 @@ from skore._utils._progress_bar import track
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -33,13 +35,14 @@ if TYPE_CHECKING:
         _InspectionAccessor,
     )
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
+    from skore._sklearn.types import EstimatorLike
 
 
 _STATE_VERSION = 1
 
 
 def _generate_estimator_report(
-    estimator: BaseEstimator,
+    estimator: EstimatorLike,
     X: ArrayLike,
     y: ArrayLike,
     pos_label: PositiveLabel | None,
@@ -58,11 +61,11 @@ def _generate_estimator_report(
 
 
 def _check_estimator_and_data(
-    estimator: BaseEstimator,
+    estimator: EstimatorLike,
     X: ArrayLike | None,
     y: ArrayLike | None,
     data: dict | None,
-) -> tuple[bool, BaseEstimator, dict]:
+) -> tuple[bool, EstimatorLike, dict]:
     if is_skrub_learner(estimator):
         initialized_with_data_op = True
         if X is not None or y is not None:
@@ -97,13 +100,24 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     Parameters
     ----------
     estimator : estimator object
-        Estimator to make the cross-validation report from.
+        Estimator to make the cross-validation report from. An estimator can
+        be one of the following:
 
-    X : {array-like, sparse matrix} of shape (n_samples, n_features)
+        - a scikit-learn compatible estimator as a :class:`~sklearn.base.BaseEstimator`;
+        - a skrub :class:`~skrub.DataOp` to preprocess the data;
+        - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
+          by calling :meth:`~skrub.DataOp.skb.make_learner`.
+
+    X : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         The data to fit. Can be for example a list, or an array.
 
-    y : array-like of shape (n_samples,) or (n_samples, n_outputs)
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         The target variable to try to predict in the case of supervised learning.
+
+    data : dict or None
+        When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
+        variables contained in the DataOp that was used to create this learner
+        (e.g. ``{"X": X_df, "other_table": df, ...}``).
 
     pos_label : int, float, bool or str, default=None
         For binary classification, the positive class to use for metrics and displays
@@ -178,7 +192,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        estimator: BaseEstimator,
+        estimator: EstimatorLike,
         X: ArrayLike | None = None,
         y: ArrayLike | None = None,
         data: dict | None = None,
@@ -482,6 +496,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         y_test : array-like of shape (n_samples,) or (n_samples, n_outputs)
             Testing target.
 
+        test_data : dict or None
+            When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
+            variables contained in the DataOp that was used to create this learner
+            (e.g. ``{"X": X_df, "other_table": df, ...}``).
+
         Examples
         --------
         >>> from sklearn.datasets import make_classification
@@ -649,7 +668,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         table_report_html = table_report.html_snippet()
 
         try:
-            estimator_html = self.estimator_._repr_html_()
+            estimator_html = repair_estimator_html_for_slotted_host(
+                self.estimator_._repr_html_()
+            )
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
@@ -674,7 +695,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         """HTML representation of the cross-validation report."""
         fragments = self._html_repr_fragments()
         container_id = f"skore-cross-validation-report-{uuid.uuid4().hex[:8]}"
-        help_doc_url = get_documentation_url(obj=self, method_name="help")
         report_class_name = self.__class__.__name__
         metrics_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="metrics"
@@ -686,11 +706,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         diagnose_documentation_url = get_documentation_url(
             obj=self, method_name="diagnose"
         )
+        help_ctx = asdict(self._build_help_data())
+        help_ctx["is_report"] = True
         return render_template(
             "cross_validation_report.html.j2",
             {
                 "container_id": container_id,
-                "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
                 "report_title": f"Report for {self.estimator_name_}",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
@@ -698,6 +719,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "data_accessor_doc_url": data_accessor_doc_url,
                 "diagnose_documentation_url": diagnose_documentation_url,
                 **fragments,
+                **help_ctx,
             },
         )
 

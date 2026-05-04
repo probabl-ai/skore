@@ -209,7 +209,7 @@ seaborn==0.13.2
     # via skore
 six==1.17.0
     # via python-dateutil
-skore==0.15.0
+skore==0.17.0
     # via skore-hub-project (skore-hub-project/pyproject.toml)
 skore-local-project==0.0.6
     # via skore

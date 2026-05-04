@@ -1,11 +1,11 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pytest import fixture
 
 
 @fixture
 def now():
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 @fixture
@@ -25,7 +25,7 @@ def Datetime(now):
 
         @staticmethod
         def now(*args, **kwargs):
-            now = datetime.now(tz=timezone.utc) if Datetime.nows else now_from_fixture
+            now = datetime.now(tz=UTC) if Datetime.nows else now_from_fixture
             now_isoformat = now.isoformat()
 
             Datetime.nows.append(now)

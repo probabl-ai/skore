@@ -504,6 +504,8 @@ class TestCrossValidationReportPayload:
     )
     @mark.respx()
     def test_model_dump_classification(self, small_cv_binary_classification, payload):
+        small_cv_binary_classification.cache_predictions()
+
         _, checksum = serialize(small_cv_binary_classification)
 
         payload_dict = payload.model_dump()

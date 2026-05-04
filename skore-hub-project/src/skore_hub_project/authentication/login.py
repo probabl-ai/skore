@@ -6,8 +6,8 @@ from logging import getLogger
 from rich.align import Align
 from rich.live import Live
 from rich.panel import Panel
+from skore import console
 
-from skore_hub_project import console
 from skore_hub_project.authentication.apikey import APIKey
 from skore_hub_project.authentication.token import Token
 from skore_hub_project.authentication.uri import URI

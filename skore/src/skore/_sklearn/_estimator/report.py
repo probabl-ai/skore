@@ -4,6 +4,7 @@ import copy
 import html
 import uuid
 import warnings
+from dataclasses import asdict
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -30,19 +31,28 @@ from skore._utils._measure_time import MeasureTime
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.data_accessor import _DataAccessor
     from skore._sklearn._estimator.inspection_accessor import _InspectionAccessor
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
+    from skore._sklearn.types import EstimatorLike
 
 
 _STATE_VERSION = 1
 
 
 def _check_estimator_and_data(
-    estimator, X_train, y_train, X_test, y_test, train_data, test_data
-):
+    estimator: EstimatorLike,
+    X_train: ArrayLike | None,
+    y_train: ArrayLike | None,
+    X_test: ArrayLike | None,
+    y_test: ArrayLike | None,
+    train_data: dict | None,
+    test_data: dict | None,
+) -> tuple[bool, EstimatorLike, dict | None, dict | None]:
+    """Check and validate the estimator and data."""
     if is_skrub_learner(estimator):
         initialized_with_data_op = True
         if any(v is not None for v in (X_train, y_train, X_test, y_test)):
@@ -86,6 +96,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator : estimator object
         Estimator to make the report from. When the estimator is not fitted,
         it is deep-copied to avoid side-effects. If it is fitted, it is cloned instead.
+        An estimator can be one of the following:
+
+        - a scikit-learn compatible estimator as a :class:`~sklearn.base.BaseEstimator`;
+        - a skrub :class:`~skrub.DataOp` to preprocess the data;
+        - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
+          by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
     fit : {"auto", True, False}, default="auto"
         Whether to fit the estimator on the training data. If "auto", the estimator
@@ -98,11 +114,21 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     y_train : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Training target.
 
-    X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
+    X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         Testing data. It should have the same structure as the training data.
 
-    y_test : array-like of shape (n_samples,) or (n_samples, n_outputs)
+    y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Testing target.
+
+    train_data : dict or None
+        When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
+        variables contained in the DataOp that was used to create this learner
+        (e.g. ``{"X": X_df, "other_table": df, ...}``).
+
+    test_data : dict or None
+        When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
+        variables contained in the DataOp that was used to create this learner
+        (e.g. ``{"X": X_df, "other_table": df, ...}``).
 
     pos_label : int, float, bool or str, default=None
         For binary classification, the positive class to use for metrics and displays
@@ -156,9 +182,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def _fit_estimator(
         self,
-        estimator: BaseEstimator,
-        data,
-    ) -> tuple[BaseEstimator, float]:
+        estimator: EstimatorLike,
+        data: dict | None,
+    ) -> tuple[EstimatorLike, float]:
+        """Fit the estimator on the training data."""
         if data is None:
             raise ValueError(
                 "The training data is required to fit the estimator. "
@@ -170,7 +197,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return estimator_, fit_time()
 
     @classmethod
-    def _copy_estimator(cls, estimator: BaseEstimator) -> BaseEstimator:
+    def _copy_estimator(cls, estimator: EstimatorLike) -> EstimatorLike:
+        """Copy the estimator."""
         try:
             return copy.deepcopy(estimator)
         except Exception as e:
@@ -186,7 +214,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __init__(
         self,
-        estimator: BaseEstimator | skrub.DataOp,
+        estimator: EstimatorLike,
         *,
         fit: Literal["auto"] | bool = "auto",
         X_train: ArrayLike | None = None,
@@ -458,8 +486,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 self._cache[time_key] = pred_time
                 self._cache[pred_key] = predictions
 
-    def _get_response_and_derived_predictions(self, data, response_method):
+    def _get_response_and_derived_predictions(
+        self,
+        data: dict,
+        response_method: Literal["predict", "predict_proba", "decision_function"],
+    ) -> tuple[ArrayLike, ArrayLike | None, float]:
         """Compute a response array and derive class predictions.
+
+        Parameters
+        ----------
+        data : dict
+            The data to use to compute the response and derive predictions.
+        response_method : str
+            The response method to use to compute the response and derive predictions.
+            Can be "decision_function" or "predict_proba".
 
         Returns
         -------
@@ -797,7 +837,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 .to_html(index=False)
             )
         try:
-            estimator_html = self.estimator_._repr_html_()
+            estimator_html = repair_estimator_html_for_slotted_host(
+                self.estimator_._repr_html_()
+            )
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
@@ -827,7 +869,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         fragments = self._html_repr_fragments()
         container_id = f"skore-estimator-report-{uuid.uuid4().hex[:8]}"
-        help_doc_url = get_documentation_url(obj=self, method_name="help")
         report_class_name = self.__class__.__name__
         metrics_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="metrics"
@@ -839,11 +880,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         diagnose_documentation_url = get_documentation_url(
             obj=self, method_name="diagnose"
         )
+        help_ctx = asdict(self._build_help_data())
+        help_ctx["is_report"] = True
         return render_template(
             "estimator_report.html.j2",
             {
                 "container_id": container_id,
-                "help_doc_url": help_doc_url,
                 "report_class_name": report_class_name,
                 "report_title": f"Report for {self.estimator_name_}",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
@@ -851,6 +893,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "data_accessor_doc_url": data_accessor_doc_url,
                 "diagnose_documentation_url": diagnose_documentation_url,
                 **fragments,
+                **help_ctx,
             },
         )
 

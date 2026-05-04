@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from math import ceil
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from joblib import Parallel, delayed
 
 from ..client.client import Client, HUBClient
 from .serializer import Serializer
@@ -99,7 +100,6 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
         Serializer(content) as serializer,
         HUBClient() as hub_client,
         Client() as standard_client,
-        ThreadPoolExecutor() as pool,
     ):
         # Ask for upload urls.
         response = hub_client.post(
@@ -116,7 +116,8 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
         # An empty response means that an artifact with the same checksum already
         # exists. The content doesn't have to be re-uploaded.
         if urls := response.json():
-            task_to_chunk_id = {}
+            chunk_ids = []
+            tasks = []
 
             # Upload each chunk of the serialized content to the artifacts storage,
             # using a disk temporary file.
@@ -126,38 +127,35 @@ def upload(project: Project, content: str | bytes, content_type: str) -> str:
             #
             # Use `threading` over `asyncio` to ensure compatibility with Jupyter
             # notebooks, where the event loop is already running.
+
             for url in urls:
                 chunk_id = url["chunk_id"] or 1
-                task = pool.submit(
-                    upload_chunk,
-                    filepath=serializer.filepath,
-                    client=standard_client,
-                    url=url["upload_url"],
-                    offset=((chunk_id - 1) * CHUNK_SIZE),
-                    length=CHUNK_SIZE,
-                    content_type=(
-                        content_type if len(urls) == 1 else "application/octet-stream"
-                    ),
-                )
 
-                task_to_chunk_id[task] = chunk_id
-
-            try:
-                etags = dict(
-                    sorted(
-                        (
-                            task_to_chunk_id[task],
-                            task.result(),
-                        )
-                        for task in as_completed(task_to_chunk_id)
+                chunk_ids.append(chunk_id)
+                tasks.append(
+                    delayed(upload_chunk)(
+                        filepath=serializer.filepath,
+                        client=standard_client,
+                        url=url["upload_url"],
+                        offset=((chunk_id - 1) * CHUNK_SIZE),
+                        length=CHUNK_SIZE,
+                        content_type=(
+                            content_type
+                            if len(urls) == 1
+                            else "application/octet-stream"
+                        ),
                     )
                 )
-            except BaseException:
-                # Cancel all remaining tasks, especially on `KeyboardInterrupt`.
-                for task in task_to_chunk_id:
-                    task.cancel()
 
-                raise
+            etags = dict(
+                sorted(
+                    zip(
+                        chunk_ids,
+                        Parallel(backend="threading")(tasks),
+                        strict=True,
+                    )
+                )
+            )
 
             # Acknowledge the upload, to let the hub/storage rebuild the whole.
             hub_client.post(

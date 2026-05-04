@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from httpx import (
     Response,
@@ -8,8 +8,8 @@ from pytest import mark, raises
 
 from skore_hub_project.authentication import login as login_module
 
-DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc).isoformat()
-DATETIME_MAX = datetime.max.replace(tzinfo=timezone.utc).isoformat()
+DATETIME_MIN = datetime.min.replace(tzinfo=UTC).isoformat()
+DATETIME_MAX = datetime.max.replace(tzinfo=UTC).isoformat()
 
 REFRESH_URL = "identity/oauth/token/refresh"
 LOGIN_URL = "identity/oauth/device/login"

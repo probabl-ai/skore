@@ -140,7 +140,9 @@
 .report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tab-help-global:hover .report-tab-help-tip-2,
 .report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tab-help-global:focus-within .report-tab-help-tip-2,
 .report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-help-global:hover .report-tab-help-tip-3,
-.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-help-global:focus-within .report-tab-help-tip-3 {
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-help-global:focus-within .report-tab-help-tip-3,
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) .report-tab-help-global:hover .report-tab-help-tip-4,
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) .report-tab-help-global:focus-within .report-tab-help-tip-4 {
     visibility: visible;
     opacity: 1;
 }
@@ -187,7 +189,8 @@
 .report-tabset:has(> .report-tab-input:nth-child(1):checked) .report-tablist .report-tab-item:nth-child(1) .report-tab-label,
 .report-tabset:has(> .report-tab-input:nth-child(2):checked) .report-tablist .report-tab-item:nth-child(2) .report-tab-label,
 .report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tablist .report-tab-item:nth-child(3) .report-tab-label,
-.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tablist .report-tab-item:nth-child(4) .report-tab-label {
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tablist .report-tab-item:nth-child(4) .report-tab-label,
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) .report-tablist .report-tab-item:nth-child(5) .report-tab-label {
     border-bottom-color: var(--color-blue);
 }
 
@@ -202,7 +205,8 @@
 .report-tabset:has(> .report-tab-input:nth-child(1):checked) .report-tab-panels .report-tab-panel:nth-child(1),
 .report-tabset:has(> .report-tab-input:nth-child(2):checked) .report-tab-panels .report-tab-panel:nth-child(2),
 .report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tab-panels .report-tab-panel:nth-child(3),
-.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-panels .report-tab-panel:nth-child(4) {
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-panels .report-tab-panel:nth-child(4),
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) .report-tab-panels .report-tab-panel:nth-child(5) {
     display: block;
 }
 
