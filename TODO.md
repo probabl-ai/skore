@@ -7,5 +7,6 @@
 - [ ] remove protocols
 - [ ] update workflows
 - [x] update lockfiles
+- [ ] review the errors on missing plugins
 
 should be good!
