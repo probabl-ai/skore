@@ -65,14 +65,6 @@ repos:
 
       - id: mypy
         pass_filenames: false
-        alias: mypy-skore-local-project
-        name: mypy skore-local-project/
-        files: ^skore-local-project/
-        args: [--config-file=skore-local-project/pyproject.toml, skore-local-project]
-        additional_dependencies: [skore]
-
-      - id: mypy
-        pass_filenames: false
         alias: mypy-skore-mlflow-project
         name: mypy skore-mlflow-project/
         files: ^skore-mlflow-project/
