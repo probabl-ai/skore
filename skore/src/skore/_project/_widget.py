@@ -195,9 +195,7 @@ class ModelExplorerWidget:
             The filtered dataframe.
         """
         df = self.dataframe.copy()
-        df = df.query(
-            f"ml_task.str.contains('{ml_task}') & report_type == '{report_type}'"
-        )
+        df = df.query("ml_task.str.contains(@ml_task) & report_type == @report_type")
 
         mean_metrics = [col for col in df.columns if col.endswith("_mean")]
         if report_type == "estimator":

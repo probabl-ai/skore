@@ -396,7 +396,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             [frame["feature"].nunique()]
             if col is None
             else [
-                frame.query(f"{col} == '{col_value}'")["feature"].nunique()
+                frame.query(f"{col} == @col_value")["feature"].nunique()
                 for col_value in frame[col].unique()
             ]
         )
