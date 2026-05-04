@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from skore._config import configuration
+from skore._project.git import git_commit
 from skore._sklearn._diagnostic.base import Check, CheckCode, DiagnosticDisplay
 from skore._sklearn._diagnostic.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._diagnostic.utils import CheckNotApplicable
@@ -194,6 +195,7 @@ class _BaseReport(ReportHelpMixin):
             # comparison reports don't have a _report_type yet at init time
             # but they don't have a `get_state` anyway:
             "report_type": getattr(self, "_report_type", "comparison"),
+            "git_commit": git_commit(),
         }
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
 
