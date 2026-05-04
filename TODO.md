@@ -6,5 +6,6 @@
 - [ ] what to do with matrix?!
 - [ ] remove protocols
 - [ ] update workflows
+- [x] update lockfiles
 
 should be good!
