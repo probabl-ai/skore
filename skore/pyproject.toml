@@ -83,7 +83,7 @@ dev = [
   "nbformat",
   "ipykernel",
 ]
-local = ["skore-local-project>=0.0.4"]
+local = ["diskcache", "platformdirs"]
 hub = ["skore-hub-project>=0.0.19"]
 mlflow = ["skore-mlflow-project>=0.0.2"]
 
@@ -126,6 +126,7 @@ addopts = [
   "--durations=25",
 ]
 xfail_strict = true
+filterwarnings = ["error"]  # ?!
 log_cli_level = "info"
 
 [tool.coverage.run]
@@ -170,10 +171,16 @@ convention = "numpy"
 
 [tool.mypy]
 exclude = ["src/skore/_externals/", "hatch/", "tests/"]
+strict = true  # ?!
+
+[[tool.mypy.overrides]]  # ?!
+follow_untyped_imports = true
+module = ["skore.*"]
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
+  "diskcache.*",
   "ipywidgets.*",
   "jinja2.*",
   "joblib.*",

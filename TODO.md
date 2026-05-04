@@ -8,5 +8,7 @@
 - [ ] update workflows
 - [x] update lockfiles
 - [ ] review the errors on missing plugins
+- [ ] mypy strict under _plugins
+- [ ] warning as errors
 
 should be good!
