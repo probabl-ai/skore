@@ -20,8 +20,6 @@ way. The functionalities of the report are accessible through accessors.
     :template: class_methods_no_index.rst
 
     ComparisonReport.help
-    ComparisonReport.diagnose
-    ComparisonReport.add_checks
     ComparisonReport.cache_predictions
     ComparisonReport.clear_cache
     ComparisonReport.create_estimator_report
@@ -34,6 +32,7 @@ way. The functionalities of the report are accessible through accessors.
     :nosignatures:
     :template: autosummary/accessor.rst
 
+    ComparisonReport.checks
     ComparisonReport.inspection
     ComparisonReport.metrics
 
@@ -53,3 +52,13 @@ The `inspection` accessor helps you inspect your model by e.g. evaluating the im
 of the features in your model.
 
 .. include:: ../api/ComparisonReport.inspection.inc
+
+.. _comparison_checks:
+
+Checks
+------
+
+The `checks` accessor runs automated checks that look for common modeling problems
+such as overfitting and underfitting.
+
+.. include:: ../api/ComparisonReport.checks.inc

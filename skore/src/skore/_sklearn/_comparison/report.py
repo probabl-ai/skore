@@ -13,8 +13,8 @@ from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._checks.base import CheckCode
 from skore._sklearn._cross_validation.report import CrossValidationReport
-from skore._sklearn._diagnostic.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
@@ -22,6 +22,7 @@ from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
+    from skore._sklearn._checks.accessor import _ChecksAccessor
     from skore._sklearn._comparison.inspection_accessor import (
         _InspectionAccessor,
     )
@@ -112,9 +113,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "checks": {"name": "checks"},
     }
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
+    checks: _ChecksAccessor
 
     _report_type: ComparisonReportType
 
@@ -544,7 +547,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         reports_by_code: dict[CheckCode, list[str]] = {}
         all_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
-            report.add_checks(self._checks_registry)
+            report.checks.add(self._checks_registry)
             report_results, applicable_codes = report._get_results(ignored_codes)
             all_applicable_codes |= applicable_codes
 
@@ -601,7 +604,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "label": label,
                     "estimator_display": fragments["estimator_display"],
                     "table_report": fragments["table_report"],
-                    "diagnostic": fragments["diagnostic"],
+                    "checks_summary": fragments["checks_summary"],
                 }
             )
 
@@ -613,8 +616,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         inspection_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="inspection"
         )
-        diagnose_documentation_url = get_documentation_url(
-            obj=self, method_name="diagnose"
+        checks_documentation_url = get_documentation_url(
+            obj=self, accessor_name="checks"
         )
         help_ctx = asdict(self._build_help_data())
         help_ctx["is_report"] = True
@@ -628,7 +631,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 "report_title": "Model comparison",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
-                "diagnose_documentation_url": diagnose_documentation_url,
+                "checks_documentation_url": checks_documentation_url,
                 **help_ctx,
             },
         )

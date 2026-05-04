@@ -20,8 +20,6 @@ report are accessible through accessors.
    :template: class_methods_no_index.rst
 
    EstimatorReport.help
-   EstimatorReport.diagnose
-   EstimatorReport.add_checks
    EstimatorReport.cache_predictions
    EstimatorReport.clear_cache
    EstimatorReport.get_predictions
@@ -33,6 +31,7 @@ report are accessible through accessors.
    :template: autosummary/accessor.rst
 
    EstimatorReport.data
+   EstimatorReport.checks
    EstimatorReport.inspection
    EstimatorReport.metrics
 
@@ -63,3 +62,13 @@ The `inspection` accessor helps you inspect your model by e.g. evaluating the im
 of the features in your model.
 
 .. include:: ../api/EstimatorReport.inspection.inc
+
+.. _estimator_checks:
+
+Checks
+------
+
+The `checks` accessor runs automated checks that look for common modeling problems
+such as overfitting and underfitting.
+
+.. include:: ../api/EstimatorReport.checks.inc

@@ -41,12 +41,16 @@ _TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str, str]] = [
 ]
 
 
-class DiagnosticDisplay(DisplayHelpMixin):
-    """Display for the diagnostic returned by :meth:`Report.diagnose`.
+class ChecksSummaryDisplay(DisplayHelpMixin):
+    """Display for the checks summary.
 
-    A display object with an HTML representation organized in three tabs
+    An instance of this class will be created by
+    :meth:`~skore.EstimatorReport.checks.summarize`.This class should not be
+    instantiated directly.
+
+    The display object has an HTML representation organized in three tabs
     (``Issues``, ``Tips``, ``Passed``). The full list of check results is
-    accessible via the :meth:`~DiagnosticDisplay.frame` method.
+    accessible via the :meth:`~ChecksSummaryDisplay.frame` method.
 
     Parameters
     ----------
@@ -79,15 +83,15 @@ class DiagnosticDisplay(DisplayHelpMixin):
             ],
             columns=["code", "title", "severity", "explanation", "documentation_url"],
         )
-        self.n_ignored_codes = n_ignored_codes
+        self._n_ignored_codes = n_ignored_codes
 
     @property
-    def header(self) -> str:
+    def _header(self) -> str:
         return (
-            f"Diagnostic: {len(self.frame(severity='issue'))} issue(s), "
+            f"Checks summary: {len(self.frame(severity='issue'))} issue(s), "
             f"{len(self.frame(severity='tip'))} tip(s), "
             f"{len(self.frame(severity='passed'))} passed, "
-            f"{self.n_ignored_codes} ignored."
+            f"{self._n_ignored_codes} ignored."
         )
 
     def frame(
@@ -149,10 +153,10 @@ class DiagnosticDisplay(DisplayHelpMixin):
                 }
             )
         return render_template(
-            "diagnostic_display.html.j2",
+            "checks_summary_display.html.j2",
             {
-                "container_id": f"skore-diagnostic-{uuid4().hex[:8]}",
-                "header": self.header,
+                "container_id": f"skore-checks-summary-{uuid4().hex[:8]}",
+                "header": self._header,
                 "tabs": tabs,
             },
         )
@@ -162,8 +166,8 @@ class DiagnosticDisplay(DisplayHelpMixin):
 
     def __repr__(self) -> str:
         if self._check_results.empty:
-            return self.header + "\nAll checks were either ignored or not applicable."
-        lines = [self.header]
+            return self._header + "\nAll checks were either ignored or not applicable."
+        lines = [self._header]
         for label, severity, _, _ in _TAB_SPECS:
             df = self.frame(severity=cast(Literal["issue", "tip", "passed"], severity))
             if df.empty:
@@ -177,13 +181,13 @@ class DiagnosticDisplay(DisplayHelpMixin):
                     if pd.notna(row.documentation_url):
                         msg += f" Read more about this here: {row.documentation_url}."
                     lines.append(msg)
-        lines.append("Mute a check with .diagnose(ignore=['<code>']).")
+        lines.append("Mute a check with .checks.summarize(ignore=['<code>']).")
         return "\n".join(lines)
 
 
 @runtime_checkable
 class Check(Protocol):
-    """Protocol for defining diagnostic checks.
+    """Protocol for defining checks.
 
     Each check wraps a callable that inspects a report. If the callable returns a
     non-empty string, that text is recorded as a finding under :attr:`code` with the
@@ -194,7 +198,7 @@ class Check(Protocol):
     ----------
     code : str
         Unique identifier for this check , used in
-        :meth:`~skore.EstimatorReport.diagnose` and `ignore` lists.
+        :meth:`~skore.EstimatorReport.checks.summarize` and `ignore` lists.
 
     title : str
         Short label shown for the finding when one is reported.
@@ -206,7 +210,7 @@ class Check(Protocol):
     docs_url : str or None, default=None
         Optional link or documentation anchor: a string starting with `"http"`
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
-        the automatic diagnostic user guide.
+        the automated checks user guide.
 
     severity : {"issue", "tip"}
         Severity of the finding. ``"issue"`` flags a modeling problem to fix;
@@ -252,4 +256,4 @@ def _get_issue_documentation_url(issue: dict) -> str | None:
         )
     except PackageNotFoundError:
         url_version = "dev"
-    return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automatic_diagnostic.html#{docs_url}"
+    return f"https://docs.skore.probabl.ai/{url_version}/user_guide/automated_checks.html#{docs_url}"

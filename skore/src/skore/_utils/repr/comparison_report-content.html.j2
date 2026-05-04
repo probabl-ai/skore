@@ -1,6 +1,6 @@
 {% set report_tabs = [
     {"label": "Results", "help_variant": "accessor", "help_url": metrics_accessor_doc_url, "accessor_name": "metrics"},
-    {"label": "Diagnostic", "help_variant": "accessor", "help_url": diagnose_documentation_url, "accessor_name": "diagnose"},
+    {"label": "Checks Summary", "help_variant": "accessor", "help_url": checks_documentation_url, "accessor_name": "checks"},
     {"label": "Estimator", "help_variant": "accessor", "help_url": inspection_accessor_doc_url, "accessor_name": "inspection"},
     {"label": "Data", "help_variant": "comparison_data"},
     {"label": "Help", "help_variant": "text", "help_text": "Browse accessors, methods, and attributes for this report (same as calling .help())."},
@@ -14,20 +14,20 @@
                 <div class="report-section report-metrics">{{ metrics_summary | safe }}</div>
             </div>
             <div class="report-tab-panel">
-                <div class="report-section report-diagnostic">
+                <div class="report-section report-checks-summary">
                     <div class="comparison-report-select-row">
-                        <label for="{{ container_id }}-report-select-diagnostic">Selected report</label>
+                        <label for="{{ container_id }}-report-select-checks-summary">Selected report</label>
                         <select
-                            id="{{ container_id }}-report-select-diagnostic"
+                            id="{{ container_id }}-report-select-checks-summary"
                             class="skore-comparison-report-select"
-                            aria-label="Select which report's diagnostic to show"
+                            aria-label="Select which report's checks summary to show"
                         >
                             {% for row in comparison_reports %}
                             <option value="{{ loop.index0 }}">{{ row.label }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <slot name="diagnostic"></slot>
+                    <slot name="checks-summary"></slot>
                 </div>
             </div>
             <div class="report-tab-panel">

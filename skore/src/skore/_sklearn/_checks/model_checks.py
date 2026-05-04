@@ -8,8 +8,8 @@ from numpy.typing import ArrayLike
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
-from skore._sklearn._diagnostic.base import Check
-from skore._sklearn._diagnostic.utils import (
+from skore._sklearn._checks.base import Check
+from skore._sklearn._checks.utils import (
     _TIMING_METRICS,
     CheckNotApplicable,
     check_score_gap_to_baseline,
