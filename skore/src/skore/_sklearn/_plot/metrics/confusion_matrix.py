@@ -461,25 +461,19 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         classes = estimator.classes_
 
-        cm = sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred, labels=classes)
         confusion_matrix_predict = cls._build_confusion_frame(
-            cm[np.newaxis, ...],
+            sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred, labels=classes)[
+                np.newaxis, ...
+            ],
             thresholds=np.array([np.nan]),
             labels=classes,
         ).drop(columns=["threshold"])
 
         if ml_task != "binary-classification":
             ovr_dfs = []
-            for class_idx, label in enumerate(classes):
-                pred_p = cm[:, class_idx].sum()
-                true_p = cm[class_idx, :].sum()
-                tp = cm[class_idx, class_idx]
-                tn = cm.sum() - pred_p - true_p + tp
-                cm_ovr = np.array(
-                    [
-                        [tn, pred_p - tp],
-                        [true_p - tp, tp],
-                    ]
+            for label in classes:
+                cm_ovr = sklearn_confusion_matrix(
+                    y_true=y_true == label, y_pred=y_pred == label, labels=[0, 1]
                 )
                 ovr_dfs.append(
                     cls._build_confusion_frame(
