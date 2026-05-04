@@ -663,10 +663,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             index_left = index_right - 1
             diff_right = abs(thresholds[index_right] - threshold_value)
             diff_left = abs(thresholds[index_left] - threshold_value)
-            closest_threshold = thresholds[
+            closest_threshold_value = thresholds[
                 index_right if diff_right < diff_left else index_left
             ]
-            return group.loc[group["threshold"] == closest_threshold]
+            return group.query(f"threshold == {closest_threshold_value}")
 
         groupby_cols = df.columns.intersection(
             ["split", "estimator", "label"]
