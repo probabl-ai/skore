@@ -167,6 +167,9 @@ convention = "numpy"
 
 [tool.mypy]
 exclude = ["src/skore/_externals/", "hatch/", "tests/"]
+# strict = false
+warn_unused_configs = true
+warn_redundant_casts = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true

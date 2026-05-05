@@ -921,7 +921,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         if cache_value is not None:
             return cache_value
 
-        data_source = cast(DataSource, data_source)
         _, y_true = self._parent._get_data_and_y_true(data_source=data_source)
 
         y_pred = self._parent._get_predictions(

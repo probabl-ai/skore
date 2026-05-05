@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import numpy as np
-from numpy.typing import ArrayLike
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
@@ -45,7 +44,7 @@ def _get_metrics_data(report: _BaseReport) -> tuple:
         else DummyRegressor(strategy="mean"),
         X_train=report.X_train,
         y_train=report.y_train,
-        X_test=cast(ArrayLike, report.X_test),
+        X_test=report.X_test,
         y_test=report.y_test,
         pos_label=report.pos_label,
     )

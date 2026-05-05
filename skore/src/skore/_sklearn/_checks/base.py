@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from importlib.metadata import PackageNotFoundError, version
-from typing import TYPE_CHECKING, Literal, Protocol, cast, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 from uuid import uuid4
 
 import pandas as pd
@@ -169,7 +169,7 @@ class ChecksSummaryDisplay(DisplayHelpMixin):
             return self._header + "\nAll checks were either ignored or not applicable."
         lines = [self._header]
         for label, severity, _, _ in _TAB_SPECS:
-            df = self.frame(severity=cast(Literal["issue", "tip", "passed"], severity))
+            df = self.frame(severity=severity)
             if df.empty:
                 continue
             lines.append(f"{label}:")
