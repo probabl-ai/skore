@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import matplotlib
 import numpy as np
@@ -65,7 +65,7 @@ def monkeypatch_configuration(monkeypatch):
 
 @pytest.fixture
 def mock_now():
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 @pytest.fixture

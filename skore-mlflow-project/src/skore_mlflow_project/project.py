@@ -7,7 +7,7 @@ import re
 import warnings
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib.metadata import version
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -74,7 +74,7 @@ def format_date(start_time: int | None) -> str:
     if start_time is None:
         return ""
 
-    return datetime.fromtimestamp(start_time / 1_000, tz=timezone.utc).isoformat()
+    return datetime.fromtimestamp(start_time / 1_000, tz=UTC).isoformat()
 
 
 class Project:

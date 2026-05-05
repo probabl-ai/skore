@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from importlib.metadata import version
 from io import StringIO
 from typing import Generic, Literal, TypeVar
@@ -9,6 +9,7 @@ from uuid import uuid4
 from rich.console import Console
 from rich.panel import Panel
 
+from skore._project.git import git_commit
 from skore._sklearn._checks.base import Check, CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._checks.utils import CheckNotApplicable
@@ -94,10 +95,11 @@ class _BaseReport(ReportHelpMixin):
         self._metadata = {
             "id": uuid4().int,
             "skore-version": version("skore"),
-            "creation-date": datetime.now(timezone.utc).isoformat(),
+            "creation-date": datetime.now(UTC).isoformat(),
             # comparison reports don't have a _report_type yet at init time
             # but they don't have a `get_state` anyway:
             "report_type": getattr(self, "_report_type", "comparison"),
+            "git_commit": git_commit(),
         }
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
 

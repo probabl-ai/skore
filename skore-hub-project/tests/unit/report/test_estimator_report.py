@@ -172,6 +172,8 @@ class TestEstimatorReportPayload:
 
     @mark.respx()
     def test_model_dump(self, binary_classification, payload):
+        binary_classification.cache_predictions()
+
         _, checksum = serialize(binary_classification)
 
         payload_dict = payload.model_dump()

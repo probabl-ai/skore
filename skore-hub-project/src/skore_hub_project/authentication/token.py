@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from threading import RLock
 from time import sleep
 from urllib.parse import urljoin
@@ -12,8 +12,8 @@ from httpx import HTTPStatusError, TimeoutException
 from rich.align import Align
 from rich.live import Live
 from rich.panel import Panel
+from skore import console
 
-from skore_hub_project import console
 from skore_hub_project.authentication.uri import URI
 
 
@@ -236,7 +236,7 @@ class Token:
 
     def __call__(self) -> dict[str, str]:  # noqa: D102
         with self.__lock:
-            if self.__expiration <= datetime.now(timezone.utc):
+            if self.__expiration <= datetime.now(UTC):
                 access, refreshment, expiration = post_oauth_refresh_token(
                     self.__refreshment
                 )
