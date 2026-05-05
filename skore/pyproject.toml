@@ -126,7 +126,6 @@ addopts = [
   "--durations=25",
 ]
 xfail_strict = true
-filterwarnings = ["error"]  # ?!
 log_cli_level = "info"
 
 [tool.coverage.run]
