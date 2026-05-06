@@ -81,7 +81,7 @@ We provide the :meth:`EstimatorReport.metrics.summarize` method that aggregates 
 in a single dataframe, available through a :class:`~skore.Display`. By default, a set of
 metrics is computed based on the type of target variable (e.g. classification or
 regression). Non-default metrics can be computed by registering them with
-:meth:`add` followed by :meth:`summarize`. We accept different metric types:
+:meth:`~skore.EstimatorReport.metrics.add` followed by :meth:`~skore.EstimatorReport.metrics.summarize`. We accept different metric types:
 
 1. A string that corresponds to a scikit-learn scorer name or a built-in `skore`
    metric name. Scikit-learn metrics that require a ``neg_`` prefix (e.g.
@@ -141,7 +141,7 @@ difference is in the initialization. It accepts an estimator, a dataset (i.e. `X
 `y`) and a cross-validation strategy. Internally, the dataset is split according to the
 cross-validation strategy and an estimator report is created for each split. Therefore,
 a :class:`CrossValidationReport` is a collection of :class:`EstimatorReport` instances,
-available through the :obj:`CrossValidationReport.estimator_reports_` attribute.
+available through the `estimator_reports_` attribute.
 
 For metrics and displays, the same API is exposed with an extra
 parameter, `aggregate`, to aggregate the metrics across the splits.
