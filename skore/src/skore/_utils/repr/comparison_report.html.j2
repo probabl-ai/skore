@@ -21,10 +21,10 @@
             {% if loop.index0 == 0 %} slot="table-report"{% endif %}
         >{{ row.table_report | safe }}</div>
         <div
-            class="skore-cmp-diagnostic-slot"
+            class="skore-cmp-checks-summary-slot"
             data-comparison-index="{{ loop.index0 }}"
-            {% if loop.index0 == 0 %} slot="diagnostic"{% endif %}
-        >{{ row.diagnostic | safe }}</div>
+            {% if loop.index0 == 0 %} slot="checks-summary"{% endif %}
+        >{{ row.checks_summary | safe }}</div>
         {% endfor %}
     </div>
 

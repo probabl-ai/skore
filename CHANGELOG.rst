@@ -66,11 +66,21 @@ Changed
   convert those to scorers using :func:`sklearn.metrics.make_scorer`. See :pr:`2814` by
   :user:`auguste-probabl`.
 
+- **Breaking change:** :meth:`EstimatorReport.diagnose` and :meth:`EstimatorReport.add_checks`
+  have been moved to the newly added :meth:`EstimatorReport.checks` accessor and have been
+  renamed to :meth:`EstimatorReport.checks.summarize` and :meth:`EstimatorReport.checks.add`
+  respectively. See :pr:`2833` by :user:`GaetandeCast`.
+
 Added
 -----
 
 - :class:`Project` now accepts strings for the `workspace` argument. See :pr:`2832` by
   :user:`auguste-probabl`.
+
+- :meth:`EstimatorReport.metrics.add` now accepts ``verbose_name`` as well as ``name``,
+  to allow customizing the verbose metric name shown in
+  :meth:`EstimatorReport.metrics.summarize`. The same change also applies to the other
+  report types. See :pr:`2869` by :user:`auguste-probabl`.
 
 `0.16.0`_ (2026-04-20)
 ======================

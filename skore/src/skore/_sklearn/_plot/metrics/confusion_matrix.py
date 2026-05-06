@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Literal, cast
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -446,7 +446,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             raise NotImplementedError(
                 "Displaying both data sources is not supported yet."
             )
-        data_source = cast(DataSource, data_source)
 
         classes = estimator.classes_
 

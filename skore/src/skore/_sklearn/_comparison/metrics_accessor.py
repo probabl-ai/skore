@@ -167,6 +167,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         metric: MetricLike,
         *,
         name: str | None = None,
+        verbose_name: str | None = None,
         greater_is_better: bool = True,
         position: Literal["first", "last"] = "first",
         **kwargs: Any,
@@ -192,6 +193,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         name : str, optional
             Custom name for the metric. If not provided, the name is inferred
             from the metric (e.g. the function's ``__name__``).
+
+        verbose_name : str, optional
+            Custom verbose name for the metric which will be used for display purposes.
+            If not provided, will be inferred from the metric name.
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -227,6 +232,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             report.metrics.add(
                 metric,
                 name=name,
+                verbose_name=verbose_name,
                 greater_is_better=greater_is_better,
                 position=position,
                 **kwargs,

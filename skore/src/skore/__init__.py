@@ -28,7 +28,7 @@ from skore._sklearn import (
     evaluate,
     train_test_split,
 )
-from skore._sklearn._diagnostic import Check, CheckNotApplicable, DiagnosticDisplay
+from skore._sklearn._checks import Check, CheckNotApplicable, ChecksSummaryDisplay
 from skore._sklearn._plot.base import Display
 from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
 from skore._sklearn._plot.inspection.impurity_decrease import (
@@ -63,7 +63,7 @@ __all__ = [
     "ComparisonReport",
     "ConfusionMatrixDisplay",
     "CrossValidationReport",
-    "DiagnosticDisplay",
+    "ChecksSummaryDisplay",
     "Display",
     "EstimatorReport",
     "ImpurityDecreaseDisplay",

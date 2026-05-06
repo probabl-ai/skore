@@ -34,6 +34,7 @@ from skore._utils.repr.html_repr import render_template
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
+    from skore._sklearn._checks.accessor import _ChecksAccessor
     from skore._sklearn._estimator.data_accessor import _DataAccessor
     from skore._sklearn._estimator.inspection_accessor import _InspectionAccessor
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
@@ -172,6 +173,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "checks": {"name": "checks"},
     }
 
     _report_type: Literal["estimator"] = "estimator"
@@ -179,6 +181,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor
+    checks: _ChecksAccessor
 
     def _fit_estimator(
         self,
@@ -843,13 +846,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostic = self.diagnose()
-        diagnostic_html = (
-            "<div class='report-diagnostic-details'>"
-            f"{len(diagnostic.frame(severity='issue'))} issue(s), "
-            f"{len(diagnostic.frame(severity='tip'))} tip(s), "
-            f"{len(diagnostic.frame(severity='passed'))} passed, "
-            f"{diagnostic.n_ignored_codes} ignored."
+        checks_summary = self.checks.summarize()
+        checks_summary_html = (
+            "<div class='report-checks-summary-details'>"
+            f"{len(checks_summary.frame(severity='issue'))} issue(s), "
+            f"{len(checks_summary.frame(severity='tip'))} tip(s), "
+            f"{len(checks_summary.frame(severity='passed'))} passed, "
+            f"{checks_summary._n_ignored_codes} ignored."
             "</div>"
         )
 
@@ -857,7 +860,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
-            "diagnostic": diagnostic_html,
+            "checks_summary": checks_summary_html,
         }
 
     def _repr_html_(self) -> str:
@@ -877,8 +880,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
-        diagnose_documentation_url = get_documentation_url(
-            obj=self, method_name="diagnose"
+        checks_documentation_url = get_documentation_url(
+            obj=self, accessor_name="checks"
         )
         help_ctx = asdict(self._build_help_data())
         help_ctx["is_report"] = True
@@ -891,7 +894,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "diagnose_documentation_url": diagnose_documentation_url,
+                "checks_documentation_url": checks_documentation_url,
                 **fragments,
                 **help_ctx,
             },

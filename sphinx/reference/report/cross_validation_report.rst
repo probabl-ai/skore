@@ -20,8 +20,6 @@ functionalities of the report are exposed through accessors.
    :template: class_methods_no_index.rst
 
    CrossValidationReport.help
-   CrossValidationReport.diagnose
-   CrossValidationReport.add_checks
    CrossValidationReport.cache_predictions
    CrossValidationReport.clear_cache
    CrossValidationReport.create_estimator_report
@@ -34,6 +32,7 @@ functionalities of the report are exposed through accessors.
    :template: autosummary/accessor.rst
 
    CrossValidationReport.data
+   CrossValidationReport.checks
    CrossValidationReport.inspection
    CrossValidationReport.metrics
 
@@ -66,3 +65,13 @@ The `inspection` accessor helps you inspect your model by e.g. evaluating the im
 of the features in your model.
 
 .. include:: ../api/CrossValidationReport.inspection.inc
+
+.. _cross_validation_checks:
+
+Checks
+------
+
+The `checks` accessor runs automated checks that look for common modeling problems
+such as overfitting and underfitting.
+
+.. include:: ../api/CrossValidationReport.checks.inc

@@ -91,6 +91,20 @@ Inspection
      - Display for visualizing feature importance via permutation importance
 
 
+Checks
+^^^^^^
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`ChecksSummaryDisplay`
+     - Display for check results returned by the ``checks`` accessor
+   * - :class:`Check`
+     - Protocol for defining custom checks
+   * - :exc:`CheckNotApplicable`
+     - Exception raised when a check cannot run on the given report
+
+
 Utilities
 ^^^^^^^^^
 

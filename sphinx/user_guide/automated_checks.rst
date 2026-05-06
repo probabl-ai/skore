@@ -1,12 +1,12 @@
-.. _automatic_diagnostic:
+.. _automated_checks:
 
-====================
-Automatic diagnostic
-====================
+================
+Automated checks
+================
 
 `skore` provides automated checks for common model quality pitfalls.
-Use :meth:`~skore.EstimatorReport.diagnose` to run checks and get a diagnostic that
-summarizes the findings. Findings come in two severities:
+Use :meth:`~skore.EstimatorReport.checks.summarize` to run checks and get a
+a summary of the findings. Findings come in two severities:
 
 - **issues** flag a concrete modeling problem to fix (e.g. overfitting);
 - **tips** do not signal a defect on their own but invite caution, typically on
@@ -18,13 +18,13 @@ Each finding has:
 - a stable check code,
 - and a link to this page.
 
-Checks can be muted per call with `ignore=...`:
+Checks can be muted per call with the `ignore` parameter of :meth:`~skore.EstimatorReport.checks.summarize`:
 
 .. code-block:: python
 
-    report.diagnose(ignore=["SKD001"])
+    report.checks.summarize(ignore=["SKD001"])
 
-You can also set a global ignore list with `configuration.ignore_checks = ...`:
+You can also set a global ignore list with :attr:`~skore.configuration.ignore_checks`:
 
 .. code-block:: python
 
@@ -32,12 +32,12 @@ You can also set a global ignore list with `configuration.ignore_checks = ...`:
     configuration.ignore_checks = ["SKD001"]
 
 For cross-validation reports, checks are run per split and then aggregated
-at report level through `~skore.CrossValidationReport.diagnose`. An issue is
+at report level through :meth:`~skore.CrossValidationReport.checks.summarize`. An issue is
 reported only when it appears in a strict majority of evaluated splits.
 
-For comparison reports, `~skore.ComparisonReport.diagnose` builds a global diagnostic
-from each component report in the comparison. Issues are grouped by component
-report and emitted as a single message.
+For comparison reports, :meth:`~skore.ComparisonReport.checks.summarize` builds a global
+summary from each component report in the comparison. Issues are grouped by
+component report and emitted as a single message.
 
 
 .. _skd001-overfitting:
