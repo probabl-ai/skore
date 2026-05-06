@@ -20,7 +20,7 @@ def optional_dependencies(extra: str) -> list[str]:
     regex = re.compile(rf"extra\s*==\s*['\"]{extra}['\"]")
     names = []
 
-    assert dependencies, "No `skore` dependencies found"
+    assert dependencies is not None, "No `skore` dependencies found"
 
     for dependency in dependencies:
         if regex.search(dependency):

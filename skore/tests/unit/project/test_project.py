@@ -148,12 +148,14 @@ class TestProject:
         with raises(
             ImportError,
             match=escape(
-                f'Missing `{fake_library_name}` library: please install `skore[local]`.'
+                f"Missing `{fake_library_name}` library: please install `skore[local]`."
             ),
         ):
             Project(mode="local", name="<name>")
 
-    def test_init_hub(self, FakeHubProject):
+    def test_init_hub(self, FakeHubProject, monkeypatch):
+        monkeypatch.setattr("skore._project.project.requires", lambda _: [])
+
         project = Project(mode="hub", name="<workspace>/<name>")
 
         assert isinstance(project, Project)
@@ -166,7 +168,9 @@ class TestProject:
             "name": "<name>",
         }
 
-    def test_init_mlflow(self, FakeMlflowProject):
+    def test_init_mlflow(self, FakeMlflowProject, monkeypatch):
+        monkeypatch.setattr("skore._project.project.requires", lambda _: [])
+
         project = Project(mode="mlflow", name="<name>", tracking_uri="<uri>")
 
         assert isinstance(project, Project)
@@ -227,16 +231,19 @@ class TestProject:
         with raises(RuntimeError, match=err_msg):
             Project(mode="local", name="<name>", workspace="<workspace>")
 
-    def test_mode(self):
-        assert Project(mode="local", name="<name>").mode == "local"
-        assert Project(mode="hub", name="<workspace>/<name>").mode == "hub"
-        assert Project(mode="mlflow", name="<name>").mode == "mlflow"
+    def test_mode(self, monkeypatch):
+        monkeypatch.setattr("skore._project.project.requires", lambda _: [])
 
-    def test_name(self):
-        assert Project(mode="local", name="<name>").name == "<name>"
-        assert (
-            Project(mode="hub", name="<workspace>/<name>").name == "<workspace>/<name>"
-        )
+        assert Project(mode="local", name="name").mode == "local"
+        assert Project(mode="hub", name="workspace/name").mode == "hub"
+        assert Project(mode="mlflow", name="name").mode == "mlflow"
+
+    def test_name(self, monkeypatch):
+        monkeypatch.setattr("skore._project.project.requires", lambda _: [])
+
+        assert Project(mode="local", name="name").name == "name"
+        assert Project(mode="hub", name="workspace/name").name == "workspace/name"
+        assert Project(mode="mlflow", name="name").name == "name"
 
     @mark.parametrize(
         "report",
