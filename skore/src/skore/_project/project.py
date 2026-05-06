@@ -18,12 +18,18 @@ def optional_dependencies(extra: str) -> list[str]:
     """List optional dependencies required by ``skore[extra]``."""
     dependencies = requires("skore")
     regex = re.compile(rf"extra\s*==\s*['\"]{extra}['\"]")
+    names = []
 
-    return [
-        re.split(r"\s*(?:<|>|=|!|~|\[)", dependency.split(";", 1)[0], maxsplit=1)[0]
-        for dependency in dependencies
-        if regex.search(dependency)
-    ]
+    assert dependencies, "No `skore` dependencies found"
+
+    for dependency in dependencies:
+        if regex.search(dependency):
+            head = dependency.split(";", 1)[0].strip()
+            name = re.split(r"\s*(?:<|>|=|!|~|\[)", head, maxsplit=1)[0].strip()
+
+            names.append(name)
+
+    return names
 
 
 def assert_optional_dependencies_installed(extra: str) -> None:
@@ -33,7 +39,7 @@ def assert_optional_dependencies_installed(extra: str) -> None:
             version(dependency)
         except PackageNotFoundError:
             raise ImportError(
-                f'Missing "{dependency}" library: please install "skore[{extra}]".'
+                f"Missing `{dependency}` library: please install `skore[{extra}]`."
             ) from None
 
 

@@ -1,6 +1,7 @@
 from importlib.metadata import EntryPoint, EntryPoints
 from re import escape
 from unittest.mock import Mock
+from uuid import uuid4
 
 from pandas import DataFrame, MultiIndex, Series
 from pytest import fixture, mark, param, raises
@@ -131,6 +132,23 @@ class TestProject:
             match=escape(
                 "The mode `local` is not supported. You need to install "
                 "`skore-local-project` to use it."
+            ),
+        ):
+            Project(mode="local", name="<name>")
+
+    def test_init_local_missing_optional_dependency(self, monkeypatch):
+        fake_library_name = uuid4().hex
+
+        def fake_requires(name):
+            assert name == "skore"
+            return [f'{fake_library_name} ; extra == "local"']
+
+        monkeypatch.setattr("skore._project.project.requires", fake_requires)
+
+        with raises(
+            ImportError,
+            match=escape(
+                f'Missing `{fake_library_name}` library: please install `skore[local]`.'
             ),
         ):
             Project(mode="local", name="<name>")
