@@ -198,7 +198,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         **kwargs: Any,
     ) -> None:
         """
-        Add a custom metric to be included in :meth:`EstimatorReport.metrics.summarize`.
+        Add a custom metric to in :meth:`~skore.EstimatorReport.metrics.summarize`.
 
         Parameters
         ----------
