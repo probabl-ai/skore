@@ -54,6 +54,9 @@ repos:
           - polars
           - pyarrow
           - scipy-stubs
+          # from local dependencies
+          - diskcache
+          - platformdirs
 
       - id: mypy
         pass_filenames: false
