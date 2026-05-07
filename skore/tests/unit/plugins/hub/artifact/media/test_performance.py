@@ -4,7 +4,7 @@ from matplotlib import pyplot as plt
 from pydantic import ValidationError
 from pytest import mark, param, raises
 
-from skore_hub_project.artifact.media import (
+from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
     ConfusionMatrixSVGTest,
@@ -22,9 +22,9 @@ from skore_hub_project.artifact.media import (
     RocSVGTest,
     RocSVGTrain,
 )
-from skore_hub_project.artifact.media.performance import PerformanceDataFrame
-from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.json import dumps
+from skore._plugins.hub.artifact.media.performance import PerformanceDataFrame
+from skore._plugins.hub.artifact.serializer import Serializer
+from skore._plugins.hub.json import dumps
 
 
 def serialize_svg(display) -> bytes:

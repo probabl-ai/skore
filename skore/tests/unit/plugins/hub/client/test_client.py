@@ -10,9 +10,9 @@ from httpx import (
 )
 from pytest import mark, raises
 
-from skore_hub_project.authentication.login import login
-from skore_hub_project.authentication.uri import URI
-from skore_hub_project.client.client import Client, HUBClient, __semver
+from skore._plugins.hub.authentication.login import login
+from skore._plugins.hub.authentication.uri import URI
+from skore._plugins.hub.client.client import Client, HUBClient, __semver
 
 DATETIME_MAX = datetime.max.replace(tzinfo=UTC).isoformat()
 
@@ -30,7 +30,7 @@ class TestClient:
         def sleep(timeout):
             timeouts.append(timeout)
 
-        monkeypatch.setattr("skore_hub_project.client.client.sleep", sleep)
+        monkeypatch.setattr("skore._plugins.hub.client.client.sleep", sleep)
         route = respx_mock.get("http://localhost/foo")
         route.side_effect = [
             TimeoutException(""),
@@ -55,7 +55,7 @@ class TestClient:
         def sleep(timeout):
             timeouts.append(timeout)
 
-        monkeypatch.setattr("skore_hub_project.client.client.sleep", sleep)
+        monkeypatch.setattr("skore._plugins.hub.client.client.sleep", sleep)
         route = respx_mock.get("http://localhost/foo")
         route.side_effect = [
             TimeoutException(""),
@@ -82,7 +82,7 @@ class TestClient:
         def sleep(timeout):
             timeouts.append(timeout)
 
-        monkeypatch.setattr("skore_hub_project.client.client.sleep", sleep)
+        monkeypatch.setattr("skore._plugins.hub.client.client.sleep", sleep)
         route = respx_mock.get("http://localhost/foo")
         route.side_effect = [
             TimeoutException(""),
@@ -110,7 +110,7 @@ class TestClient:
         def sleep(timeout):
             timeouts.append(timeout)
 
-        monkeypatch.setattr("skore_hub_project.client.client.sleep", sleep)
+        monkeypatch.setattr("skore._plugins.hub.client.client.sleep", sleep)
         route = respx_mock.get("http://localhost/foo")
         route.side_effect = [
             TimeoutException(""),
@@ -148,7 +148,7 @@ class TestHUBClient:
     @mark.respx()
     def test_request_with_token(self, monkeypatch, respx_mock):
         monkeypatch.setattr(
-            "skore_hub_project.authentication.token.open_webbrowser",
+            "skore._plugins.hub.authentication.token.open_webbrowser",
             lambda _: True,
         )
         respx_mock.get(LOGIN_URL).mock(
@@ -202,7 +202,7 @@ class TestHUBClient:
     def test_request_without_package_semver(self, monkeypatch, respx_mock):
         from importlib.metadata import version
 
-        from skore_hub_project.client.client import PACKAGE_SEMVER
+        from skore._plugins.hub.client.client import PACKAGE_SEMVER
 
         assert version("skore-hub-project") == "0.0.0+unknown"
         assert PACKAGE_SEMVER is None
@@ -219,7 +219,7 @@ class TestHUBClient:
     @mark.respx()
     def test_request_with_package_semver(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
-        monkeypatch.setattr("skore_hub_project.client.client.PACKAGE_SEMVER", "1.0.0")
+        monkeypatch.setattr("skore._plugins.hub.client.client.PACKAGE_SEMVER", "1.0.0")
         respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
         login()
 
@@ -235,7 +235,7 @@ class TestHUBClient:
         from sys import modules
         from unittest.mock import Mock
 
-        monkeypatch.setattr("skore_hub_project.client.client.JUPYTERLITE", True)
+        monkeypatch.setattr("skore._plugins.hub.client.client.JUPYTERLITE", True)
         monkeypatch.setitem(modules, "js", Mock())
         monkeypatch.setitem(modules, "pyodide.ffi", Mock())
         monkeypatch.setitem(modules, "pyodide.http.pyxhr", Mock())

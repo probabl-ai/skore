@@ -4,11 +4,11 @@ from json import dumps, loads
 import joblib
 from httpx import Response
 from pytest import fixture, mark, raises, warns
-from skore import CrossValidationReport, EstimatorReport
 
-from skore_hub_project.exception import ForbiddenException, NotFoundException
-from skore_hub_project.project.project import Project
-from skore_hub_project.report import (
+from skore import CrossValidationReport, EstimatorReport
+from skore._plugins.hub.exception import ForbiddenException, NotFoundException
+from skore._plugins.hub.project.project import Project
+from skore._plugins.hub.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
 )
@@ -19,6 +19,7 @@ def regression():
     from sklearn.datasets import make_regression
     from sklearn.linear_model import LinearRegression
     from sklearn.model_selection import train_test_split
+
     from skore import EstimatorReport
 
     X, y = make_regression()
@@ -36,7 +37,7 @@ def regression():
 @fixture(autouse=True)
 def monkeypatch_table_report_representation(monkeypatch):
     monkeypatch.setattr(
-        "skore_hub_project.artifact.media.data.TableReport.content_to_upload",
+        "skore._plugins.hub.artifact.media.data.TableReport.content_to_upload",
         lambda self: None,
     )
 

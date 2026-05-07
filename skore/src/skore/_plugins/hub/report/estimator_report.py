@@ -2,7 +2,7 @@
 
 from typing import ClassVar
 
-from skore_hub_project.artifact.media import (
+from skore._plugins.hub.artifact.media import (
     Coefficients,
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
@@ -27,8 +27,8 @@ from skore_hub_project.artifact.media import (
     TableReportTest,
     TableReportTrain,
 )
-from skore_hub_project.artifact.media.media import Media
-from skore_hub_project.metric import (
+from skore._plugins.hub.artifact.media.media import Media
+from skore._plugins.hub.metric import (
     AccuracyTest,
     AccuracyTrain,
     BrierScoreTest,
@@ -49,9 +49,9 @@ from skore_hub_project.metric import (
     RocAucTest,
     RocAucTrain,
 )
-from skore_hub_project.metric.metric import Metric
-from skore_hub_project.protocol import EstimatorReport
-from skore_hub_project.report.report import ReportPayload
+from skore._plugins.hub.metric.metric import Metric
+from skore._plugins.hub.protocol import EstimatorReport
+from skore._plugins.hub.report.report import ReportPayload
 
 
 class EstimatorReportPayload(ReportPayload[EstimatorReport]):

@@ -6,7 +6,7 @@ from httpx import (
 )
 from pytest import mark, raises
 
-from skore_hub_project.authentication import login as login_module
+from skore._plugins.hub.authentication import login as login_module
 
 DATETIME_MIN = datetime.min.replace(tzinfo=UTC).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=UTC).isoformat()
@@ -33,7 +33,7 @@ def test_login_with_api_key(monkeypatch, respx_mock):
 @mark.respx()
 def test_login_with_token(monkeypatch, respx_mock):
     monkeypatch.setattr(
-        "skore_hub_project.authentication.token.open_webbrowser",
+        "skore._plugins.hub.authentication.token.open_webbrowser",
         lambda _: True,
     )
     respx_mock.get(LOGIN_URL).mock(
@@ -72,7 +72,7 @@ def test_login_with_token(monkeypatch, respx_mock):
 @mark.respx()
 def test_login_with_expired_token(monkeypatch, respx_mock):
     monkeypatch.setattr(
-        "skore_hub_project.authentication.token.open_webbrowser",
+        "skore._plugins.hub.authentication.token.open_webbrowser",
         lambda _: True,
     )
     respx_mock.get(LOGIN_URL).mock(
@@ -121,7 +121,7 @@ def test_login_with_expired_token(monkeypatch, respx_mock):
 @mark.respx()
 def test_login_with_token_timeout(monkeypatch, respx_mock):
     monkeypatch.setattr(
-        "skore_hub_project.authentication.token.open_webbrowser",
+        "skore._plugins.hub.authentication.token.open_webbrowser",
         lambda _: True,
     )
 

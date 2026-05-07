@@ -16,13 +16,13 @@ from unicodedata import normalize
 from httpx import HTTPStatusError, codes
 from joblib import load as joblib_load
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
-from skore import THREADABLE, console
 
-from skore_hub_project import switch_plt_backend
-from skore_hub_project.client.client import Client, HUBClient
-from skore_hub_project.exception import ForbiddenException, NotFoundException
-from skore_hub_project.json import dumps
-from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
+from skore import THREADABLE, console
+from skore._plugins.hub import switch_plt_backend
+from skore._plugins.hub.client.client import Client, HUBClient
+from skore._plugins.hub.exception import ForbiddenException, NotFoundException
+from skore._plugins.hub.json import dumps
+from skore._plugins.hub.protocol import CrossValidationReport, EstimatorReport
 
 if TYPE_CHECKING:
     P = ParamSpec("P")
@@ -158,9 +158,9 @@ class Project:
     representation. Its constructor initializes a hub project by creating a new
     project or by loading an existing one from a defined workspace.
 
-    The class main methods are :func:`~skore_hub_project.Project.put`,
-    :func:`~skore_hub_project.reports.metadata` and
-    :func:`~skore_hub_project.reports.get`, respectively to insert a key-report pair
+    The class main methods are :func:`~skore._plugins.hub.Project.put`,
+    :func:`~skore._plugins.hub.reports.metadata` and
+    :func:`~skore._plugins.hub.reports.get`, respectively to insert a key-report pair
     into the Project, to obtain the reports metadata and to get a specific report.
 
     Parameters
@@ -245,8 +245,7 @@ class Project:
             If the combination of parameters are not valid.
         """
         import skore
-
-        from skore_hub_project.report import (
+        from skore._plugins.hub.report import (
             CrossValidationReportPayload,
             EstimatorReportPayload,
         )

@@ -11,9 +11,9 @@ from typing import ClassVar, Literal, cast
 from packaging.version import Version
 from pandas import concat
 
-from skore_hub_project.artifact.media.media import Media, Report
-from skore_hub_project.json import dumps
-from skore_hub_project.protocol import CrossValidationReport, Display, EstimatorReport
+from skore._plugins.hub.artifact.media.media import Media, Report
+from skore._plugins.hub.json import dumps
+from skore._plugins.hub.protocol import CrossValidationReport, Display, EstimatorReport
 
 
 class Inspection(Media[Report], ABC):  # noqa: D101

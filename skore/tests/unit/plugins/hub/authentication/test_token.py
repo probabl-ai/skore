@@ -4,7 +4,7 @@ from urllib.parse import urljoin
 from httpx import HTTPError, Response, TimeoutException
 from pytest import mark, raises
 
-from skore_hub_project.authentication.token import (
+from skore._plugins.hub.authentication.token import (
     Token,
     get_oauth_device_code_probe,
     get_oauth_device_login,
@@ -12,7 +12,7 @@ from skore_hub_project.authentication.token import (
     post_oauth_device_callback,
     post_oauth_refresh_token,
 )
-from skore_hub_project.authentication.uri import URI
+from skore._plugins.hub.authentication.uri import URI
 
 DATETIME_MIN = datetime.min.replace(tzinfo=UTC).isoformat()
 DATETIME_MAX = datetime.max.replace(tzinfo=UTC).isoformat()
@@ -86,7 +86,7 @@ def test_get_oauth_device_token(respx_mock):
 
 @mark.respx()
 def test_get_oauth_device_code_probe(monkeypatch, respx_mock):
-    monkeypatch.setattr("skore_hub_project.authentication.token.sleep", lambda _: None)
+    monkeypatch.setattr("skore._plugins.hub.authentication.token.sleep", lambda _: None)
     respx_mock.get(urljoin(URI(), PROBE_URL)).mock(
         side_effect=[
             Response(400),
@@ -167,7 +167,7 @@ class TestToken:
             return True
 
         monkeypatch.setattr(
-            "skore_hub_project.authentication.token.open_webbrowser", open_webbrowser
+            "skore._plugins.hub.authentication.token.open_webbrowser", open_webbrowser
         )
 
         respx_mock.get(LOGIN_URL).mock(
@@ -205,7 +205,7 @@ class TestToken:
     @mark.respx()
     def test_init_timeout(self, monkeypatch, respx_mock):
         monkeypatch.setattr(
-            "skore_hub_project.authentication.token.open_webbrowser",
+            "skore._plugins.hub.authentication.token.open_webbrowser",
             lambda _: True,
         )
 
@@ -230,7 +230,7 @@ class TestToken:
     @mark.respx()
     def test_call(self, monkeypatch, respx_mock):
         monkeypatch.setattr(
-            "skore_hub_project.authentication.token.open_webbrowser",
+            "skore._plugins.hub.authentication.token.open_webbrowser",
             lambda _: True,
         )
 
@@ -264,7 +264,7 @@ class TestToken:
     @mark.respx()
     def test_call_with_expired_token(self, monkeypatch, respx_mock):
         monkeypatch.setattr(
-            "skore_hub_project.authentication.token.open_webbrowser",
+            "skore._plugins.hub.authentication.token.open_webbrowser",
             lambda _: True,
         )
 

@@ -26,7 +26,7 @@ from httpx import (
 from httpx import Client as HTTPXClient
 from httpx._types import HeaderTypes
 
-from skore_hub_project.authentication.uri import URI
+from skore._plugins.hub.authentication.uri import URI
 
 logger = getLogger(__name__)
 
@@ -220,7 +220,7 @@ class HUBClient(Client):
         **kwargs: Any,
     ) -> Response:
         """Execute request with authorization."""
-        from skore_hub_project.authentication.login import credentials
+        from skore._plugins.hub.authentication.login import credentials
 
         headers = Headers(headers)
 

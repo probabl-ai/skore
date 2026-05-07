@@ -3,7 +3,7 @@ from orjson import dumps as orjson_dumps
 from pandas import Timestamp
 from pytest import raises
 
-from skore_hub_project.json import dumps
+from skore._plugins.hub.json import dumps
 
 
 def test_json_pandas_timestamp():

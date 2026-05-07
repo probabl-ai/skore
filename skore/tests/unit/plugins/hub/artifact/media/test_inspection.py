@@ -4,14 +4,14 @@ from functools import partialmethod
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
 
-from skore_hub_project.artifact.media import (
+from skore._plugins.hub.artifact.media import (
     Coefficients,
     ImpurityDecrease,
     PermutationImportanceTest,
     PermutationImportanceTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.json import dumps
+from skore._plugins.hub.artifact.serializer import Serializer
+from skore._plugins.hub.json import dumps
 
 
 def serialize(result) -> bytes:

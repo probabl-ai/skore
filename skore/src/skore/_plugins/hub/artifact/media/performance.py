@@ -11,9 +11,9 @@ from typing import ClassVar, Literal, cast
 
 from matplotlib import pyplot as plt
 
-from skore_hub_project.artifact.media.media import Media, Report
-from skore_hub_project.json import dumps
-from skore_hub_project.protocol import Display
+from skore._plugins.hub.artifact.media.media import Media, Report
+from skore._plugins.hub.json import dumps
+from skore._plugins.hub.protocol import Display
 
 
 class PerformanceSVG(Media[Report], ABC):  # noqa: D101

@@ -14,9 +14,9 @@ from sklearn.model_selection import (
     StratifiedShuffleSplit,
     TimeSeriesSplit,
 )
-from skore import CrossValidationReport, EstimatorReport
 
-from skore_hub_project.artifact.media import (
+from skore import CrossValidationReport, EstimatorReport
+from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
     ConfusionMatrixSVGTest,
@@ -34,9 +34,9 @@ from skore_hub_project.artifact.media import (
     RocSVGTest,
     RocSVGTrain,
 )
-from skore_hub_project.artifact.media.data import TableReport
-from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.metric import (
+from skore._plugins.hub.artifact.media.data import TableReport
+from skore._plugins.hub.artifact.serializer import Serializer
+from skore._plugins.hub.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
     AccuracyTrainMean,
@@ -68,7 +68,7 @@ from skore_hub_project.metric import (
     RocAucTrainMean,
     RocAucTrainStd,
 )
-from skore_hub_project.report import (
+from skore._plugins.hub.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
 )
@@ -186,7 +186,7 @@ class TestCrossValidationReportPayload:
         self, project, splitter, metadata, expected_splits, monkeypatch
     ):
         monkeypatch.setattr(
-            "skore_hub_project.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
+            "skore._plugins.hub.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
             10,
         )
 
@@ -456,11 +456,11 @@ class TestCrossValidationReportPayload:
             raise Exception("test_metrics_raises_exception")
 
         monkeypatch.setattr(
-            "skore_hub_project.report.cross_validation_report.CrossValidationReportPayload.METRICS",
+            "skore._plugins.hub.report.cross_validation_report.CrossValidationReportPayload.METRICS",
             [AccuracyTestMean],
         )
         monkeypatch.setattr(
-            "skore_hub_project.metric.AccuracyTestMean.compute",
+            "skore._plugins.hub.metric.AccuracyTestMean.compute",
             raise_exception,
         )
 

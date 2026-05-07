@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from skore_hub_project.artifact.media.media import Media, Report
+from skore._plugins.hub.artifact.media.media import Media, Report
 
 
 class EstimatorHtmlRepr(Media[Report]):  # noqa: D101

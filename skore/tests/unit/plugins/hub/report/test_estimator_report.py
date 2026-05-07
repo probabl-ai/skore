@@ -1,9 +1,9 @@
 from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
-from skore import CrossValidationReport, EstimatorReport
 
-from skore_hub_project.artifact.media import (
+from skore import CrossValidationReport, EstimatorReport
+from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
     ConfusionMatrixSVGTest,
@@ -23,8 +23,8 @@ from skore_hub_project.artifact.media import (
     TableReportTest,
     TableReportTrain,
 )
-from skore_hub_project.artifact.serializer import Serializer
-from skore_hub_project.metric import (
+from skore._plugins.hub.artifact.serializer import Serializer
+from skore._plugins.hub.metric import (
     AccuracyTest,
     AccuracyTrain,
     BrierScoreTest,
@@ -41,7 +41,7 @@ from skore_hub_project.metric import (
     RocAucTest,
     RocAucTrain,
 )
-from skore_hub_project.report import EstimatorReportPayload
+from skore._plugins.hub.report import EstimatorReportPayload
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
@@ -137,11 +137,11 @@ class TestEstimatorReportPayload:
             raise Exception("test_metrics_raises_exception")
 
         monkeypatch.setattr(
-            "skore_hub_project.report.estimator_report.EstimatorReportPayload.METRICS",
+            "skore._plugins.hub.report.estimator_report.EstimatorReportPayload.METRICS",
             [AccuracyTest],
         )
         monkeypatch.setattr(
-            "skore_hub_project.metric.AccuracyTest.compute", raise_exception
+            "skore._plugins.hub.metric.AccuracyTest.compute", raise_exception
         )
 
         with raises(Exception, match="test_metrics_raises_exception"):

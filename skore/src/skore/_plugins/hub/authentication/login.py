@@ -6,11 +6,11 @@ from logging import getLogger
 from rich.align import Align
 from rich.live import Live
 from rich.panel import Panel
-from skore import console
 
-from skore_hub_project.authentication.apikey import APIKey
-from skore_hub_project.authentication.token import Token
-from skore_hub_project.authentication.uri import URI
+from skore import console
+from skore._plugins.hub.authentication.apikey import APIKey
+from skore._plugins.hub.authentication.token import Token
+from skore._plugins.hub.authentication.uri import URI
 
 logger = getLogger(__name__)
 

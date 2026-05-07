@@ -12,9 +12,9 @@ from httpx import HTTPStatusError, TimeoutException
 from rich.align import Align
 from rich.live import Live
 from rich.panel import Panel
-from skore import console
 
-from skore_hub_project.authentication.uri import URI
+from skore import console
+from skore._plugins.hub.authentication.uri import URI
 
 
 def get_oauth_device_login(success_uri: str | None = None) -> tuple[str, str, str]:
@@ -41,7 +41,7 @@ def get_oauth_device_login(success_uri: str | None = None) -> tuple[str, str, st
         - user_code: str
             The user code that needs to be entered on the authorization page
     """
-    from skore_hub_project.client.client import Client
+    from skore._plugins.hub.client.client import Client
 
     url = "identity/oauth/device/login"
     params = {"success_uri": success_uri} if success_uri is not None else {}
@@ -68,7 +68,7 @@ def get_oauth_device_code_probe(device_code: str, *, timeout: int = 600) -> None
     device_code : str
         The device code to exchange for tokens.
     """
-    from skore_hub_project.client.client import Client
+    from skore._plugins.hub.client.client import Client
 
     url = "identity/oauth/device/code-probe"
     params = {"device_code": device_code}
@@ -104,7 +104,7 @@ def post_oauth_device_callback(state: str, user_code: str) -> None:
     user_code: str
         The code entered by the user.
     """
-    from skore_hub_project.client.client import Client
+    from skore._plugins.hub.client.client import Client
 
     url = "identity/oauth/device/callback"
     data = {"state": state, "user_code": user_code}
@@ -136,7 +136,7 @@ def get_oauth_device_token(device_code: str) -> tuple[str, str, str]:
         - expires_at : str
             The expiration datetime as ISO 8601 str of the access token
     """
-    from skore_hub_project.client.client import Client
+    from skore._plugins.hub.client.client import Client
 
     url = "identity/oauth/device/token"
     params = {"device_code": device_code}
@@ -175,7 +175,7 @@ def post_oauth_refresh_token(refresh_token: str) -> tuple[str, str, str]:
         - expires_at : str
             The expiration datetime as ISO 8601 str of the access token
     """
-    from skore_hub_project.client.client import Client
+    from skore._plugins.hub.client.client import Client
 
     url = "identity/oauth/token/refresh"
     json = {"refresh_token": refresh_token}

@@ -11,9 +11,9 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.model_selection import train_test_split
-from skore import CrossValidationReport, EstimatorReport
 
-from skore_hub_project.project.project import Project
+from skore import CrossValidationReport, EstimatorReport
+from skore._plugins.hub.project.project import Project
 
 
 @fixture
@@ -44,14 +44,14 @@ def monkeypatch_project_routes(respx_mock):
 
 @fixture
 def upload_mock():
-    from skore_hub_project.artifact.upload import upload
+    from skore._plugins.hub.artifact.upload import upload
 
     return Mock(spec=upload, wraps=upload)
 
 
 @fixture
 def monkeypatch_upload_with_mock(monkeypatch, upload_mock):
-    monkeypatch.setattr("skore_hub_project.artifact.artifact.upload", upload_mock)
+    monkeypatch.setattr("skore._plugins.hub.artifact.artifact.upload", upload_mock)
 
 
 @fixture
@@ -83,12 +83,12 @@ class FakeClient(Client):
 
 @fixture
 def monkeypatch_project_hub_client(monkeypatch):
-    monkeypatch.setattr("skore_hub_project.project.project.HUBClient", FakeClient)
+    monkeypatch.setattr("skore._plugins.hub.project.project.HUBClient", FakeClient)
 
 
 @fixture
 def monkeypatch_artifact_hub_client(monkeypatch):
-    monkeypatch.setattr("skore_hub_project.artifact.upload.HUBClient", FakeClient)
+    monkeypatch.setattr("skore._plugins.hub.artifact.upload.HUBClient", FakeClient)
 
 
 @fixture(scope="module")
@@ -337,7 +337,7 @@ def monkeypatch_rich(monkeypatch):
 @fixture
 def monkeypatch_global_variables(monkeypatch):
     """Reset global variables that can bias the tests."""
-    monkeypatch.setattr("skore_hub_project.authentication.login.credentials", None)
+    monkeypatch.setattr("skore._plugins.hub.authentication.login.credentials", None)
 
 
 @fixture(autouse=True)

@@ -1,6 +1,6 @@
 from pytest import mark, param
 
-from skore_hub_project.protocol import CrossValidationReport, EstimatorReport
+from skore._plugins.hub.protocol import CrossValidationReport, EstimatorReport
 
 
 @mark.parametrize(

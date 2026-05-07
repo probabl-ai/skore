@@ -17,7 +17,7 @@ from sklearn.model_selection import (
     TimeSeriesSplit,
 )
 
-from skore_hub_project.artifact.media import (
+from skore._plugins.hub.artifact.media import (
     Coefficients,
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
@@ -40,9 +40,9 @@ from skore_hub_project.artifact.media import (
     RocSVGTest,
     RocSVGTrain,
 )
-from skore_hub_project.artifact.media.data import TableReport
-from skore_hub_project.artifact.media.media import Media
-from skore_hub_project.metric import (
+from skore._plugins.hub.artifact.media.data import TableReport
+from skore._plugins.hub.artifact.media.media import Media
+from skore._plugins.hub.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
     AccuracyTrainMean,
@@ -82,10 +82,10 @@ from skore_hub_project.metric import (
     RocAucTrainMean,
     RocAucTrainStd,
 )
-from skore_hub_project.metric.metric import Metric
-from skore_hub_project.protocol import CrossValidationReport
-from skore_hub_project.report.estimator_report import EstimatorReportPayload
-from skore_hub_project.report.report import ReportPayload
+from skore._plugins.hub.metric.metric import Metric
+from skore._plugins.hub.protocol import CrossValidationReport
+from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
+from skore._plugins.hub.report.report import ReportPayload
 
 SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
 TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT = 100
