@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import numpy as np
 import skrub
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator, MetaEstimatorMixin, clone
+from sklearn.base import BaseEstimator, clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import (
@@ -535,9 +535,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         `decision_function(X)`. The result is cached because running the probe
         requires extra predictions.
         """
-        if isinstance(self._estimator, MetaEstimatorMixin | Pipeline):
-            return False
-
         response_methods = ["decision_function", "predict_proba"]
         try:
             method = _check_response_method(self._estimator, response_methods)
