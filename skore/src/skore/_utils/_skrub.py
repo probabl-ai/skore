@@ -70,6 +70,6 @@ def to_learner(estimator: BaseEstimator):
 
 def to_estimator(learner: _LearnerAdapter):
     assert isinstance(learner, _LearnerAdapter), (
-        "to_learner is used to unwrap _LearnerAdapter wrappers, got: {learner!r}"
+        f"to_estimator is used to unwrap _LearnerAdapter wrappers, got: {learner!r}"
     )
     return learner.estimator
