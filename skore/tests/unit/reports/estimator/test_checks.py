@@ -125,6 +125,48 @@ def test_skd006_detects_coefficient_interpretation(regression_data):
     assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
 
 
+def test_skd007_mdi_bias_with_high_cardinality(regression_data):
+    """SKD007 tip is emitted with continuous features and tree importances."""
+    X, y = regression_data
+    report = evaluate(RandomForestRegressor(n_estimators=5, random_state=0), X, y)
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    assert "SKD007" in tips.index
+    assert (
+        "High-cardinality features detected: 0, 1, 2 (and 1 more)"
+        in tips.loc["SKD007", "explanation"]
+    )
+
+
+def test_skd007_not_emitted_for_binary_features():
+    """SKD007 tip is absent when all features are low-cardinality."""
+    rng = np.random.RandomState(42)
+    X = rng.randint(0, 2, size=(20, 4)).astype(float)
+    y = rng.standard_normal(20)
+    report = evaluate(RandomForestRegressor(n_estimators=5, random_state=0), X, y)
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    assert "SKD007" not in tips.index
+
+
+def test_skd008_correlated_features():
+    """SKD008 issue is emitted when two features are near-perfectly correlated."""
+    rng = np.random.RandomState(42)
+    X = rng.standard_normal((20, 4))
+    X[:, 1] = X[:, 0] + rng.standard_normal(20) * 1e-4
+    y = rng.standard_normal(20)
+    report = evaluate(LinearRegression(), X, y)
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD008" in issues.index
+    assert "1 pair(s) of features" in issues.loc["SKD008", "explanation"]
+
+
+def test_skd008_not_emitted_for_independent_features(regression_data):
+    """SKD008 issue is absent when features are independent."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD008" not in issues.index
+
+
 def test_ignore_checks(monkeypatch, regression_report):
     """Check that checks are ignored when ignore is passed."""
     monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
@@ -407,42 +449,3 @@ def test_html_has_three_tabs(regression_report):
     assert "Issues (" in html
     assert "Tips (" in html
     assert "Passed (" in html
-
-
-def test_skd007_mdi_bias_with_high_cardinality(regression_data):
-    """SKD007 tip is emitted with continuous features and tree importances."""
-    X, y = regression_data
-    report = evaluate(RandomForestRegressor(n_estimators=5, random_state=0), X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
-    assert "SKD007" in tips.index
-    assert "PermutationImportanceDisplay" in tips.loc["SKD007", "explanation"]
-
-
-def test_skd007_not_emitted_for_binary_features():
-    """SKD007 tip is absent when all features are low-cardinality."""
-    rng = np.random.RandomState(42)
-    X = rng.randint(0, 2, size=(200, 4)).astype(float)
-    y = rng.standard_normal(200)
-    report = evaluate(RandomForestRegressor(n_estimators=5, random_state=0), X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
-    assert "SKD007" not in tips.index
-
-
-def test_skd008_correlated_features():
-    """SKD008 issue is emitted when two features are near-perfectly correlated."""
-    rng = np.random.RandomState(42)
-    X = rng.standard_normal((200, 4))
-    X[:, 1] = X[:, 0] + rng.standard_normal(200) * 1e-4
-    y = rng.standard_normal(200)
-    report = evaluate(LinearRegression(), X, y)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
-    assert "SKD008" in issues.index
-    assert "1 pair(s) of features" in issues.loc["SKD008", "explanation"]
-
-
-def test_skd008_not_emitted_for_independent_features(regression_data):
-    """SKD008 issue is absent when features are independent."""
-    X, y = regression_data
-    report = evaluate(LinearRegression(), X, y)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
-    assert "SKD008" not in issues.index
