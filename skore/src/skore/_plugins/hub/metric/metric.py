@@ -19,7 +19,7 @@ from typing import (
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from skore._plugins.hub.protocol import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport
 
 if TYPE_CHECKING:
     from pandas import DataFrame

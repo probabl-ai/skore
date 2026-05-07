@@ -17,6 +17,7 @@ from sklearn.model_selection import (
     TimeSeriesSplit,
 )
 
+from skore import CrossValidationReport
 from skore._plugins.hub.artifact.media import (
     Coefficients,
     ConfusionMatrixDataFrameTest,
@@ -83,7 +84,6 @@ from skore._plugins.hub.metric import (
     RocAucTrainStd,
 )
 from skore._plugins.hub.metric.metric import Metric
-from skore._plugins.hub.protocol import CrossValidationReport
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
 

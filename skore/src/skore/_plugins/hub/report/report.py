@@ -11,12 +11,11 @@ from joblib import Parallel, delayed
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
-from skore import THREADABLE, console
+from skore import THREADABLE, CrossValidationReport, EstimatorReport, console
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.artifact.pickle import Pickle
 from skore._plugins.hub.metric.metric import Metric
 from skore._plugins.hub.project.project import Project
-from skore._plugins.hub.protocol import CrossValidationReport, EstimatorReport
 
 SkinnedProgress = partial(
     Progress,

@@ -2,9 +2,9 @@
 
 from typing import Literal
 
+from skore import EstimatorReport
 from skore._plugins.hub.artifact.media.media import Media, Report
 from skore._plugins.hub.json import dumps
-from skore._plugins.hub.protocol import EstimatorReport
 
 
 class TableReport(Media[Report]):  # noqa: D101

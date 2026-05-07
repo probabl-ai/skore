@@ -2,6 +2,7 @@
 
 from typing import ClassVar
 
+from skore import EstimatorReport
 from skore._plugins.hub.artifact.media import (
     Coefficients,
     ConfusionMatrixDataFrameTest,
@@ -50,7 +51,6 @@ from skore._plugins.hub.metric import (
     RocAucTrain,
 )
 from skore._plugins.hub.metric.metric import Metric
-from skore._plugins.hub.protocol import EstimatorReport
 from skore._plugins.hub.report.report import ReportPayload
 
 

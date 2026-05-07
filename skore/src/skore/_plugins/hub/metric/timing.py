@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
-from skore._plugins.hub.protocol import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport
 
 from .metric import Metric, cast_to_float
 

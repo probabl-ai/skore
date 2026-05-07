@@ -5,8 +5,8 @@ from typing import Generic, TypeVar
 
 from pydantic import Field
 
+from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.hub.artifact.artifact import Artifact
-from skore._plugins.hub.protocol import CrossValidationReport, EstimatorReport
 
 Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
 
