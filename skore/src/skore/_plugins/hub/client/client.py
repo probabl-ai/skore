@@ -144,12 +144,12 @@ class Client(HTTPXClient):
 
 def __semver(version: str) -> str | None:
     """
-    Convert a PyPI version of the ``skore-hub-project`` package to semver.
+    Convert a PyPI version of the ``skore`` package to semver.
 
     Parameters
     ----------
     version : str
-        The PyPI version of the ``skore-hub-project`` package, that can only be:
+        The PyPI version of the ``skore`` package, that can only be:
         - ``0.0.0+unknown``
         - ``X.Y.Z``
         - ``X.Y.ZrcN``
@@ -160,7 +160,7 @@ def __semver(version: str) -> str | None:
     return version.replace("rc", "-rc.")
 
 
-PACKAGE_SEMVER = __semver(version("skore-hub-project"))
+PACKAGE_SEMVER = __semver(version("skore"))
 JUPYTERLITE = find_spec("pyodide") is not None
 
 

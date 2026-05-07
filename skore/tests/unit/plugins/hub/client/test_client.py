@@ -204,7 +204,7 @@ class TestHUBClient:
 
         from skore._plugins.hub.client.client import PACKAGE_SEMVER
 
-        assert version("skore-hub-project") == "0.0.0+unknown"
+        assert version("skore") == "0.0.0+unknown"
         assert PACKAGE_SEMVER is None
 
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")

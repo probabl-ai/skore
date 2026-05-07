@@ -1,4 +1,4 @@
-"""Common ``skore-hub-project`` exceptions."""
+"""Common exceptions."""
 
 
 class ForbiddenException(PermissionError):
