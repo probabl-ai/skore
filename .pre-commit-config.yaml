@@ -45,11 +45,12 @@ repos:
           - matplotlib
           - numpy
           - pandas
+          - pandas-stubs
           - plotly
           - rich
           - scikit-learn
-          - skrub
           - seaborn
+          - skrub
           # from test dependencies
           - polars
           - pyarrow
@@ -57,14 +58,10 @@ repos:
           # from local dependencies
           - diskcache
           - platformdirs
-
-      - id: mypy
-        pass_filenames: false
-        alias: mypy-skore-hub-project
-        name: mypy skore-hub-project/
-        files: ^skore-hub-project/
-        args: [--config-file=skore-hub-project/pyproject.toml, skore-hub-project]
-        additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]
+          # from hub dependencies
+          - httpx
+          - orjson
+          - pydantic
 
       - id: mypy
         pass_filenames: false
