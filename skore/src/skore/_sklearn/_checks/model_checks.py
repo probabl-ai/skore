@@ -4,6 +4,7 @@ import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
+from scipy.stats import spearmanr
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
@@ -11,6 +12,7 @@ from skore._sklearn._checks.base import Check
 from skore._sklearn._checks.utils import (
     _TIMING_METRICS,
     CheckNotApplicable,
+    _get_data,
     check_score_gap_to_baseline,
     detect_outliers_modified_zscore,
     majority_vote,
@@ -208,18 +210,15 @@ class CheckHighClassImbalance(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
 
+        y = _get_data(report, target="y", concatenate=True)
         if (
             not isinstance(report, EstimatorReport)
             or report.ml_task != "binary-classification"
-            or report.y_train is None
-            or report.y_test is None
+            or y is None
         ):
             raise CheckNotApplicable()
 
-        values, counts = np.unique_counts(
-            np.concatenate([report.y_train, report.y_test])
-        )
-
+        values, counts = np.unique_counts(y)
         overrepresented_class = values[counts >= 0.8 * counts.sum()]
 
         if overrepresented_class.size > 0:
@@ -247,18 +246,15 @@ class CheckUnderrepresentedClasses(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
 
+        y = _get_data(report, target="y", concatenate=True)
         if (
             not isinstance(report, EstimatorReport)
             or report.ml_task != "multiclass-classification"
-            or report.y_train is None
-            or report.y_test is None
+            or y is None
         ):
             raise CheckNotApplicable()
 
-        values, counts = np.unique_counts(
-            np.concatenate([report.y_train, report.y_test])
-        )
-
+        values, counts = np.unique_counts(y)
         underrepresented_classes = values[counts <= 0.1 * counts.sum()]
         if underrepresented_classes.size > 0:
             return (
@@ -286,15 +282,14 @@ class CheckCoefficientsInterpretation(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
 
+        X = _get_data(report, target="X", concatenate=True)
         if not (
             isinstance(report, EstimatorReport)
-            and report.X_train is not None
-            and report.X_test is not None
+            and X is not None
             and hasattr(report.estimator, "coef_")
         ):
             raise CheckNotApplicable()
 
-        X = np.concatenate([report.X_train, report.X_test])
         stds = X.std(axis=0)
         if not np.all(np.isclose(stds, stds[0])):
             return (
@@ -307,6 +302,92 @@ class CheckCoefficientsInterpretation(Check):
         )
 
 
+class CheckMDIHighCardinalityBias(Check):
+    """Check for MDI bias with high-cardinality features (SKD007).
+
+    Tips that mean-decrease-in-impurity importances may be inflated for
+    continuous or high-cardinality features.
+
+    We consider a feature to be high-cardinality when its number of unique values
+    exceeds 50% of the number of samples.
+    """
+
+    code = "SKD007"
+    title = "MDI biased for high-cardinality features"
+    report_type = "estimator"
+    docs_url = "skd007-mdi_cardinality_bias"
+    severity = "tip"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        from skore._sklearn._estimator.report import EstimatorReport
+
+        X = _get_data(report, target="X")
+        if not (
+            isinstance(report, EstimatorReport)
+            and hasattr(report.estimator, "feature_importances_")
+            and X is not None
+        ):
+            raise CheckNotApplicable()
+
+        n_samples, n_features = X.shape
+        high_cardinality_features = [
+            idx
+            for idx in range(n_features)
+            if len(np.unique(X[:, idx])) > 0.5 * n_samples
+        ]
+
+        if high_cardinality_features:
+            names = ", ".join(str(s) for s in high_cardinality_features[:3])
+            suffix = (
+                f" (and {len(high_cardinality_features) - 3} more)"
+                if len(high_cardinality_features) > 3
+                else ""
+            )
+            return (
+                f"High-cardinality features detected: {names}{suffix}. "
+                "Mean Decrease in Impurity (MDI) importance is biased toward "
+                "such features. Consider using permutation importance for "
+                "a more robust alternative."
+            )
+        return None
+
+
+class CheckCorrelatedFeatures(Check):
+    """Check for highly correlated input features (SKD008).
+
+    Flags when one or more pairs of numeric features have a Spearman rank
+    correlation above 0.9.
+    """
+
+    code = "SKD008"
+    title = "Highly correlated input features"
+    report_type = "estimator"
+    docs_url = "skd008-correlated_features"
+    severity = "issue"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        from skore._sklearn._estimator.report import EstimatorReport
+
+        X = _get_data(report, target="X")
+        if not (
+            isinstance(report, EstimatorReport) and X is not None and X.shape[1] >= 2
+        ):
+            raise CheckNotApplicable()
+
+        corr = np.abs(spearmanr(X).statistic)
+        np.fill_diagonal(corr, 0)
+        n_pairs = int(np.count_nonzero(corr >= 0.9) // 2)
+
+        if n_pairs:
+            return (
+                f"{n_pairs} pair(s) of features have a Spearman correlation "
+                "above 0.9. Highly correlated features can destabilize "
+                "linear model coefficients and feature-importance estimates, "
+                "and may cause collinearity-induced numerical issues."
+            )
+        return None
+
+
 _BUILTIN_CHECKS = [
     CheckOverfitting(),
     CheckUnderfitting(),
@@ -314,4 +395,6 @@ _BUILTIN_CHECKS = [
     CheckHighClassImbalance(),
     CheckUnderrepresentedClasses(),
     CheckCoefficientsInterpretation(),
+    CheckMDIHighCardinalityBias(),
+    CheckCorrelatedFeatures(),
 ]

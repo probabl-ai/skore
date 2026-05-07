@@ -77,3 +77,36 @@ def detect_outliers_modified_zscore(scores, threshold=3):
 
 class CheckNotApplicable(Exception):
     """Raised when a check cannot run on the given report."""
+
+
+def _get_data(report, *, target="X", concatenate=False) -> np.ndarray | None:
+    """Return feature matrix or target vector from a report.
+
+    Parameters
+    ----------
+    report : _BaseReport
+        the report to extract data from.
+
+    target : {"X", "y"}
+        whether to return the feature matrix or the target vector.
+
+    concatenate : bool
+        when true and both train and test are available, return their
+        concatenation. Otherwise return train if available, else test.
+
+    Returns
+    -------
+    np.ndarray or None
+    """
+    from skore._sklearn._estimator.report import EstimatorReport
+
+    if not isinstance(report, EstimatorReport):
+        return None
+
+    train = report.X_train if target == "X" else report.y_train
+    test = report.X_test if target == "X" else report.y_test
+
+    if concatenate and train is not None and test is not None:
+        return np.asarray(np.concatenate([train, test]))
+    result = train if train is not None else test
+    return np.asarray(result) if result is not None else None

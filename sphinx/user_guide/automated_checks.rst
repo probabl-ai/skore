@@ -264,3 +264,83 @@ How to reduce the risk
 - otherwise, interpret coefficient magnitudes only relative to the feature's own
   scale, or rely on scale-invariant feature-importance methods such as
   :class:`~skore.PermutationImportanceDisplay`.
+
+
+.. _skd007-mdi_cardinality_bias:
+
+SKD007 - MDI feature importance is biased for high-cardinality features
+--------------------------------------------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+This check applies only to estimators that expose a ``feature_importances_``
+attribute (tree-based models such as random forests and gradient boosting).
+
+`skore` counts the number of unique values in each feature column.
+A feature is considered high-cardinality when its number of unique values
+exceeds **50 % of the number of samples**. The check emits a tip when at
+least one such feature exists.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+The default feature importance reported by tree ensembles is Mean Decrease in
+Impurity (MDI). MDI is computed from the training set and is biased toward
+high-cardinality and continuous features: because those features offer more
+candidate split points, trees tend to select them more often, inflating their
+apparent importance even when they carry no real predictive signal.
+
+Read more about this in `the scikit-learn documentation
+<https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance.html>`_.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- use permutation importance (:class:`~skore.PermutationImportanceDisplay`)
+  instead of MDI: it measures importance on the test set and is not biased by
+  cardinality,
+- if MDI is needed, be aware of its limitations and cross-check with
+  permutation importance or drop-column importance.
+
+
+.. _skd008-correlated_features:
+
+SKD008 - Highly correlated input features
+-----------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+`skore` computes the pairwise `Spearman rank correlation
+<https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_
+between all numeric features. The check emits an issue when at least one pair
+of features has an absolute correlation above **0.9**
+(``|rho| > 0.9``).
+
+Why it matters
+^^^^^^^^^^^^^^
+
+Highly correlated features carry largely redundant information. This redundancy
+can cause two problems:
+
+- **Unstable coefficients and importances**: in linear models, correlated
+  predictors share the explanatory burden, making individual coefficients
+  erratic across small data perturbations. Feature-importance methods such as
+  MDI and permutation importance inherit the same instability.
+- **Numerical issues**: near-perfect collinearity can inflate the variance of
+  coefficient estimates and, in extreme cases, make the design matrix
+  ill-conditioned.
+
+Read more about this in the scikit-learn example on `permutation importance
+with multicollinear or correlated features
+<https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance_multicollinear.html>`_.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- remove or combine redundant features before fitting (e.g. drop one of each
+  highly correlated pair, or use dimensionality reduction),
+- use regularization (Lasso, ElasticNet) to let the model select among
+  correlated features,
+- group correlated features together before inspecting feature importance.
