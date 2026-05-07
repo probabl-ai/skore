@@ -47,7 +47,7 @@ Added
 
 - Added two new automated checks: SKD007 (MDI feature importance bias with
   high-cardinality features, tip) and SKD008 (highly correlated input features,
-  issue). See :pr:`` by :user:`GaetandeCast`.
+  issue). See :pr:`2883` by :user:`GaetandeCast`.
 
 Removed
 -------
