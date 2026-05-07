@@ -30,15 +30,14 @@ def bytes_to_b64_str(literal: bytes) -> str:
 
 
 @contextmanager
-def switch_plt_backend(backend: str = "agg") -> Iterator[None]:
+def switch_plt_backend(backend: str = "agg") -> Iterator[None]:  # FIXME: duplicated?!
     """
     Context-manager for switching ``matplotlib.pyplot.backend``.
 
     Notes
     -----
     The ``agg`` backend is a non-interactive backend that can only write to files.
-    It is used in ``skore-hub-project`` to generate artifacts where we don't need an
-    X display.
+    It is used to generate artifacts where we don't need an X display.
 
     https://matplotlib.org/stable/users/explain/figure/backends.html#selecting-a-backend
     """
