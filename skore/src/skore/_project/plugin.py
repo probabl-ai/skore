@@ -22,9 +22,6 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
     compatible with ``skore`` could expose its own plugins, as long as they are
     registered in the right groups and comply with APIs.
 
-    It is usually used to retrieve the plugins exposed by ``skore-local-project``,
-    ``skore-hub-project`` or ``skore-mlflow-project``.
-
     Parameters
     ----------
     group : PluginGroup

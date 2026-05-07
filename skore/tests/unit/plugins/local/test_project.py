@@ -9,10 +9,10 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
-from skore import CrossValidationReport, EstimatorReport
 
-from skore_local_project import Project
-from skore_local_project.storage import DiskCacheStorage
+from skore import CrossValidationReport, EstimatorReport
+from skore._plugins.local import Project
+from skore._plugins.local.storage import DiskCacheStorage
 
 
 @fixture(scope="module")
@@ -65,7 +65,7 @@ def cv_binary_classification() -> CrossValidationReport:
 
 @fixture(autouse=True)
 def monkeypatch_datetime(monkeypatch, Datetime):
-    monkeypatch.setattr("skore_local_project.metadata.datetime", Datetime)
+    monkeypatch.setattr("skore._plugins.local.metadata.datetime", Datetime)
 
 
 @fixture(autouse=True)
@@ -113,7 +113,7 @@ def monkeypatch_metrics(monkeypatch, Datetime):
 class TestProject:
     def test_init(self, monkeypatch, tmp_path):
         monkeypatch.setattr(
-            "skore_local_project.project.platformdirs.user_data_dir",
+            "skore._plugins.local.project.platformdirs.user_data_dir",
             lambda: str(tmp_path),
         )
 

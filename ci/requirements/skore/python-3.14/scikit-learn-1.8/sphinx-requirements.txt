@@ -76,7 +76,7 @@ databricks-sdk==0.102.0
 decorator==5.2.1
     # via ipython
 diskcache==5.6.3
-    # via skore-local-project
+    # via skore (skore/pyproject.toml)
 docker==7.1.0
     # via mlflow
 docutils==0.21.2
@@ -164,7 +164,6 @@ joblib==1.5.3
     #   skore (skore/pyproject.toml)
     #   scikit-learn
     #   skore-hub-project
-    #   skore-local-project
     #   skore-mlflow-project
 jsonschema==4.26.0
     # via altair
@@ -284,7 +283,7 @@ pillow==12.2.0
     #   matplotlib
     #   sphinx-gallery
 platformdirs==4.9.6
-    # via skore-local-project
+    # via skore (skore/pyproject.toml)
 plotly==6.7.0
     # via skore (skore/pyproject.toml)
 pluggy==1.6.0
@@ -375,7 +374,6 @@ rich[jupyter]==15.0.0
     # via
     #   skore (skore/pyproject.toml)
     #   skore-hub-project
-    #   skore-local-project
     #   skore-mlflow-project
 rpds-py==0.30.0
     # via
@@ -407,8 +405,6 @@ six==1.17.0
 skops==0.13.0
     # via mlflow
 skore-hub-project==0.0.21
-    # via skore (skore/pyproject.toml)
-skore-local-project==0.0.6
     # via skore (skore/pyproject.toml)
 skore-mlflow-project==0.0.4
     # via skore (skore/pyproject.toml)

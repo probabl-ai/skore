@@ -172,7 +172,8 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         position: Literal["first", "last"] = "first",
         **kwargs: Any,
     ) -> None:
-        """Add a custom metric to be included in :meth:`summarize` by default.
+        """
+        Add a custom metric to in :meth:`~skore.EstimatorReport.metrics.summarize`.
 
         Parameters
         ----------
