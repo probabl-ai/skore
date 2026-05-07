@@ -1,5 +1,6 @@
 # ruff: noqa
 # mypy: ignore-errors
+
 """Ease developer experience to support multiple versions of scikit-learn.
 
 This file is intended to be vendored in your project if you do not want to depend on
@@ -30,13 +31,6 @@ sklearn_version = parse_version(parse_version(sklearn.__version__).base_version)
 ########################################################################################
 # The following code does not depend on the sklearn version
 ########################################################################################
-
-
-# tags infrastructure
-def _dataclass_args():
-    if sys.version_info < (3, 10):
-        return {}
-    return {"slots": True}
 
 
 def get_tags(estimator):
@@ -132,237 +126,35 @@ def _to_new_tags(old_tags, estimator=None):
     )
 
 
-########################################################################################
-# Upgrading for scikit-learn 1.3
-########################################################################################
+from sklearn.base import _fit_context
+from sklearn.utils._param_validation import validate_params
+from sklearn.utils.metadata_routing import _raise_for_params, process_routing
+from sklearn.utils.validation import _is_fitted
+from sklearn.utils._chunking import (
+    chunk_generator,
+    gen_batches,
+    gen_even_slices,
+    get_chunk_n_rows,
+)
+from sklearn.utils._indexing import (
+    _determine_key_type,
+    _get_column_indices,
+    _safe_assign,
+    _safe_indexing,
+    resample,
+    shuffle,
+)
+from sklearn.utils._mask import axis0_safe_slice, indices_to_mask, safe_mask
+from sklearn.utils._missing import is_pandas_na, is_scalar_nan
+from sklearn.utils._optional_dependencies import (
+    check_matplotlib_support,
+    check_pandas_support,
+)
+from sklearn.utils._user_interface import _print_elapsed_time
+from sklearn.utils.extmath import _approximate_mode, safe_sqr
+from sklearn.utils.fixes import _IS_32BIT, _IS_WASM, _in_unstable_openblas_configuration
+from sklearn.utils.validation import _to_object_array
 
-if sklearn_version < parse_version("1.3"):
-    # parameter validation
-    def _fit_context(*, prefer_skip_nested_validation):
-        """Decorator to run the fit methods of estimators within context managers."""
-
-        def decorator(fit_method):
-            @functools.wraps(fit_method)
-            def wrapper(estimator, *args, **kwargs):
-                estimator._validate_params()
-                return fit_method(estimator, *args, **kwargs)
-
-            return wrapper
-
-        return decorator
-
-    def validate_params(parameter_constraints, *, prefer_skip_nested_validation):
-        """Validate the parameters of an estimator."""
-        from sklearn.utils._param_validation import validate_params
-
-        return validate_params(parameter_constraints)
-
-else:
-    # parameter validation
-
-    from sklearn.base import _fit_context  # noqa: F401
-    from sklearn.utils._param_validation import validate_params  # noqa: F401
-
-
-########################################################################################
-# Upgrading for scikit-learn 1.4
-########################################################################################
-
-
-if sklearn_version < parse_version("1.4"):
-
-    def _is_fitted(estimator, attributes=None, all_or_any=all):
-        """Determine if an estimator is fitted
-
-        Parameters
-        ----------
-        estimator : estimator instance
-            Estimator instance for which the check is performed.
-
-        attributes : str, list or tuple of str, default=None
-            Attribute name(s) given as string or a list/tuple of strings
-            Eg.: ``["coef_", "estimator_", ...], "coef_"``
-
-            If `None`, `estimator` is considered fitted if there exist an
-            attribute that ends with a underscore and does not start with double
-            underscore.
-
-        all_or_any : callable, {all, any}, default=all
-            Specify whether all or any of the given attributes must exist.
-
-        Returns
-        -------
-        fitted : bool
-            Whether the estimator is fitted.
-        """
-        if attributes is not None:
-            if not isinstance(attributes, (list, tuple)):
-                attributes = [attributes]
-            return all_or_any([hasattr(estimator, attr) for attr in attributes])
-
-        if hasattr(estimator, "__sklearn_is_fitted__"):
-            return estimator.__sklearn_is_fitted__()
-
-        fitted_attrs = [
-            v for v in vars(estimator) if v.endswith("_") and not v.startswith("__")
-        ]
-        return len(fitted_attrs) > 0
-
-    if sklearn_version < parse_version("1.3"):
-
-        def process_routing(_obj, _method, /, **kwargs):
-            raise NotImplementedError(
-                "Metadata routing is not implemented in scikit-learn < 1.3"
-            )
-
-        def _raise_for_params(params, owner, method):
-            raise NotImplementedError(
-                "Metadata routing is not implemented in scikit-learn < 1.3"
-            )
-    else:
-
-        def process_routing(_obj, _method, /, **kwargs):
-            """Validate and route input parameters."""
-            from sklearn.utils._metadata_requests import process_routing
-
-            return process_routing(_obj, _method, other_params=None, **kwargs)
-
-        def _raise_for_params(params, owner, method):
-            """Raise an error if metadata routing is not enabled and params are passed."""
-            from sklearn.utils._metadata_requests import _routing_enabled
-
-            caller = (
-                f"{owner.__class__.__name__}.{method}"
-                if method
-                else owner.__class__.__name__
-            )
-            if not _routing_enabled() and params:
-                raise ValueError(
-                    f"Passing extra keyword arguments to {caller} is only supported if"
-                    " enable_metadata_routing=True, which you can set using"
-                    " `sklearn.set_config`. See the User Guide"
-                    " <https://scikit-learn.org/stable/metadata_routing.html> for more"
-                    f" details. Extra parameters passed are: {set(params)}"
-                )
-
-    def _is_pandas_df(X):
-        """Return True if the X is a pandas dataframe."""
-        try:
-            pd = sys.modules["pandas"]
-        except KeyError:
-            return False
-        return isinstance(X, pd.DataFrame)
-
-else:
-    from sklearn.utils.metadata_routing import (
-        _raise_for_params,  # noqa: F401
-        process_routing,  # noqa: F401
-    )
-    from sklearn.utils.validation import (
-        _is_fitted,  # noqa: F401
-    )
-
-
-########################################################################################
-# Upgrading for scikit-learn 1.5
-########################################################################################
-
-
-if sklearn_version < parse_version("1.5"):
-    # chunking
-    # extmath
-    # fixes
-    from sklearn.utils import (
-        _IS_32BIT,  # noqa: F401
-        _approximate_mode,  # noqa: F401
-        _in_unstable_openblas_configuration,  # noqa: F401
-        gen_batches,  # noqa: F401
-        gen_even_slices,  # noqa: F401
-        get_chunk_n_rows,  # noqa: F401
-        safe_sqr,  # noqa: F401
-    )
-    from sklearn.utils import _chunk_generator as chunk_generator  # noqa: F401
-
-    _IS_WASM = platform.machine() in ["wasm32", "wasm64"]
-    # indexing
-    # mask
-    # missing
-    # optional dependencies
-    # user interface
-    # validation
-    from sklearn.utils import (
-        _determine_key_type,  # noqa: F401
-        _get_column_indices,  # noqa: F401
-        _print_elapsed_time,  # noqa: F401
-        _safe_assign,  # noqa: F401
-        _safe_indexing,  # noqa: F401
-        _to_object_array,  # noqa: F401
-        axis0_safe_slice,  # noqa: F401
-        check_matplotlib_support,  # noqa: F401
-        check_pandas_support,  # noqa: F401
-        indices_to_mask,  # noqa: F401
-        is_scalar_nan,  # noqa: F401
-        resample,  # noqa: F401
-        safe_mask,  # noqa: F401
-        shuffle,  # noqa: F401
-    )
-    from sklearn.utils import _is_pandas_na as is_pandas_na  # noqa: F401
-else:
-    # chunking
-    from sklearn.utils._chunking import (
-        chunk_generator,  # noqa: F401
-        gen_batches,  # noqa: F401
-        gen_even_slices,  # noqa: F401
-        get_chunk_n_rows,  # noqa: F401
-    )
-
-    # indexing
-    from sklearn.utils._indexing import (
-        _determine_key_type,  # noqa: F401
-        _get_column_indices,  # noqa: F401
-        _safe_assign,  # noqa: F401
-        _safe_indexing,  # noqa: F401
-        resample,  # noqa: F401
-        shuffle,  # noqa: F401
-    )
-
-    # mask
-    from sklearn.utils._mask import (
-        axis0_safe_slice,  # noqa: F401
-        indices_to_mask,  # noqa: F401
-        safe_mask,  # noqa: F401
-    )
-
-    # missing
-    from sklearn.utils._missing import (
-        is_pandas_na,  # noqa: F401
-        is_scalar_nan,  # noqa: F401
-    )
-
-    # optional dependencies
-    from sklearn.utils._optional_dependencies import (  # noqa: F401
-        check_matplotlib_support,
-        check_pandas_support,  # noqa: F401
-    )
-
-    # user interface
-    from sklearn.utils._user_interface import _print_elapsed_time  # noqa: F401
-
-    # extmath
-    from sklearn.utils.extmath import (
-        _approximate_mode,  # noqa: F401
-        safe_sqr,  # noqa: F401
-    )
-
-    # fixes
-    from sklearn.utils.fixes import (
-        _IS_32BIT,  # noqa: F401
-        _IS_WASM,  # noqa: F401
-        _in_unstable_openblas_configuration,  # noqa: F401
-    )
-
-    # validation
-    from sklearn.utils.validation import _to_object_array  # noqa: F401
 
 ########################################################################################
 # Upgrading for scikit-learn 1.6
@@ -559,7 +351,7 @@ if sklearn_version < parse_version("1.6"):
         )
 
     # tags infrastructure
-    @dataclass(**_dataclass_args())
+    @dataclass(slots=True)
     class InputTags:
         """Tags for the input data.
 
@@ -619,7 +411,7 @@ if sklearn_version < parse_version("1.6"):
         allow_nan: bool = False
         pairwise: bool = False
 
-    @dataclass(**_dataclass_args())
+    @dataclass(slots=True)
     class TargetTags:
         """Tags for the target data.
 
@@ -657,7 +449,7 @@ if sklearn_version < parse_version("1.6"):
         multi_output: bool = False
         single_output: bool = True
 
-    @dataclass(**_dataclass_args())
+    @dataclass(slots=True)
     class TransformerTags:
         """Tags for the transformer.
 
@@ -676,7 +468,7 @@ if sklearn_version < parse_version("1.6"):
 
         preserves_dtype: list[str] = field(default_factory=lambda: ["float64"])
 
-    @dataclass(**_dataclass_args())
+    @dataclass(slots=True)
     class ClassifierTags:
         """Tags for the classifier.
 
@@ -703,7 +495,7 @@ if sklearn_version < parse_version("1.6"):
         multi_class: bool = True
         multi_label: bool = False
 
-    @dataclass(**_dataclass_args())
+    @dataclass(slots=True)
     class RegressorTags:
         """Tags for the regressor.
 
@@ -724,7 +516,7 @@ if sklearn_version < parse_version("1.6"):
         poor_score: bool = False
         multi_label: bool = False
 
-    @dataclass(**_dataclass_args())
+    @dataclass(slots=True)
     class Tags:
         """Tags for the estimator.
 
@@ -839,7 +631,7 @@ if sklearn_version < parse_version("1.6"):
 
 else:
     # base
-    from sklearn.base import is_clusterer  # noqa: F401
+    from sklearn.base import is_clusterer
 
     # test_common
     # tags infrastructure
@@ -852,21 +644,21 @@ else:
         TransformerTags,
     )
     from sklearn.utils._test_common.instance_generator import (
-        _construct_instances,  # noqa: F401
+        _construct_instances,
     )
     from sklearn.utils.estimator_checks import (
-        check_estimator,  # noqa: F401
-        parametrize_with_checks,  # noqa: F401
+        check_estimator,
+        parametrize_with_checks,
     )
-    from sklearn.utils.multiclass import type_of_target  # noqa: F401
+    from sklearn.utils.multiclass import type_of_target
 
     # validation
     from sklearn.utils.validation import (
-        _check_feature_names,  # noqa: F401
-        _check_n_features,  # noqa: F401
-        check_array,  # noqa: F401
-        check_X_y,  # noqa: F401
-        validate_data,  # noqa: F401
+        _check_feature_names,
+        _check_n_features,
+        check_array,
+        check_X_y,
+        validate_data,
     )
 
 
@@ -883,5 +675,6 @@ if sklearn_version < parse_version("1.8"):
         fns = tps[-1] - tps
         tns = fps[-1] - fps
         return tns, fps, fns, tps, thresholds
+
 else:
-    from sklearn.metrics._ranking import confusion_matrix_at_thresholds  # noqa: F401
+    from sklearn.metrics._ranking import confusion_matrix_at_thresholds
