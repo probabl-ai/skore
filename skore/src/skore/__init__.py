@@ -101,6 +101,8 @@ console = Console(
 )
 
 
+# Whether threading is available or not.
+THREADABLE: bool = True
 try:
     from threading import Thread
 
@@ -109,5 +111,3 @@ try:
     thread.join()
 except Exception:
     THREADABLE = False
-else:
-    THREADABLE = True
