@@ -50,6 +50,7 @@ deep_tree = DecisionTreeRegressor(random_state=42)
 # - :meth:`~skore.EstimatorReport.checks.add` to add custom checks
 # - :meth:`~skore.EstimatorReport.checks.remove` to remove checks
 # - :meth:`~skore.EstimatorReport.checks.available` to list the available checks
+#
 # Let's use :meth:`~skore.EstimatorReport.checks.summarize` to see what issues can be
 # found for the linear model.
 
