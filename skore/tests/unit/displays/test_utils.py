@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
+from sklearn.linear_model import LogisticRegression
 
+from skore import evaluate
 from skore._sklearn._plot.utils import (
     _adjust_fig_size,
     _get_adjusted_fig_size,
@@ -102,3 +104,15 @@ def test_adjust_fig_size(pyplot):
     expected_width = _get_adjusted_fig_size(fig, ax, "width", 1)
     expected_height = _get_adjusted_fig_size(fig, ax, "height", 2)
     np.testing.assert_allclose(fig.get_size_inches(), (expected_width, expected_height))
+
+
+def test_apostrophe_in_label(binary_classification_data):
+    """Non regression test for issue https://github.com/skore-ai/skore/issues/2860"""
+    X, y = binary_classification_data
+    labels = np.array(["A'B", "C'D"], dtype=object)
+    y = labels[y]
+    report = evaluate(LogisticRegression(), X, y)
+    display = report.metrics.roc()
+    fig = display.plot()
+    legend_text = [t.get_text() for t in fig.axes[0].get_legend().get_texts()]
+    assert any("A'B" in text for text in legend_text)

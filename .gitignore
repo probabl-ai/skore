@@ -198,7 +198,6 @@ examples/integrations/mlruns/
 # Exclude hatch artifacts
 skore/LICENSE
 skore-hub-project/LICENSE
-skore-local-project/LICENSE
 skore-mlflow-project/LICENSE
 .aider*
 

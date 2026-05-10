@@ -69,3 +69,16 @@ the API of each display.
    :hidden:
 
    displays
+
+Checks
+------
+
+Checks classes used by the ``checks`` accessor on reports.
+
+.. autosummary::
+    :toctree: ../api/
+    :template: base.rst
+
+    ChecksSummaryDisplay
+    Check
+    CheckNotApplicable

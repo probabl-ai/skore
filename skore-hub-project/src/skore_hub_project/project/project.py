@@ -16,7 +16,6 @@ from unicodedata import normalize
 from httpx import HTTPStatusError, codes
 from joblib import load as joblib_load
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
-from sklearn.utils.validation import _check_pos_label_consistency
 from skore import THREADABLE, console
 
 from skore_hub_project import switch_plt_backend
@@ -260,21 +259,6 @@ class Project:
                 f"Report must be a `skore.EstimatorReport` or "
                 f"`skore.CrossValidationReport` (found '{type(report)}')."
             )
-
-        if report.ml_task == "binary-classification":
-            # check that pos_label is either specified or can be inferred from the data
-            if isinstance(report, EstimatorReport):
-                target = report.estimator_.classes_
-            else:  # CrossValidationReport
-                target = report.estimator_reports_[0].estimator_.classes_
-
-            try:
-                _check_pos_label_consistency(report.pos_label, target)
-            except ValueError as exc:
-                raise ValueError(
-                    "For binary classification, the positive label must be specified. "
-                    "You can set it using `report.pos_label = <positive_label>`."
-                ) from exc
 
         payload: EstimatorReportPayload | CrossValidationReportPayload
 

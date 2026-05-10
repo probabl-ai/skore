@@ -14,7 +14,7 @@
    :add-heading: Gallery examples
    :heading-level: -
 
-{%- elif objtype == "class" -%}
+{%- elif objtype in ("class", "exception") -%}
 
 .. currentmodule:: {{ module }}
 

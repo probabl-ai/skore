@@ -144,8 +144,6 @@ class TestProject:
     def test_put_exception(
         self,
         respx_mock,
-        binary_classification_string_labels,
-        cv_binary_classification_string_labels,
     ):
         mocks = [
             ("get", "/projects/workspace", Response(200)),
@@ -170,19 +168,6 @@ class TestProject:
             match="must be a `skore.EstimatorReport` or `skore.CrossValidationReport`",
         ):
             Project(workspace="workspace", name="name").put("<key>", "<value>")
-
-        pos_label_msg = (
-            "For binary classification, the positive label must be specified. "
-            "You can set it using `report.pos_label = <positive_label>`."
-        )
-        with raises(ValueError, match=pos_label_msg):
-            Project(workspace="workspace", name="name").put(
-                "<key>", binary_classification_string_labels
-            )
-        with raises(ValueError, match=pos_label_msg):
-            Project(workspace="workspace", name="name").put(
-                "<key>", cv_binary_classification_string_labels
-            )
 
     @mark.respx()
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
@@ -306,6 +291,90 @@ class TestProject:
         desired = loads(
             dumps(
                 EstimatorReportPayload(
+                    project=project, key="<key>", report=report
+                ).model_dump()
+            )
+        )
+        assert content == desired
+
+    @mark.respx()
+    def test_put_estimator_report_string_labels_pos_label_none(
+        self, binary_classification_string_labels, respx_mock
+    ):
+        """Put with binary string labels and default ``pos_label`` (None) works."""
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
+            (
+                "post",
+                "projects/workspace/name/estimator-reports",
+                Response(200, json={"id": 42}),
+            ),
+        ]
+
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
+        report = binary_classification_string_labels
+        project.put("<key>", report)
+
+        content = loads(respx_mock.calls.last.request.content.decode())
+        desired = loads(
+            dumps(
+                EstimatorReportPayload(
+                    project=project, key="<key>", report=report
+                ).model_dump()
+            )
+        )
+        assert content == desired
+
+    @mark.filterwarnings(
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning",
+        "ignore:The default of observed=False is deprecated.*:FutureWarning",
+    )
+    @mark.respx()
+    def test_put_cross_validation_report_string_labels_pos_label_none(
+        self, cv_binary_classification_string_labels, respx_mock
+    ):
+        """Put with CV binary string labels and default ``pos_label`` (None) works."""
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            ("post", "projects/workspace/name/artifacts", Response(200, json=[])),
+            (
+                "post",
+                "projects/workspace/name/cross-validation-reports",
+                Response(201, json={"id": 42}),
+            ),
+        ]
+
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
+        report = cv_binary_classification_string_labels
+        project.put("<key>", report)
+
+        content = loads(respx_mock.calls.last.request.content.decode())
+        desired = loads(
+            dumps(
+                CrossValidationReportPayload(
                     project=project, key="<key>", report=report
                 ).model_dump()
             )

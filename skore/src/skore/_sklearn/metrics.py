@@ -240,6 +240,7 @@ class Metric:
         metric: MetricLike | Metric,
         *,
         name: str | None = None,
+        verbose_name: str | None = None,
         greater_is_better: bool = True,
         kwargs: dict[str, Any] | None = None,
     ) -> Metric:
@@ -267,6 +268,10 @@ class Metric:
             Custom name for the metric. If not provided the name is inferred
             from the input (e.g. the function's ``__name__``).
 
+        verbose_name : str, optional
+            Custom verbose name for the metric which will be used for display purposes.
+            If not provided, will be inferred from the metric name.
+
         greater_is_better : bool, default=True
             Whether a higher score is better. Only used when *metric* is a
             scorer callable.
@@ -282,16 +287,24 @@ class Metric:
             A new :class:`Metric` instance.
         """
         if isinstance(metric, Metric):
+            if name is None and verbose_name is None:
+                return metric
+
+            result = copy.copy(metric)
+
             if name is not None:
-                result = copy.copy(metric)
                 result.name = name
                 result.verbose_name = name.replace("_", " ").title()
-                return result
-            else:
-                return metric
+
+            if verbose_name is not None:
+                result.verbose_name = verbose_name
+
+            return result
+
         elif isinstance(metric, _BaseScorer):
             return Metric(
                 name=name or _callable_name(metric._score_func),
+                verbose_name=verbose_name,
                 greater_is_better=metric._sign == 1,
                 function=metric._score_func,
                 response_method=metric._response_method,
@@ -341,6 +354,7 @@ class Metric:
                 raise MissingKwargsError(metric, missing_kwargs)
             return Metric(
                 name=name or _callable_name(metric),
+                verbose_name=verbose_name,
                 greater_is_better=greater_is_better,
                 function=metric,
                 kwargs=resolved_kwargs,
@@ -708,7 +722,7 @@ class MetricRegistry(UserDict[str, Metric]):
         if position not in ("first", "last"):
             raise ValueError(f"position must be 'first' or 'last', got {position!r}.")
 
-        if metric.name in [m.name for m in BUILTIN_METRICS]:
+        if metric.name in {m.name for m in BUILTIN_METRICS}:
             raise ValueError(
                 f"Cannot add {metric.name!r}: it is a built-in metric name."
             )

@@ -6,13 +6,13 @@
 #
 # You can pass any `uv pip compile` parameter:
 #
-#     $ bash pip-compile.sh --test-requirements <skore|skore-hub-project|skore-local-project|skore-mlflow-project> --upgrade
+#     $ bash pip-compile.sh --test-requirements <skore|skore-hub-project|skore-mlflow-project> --upgrade
 #     $ bash pip-compile.sh --sphinx-requirements --upgrade
 #
 
 usage () {
     >&2 echo "Usage:"
-    >&2 echo "    $ bash pip-compile.sh --test-requirements <all|skore|skore-hub-project|skore-local-project|skore-mlflow-project> [option...]"
+    >&2 echo "    $ bash pip-compile.sh --test-requirements <all|skore|skore-hub-project|skore-mlflow-project> [option...]"
     >&2 echo "    $ bash pip-compile.sh --sphinx-requirements [option...]"
 }
 
@@ -32,10 +32,9 @@ case $1 in
             "all")
                 PACKAGES+=("skore")
                 PACKAGES+=("skore-hub-project")
-                PACKAGES+=("skore-local-project")
                 PACKAGES+=("skore-mlflow-project")
                 ;;
-            "skore"|"skore-hub-project"|"skore-local-project"|"skore-mlflow-project")
+            "skore"|"skore-hub-project"|"skore-mlflow-project")
                 PACKAGES+=($2)
                 ;;
             *)
