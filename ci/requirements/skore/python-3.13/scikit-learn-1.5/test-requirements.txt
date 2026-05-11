@@ -207,7 +207,7 @@ traitlets==5.14.3
     #   matplotlib-inline
 typing-extensions==4.15.0
     # via anywidget
-urllib3==2.6.3
+urllib3==2.7.0
     # via requests
 virtualenv==21.2.4
     # via pre-commit
