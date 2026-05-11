@@ -102,6 +102,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ... )
                     LogisticRegression Favorability
         Metric
+        Score                  0.94...         (↗︎)
         Accuracy               0.94...         (↗︎)
         Precision              0.98...         (↗︎)
         Recall                 0.92...         (↗︎)
@@ -118,6 +119,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
         Metric
+        Score                           0.96...                     0.94...          (↗︎)
         Accuracy                        0.96...                     0.94...          (↗︎)
         Precision                       0.96...                     0.98...          (↗︎)
         Recall                          0.97...                     0.92...          (↗︎)

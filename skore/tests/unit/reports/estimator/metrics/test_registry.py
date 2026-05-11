@@ -305,7 +305,7 @@ class TestAddPosition:
         keys = list(report._metric_registry.keys())
         assert keys[0] == "metric_b"
         assert keys[1] == "metric_a"
-        assert keys[2] == "accuracy"
+        assert keys[2] == "score"
 
         display = report.metrics.summarize()
         assert display.data.iloc[0]["metric_verbose_name"] == "Metric B"
@@ -356,7 +356,7 @@ class TestAddPosition:
 
         keys = list(report._metric_registry.keys())
         assert keys[0] == "m_first"
-        assert keys[1] == "accuracy"
+        assert keys[1] == "score"
         assert keys[-1] == "m_last"
 
     def test_readd_raises_without_remove(self, binary_classification_report):
@@ -532,31 +532,31 @@ class TestEdgeCases:
         """Adding with duplicate name raises and keeps the original metric."""
         report = binary_classification_report
 
-        def score(y_true, y_pred):
+        def my_metric(y_true, y_pred):
             return 0
 
-        report.metrics.add(make_scorer(score, response_method="predict"))
+        report.metrics.add(make_scorer(my_metric, response_method="predict"))
 
         nb_metrics_before_overwriting = len(report._metric_registry)
 
-        result = report.metrics.summarize(metric="score")
+        result = report.metrics.summarize(metric="my_metric")
         assert result.data["score"].iloc[0] == 0
 
         # add a new metric with the same name
-        def score(y_true, y_pred):
+        def my_metric(y_true, y_pred):
             return 1
 
         err_msg = re.escape(
-            "Cannot add 'score': it already exists. "
+            "Cannot add 'my_metric': it already exists. "
             "Remove it first using the `remove` method."
         )
         with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add(make_scorer(score, response_method="predict"))
+            report.metrics.add(make_scorer(my_metric, response_method="predict"))
 
         assert len(report._metric_registry) == nb_metrics_before_overwriting
 
         # summarize still reflects the original metric
-        result = report.metrics.summarize(metric="score")
+        result = report.metrics.summarize(metric="my_metric")
         assert result.data["score"].iloc[0] == 0
 
 
