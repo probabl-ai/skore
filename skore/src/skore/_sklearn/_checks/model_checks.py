@@ -283,13 +283,11 @@ class CheckCoefficientsInterpretation(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
 
-        _, predictor = _unwrap_estimator(report.estimator_)
+        if not isinstance(report, EstimatorReport):
+            raise CheckNotApplicable()
+        _, predictor = _unwrap_estimator(report.estimator)
         X = _get_data(report, target="X", concatenate=True)
-        if not (
-            isinstance(report, EstimatorReport)
-            and X is not None
-            and hasattr(predictor, "coef_")
-        ):
+        if X is None or not hasattr(predictor, "coef_"):
             raise CheckNotApplicable()
 
         stds = X.std(axis=0)
@@ -323,13 +321,11 @@ class CheckMDIHighCardinalityBias(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
 
-        _, predictor = _unwrap_estimator(report.estimator_)
+        if not isinstance(report, EstimatorReport):
+            raise CheckNotApplicable()
+        _, predictor = _unwrap_estimator(report.estimator)
         X = _get_data(report, target="X")
-        if (
-            X is None
-            or not hasattr(predictor, "feature_importances_")
-            or not isinstance(report, EstimatorReport)
-        ):
+        if X is None or not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable()
 
         n_samples, n_features = X.shape

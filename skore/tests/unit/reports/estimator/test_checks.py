@@ -8,14 +8,15 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.tree import DecisionTreeRegressor
+from skrub import tabular_pipeline
 
 from skore import Check, EstimatorReport, configuration, evaluate
-from skrub import tabular_pipeline
 from skore._sklearn._checks.base import (
     ChecksSummaryDisplay,
     _get_issue_documentation_url,
 )
 from skore._sklearn._checks.utils import CheckNotApplicable
+
 
 @pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
 def regression_report(request, regression_data):
@@ -147,7 +148,10 @@ def test_skd007_not_emitted_for_binary_features():
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD007" not in tips.index
 
-@pytest.mark.parametrize("estimator", [LinearRegression(), tabular_pipeline(LinearRegression())])
+
+@pytest.mark.parametrize(
+    "estimator", [LinearRegression(), tabular_pipeline(LinearRegression())]
+)
 def test_skd008_correlated_features(estimator):
     """SKD008 issue is emitted when two features are near-perfectly correlated."""
     rng = np.random.RandomState(42)
