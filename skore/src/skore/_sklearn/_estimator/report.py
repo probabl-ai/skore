@@ -399,6 +399,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def cache_predictions(
         self,
+        *,
         data_source: DataSource | Literal["both"] = "both",
     ) -> None:
         """Cache estimator's predictions.

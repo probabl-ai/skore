@@ -213,6 +213,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
     def timings(
         self,
+        *,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get all measured processing times related to the estimator.
