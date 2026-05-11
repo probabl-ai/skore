@@ -30,7 +30,7 @@ def bytes_to_b64_str(literal: bytes) -> str:
 
 
 @contextmanager
-def switch_plt_backend(backend: str = "agg") -> Iterator[None]:  # FIXME: duplicated?!
+def switch_plt_backend(backend: str = "agg") -> Iterator[None]:
     """
     Context-manager for switching ``matplotlib.pyplot.backend``.
 
