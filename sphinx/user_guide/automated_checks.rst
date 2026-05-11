@@ -251,7 +251,7 @@ standard deviation rather than per original unit. Statements like "an increase o
 natural units have been scaled away.
 
 Read more about this in `the scikit-learn documentation
-<https://scikit-learn.org/dev/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`_.
+<https://scikit-learn.org/dev/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`__.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -292,7 +292,7 @@ candidate split points, trees tend to select them more often, inflating their
 apparent importance even when they carry no real predictive signal.
 
 Read more about this in `the scikit-learn documentation
-<https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance.html>`_.
+<https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance.html>`__.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
