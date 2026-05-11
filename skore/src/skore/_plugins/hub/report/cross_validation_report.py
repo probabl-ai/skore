@@ -1,9 +1,10 @@
 """Class definition of the payload used to send a cross-validation report to ``hub``."""
 
 from collections import Counter, defaultdict
+from collections.abc import Iterable, Sized
 from functools import cached_property
 from inspect import signature
-from typing import Any, ClassVar
+from typing import Any, ClassVar, cast
 
 import numpy as np
 import pandas as pd
@@ -188,16 +189,17 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         self.__sample_to_class_index: list[int] | None
         self.__classes: list[str] | None
 
-        if "classification" in self.ml_task:
+        if "classification" in self.ml_task and (self.report.y is not None):
             class_to_class_indice: defaultdict[Any, int] = defaultdict(
                 lambda: len(class_to_class_indice)
             )
 
             self.__sample_to_class_index = [
-                class_to_class_indice[sample] for sample in self.report.y
+                class_to_class_indice[sample]
+                for sample in cast(Iterable[Any], self.report.y)
             ]
 
-            assert len(self.__sample_to_class_index) == len(self.report.X)
+            assert len(self.__sample_to_class_index) == len(cast(Sized, self.report.X))
 
             self.__classes = [str(class_) for class_ in class_to_class_indice]
 
@@ -210,18 +212,19 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     @cached_property
     def dataset_size(self) -> int:
         """Size of the dataset."""
-        return len(self.report.X)
+        return len(cast(Sized, self.report.X))
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
     def splitting_strategy(self) -> dict[str, Any]:
         """The splitting strategy used in the report."""
-        from skore._externals._sklearn_compat import (  # type: ignore[attr-defined]
-            _safe_indexing,
-        )
+        from skore._externals._sklearn_compat import _safe_indexing
+
+        if self.report.y is None:
+            return {}
 
         splitter = self.report.splitter
-        target = self.report.y
+        target = cast(Sized, self.report.y)
         is_classifier = "classification" in self.ml_task
 
         n_repeats = getattr(splitter, "n_repeats", None)
@@ -246,6 +249,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             # create an undersampled target to create a simplify representation
             if not isinstance(target, pd.Series):
                 target = pd.Series(target)
+
             probs = target.value_counts(normalize=True)
             target_repr = rng.choice(
                 probs.index.to_numpy(),  # classes
@@ -257,7 +261,9 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         else:  # regression
             # uniformly sample the target because it will have no impact on the
             # representation
-            target_repr = rng.choice(target, size=rng_size, replace=False)
+            target_repr = rng.choice(
+                cast(np.ndarray, target), size=rng_size, replace=False
+            )
 
         # create a simplified splitter without shuffling and repetitions
         simplified_cls = SPLITTERS.get(splitter.__class__.__name__, splitter.__class__)
@@ -292,6 +298,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         train_target_distributions_sample_count = []
         test_target_distributions = []
         test_target_distributions_sample_count = []
+
         for train_indices, test_indices in self.report.split_indices:
             train_y = _safe_indexing(self.report.y, train_indices)
             test_y = _safe_indexing(self.report.y, test_indices)
@@ -305,7 +312,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 for label in self.__classes:
                     train_target_distribution.append(train.get(label, 0))
                     test_target_distribution.append(test.get(label, 0))
-
             else:
                 linspace = np.linspace(
                     float(train_y.min()),
@@ -318,9 +324,9 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 test_target_distribution = [float(x) for x in test_kernel(linspace)]
 
             train_target_distributions.append(train_target_distribution)
-            train_target_distributions_sample_count.append(len(train_indices))
+            train_target_distributions_sample_count.append(len(train_y))
             test_target_distributions.append(test_target_distribution)
-            test_target_distributions_sample_count.append(len(test_indices))
+            test_target_distributions_sample_count.append(len(test_y))
 
         return {
             "splitter": splitter_metadata,
@@ -347,9 +353,12 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     @cached_property
     def target_range(self) -> list[float] | None:
         """The range of the target values of the dataset used in the report."""
-        if self.__classes:
+        if self.__classes or (self.report.y is None):
             return None
-        return [float(self.report.y.min()), float(self.report.y.max())]
+
+        target = cast(np.ndarray, self.report.y)
+
+        return [float(target.min()), float(target.max())]
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

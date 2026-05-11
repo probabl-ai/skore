@@ -45,7 +45,6 @@ repos:
           - matplotlib
           - numpy
           - pandas
-          - pandas-stubs
           - plotly
           - rich
           - scikit-learn

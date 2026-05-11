@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
+from pydantic import Field
+
 from .metric import CrossValidationReportMetric, EstimatorReportMetric, cast_to_float
 
 
@@ -11,6 +13,7 @@ class Recall(EstimatorReportMetric):  # noqa: D101
     accessor: ClassVar[str] = "metrics.recall"
     name: str = "recall"
     verbose_name: str = "Recall (macro)"
+    data_source: Literal["train", "test"] = Field(init=False)
     greater_is_better: bool = True
     position: None = None
 
@@ -38,6 +41,7 @@ class RecallMean(CrossValidationReportMetric):  # noqa: D101
     accessor: ClassVar[str] = "metrics.recall"
     aggregate: ClassVar[Literal["mean"]] = "mean"
     name: str = "recall_mean"
+    data_source: Literal["train", "test"] = Field(init=False)
     verbose_name: str = "Recall (macro) - MEAN"
     greater_is_better: bool = True
     position: None = None
@@ -68,6 +72,7 @@ class RecallStd(CrossValidationReportMetric):  # noqa: D101
     aggregate: ClassVar[Literal["std"]] = "std"
     name: str = "recall_std"
     verbose_name: str = "Recall (macro) - STD"
+    data_source: Literal["train", "test"] = Field(init=False)
     greater_is_better: bool = False
     position: None = None
 

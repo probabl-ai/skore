@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from skore import EstimatorReport
+from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.hub.artifact.media.media import Media, Report
 from skore._plugins.hub.json import dumps
 
@@ -17,7 +17,10 @@ class TableReport(Media[Report]):  # noqa: D101
     def content_to_upload(self) -> bytes:  # noqa: D102
         display = (
             self.report.data.analyze()
-            if self.data_source is None
+            if (
+                isinstance(self.report, CrossValidationReport)
+                or (self.data_source is None)
+            )
             else self.report.data.analyze(data_source=self.data_source)
         )
 

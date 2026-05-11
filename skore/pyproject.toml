@@ -48,7 +48,6 @@ jupyter = [
 ]
 test-base = [
   "jedi",
-  "pandas-stubs",
   "pre-commit",
   "pytest",
   "pytest-cov",
@@ -214,6 +213,7 @@ module = [
   "jinja2.*",
   "joblib.*",
   "js.*",
+  "pandas.*",
   "plotly.*",
   "pyodide.*",
   "seaborn.*",

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import ClassVar, Literal
 
+from pydantic import Field
+
 from .metric import CrossValidationReportMetric, EstimatorReportMetric, cast_to_float
 
 
@@ -11,6 +13,7 @@ class Precision(EstimatorReportMetric):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision"
     name: str = "precision"
     verbose_name: str = "Precision (macro)"
+    data_source: Literal["train", "test"] = Field(init=False)
     greater_is_better: bool = True
     position: None = None
 
@@ -38,6 +41,7 @@ class PrecisionMean(CrossValidationReportMetric):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision"
     name: str = "precision_mean"
     verbose_name: str = "Precision (macro) - MEAN"
+    data_source: Literal["train", "test"] = Field(init=False)
     greater_is_better: bool = True
     position: None = None
 
@@ -66,6 +70,7 @@ class PrecisionStd(CrossValidationReportMetric):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision"
     name: str = "precision_std"
     verbose_name: str = "Precision (macro) - STD"
+    data_source: Literal["train", "test"] = Field(init=False)
     greater_is_better: bool = False
     position: None = None
 
