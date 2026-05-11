@@ -33,8 +33,6 @@ babel==2.18.0
     #   sphinx
 beautifulsoup4==4.14.3
     # via pydata-sphinx-theme
-blake3==1.0.8
-    # via skore-hub-project
 blinker==1.9.0
     # via flask
 cachetools==7.0.5
@@ -125,7 +123,7 @@ h11==0.16.0
 httpcore==1.0.9
     # via httpx
 httpx==0.28.1
-    # via skore-hub-project
+    # via skore (skore/pyproject.toml)
 huey==2.6.0
     # via mlflow
 idna==3.11
@@ -163,7 +161,6 @@ joblib==1.5.3
     # via
     #   skore (skore/pyproject.toml)
     #   scikit-learn
-    #   skore-hub-project
     #   skore-mlflow-project
 jsonschema==4.26.0
     # via altair
@@ -194,7 +191,6 @@ matplotlib==3.10.8
     #   skore (skore/pyproject.toml)
     #   mlflow
     #   seaborn
-    #   skore-hub-project
     #   skore-mlflow-project
     #   skrub
 matplotlib-inline==0.2.1
@@ -228,7 +224,6 @@ numpy==2.4.4
     #   scipy
     #   seaborn
     #   skops
-    #   skore-hub-project
     #   skore-mlflow-project
     #   skrub
     #   xgboost-cpu
@@ -252,8 +247,8 @@ opentelemetry-semantic-conventions==0.62b0
     # via opentelemetry-sdk
 orjson==3.11.8
     # via
+    #   skore (skore/pyproject.toml)
     #   kaleido
-    #   skore-hub-project
 packaging==26.1
     # via
     #   altair
@@ -320,10 +315,10 @@ pycparser==3.0
     # via cffi
 pydantic==2.13.1
     # via
+    #   skore (skore/pyproject.toml)
     #   fastapi
     #   mlflow-skinny
     #   mlflow-tracing
-    #   skore-hub-project
 pydantic-core==2.46.1
     # via pydantic
 pydata-sphinx-theme==0.17.0
@@ -373,7 +368,6 @@ requests==2.33.1
 rich[jupyter]==15.0.0
     # via
     #   skore (skore/pyproject.toml)
-    #   skore-hub-project
     #   skore-mlflow-project
 rpds-py==0.30.0
     # via
@@ -385,15 +379,14 @@ scikit-learn==1.8.0
     #   skore (skore/pyproject.toml)
     #   mlflow
     #   skops
-    #   skore-hub-project
     #   skore-mlflow-project
     #   skrub
 scipy==1.17.1
     # via
+    #   skore (skore/pyproject.toml)
     #   mlflow
     #   scikit-learn
     #   skops
-    #   skore-hub-project
     #   skrub
     #   xgboost-cpu
 seaborn==0.13.2
@@ -404,8 +397,6 @@ six==1.17.0
     # via python-dateutil
 skops==0.13.0
     # via mlflow
-skore-hub-project==0.0.21
-    # via skore (skore/pyproject.toml)
 skore-mlflow-project==0.0.4
     # via skore (skore/pyproject.toml)
 skrub==0.8.0

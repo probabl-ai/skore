@@ -108,7 +108,6 @@ numpy==2.4.4
     #   numpy-typing-compat
     #   optype
     #   pandas
-    #   pandas-stubs
     #   scikit-learn
     #   scipy
     #   seaborn
@@ -129,8 +128,6 @@ pandas==3.0.2
     #   skore (skore/pyproject.toml)
     #   seaborn
     #   skrub
-pandas-stubs==3.0.0.260204
-    # via skore (skore/pyproject.toml)
 parso==0.8.6
     # via jedi
 pexpect==4.9.0
