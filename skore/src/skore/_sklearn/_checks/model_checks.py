@@ -13,6 +13,7 @@ from skore._sklearn._checks.utils import (
     _TIMING_METRICS,
     CheckNotApplicable,
     _get_data,
+    _unwrap_estimator,
     check_score_gap_to_baseline,
     detect_outliers_modified_zscore,
     majority_vote,
@@ -282,11 +283,12 @@ class CheckCoefficientsInterpretation(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
 
+        _, predictor = _unwrap_estimator(report.estimator_)
         X = _get_data(report, target="X", concatenate=True)
         if not (
             isinstance(report, EstimatorReport)
             and X is not None
-            and hasattr(report.estimator, "coef_")
+            and hasattr(predictor, "coef_")
         ):
             raise CheckNotApplicable()
 
@@ -321,11 +323,12 @@ class CheckMDIHighCardinalityBias(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
 
+        _, predictor = _unwrap_estimator(report.estimator_)
         X = _get_data(report, target="X")
-        if not (
-            isinstance(report, EstimatorReport)
-            and hasattr(report.estimator, "feature_importances_")
-            and X is not None
+        if (
+            X is None
+            or not hasattr(predictor, "feature_importances_")
+            or not isinstance(report, EstimatorReport)
         ):
             raise CheckNotApplicable()
 

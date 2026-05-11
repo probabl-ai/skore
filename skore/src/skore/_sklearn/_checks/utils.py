@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from sklearn.pipeline import Pipeline
 
 _TIMING_METRICS = {
     "Fit time (s)",
@@ -79,8 +80,26 @@ class CheckNotApplicable(Exception):
     """Raised when a check cannot run on the given report."""
 
 
+def _unwrap_estimator(estimator):
+    """Return ``(preprocessor, predictor)`` from a possibly wrapped estimator.
+
+    Splits sklearn :class:`~sklearn.pipeline.Pipeline` into its preprocessing
+    steps and final predictor.
+    """
+    if isinstance(estimator, Pipeline):
+        preprocessor, predictor = estimator[:-1], estimator[-1]
+    else:
+        preprocessor, predictor = None, estimator
+    return preprocessor, predictor
+
+
 def _get_data(report, *, target="X", concatenate=False) -> np.ndarray | None:
     """Return feature matrix or target vector from a report.
+
+    When ``target == "X"`` and the report's estimator is a
+    :class:`~sklearn.pipeline.Pipeline`, the raw feature matrix is passed
+    through the fitted preprocessor (all steps except the last) before being
+    returned, so the result reflects what the predictor actually sees.
 
     Parameters
     ----------
@@ -107,6 +126,20 @@ def _get_data(report, *, target="X", concatenate=False) -> np.ndarray | None:
     test = report.X_test if target == "X" else report.y_test
 
     if concatenate and train is not None and test is not None:
-        return np.asarray(np.concatenate([train, test]))
-    result = train if train is not None else test
-    return np.asarray(result) if result is not None else None
+        data = (
+            pd.concat([train, test], axis=0, ignore_index=True)
+            if isinstance(train, pd.DataFrame)
+            else np.concatenate([train, test])
+        )
+    elif train is not None:
+        data = train
+    elif test is not None:
+        data = test
+    else:
+        return None
+
+    if target == "X":
+        preprocessor, _ = _unwrap_estimator(report.estimator_)
+        if preprocessor is not None and len(preprocessor.steps) > 0:
+            data = preprocessor.transform(data)
+    return np.asarray(data)

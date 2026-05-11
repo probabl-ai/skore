@@ -10,17 +10,18 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import Check, EstimatorReport, configuration, evaluate
+from skrub import tabular_pipeline
 from skore._sklearn._checks.base import (
     ChecksSummaryDisplay,
     _get_issue_documentation_url,
 )
 from skore._sklearn._checks.utils import CheckNotApplicable
 
-
-@pytest.fixture
-def regression_report(regression_data):
+@pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
+def regression_report(request, regression_data):
+    estimator = request.param
     X, y = regression_data
-    return evaluate(LinearRegression(), X, y)
+    return evaluate(estimator, X, y)
 
 
 def mock_issue(report, ignored_codes):
@@ -146,14 +147,14 @@ def test_skd007_not_emitted_for_binary_features():
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD007" not in tips.index
 
-
-def test_skd008_correlated_features():
+@pytest.mark.parametrize("estimator", [LinearRegression(), tabular_pipeline(LinearRegression())])
+def test_skd008_correlated_features(estimator):
     """SKD008 issue is emitted when two features are near-perfectly correlated."""
     rng = np.random.RandomState(42)
     X = rng.standard_normal((20, 4))
     X[:, 1] = X[:, 0] + rng.standard_normal(20) * 1e-4
     y = rng.standard_normal(20)
-    report = evaluate(LinearRegression(), X, y)
+    report = evaluate(estimator, X, y)
     issues = report.checks.summarize().frame(severity="issue").set_index("code")
     assert "SKD008" in issues.index
     assert "1 pair(s) of features" in issues.loc["SKD008", "explanation"]
