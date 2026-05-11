@@ -58,6 +58,12 @@ Changed
 Added
 -----
 
+- :meth:`~EstimatorReport.metrics.summarize` (and ``summarize`` on the other reports)
+  now includes a ``score`` row corresponding to the estimator's default score, obtained
+  by running ``estimator.score()``. It supports :class:`skrub.DataOp` estimators,
+  for which scorings can be registered with :meth:`~skrub.DataOp.skb.with_scoring`.
+  See :pr:`2884` by :user:`auguste-probabl`.
+
 Removed
 -------
 

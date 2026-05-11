@@ -654,6 +654,27 @@ class Mape(Metric):
         )
 
 
+class Score(Metric):
+    name = "score"
+    verbose_name = "Score"
+    response_method = "predict"
+    greater_is_better = True
+    function_kind = FunctionKind.SCORER
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return hasattr(report.estimator_, "score")
+
+    @staticmethod
+    def function(estimator, X, y, *args, **kwargs):
+        if hasattr(estimator, "__skrub_to_Xy_pipeline__"):
+            # SkrubLearner.score expects an env dict, not (X, y); swap to the
+            # sklearn-style pipeline (empty env: X and y are passed directly).
+            estimator = estimator.__skrub_to_Xy_pipeline__({})
+            return estimator._score(X, y, *args, cast_to_float=False, **kwargs)
+        return estimator.score(X, y, *args, **kwargs)
+
+
 # Order matters for default display
 BUILTIN_METRICS: list[Metric] = [
     Accuracy(),
@@ -668,6 +689,7 @@ BUILTIN_METRICS: list[Metric] = [
     Mape(),
     FitTime(),
     PredictTime(),
+    Score(),
 ]
 
 

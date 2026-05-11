@@ -532,31 +532,31 @@ class TestEdgeCases:
         """Adding with duplicate name raises and keeps the original metric."""
         report = binary_classification_report
 
-        def score(y_true, y_pred):
+        def my_metric(y_true, y_pred):
             return 0
 
-        report.metrics.add(make_scorer(score, response_method="predict"))
+        report.metrics.add(make_scorer(my_metric, response_method="predict"))
 
         nb_metrics_before_overwriting = len(report._metric_registry)
 
-        result = report.metrics.summarize(metric="score")
+        result = report.metrics.summarize(metric="my_metric")
         assert result.data["score"].iloc[0] == 0
 
         # add a new metric with the same name
-        def score(y_true, y_pred):
+        def my_metric(y_true, y_pred):
             return 1
 
         err_msg = re.escape(
-            "Cannot add 'score': it already exists. "
+            "Cannot add 'my_metric': it already exists. "
             "Remove it first using the `remove` method."
         )
         with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add(make_scorer(score, response_method="predict"))
+            report.metrics.add(make_scorer(my_metric, response_method="predict"))
 
         assert len(report._metric_registry) == nb_metrics_before_overwriting
 
         # summarize still reflects the original metric
-        result = report.metrics.summarize(metric="score")
+        result = report.metrics.summarize(metric="my_metric")
         assert result.data["score"].iloc[0] == 0
 
 
