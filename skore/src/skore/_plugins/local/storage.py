@@ -60,7 +60,8 @@ class DiskCacheStorage:
         bool
             True if the key is in the storage, else False.
         """
-        return key in self.keys()
+        with Cache(self.directory) as storage:
+            return key in storage
 
     def __len__(self) -> int:
         """
@@ -71,7 +72,8 @@ class DiskCacheStorage:
         int
             The number of items in the storage.
         """
-        return len(list(self.keys()))
+        with Cache(self.directory) as storage:
+            return len(storage)
 
     def __iter__(self) -> Iterator[str]:
         """
