@@ -3,6 +3,7 @@
 from logging import getLogger
 
 from skore._project import plugin
+from skore._project.dependencies import assert_optional_dependencies_installed
 from skore._project.types import ProjectMode
 
 logger = getLogger(__name__)
@@ -57,6 +58,11 @@ def login(*, mode: ProjectMode = "hub", **kwargs):
     :class:`~skore.Project` :
         Refer to the :ref:`project` section of the user guide for more details.
     """
+    if mode not in {"hub", "local", "mlflow"}:
+        raise ValueError(f'`mode` must be "hub", "local" or "mlflow" (found {mode})')
+
+    assert_optional_dependencies_installed(mode)
+
     if mode == "local":
         logger.debug("Login to local storage.")
         return
