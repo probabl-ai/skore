@@ -143,18 +143,19 @@ class TestProject:
             assert name == "skore"
             return [f'{fake_library_name} ; extra == "local"']
 
-        monkeypatch.setattr("skore._project.project.requires", fake_requires)
+        monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
 
         with raises(
             ImportError,
             match=escape(
-                f"Missing `{fake_library_name}` library: please install `skore[local]`."
+                f"Missing library: `{fake_library_name}`. "
+                "You can fix this error by installing `skore[local]`."
             ),
         ):
             Project(mode="local", name="<name>")
 
     def test_init_hub(self, FakeHubProject, monkeypatch):
-        monkeypatch.setattr("skore._project.project.requires", lambda _: [])
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
         project = Project(mode="hub", name="<workspace>/<name>")
 
@@ -169,7 +170,7 @@ class TestProject:
         }
 
     def test_init_mlflow(self, FakeMlflowProject, monkeypatch):
-        monkeypatch.setattr("skore._project.project.requires", lambda _: [])
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
         project = Project(mode="mlflow", name="<name>", tracking_uri="<uri>")
 
@@ -232,14 +233,14 @@ class TestProject:
             Project(mode="local", name="<name>", workspace="<workspace>")
 
     def test_mode(self, monkeypatch):
-        monkeypatch.setattr("skore._project.project.requires", lambda _: [])
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
         assert Project(mode="local", name="name").mode == "local"
         assert Project(mode="hub", name="workspace/name").mode == "hub"
         assert Project(mode="mlflow", name="name").mode == "mlflow"
 
     def test_name(self, monkeypatch):
-        monkeypatch.setattr("skore._project.project.requires", lambda _: [])
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
         assert Project(mode="local", name="name").name == "name"
         assert Project(mode="hub", name="workspace/name").name == "workspace/name"
