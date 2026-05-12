@@ -257,15 +257,3 @@ def test_score_skrub_learner_with_extra_env_vars():
     )
 
     assert isinstance(report.metrics.score(), float)
-
-
-@pytest.mark.filterwarnings("ignore:Precision is ill-defined")
-def test_score_appears_in_summarize_for_skrub_learner():
-    """The ``Score`` row is included in ``summarize().frame()`` for SkrubLearners."""
-    report = skrub_report(with_scoring=True)
-
-    frame = report.metrics.summarize().frame()
-
-    # FIXME: The sub-metric names should not be in the "Label" column
-    score_labels = frame.xs("Score", level="Metric").index.get_level_values("Label")
-    assert set(score_labels) == {"accuracy", "weighted_accuracy"}

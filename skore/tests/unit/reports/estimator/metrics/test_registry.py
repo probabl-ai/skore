@@ -5,7 +5,9 @@ import pickle
 import re
 
 import numpy as np
+import pandas as pd
 import pytest
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     get_scorer,
@@ -636,62 +638,82 @@ class TestDifferentMLTasks:
         report.metrics.add(scorer)
 
 
-class TestDictReturnValues:
-    """Test that metrics returning dicts work correctly (per-label scores).
+class TestMultiMetric:
+    """Test that metrics returning dicts work correctly (multimetric scorers)."""
 
-    Note: Multimetric scorers (single scorer returning multiple different metrics)
-    are NOT supported - users should add metrics separately.
-    """
-
-    def test_per_class_accuracy_dict(self, binary_classification_report):
-        """Test metric that returns per-class scores as dict."""
-        report = binary_classification_report
-
-        def per_class_accuracy(y_true, y_pred) -> dict[int, float]:
-            """Return accuracy for each class."""
-            accuracies = {}
-            for label in np.unique(y_true):
-                mask = y_true == label
-                accuracies[int(label)] = float((y_pred[mask] == label).mean())
-            return accuracies
-
-        def scorer(est, X, y_true):
-            y_pred = est.predict(X)
-            return per_class_accuracy(y_true, y_pred)
-
-        report.metrics.add(scorer, name="per_class_accuracy")
-
-        display = report.metrics.summarize(metric="per_class_accuracy")
-
-        metric_rows = display.data[
-            display.data["metric_verbose_name"] == "Per Class Accuracy"
-        ]
-        assert len(metric_rows) == 2
-        assert set(metric_rows["label"].values) == {0, 1}
-
-        # Cached correctly
-        with check_cache_unchanged(report._cache):
-            report.metrics.summarize(metric="per_class_accuracy")
-
-    def test_multimetric_scorer_not_recommended(self, binary_classification_report):
-        """Multimetric scorers are treated as per-label scores (not supported)."""
+    def test(self, binary_classification_report):
+        """Multimetric scorers are unpacked properly."""
         report = binary_classification_report
 
         def multimetric_scorer(y_true, y_pred):
             return {
                 "accuracy": accuracy_score(y_true, y_pred),
-                "precision": precision_score(y_true, y_pred, average="binary"),
+                "precision": precision_score(y_true, y_pred, average=None),
             }
 
         report.metrics.add(make_scorer(multimetric_scorer, response_method="predict"))
 
         display = report.metrics.summarize(metric="multimetric_scorer")
 
-        metric_rows = display.data[
-            display.data["metric_verbose_name"] == "Multimetric Scorer"
+        assert list(display.data["metric_verbose_name"]) == [
+            "accuracy",
+            "precision",  # Label 0
+            "precision",  # Label 1
         ]
-        # Not quite right...
-        assert set(metric_rows["label"]) == {"accuracy", "precision"}
+        assert list(display.data["label"]) == [pd.NA, np.int64(0), np.int64(1)]
+
+    def test_score(self, logistic_binary_classification_with_train_test):
+        """Setting an estimator's `score` method to a multimetric scorer works."""
+
+        def multimetric_scorer(y_true, y_pred):
+            return {
+                "accuracy": accuracy_score(y_true, y_pred),
+                "precision": precision_score(y_true, y_pred, average=None),
+            }
+
+        class MyEstimator(LogisticRegression):
+            def score(self, X, y, sample_weight=None):
+                y_pred = self.predict(X)
+                return multimetric_scorer(y, y_pred)
+
+        _, X_train, X_test, y_train, y_test = (
+            logistic_binary_classification_with_train_test
+        )
+
+        report = EstimatorReport(
+            MyEstimator(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+
+        display = report.metrics.summarize(metric="score")
+
+        assert list(display.data["metric_verbose_name"]) == [
+            "accuracy",
+            "precision",  # Label 0
+            "precision",  # Label 1
+        ]
+        assert list(display.data["label"]) == [pd.NA, np.int64(0), np.int64(1)]
+
+    def test_preexisting_metric_name(self, binary_classification_report):
+        """If a multimetric scorer is added and it contains a submetric that has the
+        same name as a metric in the registry, then the metric name will appear more
+        than once."""
+        report = binary_classification_report
+
+        def multimetric_scorer(y_true, y_pred):
+            # NOTE: "Accuracy" is the name of a default metric
+            return {"Accuracy": 1000}
+
+        report.metrics.add(make_scorer(multimetric_scorer, response_method="predict"))
+
+        display = report.metrics.summarize()
+
+        results = display.data[display.data["metric_verbose_name"] == "Accuracy"]
+        # Our metric, then the default one
+        assert list(results["score"]) == [1000, 1.0]
 
 
 class TestStringScorerNames:

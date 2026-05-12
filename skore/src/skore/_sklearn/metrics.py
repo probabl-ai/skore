@@ -438,25 +438,30 @@ class Metric:
             output=output,
         )
 
-    def rows(
+    def _to_rows(
         self,
+        score,
         *,
         report: EstimatorReport,
-        data_source: DataSource,
         **kwargs: Any,
     ) -> list[MetricRow]:
-        """Compute the metric and expand it into one or more rows."""
-        merged_kwargs = self.kwargs | kwargs
-        score = self.raw_cached(report=report, data_source=data_source, **merged_kwargs)
+        """Convert a score into one or more rows."""
+        if isinstance(score, dict):
+            # Multimetric scorer
+            result = []
+            for submetric_name, submetric_value in score.items():
+                rows = self._to_rows(submetric_value, report=report, kwargs=kwargs)
+                for r in rows:
+                    r["metric_verbose_name"] = submetric_name
+                result.extend(rows)
+            return result
 
         if (
             report._ml_task == "binary-classification"
             and kwargs.get("average") == "binary"
         ):
             return [
-                self._row(
-                    score=score, label=merged_kwargs.get("pos_label", report.pos_label)
-                )
+                self._row(score=score, label=kwargs.get("pos_label", report.pos_label))
             ]
         if report._ml_task in ("binary-classification", "multiclass-classification"):
             if isinstance(score, np.ndarray):
@@ -468,15 +473,50 @@ class Metric:
                         strict=False,
                     )
                 ]
-            return [self._row(score=score, average=merged_kwargs.get("average"))]
+            return [self._row(score=score, average=kwargs.get("average"))]
         if report._ml_task == "multioutput-regression":
             if isinstance(score, np.ndarray):
                 return [
                     self._row(score=s, output=idx)
                     for idx, s in enumerate(score.tolist())
                 ]
-            return [self._row(score=score, average=merged_kwargs.get("multioutput"))]
+            return [self._row(score=score, average=kwargs.get("multioutput"))]
         return [self._row(score=score)]
+
+    def rows(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource,
+        **kwargs: Any,
+    ) -> list[MetricRow]:
+        """Compute the metric and expand it into one or more rows."""
+        merged_kwargs = self.kwargs | kwargs
+        score = self.raw_cached(report=report, data_source=data_source, **merged_kwargs)
+        return self._to_rows(score, report=report, **merged_kwargs)
+
+    def _to_pretty(self, rows: list[MetricRow]) -> Any:
+        """Convert rows into a human-readable metric output."""
+        if len(rows) == 1:
+            return rows[0]["score"]
+
+        if len({row["metric_verbose_name"] for row in rows}) != 1:
+            # Multi-metric scorer
+            # We assume each submetric's values are grouped together
+            return {
+                name: self._to_pretty(list(rows_))
+                for name, rows_ in groupby(
+                    rows, key=lambda row: row["metric_verbose_name"]
+                )
+            }
+
+        if rows[0]["label"] is not None:
+            # Multi-class classification
+            return {row["label"]: row["score"] for row in rows}
+
+        # Multioutput regression
+        # We assume rows are sorted by output
+        return np.array([row["score"] for row in rows])
 
     def pretty(
         self,
@@ -487,17 +527,7 @@ class Metric:
     ) -> Any:
         """Compute the metric in a human-readable shape."""
         rows = self.rows(report=report, data_source=data_source, **kwargs)
-
-        if len(rows) == 1:
-            return rows[0]["score"]
-
-        if rows[0]["label"] is not None:
-            # Multi-class classification
-            return {row["label"]: row["score"] for row in rows}
-
-        # Multioutput regression
-        # We assume rows are sorted by output
-        return np.array([row["score"] for row in rows])
+        return self._to_pretty(rows)
 
 
 class FitTime(Metric):
