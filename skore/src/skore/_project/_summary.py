@@ -45,7 +45,7 @@ class Summary(DataFrame):
 
         Parameters
         ----------
-        project : ``skore._plugins.local.Project`` | ``skore_hub_project.Project``
+        project : ``skore._plugins.local.Project`` | ``skore._plugins.hub.Project``
             The project from which the summary object is to be constructed.
 
         Notes

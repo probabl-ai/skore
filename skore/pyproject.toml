@@ -27,6 +27,7 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
+  "jinja2",
   "joblib",
   "matplotlib",
   "numpy",
@@ -34,10 +35,9 @@ dependencies = [
   "plotly",
   "rich>=14.2",
   "scikit-learn",
+  "seaborn",
   "skore[local]",
   "skrub>=0.8",
-  "seaborn",
-  "jinja2",
 ]
 
 [project.optional-dependencies]
@@ -47,6 +47,7 @@ jupyter = [
   "ipywidgets",
 ]
 test-base = [
+  "jedi",
   "pre-commit",
   "pytest",
   "pytest-cov",
@@ -55,10 +56,11 @@ test-base = [
   "pytest-xdist",
   "scipy-stubs",
   "xdoctest",
-  "jedi",
+  "respx",
+  "skore[hub, jupyter]",
 ]
-test = ["skore[test-base]", "skore[jupyter]", "polars", "pyarrow"]
-test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
+test = ["polars", "pyarrow", "skore[test-base]"]
+test-lts-cpu = ["polars-lts-cpu", "skore[test-base]"]
 sphinx-base = [
   "altair",
   "kaleido",
@@ -77,18 +79,25 @@ sphinx-base = [
   "xgboost-cpu ; platform_system != 'Darwin'",
   "xgboost ; platform_system == 'Darwin'",
 ]
-sphinx = ["skore[sphinx-base, hub, mlflow]", "mlflow", "polars"]
-sphinx-lts-cpu = ["skore[sphinx-base, hub, mlflow]", "mlflow", "polars-lts-cpu"]
-dev = [
-  "nbformat",
-  "ipykernel",
-]
+sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
+sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
+dev = ["ipykernel", "nbformat"]
 local = ["diskcache", "platformdirs"]
-hub = ["skore-hub-project>=0.0.19"]
+hub = [
+  "httpx",
+  "orjson",
+  "pydantic",
+  "rich[jupyter]>=14.2",
+  "scipy",
+]
 mlflow = ["skore-mlflow-project>=0.0.2"]
+
+[project.entry-points."skore.plugins.login"]
+hub = "skore._plugins.hub.authentication.login:login"
 
 [project.entry-points."skore.plugins.project"]
 local = "skore._plugins.local:Project"
+hub = "skore._plugins.hub.project.project:Project"
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -203,8 +212,10 @@ module = [
   "ipywidgets.*",
   "jinja2.*",
   "joblib.*",
+  "js.*",
   "pandas.*",
   "plotly.*",
+  "pyodide.*",
   "seaborn.*",
   "sklearn.*",
   "skrub.*",

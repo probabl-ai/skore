@@ -1,9 +1,16 @@
+annotated-types==0.7.0
+    # via pydantic
+anyio==4.13.0
+    # via httpx
 anywidget==0.10.0
     # via skore (skore/pyproject.toml)
 asttokens==3.0.1
     # via stack-data
 certifi==2026.2.25
-    # via requests
+    # via
+    #   httpcore
+    #   httpx
+    #   requests
 cfgv==3.5.0
     # via pre-commit
 charset-normalizer==3.4.7
@@ -32,10 +39,21 @@ filelock==3.28.0
     #   virtualenv
 fonttools==4.62.1
     # via matplotlib
+h11==0.16.0
+    # via httpcore
+httpcore==1.0.9
+    # via httpx
+httpx==0.28.1
+    # via
+    #   skore (skore/pyproject.toml)
+    #   respx
 identify==2.6.18
     # via pre-commit
 idna==3.11
-    # via requests
+    # via
+    #   anyio
+    #   httpx
+    #   requests
 iniconfig==2.3.0
     # via pytest
 ipython==9.12.0
@@ -48,6 +66,7 @@ ipywidgets==8.1.8
     # via
     #   skore (skore/pyproject.toml)
     #   anywidget
+    #   rich
 jedi==0.19.2
     # via
     #   skore (skore/pyproject.toml)
@@ -97,6 +116,8 @@ numpy-typing-compat==20251206.2.4
     # via optype
 optype[numpy]==0.17.0
     # via scipy-stubs
+orjson==3.11.9
+    # via skore (skore/pyproject.toml)
 packaging==26.1
     # via
     #   matplotlib
@@ -140,6 +161,10 @@ pure-eval==0.2.3
     # via stack-data
 pyarrow==23.0.1
     # via skore (skore/pyproject.toml)
+pydantic==2.13.4
+    # via skore (skore/pyproject.toml)
+pydantic-core==2.46.4
+    # via pydantic
 pydot==4.0.1
     # via skrub
 pygments==2.20.0
@@ -177,7 +202,9 @@ pyyaml==6.0.3
     # via pre-commit
 requests==2.33.1
     # via skrub
-rich==15.0.0
+respx==0.23.1
+    # via skore (skore/pyproject.toml)
+rich[jupyter]==15.0.0
     # via skore (skore/pyproject.toml)
 scikit-learn==1.7.2
     # via
@@ -186,6 +213,7 @@ scikit-learn==1.7.2
     #   skrub
 scipy==1.17.1
     # via
+    #   skore (skore/pyproject.toml)
     #   scikit-learn
     #   skrub
 scipy-stubs==1.17.1.4
@@ -206,7 +234,13 @@ traitlets==5.14.3
     #   ipywidgets
     #   matplotlib-inline
 typing-extensions==4.15.0
-    # via anywidget
+    # via
+    #   anywidget
+    #   pydantic
+    #   pydantic-core
+    #   typing-inspection
+typing-inspection==0.4.2
+    # via pydantic
 urllib3==2.7.0
     # via requests
 virtualenv==21.2.4
