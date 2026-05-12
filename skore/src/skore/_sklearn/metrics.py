@@ -312,15 +312,17 @@ class Metric:
     def __repr__(self) -> str:
         """Return a representation of the metric."""
         args = [
-            f"name={self.name!r}",
-            f"verbose_name={self.verbose_name!r}",
-            f"function={self.function}",
-            f"greater_is_better={self.greater_is_better}",
-            f"response_method={self.response_method}",
-            f"kwargs={self.kwargs}",
+            "name",
+            "verbose_name",
+            "function",
+            "greater_is_better",
+            "response_method",
+            "kwargs",
         ]
 
-        return f"Metric({', '.join(args)})"
+        kwargs = [f"{a}={getattr(self, a)!r}" for a in args if hasattr(self, a)]
+
+        return f"Metric({', '.join(kwargs)})"
 
     def __getstate__(self) -> dict[str, Any]:
         """Return a pickle-safe representation of the metric."""
