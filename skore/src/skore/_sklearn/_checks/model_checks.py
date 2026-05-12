@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 from scipy.stats import spearmanr
@@ -21,6 +21,8 @@ from skore._sklearn._checks.utils import (
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
+    from skore._sklearn._cross_validation.report import CrossValidationReport
+    from skore._sklearn._estimator.report import EstimatorReport
 
 
 def _get_metrics_data(report: _BaseReport) -> tuple:
@@ -168,10 +170,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._cross_validation.report import CrossValidationReport
-
-        if not isinstance(report, CrossValidationReport):
-            raise CheckNotApplicable()
+        report = cast("CrossValidationReport", report)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UndefinedMetricWarning)
@@ -209,14 +208,9 @@ class CheckHighClassImbalance(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
-
+        report = cast("EstimatorReport", report)
         y = _get_data(report, target="y", concatenate=True)
-        if (
-            not isinstance(report, EstimatorReport)
-            or report.ml_task != "binary-classification"
-            or y is None
-        ):
+        if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
         values, counts = np.unique_counts(y)
@@ -245,14 +239,10 @@ class CheckUnderrepresentedClasses(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
+        report = cast("EstimatorReport", report)
 
         y = _get_data(report, target="y", concatenate=True)
-        if (
-            not isinstance(report, EstimatorReport)
-            or report.ml_task != "multiclass-classification"
-            or y is None
-        ):
+        if report.ml_task != "multiclass-classification" or y is None:
             raise CheckNotApplicable()
 
         values, counts = np.unique_counts(y)
@@ -281,12 +271,10 @@ class CheckCoefficientsInterpretation(Check):
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
-
-        if not isinstance(report, EstimatorReport):
-            raise CheckNotApplicable()
+        report = cast("EstimatorReport", report)
         _, predictor = _unwrap_estimator(report.estimator)
         X = _get_data(report, target="X", concatenate=True)
+
         if X is None or not hasattr(predictor, "coef_"):
             raise CheckNotApplicable()
 
@@ -319,12 +307,10 @@ class CheckMDIHighCardinalityBias(Check):
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
-
-        if not isinstance(report, EstimatorReport):
-            raise CheckNotApplicable()
+        report = cast("EstimatorReport", report)
         _, predictor = _unwrap_estimator(report.estimator)
         X = _get_data(report, target="X")
+
         if X is None or not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable()
 
@@ -365,12 +351,10 @@ class CheckCorrelatedFeatures(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
-
+        report = cast("EstimatorReport", report)
         X = _get_data(report, target="X")
-        if not (
-            isinstance(report, EstimatorReport) and X is not None and X.shape[1] >= 2
-        ):
+
+        if X is None or X.shape[1] < 2:
             raise CheckNotApplicable()
 
         corr = np.abs(spearmanr(X).statistic)

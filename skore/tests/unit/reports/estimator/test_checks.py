@@ -2,6 +2,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -22,7 +23,11 @@ from skore._sklearn._checks.utils import CheckNotApplicable
 def regression_report(request, regression_data):
     estimator = request.param
     X, y = regression_data
-    return evaluate(estimator, X, y)
+    return evaluate(
+        estimator,
+        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
+        pd.Series(y),
+    )
 
 
 def mock_issue(report, ignored_codes):
@@ -158,7 +163,11 @@ def test_skd008_correlated_features(estimator):
     X = rng.standard_normal((20, 4))
     X[:, 1] = X[:, 0] + rng.standard_normal(20) * 1e-4
     y = rng.standard_normal(20)
-    report = evaluate(estimator, X, y)
+    report = evaluate(
+        estimator,
+        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
+        pd.Series(y),
+    )
     issues = report.checks.summarize().frame(severity="issue").set_index("code")
     assert "SKD008" in issues.index
     assert "1 pair(s) of features" in issues.loc["SKD008", "explanation"]
