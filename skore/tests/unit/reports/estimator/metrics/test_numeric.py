@@ -26,9 +26,7 @@ def deep_contain(value, test_value):
         return False
 
 
-def test_interaction_cache_metrics(
-    linear_regression_multioutput_with_test,
-):
+def test_interaction_cache_metrics(linear_regression_multioutput_with_test):
     """Check that the cache take into account the 'kwargs' of a metric."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -184,6 +182,13 @@ def test_roc_multiclass_requires_predict_proba(
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "roc_auc")
     report.metrics.roc_auc()
+
+
+def test_r2_returns_float(linear_regression_with_test):
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    assert isinstance(report.metrics.r2(), float)
 
 
 # report.metrics.score

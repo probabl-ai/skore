@@ -7,12 +7,13 @@ from collections import OrderedDict, UserDict
 from collections.abc import Callable
 from enum import Enum, auto
 from inspect import Parameter
-from typing import TYPE_CHECKING, Any, Literal, Protocol, cast
+from itertools import groupby
+from typing import TYPE_CHECKING, Any, Literal, Protocol, TypedDict, cast
 
 import numpy as np
 import sklearn
 import sklearn.metrics
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator
 from sklearn.metrics._scorer import _BaseScorer
 
@@ -50,6 +51,38 @@ _METRIC_ALIASES: dict[str, str] = {
     "max_error": "neg_max_error",
     "negative_likelihood_ratio": "neg_negative_likelihood_ratio",
 }
+
+
+class MetricRow(TypedDict):
+    """A single row of a metric output.
+
+    Parameters
+    ----------
+    metric_verbose_name : str
+        Human-readable metric name.
+
+    greater_is_better : bool or None
+        Whether higher values are better.
+
+    score : float
+        Scalar metric value.
+
+    label : label, default=None
+        Class label for per-class classification metrics.
+
+    average : str, default=None
+        Averaging mode when a metric is aggregated across labels or outputs.
+
+    output : int, default=None
+        Output index for multioutput regression metrics.
+    """
+
+    metric_verbose_name: str
+    greater_is_better: bool | None
+    score: float
+    label: PositiveLabel | None
+    average: str | None
+    output: int | None
 
 
 class FunctionKind(Enum):
@@ -102,6 +135,16 @@ class Metric:
 
     kwargs : dict, default={}
         Default keyword arguments for the scoring function.
+
+    Notes
+    -----
+    A metric's value flows through four layers, from raw to human-readable:
+
+    - :meth:`raw` performs the actual computation.
+    - :meth:`raw_cached` wraps :meth:`raw` and caches the result.
+    - :meth:`rows` outputs metric scores in a structured format.
+    - :meth:`pretty` outputs metric scores in a human-readable format, which may
+      differ from what the base metric returned.
     """
 
     def __init__(
@@ -135,123 +178,6 @@ class Metric:
         self.function = function
         self.function_kind = function_kind
 
-    def __getstate__(self) -> dict[str, Any]:
-        state = self.__dict__.copy()
-        if state.get("function") is not None:
-            try:
-                pickle.dumps(state["function"])
-            except Exception:
-                state["function"] = None
-        return state
-
-    @staticmethod
-    def available(report: EstimatorReport) -> bool:
-        """Whether this metric is applicable to the given report."""
-        return True
-
-    def __repr__(self) -> str:
-        args = [
-            f"name={self.name!r}",
-            f"verbose_name={self.verbose_name!r}",
-            f"function={self.function}",
-            f"greater_is_better={self.greater_is_better}",
-            f"response_method={self.response_method}",
-            f"kwargs={self.kwargs}",
-        ]
-
-        return f"Metric({', '.join(args)})"
-
-    def __call__(
-        self,
-        *,
-        report: EstimatorReport,
-        data_source: DataSource = "test",
-        **kwargs: Any,
-    ) -> float | dict[PositiveLabel, float] | list:
-        """Compute the metric score.
-
-        Parameters
-        ----------
-        report : EstimatorReport
-            The report to compute the metric for.
-
-        data_source : {"test", "train"}, default="test"
-            Which data split to use.
-
-        **kwargs
-            Additional keyword arguments passed to the scoring function.
-        """
-        # Merge default kwargs with call-time kwargs
-        merged_kwargs = self.kwargs | kwargs
-
-        cache_key = make_cache_key(data_source, self.name, merged_kwargs)
-        score = report._cache.get(cache_key)
-        if score is not None:
-            return score
-
-        score = self._compute(report=report, data_source=data_source, **merged_kwargs)
-
-        if isinstance(score, np.ndarray):
-            score = cast(NDArray, score).tolist()
-
-        if hasattr(score, "item"):
-            score = cast(NDArray, score).item()
-        elif isinstance(score, list):
-            if len(score) == 1:
-                score = score[0]
-            elif "classification" in report._ml_task:
-                score = dict(
-                    zip(report.learner_.classes_.tolist(), score, strict=False)
-                )
-
-        report._cache[cache_key] = score
-        return cast(float | dict[PositiveLabel, float] | list[float], score)
-
-    def _compute(
-        self,
-        *,
-        report: EstimatorReport,
-        data_source: DataSource,
-        **kwargs: Any,
-    ) -> Any:
-        """Compute the raw uncached score.
-
-        Override this hook when a metric's score cannot be expressed as
-        ``self.function(...)`` (see :class:`Score`). Subclasses that only need
-        to tweak kwargs should override :meth:`__call__` and delegate to
-        ``super().__call__``; the cache and post-processing live in
-        :meth:`__call__` and run for every override of this hook.
-        """
-        if self.function is None:
-            raise ValueError(f"Metric {self.name!r} has no scoring function.")
-
-        metric_params = inspect.signature(self.function).parameters
-        call_kwargs = kwargs.copy()
-        if "pos_label" in metric_params and "pos_label" not in call_kwargs:
-            call_kwargs["pos_label"] = report.pos_label
-
-        if self.function_kind == FunctionKind.METRIC:
-            assert self.response_method is not None
-
-            _, y_true = report._get_data_and_y_true(data_source=data_source)
-            y_pred = report._get_predictions(
-                data_source=data_source,
-                response_method=self.response_method,
-                pos_label=call_kwargs.get("pos_label", None),
-            )
-
-            return cast(MetricCallable, self.function)(y_true, y_pred, **call_kwargs)
-
-        assert self.function_kind == FunctionKind.SCORER
-        data, y_true = report._get_data_and_y_true(data_source=data_source)
-        X = data["_skrub_X"]
-        return cast(ScorerCallable, self.function)(
-            report.estimator_,
-            X,
-            y_true,
-            **call_kwargs,
-        )
-
     @staticmethod
     def new(
         metric: MetricLike | Metric,
@@ -261,7 +187,7 @@ class Metric:
         greater_is_better: bool = True,
         kwargs: dict[str, Any] | None = None,
     ) -> Metric:
-        """Convert a metric-like object into a :class:`Metric` instance.
+        """Create a :class:`Metric` from a metric-like object.
 
         Parameters
         ----------
@@ -383,6 +309,196 @@ class Metric:
                 "Expected a callable, sklearn scorer, or Metric instance."
             )
 
+    def __repr__(self) -> str:
+        """Return a representation of the metric."""
+        args = [
+            f"name={self.name!r}",
+            f"verbose_name={self.verbose_name!r}",
+            f"function={self.function}",
+            f"greater_is_better={self.greater_is_better}",
+            f"response_method={self.response_method}",
+            f"kwargs={self.kwargs}",
+        ]
+
+        return f"Metric({', '.join(args)})"
+
+    def __getstate__(self) -> dict[str, Any]:
+        """Return a pickle-safe representation of the metric."""
+        state = self.__dict__.copy()
+        if state.get("function") is not None:
+            try:
+                pickle.dumps(state["function"])
+            except Exception:
+                # function may be a closure or some other non-picklable object
+                state["function"] = None
+        return state
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        """Whether this metric is applicable to the given report.
+
+        Override this when the metric is not defined for every ML task or estimator
+        (e.g. accuracy is not a regression metric).
+        """
+        return True
+
+    def raw(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource = "test",
+        **kwargs: Any,
+    ) -> Any:
+        """Compute the raw metric on the given report.
+
+        Override this when the score cannot be expressed as ``self.function(...)``
+        (see :class:`Score`, :class:`FitTime`, :class:`PredictTime`). Subclasses that
+        only need to adjust kwargs before delegating should call ``super().raw(...)``
+        (see :class:`Precision`, :class:`Brier`, :class:`RocAuc`).
+
+        Parameters
+        ----------
+        report : EstimatorReport
+            The report to compute the metric for.
+
+        data_source : {"test", "train"}, default="test"
+            Which data split to use.
+
+        **kwargs
+            Additional keyword arguments passed to the scoring function.
+
+        Returns
+        -------
+        float or ndarray or dict
+            The computed metric value.
+        """
+        if self.function is None:
+            raise ValueError(f"Metric {self.name!r} has no scoring function.")
+
+        metric_params = inspect.signature(self.function).parameters
+        call_kwargs = kwargs.copy()
+        if "pos_label" in metric_params and "pos_label" not in call_kwargs:
+            call_kwargs["pos_label"] = report.pos_label
+
+        if self.function_kind == FunctionKind.METRIC:
+            assert self.response_method is not None
+
+            _, y_true = report._get_data_and_y_true(data_source=data_source)
+            y_pred = report._get_predictions(
+                data_source=data_source,
+                response_method=self.response_method,
+                pos_label=call_kwargs.get("pos_label", None),
+            )
+
+            return cast(MetricCallable, self.function)(y_true, y_pred, **call_kwargs)
+
+        assert self.function_kind == FunctionKind.SCORER
+
+        data, y_true = report._get_data_and_y_true(data_source=data_source)
+        X = data["_skrub_X"]
+        return cast(ScorerCallable, self.function)(
+            report.estimator_,
+            X,
+            y_true,
+            **call_kwargs,
+        )
+
+    def raw_cached(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource = "test",
+        **kwargs: Any,
+    ) -> Any:
+        """Compute the raw metric and cache it in the report."""
+        cache_key = make_cache_key(data_source, self.name, kwargs)
+        score = report._cache.get(cache_key)
+        if score is None:
+            score = self.raw(report=report, data_source=data_source, **kwargs)
+
+            report._cache[cache_key] = score
+
+        return score
+
+    def _row(
+        self,
+        *,
+        score: Any,
+        label: PositiveLabel | None = None,
+        average: str | None = None,
+        output: int | None = None,
+    ) -> MetricRow:
+        """Build a single :class:`MetricRow`."""
+        return MetricRow(
+            metric_verbose_name=self.verbose_name,
+            greater_is_better=self.greater_is_better,
+            score=score.item() if hasattr(score, "item") else score,
+            label=label,
+            average=average,
+            output=output,
+        )
+
+    def rows(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource,
+        **kwargs: Any,
+    ) -> list[MetricRow]:
+        """Compute the metric and expand it into one or more rows."""
+        merged_kwargs = self.kwargs | kwargs
+        score = self.raw_cached(report=report, data_source=data_source, **merged_kwargs)
+
+        if (
+            report._ml_task == "binary-classification"
+            and kwargs.get("average") == "binary"
+        ):
+            return [
+                self._row(
+                    score=score, label=merged_kwargs.get("pos_label", report.pos_label)
+                )
+            ]
+        if report._ml_task in ("binary-classification", "multiclass-classification"):
+            if isinstance(score, np.ndarray):
+                return [
+                    self._row(score=s, label=label)
+                    for label, s in zip(
+                        report.learner_.classes_.tolist(),
+                        score.tolist(),
+                        strict=False,
+                    )
+                ]
+            return [self._row(score=score, average=merged_kwargs.get("average"))]
+        if report._ml_task == "multioutput-regression":
+            if isinstance(score, np.ndarray):
+                return [
+                    self._row(score=s, output=idx)
+                    for idx, s in enumerate(score.tolist())
+                ]
+            return [self._row(score=score, average=merged_kwargs.get("multioutput"))]
+        return [self._row(score=score)]
+
+    def pretty(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource = "test",
+        **kwargs: Any,
+    ) -> Any:
+        """Compute the metric in a human-readable shape."""
+        rows = self.rows(report=report, data_source=data_source, **kwargs)
+
+        if len(rows) == 1:
+            return rows[0]["score"]
+
+        if rows[0]["label"] is not None:
+            # Multi-class classification
+            return {row["label"]: row["score"] for row in rows}
+
+        # Multioutput regression
+        # We assume rows are sorted by output
+        return np.array([row["score"] for row in rows])
+
 
 class FitTime(Metric):
     name = "fit_time"
@@ -395,9 +511,7 @@ class FitTime(Metric):
     def available(report: EstimatorReport) -> bool:
         return True
 
-    def __call__(
-        self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs
-    ):
+    def raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
         if cast and report.fit_time_ is None:
             return float("nan")
         return report.fit_time_
@@ -414,9 +528,7 @@ class PredictTime(Metric):
     def available(report: EstimatorReport) -> bool:
         return True
 
-    def __call__(
-        self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs
-    ):
+    def raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
         predict_time_cache_key = make_cache_key(data_source, "predict_time")
         return report._cache.get(
             predict_time_cache_key, (float("nan") if cast else None)
@@ -448,7 +560,7 @@ class Precision(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
-    def __call__(
+    def raw(
         self, *, report: EstimatorReport, data_source="test", average=None, **kwargs
     ):
         if report._ml_task == "binary-classification":
@@ -457,7 +569,7 @@ class Precision(Metric):
             elif average != "binary":
                 kwargs["pos_label"] = None
 
-        return super().__call__(
+        return super().raw(
             report=report, data_source=data_source, average=average, **kwargs
         )
 
@@ -474,7 +586,7 @@ class Recall(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
-    def __call__(
+    def raw(
         self, *, report: EstimatorReport, data_source="test", average=None, **kwargs
     ):
         if report._ml_task == "binary-classification":
@@ -483,7 +595,7 @@ class Recall(Metric):
             elif average != "binary":
                 kwargs["pos_label"] = None
 
-        return super().__call__(
+        return super().raw(
             report=report, data_source=data_source, average=average, **kwargs
         )
 
@@ -502,11 +614,11 @@ class Brier(Metric):
             report.learner_, "predict_proba"
         )
 
-    def __call__(self, *, report: EstimatorReport, data_source="test", **kwargs):
+    def raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
         # The Brier score in scikit-learn requests `pos_label` to ensure that
         # the integral encoding of `y_true` corresponds to the probabilities of
         # the `pos_label`.
-        return super().__call__(
+        return super().raw(
             report=report,
             data_source=data_source,
             pos_label=report.learner_.classes_[-1],
@@ -537,7 +649,7 @@ class RocAuc(Metric):
             y_score = y_score[:, 1]
         return sklearn.metrics.roc_auc_score(y_true, y_score, **kwargs)
 
-    def __call__(
+    def raw(
         self,
         *,
         report: EstimatorReport,
@@ -546,7 +658,7 @@ class RocAuc(Metric):
         multi_class="ovr",
         **kwargs,
     ):
-        return super().__call__(
+        return super().raw(
             report=report,
             data_source=data_source,
             average=average,
@@ -583,7 +695,7 @@ class R2(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
-    def __call__(
+    def raw(
         self,
         *,
         report: EstimatorReport,
@@ -591,7 +703,7 @@ class R2(Metric):
         multioutput="raw_values",
         **kwargs,
     ):
-        return super().__call__(
+        return super().raw(
             report=report, data_source=data_source, multioutput=multioutput, **kwargs
         )
 
@@ -608,7 +720,7 @@ class Rmse(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
-    def __call__(
+    def raw(
         self,
         *,
         report: EstimatorReport,
@@ -616,7 +728,7 @@ class Rmse(Metric):
         multioutput="raw_values",
         **kwargs,
     ):
-        return super().__call__(
+        return super().raw(
             report=report, data_source=data_source, multioutput=multioutput, **kwargs
         )
 
@@ -633,7 +745,7 @@ class Mae(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
-    def __call__(
+    def raw(
         self,
         *,
         report: EstimatorReport,
@@ -641,7 +753,7 @@ class Mae(Metric):
         multioutput="raw_values",
         **kwargs,
     ):
-        return super().__call__(
+        return super().raw(
             report=report, data_source=data_source, multioutput=multioutput, **kwargs
         )
 
@@ -658,7 +770,7 @@ class Mape(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
-    def __call__(
+    def raw(
         self,
         *,
         report: EstimatorReport,
@@ -666,7 +778,7 @@ class Mape(Metric):
         multioutput="raw_values",
         **kwargs,
     ):
-        return super().__call__(
+        return super().raw(
             report=report, data_source=data_source, multioutput=multioutput, **kwargs
         )
 
@@ -682,7 +794,7 @@ class Score(Metric):
     def available(report: EstimatorReport) -> bool:
         return hasattr(report.estimator_, "score")
 
-    def _compute(
+    def raw(
         self,
         *,
         report: EstimatorReport,
