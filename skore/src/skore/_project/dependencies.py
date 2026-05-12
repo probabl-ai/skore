@@ -29,5 +29,6 @@ def assert_optional_dependencies_installed(extra: str) -> None:
             version(dependency)
         except PackageNotFoundError:
             raise ImportError(
-                f"Missing `{dependency}` library: please install `skore[{extra}]`."
+                f"Missing library: `{dependency}`. "
+                f"You can fix this error by installing `skore[{extra}]`."
             ) from None

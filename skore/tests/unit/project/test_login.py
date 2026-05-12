@@ -55,7 +55,8 @@ def test_login_local_missing_optional_dependency(monkeypatch):
     with raises(
         ImportError,
         match=escape(
-            f"Missing `{fake_library_name}` library: please install `skore[local]`."
+            f"Missing library: `{fake_library_name}`. "
+            "You can fix this error by installing `skore[local]`."
         ),
     ):
         login(mode="local", arg1=1, arg2=2)

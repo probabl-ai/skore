@@ -148,7 +148,8 @@ class TestProject:
         with raises(
             ImportError,
             match=escape(
-                f"Missing `{fake_library_name}` library: please install `skore[local]`."
+                f"Missing library: `{fake_library_name}`. "
+                "You can fix this error by installing `skore[local]`."
             ),
         ):
             Project(mode="local", name="<name>")
