@@ -87,10 +87,8 @@ def _unwrap_estimator(estimator):
     steps and final predictor.
     """
     if isinstance(estimator, Pipeline):
-        preprocessor, predictor = estimator[:-1], estimator[-1]
-    else:
-        preprocessor, predictor = None, estimator
-    return preprocessor, predictor
+        return estimator[:-1], estimator[-1]
+    return None, estimator
 
 
 def _get_data(report, *, target="X", concatenate=False) -> np.ndarray | None:
