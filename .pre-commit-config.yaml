@@ -20,11 +20,11 @@ repos:
     hooks:
 
       - id: ruff-check
-        files: ^((skore|skore-mlflow-project)/(hatch|src|tests))|(examples)/
+        files: ^(skore/(hatch|src|tests))|(examples)/
         args: [--fix, --extend-select, I]
 
       - id: ruff-format
-        files: ^((skore|skore-mlflow-project)/(hatch|src|tests))|(examples)/
+        files: ^(skore/(hatch|src|tests))|(examples)/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.20.2
@@ -32,8 +32,6 @@ repos:
 
       - id: mypy
         pass_filenames: false
-        alias: mypy-skore
-        name: mypy skore/
         files: ^skore/
         args: [--config-file=skore/pyproject.toml, skore]
         additional_dependencies:
@@ -61,11 +59,5 @@ repos:
           - httpx
           - orjson
           - pydantic
-
-      - id: mypy
-        pass_filenames: false
-        alias: mypy-skore-mlflow-project
-        name: mypy skore-mlflow-project/
-        files: ^skore-mlflow-project/
-        args: [--config-file=skore-mlflow-project/pyproject.toml, skore-mlflow-project]
-        additional_dependencies: [skore, mlflow]
+          # from mlflow dependencies
+          - mlflow
