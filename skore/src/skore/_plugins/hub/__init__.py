@@ -1,4 +1,4 @@
-"""Package that provides APIs to communicate between ``skore`` and ``skore hub``."""
+"""Module that provides APIs to communicate between ``skore`` and ``skore hub``."""
 
 from base64 import b64decode, b64encode
 from collections.abc import Iterator
