@@ -272,6 +272,8 @@ class Project:
         with (
             skore.configuration(show_progress=False),
             switch_plt_backend(),
+            HUBClient() as hub_client,
+            Client() as storage_client,
             Progress(
                 SpinnerColumn(),
                 TextColumn("{task.description}"),
@@ -285,25 +287,22 @@ class Project:
                 total=1,
             )
 
-            payload_dict = payload.model_dump()
-            # NOTE: `model_dump()` does more than serializing the payload to a
-            # JSON-like dict. It also evaluates computed fields with side effects:
-            # - `metrics`: computes the metrics
-            # - `medias`: computes and uploads displays/artifacts to artifact storage
-            # - `pickle`: pickles and uploads the report to artifact storage
-            # `payload_dict` does not contain artifact bytes; it contains artifact
-            # metadata including the bytes' checksum, which is used as identifier.
-            payload_json_bytes = dumps(payload_dict)
+            # Batched artifact pipeline (compute + upload). Populates each
+            # artifact instance's ``_plan`` and the payload's
+            # ``_media_instances`` / ``_pickle_instance`` so the subsequent
+            # ``model_dump()`` is side-effect-free.
+            payload.upload_artifacts(hub_client, storage_client)
 
-            with HUBClient() as hub_client:
-                response = hub_client.post(
-                    url=f"projects/{self.workspace}/{self.name}/{endpoint}",
-                    content=payload_json_bytes,
-                    headers={
-                        "Content-Length": str(len(payload_json_bytes)),
-                        "Content-Type": "application/json",
-                    },
-                )
+            payload_json_bytes = dumps(payload.model_dump())
+
+            response = hub_client.post(
+                url=f"projects/{self.workspace}/{self.name}/{endpoint}",
+                content=payload_json_bytes,
+                headers={
+                    "Content-Length": str(len(payload_json_bytes)),
+                    "Content-Type": "application/json",
+                },
+            )
 
             progress.advance(task)
             progress.refresh()

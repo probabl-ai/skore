@@ -1,3 +1,6 @@
+from hashlib import blake2b
+
+from httpx import Client as HTTPXClient
 from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
@@ -23,7 +26,6 @@ from skore._plugins.hub.artifact.media import (
     TableReportTest,
     TableReportTrain,
 )
-from skore._plugins.hub.artifact.serializer import Serializer
 from skore._plugins.hub.metric import (
     AccuracyTest,
     AccuracyTrain,
@@ -63,10 +65,21 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
         for report, cache in reports_with_cache:
             report._cache = cache
 
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
+    checksum = f"blake2b-{blake2b(pickle_bytes).hexdigest()}"
     return pickle_bytes, checksum
+
+
+def _run_orchestrator(payload):
+    """Execute the batched upload pipeline so payload.medias / .pickle are populated.
+
+    Imports ``HUBClient`` from the upload module at call time so the
+    ``monkeypatch_artifact_hub_client`` fixture's swap to ``FakeClient`` is
+    observable (binding it at module load would lock in the real class).
+    """
+    from skore._plugins.hub.artifact.upload import HUBClient
+
+    with HUBClient() as hub_client, HTTPXClient() as storage_client:
+        payload.upload_artifacts(hub_client, storage_client)
 
 
 @fixture
@@ -86,25 +99,10 @@ def payload(project, binary_classification):
 
 class TestEstimatorReportPayload:
     @mark.respx()
-    def test_pickle(
-        self, binary_classification, project, payload, upload_mock, respx_mock
-    ):
-        pickle, checksum = serialize(binary_classification)
-
-        # Ensure payload is well constructed
+    def test_pickle(self, binary_classification, project, payload, respx_mock):
+        _, checksum = serialize(binary_classification)
+        _run_orchestrator(payload)
         assert payload.pickle.checksum == checksum
-
-        # Ensure payload is well constructed
-        assert payload.pickle.checksum == checksum
-
-        # ensure `upload` is well called
-        assert upload_mock.called
-        assert not upload_mock.call_args.args
-        assert upload_mock.call_args.kwargs == {
-            "project": project,
-            "content": pickle,
-            "content_type": "application/octet-stream",
-        }
 
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
@@ -149,6 +147,7 @@ class TestEstimatorReportPayload:
 
     @mark.respx()
     def test_medias(self, payload):
+        _run_orchestrator(payload)
         assert list(map(type, payload.medias)) == [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
@@ -175,6 +174,7 @@ class TestEstimatorReportPayload:
         binary_classification.cache_predictions()
 
         _, checksum = serialize(binary_classification)
+        _run_orchestrator(payload)
 
         payload_dict = payload.model_dump()
 

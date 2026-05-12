@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC
 from functools import cached_property, partial
 from operator import methodcaller
-from typing import ClassVar, Generic, TypeVar, cast
+from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar, cast
 
 from joblib import Parallel, delayed
 from pydantic import BaseModel, ConfigDict, Field, computed_field
@@ -16,6 +16,9 @@ from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.artifact.pickle import Pickle
 from skore._plugins.hub.metric.metric import Metric
 from skore._plugins.hub.project.project import Project
+
+if TYPE_CHECKING:
+    import httpx
 
 SkinnedProgress = partial(
     Progress,
@@ -126,46 +129,95 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         return [metric for metric in metrics if metric.value is not None]
 
     @computed_field  # type: ignore[prop-decorator]
-    @cached_property
+    @property
     def medias(self) -> list[Media[Report]]:
+        """Pre-uploaded media artifacts.
+
+        Populated by ``upload_artifacts``. Reading this field has no side
+        effects: no network, no compute. Returns an empty list if the
+        orchestrator hasn't run yet (e.g., direct ``model_dump`` in a test).
         """
-        The list of medias that have been computed from the report.
-
-        Medias are `pandas.Dataframe`, SVG images, Python dictionaries or HTML string.
-
-        Notes
-        -----
-        Unavailable medias have been filtered out.
-        """
-        payloads = []
-
-        with SkinnedProgress() as progress:
-            for media_cls in progress.track(
-                self.MEDIAS,
-                description=(
-                    f"Computing/uploading {self.report.__class__.__name__} "
-                    f"#{self.report._hash} media"
-                ),
-                total=len(self.MEDIAS),
-            ):
-                payload = media_cls(project=self.project, report=self.report)
-
-                # NOTE: Accessing `payload.checksum` lazily uploads the artifact.
-                if payload.checksum is not None:
-                    payloads.append(payload)
-
-                progress.refresh()
-
-        return payloads
+        return getattr(self, "_media_instances", [])
 
     @computed_field  # type: ignore[prop-decorator]
-    @cached_property
+    @property
     def pickle(self) -> Pickle:
-        """
-        The checksum of the instance.
+        """Pre-uploaded pickle artifact.
 
-        The checksum of the instance that was assigned before being uploaded to the
-        artifact storage. It is based on its ``joblib`` serialization and mainly used to
-        retrieve it from the artifacts storage.
+        Populated by ``upload_artifacts``. If the orchestrator hasn't run,
+        falls back to a fresh ``Pickle`` instance whose ``checksum`` is
+        ``None`` (matching the pre-upload state).
         """
-        return Pickle(project=self.project, report=self.report)
+        instance: Pickle | None = getattr(self, "_pickle_instance", None)
+        if instance is None:
+            return Pickle(project=self.project, report=self.report)
+        return instance
+
+    def upload_artifacts(
+        self,
+        hub_client: httpx.Client,
+        storage_client: httpx.Client,
+    ) -> None:
+        """Compute and upload every artifact (medias + pickle) for this report.
+
+        Pipeline:
+        1. Realize ``metrics`` (existing parallel implementation).
+        2. Compute media artifact content + checksum in parallel.
+        3. Compute the pickle artifact on the *main thread* (it temporarily
+           mutates ``report._cache`` non-atomically; cannot share the fan-out).
+        4. One ``POST /artifacts``, parallel chunk PUTs, one ``POST
+           /artifacts/complete``.
+
+        After this returns, each artifact instance carries a ``_plan``
+        attribute that the ``medias`` / ``pickle`` computed fields and
+        ``Artifact.checksum`` read from during ``model_dump()``.
+        """
+        from skore._plugins.hub.artifact.pickle import Pickle
+        from skore._plugins.hub.artifact.upload import (
+            complete_uploads,
+            prepare_artifacts,
+            request_upload_urls,
+            upload_chunks,
+        )
+
+        # 1. Metrics.
+        _ = self.metrics
+
+        # 2. Media plans, in parallel.
+        from skore._plugins.hub.artifact.artifact import Artifact
+
+        media_artifacts: list[Artifact] = [
+            media_cls(project=self.project, report=self.report)
+            for media_cls in self.MEDIAS
+        ]
+        media_plans = prepare_artifacts(media_artifacts)
+
+        # 3. Pickle plan, on the main thread.
+        pickle_artifact = Pickle(project=self.project, report=self.report)
+        pickle_plan = pickle_artifact.local_plan()
+
+        artifacts = media_artifacts + [pickle_artifact]
+        plans = media_plans + [pickle_plan]
+
+        # Attach each plan to its artifact for downstream ``checksum`` reads.
+        for artifact, plan in zip(artifacts, plans, strict=True):
+            object.__setattr__(artifact, "_plan", plan)
+
+        # Keep instance lists for the (later) side-effect-free ``medias`` /
+        # ``pickle`` fields to return.
+        object.__setattr__(
+            self,
+            "_media_instances",
+            [
+                a
+                for a, p in zip(media_artifacts, media_plans, strict=True)
+                if p is not None
+            ],
+        )
+        object.__setattr__(self, "_pickle_instance", pickle_artifact)
+
+        # 4. Network: batched URL request, parallel PUTs, batched complete.
+        non_null_plans = [p for p in plans if p is not None]
+        urls = request_upload_urls(hub_client, self.project, non_null_plans)
+        etags = upload_chunks(storage_client, non_null_plans, urls)
+        complete_uploads(hub_client, self.project, etags)

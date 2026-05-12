@@ -1,7 +1,6 @@
 from datetime import UTC, datetime
 from functools import partial
 from importlib import reload
-from unittest.mock import Mock
 from urllib.parse import urljoin
 
 from httpx import Client, Response
@@ -42,32 +41,36 @@ def monkeypatch_project_routes(respx_mock):
         respx_mock.request(method=method, url=url).mock(response)
 
 
-@fixture
-def upload_mock():
-    from skore._plugins.hub.artifact.upload import upload
+def _make_artifacts_response(request):
+    """Echo back: issue one chunk1 URL per checksum in the request body."""
+    import json
 
-    return Mock(spec=upload, wraps=upload)
-
-
-@fixture
-def monkeypatch_upload_with_mock(monkeypatch, upload_mock):
-    monkeypatch.setattr("skore._plugins.hub.artifact.artifact.upload", upload_mock)
+    body = json.loads(request.read())
+    return Response(
+        201,
+        json=[
+            {
+                "checksum": entry["checksum"],
+                "upload_url": f"http://chunk{i + 1}.com/",
+                "chunk_id": None,
+            }
+            for i, entry in enumerate(body)
+        ],
+    )
 
 
 @fixture
 def monkeypatch_upload_routes(respx_mock):
-    mocks = [
-        (
-            "post",
-            "projects/workspace/name/artifacts",
-            Response(201, json=[{"upload_url": "http://chunk1.com/", "chunk_id": 1}]),
-        ),
-        ("put", "http://chunk1.com", Response(200, headers={"etag": '"<etag1>"'})),
-        ("post", "projects/workspace/name/artifacts/complete", Response(200)),
-    ]
-
-    for method, url, response in mocks:
-        respx_mock.request(method=method, url=url).mock(response)
+    """Mock the batched upload endpoints used by the new pipeline."""
+    respx_mock.post("projects/workspace/name/artifacts").mock(
+        side_effect=_make_artifacts_response
+    )
+    respx_mock.put(url__regex=r"http://chunk\d+\.com.*").mock(
+        return_value=Response(200, headers={"etag": '"<etag>"'})
+    )
+    respx_mock.post("projects/workspace/name/artifacts/complete").mock(
+        return_value=Response(200)
+    )
 
 
 class FakeClient(Client):

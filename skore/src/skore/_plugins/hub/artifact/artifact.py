@@ -2,11 +2,14 @@
 
 from abc import ABC, abstractmethod
 from contextlib import AbstractContextManager, nullcontext
-from functools import cached_property
+from hashlib import blake2b
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
-from skore._plugins.hub.artifact.upload import upload
+from skore._plugins.hub.artifact.plan import ArtifactPlan
 from skore._plugins.hub.project.project import Project
 
 Content = str | bytes | None
@@ -55,21 +58,65 @@ class Artifact(BaseModel, ABC):
                 yield "<str>"
         """
 
-    @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def checksum(self) -> str | None:
-        """Checksum used to identify the content of the artifact."""
+    # Below this threshold we keep content in memory; above, we spool to disk.
+    SMALL_CONTENT_THRESHOLD: ClassVar[int] = 10 * 1024 * 1024  # 10 MB
+
+    def local_plan(self) -> ArtifactPlan | None:
+        """Compute content + checksum locally. No network calls.
+
+        Returns
+        -------
+        ArtifactPlan | None
+            A plan describing the prepared artifact, or ``None`` if the
+            artifact has no content to upload for this report (e.g., a
+            confusion-matrix media on a regression report).
+        """
         contextmanager = self.content_to_upload()
 
         if not isinstance(contextmanager, AbstractContextManager):
             contextmanager = nullcontext(contextmanager)
 
         with contextmanager as content:
-            if content is not None:
-                return upload(
-                    project=self.project,
-                    content=content,
+            if content is None:
+                return None
+
+            if isinstance(content, str):
+                content = content.encode("utf-8")
+
+            if len(content) <= self.SMALL_CONTENT_THRESHOLD:
+                checksum = blake2b(content).hexdigest()
+                return ArtifactPlan(
+                    checksum=f"blake2b-{checksum}",
+                    size=len(content),
                     content_type=self.content_type,
+                    payload=content,
                 )
 
-        return None
+            # Big content: spool to a tempfile.
+            with NamedTemporaryFile(mode="wb", delete=False) as f:
+                f.write(content)
+                path = Path(f.name)
+
+            digest = blake2b()
+            with path.open("rb") as f:
+                while chunk := f.read(1 << 20):
+                    digest.update(chunk)
+
+            return ArtifactPlan(
+                checksum=f"blake2b-{digest.hexdigest()}",
+                size=path.stat().st_size,
+                content_type=self.content_type,
+                payload=path,
+            )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def checksum(self) -> str | None:
+        """Checksum assigned during ``ReportPayload.upload_artifacts``.
+
+        Reads from ``self._plan`` (attached by the orchestrator). Returns
+        ``None`` if the artifact has no content (e.g., a confusion-matrix
+        media on a regression report) or if no orchestrator has run yet.
+        """
+        plan = getattr(self, "_plan", None)
+        return plan.checksum if plan is not None else None
