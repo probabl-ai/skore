@@ -15,8 +15,9 @@ from mlflow.data.dataset import Dataset as MlFlowDatasetType
 from numpy.typing import NDArray
 from sklearn.base import BaseEstimator, clone
 
+from skore import CrossValidationReport, EstimatorReport
+
 from ._matplotlib import switch_mpl_backend
-from .protocol import CrossValidationReport, EstimatorReport
 
 ArrayLike: TypeAlias = pd.DataFrame | NDArray[np.generic]
 
