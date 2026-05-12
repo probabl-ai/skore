@@ -164,7 +164,7 @@ PACKAGE_SEMVER = __semver(version("skore"))
 JUPYTERLITE = find_spec("pyodide") is not None
 
 
-class HUBClient(Client):
+class HubClient(Client):
     """Client exchanging with ``skore hub``."""
 
     def __init__(

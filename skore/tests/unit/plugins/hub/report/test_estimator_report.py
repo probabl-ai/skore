@@ -1,3 +1,6 @@
+from hashlib import blake2b
+
+from httpx import Client as HTTPXClient
 from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
@@ -23,7 +26,8 @@ from skore._plugins.hub.artifact.media import (
     TableReportTest,
     TableReportTrain,
 )
-from skore._plugins.hub.artifact.serializer import Serializer
+from skore._plugins.hub.artifact.pickle import Pickle
+from skore._plugins.hub.artifact.upload import upload_artifacts
 from skore._plugins.hub.metric import (
     AccuracyTest,
     AccuracyTrain,
@@ -63,10 +67,42 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
         for report, cache in reports_with_cache:
             report._cache = cache
 
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
+    checksum = f"blake2b-{blake2b(pickle_bytes).hexdigest()}"
     return pickle_bytes, checksum
+
+
+def _run_orchestrator(payload):
+    """Execute the batched upload pipeline and return ``(medias, pickle_plan)``.
+
+    ``medias`` is a list of ``(media_artifact, plan)`` pairs filtered to those
+    that produced content. Late import of ``HubClient`` so the
+    ``monkeypatch_artifact_hub_client`` fixture's swap to ``FakeClient`` is
+    observable.
+    """
+    from skore._plugins.hub.artifact.upload import HubClient
+
+    media_artifacts = [
+        media_cls(project=payload.project, report=payload.report)
+        for media_cls in payload.MEDIAS
+    ]
+    pickle_artifact = Pickle(project=payload.project, report=payload.report)
+
+    with HubClient() as hub_client, HTTPXClient() as storage_client:
+        plans = upload_artifacts(
+            hub_client=hub_client,
+            storage_client=storage_client,
+            workspace=payload.project.workspace,
+            project_name=payload.project.name,
+            artifacts=[*media_artifacts, pickle_artifact],
+        )
+
+    *media_plans, pickle_plan = plans
+    medias = [
+        (m, p)
+        for m, p in zip(media_artifacts, media_plans, strict=True)
+        if p is not None
+    ]
+    return medias, pickle_plan
 
 
 @fixture
@@ -86,25 +122,16 @@ def payload(project, binary_classification):
 
 class TestEstimatorReportPayload:
     @mark.respx()
-    def test_pickle(
-        self, binary_classification, project, payload, upload_mock, respx_mock
-    ):
-        pickle, checksum = serialize(binary_classification)
-
-        # Ensure payload is well constructed
-        assert payload.pickle.checksum == checksum
-
-        # Ensure payload is well constructed
-        assert payload.pickle.checksum == checksum
-
-        # ensure `upload` is well called
-        assert upload_mock.called
-        assert not upload_mock.call_args.args
-        assert upload_mock.call_args.kwargs == {
-            "project": project,
-            "content": pickle,
-            "content_type": "application/octet-stream",
-        }
+    def test_pickle(self, binary_classification, project, payload, respx_mock):
+        # The orchestrator's metric/media compute memoizes
+        # ``EstimatorReport._can_skip_predict`` (a ``@cached_property``) into
+        # the report's ``__dict__``; ``clear_cache`` only resets ``_cache``, so
+        # this attribute survives the pickle's clear-cache step and shifts the
+        # checksum. Compute the expected checksum after the orchestrator runs
+        # so both pickles are taken from the same state.
+        _, pickle_plan = _run_orchestrator(payload)
+        _, checksum = serialize(binary_classification)
+        assert pickle_plan.checksum == checksum
 
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
@@ -149,7 +176,8 @@ class TestEstimatorReportPayload:
 
     @mark.respx()
     def test_medias(self, payload):
-        assert list(map(type, payload.medias)) == [
+        medias, _ = _run_orchestrator(payload)
+        assert [type(m) for m, _ in medias] == [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
             ConfusionMatrixSVGTest,
@@ -175,22 +203,18 @@ class TestEstimatorReportPayload:
         binary_classification.cache_predictions()
 
         _, checksum = serialize(binary_classification)
+        _, pickle_plan = _run_orchestrator(payload)
 
         payload_dict = payload.model_dump()
-
         payload_dict.pop("metrics")
-        payload_dict.pop("medias")
 
         assert payload_dict == {
             "key": "<key>",
             "estimator_class_name": "RandomForestClassifier",
             "dataset_fingerprint": hash(binary_classification.y_test),
             "ml_task": "binary-classification",
-            "pickle": {
-                "checksum": checksum,
-                "content_type": "application/octet-stream",
-            },
         }
+        assert pickle_plan.checksum == checksum
 
     @mark.respx(assert_all_called=False)
     def test_exception(self, project):

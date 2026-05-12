@@ -1,38 +1,25 @@
+from hashlib import blake2b
+
 from pydantic import ValidationError
 from pytest import mark, raises
 from sklearn.utils import estimator_html_repr
 
 from skore._plugins.hub.artifact.media import EstimatorHtmlRepr
-from skore._plugins.hub.artifact.serializer import Serializer
+from skore._plugins.hub.artifact.upload import plan_upload
 
 
 @mark.respx()
-def test_estimator_html_repr(binary_classification, upload_mock, project):
+def test_estimator_html_repr(binary_classification, project):
     content = estimator_html_repr(binary_classification.estimator_)
+    expected_checksum = f"blake2b-{blake2b(content.encode('utf-8')).hexdigest()}"
 
-    with Serializer(content) as serializer:
-        checksum = serializer.checksum
-
-    # create media
     media = EstimatorHtmlRepr(project=project, report=binary_classification)
-    media_dict = media.model_dump()
+    plan = plan_upload(media)
 
-    # ensure `upload` is well called
-    assert upload_mock.called
-    assert not upload_mock.call_args.args
-    assert upload_mock.call_args.kwargs == {
-        "project": project,
-        "content": content,
-        "content_type": "text/html",
-    }
-
-    # ensure payload is well constructed
-    assert media_dict == {
-        "content_type": "text/html",
-        "name": "estimator_html_repr",
-        "data_source": None,
-        "checksum": checksum,
-    }
+    assert plan is not None
+    assert plan.content_type == "text/html"
+    assert plan.payload == content.encode("utf-8")
+    assert plan.checksum == expected_checksum
 
     # wrong type
     with raises(

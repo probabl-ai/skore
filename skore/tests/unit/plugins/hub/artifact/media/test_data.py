@@ -1,41 +1,33 @@
+from hashlib import blake2b
 from json import loads
 
 from pydantic import ValidationError
 from pytest import mark, param, raises
 
 from skore._plugins.hub.artifact.media import TableReportTest, TableReportTrain
-from skore._plugins.hub.artifact.serializer import Serializer
+from skore._plugins.hub.artifact.upload import plan_upload
 
 
 @mark.parametrize(
     "Media,data_source",
     (
         param(TableReportTest, "test", id="TableReportTest"),
-        param(TableReportTrain, "train", id="TableReportTest"),
+        param(TableReportTrain, "train", id="TableReportTrain"),
     ),
 )
 @mark.respx()
-def test_table_report(binary_classification, Media, data_source, upload_mock, project):
+def test_table_report(binary_classification, Media, data_source, project):
     media = Media(project=project, report=binary_classification)
-    media.model_dump()
+    plan = plan_upload(media)
 
-    # ensure `upload` is well called
-    assert upload_mock.called
-    assert not upload_mock.call_args.args
-
-    content = upload_mock.call_args.kwargs.pop("content")
-
-    assert upload_mock.call_args.kwargs == {
-        "project": project,
-        "content_type": "application/vnd.skrub.table-report.v1+json",
-    }
-
-    with Serializer(content) as serializer:
-        checksum = serializer.checksum
+    assert plan is not None
+    assert plan.content_type == "application/vnd.skrub.table-report.v1+json"
 
     # ensure content is well constructed
-    dataframe = loads(content)
-
+    content_bytes = (
+        plan.payload if isinstance(plan.payload, bytes) else plan.payload.read_bytes()
+    )
+    dataframe = loads(content_bytes)
     assert {
         "n_rows",
         "n_columns",
@@ -46,13 +38,7 @@ def test_table_report(binary_classification, Media, data_source, upload_mock, pr
         "top_associations",
     }.issubset(dataframe.keys())
 
-    # ensure payload is well constructed
-    assert media.model_dump() == {
-        "content_type": "application/vnd.skrub.table-report.v1+json",
-        "name": "table_report",
-        "data_source": data_source,
-        "checksum": checksum,
-    }
+    assert plan.checksum == f"blake2b-{blake2b(content_bytes).hexdigest()}"
 
     # wrong type
     with raises(
