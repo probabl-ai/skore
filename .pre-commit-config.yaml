@@ -45,11 +45,12 @@ repos:
           - matplotlib
           - numpy
           - pandas
+          - pandas-stubs
           - plotly
           - rich
           - scikit-learn
-          - skrub
           - seaborn
+          - skrub
           # from test dependencies
           - polars
           - pyarrow
