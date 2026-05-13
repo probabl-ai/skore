@@ -16,8 +16,7 @@ from numpy.typing import NDArray
 from sklearn.base import BaseEstimator, clone
 
 from skore import CrossValidationReport, EstimatorReport
-
-from ._matplotlib import switch_mpl_backend
+from skore._plugins import switch_plt_backend
 
 ArrayLike: TypeAlias = pd.DataFrame | NDArray[np.generic]
 
@@ -122,7 +121,7 @@ def iter_cv_metrics(
         method = getattr(report_any.metrics, name)
         display = method()
         yield Artifact(f"metrics_details/{name}", display.frame())
-        with switch_mpl_backend(), plt.ioff():
+        with switch_plt_backend(), plt.ioff():
             figure = display.plot()
             if figure is None:
                 # NOTE: backward compatibility for when `figure_` was stored as an
@@ -163,7 +162,7 @@ def iter_estimator_metrics(
         method = getattr(report_any.metrics, name)
         display = method()
         yield Artifact(f"metrics_details/{name}", display.frame())
-        with switch_mpl_backend(), plt.ioff():
+        with switch_plt_backend(), plt.ioff():
             figure = display.plot()
             if figure is None:
                 # NOTE: backward compatibility for when `figure_` was stored as an
@@ -226,7 +225,7 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
 
 
 def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
-    with switch_mpl_backend(), plt.ioff():
+    with switch_plt_backend(), plt.ioff():
         try:
             return report.data.analyze()._repr_html_()
         finally:

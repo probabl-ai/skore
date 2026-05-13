@@ -94,27 +94,6 @@ def test_log_artifact_raises_on_unsupported_payload() -> None:
         _log_artifact(project_module.Artifact("bad", 123))
 
 
-def test_switch_mpl_backend_falls_back_when_restore_fails(monkeypatch) -> None:
-    get_backend_values = iter(["TkAgg", "agg"])
-    switch_calls = []
-
-    monkeypatch.setattr(
-        matplotlib_module.plt, "get_backend", lambda: next(get_backend_values)
-    )
-
-    def _switch_backend(backend):
-        switch_calls.append(backend)
-        if backend == "TkAgg":
-            raise RuntimeError("restore failed")
-
-    monkeypatch.setattr(matplotlib_module.plt, "switch_backend", _switch_backend)
-
-    with matplotlib_module.switch_mpl_backend("agg"):
-        pass
-
-    assert switch_calls == ["agg", "TkAgg", "agg"]
-
-
 class TestProject:
     CLF_ARTIFACTS = [
         "metrics.confusion_matrix.png",
