@@ -85,14 +85,20 @@ def _baseline_estimator_report(
             LogisticRegression(max_iter=1000) if is_classification else RidgeCV()
         )
 
-    baseline_report = EstimatorReport(
-        estimator,
-        X_train=report.X_train,
-        y_train=report.y_train,
-        X_test=report.X_test,
-        y_test=report.y_test,
-        pos_label=report.pos_label,
-    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Only pandas and polars DataFrames are supported",
+            category=UserWarning,
+        )
+        baseline_report = EstimatorReport(
+            estimator,
+            X_train=report.X_train,
+            y_train=report.y_train,
+            X_test=report.X_test,
+            y_test=report.y_test,
+            pos_label=report.pos_label,
+        )
     baseline_report._metric_registry = report._metric_registry
     return baseline_report
 
@@ -381,6 +387,11 @@ class CheckWorseThanBaseline(Check):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+            warnings.filterwarnings(
+                "ignore",
+                message="Only pandas and polars DataFrames are supported",
+                category=UserWarning,
+            )
             report_test = collect_scores(report, data_source="test")
             baseline_test = collect_scores(baseline, data_source="test")
 
@@ -436,6 +447,11 @@ class CheckSlowerThanBaseline(Check):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+            warnings.filterwarnings(
+                "ignore",
+                message="Only pandas and polars DataFrames are supported",
+                category=UserWarning,
+            )
             report_test = collect_scores(report, data_source="test")
             baseline_test = collect_scores(baseline, data_source="test")
 
