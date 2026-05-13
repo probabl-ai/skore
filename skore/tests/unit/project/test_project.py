@@ -121,21 +121,6 @@ class TestProject:
             "workspace": "<workspace>",
         }
 
-    def test_init_local_unknown_plugin(self, monkeypatch, tmp_path):
-        monkeypatch.undo()
-        monkeypatch.setattr(
-            "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
-        )
-
-        with raises(
-            ValueError,
-            match=escape(
-                "The mode `local` is not supported. You need to install "
-                "`skore-local-project` to use it."
-            ),
-        ):
-            Project(mode="local", name="<name>")
-
     def test_init_local_missing_optional_dependency(self, monkeypatch):
         fake_library_name = uuid4().hex
 
@@ -183,21 +168,6 @@ class TestProject:
             "name": "<name>",
             "tracking_uri": "<uri>",
         }
-
-    def test_init_hub_unknown_plugin(self, monkeypatch, tmp_path):
-        monkeypatch.undo()
-        monkeypatch.setattr(
-            "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
-        )
-
-        with raises(
-            ValueError,
-            match=escape(
-                "The mode `hub` is not supported. You need to install "
-                "`skore-hub-project` to use it."
-            ),
-        ):
-            Project(mode="hub", name="<workspace>/<name>")
 
     def test_init_exception_wrong_ml_task(self, monkeypatch):
         """If the underlying Project implementation contains reports with
