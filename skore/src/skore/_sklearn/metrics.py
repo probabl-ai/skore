@@ -229,7 +229,7 @@ class Metric:
                 score = score[0]
             elif "classification" in report._ml_task:
                 score = dict(
-                    zip(report._estimator.classes_.tolist(), score, strict=False)
+                    zip(report.learner_.classes_.tolist(), score, strict=False)
                 )
 
         report._cache[cache_key] = score
@@ -482,7 +482,7 @@ class Brier(Metric):
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task == "binary-classification" and hasattr(
-            report._estimator, "predict_proba"
+            report.learner_, "predict_proba"
         )
 
     def __call__(self, *, report: EstimatorReport, data_source="test", **kwargs):
@@ -492,7 +492,7 @@ class Brier(Metric):
         return super().__call__(
             report=report,
             data_source=data_source,
-            pos_label=report._estimator.classes_[-1],
+            pos_label=report.learner_.classes_[-1],
             **kwargs,
         )
 
@@ -506,8 +506,8 @@ class RocAuc(Metric):
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
-        has_predict_proba = hasattr(report._estimator, "predict_proba")
-        has_decision_function = hasattr(report._estimator, "decision_function")
+        has_predict_proba = hasattr(report.learner_, "predict_proba")
+        has_decision_function = hasattr(report.learner_, "decision_function")
         if report._ml_task == "binary-classification":
             return has_predict_proba or has_decision_function
         elif report._ml_task == "multiclass-classification":
@@ -551,7 +551,7 @@ class LogLoss(Metric):
         return report._ml_task in (
             "binary-classification",
             "multiclass-classification",
-        ) and hasattr(report._estimator, "predict_proba")
+        ) and hasattr(report.learner_, "predict_proba")
 
 
 class R2(Metric):

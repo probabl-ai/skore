@@ -1182,10 +1182,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         """
         do_thresholds = True
         if not all(
-            hasattr(report._estimator, "predict_proba")
+            hasattr(report.learner_, "predict_proba")
             for report in self._parent.reports_.values()
         ) and not all(
-            hasattr(report._estimator, "decision_function")
+            hasattr(report.learner_, "decision_function")
             for report in self._parent.reports_.values()
         ):
             warnings.warn(
