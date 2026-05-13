@@ -239,6 +239,7 @@ def test_flat_index(forest_binary_classification_with_test):
     assert result.shape == (11, 1)
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
+        "score",
         "accuracy",
         "precision_0",
         "precision_1",
@@ -249,7 +250,6 @@ def test_flat_index(forest_binary_classification_with_test):
         "brier_score",
         "fit_time_s",
         "predict_time_s",
-        "score",
     ]
 
     assert result.columns.tolist() == ["RandomForestClassifier"]

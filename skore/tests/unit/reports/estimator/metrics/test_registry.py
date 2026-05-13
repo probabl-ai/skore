@@ -305,7 +305,7 @@ class TestAddPosition:
         keys = list(report._metric_registry.keys())
         assert keys[0] == "metric_b"
         assert keys[1] == "metric_a"
-        assert keys[2] == "accuracy"
+        assert keys[2] == "score"
 
         display = report.metrics.summarize()
         assert display.data.iloc[0]["metric_verbose_name"] == "Metric B"
@@ -356,7 +356,7 @@ class TestAddPosition:
 
         keys = list(report._metric_registry.keys())
         assert keys[0] == "m_first"
-        assert keys[1] == "accuracy"
+        assert keys[1] == "score"
         assert keys[-1] == "m_last"
 
     def test_readd_raises_without_remove(self, binary_classification_report):

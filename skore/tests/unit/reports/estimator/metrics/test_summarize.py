@@ -420,8 +420,9 @@ def test_data_source_both(forest_binary_classification_data):
 
 
 def _compute_score(report, **kwargs):
-    """Invoke the ``score`` metric via the report's registry."""
-    return report._metric_registry["score"](report=report, **kwargs)
+    """Compute the raw ``score`` metric value via the report's registry."""
+    metric = report._metric_registry["score"]
+    return metric(report=report, **kwargs)
 
 
 def _make_skrub_report(*, with_scoring):
@@ -481,3 +482,30 @@ def test_score_appears_in_summarize_for_skrub_learner():
 
     score_labels = frame.xs("Score", level="Metric").index.get_level_values("Label")
     assert set(score_labels) == {"accuracy", "weighted_accuracy"}
+
+
+def test_score_skrub_learner_with_extra_env_vars():
+    """``score`` works when the DataOp env has variables beyond X and y.
+
+    Non-regression test: the previous implementation invoked
+    ``__skrub_to_Xy_pipeline__({})`` with an empty environment, which dropped
+    any additional variables referenced by the DataOp (e.g. a parent table
+    from which X and y are derived via ``mark_as_X``/``mark_as_y``).
+    """
+    df = pd.DataFrame(
+        {
+            "feat": np.arange(20, dtype=float),
+            "target": np.where(np.arange(20) % 2 == 0, "a", "b"),
+        }
+    )
+    data = skrub.var("df", df)
+    X = data[["feat"]].skb.mark_as_X()
+    y = data["target"].skb.mark_as_y()
+    data_op = X.skb.apply(DummyClassifier(), y=y)
+    learner = data_op.skb.make_learner()
+    split = data_op.skb.train_test_split()
+    report = EstimatorReport(
+        learner, train_data=split["train"], test_data=split["test"]
+    )
+
+    assert isinstance(_compute_score(report), float)

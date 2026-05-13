@@ -8,12 +8,12 @@ from sklearn.utils.validation import NotFittedError, check_is_fitted
 
 def eval_X_y(data_op: skrub.DataOp, env: dict) -> dict:
     """
-    Return a dict in which X and y have been materialized.
+    Return a dict in which ``X`` and ``y`` have been materialized.
 
-    The result is similar to .skb.train_test_split outputs.
-    It ensures we can retrieve the ground truth to compute metrics, and that X
-    and y are materialized so that results will be consistent even if there is
-    randomness in the production of X and y (e.g. they are unsorted database
+    The result is similar to what ``.skb.train_test_split`` outputs.
+    It ensures we can retrieve the ground truth to compute metrics, and that ``X``
+    and ``y`` are materialized, so that results will be consistent even if there is
+    randomness in the production of ``X`` and ``y`` (e.g. they are unsorted database
     query results).
     """
     return data_op.skb.train_test_split(
