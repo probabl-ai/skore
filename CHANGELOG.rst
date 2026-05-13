@@ -67,7 +67,7 @@ Added
   to fit than a :func:`skrub.tabular_pipeline` wrapped
   :class:`~sklearn.linear_model.LogisticRegression` /
   :class:`~sklearn.linear_model.RidgeCV` baseline without delivering
-  significantly better test scores. See :pr:``.
+  significantly better test scores. See :pr:`2906`.
 
 Removed
 -------
