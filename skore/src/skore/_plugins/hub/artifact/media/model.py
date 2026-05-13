@@ -13,8 +13,10 @@ class EstimatorHtmlRepr(Media[Report]):  # noqa: D101
     def content_to_upload(self) -> str:  # noqa: D102
         import sklearn.utils
 
+        # FIXME: Unclear if we want the repr of estimator_
+        # or the original_estimator
         estimator_html_repr: str = sklearn.utils.estimator_html_repr(
-            self.report.estimator
+            self.report.estimator_
         )
 
         return estimator_html_repr

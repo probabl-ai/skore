@@ -290,7 +290,7 @@ class CheckCoefficientsInterpretation(Check):
             isinstance(report, EstimatorReport)
             and report.X_train is not None
             and report.X_test is not None
-            and hasattr(report.estimator, "coef_")
+            and hasattr(report.estimator_, "coef_")
         ):
             raise CheckNotApplicable()
 

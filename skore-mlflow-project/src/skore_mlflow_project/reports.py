@@ -199,7 +199,7 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
     """Yield loggable objects for a cross-validation report."""
     yield from iter_cv_metrics(report)
 
-    estimator = clone(report.estimator).fit(report.X, report.y)
+    estimator = clone(report.original_estimator).fit(report.X, report.y)
     yield Params(estimator.get_params())
     yield Model(estimator, _sample_input_example(report.X))
 
