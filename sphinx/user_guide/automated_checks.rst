@@ -264,3 +264,83 @@ How to reduce the risk
 - otherwise, interpret coefficient magnitudes only relative to the feature's own
   scale, or rely on scale-invariant feature-importance methods such as
   :class:`~skore.PermutationImportanceDisplay`.
+
+
+.. _skd009-worse-than-baseline:
+
+SKD009 - Model worse than baseline
+----------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+`skore` builds a strong baseline made of :func:`skrub.tabular_pipeline` wrapped around
+:class:`~sklearn.ensemble.HistGradientBoostingClassifier` for classification tasks or
+:class:`~sklearn.ensemble.HistGradientBoostingRegressor` for regression tasks. The baseline
+is trained on the same train data as the report's estimator and is evaluated on the same
+test set.
+
+For each of the report's default predictive metrics (timing metrics are excluded), a
+metric votes for the issue when the report is **not significantly better** than the
+baseline. A score is considered significantly better only when its gap to the baseline
+exceeds ``max(0.01, 0.05 * |baseline|)``.
+
+The check detects an issue when a **strict majority** of comparable metrics vote.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+If the model does not match or beat a sensible off-the-shelf baseline, the modeling
+effort may not be worth its complexity: a simpler, well-tuned default could deliver the
+same quality with less risk of overfitting or maintenance burden.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- revisit feature engineering and preprocessing,
+- tune the model's hyperparameters,
+- check whether the model family is appropriate for the data,
+- consider switching to a stronger default such as
+  :class:`~sklearn.ensemble.HistGradientBoostingClassifier` /
+  :class:`~sklearn.ensemble.HistGradientBoostingRegressor`.
+
+
+.. _skd010-slower-than-baseline:
+
+SKD010 - Model slower than baseline
+-----------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+`skore` builds a fast linear baseline made of :func:`skrub.tabular_pipeline` wrapped
+around :class:`~sklearn.linear_model.LogisticRegression` for classification tasks or
+:class:`~sklearn.linear_model.RidgeCV` for regression tasks. The baseline is trained on
+the same train data as the report's estimator and is evaluated on the same test set.
+
+The check first compares fit times: it triggers only when the report's ``fit_time_`` is
+at least **2x** the baseline's fit time and the absolute gap is at least 0.05 seconds
+(the floor avoids spurious results on very fast fits).
+
+Then, like :ref:`SKD009 <skd009-worse-than-baseline>`, each default predictive metric
+votes for the issue when the report is **not significantly better** than the baseline on
+the test set, with the same ``max(0.01, 0.05 * |baseline|)`` adaptive threshold.
+
+The check detects an issue when the slowness gate holds **and** a strict majority of
+comparable metrics vote.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+A model that is much slower than a simple linear baseline but does not deliver
+better predictive quality wastes compute and engineering time. The added complexity
+is rarely justified when a fast linear model already captures the signal.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- switch to the fast linear baseline when its quality is sufficient,
+- reduce the model's complexity (e.g. fewer trees, lower depth, smaller
+  hyperparameter grids),
+- profile fit time to understand the dominant cost,
+- check that the input pipeline (encoding, scaling) is not the actual bottleneck.

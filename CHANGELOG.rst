@@ -58,6 +58,17 @@ Changed
 Added
 -----
 
+- Two new automated checks for :meth:`EstimatorReport.checks.summarize`:
+  ``SKD009`` ("Model worse than baseline") flags when the report's test
+  scores are not significantly better than a :func:`skrub.tabular_pipeline`
+  wrapped :class:`~sklearn.ensemble.HistGradientBoostingClassifier` /
+  :class:`~sklearn.ensemble.HistGradientBoostingRegressor`, and ``SKD010``
+  ("Model slower than baseline") flags when the report is at least 2x slower
+  to fit than a :func:`skrub.tabular_pipeline` wrapped
+  :class:`~sklearn.linear_model.LogisticRegression` /
+  :class:`~sklearn.linear_model.RidgeCV` baseline without delivering
+  significantly better test scores. See :pr:``.
+
 Removed
 -------
 
