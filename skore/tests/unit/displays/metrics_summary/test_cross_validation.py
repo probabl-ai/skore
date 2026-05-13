@@ -201,6 +201,18 @@ def test_flat_index_with_favorability(forest_binary_classification_data):
     ]
 
 
+def test_data_source_both(forest_binary_classification_data):
+    """Test that train and test ar separate for `data_source='both'`."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    estimator_name = report.estimator_name_
+    result = report.metrics.summarize(data_source="both").frame()
+
+    assert isinstance(result.columns, pd.MultiIndex)
+    top_level = set(result.columns.get_level_values(0))
+    assert top_level == {f"{estimator_name} (train)", f"{estimator_name} (test)"}
+
+
 def test_multiclass_classification(forest_multiclass_classification_data):
     """Test cross-validation with multiclass classification data."""
     estimator, X, y = forest_multiclass_classification_data
