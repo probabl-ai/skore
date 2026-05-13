@@ -843,7 +843,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        checks_summary = self.checks.summarize()
+        checks_summary = self.checks.summarize(fast_mode=True)
         checks_summary_html = (
             "<div class='report-checks-summary-details'>"
             f"{len(checks_summary.frame(severity='issue'))} issue(s), "

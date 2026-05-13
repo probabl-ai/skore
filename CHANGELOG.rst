@@ -58,6 +58,18 @@ Changed
 Added
 -----
 
+- Three new built-in checks: :ref:`SKD011 <skd011-golden-feature>` (golden
+  feature, slow), :ref:`SKD012 <skd012-useless-features>` (useless features
+  via permutation importance, slow), and
+  :ref:`SKD013 <skd013-train-test-time-overlap>` (train-test overlap in time
+  series).
+- :meth:`EstimatorReport.checks.summarize` (and the equivalents on
+  :class:`~skore.CrossValidationReport` and :class:`~skore.ComparisonReport`)
+  now accept a ``fast_mode`` parameter that skips expensive checks not yet
+  in the cache while still surfacing cached slow results. The HTML
+  representation of a report uses ``fast_mode=True`` so it never triggers
+  costly computations.
+
 Removed
 -------
 

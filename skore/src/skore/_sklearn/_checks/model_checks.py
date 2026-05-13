@@ -4,6 +4,8 @@ import warnings
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pandas as pd
+from sklearn.base import clone
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
@@ -14,7 +16,9 @@ from skore._sklearn._checks.utils import (
     check_score_gap_to_baseline,
     detect_outliers_modified_zscore,
     majority_vote,
+    select_feature,
 )
+from skore._sklearn.feature_names import _get_feature_names
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -81,6 +85,7 @@ class CheckOverfitting(Check):
     report_type = "estimator"
     docs_url = "skd001-overfitting"
     severity = "issue"
+    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         report_data, _baseline_data = _get_metrics_data(report)
@@ -119,6 +124,7 @@ class CheckUnderfitting(Check):
     report_type = "estimator"
     docs_url = "skd002-underfitting"
     severity = "issue"
+    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         report_data, baseline_data = _get_metrics_data(report)
@@ -163,6 +169,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
     report_type = "cross-validation"
     docs_url = "skd003-inconsistent-performance"
     severity = "issue"
+    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._cross_validation.report import CrossValidationReport
@@ -204,6 +211,7 @@ class CheckHighClassImbalance(Check):
     report_type = "estimator"
     docs_url = "skd004-high-class-imbalance"
     severity = "issue"
+    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
@@ -243,6 +251,7 @@ class CheckUnderrepresentedClasses(Check):
     report_type = "estimator"
     docs_url = "skd005-underrepresented-classes"
     severity = "issue"
+    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
@@ -282,6 +291,7 @@ class CheckCoefficientsInterpretation(Check):
     report_type = "estimator"
     docs_url = "skd006-unscaled-coefficients"
     severity = "tip"
+    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
@@ -307,6 +317,209 @@ class CheckCoefficientsInterpretation(Check):
         )
 
 
+class CheckGoldenFeature(Check):
+    """Check for a golden feature (SKD011).
+
+    Detects a single feature that, used alone to refit the estimator, reaches
+    scores close to the full model on the report's default predictive metrics.
+    This often signals data leakage or excessive reliance on one feature.
+    """
+
+    code = "SKD011"
+    title = "Golden feature"
+    report_type = "estimator"
+    docs_url = "skd011-golden-feature"
+    severity = "tip"
+    slow = True
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        from skore._sklearn._estimator.report import EstimatorReport
+
+        if (
+            not isinstance(report, EstimatorReport)
+            or report._initialized_with_data_op
+            or report.X_train is None
+            or report.y_train is None
+            or report.X_test is None
+            or report.y_test is None
+        ):
+            raise CheckNotApplicable()
+
+        n_features = report.X_train.shape[1]
+        if n_features < 2:
+            raise CheckNotApplicable()
+
+        feature_names = _get_feature_names(
+            report.estimator_, X=report.X_train, n_features=n_features
+        )
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+            full_data = report.metrics.summarize(data_source="test").data
+
+        predictive_rows = [
+            idx
+            for idx in range(len(full_data))
+            if full_data.loc[idx, "metric_verbose_name"] not in _TIMING_METRICS
+            and not pd.isna(full_data.loc[idx, "greater_is_better"])
+        ]
+        if not predictive_rows:
+            raise CheckNotApplicable()
+
+        golden_features: list[str] = []
+        for i in range(n_features):
+            try:
+                single_estimator = clone(report._raw_estimator)
+                single_report = EstimatorReport(
+                    single_estimator,
+                    X_train=select_feature(report.X_train, i),
+                    y_train=report.y_train,
+                    X_test=select_feature(report.X_test, i),
+                    y_test=report.y_test,
+                    pos_label=report.pos_label,
+                )
+            except Exception as exc:
+                raise CheckNotApplicable() from exc
+            single_report._metric_registry = report._metric_registry
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+                single_data = single_report.metrics.summarize(data_source="test").data
+
+            votes = [
+                not check_score_gap_to_baseline(
+                    score=full_data.loc[idx, "score"],
+                    baseline=single_data.loc[idx, "score"],
+                    greater_is_better=full_data.loc[idx, "greater_is_better"],
+                    floor=0.03,
+                    fraction=0.10,
+                )
+                for idx in predictive_rows
+            ]
+            majority, _, _ = majority_vote(votes)
+            if majority:
+                golden_features.append(str(feature_names[i]))
+
+        if golden_features:
+            return (
+                f"Feature(s) {golden_features} alone reach scores close to the "
+                "full model's on the default predictive metrics. This may "
+                "signal data leakage or excessive reliance on a single feature."
+            )
+        return None
+
+
+class CheckUselessFeatures(Check):
+    """Check for useless features (SKD012).
+
+    Flags features whose permutation importance overlaps with zero (i.e.
+    ``mean - std <= 0 <= mean + std``), meaning the model relies on them
+    weakly enough that they could likely be dropped without degrading
+    performance.
+
+    Permutation importance is computed via the inspection accessor with a
+    fixed seed so the result is cached and shared with explicit calls to
+    :meth:`~skore.EstimatorReport.inspection.permutation_importance`.
+    """
+
+    code = "SKD012"
+    title = "Useless features"
+    report_type = "estimator"
+    docs_url = "skd012-useless-features"
+    severity = "tip"
+    slow = True
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        from skore._sklearn._estimator.report import EstimatorReport
+
+        if (
+            not isinstance(report, EstimatorReport)
+            or report._initialized_with_data_op
+            or report.X_train is None
+            or report.X_test is None
+            or report.y_test is None
+        ):
+            raise CheckNotApplicable()
+
+        try:
+            display = report.inspection.permutation_importance(
+                data_source="test", seed=0, n_repeats=5
+            )
+        except Exception as exc:
+            raise CheckNotApplicable() from exc
+
+        frame = display.frame()
+        if "feature" not in frame.columns or "value_mean" not in frame.columns:
+            raise CheckNotApplicable()
+
+        per_feature = (
+            frame.groupby("feature")[["value_mean", "value_std"]].mean().reset_index()
+        )
+        overlaps_zero = (per_feature["value_mean"] - per_feature["value_std"] <= 0) & (
+            per_feature["value_mean"] + per_feature["value_std"] >= 0
+        )
+        useless = per_feature.loc[overlaps_zero, "feature"].tolist()
+        if useless:
+            return (
+                f"Feature(s) {useless} have permutation importance overlapping "
+                "with zero and could likely be dropped without degrading "
+                "performance."
+            )
+        return None
+
+
+class CheckTrainTestTimeOverlap(Check):
+    """Check for train/test temporal overlap (SKD013).
+
+    Flags datetime columns where the latest train timestamp is at or after
+    the earliest test timestamp, indicating that future points leak into
+    the training set (e.g. data was shuffled before splitting a time series).
+
+    Raises :class:`CheckNotApplicable` when train and test inputs are not
+    pandas DataFrames or contain no datetime column.
+    """
+
+    code = "SKD013"
+    title = "Train-test overlap in time series"
+    report_type = "estimator"
+    docs_url = "skd013-train-test-time-overlap"
+    severity = "issue"
+    slow = False
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        from skore._sklearn._estimator.report import EstimatorReport
+
+        if (
+            not isinstance(report, EstimatorReport)
+            or not isinstance(report.X_train, pd.DataFrame)
+            or not isinstance(report.X_test, pd.DataFrame)
+        ):
+            raise CheckNotApplicable()
+
+        datetime_columns = [
+            col
+            for col in report.X_train.columns
+            if col in report.X_test.columns
+            and pd.api.types.is_datetime64_any_dtype(report.X_train[col])
+            and pd.api.types.is_datetime64_any_dtype(report.X_test[col])
+        ]
+        if not datetime_columns:
+            raise CheckNotApplicable()
+
+        overlapping = [
+            col
+            for col in datetime_columns
+            if report.X_train[col].max() >= report.X_test[col].min()
+        ]
+        if overlapping:
+            return (
+                f"Datetime column(s) {overlapping} contain training timestamps "
+                "that are at or after the earliest test timestamp. Future "
+                "points may be leaking into the training set; consider a "
+                "time-based split."
+            )
+        return None
+
+
 _BUILTIN_CHECKS = [
     CheckOverfitting(),
     CheckUnderfitting(),
@@ -314,4 +527,7 @@ _BUILTIN_CHECKS = [
     CheckHighClassImbalance(),
     CheckUnderrepresentedClasses(),
     CheckCoefficientsInterpretation(),
+    CheckGoldenFeature(),
+    CheckUselessFeatures(),
+    CheckTrainTestTimeOverlap(),
 ]

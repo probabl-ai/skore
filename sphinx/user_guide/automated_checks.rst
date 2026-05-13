@@ -31,6 +31,19 @@ You can also set a global ignore list with :attr:`~skore.configuration.ignore_ch
     from skore import configuration
     configuration.ignore_checks = ["SKD001"]
 
+Some checks are expensive because they require model refits or permutation
+predictions (e.g. :ref:`SKD011 <skd011-golden-feature>` and
+:ref:`SKD012 <skd012-useless-features>`). Those are tagged as *slow* and
+can be skipped with `fast_mode=True`:
+
+.. code-block:: python
+
+    report.checks.summarize(fast_mode=True)
+
+In fast mode, slow checks that are not yet in the cache are not run; cached
+slow results from a previous call are still surfaced. The HTML representation
+of a report uses fast mode so it never triggers an expensive computation.
+
 For cross-validation reports, checks are run per split and then aggregated
 at report level through :meth:`~skore.CrossValidationReport.checks.summarize`. An issue is
 reported only when it appears in a strict majority of evaluated splits.
@@ -264,3 +277,109 @@ How to reduce the risk
 - otherwise, interpret coefficient magnitudes only relative to the feature's own
   scale, or rely on scale-invariant feature-importance methods such as
   :class:`~skore.PermutationImportanceDisplay`.
+
+
+.. _skd011-golden-feature:
+
+SKD011 - Golden feature
+-----------------------
+
+This check is *slow*: it requires fitting one model per feature. Skip it with
+``fast_mode=True``.
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+For each input feature, `skore` clones the report's estimator, refits it on
+that single feature, and scores it on the test set. A feature is reported as
+*golden* when its single-feature scores reach the full model's scores within
+an adaptive threshold (``max(0.03, 0.10 * |full_score|)``) on a **strict
+majority** of the report's default predictive metrics (timing metrics
+excluded).
+
+The check only runs when the report has at least two features.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+A single feature that already captures (almost) all the predictive signal is
+often a symptom of data leakage (e.g. a column that encodes the target) or
+of an over-reliance on one feature that could hurt robustness in production
+if the feature's distribution changes.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- audit the suspect feature for leakage (is it derived from the target or
+  from data that would not be available at inference time?),
+- compare predictive performance with and without the feature,
+- collect or engineer additional features so the model is less dependent on
+  a single one.
+
+
+.. _skd012-useless-features:
+
+SKD012 - Useless features
+-------------------------
+
+This check is *slow*: it computes permutation importance. Skip it with
+``fast_mode=True``.
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+`skore` computes permutation importance on the test set with a fixed seed
+(``seed=0``, ``n_repeats=5``) via
+:meth:`~skore.EstimatorReport.inspection.permutation_importance`. The result
+is cached and shared with explicit calls to that method. A feature is
+flagged as *useless* when its importance interval ``[mean - std, mean + std]``
+contains zero, i.e. its mean importance is within one standard deviation of
+zero.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+Features whose permutation importance overlaps with zero contribute little
+or no measurable signal: shuffling their values does not degrade the model's
+score. They are good candidates for dropping, which can simplify the model
+and reduce overfitting risk.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- review the flagged features and consider dropping them,
+- refit the model on the reduced feature set and verify performance is
+  preserved,
+- if a flagged feature is expected to matter, investigate whether the model
+  is too simple or the feature is poorly encoded.
+
+
+.. _skd013-train-test-time-overlap:
+
+SKD013 - Train-test overlap in time series
+------------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+This check only applies when both ``X_train`` and ``X_test`` are pandas
+DataFrames. For every column with a datetime dtype, `skore` checks whether
+the latest training timestamp is greater than or equal to the earliest test
+timestamp. When that is the case for any column, the check reports an issue
+and lists the impacted columns.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+If future points are present in the training set, the evaluation score
+becomes optimistic because the model gets to see information that would
+not be available at inference time. This is a common pitfall when a
+time-indexed dataset is shuffled before splitting.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- use a time-based splitter such as
+  :class:`~sklearn.model_selection.TimeSeriesSplit`,
+- sort the data chronologically and split on a fixed cut-off date,
+- exclude rows whose timestamps fall after the chosen training window.

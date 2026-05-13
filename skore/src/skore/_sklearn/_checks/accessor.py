@@ -22,6 +22,7 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         self,
         *,
         ignore: list[CheckCode] | tuple[CheckCode, ...] | None = None,
+        fast_mode: bool = False,
     ) -> ChecksSummaryDisplay:
         """Run checks and return a summary with detected issues.
 
@@ -33,6 +34,10 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         ----------
         ignore : list of str or tuple of str or None, default=None
             Check codes to exclude from the results, e.g. `["SKD001"]`.
+
+        fast_mode : bool, default=False
+            When True, skip the expensive checks that are not already in the
+            cache. Cached slow results from a previous call are still surfaced.
 
         Returns
         -------
@@ -68,7 +73,9 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 for code in configuration.ignore_checks
                 if code.strip()
             )
-        check_results, applicable_codes = self._parent._get_results(ignored_codes)
+        check_results, applicable_codes = self._parent._get_results(
+            ignored_codes, fast_mode=fast_mode
+        )
         return ChecksSummaryDisplay(
             check_results={
                 code: check_result

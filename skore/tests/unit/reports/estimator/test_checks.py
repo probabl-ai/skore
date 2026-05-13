@@ -1,10 +1,12 @@
 from pathlib import Path
 from urllib.parse import urlparse
 
+import numpy as np
+import pandas as pd
 import pytest
-from sklearn.datasets import make_classification
+from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
-from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import Check, EstimatorReport, configuration, evaluate
@@ -21,7 +23,7 @@ def regression_report(regression_data):
     return evaluate(LinearRegression(), X, y)
 
 
-def mock_issue(report, ignored_codes):
+def mock_issue(report, ignored_codes, *, fast_mode=False):
     return (
         {
             "SKD001": {
@@ -149,7 +151,7 @@ def test_no_issues(monkeypatch, regression_report):
     monkeypatch.setattr(
         EstimatorReport,
         "_get_results",
-        lambda report, ignored_codes: ({}, {"SKD001", "SKD002"}),
+        lambda report, ignored_codes, *, fast_mode=False: ({}, {"SKD001", "SKD002"}),
     )
     assert regression_report.checks.summarize().frame(severity="issue").empty
 
@@ -405,3 +407,218 @@ def test_html_has_three_tabs(regression_report):
     assert "Issues (" in html
     assert "Tips (" in html
     assert "Passed (" in html
+
+
+def test_skd011_detects_golden_feature():
+    """A feature that is essentially the target gets flagged as golden."""
+    rng = np.random.RandomState(0)
+    n_samples = 200
+    X = rng.normal(size=(n_samples, 4))
+    y = X[:, 0] * 10
+    X[:, 1] += y * 0.01
+    report = evaluate(LinearRegression(), X, y, splitter=0.2)
+    result = report.checks.summarize()
+    tips = result.frame(severity="tip").set_index("code")
+    assert "SKD011" in tips.index
+    assert "Feature" in tips.loc["SKD011", "explanation"]
+
+
+def test_skd012_detects_useless_features():
+    """Noise features are flagged when permutation importance overlaps zero."""
+    X, y = make_regression(
+        n_samples=300, n_features=6, n_informative=2, noise=0.1, random_state=0
+    )
+    report = evaluate(Ridge(), X, y, splitter=0.2)
+    issues = report.checks.summarize().frame(severity="tip").set_index("code")
+    assert "SKD012" in issues.index
+    assert "permutation importance" in issues.loc["SKD012", "explanation"]
+
+
+def test_skd012_shares_cache_with_inspection_permutation_importance(monkeypatch):
+    """SKD012 reuses a cached permutation_importance result from the inspection accessor."""
+    from sklearn.inspection import permutation_importance as sklearn_pi
+
+    X, y = make_regression(
+        n_samples=200, n_features=4, n_informative=2, noise=0.1, random_state=0
+    )
+    report = evaluate(Ridge(), X, y, splitter=0.2)
+
+    report.inspection.permutation_importance(data_source="test", seed=0, n_repeats=5)
+
+    calls = 0
+
+    def counting_pi(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        return sklearn_pi(*args, **kwargs)
+
+    monkeypatch.setattr(
+        "skore._sklearn._plot.inspection.permutation_importance.permutation_importance",
+        counting_pi,
+    )
+    report.checks.summarize(ignore=["SKD011"])
+    assert calls == 0
+
+
+def _datetime_aware_pipeline():
+    from sklearn.compose import ColumnTransformer
+    from sklearn.pipeline import Pipeline
+
+    return Pipeline(
+        [
+            (
+                "drop_date",
+                ColumnTransformer(
+                    [("drop_date", "drop", ["date"])], remainder="passthrough"
+                ),
+            ),
+            ("reg", LinearRegression()),
+        ]
+    )
+
+
+def test_skd013_detects_train_test_time_overlap():
+    """A datetime column whose train extends past test min is flagged."""
+    rng = np.random.RandomState(0)
+    n = 200
+    dates = pd.date_range("2020-01-01", periods=n, freq="D")
+    shuffled = rng.permutation(n)
+    df = pd.DataFrame(
+        {
+            "feat": rng.normal(size=n),
+            "date": dates[shuffled],
+        }
+    )
+    y = df["feat"].to_numpy()
+    split = n // 2
+    report = EstimatorReport(
+        _datetime_aware_pipeline(),
+        X_train=df.iloc[:split],
+        y_train=y[:split],
+        X_test=df.iloc[split:],
+        y_test=y[split:],
+    )
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD013" in issues.index
+    assert "date" in issues.loc["SKD013", "explanation"]
+
+
+def test_skd013_passes_on_sorted_split():
+    """A clean temporal split runs SKD013 and emits no issue."""
+    n = 200
+    df = pd.DataFrame(
+        {
+            "feat": np.arange(n, dtype=float),
+            "date": pd.date_range("2020-01-01", periods=n, freq="D"),
+        }
+    )
+    y = df["feat"].to_numpy()
+    split = n // 2
+    report = EstimatorReport(
+        _datetime_aware_pipeline(),
+        X_train=df.iloc[:split],
+        y_train=y[:split],
+        X_test=df.iloc[split:],
+        y_test=y[split:],
+    )
+    summary = report.checks.summarize()
+    assert "SKD013" not in set(summary.frame(severity="issue")["code"])
+    assert "SKD013" in set(summary.frame(severity="passed")["code"])
+
+
+class SlowMockCheck(Check):
+    code = "TSTSLOW"
+    title = "Slow mock check"
+    report_type = "estimator"
+    docs_url = "tstslow"
+    slow = True
+
+    def __init__(self):
+        self.calls = 0
+
+    def check_function(self, report):
+        self.calls += 1
+        return "Slow finding."
+
+
+def test_summarize_fast_mode_skips_uncached_slow_checks(regression_report):
+    """fast_mode=True skips slow checks that are not cached."""
+    slow_check = SlowMockCheck()
+    regression_report.checks.add([slow_check])
+    codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
+    assert "TSTSLOW" not in codes
+    assert slow_check.calls == 0
+
+
+def test_summarize_fast_mode_uses_cached_slow_results(regression_report):
+    """fast_mode=True surfaces slow results that were already cached."""
+    slow_check = SlowMockCheck()
+    regression_report.checks.add([slow_check])
+    regression_report.checks.summarize()
+    assert slow_check.calls == 1
+    issues = (
+        regression_report.checks.summarize(fast_mode=True)
+        .frame(severity="issue")
+        .set_index("code")
+    )
+    assert "TSTSLOW" in issues.index
+    assert slow_check.calls == 1
+
+
+def test_html_repr_does_not_compute_slow(regression_report):
+    """The HTML repr never invokes slow check functions."""
+
+    class FailingSlow(Check):
+        code = "TSTFAIL"
+        title = "Failing slow"
+        report_type = "estimator"
+        docs_url = "tstfail"
+        slow = True
+
+        def check_function(self, report):
+            raise AssertionError("slow check should not run during HTML repr")
+
+    regression_report.checks.add([FailingSlow()])
+    fragments = regression_report._html_repr_fragments()
+    assert "checks_summary" in fragments
+
+
+def test_html_repr_shows_cached_slow(regression_report):
+    """A cached slow result is reflected in the HTML repr summary."""
+    slow_check = SlowMockCheck()
+    regression_report.checks.add([slow_check])
+    regression_report.checks.summarize()
+    fragments = regression_report._html_repr_fragments()
+    assert "1 issue(s)" in fragments["checks_summary"]
+
+
+def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):
+    """A subclass of Check that does not declare `slow` inherits the protocol default."""
+
+    class CheckNoSlowAttr(Check):
+        code = "TSTFAST"
+        title = "No slow attr"
+        report_type = "estimator"
+        docs_url = "tstfast"
+        severity = "issue"
+
+        def check_function(self, report):
+            return "Found."
+
+    check = CheckNoSlowAttr()
+    assert check.slow is False
+    regression_report.checks.add([check])
+    codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
+    assert "TSTFAST" in codes
+
+
+def test_builtin_checks_are_fast():
+    """All built-in checks shipped before the feature-checks PR remain fast."""
+    from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
+
+    fast_codes = {c.code for c in _BUILTIN_CHECKS if not c.slow}
+    assert {"SKD001", "SKD002", "SKD003", "SKD004", "SKD005", "SKD006"}.issubset(
+        fast_codes
+    )
+    slow_codes = {c.code for c in _BUILTIN_CHECKS if c.slow}
+    assert slow_codes == {"SKD011", "SKD012"}

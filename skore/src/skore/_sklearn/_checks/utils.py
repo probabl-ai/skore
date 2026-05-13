@@ -75,5 +75,12 @@ def detect_outliers_modified_zscore(scores, threshold=3):
     return np.abs(modified_z_scores) > threshold
 
 
+def select_feature(X, i: int):
+    """Return X reduced to a single feature index, preserving DataFrame/array kind."""
+    if hasattr(X, "iloc"):
+        return X.iloc[:, [i]]
+    return X[:, [i]]
+
+
 class CheckNotApplicable(Exception):
     """Raised when a check cannot run on the given report."""
