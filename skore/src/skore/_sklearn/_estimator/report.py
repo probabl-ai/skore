@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import numpy as np
 import skrub
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator, MetaEstimatorMixin, clone
+from sklearn.base import BaseEstimator, clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import (
@@ -399,6 +399,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def cache_predictions(
         self,
+        *,
         data_source: DataSource | Literal["both"] = "both",
     ) -> None:
         """Cache estimator's predictions.
@@ -517,7 +518,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         with MeasureTime() as pred_time:
             response = getattr(self._estimator, response_method)(data)
-        classes = to_estimator(self._estimator).classes_
+        classes = self._estimator.classes_
         if response_method == "decision_function":
             if self.ml_task == "binary-classification":
                 response = np.vstack((-response, response)).T
@@ -535,13 +536,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         `decision_function(X)`. The result is cached because running the probe
         requires extra predictions.
         """
-        estimator = to_estimator(self._estimator)
-        if isinstance(estimator, MetaEstimatorMixin | Pipeline):
-            return False
-
         response_methods = ["decision_function", "predict_proba"]
         try:
-            method = _check_response_method(estimator, response_methods)
+            method = _check_response_method(self._estimator, response_methods)
         except AttributeError:
             return False
         data = self.train_data if self.test_data is None else self.test_data

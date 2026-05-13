@@ -42,6 +42,19 @@ Release highlights
 Changed
 -------
 
+- **Breaking change:** The following methods now enforce keyword-only arguments
+  (parameters must be passed by name, not by position):
+  :meth:`EstimatorReport.data.analyze`,
+  :meth:`EstimatorReport.metrics.fit_time`,
+  :meth:`EstimatorReport.cache_predictions`,
+  :meth:`CrossValidationReport.data.analyze`,
+  :meth:`CrossValidationReport.metrics.timings`,
+  :meth:`ComparisonReport.metrics.available`,
+  :meth:`ComparisonReport.metrics.timings`,
+  :meth:`RocCurveDisplay.frame`,
+  :meth:`PrecisionRecallCurveDisplay.frame`.
+  See :pr:`2877` by :user:`Direk Kakkar`.
+
 Added
 -----
 

@@ -113,7 +113,7 @@ How to reduce the risk
 - collect richer data if possible.
 
 
-.. _skd003-inconsistent_performance:
+.. _skd003-inconsistent-performance:
 
 SKD003 - Inconsistent performance across splits
 -----------------------------------------------
@@ -156,7 +156,7 @@ How to reduce the risk
 - increase the size of the dataset to improve stability.
 
 
-.. _skd004-high_class_imbalance:
+.. _skd004-high-class-imbalance:
 
 SKD004 - High class imbalance
 ------------------------------
@@ -186,7 +186,7 @@ How to reduce the risk
 - collect more data for the minority class if possible.
 
 
-.. _skd005-underrepresented_classes:
+.. _skd005-underrepresented-classes:
 
 SKD005 - Underrepresented classes
 ---------------------------------
@@ -216,7 +216,7 @@ How to reduce the risk
 - collect more data for the underrepresented classes if possible.
 
 
-.. _skd006-unscaled_coefficients:
+.. _skd006-unscaled-coefficients:
 
 SKD006 - Coefficient interpretation
 ------------------------------------
@@ -266,7 +266,7 @@ How to reduce the risk
   :class:`~skore.PermutationImportanceDisplay`.
 
 
-.. _skd007-mdi_cardinality_bias:
+.. _skd007-mdi-cardinality-bias:
 
 SKD007 - MDI feature importance is biased for high-cardinality features
 --------------------------------------------------------------------------
@@ -304,7 +304,7 @@ How to reduce the risk
   permutation importance or drop-column importance.
 
 
-.. _skd008-correlated_features:
+.. _skd008-correlated-features:
 
 SKD008 - Highly correlated input features
 -----------------------------------------

@@ -4,6 +4,13 @@
 {%- block extrahead %}
     {{ super() }}
     {# Add here landing-page specific stuff that goes in the header (eg css) #}
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Skore">
+    <meta property="og:site_name" content="skore">
+    <meta property="og:description" content="Track your Data Science">
+    <meta property="og:image" content="https://docs.skore.probabl.ai/stable/_static/Logo_Skore_Light@2x.svg">
+    <meta property="og:image:alt" content="skore">
+    <meta name="description" content="skore is a Python library to evaluate and get insights from your predictive models. We structure and store your experiments so that you can easily retrieve them later.">
 {%- endblock extrahead %}
 
 {% block docs_navbar %}

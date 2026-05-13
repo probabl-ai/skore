@@ -66,6 +66,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def analyze(
         self,
+        *,
         data_source: Literal["train", "test", "both"] = "both",
         with_y: bool = True,
         subsample: int | None = None,

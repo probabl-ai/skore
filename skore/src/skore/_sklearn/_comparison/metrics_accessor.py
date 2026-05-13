@@ -131,7 +131,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             ],
         )
 
-    def available(self, report_name: str | None = None) -> list[str]:
+    def available(self, *, report_name: str | None = None) -> list[str]:
         """List available metric names in the registry.
 
         Parameters
@@ -261,6 +261,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
     def timings(
         self,
+        *,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get all measured processing times related to the different estimators.

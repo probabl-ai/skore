@@ -166,7 +166,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
     code = "SKD003"
     title = "Inconsistent performance across splits"
     report_type = "cross-validation"
-    docs_url = "skd003-inconsistent_performance"
+    docs_url = "skd003-inconsistent-performance"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
@@ -204,7 +204,7 @@ class CheckHighClassImbalance(Check):
     code = "SKD004"
     title = "High class imbalance"
     report_type = "estimator"
-    docs_url = "skd004-high_class_imbalance"
+    docs_url = "skd004-high-class-imbalance"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
@@ -235,7 +235,7 @@ class CheckUnderrepresentedClasses(Check):
     code = "SKD005"
     title = "Underrepresented classes"
     report_type = "estimator"
-    docs_url = "skd005-underrepresented_classes"
+    docs_url = "skd005-underrepresented-classes"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
@@ -267,7 +267,7 @@ class CheckCoefficientsInterpretation(Check):
     code = "SKD006"
     title = "Coefficient interpretation"
     report_type = "estimator"
-    docs_url = "skd006-unscaled_coefficients"
+    docs_url = "skd006-unscaled-coefficients"
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
@@ -303,7 +303,7 @@ class CheckMDIHighCardinalityBias(Check):
     code = "SKD007"
     title = "MDI biased for high-cardinality features"
     report_type = "estimator"
-    docs_url = "skd007-mdi_cardinality_bias"
+    docs_url = "skd007-mdi-cardinality-bias"
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
@@ -347,7 +347,7 @@ class CheckCorrelatedFeatures(Check):
     code = "SKD008"
     title = "Highly correlated input features"
     report_type = "estimator"
-    docs_url = "skd008-correlated_features"
+    docs_url = "skd008-correlated-features"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:

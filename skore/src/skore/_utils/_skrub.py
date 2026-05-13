@@ -68,10 +68,8 @@ def to_learner(estimator: BaseEstimator):
     return _LearnerAdapter(estimator)
 
 
-def to_estimator(learner: skrub.SkrubLearner):
-    if isinstance(learner, _LearnerAdapter):
-        return learner.estimator
-    estimator = getattr(learner.data_op._skrub_impl, "estimator_", None)
-    if estimator is not None:
-        return estimator
-    return learner.find_fitted_estimator("estimator")
+def to_estimator(learner: _LearnerAdapter):
+    assert isinstance(learner, _LearnerAdapter), (
+        f"to_estimator is used to unwrap _LearnerAdapter wrappers, got: {learner!r}"
+    )
+    return learner.estimator

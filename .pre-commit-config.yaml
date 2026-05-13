@@ -11,23 +11,23 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.42.3
+    rev: v1.46.0
     hooks:
       - id: typos
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.14
+    rev: v0.15.12
     hooks:
 
       - id: ruff-check
-        files: ^((skore|skore-hub-project|skore-mlflow-project)/(hatch|src|tests))|(examples)/
+        files: ^((skore|skore-mlflow-project)/(hatch|src|tests))|(examples)/
         args: [--fix, --extend-select, I]
 
       - id: ruff-format
-        files: ^((skore|skore-hub-project|skore-mlflow-project)/(hatch|src|tests))|(examples)/
+        files: ^((skore|skore-mlflow-project)/(hatch|src|tests))|(examples)/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+    rev: v1.20.2
     hooks:
 
       - id: mypy
@@ -48,8 +48,8 @@ repos:
           - plotly
           - rich
           - scikit-learn
-          - skrub
           - seaborn
+          - skrub
           # from test dependencies
           - polars
           - pyarrow
@@ -57,14 +57,10 @@ repos:
           # from local dependencies
           - diskcache
           - platformdirs
-
-      - id: mypy
-        pass_filenames: false
-        alias: mypy-skore-hub-project
-        name: mypy skore-hub-project/
-        files: ^skore-hub-project/
-        args: [--config-file=skore-hub-project/pyproject.toml, skore-hub-project]
-        additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]
+          # from hub dependencies
+          - httpx
+          - orjson
+          - pydantic
 
       - id: mypy
         pass_filenames: false

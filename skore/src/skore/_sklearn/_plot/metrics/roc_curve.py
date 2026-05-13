@@ -436,6 +436,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     def frame(
         self,
+        *,
         with_roc_auc: bool = False,
         label: PositiveLabel = _DEFAULT,
     ) -> DataFrame:

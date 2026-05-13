@@ -211,7 +211,6 @@ def test_get_predictions_is_correct_for_special_classifiers(estimator):
         report.get_predictions(data_source="test"),
         report.estimator_.predict(report.X_test),
     )
-    assert not report._can_skip_predict
 
 
 def test_pickle(forest_binary_classification_with_test):
@@ -574,3 +573,15 @@ def test_from_state_rejects_unknown_version(logistic_binary_classification_with_
 
     with pytest.raises(ValueError, match="Unexpected state version"):
         EstimatorReport.from_state(state)
+
+
+def test_learner_report_root_node_not_an_estimator():
+    data_op = (
+        skrub.X().skb.apply(DummyClassifier(), y=skrub.y()).skb.apply_func(lambda x: x)
+    )
+    X, y = make_classification()
+    split = data_op.skb.train_test_split({"X": X, "y": y})
+    report = EstimatorReport(
+        data_op.skb.make_learner(), train_data=split["train"], test_data=split["test"]
+    )
+    report.metrics.summarize(metric="accuracy")
