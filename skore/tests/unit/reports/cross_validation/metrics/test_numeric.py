@@ -195,13 +195,11 @@ def test_precision_recall_pos_label_overwrite(
 
 def test_data_source_both(logistic_binary_classification_data):
     """
-    data_source="both" is not yet supported for CrossValidationReport.
-
-    Non regression test for https://github.com/probabl-ai/skore/issues/2546
+    data_source="both" is supported for CrossValidationReport by returning
+    separate results for train and test.
     """
     classifier, X, y = logistic_binary_classification_data
     report = CrossValidationReport(classifier, X, y)
 
-    error_msg = 'data_source="both" is not yet supported for CrossValidationReport'
-    with pytest.raises(NotImplementedError, match=error_msg):
-        report.metrics.summarize(data_source="both")
+    display = report.metrics.summarize(data_source="both")
+    assert set(display.data["data_source"]) == {"train", "test"}
