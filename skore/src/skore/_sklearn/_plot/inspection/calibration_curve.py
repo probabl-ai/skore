@@ -66,7 +66,7 @@ class CalibrationDisplay(DisplayMixin):
     _default_line_kwargs = {
         "marker": "s",
         "linestyle": "-",
-        "color": "blue",
+        "palette": "tab10",
         "height": 6,
     }
     _default_ax_set_kwargs = {
