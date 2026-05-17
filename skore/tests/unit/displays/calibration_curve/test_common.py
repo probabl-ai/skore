@@ -9,7 +9,7 @@ from skore import CalibrationDisplay
         "estimator_reports",
     ],
 )
-@pytest.mark.parametrize("task", ["binary_classification"])
+@pytest.mark.parametrize("task", ["binary_classification", "multiclass_classification"])
 class TestCalibrationDisplay:
     def test_class_attributes(self, pyplot, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
