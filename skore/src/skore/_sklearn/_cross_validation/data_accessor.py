@@ -86,6 +86,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
     def analyze(
         self,
+        *,
         with_y: bool = True,
         subsample: int | None = None,
         subsample_strategy: Literal["head", "random"] = "head",

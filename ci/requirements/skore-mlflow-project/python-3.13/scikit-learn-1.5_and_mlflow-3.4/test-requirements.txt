@@ -373,7 +373,7 @@ python-dotenv==1.2.2
     #   pydantic-settings
 python-json-logger==4.1.0
     # via pydocket
-python-multipart==0.0.26
+python-multipart==0.0.27
     # via mcp
 pytz==2026.1.post1
     # via pandas
@@ -487,7 +487,7 @@ tzdata==2026.1
     # via pandas
 uncalled-for==0.3.1
     # via pydocket
-urllib3==2.6.3
+urllib3==2.7.0
     # via
     #   docker
     #   requests

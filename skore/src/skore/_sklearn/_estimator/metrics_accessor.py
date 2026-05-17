@@ -281,7 +281,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         self._parent._metric_registry.remove(name)
 
-    def fit_time(self, cast: bool = True) -> float | None:
+    def fit_time(self, *, cast: bool = True) -> float | None:
         """Get time to fit the estimator.
 
         Parameters
