@@ -239,6 +239,7 @@ class CalibrationDisplay(DisplayMixin):
             lineplot_kwargs = {k: v for k, v in lineplot_kwargs.items() if k != "color"}
             facet = sns.relplot(
                 data=frame,
+                kind="line",
                 x="predicted_probability",
                 y="fraction_of_positives",
                 hue="label",
@@ -247,6 +248,7 @@ class CalibrationDisplay(DisplayMixin):
         else:
             facet = sns.relplot(
                 data=frame,
+                kind="line",
                 x="predicted_probability",
                 y="fraction_of_positives",
                 label=estimator_name,
