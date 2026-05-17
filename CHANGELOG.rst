@@ -57,6 +57,12 @@ Changed
 
 Added
 -----
+- Added :class:`CalibrationDisplay` to  EstimatoReport as an inspection
+  tool. Frames with columns "predicted_probability" and "true_probability",
+  "label" (depending on the task) are calculated and can be plotted. Both
+  multiclass and binary classification are supported, with the option to specify
+  a positive class.
+  See :pr:`2595` by :user:`snath-xoc`.
 
 Removed
 -------
