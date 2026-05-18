@@ -41,18 +41,19 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     def summarize(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         metric: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train","both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "both" : use both the train and test and show them side-by-side
 
         metric : str or list of str or None, default=None
             The metrics to report, from the list of registered metrics. None means show
@@ -83,8 +84,16 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Recall              0.96...  0.02...         (↗︎)
         """
         if data_source == "both":
-            raise NotImplementedError(
-                'data_source="both" is not yet supported for CrossValidationReport'
+            train_summary = self.summarize(data_source="train", metric=metric)
+            test_summary = self.summarize(data_source="test", metric=metric)
+
+            return MetricsSummaryDisplay._concatenate(
+                [train_summary, test_summary],
+                report_type="cross-validation",
+                extra_rows_data=[
+                    {"estimator_name": self._parent.estimator_name_},
+                    {"estimator_name": self._parent.estimator_name_},
+                ],
             )
 
         parallel = Parallel(
