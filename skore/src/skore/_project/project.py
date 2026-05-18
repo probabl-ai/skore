@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from skore._project import plugin
 from skore._project._summary import Summary
+from skore._project.dependencies import assert_optional_dependencies_installed
 from skore._project.types import ProjectMode
 
 if TYPE_CHECKING:
@@ -174,6 +175,8 @@ class Project:
                 The URI of the MLflow tracking server.
         """
         plugin, parameters = Project.__setup_plugin(mode, name)
+
+        assert_optional_dependencies_installed(mode)
 
         self.__mode = mode
         self.__name = name

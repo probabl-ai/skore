@@ -368,7 +368,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 hue=hue,
                 col=col,
                 kind="bar",
-                **barplot_kwargs,
+                **(barplot_kwargs or {}),
             )
         else:  # "cross-validation" in report_type
             facet = sns.catplot(
@@ -379,14 +379,14 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 col=col,
                 kind="strip",
                 dodge=True,
-                **stripplot_kwargs,
+                **(stripplot_kwargs or {}),
             ).map_dataframe(
                 sns.boxplot,
                 x="importance",
                 y="feature",
                 hue=hue,
                 palette="tab10",
-                **boxplot_kwargs,
+                **(boxplot_kwargs or {}),
             )
         add_background_features = hue is not None
 
@@ -396,7 +396,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
             [frame["feature"].nunique()]
             if col is None
             else [
-                frame.query(f"{col} == '{col_value}'")["feature"].nunique()
+                frame.query(f"{col} == @col_value")["feature"].nunique()
                 for col_value in frame[col].unique()
             ]
         )

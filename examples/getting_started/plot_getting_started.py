@@ -67,7 +67,7 @@ TableReport(german_credit.frame)
 # development and cross-validation, while the left-out set will only be used at the end
 # to validate our final model.
 #
-# Unlike scikit-learn's :func:`~skore.train_test_split`, skore's version provides
+# Unlike scikit-learn's :func:`~sklearn.model_selection.train_test_split`, skore's version provides
 # helpful diagnostics about potential issues with your data split, such as class
 # imbalance.
 

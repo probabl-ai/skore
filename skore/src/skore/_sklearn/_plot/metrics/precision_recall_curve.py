@@ -419,6 +419,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     def frame(
         self,
+        *,
         with_average_precision: bool = False,
         label: PositiveLabel = _DEFAULT,
     ) -> DataFrame:

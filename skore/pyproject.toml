@@ -21,12 +21,13 @@ classifiers = [
   "Operating System :: Unix",
   "Operating System :: MacOS",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
+  "jinja2",
   "joblib",
   "matplotlib",
   "numpy",
@@ -34,10 +35,9 @@ dependencies = [
   "plotly",
   "rich>=14.2",
   "scikit-learn",
-  "skore[local]",
-  "skrub>=0.8",
   "seaborn",
-  "jinja2",
+  "skore[local]",
+  "skrub>=0.9",
 ]
 
 [project.optional-dependencies]
@@ -47,6 +47,7 @@ jupyter = [
   "ipywidgets",
 ]
 test-base = [
+  "jedi",
   "pre-commit",
   "pytest",
   "pytest-cov",
@@ -55,10 +56,11 @@ test-base = [
   "pytest-xdist",
   "scipy-stubs",
   "xdoctest",
-  "jedi",
+  "respx",
+  "skore[hub, jupyter]",
 ]
-test = ["skore[test-base]", "skore[jupyter]", "polars", "pyarrow"]
-test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
+test = ["polars", "pyarrow", "skore[test-base]"]
+test-lts-cpu = ["polars-lts-cpu", "skore[test-base]"]
 sphinx-base = [
   "altair",
   "kaleido",
@@ -77,15 +79,25 @@ sphinx-base = [
   "xgboost-cpu ; platform_system != 'Darwin'",
   "xgboost ; platform_system == 'Darwin'",
 ]
-sphinx = ["skore[sphinx-base, hub, mlflow]", "mlflow", "polars"]
-sphinx-lts-cpu = ["skore[sphinx-base, hub, mlflow]", "mlflow", "polars-lts-cpu"]
-dev = [
-  "nbformat",
-  "ipykernel",
+sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
+sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
+dev = ["ipykernel", "nbformat"]
+local = ["diskcache", "platformdirs"]
+hub = [
+  "httpx",
+  "orjson",
+  "pydantic",
+  "rich[jupyter]>=14.2",
+  "scipy",
 ]
-local = ["skore-local-project>=0.0.4"]
-hub = ["skore-hub-project>=0.0.19"]
 mlflow = ["skore-mlflow-project>=0.0.2"]
+
+[project.entry-points."skore.plugins.login"]
+hub = "skore._plugins.hub.authentication.login:login"
+
+[project.entry-points."skore.plugins.project"]
+local = "skore._plugins.local:Project"
+hub = "skore._plugins.hub.project.project:Project"
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -167,15 +179,43 @@ convention = "numpy"
 
 [tool.mypy]
 exclude = ["src/skore/_externals/", "hatch/", "tests/"]
+# strict = false
+warn_unused_configs = true
+warn_redundant_casts = true
+
+[[tool.mypy.overrides]]
+module = ["skore._plugins.*"]
+#
+# strict = true is incompatible with per-module configuration
+# https://github.com/python/mypy/issues/11401
+# https://mypy.readthedocs.io/en/stable/existing_code.html#introduce-stricter-options
+#
+# The following config is equivalent to `strict = true`:
+#
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+extra_checks = true
+no_implicit_reexport = true
+strict_equality = true
+warn_return_any = true
+warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
+  "diskcache.*",
   "ipywidgets.*",
   "jinja2.*",
   "joblib.*",
+  "js.*",
   "pandas.*",
   "plotly.*",
+  "pyodide.*",
   "seaborn.*",
   "sklearn.*",
   "skrub.*",

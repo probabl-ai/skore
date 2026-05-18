@@ -109,6 +109,17 @@ class TestBasicAdd:
         assert "custom_metric" in report._metric_registry
         assert report._metric_registry["custom_metric"].verbose_name == "Custom Metric"
 
+    def test_callable_with_verbose_name(self, binary_classification_report):
+        """Test adding a callable with a custom name."""
+        report = binary_classification_report
+
+        report.metrics.add(
+            business_loss_scorer, verbose_name="hello", cost_fp=10, cost_fn=5
+        )
+
+        assert "business_loss_scorer" in report._metric_registry
+        assert report._metric_registry["business_loss_scorer"].verbose_name == "hello"
+
     def test_callable_with_kwargs(self, binary_classification_report):
         """Test adding a callable with default kwargs via **kwargs."""
         report = binary_classification_report
@@ -136,12 +147,23 @@ class TestBasicAdd:
         """Test adding a Metric instance directly."""
         report = binary_classification_report
 
-        metric = Metric.new(get_scorer("accuracy"), name="custom_acc")
-        report.metrics.add(metric)
+        metric = Metric.new(get_scorer("accuracy"))
+        report.metrics.add(metric, name="custom_acc")
 
         assert "custom_acc" in report._metric_registry
         display = report.metrics.summarize(metric="custom_acc")
         assert display.data["score"].iloc[0] > 0
+
+    def test_metric_instance_with_verbose_name(self, binary_classification_report):
+        """Test adding a Metric instance directly."""
+        report = binary_classification_report
+
+        metric = Metric.new(get_scorer("accuracy"))
+        report.metrics.add(metric, verbose_name="custom_acc")
+
+        assert "accuracy_score" in report._metric_registry
+        display = report.metrics.summarize(metric="accuracy_score")
+        assert set(display.data["metric_verbose_name"]) == {"custom_acc"}
 
     def test_multiple_metrics(self, binary_classification_report):
         """Test adding multiple custom metrics."""
