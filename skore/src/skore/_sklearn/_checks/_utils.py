@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
@@ -101,7 +103,7 @@ def get_preprocessed_data(
     *,
     target: Literal["X", "y"] = "X",
     concatenate: bool = False,
-) -> np.ndarray | pd.DataFrame | None:
+) -> np.ndarray | pd.DataFrame | pd.Series | None:
     """Return feature matrix or target vector from a report.
 
     When ``target == "X"`` and the report's estimator is a
@@ -149,6 +151,6 @@ def get_preprocessed_data(
         if preprocessor is not None and len(preprocessor.steps) > 0:
             data = preprocessor.transform(data)
 
-    if not isinstance(data, (np.ndarray, pd.DataFrame)):
+    if not isinstance(data, (np.ndarray, pd.DataFrame, pd.Series)):
         return None
     return data
