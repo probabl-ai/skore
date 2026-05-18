@@ -485,23 +485,15 @@ def test_score_appears_in_summarize_for_skrub_learner():
 
 
 def test_score_skrub_learner_with_extra_env_vars():
-    """``score`` works when the DataOp env has variables beyond X and y.
-
-    Non-regression test: the previous implementation invoked
-    ``__skrub_to_Xy_pipeline__({})`` with an empty environment, which dropped
-    any additional variables referenced by the DataOp (e.g. a parent table
-    from which X and y are derived via ``mark_as_X``/``mark_as_y``).
-    """
-    df = pd.DataFrame(
-        {
-            "feat": np.arange(20, dtype=float),
-            "target": np.where(np.arange(20) % 2 == 0, "a", "b"),
-        }
-    )
+    """``score`` works when the DataOp env has variables beyond X and y."""
+    df = pd.DataFrame({"feat": np.arange(20, dtype=float), "target": ["a", "b"] * 10})
     data = skrub.var("df", df)
+    weight = skrub.var("weight", 0.5)
+
     X = data[["feat"]].skb.mark_as_X()
+    weighted_X = X * weight  # brings in `weight` after marking the X
     y = data["target"].skb.mark_as_y()
-    data_op = X.skb.apply(DummyClassifier(), y=y)
+    data_op = weighted_X.skb.apply(DummyClassifier(), y=y)
     learner = data_op.skb.make_learner()
     split = data_op.skb.train_test_split()
     report = EstimatorReport(
