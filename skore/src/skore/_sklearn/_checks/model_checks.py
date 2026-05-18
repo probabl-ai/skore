@@ -345,12 +345,16 @@ class CheckGoldenFeature(Check):
         ):
             raise CheckNotApplicable()
 
-        n_features = report.X_train.shape[1]
+        X_train = report.X_train
+        if not isinstance(X_train, (np.ndarray, pd.DataFrame)):
+            raise CheckNotApplicable()
+
+        n_features = X_train.shape[1]
         if n_features < 2:
             raise CheckNotApplicable()
 
         feature_names = _get_feature_names(
-            report.estimator_, X=report.X_train, n_features=n_features
+            report.estimator_, X=X_train, n_features=n_features
         )
 
         with warnings.catch_warnings():
@@ -372,7 +376,7 @@ class CheckGoldenFeature(Check):
                 single_estimator = clone(report._raw_estimator)
                 single_report = EstimatorReport(
                     single_estimator,
-                    X_train=select_feature(report.X_train, i),
+                    X_train=select_feature(X_train, i),
                     y_train=report.y_train,
                     X_test=select_feature(report.X_test, i),
                     y_test=report.y_test,
@@ -411,10 +415,9 @@ class CheckGoldenFeature(Check):
 class CheckUselessFeatures(Check):
     """Check for useless features (SKD012).
 
-    Flags features whose permutation importance overlaps with zero (i.e.
-    ``mean - std <= 0 <= mean + std``), meaning the model relies on them
-    weakly enough that they could likely be dropped without degrading
-    performance.
+    Flags features whose permutation importance is negligible: either the mean
+    importance is negative, below 1e-6, or its interval ``[mean - std,
+    mean + std]`` contains zero.
 
     Permutation importance is computed via the inspection accessor with a
     fixed seed so the result is cached and shared with explicit calls to
@@ -440,24 +443,18 @@ class CheckUselessFeatures(Check):
         ):
             raise CheckNotApplicable()
 
-        try:
-            display = report.inspection.permutation_importance(
-                data_source="test", seed=0, n_repeats=5
-            )
-        except Exception as exc:
-            raise CheckNotApplicable() from exc
-
+        display = report.inspection.permutation_importance(
+            data_source="test", seed=0, n_repeats=5
+        )
         frame = display.frame()
-        if "feature" not in frame.columns or "value_mean" not in frame.columns:
-            raise CheckNotApplicable()
 
         per_feature = (
             frame.groupby("feature")[["value_mean", "value_std"]].mean().reset_index()
         )
-        overlaps_zero = (per_feature["value_mean"] - per_feature["value_std"] <= 0) & (
-            per_feature["value_mean"] + per_feature["value_std"] >= 0
-        )
-        useless = per_feature.loc[overlaps_zero, "feature"].tolist()
+        mean = per_feature["value_mean"]
+        std = per_feature["value_std"]
+        useless_mask = (mean <= 1e-6) | ((mean - std <= 0) & (mean + std >= 0))
+        useless = per_feature.loc[useless_mask, "feature"].tolist()
         if useless:
             return (
                 f"Feature(s) {useless} have permutation importance overlapping "

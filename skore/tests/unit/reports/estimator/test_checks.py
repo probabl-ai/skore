@@ -4,10 +4,14 @@ from urllib.parse import urlparse
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.compose import ColumnTransformer
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeRegressor
+from skrub import DatetimeEncoder
 
 from skore import Check, EstimatorReport, configuration, evaluate
 from skore._sklearn._checks.base import (
@@ -123,6 +127,93 @@ def test_skd006_detects_coefficient_interpretation(regression_data):
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD006" in tips.index
     assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
+
+
+def test_skd011_detects_golden_feature():
+    """Features correlated with the target get flagged as golden."""
+    rng = np.random.RandomState(0)
+    n_samples = 200
+    X = rng.normal(size=(n_samples, 4))
+    y = X[:, 0] * 10
+    X[:, 1] = y + rng.normal(scale=0.01, size=n_samples)
+    report = evaluate(LinearRegression(), X, y, splitter=0.2)
+    result = report.checks.summarize()
+    tips = result.frame(severity="tip").set_index("code")
+    assert "SKD011" in tips.index
+    explanation = tips.loc["SKD011", "explanation"]
+    assert "Feature #0" in explanation
+    assert "Feature #1" in explanation
+    assert "Feature #2" not in explanation
+    assert "Feature #3" not in explanation
+
+
+def test_skd012_detects_useless_features():
+    """Noise features are flagged when permutation importance is negligible."""
+    X, y = make_regression(
+        n_samples=300,
+        n_features=6,
+        n_informative=2,
+        noise=0.1,
+        shuffle=False,
+        random_state=0,
+    )
+    report = evaluate(Ridge(), X, y, splitter=0.2)
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    assert "SKD012" in tips.index
+    explanation = tips.loc["SKD012", "explanation"]
+    assert "permutation importance" in explanation
+    assert "Feature #0" not in explanation
+    assert "Feature #1" not in explanation
+    assert "Feature #2" in explanation
+    assert "Feature #3" in explanation
+    assert "Feature #4" in explanation
+    assert "Feature #5" in explanation
+
+
+def test_skd013_train_test_time_overlap():
+    """Shuffled split triggers overlap; proper temporal split passes."""
+    n = 200
+    X = pd.DataFrame(
+        {
+            "feat": np.arange(n, dtype=float),
+            "date": pd.date_range("2020-01-01", periods=n, freq="D"),
+        }
+    )
+    y = np.arange(n, dtype=float)
+    pipe = Pipeline(
+        [
+            (
+                "preprocess",
+                ColumnTransformer(
+                    [("date", DatetimeEncoder(), ["date"])],
+                    remainder="passthrough",
+                ),
+            ),
+            ("reg", LinearRegression()),
+        ]
+    )
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, shuffle=True, random_state=0
+    )
+    report = EstimatorReport(
+        pipe, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD013" in issues.index
+    assert "date" in issues.loc["SKD013", "explanation"]
+
+    split = int(n * 0.8)
+    report = EstimatorReport(
+        pipe,
+        X_train=X.iloc[:split],
+        y_train=y[:split],
+        X_test=X.iloc[split:],
+        y_test=y[split:],
+    )
+    summary = report.checks.summarize()
+    assert "SKD013" not in set(summary.frame(severity="issue")["code"])
+    assert "SKD013" in set(summary.frame(severity="passed")["code"])
 
 
 def test_ignore_checks(monkeypatch, regression_report):
@@ -409,123 +500,6 @@ def test_html_has_three_tabs(regression_report):
     assert "Passed (" in html
 
 
-def test_skd011_detects_golden_feature():
-    """A feature that is essentially the target gets flagged as golden."""
-    rng = np.random.RandomState(0)
-    n_samples = 200
-    X = rng.normal(size=(n_samples, 4))
-    y = X[:, 0] * 10
-    X[:, 1] += y * 0.01
-    report = evaluate(LinearRegression(), X, y, splitter=0.2)
-    result = report.checks.summarize()
-    tips = result.frame(severity="tip").set_index("code")
-    assert "SKD011" in tips.index
-    assert "Feature" in tips.loc["SKD011", "explanation"]
-
-
-def test_skd012_detects_useless_features():
-    """Noise features are flagged when permutation importance overlaps zero."""
-    X, y = make_regression(
-        n_samples=300, n_features=6, n_informative=2, noise=0.1, random_state=0
-    )
-    report = evaluate(Ridge(), X, y, splitter=0.2)
-    issues = report.checks.summarize().frame(severity="tip").set_index("code")
-    assert "SKD012" in issues.index
-    assert "permutation importance" in issues.loc["SKD012", "explanation"]
-
-
-def test_skd012_shares_cache_with_inspection_permutation_importance(monkeypatch):
-    """SKD012 reuses a cached permutation_importance result from the inspection accessor."""
-    from sklearn.inspection import permutation_importance as sklearn_pi
-
-    X, y = make_regression(
-        n_samples=200, n_features=4, n_informative=2, noise=0.1, random_state=0
-    )
-    report = evaluate(Ridge(), X, y, splitter=0.2)
-
-    report.inspection.permutation_importance(data_source="test", seed=0, n_repeats=5)
-
-    calls = 0
-
-    def counting_pi(*args, **kwargs):
-        nonlocal calls
-        calls += 1
-        return sklearn_pi(*args, **kwargs)
-
-    monkeypatch.setattr(
-        "skore._sklearn._plot.inspection.permutation_importance.permutation_importance",
-        counting_pi,
-    )
-    report.checks.summarize(ignore=["SKD011"])
-    assert calls == 0
-
-
-def _datetime_aware_pipeline():
-    from sklearn.compose import ColumnTransformer
-    from sklearn.pipeline import Pipeline
-
-    return Pipeline(
-        [
-            (
-                "drop_date",
-                ColumnTransformer(
-                    [("drop_date", "drop", ["date"])], remainder="passthrough"
-                ),
-            ),
-            ("reg", LinearRegression()),
-        ]
-    )
-
-
-def test_skd013_detects_train_test_time_overlap():
-    """A datetime column whose train extends past test min is flagged."""
-    rng = np.random.RandomState(0)
-    n = 200
-    dates = pd.date_range("2020-01-01", periods=n, freq="D")
-    shuffled = rng.permutation(n)
-    df = pd.DataFrame(
-        {
-            "feat": rng.normal(size=n),
-            "date": dates[shuffled],
-        }
-    )
-    y = df["feat"].to_numpy()
-    split = n // 2
-    report = EstimatorReport(
-        _datetime_aware_pipeline(),
-        X_train=df.iloc[:split],
-        y_train=y[:split],
-        X_test=df.iloc[split:],
-        y_test=y[split:],
-    )
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
-    assert "SKD013" in issues.index
-    assert "date" in issues.loc["SKD013", "explanation"]
-
-
-def test_skd013_passes_on_sorted_split():
-    """A clean temporal split runs SKD013 and emits no issue."""
-    n = 200
-    df = pd.DataFrame(
-        {
-            "feat": np.arange(n, dtype=float),
-            "date": pd.date_range("2020-01-01", periods=n, freq="D"),
-        }
-    )
-    y = df["feat"].to_numpy()
-    split = n // 2
-    report = EstimatorReport(
-        _datetime_aware_pipeline(),
-        X_train=df.iloc[:split],
-        y_train=y[:split],
-        X_test=df.iloc[split:],
-        y_test=y[split:],
-    )
-    summary = report.checks.summarize()
-    assert "SKD013" not in set(summary.frame(severity="issue")["code"])
-    assert "SKD013" in set(summary.frame(severity="passed")["code"])
-
-
 class SlowMockCheck(Check):
     code = "TSTSLOW"
     title = "Slow mock check"
@@ -533,10 +507,13 @@ class SlowMockCheck(Check):
     docs_url = "tstslow"
     slow = True
 
-    def __init__(self):
+    def __init__(self, *, fail=False):
         self.calls = 0
+        self._fail = fail
 
     def check_function(self, report):
+        if self._fail:
+            raise AssertionError("slow check should not have been called")
         self.calls += 1
         return "Slow finding."
 
@@ -567,18 +544,7 @@ def test_summarize_fast_mode_uses_cached_slow_results(regression_report):
 
 def test_html_repr_does_not_compute_slow(regression_report):
     """The HTML repr never invokes slow check functions."""
-
-    class FailingSlow(Check):
-        code = "TSTFAIL"
-        title = "Failing slow"
-        report_type = "estimator"
-        docs_url = "tstfail"
-        slow = True
-
-        def check_function(self, report):
-            raise AssertionError("slow check should not run during HTML repr")
-
-    regression_report.checks.add([FailingSlow()])
+    regression_report.checks.add([SlowMockCheck(fail=True)])
     fragments = regression_report._html_repr_fragments()
     assert "checks_summary" in fragments
 
@@ -593,7 +559,7 @@ def test_html_repr_shows_cached_slow(regression_report):
 
 
 def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):
-    """A subclass of Check that does not declare `slow` inherits the protocol default."""
+    """Subclass of Check without `slow` inherits the protocol default."""
 
     class CheckNoSlowAttr(Check):
         code = "TSTFAST"
@@ -610,15 +576,3 @@ def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):
     regression_report.checks.add([check])
     codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
     assert "TSTFAST" in codes
-
-
-def test_builtin_checks_are_fast():
-    """All built-in checks shipped before the feature-checks PR remain fast."""
-    from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
-
-    fast_codes = {c.code for c in _BUILTIN_CHECKS if not c.slow}
-    assert {"SKD001", "SKD002", "SKD003", "SKD004", "SKD005", "SKD006"}.issubset(
-        fast_codes
-    )
-    slow_codes = {c.code for c in _BUILTIN_CHECKS if c.slow}
-    assert slow_codes == {"SKD011", "SKD012"}

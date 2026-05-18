@@ -328,18 +328,17 @@ This check is *slow*: it computes permutation importance. Skip it with
 How it is detected
 ^^^^^^^^^^^^^^^^^^
 
-`skore` computes permutation importance on the test set with a fixed seed
-(``seed=0``, ``n_repeats=5``) via
-:meth:`~skore.EstimatorReport.inspection.permutation_importance`. The result
-is cached and shared with explicit calls to that method. A feature is
-flagged as *useless* when its importance interval ``[mean - std, mean + std]``
-contains zero, i.e. its mean importance is within one standard deviation of
-zero.
+`skore` uses permutation importance on the test set to assess each feature's
+contribution. A feature is flagged as *useless* when:
+
+- its mean importance is **below 1e-6** (catches negligible or negative
+  values regardless of variance), or
+- its importance interval ``[mean - std, mean + std]`` **contains zero**.
 
 Why it matters
 ^^^^^^^^^^^^^^
 
-Features whose permutation importance overlaps with zero contribute little
+Features whose permutation importance is negligible contribute little
 or no measurable signal: shuffling their values does not degrade the model's
 score. They are good candidates for dropping, which can simplify the model
 and reduce overfitting risk.
@@ -352,6 +351,16 @@ How to reduce the risk
   preserved,
 - if a flagged feature is expected to matter, investigate whether the model
   is too simple or the feature is poorly encoded.
+
+.. note::
+
+   In the presence of correlated features, permutation importance can be near
+   zero even for predictive features (see `Permutation Importance with
+   Multicollinear or Correlated Features
+   <https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance_multicollinear.html>`_).
+   When input features are correlated, drop zero-importance features one by
+   one — e.g. with scikit-learn's :class:`~sklearn.feature_selection.RFECV` —
+   rather than all at once.
 
 
 .. _skd013-train-test-time-overlap:
