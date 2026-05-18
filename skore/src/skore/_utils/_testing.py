@@ -102,7 +102,7 @@ class MockReport(_BaseReport):
         y_test=None,
     ):
         super().__init__()
-        self._original_estimator = estimator
+        self.original_estimator = estimator
         self.learner_ = to_learner(estimator)
         if X_train is not None:
             self._train_data = {
@@ -128,7 +128,7 @@ class MockReport(_BaseReport):
 
     @property
     def estimator_(self):
-        return self._original_estimator
+        return self.original_estimator
 
     @property
     def X_train(self):

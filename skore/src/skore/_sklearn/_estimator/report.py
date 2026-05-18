@@ -140,13 +140,22 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     Attributes
     ----------
     estimator_ : estimator object
-        The fitted estimator.
+        The fitted estimator, exposed with the same interface as ``original_estimator``:
+
+        - if the input was a regular scikit-learn estimator, its ``predict`` method
+          should be used with arrays as usual, e.g. ``Report.estimator_.predict(X)``;
+        - if the input was a :class:`skrub.DataOp` or a :class:`skrub.SkrubLearner`,
+          ``estimator_`` is a :class:`skrub.SkrubLearner` so its ``predict`` method
+          should be used with an environment dict, e.g.
+          ``Report.estimator_.predict({"a": ..., "b": ...})``.
 
     original_estimator : estimator object
         The estimator that was given as input.
 
     learner_ : skrub.SkrubLearner
-        The estimator wrapped in a skrub Learner.
+        The fitted estimator wrapped in a :class:`skrub.SkrubLearner`. If the
+        input was already a :class:`skrub.SkrubLearner`, it is used as-is without
+        further wrapping.
 
     estimator_name_ : str
         The name of the estimator.
@@ -236,7 +245,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     ) -> None:
         super().__init__()
         estimator = self._copy_estimator(estimator)
-        self._original_estimator = estimator
+        self.original_estimator = estimator
         self._fit = fit
 
         if isinstance(estimator, skrub.DataOp):
@@ -326,7 +335,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             # -------- CORE STATE ---------
             "metadata": self._metadata,
             "initialized_with_data_op": self._initialized_with_data_op,
-            "original_estimator": self._original_estimator,
+            "original_estimator": self.original_estimator,
             "ml_task": self._ml_task,
             "fit": self._fit,
             "fit_time": self.fit_time_,
@@ -367,7 +376,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report.fit_time_ = state["fit_time"]
         report._pos_label = state["pos_label"]
         report.learner_ = state["estimator"]
-        report._original_estimator = state["original_estimator"]
+        report.original_estimator = state["original_estimator"]
         data = state["data"]
         report._train_data = data["train_data"]
         report._test_data = data["test_data"]
@@ -733,11 +742,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return self._ml_task
 
     @property
-    def original_estimator(self) -> EstimatorLike:
-        """The estimator that was given as input."""
-        return self._original_estimator
-
-    @property
     def estimator_(self) -> EstimatorLike:
         """The report's fitted estimator."""
         if self._initialized_with_data_op:
@@ -778,10 +782,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     @property
     def estimator_name_(self) -> str:
-        if isinstance(self._original_estimator, Pipeline):
-            name = self._original_estimator[-1].__class__.__name__
+        if isinstance(self.original_estimator, Pipeline):
+            name = self.original_estimator[-1].__class__.__name__
         else:
-            name = self._original_estimator.__class__.__name__
+            name = self.original_estimator.__class__.__name__
         return name
 
     ####################################################################################

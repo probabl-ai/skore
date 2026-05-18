@@ -210,7 +210,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_jobs: int | None = None,
     ) -> None:
         super().__init__()
-        self._original_estimator = estimator
+        self.original_estimator = estimator
         if isinstance(estimator, skrub.DataOp):
             if data is None:
                 data = estimator.skb.get_data()
@@ -270,7 +270,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 track(
                     parallel(
                         delayed(_generate_estimator_report)(
-                            clone(self._original_estimator),
+                            clone(self.original_estimator),
                             self.X,
                             self.y,
                             self.pos_label,
@@ -302,7 +302,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "version": _STATE_VERSION,
             "metadata": self._metadata,
             "initialized_with_data_op": self._initialized_with_data_op,
-            "original_estimator": self._original_estimator,
+            "original_estimator": self.original_estimator,
             "ml_task": self.ml_task,
             "pos_label": self.pos_label,
             "estimator": self.learner_,
@@ -330,7 +330,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         report._ml_task = state["ml_task"]
         report._pos_label = state["pos_label"]
         report.learner_ = state["estimator"]
-        report._original_estimator = state["original_estimator"]
+        report.original_estimator = state["original_estimator"]
         report._data = state["data"]
         report._split_indices = state["split_indices"]
         # TODO? Include splitter in state?
@@ -548,7 +548,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
         else:
             report = EstimatorReport(
-                self._original_estimator,
+                self.original_estimator,
                 X_train=self.X,
                 y_train=self.y,
                 X_test=X_test,
@@ -592,11 +592,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._ml_task
 
     @property
-    def original_estimator(self) -> EstimatorLike:
-        """The estimator that was given as input."""
-        return self._original_estimator
-
-    @property
     def estimator_(self) -> EstimatorLike:
         """The report's fitted estimator."""
         if self._initialized_with_data_op:
@@ -605,10 +600,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     @property
     def estimator_name_(self) -> str:
-        if isinstance(self._original_estimator, Pipeline):
-            name = self._original_estimator[-1].__class__.__name__
+        if isinstance(self.original_estimator, Pipeline):
+            name = self.original_estimator[-1].__class__.__name__
         else:
-            name = self._original_estimator.__class__.__name__
+            name = self.original_estimator.__class__.__name__
         return name
 
     @property
