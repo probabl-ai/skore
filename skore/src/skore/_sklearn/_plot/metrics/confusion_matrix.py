@@ -403,7 +403,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         *,
         report_type: ReportType,
         estimator: BaseEstimator,
-        estimator_name: str,
         ml_task: MLTask,
         data_source: DataSource | Literal["both"],
         report_pos_label: PositiveLabel | None = None,
@@ -426,9 +425,6 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         estimator : BaseEstimator
             The estimator.
-
-        estimator_name : str
-            The estimator name. Accepted for compatibility with display builders.
 
         ml_task : {"binary-classification", "multiclass-classification"}
             The machine learning task.
