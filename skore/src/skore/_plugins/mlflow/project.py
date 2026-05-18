@@ -22,7 +22,8 @@ from mlflow.exceptions import MlflowException
 from mlflow.utils.autologging_utils import disable_discrete_autologging
 from sklearn.base import BaseEstimator
 
-from .protocol import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport
+
 from .reports import (
     Artifact,
     Dataset,

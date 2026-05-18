@@ -11,6 +11,7 @@ from sklearn.datasets import (
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+
 from skore import CrossValidationReport, EstimatorReport
 
 

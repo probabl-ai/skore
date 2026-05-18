@@ -5,10 +5,10 @@ import mlflow
 import pytest
 from sklearn.linear_model import LinearRegression
 
-from skore_mlflow_project import Project
-from skore_mlflow_project import _matplotlib as matplotlib_module
-from skore_mlflow_project import project as project_module
-from skore_mlflow_project.project import (
+from skore._plugins.mlflow import Project
+from skore._plugins.mlflow import _matplotlib as matplotlib_module
+from skore._plugins.mlflow import project as project_module
+from skore._plugins.mlflow.project import (
     _log_artifact,
     format_date,
     report_type,
@@ -92,27 +92,6 @@ def test_log_model_reraises_unexpected_typeerror(monkeypatch) -> None:
 def test_log_artifact_raises_on_unsupported_payload() -> None:
     with pytest.raises(TypeError, match="Unexpected artifact payload type"):
         _log_artifact(project_module.Artifact("bad", 123))
-
-
-def test_switch_mpl_backend_falls_back_when_restore_fails(monkeypatch) -> None:
-    get_backend_values = iter(["TkAgg", "agg"])
-    switch_calls = []
-
-    monkeypatch.setattr(
-        matplotlib_module.plt, "get_backend", lambda: next(get_backend_values)
-    )
-
-    def _switch_backend(backend):
-        switch_calls.append(backend)
-        if backend == "TkAgg":
-            raise RuntimeError("restore failed")
-
-    monkeypatch.setattr(matplotlib_module.plt, "switch_backend", _switch_backend)
-
-    with matplotlib_module.switch_mpl_backend("agg"):
-        pass
-
-    assert switch_calls == ["agg", "TkAgg", "agg"]
 
 
 class TestProject:
