@@ -377,6 +377,18 @@ def test_data_source_both_is_not_supported(binary_classification_data):
         report.metrics.confusion_matrix(data_source="both")
 
 
+def test_plot_threshold_requires_label(pyplot, binary_classification_data):
+    """Check that plot raises when threshold_value is set but label is None."""
+    X, y = binary_classification_data
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+
+    display = report.metrics.confusion_matrix()
+    with pytest.raises(
+        ValueError, match="Please indicate the class to consider as positive"
+    ):
+        display.plot(threshold_value=0.5, label=None)
+
+
 def test_frame_threshold_label_none_returns_all_labels(binary_classification_data):
     """Check that frame can return thresholded data for all labels."""
     X, y = binary_classification_data
@@ -384,23 +396,25 @@ def test_frame_threshold_label_none_returns_all_labels(binary_classification_dat
 
     display = report.metrics.confusion_matrix()
     frame = display.frame(threshold_value=0.5, label=None)
-
     assert set(frame["label"]) == set(display.labels)
 
 
-def test_multiclass_thresholded_plot_with_numeric_label(
-    pyplot, multiclass_classification_data
+@pytest.mark.parametrize("threshold_value", [None, 0.5])
+def test_multiclass_plot_with_numeric_label(
+    pyplot, multiclass_classification_data, threshold_value
 ):
-    """Check that numeric labels can select OvR heatmaps."""
+    """Check that numeric labels can select predict-based and thresholded OvR plots."""
     X, y = multiclass_classification_data
     report = evaluate(LogisticRegression(), X, y, splitter=0.2)
 
     display = report.metrics.confusion_matrix()
-    fig = display.plot(threshold_value=0.5, label=1)
+    fig = display.plot(threshold_value=threshold_value, label=1)
+    ax = fig.axes[0]
 
-    heatmap_values = fig.axes[0].collections[0].get_array()
-    assert not np.ma.is_masked(heatmap_values)
-    assert np.isfinite(heatmap_values).all()
+    xticklabels = [tick.get_text() for tick in ax.get_xticklabels()]
+    yticklabels = [tick.get_text() for tick in ax.get_yticklabels()]
+    assert xticklabels == ["not 1", "1*"]
+    assert yticklabels == ["not 1", "1*"]
 
 
 def test_plot_threshold_all_not_supported(pyplot, binary_classification_data):
