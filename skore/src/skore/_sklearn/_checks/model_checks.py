@@ -4,6 +4,7 @@ import warnings
 from typing import TYPE_CHECKING, cast
 
 import numpy as np
+import pandas as pd
 from scipy.stats import spearmanr
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
@@ -279,7 +280,7 @@ class CheckCoefficientsInterpretation(Check):
         if X is None or not hasattr(predictor, "coef_"):
             raise CheckNotApplicable()
 
-        stds = X.std(axis=0)
+        stds = np.asarray(X.std(axis=0))
         if not np.all(np.isclose(stds, stds[0])):
             return (
                 "Features are not on the same scale: coefficient magnitudes "
@@ -315,11 +316,9 @@ class CheckMDIHighCardinalityBias(Check):
         if X is None or not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable()
 
-        n_samples, n_features = X.shape
+        X_df = X if isinstance(X, pd.DataFrame) else pd.DataFrame(X)
         high_cardinality_features = [
-            idx
-            for idx in range(n_features)
-            if len(np.unique(X[:, idx])) > 0.5 * n_samples
+            c for c in X_df.columns if X_df[c].nunique() > 0.5 * len(X_df)
         ]
 
         if high_cardinality_features:
@@ -355,7 +354,11 @@ class CheckCorrelatedFeatures(Check):
         report = cast("EstimatorReport", report)
         X = get_preprocessed_data(report, target="X")
 
-        if X is None or X.shape[1] < 2:
+        if X is None:
+            raise CheckNotApplicable()
+        if isinstance(X, pd.DataFrame):
+            X = X.select_dtypes(include="number")
+        if X.shape[1] < 2:
             raise CheckNotApplicable()
 
         corr = np.abs(spearmanr(X).statistic)

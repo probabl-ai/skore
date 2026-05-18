@@ -101,13 +101,16 @@ def get_preprocessed_data(
     *,
     target: Literal["X", "y"] = "X",
     concatenate: bool = False,
-) -> np.ndarray | None:
+) -> np.ndarray | pd.DataFrame | None:
     """Return feature matrix or target vector from a report.
 
     When ``target == "X"`` and the report's estimator is a
     :class:`~sklearn.pipeline.Pipeline`, the raw feature matrix is passed
     through the fitted preprocessor (all steps except the last) before being
     returned, so the result reflects what the predictor actually sees.
+
+    Returns ``None`` when no data is available or when the preprocessor
+    produces an unsupported type (e.g. sparse matrices).
 
     Parameters
     ----------
@@ -123,7 +126,7 @@ def get_preprocessed_data(
 
     Returns
     -------
-    np.ndarray or None
+    np.ndarray, pd.DataFrame, or None
     """
     train = report.X_train if target == "X" else report.y_train
     test = report.X_test if target == "X" else report.y_test
@@ -145,4 +148,7 @@ def get_preprocessed_data(
         preprocessor, _ = split_preprocessor_estimator(report.estimator_)
         if preprocessor is not None and len(preprocessor.steps) > 0:
             data = preprocessor.transform(data)
-    return np.asarray(data)
+
+    if not isinstance(data, (np.ndarray, pd.DataFrame)):
+        return None
+    return data
