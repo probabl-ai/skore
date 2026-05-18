@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
 
 
-def _get_metrics_data(report: _BaseReport) -> tuple:
+def _get_metrics_data(report: EstimatorReport) -> tuple:
     """Compute report/baseline metrics data for SKD001 and SKD002.
 
     Raises :class:`CheckNotApplicable` when train+test data is
@@ -35,8 +35,7 @@ def _get_metrics_data(report: _BaseReport) -> tuple:
     from skore._sklearn._estimator.report import EstimatorReport
 
     if (
-        not isinstance(report, EstimatorReport)
-        or report.X_train is None
+        report.X_train is None
         or report.y_train is None
         or report.X_test is None
         or report.y_test is None
@@ -88,6 +87,7 @@ class CheckOverfitting(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
         report_data, _baseline_data = _get_metrics_data(report)
 
         votes = [
@@ -126,6 +126,7 @@ class CheckUnderfitting(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
         report_data, baseline_data = _get_metrics_data(report)
 
         votes = [
