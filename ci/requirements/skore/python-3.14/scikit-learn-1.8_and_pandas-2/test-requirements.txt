@@ -225,7 +225,7 @@ seaborn==0.13.2
     # via skore (skore/pyproject.toml)
 six==1.17.0
     # via python-dateutil
-skrub==0.8.0
+skrub==0.9.0
     # via skore (skore/pyproject.toml)
 stack-data==0.6.3
     # via ipython
