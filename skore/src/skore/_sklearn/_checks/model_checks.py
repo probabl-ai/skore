@@ -11,9 +11,9 @@ from sklearn.exceptions import UndefinedMetricWarning
 from skore._sklearn._checks._utils import (
     _TIMING_METRICS,
     CheckNotApplicable,
-    _get_data,
     check_score_gap_to_baseline,
     detect_outliers_modified_zscore,
+    get_preprocessed_data,
     majority_vote,
     split_preprocessor_estimator,
 )
@@ -210,7 +210,7 @@ class CheckHighClassImbalance(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        y = _get_data(report, target="y", concatenate=True)
+        y = get_preprocessed_data(report, target="y", concatenate=True)
         if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
@@ -242,7 +242,7 @@ class CheckUnderrepresentedClasses(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
 
-        y = _get_data(report, target="y", concatenate=True)
+        y = get_preprocessed_data(report, target="y", concatenate=True)
         if report.ml_task != "multiclass-classification" or y is None:
             raise CheckNotApplicable()
 
@@ -274,7 +274,7 @@ class CheckCoefficientsInterpretation(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
         _, predictor = split_preprocessor_estimator(report.estimator)
-        X = _get_data(report, target="X", concatenate=True)
+        X = get_preprocessed_data(report, target="X", concatenate=True)
 
         if X is None or not hasattr(predictor, "coef_"):
             raise CheckNotApplicable()
@@ -310,7 +310,7 @@ class CheckMDIHighCardinalityBias(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
         _, predictor = split_preprocessor_estimator(report.estimator)
-        X = _get_data(report, target="X")
+        X = get_preprocessed_data(report, target="X")
 
         if X is None or not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable()
@@ -353,7 +353,7 @@ class CheckCorrelatedFeatures(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        X = _get_data(report, target="X")
+        X = get_preprocessed_data(report, target="X")
 
         if X is None or X.shape[1] < 2:
             raise CheckNotApplicable()

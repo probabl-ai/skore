@@ -1,6 +1,11 @@
+from typing import TYPE_CHECKING, Literal
+
 import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
+
+if TYPE_CHECKING:
+    from skore._sklearn._estimator.report import EstimatorReport
 
 _TIMING_METRICS = {
     "Fit time (s)",
@@ -91,7 +96,12 @@ def split_preprocessor_estimator(estimator):
     return None, estimator
 
 
-def _get_data(report, *, target="X", concatenate=False) -> np.ndarray | None:
+def get_preprocessed_data(
+    report: EstimatorReport,
+    *,
+    target: Literal["X", "y"] = "X",
+    concatenate: bool = False,
+) -> np.ndarray | None:
     """Return feature matrix or target vector from a report.
 
     When ``target == "X"`` and the report's estimator is a
@@ -115,11 +125,6 @@ def _get_data(report, *, target="X", concatenate=False) -> np.ndarray | None:
     -------
     np.ndarray or None
     """
-    from skore._sklearn._estimator.report import EstimatorReport
-
-    if not isinstance(report, EstimatorReport):
-        return None
-
     train = report.X_train if target == "X" else report.y_train
     test = report.X_test if target == "X" else report.y_test
 
