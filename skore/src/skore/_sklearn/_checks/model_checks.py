@@ -8,16 +8,16 @@ from scipy.stats import spearmanr
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
-from skore._sklearn._checks.base import Check
-from skore._sklearn._checks.utils import (
+from skore._sklearn._checks._utils import (
     _TIMING_METRICS,
     CheckNotApplicable,
     _get_data,
-    _unwrap_estimator,
     check_score_gap_to_baseline,
     detect_outliers_modified_zscore,
     majority_vote,
+    split_preprocessor_estimator,
 )
+from skore._sklearn._checks.base import Check
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -273,7 +273,7 @@ class CheckCoefficientsInterpretation(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        _, predictor = _unwrap_estimator(report.estimator)
+        _, predictor = split_preprocessor_estimator(report.estimator)
         X = _get_data(report, target="X", concatenate=True)
 
         if X is None or not hasattr(predictor, "coef_"):
@@ -309,7 +309,7 @@ class CheckMDIHighCardinalityBias(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        _, predictor = _unwrap_estimator(report.estimator)
+        _, predictor = split_preprocessor_estimator(report.estimator)
         X = _get_data(report, target="X")
 
         if X is None or not hasattr(predictor, "feature_importances_"):

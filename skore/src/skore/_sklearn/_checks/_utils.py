@@ -80,7 +80,7 @@ class CheckNotApplicable(Exception):
     """Raised when a check cannot run on the given report."""
 
 
-def _unwrap_estimator(estimator):
+def split_preprocessor_estimator(estimator):
     """Return ``(preprocessor, predictor)`` from a possibly wrapped estimator.
 
     Splits sklearn :class:`~sklearn.pipeline.Pipeline` into its preprocessing
@@ -137,7 +137,7 @@ def _get_data(report, *, target="X", concatenate=False) -> np.ndarray | None:
         return None
 
     if target == "X":
-        preprocessor, _ = _unwrap_estimator(report.estimator_)
+        preprocessor, _ = split_preprocessor_estimator(report.estimator_)
         if preprocessor is not None and len(preprocessor.steps) > 0:
             data = preprocessor.transform(data)
     return np.asarray(data)

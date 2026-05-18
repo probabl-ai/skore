@@ -12,11 +12,11 @@ from sklearn.tree import DecisionTreeRegressor
 from skrub import tabular_pipeline
 
 from skore import Check, EstimatorReport, configuration, evaluate
+from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import (
     ChecksSummaryDisplay,
     _get_issue_documentation_url,
 )
-from skore._sklearn._checks.utils import CheckNotApplicable
 
 
 @pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
