@@ -316,10 +316,16 @@ class CheckMDIHighCardinalityBias(Check):
         if X is None or not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable()
 
-        X_df = X if isinstance(X, pd.DataFrame) else pd.DataFrame(X)
-        high_cardinality_features = [
-            c for c in X_df.columns if X_df[c].nunique() > 0.5 * len(X_df)
-        ]
+        if isinstance(X, (pd.DataFrame, pd.Series)):
+            high_cardinality_features = [
+                c for c in X.columns if X[c].nunique() > 0.5 * len(X)
+            ]
+        elif isinstance(X, np.ndarray):
+            high_cardinality_features = [
+                i for i in range(X.shape[1]) if np.unique(X[:, i]).size > 0.5 * len(X)
+            ]
+        else:
+            raise CheckNotApplicable()
 
         if high_cardinality_features:
             names = ", ".join(str(s) for s in high_cardinality_features[:3])
