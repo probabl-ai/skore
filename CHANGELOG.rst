@@ -64,6 +64,10 @@ Added
   for which scorings can be registered with :meth:`~skrub.DataOp.skb.with_scoring`.
   See :pr:`2884` by :user:`auguste-probabl`.
 
+- Added two new automated checks: SKD007 (MDI feature importance bias with
+  high-cardinality features, tip) and SKD008 (highly correlated input features,
+  issue). See :pr:`2883` by :user:`GaetandeCast`.
+
 Removed
 -------
 
