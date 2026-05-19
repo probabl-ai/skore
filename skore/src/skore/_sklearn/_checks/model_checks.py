@@ -414,7 +414,7 @@ class CheckGoldenFeature(Check):
         if report._initialized_with_data_op:
             raise CheckNotApplicable()
 
-        X_train = get_preprocessed_data(report, target="X")
+        X_train = report.X_train
         if X_train is None or not isinstance(X_train, (np.ndarray, pd.DataFrame)):
             raise CheckNotApplicable()
 

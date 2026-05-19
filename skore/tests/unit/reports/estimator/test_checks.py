@@ -22,10 +22,14 @@ from skore._sklearn._checks.base import (
 )
 
 
-@pytest.fixture
-def regression_report(regression_data):
+@pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
+def regression_report(request, regression_data):
     X, y = regression_data
-    return evaluate(LinearRegression(), X, y)
+    return evaluate(
+        request.param,
+        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
+        pd.Series(y),
+    )
 
 
 def mock_issue(report, ignored_codes, *, fast_mode=False):
