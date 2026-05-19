@@ -324,17 +324,20 @@ Why it matters
 Highly correlated features carry largely redundant information. This redundancy
 can cause two problems:
 
-- **Unstable coefficients and importances**: in linear models, correlated
-  predictors share the explanatory burden, making individual coefficients
-  erratic across small data perturbations. Feature-importance methods such as
-  MDI and permutation importance inherit the same instability.
-- **Numerical issues**: near-perfect collinearity can inflate the variance of
-  coefficient estimates and, in extreme cases, make the design matrix
-  ill-conditioned.
-
-Read more about this in the scikit-learn example on `permutation importance
-with multicollinear or correlated features
-<https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance_multicollinear.html>`_.
+- **Unreliable feature importance**: when two features are highly correlated,
+  importance methods (MDI, permutation importance, linear-model coefficients)
+  can arbitrarily split credit between them. A genuinely important feature may
+  receive near-zero importance simply because a correlated partner captured
+  most of the signal, and the estimates become highly variable across data
+  perturbations. Read more `here
+  <https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance_multicollinear.html>`_.
+- **Wasted resources and overfitting risk**: redundant features increase memory
+  usage and computation time without adding information. Removing them can speed
+  up training and, by reducing the effective dimensionality, may also reduce
+  overfitting.
+- **Degenerate linear models**: near-perfect collinearity makes the design
+  matrix ill-conditioned, inflating coefficient variance and making
+  least-squares estimates numerically unstable.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
