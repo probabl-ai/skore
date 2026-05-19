@@ -17,7 +17,7 @@ attrs==26.1.0
     #   cyclopts
     #   jsonschema
     #   referencing
-authlib==1.6.11
+authlib==1.6.12
     # via fastmcp
 beartype==0.22.9
     # via
@@ -140,7 +140,7 @@ httpx-sse==0.4.3
     # via mcp
 identify==2.6.18
     # via pre-commit
-idna==3.11
+idna==3.15
     # via
     #   anyio
     #   email-validator

@@ -126,7 +126,7 @@ httpx==0.28.1
     # via skore (skore/pyproject.toml)
 huey==2.6.0
     # via mlflow
-idna==3.11
+idna==3.15
     # via
     #   anyio
     #   httpx
