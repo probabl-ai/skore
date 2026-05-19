@@ -1,7 +1,6 @@
 import contextlib
 import json
 import pickle
-import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -43,9 +42,7 @@ def export(report, *, root_data_dir=None, name=None):
         reports_dir / f"{date_str}__{report._metadata['id']:x}__"
         f"{report._metadata['report_type']}{name_str}"
     )
-    with contextlib.suppress(FileNotFoundError):
-        shutil.rmtree(output_dir)
-    output_dir.mkdir(parents=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     symlink = reports_dir / f"latest{name_str}"
     with contextlib.suppress(FileNotFoundError):
         symlink.unlink()
@@ -83,8 +80,15 @@ def export(report, *, root_data_dir=None, name=None):
     with open(output_dir / "_raw_estimator.pickle", "wb") as f:
         pickle.dump(report._raw_estimator, f)
 
+    user_dir = output_dir / "user"
+    user_dir.mkdir(exist_ok=True)
+    (user_dir / "README").write_text(
+        "This directory is not used by skore, use it to store arbitrary "
+        "additional data or notes attached to this report.\n"
+    )
+
     metrics_dir = output_dir / "metrics"
-    metrics_dir.mkdir()
+    metrics_dir.mkdir(exist_ok=True)
     report.metrics.summarize().frame(flat_index=True).to_csv(
         metrics_dir / "summarize.csv"
     )
@@ -92,11 +96,11 @@ def export(report, *, root_data_dir=None, name=None):
         pickle.dump(report._metric_registry, f)
 
     checks_dir = output_dir / "checks"
-    checks_dir.mkdir()
+    checks_dir.mkdir(exist_ok=True)
     report.checks.summarize().frame().to_csv(checks_dir / "summarize.csv", index=False)
 
     data_dir = output_dir / "data"
-    data_dir.mkdir()
+    data_dir.mkdir(exist_ok=True)
 
     for subset_name, subset in state["data"].items():
         subset_refs = {}
@@ -107,11 +111,24 @@ def export(report, *, root_data_dir=None, name=None):
             refs_file.write_text(json.dumps(subset_refs), "UTF-8")
 
     predictions_dir = output_dir / "predictions"
-    predictions_dir.mkdir()
+    predictions_dir.mkdir(exist_ok=True)
     for (subset_name, meth_name), val in report.get_state()["predictions"].items():
         with open(predictions_dir / f"{subset_name}__{meth_name}.joblib", "wb") as f:
             joblib.dump(val, f)
 
+    inspection_dir = output_dir / "inspection"
+    inspection_dir.mkdir(exist_ok=True)
+    permutation_displays = [
+        (k, v) for k, v in report._cache.items() if k[1] == "permutation_importance"
+    ]
+    for k, display in permutation_displays:
+        display_dir = inspection_dir / f"{k[0]}__{k[2][1][0][1]}"
+        # TODO handle multiple permutations for the same thing: keep the one
+        # with most repeats, add suffix to dir, ...
+        #
+        # Store creation params in cache and in display object
+        display_dir.mkdir(exist_ok=True)
+        display.importances.to_csv(display_dir / "importances.csv", index=False)
     return output_dir
 
 
