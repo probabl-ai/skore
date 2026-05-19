@@ -310,7 +310,7 @@ class CheckMDIHighCardinalityBias(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.estimator)
+        _, predictor = split_preprocessor_estimator(report.estimator_)
         X = get_preprocessed_data(report, target="X")
 
         if X is None or not hasattr(predictor, "feature_importances_"):
