@@ -189,35 +189,7 @@ class Metric:
         if score is not None:
             return score
 
-        if self.function is None:
-            raise ValueError(f"Metric {self.name!r} has no scoring function.")
-
-        metric_params = inspect.signature(self.function).parameters
-        call_kwargs = merged_kwargs.copy()
-        if "pos_label" in metric_params and "pos_label" not in call_kwargs:
-            call_kwargs["pos_label"] = report.pos_label
-
-        if self.function_kind == FunctionKind.METRIC:
-            assert self.response_method is not None
-
-            _, y_true = report._get_data_and_y_true(data_source=data_source)
-            y_pred = report._get_predictions(
-                data_source=data_source,
-                response_method=self.response_method,
-                pos_label=call_kwargs.get("pos_label", None),
-            )
-
-            score = cast(MetricCallable, self.function)(y_true, y_pred, **call_kwargs)
-        elif self.function_kind == FunctionKind.SCORER:
-            data, y_true = report._get_data_and_y_true(data_source=data_source)
-            X = data["_skrub_X"]
-
-            score = cast(ScorerCallable, self.function)(
-                report.estimator_,
-                X,
-                y_true,
-                **call_kwargs,
-            )
+        score = self._compute(report=report, data_source=data_source, **merged_kwargs)
 
         if isinstance(score, np.ndarray):
             score = cast(NDArray, score).tolist()
@@ -234,6 +206,51 @@ class Metric:
 
         report._cache[cache_key] = score
         return cast(float | dict[PositiveLabel, float] | list[float], score)
+
+    def _compute(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource,
+        **kwargs: Any,
+    ) -> Any:
+        """Compute the raw uncached score.
+
+        Override this hook when a metric's score cannot be expressed as
+        ``self.function(...)`` (see :class:`Score`). Subclasses that only need
+        to tweak kwargs should override :meth:`__call__` and delegate to
+        ``super().__call__``; the cache and post-processing live in
+        :meth:`__call__` and run for every override of this hook.
+        """
+        if self.function is None:
+            raise ValueError(f"Metric {self.name!r} has no scoring function.")
+
+        metric_params = inspect.signature(self.function).parameters
+        call_kwargs = kwargs.copy()
+        if "pos_label" in metric_params and "pos_label" not in call_kwargs:
+            call_kwargs["pos_label"] = report.pos_label
+
+        if self.function_kind == FunctionKind.METRIC:
+            assert self.response_method is not None
+
+            _, y_true = report._get_data_and_y_true(data_source=data_source)
+            y_pred = report._get_predictions(
+                data_source=data_source,
+                response_method=self.response_method,
+                pos_label=call_kwargs.get("pos_label", None),
+            )
+
+            return cast(MetricCallable, self.function)(y_true, y_pred, **call_kwargs)
+
+        assert self.function_kind == FunctionKind.SCORER
+        data, y_true = report._get_data_and_y_true(data_source=data_source)
+        X = data["_skrub_X"]
+        return cast(ScorerCallable, self.function)(
+            report.estimator_,
+            X,
+            y_true,
+            **call_kwargs,
+        )
 
     @staticmethod
     def new(
@@ -654,8 +671,35 @@ class Mape(Metric):
         )
 
 
+class Score(Metric):
+    name = "score"
+    verbose_name = "Score"
+    greater_is_better = True
+    function = None
+    function_kind = None
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return hasattr(report.estimator_, "score")
+
+    def _compute(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource,
+        **kwargs: Any,
+    ) -> Any:
+        # Both estimator paths accept the dict ``data`` directly:
+        # ``_LearnerAdapter`` unpacks ``_skrub_X``/``_skrub_y`` for sklearn
+        # estimators; ``SkrubLearner`` takes the full env, preserving vars
+        # beyond X/y (e.g. additional tables referenced by the DataOp).
+        data, _ = report._get_data_and_y_true(data_source=data_source)
+        return report._estimator.score(data)
+
+
 # Order matters for default display
 BUILTIN_METRICS: list[Metric] = [
+    Score(),
     Accuracy(),
     Precision(),
     Recall(),
