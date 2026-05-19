@@ -58,6 +58,10 @@ Changed
 Added
 -----
 
+- Added two new automated checks: SKD007 (MDI feature importance bias with
+  high-cardinality features, tip) and SKD008 (highly correlated input features,
+  issue). See :pr:`2883` by :user:`GaetandeCast`.
+
 - Two new automated checks for :meth:`EstimatorReport.checks.summarize`:
   ``SKD009`` ("Model worse than baseline") flags when the report's test
   scores are not significantly better than a :func:`skrub.tabular_pipeline`

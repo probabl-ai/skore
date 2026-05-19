@@ -226,10 +226,7 @@ class TestHUBClient:
         with HUBClient() as client:
             client.get("foo")
 
-        assert (
-            respx_mock.calls.last.request.headers["X-Skore-Client"]
-            == "skore-hub-project/1.0.0"
-        )
+        assert respx_mock.calls.last.request.headers["X-Skore-Client"] == "skore/1.0.0"
 
     def test_jupyterlite(self, monkeypatch):
         from sys import modules

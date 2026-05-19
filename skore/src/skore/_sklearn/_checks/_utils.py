@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import pandas as pd
+from sklearn.pipeline import Pipeline
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
@@ -106,3 +107,72 @@ def detect_outliers_modified_zscore(scores, threshold=3):
 
 class CheckNotApplicable(Exception):
     """Raised when a check cannot run on the given report."""
+
+
+def split_preprocessor_estimator(estimator):
+    """Return ``(preprocessor, predictor)`` from a possibly wrapped estimator.
+
+    Splits sklearn :class:`~sklearn.pipeline.Pipeline` into its preprocessing
+    steps and final predictor.
+    """
+    if isinstance(estimator, Pipeline):
+        return estimator[:-1], estimator[-1]
+    return None, estimator
+
+
+def get_preprocessed_data(
+    report: EstimatorReport,
+    *,
+    target: Literal["X", "y"] = "X",
+    concatenate: bool = False,
+) -> np.ndarray | pd.DataFrame | pd.Series | None:
+    """Return feature matrix or target vector from a report.
+
+    When ``target == "X"`` and the report's estimator is a
+    :class:`~sklearn.pipeline.Pipeline`, the raw feature matrix is passed
+    through the fitted preprocessor (all steps except the last) before being
+    returned, so the result reflects what the predictor actually sees.
+
+    Returns ``None`` when no data is available or when the preprocessor
+    produces an unsupported type (e.g. sparse matrices).
+
+    Parameters
+    ----------
+    report : _BaseReport
+        the report to extract data from.
+
+    target : {"X", "y"}
+        whether to return the feature matrix or the target vector.
+
+    concatenate : bool
+        when true and both train and test are available, return their
+        concatenation. Otherwise return train if available, else test.
+
+    Returns
+    -------
+    np.ndarray, pd.DataFrame, or None
+    """
+    train = report.X_train if target == "X" else report.y_train
+    test = report.X_test if target == "X" else report.y_test
+
+    if concatenate and train is not None and test is not None:
+        data = (
+            pd.concat([train, test], axis=0, ignore_index=True)
+            if isinstance(train, pd.DataFrame)
+            else np.concatenate([train, test])
+        )
+    elif train is not None:
+        data = train
+    elif test is not None:
+        data = test
+    else:
+        return None
+
+    if target == "X":
+        preprocessor, _ = split_preprocessor_estimator(report.estimator_)
+        if preprocessor is not None and len(preprocessor.steps) > 0:
+            data = preprocessor.transform(data)
+
+    if not isinstance(data, (np.ndarray, pd.DataFrame, pd.Series)):
+        return None
+    return data
