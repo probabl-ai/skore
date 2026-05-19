@@ -63,7 +63,7 @@ def _check_roc_auc(ml_task_and_methods: list[tuple[str, list[str]]]):
         for ml_task, methods in ml_task_and_methods:
             is_supported_ml_task = ml_task in accessor._parent._ml_task
             has_methods = any(
-                hasattr(accessor._parent._estimator, method) for method in methods
+                hasattr(accessor._parent.learner_, method) for method in methods
             )
             are_supported_cases.append(is_supported_ml_task and has_methods)
 
@@ -181,7 +181,7 @@ def _check_estimator_report_has_method(
 def _check_cross_validation_sub_estimator_has_coef() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the underlying estimator has a `coef_` attribute."""
-        return _check_has_coef(accessor._parent.estimator_reports_[0].estimator)
+        return _check_has_coef(accessor._parent.estimator_reports_[0].estimator_)
 
     return check
 

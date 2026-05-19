@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import numpy as np
 import skrub
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator, clone
+from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import (
@@ -52,7 +52,7 @@ def _check_estimator_and_data(
     y_test: ArrayLike | None,
     train_data: dict | None,
     test_data: dict | None,
-) -> tuple[bool, EstimatorLike, dict | None, dict | None]:
+) -> tuple[bool, skrub.SkrubLearner, dict | None, dict | None]:
     """Check and validate the estimator and data."""
     if is_skrub_learner(estimator):
         initialized_with_data_op = True
@@ -140,7 +140,22 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     Attributes
     ----------
     estimator_ : estimator object
-        The cloned or copied estimator.
+        The fitted estimator, exposed with the same interface as ``original_estimator``:
+
+        - if the input was a regular scikit-learn estimator, its ``predict`` method
+          should be used with arrays as usual, e.g. ``Report.estimator_.predict(X)``;
+        - if the input was a :class:`skrub.DataOp` or a :class:`skrub.SkrubLearner`,
+          ``estimator_`` is a :class:`skrub.SkrubLearner` so its ``predict`` method
+          should be used with an environment dict, e.g.
+          ``Report.estimator_.predict({"a": ..., "b": ...})``.
+
+    original_estimator : estimator object
+        The estimator that was given as input.
+
+    learner_ : skrub.SkrubLearner
+        The fitted estimator wrapped in a :class:`skrub.SkrubLearner`. If the
+        input was already a :class:`skrub.SkrubLearner`, it is used as-is without
+        further wrapping.
 
     estimator_name_ : str
         The name of the estimator.
@@ -230,7 +245,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     ) -> None:
         super().__init__()
         estimator = self._copy_estimator(estimator)
-        self._raw_estimator = estimator
+        self.original_estimator = estimator
         self._fit = fit
 
         if isinstance(estimator, skrub.DataOp):
@@ -254,17 +269,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
-                self._estimator = estimator
+                self.learner_ = estimator
             except NotFittedError:
-                self._estimator, self._fit_time = self._fit_estimator(
+                self.learner_, self._fit_time = self._fit_estimator(
                     estimator, self._train_data
                 )
         elif fit is True:
-            self._estimator, self._fit_time = self._fit_estimator(
+            self.learner_, self._fit_time = self._fit_estimator(
                 estimator, self._train_data
             )
         else:  # fit is False
-            self._estimator = estimator
+            self.learner_ = estimator
 
         self._pos_label = pos_label
         self.fit_time_ = self._fit_time
@@ -320,12 +335,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             # -------- CORE STATE ---------
             "metadata": self._metadata,
             "initialized_with_data_op": self._initialized_with_data_op,
-            "raw_estimator": self._raw_estimator,
+            "original_estimator": self.original_estimator,
             "ml_task": self._ml_task,
             "fit": self._fit,
             "fit_time": self.fit_time_,
             "pos_label": self._pos_label,
-            "estimator": self._estimator,
+            "estimator": self.learner_,
             "data": {
                 "train_data": self._train_data,
                 "test_data": self._test_data,
@@ -360,8 +375,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report._fit = state["fit"]
         report.fit_time_ = state["fit_time"]
         report._pos_label = state["pos_label"]
-        report._estimator = state["estimator"]
-        report._raw_estimator = state["raw_estimator"]
+        report.learner_ = state["estimator"]
+        report.original_estimator = state["original_estimator"]
         data = state["data"]
         report._train_data = data["train_data"]
         report._test_data = data["test_data"]
@@ -451,11 +466,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         # from decision_function/predict_proba:
         if not self._can_skip_predict:
             with MeasureTime() as pred_time:
-                self._cache[pred_key] = self._estimator.predict(data)
+                self._cache[pred_key] = self.learner_.predict(data)
             self._cache[time_key] = pred_time()
 
-        has_proba = hasattr(self._estimator, "predict_proba")
-        has_decision = hasattr(self._estimator, "decision_function")
+        has_proba = hasattr(self.learner_, "predict_proba")
+        has_decision = hasattr(self.learner_, "decision_function")
 
         if not (has_proba or has_decision):
             return
@@ -517,8 +532,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             Time spent computing ``response_method(data)`` in seconds.
         """
         with MeasureTime() as pred_time:
-            response = getattr(self._estimator, response_method)(data)
-        classes = self._estimator.classes_
+            response = getattr(self.learner_, response_method)(data)
+        classes = self.learner_.classes_
         if response_method == "decision_function":
             if self.ml_task == "binary-classification":
                 response = np.vstack((-response, response)).T
@@ -538,7 +553,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """
         response_methods = ["decision_function", "predict_proba"]
         try:
-            method = _check_response_method(self._estimator, response_methods)
+            method = _check_response_method(self.learner_, response_methods)
         except AttributeError:
             return False
         data = self.train_data if self.test_data is None else self.test_data
@@ -557,7 +572,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             sampled_data = data | {"_skrub_X": X_sample}
 
         # probe:
-        predictions = self._estimator.predict(sampled_data)
+        predictions = self.learner_.predict(sampled_data)
         _, deduced_predictions, _ = self._get_response_and_derived_predictions(
             sampled_data,
             response_method=method.__name__,
@@ -727,14 +742,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return self._ml_task
 
     @property
-    def estimator(self) -> BaseEstimator:
-        return self.estimator_
-
-    @property
-    def estimator_(self) -> BaseEstimator:
+    def estimator_(self) -> EstimatorLike:
+        """The report's fitted estimator."""
         if self._initialized_with_data_op:
-            return self._estimator
-        return to_estimator(self._estimator)
+            return self.learner_
+        return to_estimator(self.learner_)
 
     @property
     def X_train(self) -> ArrayLike | None:
@@ -770,10 +782,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     @property
     def estimator_name_(self) -> str:
-        if isinstance(self._raw_estimator, Pipeline):
-            name = self._raw_estimator[-1].__class__.__name__
+        if isinstance(self.original_estimator, Pipeline):
+            name = self.original_estimator[-1].__class__.__name__
         else:
-            name = self._raw_estimator.__class__.__name__
+            name = self.original_estimator.__class__.__name__
         return name
 
     ####################################################################################

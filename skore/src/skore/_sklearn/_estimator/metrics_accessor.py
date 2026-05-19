@@ -1163,8 +1163,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 "data_source='both' is not supported for confusion_matrix."
             )
 
-        if hasattr(self._parent._estimator, "predict_proba") or hasattr(
-            self._parent._estimator, "decision_function"
+        if hasattr(self._parent.learner_, "predict_proba") or hasattr(
+            self._parent.learner_, "decision_function"
         ):
             y_scores = self._parent._get_predictions(
                 data_source=data_source,

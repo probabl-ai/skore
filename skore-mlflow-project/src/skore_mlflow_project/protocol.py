@@ -17,7 +17,7 @@ class EstimatorReport(Protocol):
     """Protocol equivalent to ``skore.EstimatorReport``."""
 
     ml_task: str
-    estimator: BaseEstimator
+    original_estimator: BaseEstimator
     estimator_: BaseEstimator
     estimator_name_: str
     X_train: DatasetLike | None
@@ -33,7 +33,7 @@ class CrossValidationReport(Protocol):
     """Protocol equivalent to ``skore.CrossValidationReport``."""
 
     ml_task: str
-    estimator: BaseEstimator
+    original_estimator: BaseEstimator
     estimator_: BaseEstimator
     estimator_name_: str
     estimator_reports_: list[EstimatorReport]

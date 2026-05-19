@@ -523,7 +523,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             X_train, y_train = estimator_report.X_train, estimator_report.y_train
 
         return EstimatorReport(
-            estimator_report._raw_estimator,
+            estimator_report.original_estimator,
             fit=True,
             X_train=X_train,
             y_train=y_train,
