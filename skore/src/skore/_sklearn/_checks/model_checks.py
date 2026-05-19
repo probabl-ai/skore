@@ -1,30 +1,35 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pandas as pd
+from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.exceptions import UndefinedMetricWarning
 
-from skore._sklearn._checks.base import Check
-from skore._sklearn._checks.utils import (
+from skore._sklearn._checks._utils import (
     _TIMING_METRICS,
     CheckNotApplicable,
     check_score_gap_to_baseline,
     detect_outliers_modified_zscore,
+    get_preprocessed_data,
     majority_vote,
     select_feature,
+    split_preprocessor_estimator,
 )
+from skore._sklearn._checks.base import Check
 from skore._sklearn.feature_names import _get_feature_names
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
+    from skore._sklearn._cross_validation.report import CrossValidationReport
+    from skore._sklearn._estimator.report import EstimatorReport
 
 
-def _get_metrics_data(report: _BaseReport) -> tuple:
+def _get_metrics_data(report: EstimatorReport) -> tuple:
     """Compute report/baseline metrics data for SKD001 and SKD002.
 
     Raises :class:`CheckNotApplicable` when train+test data is
@@ -34,8 +39,7 @@ def _get_metrics_data(report: _BaseReport) -> tuple:
     from skore._sklearn._estimator.report import EstimatorReport
 
     if (
-        not isinstance(report, EstimatorReport)
-        or report.X_train is None
+        report.X_train is None
         or report.y_train is None
         or report.X_test is None
         or report.y_test is None
@@ -88,6 +92,7 @@ class CheckOverfitting(Check):
     slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
         report_data, _baseline_data = _get_metrics_data(report)
 
         votes = [
@@ -127,6 +132,7 @@ class CheckUnderfitting(Check):
     slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
         report_data, baseline_data = _get_metrics_data(report)
 
         votes = [
@@ -172,10 +178,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
     slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._cross_validation.report import CrossValidationReport
-
-        if not isinstance(report, CrossValidationReport):
-            raise CheckNotApplicable()
+        report = cast("CrossValidationReport", report)
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UndefinedMetricWarning)
@@ -214,20 +217,12 @@ class CheckHighClassImbalance(Check):
     slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
-
-        if (
-            not isinstance(report, EstimatorReport)
-            or report.ml_task != "binary-classification"
-            or report.y_train is None
-            or report.y_test is None
-        ):
+        report = cast("EstimatorReport", report)
+        y = get_preprocessed_data(report, target="y", concatenate=True)
+        if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
-        values, counts = np.unique_counts(
-            np.concatenate([report.y_train, report.y_test])
-        )
-
+        values, counts = np.unique_counts(y)
         overrepresented_class = values[counts >= 0.8 * counts.sum()]
 
         if overrepresented_class.size > 0:
@@ -254,20 +249,13 @@ class CheckUnderrepresentedClasses(Check):
     slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
+        report = cast("EstimatorReport", report)
 
-        if (
-            not isinstance(report, EstimatorReport)
-            or report.ml_task != "multiclass-classification"
-            or report.y_train is None
-            or report.y_test is None
-        ):
+        y = get_preprocessed_data(report, target="y", concatenate=True)
+        if report.ml_task != "multiclass-classification" or y is None:
             raise CheckNotApplicable()
 
-        values, counts = np.unique_counts(
-            np.concatenate([report.y_train, report.y_test])
-        )
-
+        values, counts = np.unique_counts(y)
         underrepresented_classes = values[counts <= 0.1 * counts.sum()]
         if underrepresented_classes.size > 0:
             return (
@@ -294,18 +282,14 @@ class CheckCoefficientsInterpretation(Check):
     slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
+        report = cast("EstimatorReport", report)
+        _, predictor = split_preprocessor_estimator(report.estimator)
+        X = get_preprocessed_data(report, target="X", concatenate=True)
 
-        if not (
-            isinstance(report, EstimatorReport)
-            and report.X_train is not None
-            and report.X_test is not None
-            and hasattr(report.estimator, "coef_")
-        ):
+        if X is None or not hasattr(predictor, "coef_"):
             raise CheckNotApplicable()
 
-        X = np.concatenate([report.X_train, report.X_test])
-        stds = X.std(axis=0)
+        stds = np.asarray(X.std(axis=0))
         if not np.all(np.isclose(stds, stds[0])):
             return (
                 "Features are not on the same scale: coefficient magnitudes "
@@ -315,6 +299,97 @@ class CheckCoefficientsInterpretation(Check):
             "Features appear to be standardized: coefficients are comparable "
             "but no longer interpretable in the original feature units."
         )
+
+
+class CheckMDIHighCardinalityBias(Check):
+    """Check for MDI bias with high-cardinality features (SKD007).
+
+    Tips that mean-decrease-in-impurity importances may be inflated for
+    continuous or high-cardinality features.
+
+    We consider a feature to be high-cardinality when its number of unique values
+    exceeds 50% of the number of samples.
+    """
+
+    code = "SKD007"
+    title = "MDI biased for high-cardinality features"
+    report_type = "estimator"
+    docs_url = "skd007-mdi-cardinality-bias"
+    severity = "tip"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        _, predictor = split_preprocessor_estimator(report.estimator)
+        X = get_preprocessed_data(report, target="X")
+
+        if X is None or not hasattr(predictor, "feature_importances_"):
+            raise CheckNotApplicable()
+
+        if isinstance(X, pd.DataFrame):
+            high_cardinality_features = [
+                c for c in X.columns if X[c].nunique() > 0.5 * len(X)
+            ]
+        elif isinstance(X, np.ndarray):
+            high_cardinality_features = [
+                i for i in range(X.shape[1]) if np.unique(X[:, i]).size > 0.5 * len(X)
+            ]
+        else:
+            raise CheckNotApplicable()
+
+        if high_cardinality_features:
+            names = ", ".join(str(s) for s in high_cardinality_features[:3])
+            suffix = (
+                f" (and {len(high_cardinality_features) - 3} more)"
+                if len(high_cardinality_features) > 3
+                else ""
+            )
+            return (
+                f"High-cardinality features detected: {names}{suffix}. "
+                "Mean Decrease in Impurity (MDI) importance is biased toward "
+                "such features. Consider using permutation importance for "
+                "a more robust alternative."
+            )
+        return None
+
+
+class CheckCorrelatedFeatures(Check):
+    """Check for highly correlated input features (SKD008).
+
+    Flags when one or more pairs of numeric features have a Spearman rank
+    correlation above 0.9.
+    """
+
+    code = "SKD008"
+    title = "Highly correlated input features"
+    report_type = "estimator"
+    docs_url = "skd008-correlated-features"
+    severity = "issue"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        X = get_preprocessed_data(report, target="X")
+
+        if X is None:
+            raise CheckNotApplicable()
+        if isinstance(X, pd.DataFrame):
+            X = X.select_dtypes(include="number")
+        if X.shape[1] < 2:
+            raise CheckNotApplicable()
+
+        corr = np.abs(spearmanr(X).statistic)
+        if corr.ndim < 2:
+            return None
+        np.fill_diagonal(corr, 0)
+        n_pairs = int(np.count_nonzero(corr >= 0.9) // 2)
+
+        if n_pairs:
+            return (
+                f"{n_pairs} pair(s) of features have a Spearman correlation "
+                "above 0.9. Highly correlated features can destabilize "
+                "linear model coefficients and feature-importance estimates, "
+                "and may cause collinearity-induced numerical issues."
+            )
+        return None
 
 
 class CheckGoldenFeature(Check):
@@ -335,22 +410,19 @@ class CheckGoldenFeature(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         from skore._sklearn._estimator.report import EstimatorReport
 
-        if (
-            not isinstance(report, EstimatorReport)
-            or report._initialized_with_data_op
-            or report.X_train is None
-            or report.y_train is None
-            or report.X_test is None
-            or report.y_test is None
-        ):
+        report = cast("EstimatorReport", report)
+        if report._initialized_with_data_op:
             raise CheckNotApplicable()
 
-        X_train = report.X_train
-        if not isinstance(X_train, (np.ndarray, pd.DataFrame)):
+        X_train = get_preprocessed_data(report, target="X")
+        if X_train is None or not isinstance(X_train, (np.ndarray, pd.DataFrame)):
             raise CheckNotApplicable()
 
         n_features = X_train.shape[1]
         if n_features < 2:
+            raise CheckNotApplicable()
+
+        if report.X_test is None or report.y_train is None or report.y_test is None:
             raise CheckNotApplicable()
 
         feature_names = _get_feature_names(
@@ -432,11 +504,9 @@ class CheckUselessFeatures(Check):
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
-
+        report = cast("EstimatorReport", report)
         if (
-            not isinstance(report, EstimatorReport)
-            or report._initialized_with_data_op
+            report._initialized_with_data_op
             or report.X_train is None
             or report.X_test is None
             or report.y_test is None
@@ -483,12 +553,9 @@ class CheckTrainTestTimeOverlap(Check):
     slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
-
-        if (
-            not isinstance(report, EstimatorReport)
-            or not isinstance(report.X_train, pd.DataFrame)
-            or not isinstance(report.X_test, pd.DataFrame)
+        report = cast("EstimatorReport", report)
+        if not isinstance(report.X_train, pd.DataFrame) or not isinstance(
+            report.X_test, pd.DataFrame
         ):
             raise CheckNotApplicable()
 
@@ -524,6 +591,8 @@ _BUILTIN_CHECKS = [
     CheckHighClassImbalance(),
     CheckUnderrepresentedClasses(),
     CheckCoefficientsInterpretation(),
+    CheckMDIHighCardinalityBias(),
+    CheckCorrelatedFeatures(),
     CheckGoldenFeature(),
     CheckUselessFeatures(),
     CheckTrainTestTimeOverlap(),

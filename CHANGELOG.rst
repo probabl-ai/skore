@@ -58,6 +58,9 @@ Changed
 Added
 -----
 
+- Added two new automated checks: SKD007 (MDI feature importance bias with
+  high-cardinality features, tip) and SKD008 (highly correlated input features,
+  issue). See :pr:`2883` by :user:`GaetandeCast`.
 - Three new built-in checks: :ref:`SKD011 <skd011-golden-feature>` (golden
   feature, slow), :ref:`SKD012 <skd012-useless-features>` (useless features
   via permutation importance, slow), and
