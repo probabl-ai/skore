@@ -1,15 +1,15 @@
-"""Function definition of the artifact ``upload``."""
+"""Batched artifact-upload pipeline used by ``ReportPayload.upload_artifacts``."""
 
 from __future__ import annotations
 
-from math import ceil
-from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from joblib import Parallel, delayed
 
-from ..client.client import Client, HUBClient
-from .serializer import Serializer
+# Re-exported so tests can monkey-patch ``HUBClient`` in this module's
+# namespace (see ``monkeypatch_artifact_hub_client`` in tests' conftest).
+from ..client.client import HUBClient  # noqa: F401
+from .plan import ArtifactPlan
 
 if TYPE_CHECKING:
     from typing import Final
@@ -17,155 +17,148 @@ if TYPE_CHECKING:
     import httpx
 
     from ..project.project import Project
+    from .artifact import Artifact
 
 
-def upload_chunk(
-    filepath: Path,
-    client: httpx.Client,
-    url: str,
-    offset: int,
-    length: int,
-    content_type: str,
-) -> str:
+def prepare_artifacts(artifacts: list[Artifact]) -> list[ArtifactPlan | None]:
+    """Run ``local_plan()`` on every artifact in parallel.
+
+    Returns a list aligned position-by-position with ``artifacts``;
+    entries are ``None`` where the artifact has no content (e.g.,
+    a confusion-matrix media on a regression report). Callers that
+    only want the non-null plans should filter explicitly.
     """
-    Upload a chunk of the serialized content to the artifacts storage.
+    if not artifacts:
+        return []
 
-    Parameters
-    ----------
-    filepath : ``Path``
-        The path of the file containing the serialized content.
-    client : ``httpx.Client``
-        The client used to upload the chunk to the artifacts storage.
-    url : str
-        The url used to upload the chunk to the artifacts storage.
-    offset : int
-        The start of the chunk in the file containing the serialized content.
-    length: int
-        The length of the chunk in the file containing the serialized content.
-    content_type: strategy
-        The type of the content to upload.
+    plans: list[ArtifactPlan | None] = Parallel(backend="threading")(
+        delayed(a.local_plan)() for a in artifacts
+    )
+    return plans
 
-    Returns
-    -------
-    etag : str
-        The ETag assigned by the artifacts storage to the chunk, used to acknowledge the
-        upload.
 
-    Notes
-    -----
-    This function is in charge of reading its own chunk to reduce RAM footprint.
+def request_upload_urls(
+    hub_client: httpx.Client,
+    project: Project,
+    plans: list[ArtifactPlan],
+) -> dict[str, list[dict[str, Any]]]:
+    """One ``POST /artifacts`` carrying every plan's metadata.
+
+    Returns a mapping from checksum to its list of upload-URL descriptors.
+    Checksums whose content was already uploaded on the hub are absent from
+    the returned mapping (the backend issues no URL for them).
     """
-    with filepath.open("rb") as file:
-        file.seek(offset)
+    if not plans:
+        return {}
 
-        response = client.put(
-            url=url,
-            content=file.read(length),
-            headers={"Content-Type": content_type},
-            timeout=30,
-        )
+    body = [
+        {
+            "checksum": plan.checksum,
+            "chunk_number": plan.chunk_count_for(CHUNK_SIZE),
+            "content_type": plan.content_type,
+        }
+        for plan in plans
+    ]
 
-        return response.headers["etag"]
+    response = hub_client.post(
+        url=f"projects/{project.workspace}/{project.name}/artifacts",
+        json=body,
+    )
+
+    urls: dict[str, list[dict[str, Any]]] = {}
+    for entry in response.json():
+        urls.setdefault(entry["checksum"], []).append(entry)
+    return urls
 
 
 # This is both the threshold at which a content is split into several small parts for
 # upload, and the size of these small parts.
 CHUNK_SIZE: Final[int] = int(1e7)  # ~10mb
 
+# Cap on concurrent chunk PUTs to avoid tripping object-storage rate limits.
+MAX_PARALLEL_UPLOADS: Final[int] = 10
 
-def upload(project: Project, content: str | bytes, content_type: str) -> str:
+
+def _put_one_chunk(
+    storage_client: httpx.Client,
+    plan: ArtifactPlan,
+    chunk_id: int,
+    content: bytes,
+    url: str,
+    content_type: str,
+) -> tuple[str, int, str]:
+    """PUT one chunk; return ``(checksum, chunk_id, etag)``."""
+    response = storage_client.put(
+        url=url,
+        content=content,
+        headers={"Content-Type": content_type},
+        timeout=30,
+    )
+    return (plan.checksum, chunk_id, response.headers["etag"])
+
+
+def upload_chunks(
+    storage_client: httpx.Client,
+    plans: list[ArtifactPlan],
+    urls_per_checksum: dict[str, list[dict[str, Any]]],
+) -> dict[str, dict[int, str]]:
+    """PUT every chunk of every plan in parallel.
+
+    Skips any plan that has no entry in ``urls_per_checksum`` (the backend
+    reports its checksum as already uploaded).
+
+    Returns ETags grouped by checksum: ``{checksum: {chunk_id: etag}}``.
     """
-    Upload content to the artifacts storage.
+    tasks = []
+    for plan in plans:
+        urls = urls_per_checksum.get(plan.checksum)
+        if not urls:
+            continue
 
-    Parameters
-    ----------
-    project : ``Project``
-        The project where to upload the content.
-    content : str | bytes
-        The content to upload.
-    content_type : str
-        The type of content to upload.
+        url_by_chunk = {
+            (entry.get("chunk_id") or 1): entry["upload_url"] for entry in urls
+        }
+        # Per wire convention: streamed single-part uploads use the artifact's
+        # true content-type; multipart chunks use octet-stream.
+        is_multipart = len(url_by_chunk) > 1
+        content_type = "application/octet-stream" if is_multipart else plan.content_type
 
-    Returns
-    -------
-    checksum : str
-        The checksum of the content before upload to the artifacts storage, based on its
-        serialization.
-
-    Notes
-    -----
-    A content that was already uploaded in its whole will be ignored.
-    """
-    with (
-        Serializer(content) as serializer,
-        HUBClient() as hub_client,
-        Client() as standard_client,
-    ):
-        # Ask for upload urls.
-        response = hub_client.post(
-            url=f"projects/{project.workspace}/{project.name}/artifacts",
-            json=[
-                {
-                    "checksum": serializer.checksum,
-                    "chunk_number": ceil(serializer.size / CHUNK_SIZE),
-                    "content_type": content_type,
-                }
-            ],
-        )
-
-        # An empty response means that an artifact with the same checksum already
-        # exists. The content doesn't have to be re-uploaded.
-        if urls := response.json():
-            chunk_ids = []
-            tasks = []
-
-            # Upload each chunk of the serialized content to the artifacts storage,
-            # using a disk temporary file.
-            #
-            # Each task is in charge of reading its own file chunk at runtime, to reduce
-            # RAM footprint.
-            #
-            # Use `threading` over `asyncio` to ensure compatibility with Jupyter
-            # notebooks, where the event loop is already running.
-
-            for url in urls:
-                chunk_id = url["chunk_id"] or 1
-
-                chunk_ids.append(chunk_id)
-                tasks.append(
-                    delayed(upload_chunk)(
-                        filepath=serializer.filepath,
-                        client=standard_client,
-                        url=url["upload_url"],
-                        offset=((chunk_id - 1) * CHUNK_SIZE),
-                        length=CHUNK_SIZE,
-                        content_type=(
-                            content_type
-                            if len(urls) == 1
-                            else "application/octet-stream"
-                        ),
-                    )
-                )
-
-            etags = dict(
-                sorted(
-                    zip(
-                        chunk_ids,
-                        Parallel(backend="threading")(tasks),
-                        strict=True,
-                    )
+        for chunk_id, chunk_bytes in plan.iter_chunks(CHUNK_SIZE):
+            tasks.append(
+                delayed(_put_one_chunk)(
+                    storage_client=storage_client,
+                    plan=plan,
+                    chunk_id=chunk_id,
+                    content=chunk_bytes,
+                    url=url_by_chunk[chunk_id],
+                    content_type=content_type,
                 )
             )
 
-            # Acknowledge the upload, to let the hub/storage rebuild the whole.
-            hub_client.post(
-                url=f"projects/{project.workspace}/{project.name}/artifacts/complete",
-                json=[
-                    {
-                        "checksum": serializer.checksum,
-                        "etags": etags,
-                    }
-                ],
-            )
+    if not tasks:
+        return {}
 
-    return serializer.checksum
+    results = Parallel(backend="threading", n_jobs=MAX_PARALLEL_UPLOADS)(tasks)
+
+    etags: dict[str, dict[int, str]] = {}
+    for checksum, chunk_id, etag in results:
+        etags.setdefault(checksum, {})[chunk_id] = etag
+    return etags
+
+
+def complete_uploads(
+    hub_client: httpx.Client,
+    project: Project,
+    etags_per_checksum: dict[str, dict[int, str]],
+) -> None:
+    """One ``POST /artifacts/complete`` for all newly-uploaded artifacts."""
+    if not etags_per_checksum:
+        return
+
+    hub_client.post(
+        url=f"projects/{project.workspace}/{project.name}/artifacts/complete",
+        json=[
+            {"checksum": checksum, "etags": etags}
+            for checksum, etags in etags_per_checksum.items()
+        ],
+    )

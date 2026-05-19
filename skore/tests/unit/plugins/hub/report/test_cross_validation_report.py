@@ -1,5 +1,7 @@
+from hashlib import blake2b
 from io import BytesIO
 
+from httpx import Client as HTTPXClient
 from joblib import dump, hash
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
@@ -35,7 +37,6 @@ from skore._plugins.hub.artifact.media import (
     RocSVGTrain,
 )
 from skore._plugins.hub.artifact.media.data import TableReport
-from skore._plugins.hub.artifact.serializer import Serializer
 from skore._plugins.hub.metric import (
     AccuracyTestMean,
     AccuracyTestStd,
@@ -89,10 +90,20 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
         for report, cache in reports_with_cache:
             report._cache = cache
 
-    with Serializer(pickle_bytes) as serializer:
-        checksum = serializer.checksum
-
+    checksum = f"blake2b-{blake2b(pickle_bytes).hexdigest()}"
     return pickle_bytes, checksum
+
+
+def _run_orchestrator(payload):
+    """Execute the batched upload pipeline so payload.medias / .pickle are populated.
+
+    Late import of ``HUBClient`` so the ``monkeypatch_artifact_hub_client``
+    fixture's swap to ``FakeClient`` is observable.
+    """
+    from skore._plugins.hub.artifact.upload import HUBClient
+
+    with HUBClient() as hub_client, HTTPXClient() as storage_client:
+        payload.upload_artifacts(hub_client, storage_client)
 
 
 @fixture
@@ -362,48 +373,28 @@ class TestCrossValidationReportPayload:
         "ignore:Precision is ill-defined*:sklearn.exceptions.UndefinedMetricWarning"
     )
     @mark.respx()
-    def test_estimators(self, project, payload, upload_mock):
+    def test_estimators(self, project, payload):
         payload.report.cache_predictions()
         assert len(payload.estimators) == len(payload.report.estimator_reports_)
 
         for i, estimator in enumerate(payload.estimators):
-            # Ensure payload is well constructed
             assert isinstance(estimator, EstimatorReportPayload)
             assert estimator.project == project
             assert estimator.report == payload.report.estimator_reports_[i]
 
-            # ensure `upload` is well called
-            pickle, checksum = serialize(payload.report.estimator_reports_[i])
-
-            estimator.model_dump()
-
-            assert upload_mock.called
-            assert not upload_mock.call_args.args
-            assert upload_mock.call_args.kwargs == {
-                "project": project,
-                "content": pickle,
-                "content_type": "application/octet-stream",
-            }
-
-            upload_mock.reset_mock()
+            _, checksum = serialize(payload.report.estimator_reports_[i])
+            _run_orchestrator(estimator)
+            assert estimator.pickle.checksum == checksum
 
     @mark.respx()
-    def test_pickle(
-        self, small_cv_binary_classification, project, payload, upload_mock
-    ):
-        pickle, checksum = serialize(small_cv_binary_classification)
-
-        # Ensure payload is well constructed
+    def test_pickle(self, small_cv_binary_classification, project, payload):
+        # The orchestrator runs metrics/media compute which populates the
+        # estimator-reports' caches as a side effect; ``clear_cache`` on the
+        # top-level only clears the top-level. Compute expected after the
+        # orchestrator runs so both pickles are taken from the same state.
+        _run_orchestrator(payload)
+        _, checksum = serialize(small_cv_binary_classification)
         assert payload.pickle.checksum == checksum
-
-        # ensure `upload` is well called
-        assert upload_mock.called
-        assert not upload_mock.call_args.args
-        assert upload_mock.call_args.kwargs == {
-            "project": project,
-            "content": pickle,
-            "content_type": "application/octet-stream",
-        }
 
     @mark.filterwarnings(
         # ignore precision warning due to the low number of labels in
@@ -474,6 +465,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.respx()
     def test_medias(self, payload):
+        _run_orchestrator(payload)
         assert list(map(type, payload.medias)) == [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
@@ -507,6 +499,7 @@ class TestCrossValidationReportPayload:
         small_cv_binary_classification.cache_predictions()
 
         _, checksum = serialize(small_cv_binary_classification)
+        _run_orchestrator(payload)
 
         payload_dict = payload.model_dump()
 

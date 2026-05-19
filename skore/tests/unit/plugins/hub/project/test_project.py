@@ -42,6 +42,24 @@ def monkeypatch_table_report_representation(monkeypatch):
     )
 
 
+def _expected_payload_dump(Payload, project, key, report):
+    """Build the expected ``model_dump`` after running the orchestrator.
+
+    ``put`` calls ``upload_artifacts`` before ``model_dump``, which attaches
+    ``_plan`` to each artifact and populates ``_media_instances`` /
+    ``_pickle_instance``. Tests that compare against a freshly-built payload
+    must do the same to get matching checksums.
+    """
+    from httpx import Client as HTTPXClient
+
+    from skore._plugins.hub.artifact.upload import HUBClient
+
+    payload = Payload(project=project, key=key, report=report)
+    with HUBClient() as hub_client, HTTPXClient() as storage_client:
+        payload.upload_artifacts(hub_client, storage_client)
+    return loads(dumps(payload.model_dump()))
+
+
 @mark.filterwarnings(
     "ignore:.*The workspace name can only contain unicode.*:UserWarning"
 )
@@ -196,17 +214,10 @@ class TestProject:
         project = Project(workspace="workspace", name="name")
         project.put("<key>", binary_classification)
 
-        # Retrieve the content of the request
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                EstimatorReportPayload(
-                    project=project, key="<key>", report=binary_classification
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            EstimatorReportPayload, project, "<key>", binary_classification
         )
-
-        # Compare content with the desired output
         assert content == desired
 
     @mark.filterwarnings(
@@ -247,15 +258,12 @@ class TestProject:
 
         # Retrieve the content of the request
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                CrossValidationReportPayload(
-                    project=project, key="<key>", report=small_cv_binary_classification
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            CrossValidationReportPayload,
+            project,
+            "<key>",
+            small_cv_binary_classification,
         )
-
-        # Compare content with the desired output
         assert content == desired
 
     @mark.respx()
@@ -289,12 +297,8 @@ class TestProject:
         project.put("<key>", report)
 
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                EstimatorReportPayload(
-                    project=project, key="<key>", report=report
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            EstimatorReportPayload, project, "<key>", report
         )
         assert content == desired
 
@@ -329,12 +333,8 @@ class TestProject:
         project.put("<key>", report)
 
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                EstimatorReportPayload(
-                    project=project, key="<key>", report=report
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            EstimatorReportPayload, project, "<key>", report
         )
         assert content == desired
 
@@ -373,12 +373,8 @@ class TestProject:
         project.put("<key>", report)
 
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                CrossValidationReportPayload(
-                    project=project, key="<key>", report=report
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            CrossValidationReportPayload, project, "<key>", report
         )
         assert content == desired
 
@@ -417,12 +413,8 @@ class TestProject:
         project.put("<key>", report)
 
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                CrossValidationReportPayload(
-                    project=project, key="<key>", report=report
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            CrossValidationReportPayload, project, "<key>", report
         )
         assert content == desired
 
@@ -729,3 +721,48 @@ class TestProject:
 
         monkeypatch.setattr("rich.console.Console", assert_cv_report_url)
         project.put("<key>", cv_binary_classification)
+
+    @mark.respx()
+    def test_put_makes_one_artifacts_call(self, respx_mock, binary_classification):
+        """The whole point of Approach A: one batched POST /artifacts and one
+        batched POST /artifacts/complete per ``put``, regardless of how many
+        media artifacts the report produces."""
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/workspace/name"},
+                ),
+            ),
+            ("post", "projects/workspace/name/artifacts", Response(201, json=[])),
+            (
+                "post",
+                "projects/workspace/name/estimator-reports",
+                Response(201, json={"id": 42}),
+            ),
+        ]
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
+        project.put("<key>", binary_classification)
+
+        artifacts_calls = [
+            c
+            for c in respx_mock.calls
+            if c.request.method == "POST" and c.request.url.path.endswith("/artifacts")
+        ]
+        complete_calls = [
+            c
+            for c in respx_mock.calls
+            if c.request.url.path.endswith("/artifacts/complete")
+        ]
+        assert len(artifacts_calls) == 1, (
+            f"expected exactly one batched POST /artifacts; got {len(artifacts_calls)}"
+        )
+        # With the mock returning [], no chunks are uploaded so /complete is
+        # never called. The point is just that there's at most one.
+        assert len(complete_calls) <= 1

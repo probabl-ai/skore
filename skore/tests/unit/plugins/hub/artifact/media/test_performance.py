@@ -1,3 +1,4 @@
+from hashlib import blake2b
 from io import BytesIO
 
 from matplotlib import pyplot as plt
@@ -23,7 +24,6 @@ from skore._plugins.hub.artifact.media import (
     RocSVGTrain,
 )
 from skore._plugins.hub.artifact.media.performance import PerformanceDataFrame
-from skore._plugins.hub.artifact.serializer import Serializer
 from skore._plugins.hub.json import dumps
 
 
@@ -357,47 +357,25 @@ def test_performance(
     data_source,
     content_type,
     serialize,
-    upload_mock,
     request,
     project,
 ):
     report = request.getfixturevalue(report)
     display = getattr(report.metrics, accessor)(data_source=data_source)
     content = serialize(display)
+    expected_checksum = f"blake2b-{blake2b(content).hexdigest()}"
 
-    with Serializer(content) as serializer:
-        checksum = serializer.checksum
+    # available accessor: ``local_plan`` produces content + checksum locally.
+    media = Media(project=project, report=report)
+    plan = media.local_plan()
 
-    # available accessor
-    assert Media(project=project, report=report).model_dump() == {
-        "content_type": content_type,
-        "name": accessor,
-        "data_source": data_source,
-        "checksum": checksum,
-    }
+    assert plan is not None
+    assert plan.content_type == content_type
+    assert plan.checksum == expected_checksum
 
-    # ensure `upload` is well called
-    assert upload_mock.called
-    assert not upload_mock.call_args.args
-    assert upload_mock.call_args.kwargs == {
-        "project": project,
-        "content": content,
-        "content_type": content_type,
-    }
-
-    # unavailable accessor
+    # unavailable accessor: ``local_plan`` returns None.
     monkeypatch.delattr(report.metrics.__class__, accessor)
-    upload_mock.reset_mock()
-
-    assert Media(project=project, report=report).model_dump() == {
-        "content_type": content_type,
-        "name": accessor,
-        "data_source": data_source,
-        "checksum": None,
-    }
-
-    # ensure `upload` is not called
-    assert not upload_mock.called
+    assert Media(project=project, report=report).local_plan() is None
 
     # wrong type
     with raises(

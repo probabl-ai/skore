@@ -1,5 +1,6 @@
 import inspect
 from functools import partialmethod
+from hashlib import blake2b
 
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
@@ -10,7 +11,6 @@ from skore._plugins.hub.artifact.media import (
     PermutationImportanceTest,
     PermutationImportanceTrain,
 )
-from skore._plugins.hub.artifact.serializer import Serializer
 from skore._plugins.hub.json import dumps
 
 
@@ -124,7 +124,6 @@ def test_inspection(
     report,
     accessor,
     data_source,
-    upload_mock,
     request,
     project,
 ):
@@ -134,41 +133,20 @@ def test_inspection(
     function_kwargs = {"data_source": data_source} if data_source else {}
     result = function(**function_kwargs)
     content = serialize(result)
+    expected_checksum = f"blake2b-{blake2b(content).hexdigest()}"
 
-    with Serializer(content) as serializer:
-        checksum = serializer.checksum
+    # available accessor: ``local_plan`` produces content + checksum locally.
+    plan = Media(project=project, report=report).local_plan()
 
-    # available accessor
-    assert Media(project=project, report=report).model_dump() == {
-        "content_type": "application/vnd.dataframe",
-        "name": accessor,
-        "data_source": data_source,
-        "checksum": checksum,
-    }
+    assert plan is not None
+    assert plan.content_type == "application/vnd.dataframe"
+    assert plan.checksum == expected_checksum
 
-    # ensure `upload` is well called
-    assert upload_mock.called
-    assert not upload_mock.call_args.args
-    assert upload_mock.call_args.kwargs == {
-        "project": project,
-        "content": content,
-        "content_type": "application/vnd.dataframe",
-    }
-
-    # unavailable accessor
+    # unavailable accessor: ``local_plan`` returns None.
     report.clear_cache()
     monkeypatch.delattr(report.inspection.__class__, accessor)
-    upload_mock.reset_mock()
 
-    assert Media(project=project, report=report).model_dump() == {
-        "content_type": "application/vnd.dataframe",
-        "name": accessor,
-        "data_source": data_source,
-        "checksum": None,
-    }
-
-    # ensure `upload` is not called
-    assert not upload_mock.called
+    assert Media(project=project, report=report).local_plan() is None
 
     # wrong type
     with raises(
