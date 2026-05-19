@@ -10,9 +10,9 @@ from rich.console import Console
 from rich.panel import Panel
 
 from skore._project.git import git_commit
+from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
-from skore._sklearn._checks.utils import CheckNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
