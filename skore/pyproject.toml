@@ -37,7 +37,7 @@ dependencies = [
   "scikit-learn",
   "seaborn",
   "skore[local]",
-  "skrub>=0.8",
+  "skrub>=0.9",
 ]
 
 [project.optional-dependencies]
