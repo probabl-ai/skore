@@ -154,3 +154,10 @@ def get_preprocessed_data(
     if not isinstance(data, (np.ndarray, pd.DataFrame, pd.Series)):
         return None
     return data
+
+
+def select_feature(X, i: int):
+    """Return X reduced to a single feature index, preserving DataFrame/array kind."""
+    if hasattr(X, "iloc"):
+        return X.iloc[:, [i]]
+    return X[:, [i]]
