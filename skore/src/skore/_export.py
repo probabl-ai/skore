@@ -34,6 +34,7 @@ def export(report, *, root_data_dir=None, name=None):
     reports_dir = root_data_dir / "reports"
     date_str = (
         datetime.fromisoformat(report._metadata["creation-date"])
+        .replace(tzinfo=None)
         .isoformat()
         .replace(":", "-")
     )
