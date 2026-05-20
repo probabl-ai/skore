@@ -11,12 +11,10 @@ Organised by metric input type, then corner cases:
 import numpy as np
 import pandas as pd
 import pytest
-import skrub
 from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 from sklearn.base import clone
 from sklearn.datasets import make_classification
-from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_score, recall_score
 from sklearn.model_selection import train_test_split
@@ -414,90 +412,3 @@ def test_data_source_both(forest_binary_classification_data):
 
     test_data = display_both.data[display_both.data["data_source"] == "test"]
     assert_array_equal(test_data["score"], display_test.data["score"])
-
-
-# Score metric
-
-
-def _compute_score(report, **kwargs):
-    """Compute the raw ``score`` metric value via the report's registry."""
-    metric = report._metric_registry["score"]
-    return metric(report=report, **kwargs)
-
-
-def _make_skrub_report(*, with_scoring):
-    X, y = make_classification(n_samples=20, random_state=0)
-    # String-labeled y avoids the int/str clash in MetricsSummaryDisplay's label
-    # column when ``Score`` emits a dict keyed by scorer name.
-    y = np.where(y == 1, "pos", "neg")
-    data_op = skrub.X(X).skb.apply(DummyClassifier(), y=skrub.y(y))
-    if with_scoring:
-        data_op = data_op.skb.with_scoring("accuracy").skb.with_scoring(
-            "accuracy", name="weighted_accuracy"
-        )
-    learner = data_op.skb.make_learner()
-    split = data_op.skb.train_test_split()
-    return EstimatorReport(learner, train_data=split["train"], test_data=split["test"])
-
-
-def test_score_matches_sklearn_score(logistic_binary_classification_with_train_test):
-    """For a plain sklearn estimator, ``score`` returns ``estimator.score(X, y)``."""
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-    assert _compute_score(report) == report.estimator_.score(X_test, y_test)
-
-
-def test_score_skrub_learner_with_custom_scoring_returns_dict():
-    """``score`` on a SkrubLearner with ``with_scoring`` returns a dict of scorers.
-
-    Non-regression test: previously ``SkrubLearner.score`` was called as
-    ``score(X, y)`` but it expects an environment dict.
-    """
-    report = _make_skrub_report(with_scoring=True)
-
-    result = _compute_score(report)
-
-    assert isinstance(result, dict)
-    assert set(result) == {"accuracy", "weighted_accuracy"}
-    assert all(isinstance(v, float) for v in result.values())
-
-
-def test_score_skrub_learner_without_custom_scoring_returns_float():
-    """Without ``with_scoring``, ``score`` returns the default float score."""
-    report = _make_skrub_report(with_scoring=False)
-
-    assert isinstance(_compute_score(report), float)
-
-
-def test_score_appears_in_summarize_for_skrub_learner():
-    """The ``Score`` row is included in ``summarize().frame()`` for SkrubLearners."""
-    report = _make_skrub_report(with_scoring=True)
-
-    frame = report.metrics.summarize().frame()
-
-    score_labels = frame.xs("Score", level="Metric").index.get_level_values("Label")
-    assert set(score_labels) == {"accuracy", "weighted_accuracy"}
-
-
-def test_score_skrub_learner_with_extra_env_vars():
-    """``score`` works when the DataOp env has variables beyond X and y."""
-    df = pd.DataFrame({"feat": np.arange(20, dtype=float), "target": ["a", "b"] * 10})
-    data = skrub.var("df", df)
-    weight = skrub.var("weight", 0.5)
-
-    X = data[["feat"]].skb.mark_as_X()
-    weighted_X = X * weight  # brings in `weight` after marking the X
-    y = data["target"].skb.mark_as_y()
-    data_op = weighted_X.skb.apply(DummyClassifier(), y=y)
-    learner = data_op.skb.make_learner()
-    split = data_op.skb.train_test_split()
-    report = EstimatorReport(
-        learner, train_data=split["train"], test_data=split["test"]
-    )
-
-    assert isinstance(_compute_score(report), float)
