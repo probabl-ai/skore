@@ -183,22 +183,29 @@ def test_skd008_not_emitted_for_independent_features(regression_data):
     assert "SKD008" not in issues.index
 
 
-def test_skd011_detects_golden_feature():
+@pytest.mark.parametrize(
+    "estimator", [LinearRegression(), tabular_pipeline(LinearRegression())]
+)
+def test_skd011_detects_golden_feature(estimator):
     """Features correlated with the target get flagged as golden."""
     rng = np.random.RandomState(0)
     n_samples = 200
     X = rng.normal(size=(n_samples, 4))
     y = X[:, 0] * 10
     X[:, 1] = y + rng.normal(scale=0.01, size=n_samples)
-    report = evaluate(LinearRegression(), X, y, splitter=0.2)
-    result = report.checks.summarize()
-    tips = result.frame(severity="tip").set_index("code")
+    report = evaluate(
+        estimator,
+        pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])]),
+        pd.Series(y),
+        splitter=0.2,
+    )
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD011" in tips.index
     explanation = tips.loc["SKD011", "explanation"]
-    assert "Feature #0" in explanation
-    assert "Feature #1" in explanation
-    assert "Feature #2" not in explanation
-    assert "Feature #3" not in explanation
+    assert "Feature 0" in explanation
+    assert "Feature 1" in explanation
+    assert "Feature 2" not in explanation
+    assert "Feature 3" not in explanation
 
 
 def test_skd012_detects_useless_features():
@@ -230,7 +237,7 @@ def test_skd013_train_test_time_overlap():
     X = pd.DataFrame(
         {
             "feat": np.arange(n, dtype=float),
-            "date": pd.date_range("2020-01-01", periods=n, freq="D"),
+            "date": pd.date_range("2026-12-01", periods=n, freq="D"),
         }
     )
     y = np.arange(n, dtype=float)

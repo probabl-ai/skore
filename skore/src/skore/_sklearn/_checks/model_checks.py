@@ -413,49 +413,41 @@ class CheckGoldenFeature(Check):
         report = cast("EstimatorReport", report)
         if report._initialized_with_data_op:
             raise CheckNotApplicable()
+        if (
+            report.X_train is None
+            or report.X_test is None
+            or report.y_train is None
+            or report.y_test is None
+        ):
+            raise CheckNotApplicable()
 
-        X_train = report.X_train
-        if X_train is None or not isinstance(X_train, (np.ndarray, pd.DataFrame)):
+        preprocessor_, predictor_ = split_preprocessor_estimator(report.estimator)
+        X_train, X_test = report.X_train, report.X_test
+        if preprocessor_ is not None and preprocessor_.steps:
+            X_train = preprocessor_.transform(X_train)
+            X_test = preprocessor_.transform(X_test)
+        if not isinstance(X_train, (np.ndarray, pd.DataFrame)) or X_train.shape[1] < 2:
             raise CheckNotApplicable()
 
         n_features = X_train.shape[1]
-        if n_features < 2:
-            raise CheckNotApplicable()
-
-        if report.X_test is None or report.y_train is None or report.y_test is None:
-            raise CheckNotApplicable()
-
         feature_names = _get_feature_names(
-            report.estimator_, X=X_train, n_features=n_features
+            predictor_, transformer=preprocessor_, X=X_train, n_features=n_features
         )
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UndefinedMetricWarning)
             full_data = report.metrics.summarize(data_source="test").data
 
-        predictive_rows = [
-            idx
-            for idx in range(len(full_data))
-            if full_data.loc[idx, "metric_verbose_name"] not in _TIMING_METRICS
-            and not pd.isna(full_data.loc[idx, "greater_is_better"])
-        ]
-        if not predictive_rows:
-            raise CheckNotApplicable()
-
         golden_features: list[str] = []
         for i in range(n_features):
-            try:
-                single_estimator = clone(report._raw_estimator)
-                single_report = EstimatorReport(
-                    single_estimator,
-                    X_train=select_feature(X_train, i),
-                    y_train=report.y_train,
-                    X_test=select_feature(report.X_test, i),
-                    y_test=report.y_test,
-                    pos_label=report.pos_label,
-                )
-            except Exception as exc:
-                raise CheckNotApplicable() from exc
+            single_report = EstimatorReport(
+                clone(predictor_),
+                X_train=select_feature(X_train, i),
+                y_train=report.y_train,
+                X_test=select_feature(X_test, i),
+                y_test=report.y_test,
+                pos_label=report.pos_label,
+            )
             single_report._metric_registry = report._metric_registry
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore", category=UndefinedMetricWarning)
@@ -469,7 +461,8 @@ class CheckGoldenFeature(Check):
                     floor=0.03,
                     fraction=0.10,
                 )
-                for idx in predictive_rows
+                for idx in range(len(full_data))
+                if full_data.loc[idx, "metric_verbose_name"] not in _TIMING_METRICS
             ]
             majority, _, _ = majority_vote(votes)
             if majority:
@@ -505,21 +498,18 @@ class CheckUselessFeatures(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        if (
-            report._initialized_with_data_op
-            or report.X_train is None
-            or report.X_test is None
-            or report.y_test is None
-        ):
-            raise CheckNotApplicable()
 
-        display = report.inspection.permutation_importance(
-            data_source="test", seed=0, n_repeats=5
-        )
-        frame = display.frame()
+        try:
+            importance_frame = report.inspection.permutation_importance(
+                data_source="test", seed=0, n_repeats=5
+            ).frame()
+        except (ValueError, TypeError):
+            raise CheckNotApplicable() from None
 
         per_feature = (
-            frame.groupby("feature")[["value_mean", "value_std"]].mean().reset_index()
+            importance_frame.groupby("feature")[["value_mean", "value_std"]]
+            .mean()
+            .reset_index()
         )
         mean = per_feature["value_mean"]
         std = per_feature["value_std"]
