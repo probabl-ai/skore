@@ -209,13 +209,20 @@ def test_data_source_both_favorability(forest_binary_classification_data):
     display = report.metrics.summarize(data_source="both")
 
     result = display.frame(favorability=False)
-    assert result.columns.tolist() == [f"{name} (train)", f"{name} (test)"]
+    assert result.columns.tolist() == [
+        (f"{name} (train)", "mean"),
+        (f"{name} (train)", "std"),
+        (f"{name} (test)", "mean"),
+        (f"{name} (test)", "std"),
+    ]
 
     result = display.frame(favorability=True)
     assert result.columns.tolist() == [
-        f"{name} (train)",
-        f"{name} (test)",
-        "Favorability",
+        (f"{name} (train)", "mean"),
+        (f"{name} (train)", "std"),
+        (f"{name} (test)", "mean"),
+        (f"{name} (test)", "std"),
+        ("Favorability", ""),
     ]
 
 
@@ -223,10 +230,15 @@ def test_data_source_both_flat_index(forest_binary_classification_data):
     """Test flat_index columns and index when data_source='both'."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    name = report.estimator_name_
+    name = report.estimator_name_.lower()
     result = report.metrics.summarize(data_source="both").frame(flat_index=True)
 
-    assert result.columns.tolist() == [f"{name} (train)", f"{name} (test)"]
+    assert result.columns.tolist() == [
+        f"{name}_(train)_mean",
+        f"{name}_(train)_std",
+        f"{name}_(test)_mean",
+        f"{name}_(test)_std",
+    ]
     assert result.index.tolist() == [
         "accuracy",
         "precision_0",
