@@ -87,14 +87,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             train_summary = self.summarize(data_source="train", metric=metric)
             test_summary = self.summarize(data_source="test", metric=metric)
 
-            return MetricsSummaryDisplay._concatenate(
-                [train_summary, test_summary],
-                report_type="cross-validation",
-                extra_rows_data=[
-                    {"estimator_name": self._parent.estimator_name_},
-                    {"estimator_name": self._parent.estimator_name_},
-                ],
-            )
+            combined = train_summary.rows + test_summary.rows
+            return MetricsSummaryDisplay(rows=combined, report_type="cross-validation")
 
         parallel = Parallel(
             **_validate_joblib_parallel_params(
