@@ -113,7 +113,7 @@ How to reduce the risk
 - collect richer data if possible.
 
 
-.. _skd003-inconsistent_performance:
+.. _skd003-inconsistent-performance:
 
 SKD003 - Inconsistent performance across splits
 -----------------------------------------------
@@ -156,7 +156,7 @@ How to reduce the risk
 - increase the size of the dataset to improve stability.
 
 
-.. _skd004-high_class_imbalance:
+.. _skd004-high-class-imbalance:
 
 SKD004 - High class imbalance
 ------------------------------
@@ -186,7 +186,7 @@ How to reduce the risk
 - collect more data for the minority class if possible.
 
 
-.. _skd005-underrepresented_classes:
+.. _skd005-underrepresented-classes:
 
 SKD005 - Underrepresented classes
 ---------------------------------
@@ -216,7 +216,7 @@ How to reduce the risk
 - collect more data for the underrepresented classes if possible.
 
 
-.. _skd006-unscaled_coefficients:
+.. _skd006-unscaled-coefficients:
 
 SKD006 - Coefficient interpretation
 ------------------------------------
@@ -251,7 +251,7 @@ standard deviation rather than per original unit. Statements like "an increase o
 natural units have been scaled away.
 
 Read more about this in `the scikit-learn documentation
-<https://scikit-learn.org/dev/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`_.
+<https://scikit-learn.org/dev/auto_examples/inspection/plot_linear_model_coefficient_interpretation.html#interpreting-coefficients-scale-matters>`__.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -264,3 +264,86 @@ How to reduce the risk
 - otherwise, interpret coefficient magnitudes only relative to the feature's own
   scale, or rely on scale-invariant feature-importance methods such as
   :class:`~skore.PermutationImportanceDisplay`.
+
+
+.. _skd007-mdi-cardinality-bias:
+
+SKD007 - MDI feature importance is biased for high-cardinality features
+--------------------------------------------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+This check applies only to estimators that expose a ``feature_importances_``
+attribute (tree-based models such as random forests and gradient boosting).
+
+`skore` counts the number of unique values in each feature column.
+A feature is considered high-cardinality when its number of unique values
+exceeds **50 % of the number of samples**. The check emits a tip when at
+least one such feature exists.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+The default feature importance reported by tree ensembles is Mean Decrease in
+Impurity (MDI). MDI is computed from the training set and is biased toward
+high-cardinality and continuous features: because those features offer more
+candidate split points, trees tend to select them more often, inflating their
+apparent importance even when they carry no real predictive signal.
+
+Read more about this in `the scikit-learn documentation
+<https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance.html>`__.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- use permutation importance (:class:`~skore.PermutationImportanceDisplay`)
+  instead of MDI: it measures importance on the test set and is not biased by
+  cardinality,
+- if MDI is needed, be aware of its limitations and cross-check with
+  permutation importance or drop-column importance.
+
+
+.. _skd008-correlated-features:
+
+SKD008 - Highly correlated input features
+-----------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+`skore` computes the pairwise `Spearman rank correlation
+<https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient>`_
+between all numeric features. The check emits an issue when at least one pair
+of features has an absolute correlation above **0.9**
+(``|rho| > 0.9``).
+
+Why it matters
+^^^^^^^^^^^^^^
+
+Highly correlated features carry largely redundant information. This redundancy
+can cause two problems:
+
+- **Unreliable feature importance**: when two features are highly correlated,
+  importance methods (MDI, permutation importance, linear-model coefficients)
+  can arbitrarily split credit between them. A genuinely important feature may
+  receive near-zero importance simply because a correlated partner captured
+  most of the signal, and the estimates become highly variable across data
+  perturbations. Read more `here
+  <https://scikit-learn.org/stable/auto_examples/inspection/plot_permutation_importance_multicollinear.html>`_.
+- **Wasted resources and overfitting risk**: redundant features increase memory
+  usage and computation time without adding information. Removing them can speed
+  up training and, by reducing the effective dimensionality, may also reduce
+  overfitting.
+- **Degenerate linear models**: near-perfect collinearity makes the design
+  matrix ill-conditioned, inflating coefficient variance and making
+  least-squares estimates numerically unstable.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- remove or combine redundant features before fitting (e.g. drop one of each
+  highly correlated pair, or use dimensionality reduction),
+- use regularization (Lasso, ElasticNet) to let the model select among
+  correlated features,
+- group correlated features together before inspecting feature importance.

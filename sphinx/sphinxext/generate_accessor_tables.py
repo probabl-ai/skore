@@ -215,8 +215,9 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
     output_path.write_text(rst_content)
     logger.info(f"Wrote accessor tables to {output_path}")
 
-    # Generate .inc files and collect toctree data for each accessor
+    # Generate .inc files and collect toctree/method data for each accessor
     accessor_toctrees: dict[str, list[str]] = {}
+    accessor_methods: dict[str, list[tuple[str, str]]] = {}
 
     for class_path, class_data in classes_data:
         class_name = class_data["name"]
@@ -260,6 +261,7 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
                 f"skore.{class_name}.{accessor_name}.{method_name}"
                 for method_name, _ in ordered
             ]
+            accessor_methods[accessor_path] = ordered
 
             for method_name, _ in ordered:
                 _write_accessor_method_stub(
@@ -268,6 +270,7 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
 
     ctx = dict(config.autosummary_context or {})
     ctx["accessor_toctrees"] = accessor_toctrees
+    ctx["accessor_methods"] = accessor_methods
     config.autosummary_context = ctx
 
 
