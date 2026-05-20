@@ -161,7 +161,6 @@ joblib==1.5.3
     # via
     #   skore (skore/pyproject.toml)
     #   scikit-learn
-    #   skore-mlflow-project
 jsonschema==4.26.0
     # via altair
 jsonschema-specifications==2025.9.1
@@ -191,16 +190,13 @@ matplotlib==3.10.8
     #   skore (skore/pyproject.toml)
     #   mlflow
     #   seaborn
-    #   skore-mlflow-project
     #   skrub
 matplotlib-inline==0.2.1
     # via ipython
 mdurl==0.1.2
     # via markdown-it-py
 mlflow==3.11.1
-    # via
-    #   skore (skore/pyproject.toml)
-    #   skore-mlflow-project
+    # via skore (skore/pyproject.toml)
 mlflow-skinny==3.11.1
     # via mlflow
 mlflow-tracing==3.11.1
@@ -224,7 +220,6 @@ numpy==2.4.4
     #   scipy
     #   seaborn
     #   skops
-    #   skore-mlflow-project
     #   skrub
     #   xgboost-cpu
 numpydoc==1.10.0
@@ -267,7 +262,6 @@ pandas==2.3.3
     #   skore (skore/pyproject.toml)
     #   mlflow
     #   seaborn
-    #   skore-mlflow-project
     #   skrub
 parso==0.8.6
     # via jedi
@@ -366,9 +360,7 @@ requests==2.33.1
     #   skrub
     #   sphinx
 rich[jupyter]==15.0.0
-    # via
-    #   skore (skore/pyproject.toml)
-    #   skore-mlflow-project
+    # via skore (skore/pyproject.toml)
 rpds-py==0.30.0
     # via
     #   jsonschema
@@ -379,7 +371,6 @@ scikit-learn==1.8.0
     #   skore (skore/pyproject.toml)
     #   mlflow
     #   skops
-    #   skore-mlflow-project
     #   skrub
 scipy==1.17.1
     # via
@@ -397,8 +388,6 @@ six==1.17.0
     # via python-dateutil
 skops==0.13.0
     # via mlflow
-skore-mlflow-project==0.0.4
-    # via skore (skore/pyproject.toml)
 skrub==0.8.0
     # via skore (skore/pyproject.toml)
 smmap==5.0.3
