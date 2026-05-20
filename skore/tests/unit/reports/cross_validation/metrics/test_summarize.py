@@ -7,6 +7,7 @@ without depending on MetricsSummaryDisplay.frame().
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.testing import assert_array_equal
 
 from skore import CrossValidationReport, MetricsSummaryDisplay
 
@@ -258,8 +259,14 @@ def test_data_source_both(forest_binary_classification_data):
     train_display = report.metrics.summarize(data_source="train")
     test_display = report.metrics.summarize(data_source="test")
     both_display = report.metrics.summarize(data_source="both")
+
     assert set(both_display.data["data_source"]) == {"train", "test"}
-    assert len(both_display.data) == len(train_display.data) + len(test_display.data)
+
+    train_data = both_display.data[both_display.data["data_source"] == "train"]
+    assert_array_equal(train_data["score"], train_display.data["score"])
+
+    test_data = both_display.data[both_display.data["data_source"] == "test"]
+    assert_array_equal(test_data["score"], test_display.data["score"])
 
 
 # Tests about default metric behavior
