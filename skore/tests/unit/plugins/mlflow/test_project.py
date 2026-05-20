@@ -6,7 +6,6 @@ import pytest
 from sklearn.linear_model import LinearRegression
 
 from skore._plugins.mlflow import Project
-from skore._plugins.mlflow import _matplotlib as matplotlib_module
 from skore._plugins.mlflow import project as project_module
 from skore._plugins.mlflow.project import (
     _log_artifact,

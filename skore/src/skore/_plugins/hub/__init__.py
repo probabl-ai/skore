@@ -3,12 +3,7 @@
 from base64 import b64decode, b64encode
 from logging import basicConfig, getLogger
 
-__all__ = [
-    "Payload",
-    "b64_str_to_bytes",
-    "bytes_to_b64_str",
-    "switch_plt_backend",
-]
+__all__ = ["b64_str_to_bytes", "bytes_to_b64_str"]
 
 
 basicConfig()
