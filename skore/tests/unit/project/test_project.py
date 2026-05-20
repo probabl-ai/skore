@@ -130,8 +130,9 @@ class TestProject:
         with raises(
             ValueError,
             match=escape(
-                "The mode `local` is not supported. You need to install "
-                "`skore-local-project` to use it."
+                "The mode `local` is not supported. "
+                "You can install the required dependencies with:\n"
+                '    pip install "skore[local]"'
             ),
         ):
             Project(mode="local", name="<name>")
@@ -193,8 +194,9 @@ class TestProject:
         with raises(
             ValueError,
             match=escape(
-                "The mode `hub` is not supported. You need to install "
-                "`skore-hub-project` to use it."
+                "The mode `hub` is not supported. "
+                "You can install the required dependencies with:\n"
+                '    pip install "skore[hub]"'
             ),
         ):
             Project(mode="hub", name="<workspace>/<name>")
