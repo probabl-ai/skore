@@ -201,16 +201,44 @@ def test_flat_index_with_favorability(forest_binary_classification_data):
     ]
 
 
-def test_data_source_both(forest_binary_classification_data):
-    """Test that train and test ar separate for `data_source='both'`."""
+def test_data_source_both_favorability(forest_binary_classification_data):
+    """Test favorability columns when data_source='both'."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    estimator_name = report.estimator_name_
-    result = report.metrics.summarize(data_source="both").frame()
+    name = report.estimator_name_
+    display = report.metrics.summarize(data_source="both")
 
-    assert isinstance(result.columns, pd.MultiIndex)
-    top_level = set(result.columns.get_level_values(0))
-    assert top_level == {f"{estimator_name} (train)", f"{estimator_name} (test)"}
+    result = display.frame(favorability=False)
+    assert result.columns.tolist() == [f"{name} (train)", f"{name} (test)"]
+
+    result = display.frame(favorability=True)
+    assert result.columns.tolist() == [
+        f"{name} (train)",
+        f"{name} (test)",
+        "Favorability",
+    ]
+
+
+def test_data_source_both_flat_index(forest_binary_classification_data):
+    """Test flat_index columns and index when data_source='both'."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    name = report.estimator_name_
+    result = report.metrics.summarize(data_source="both").frame(flat_index=True)
+
+    assert result.columns.tolist() == [f"{name} (train)", f"{name} (test)"]
+    assert result.index.tolist() == [
+        "accuracy",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "log_loss",
+        "brier_score",
+        "fit_time_s",
+        "predict_time_s",
+    ]
 
 
 def test_multiclass_classification(forest_multiclass_classification_data):
