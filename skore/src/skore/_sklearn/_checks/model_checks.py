@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from collections import defaultdict
 from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
@@ -17,9 +16,7 @@ from sklearn.linear_model import LogisticRegression, RidgeCV
 
 from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._checks._utils import (
-    _TIMING_METRICS,
     CheckNotApplicable,
-    _metric_key,
     check_score_gap_to_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
@@ -216,28 +213,18 @@ class CheckMetricsConsistencyAcrossSplits(Check):
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            rows = report.metrics.summarize(data_source="test").rows
-
-        n_splits = len(report.estimator_reports_)
-        scores_by_metric: dict[tuple, list[float]] = defaultdict(
-            lambda: [np.nan] * n_splits
-        )
-        for row in rows:
-            if row["metric_verbose_name"] in _TIMING_METRICS:
-                continue
-            scores_by_metric[_metric_key(row)][row["split"]] = row["score"]
-
-        if not scores_by_metric:
-            return None
-
+            report_data = report.metrics.summarize(data_source="test").frame(
+                aggregate=None, flat_index=True
+            )
         votes = np.array(
             [
-                detect_outliers_modified_zscore(np.asarray(scores))
-                for scores in scores_by_metric.values()
+                detect_outliers_modified_zscore(report_data.loc[idx])
+                for idx in report_data.index
+                if idx not in ["fit_time_s", "predict_time_s"]
             ]
         )
         explanation = []
-        for cv in range(n_splits):
+        for cv in range(report_data.shape[1]):
             majority, n_positive, total = majority_vote(votes[:, cv].tolist())
             if majority:
                 explanation.append(f"in split #{cv} for {n_positive}/{total} metrics")
