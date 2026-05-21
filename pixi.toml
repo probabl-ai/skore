@@ -1,0 +1,68 @@
+[workspace]
+name = "skore"
+authors = ["skore developers <skore@signal.probabl.ai>"]
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["linux-64", "win-64", "osx-arm64"]
+
+[feature.py311.dependencies]
+python = "3.11.*"
+
+[feature.py312.dependencies]
+python = "3.12.*"
+
+[feature.py313.dependencies]
+python = "3.13.*"
+
+[feature.py314.dependencies]
+python = "3.14.*"
+
+[feature.sklearn15.dependencies]
+scikit-learn = "1.5.*"
+
+[feature.sklearn17.dependencies]
+scikit-learn = "1.7.*"
+
+[feature.sklearn18.dependencies]
+scikit-learn = "1.8.*"
+
+[feature.mlflow2.dependencies]
+mlflow = "2.*"
+
+[feature.mlflow3.dependencies]
+mlflow = "3.*"
+
+[feature.pandas2.dependencies]
+pandas = "2.*"
+
+[feature.test.pypi-dependencies]
+skore = { path = "skore", editable = true, extras = ["test"] }
+
+[feature.test.tasks]
+tests = { cmd = "pytest -vsl --cov=skore --cov-report=xml --cov-report=term-missing -n auto src/ tests/", cwd = "skore" }
+lint = "pre-commit install && pre-commit run -v --all-files --show-diff-on-failure"
+
+[feature.sphinx.dependencies]
+graphviz = "*"
+
+[feature.sphinx.pypi-dependencies]
+skore = { path = "skore", editable = true, extras = ["sphinx"] }
+
+[feature.sphinx.tasks]
+docs = { cmd = "make html", cwd = "sphinx" }
+
+[feature.sphinx.target.osx-arm64.activation]
+scripts = ["activate_dot.sh"]
+
+[environments]
+py311-sklearn15 = ["py311", "sklearn15", "test"]
+py311-sklearn15-mlflow2 = ["py311", "sklearn15", "mlflow2", "test"]
+py311-sklearn18 = ["py311", "sklearn18", "test"]
+py312-sklearn15 = ["py312", "sklearn15", "test"]
+py312-sklearn18 = ["py312", "sklearn18", "test"]
+py313-sklearn15 = ["py313", "sklearn15", "test"]
+py313-sklearn18 = ["py313", "sklearn18", "test"]
+py314-sklearn17 = ["py314", "sklearn17", "test"]
+py314-sklearn18 = ["py314", "sklearn18", "test"]
+py314-sklearn18-pandas2 = ["py314", "sklearn18", "pandas2", "test"]
+py314-sklearn18-mlflow3 = ["py314", "sklearn18", "mlflow3", "test"]
+sphinx = ["py314", "sklearn18", "sphinx"]
