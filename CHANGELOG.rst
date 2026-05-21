@@ -6,26 +6,20 @@
 
    .. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/<new-version>...HEAD
 
-Release highlights
-------------------
+   Release highlights
+   ------------------
 
-Changed
--------
+   Changed
+   -------
 
-- Align public API docstrings with numpydoc and scikit-learn conventions across
-  reports, displays, accessors, project helpers, and checks.
+   Added
+   -----
 
-Removed
--------
+   Removed
+   -------
 
-- Drop ``THREADABLE`` and ``console`` from :obj:`skore.__all__` (they remain
-  importable from the package module but are not part of the documented public API).
-
-Added
------
-
-Fixed
------
+   Fixed
+   -----
 
 .. The changelog follows conventions close to https://common-changelog.org
 
@@ -80,9 +74,6 @@ Added
 - Added two new automated checks: SKD007 (MDI feature importance bias with
   high-cardinality features, tip) and SKD008 (highly correlated input features,
   issue). See :pr:`2883` by :user:`GaetandeCast`.
-
-Removed
--------
 
 Fixed
 -----

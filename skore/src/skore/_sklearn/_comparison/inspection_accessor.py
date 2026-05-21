@@ -267,8 +267,8 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
 
         See Also
         --------
-        :class:`PermutationImportanceDisplay` : Display class for permutation
-        importance plots.
+        :class:`PermutationImportanceDisplay`
+            Display class for permutation importance plots.
 
         Examples
         --------

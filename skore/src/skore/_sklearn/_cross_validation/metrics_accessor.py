@@ -1014,8 +1014,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         See Also
         --------
-        :class:`PrecisionRecallCurveDisplay` : Display class for precision-recall
-        curve plots.
+        :class:`PrecisionRecallCurveDisplay`
+            Display class for precision-recall curve plots.
 
         Examples
         --------
