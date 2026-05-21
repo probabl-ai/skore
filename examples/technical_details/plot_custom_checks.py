@@ -69,7 +69,7 @@ from skore import evaluate
 
 rng = np.random.default_rng(42)
 X = rng.normal(size=(200, 80))
-y = X[:, 0] + rng.normal(size=200)
+y = X[:, 0] + rng.normal(scale=0.1, size=200)
 
 report = evaluate(LinearRegression(), X, y)
 report.checks.add([CustomCheck1()])
@@ -89,6 +89,9 @@ report.checks.summarize()
 # this is an issue to fix.
 #
 # We will corrupt the first fold of the target to illustrate the check.
+#
+# We see that our new check appears along another similar issue that detects folds that
+# are outliers in terms of performance metrics.
 import pandas as pd
 
 y_noisy = y.copy()
