@@ -38,7 +38,13 @@ pandas = "2.*"
 skore = { path = "skore", editable = true, extras = ["test"] }
 
 [feature.test.tasks]
-tests = { cmd = "pytest -vsl --cov=skore --cov-report=xml --cov-report=term-missing -n auto src/ tests/", cwd = "skore" }
+tests = { cmd = "pytest src/ tests/ --no-cov", cwd = "skore" }
+tests-coverage = { cmd = "pytest src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov", cwd = "skore" }
+
+[feature.lint.dependencies]
+pre-commit = "*"
+
+[feature.lint.tasks]
 lint = "pre-commit install && pre-commit run -v --all-files --show-diff-on-failure"
 
 [feature.sphinx.dependencies]
@@ -66,3 +72,4 @@ py314-sklearn18 = ["py314", "sklearn18", "test"]
 py314-sklearn18-pandas2 = ["py314", "sklearn18", "pandas2", "test"]
 py314-sklearn18-mlflow3 = ["py314", "sklearn18", "mlflow3", "test"]
 sphinx = ["py314", "sklearn18", "sphinx"]
+lint = ["py312", "lint"]
