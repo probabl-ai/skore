@@ -1,9 +1,11 @@
 # similar to scikit-learn .codecov.yml
 comment: false
 
-coverage:
-  wait_for_ci: true
+codecov:
+  notify:
+    wait_for_ci: true
 
+coverage:
   status:
     project:
       default:
