@@ -7,7 +7,7 @@ from mlflow.data.numpy_dataset import NumpyDataset
 from mlflow.data.pandas_dataset import PandasDataset
 from numpy.testing import assert_array_equal
 
-from skore_mlflow_project.reports import (
+from skore._plugins.mlflow.reports import (
     Artifact,
     Metric,
     _dataset_from_Xy,
