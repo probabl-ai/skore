@@ -1205,16 +1205,15 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from sklearn.svm import SVC
-        >>> from skore import compare, evaluate
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> reports = evaluate(
+        >>> comparison = evaluate(
         ...     [LogisticRegression(max_iter=10_000), SVC()],
         ...     X,
         ...     y,
         ...     splitter=2,
         ...     pos_label=1,
         ... )
-        >>> comparison = compare(reports)
         >>> display = comparison.metrics.confusion_matrix()
         >>> display.plot()
         """

@@ -434,9 +434,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ... )
         >>> comparison_report = ComparisonReport([linear_report, forest_report])
         >>> summary = comparison_report.metrics.summarize().frame()
-        >>> best_key = summary.columns[0]
         >>> final_report = comparison_report.create_estimator_report(
-        ...     report_key=best_key, X_test=X_test, y_test=y_test
+        ...     report_key="RandomForestClassifier", X_test=X_test, y_test=y_test
         ... )
         >>> final_report.metrics.summarize().frame()
         """

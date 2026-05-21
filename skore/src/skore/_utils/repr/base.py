@@ -115,20 +115,7 @@ class DisplayHelpMixin(_RichHelpDisplayMixin, _HTMLHelpDisplayMixin):
         return f"{self.__class__.__name__} display"
 
     def help(self) -> _HelpDisplay | None:
-        """Display display help using rich or HTML.
-
-        Returns
-        -------
-        _HelpDisplay or None
-            In Sphinx builds, a display object with HTML and plain-text help.
-            In Jupyter, help is shown inline and `None` is returned.
-            In the terminal, help is printed and `None` is returned.
-
-        Notes
-        -----
-        The rendering backend depends on the environment (Sphinx, notebook, or
-        terminal).
-        """
+        """Display display help using rich or HTML."""
         return _help_dispatch(
             html_help_factory=self._create_help_html,
             rich_help_factory=self._create_help_panel,
