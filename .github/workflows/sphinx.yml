@@ -239,7 +239,6 @@ jobs:
       - name: Install all packages from local branch
         run: |
           python -m pip install --force-reinstall --no-deps skore/
-          python -m pip install --force-reinstall --no-deps skore-mlflow-project/
 
       - name: Build documentation
         working-directory: sphinx

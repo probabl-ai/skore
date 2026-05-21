@@ -1,18 +1,9 @@
-"""Package that provides APIs to communicate between ``skore`` and ``skore hub``."""
+"""Module that provides APIs to communicate between ``skore`` and ``skore hub``."""
 
 from base64 import b64decode, b64encode
-from collections.abc import Iterator
-from contextlib import contextmanager
 from logging import basicConfig, getLogger
 
-from matplotlib import pyplot as plt
-
-__all__ = [
-    "Payload",
-    "b64_str_to_bytes",
-    "bytes_to_b64_str",
-    "switch_plt_backend",
-]
+__all__ = ["b64_str_to_bytes", "bytes_to_b64_str"]
 
 
 basicConfig()
@@ -27,25 +18,3 @@ def b64_str_to_bytes(literal: str) -> bytes:
 def bytes_to_b64_str(literal: bytes) -> str:
     """Encode the bytes-like object ``literal`` in a Base64 str."""
     return b64encode(literal).decode("utf-8")
-
-
-@contextmanager
-def switch_plt_backend(backend: str = "agg") -> Iterator[None]:
-    """
-    Context-manager for switching ``matplotlib.pyplot.backend``.
-
-    Notes
-    -----
-    The ``agg`` backend is a non-interactive backend that can only write to files.
-    It is used to generate artifacts where we don't need an X display.
-
-    https://matplotlib.org/stable/users/explain/figure/backends.html#selecting-a-backend
-    """
-    original = plt.get_backend()
-
-    try:
-        plt.switch_backend(backend)
-        yield
-    finally:
-        plt.close("all")
-        plt.switch_backend(original)
