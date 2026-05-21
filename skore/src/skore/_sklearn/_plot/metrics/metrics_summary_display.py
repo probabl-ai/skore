@@ -279,6 +279,48 @@ class MetricsSummaryDisplay(DisplayMixin):
     ) -> pd.DataFrame:
         """Process cross-validation report data into a formatted dataframe."""
         df = data.copy()
+
+        if df["data_source"].nunique() > 1:
+            grouped = list(df.groupby("data_source", sort=False))
+            frames = []
+            favorability_col = None
+
+            for data_source, source_df in grouped:
+                source_frame = MetricsSummaryDisplay._frame_cross_validation(
+                    source_df,
+                    aggregate=aggregate,
+                    favorability=True,
+                    flat_index=False,
+                )
+                if favorability_col is None and "Favorability" in source_frame.columns:
+                    favorability_col = source_frame.pop("Favorability")
+                else:
+                    source_frame = source_frame.drop(
+                        columns="Favorability", errors="ignore"
+                    )
+                if isinstance(source_frame.columns, pd.MultiIndex):
+                    source_frame.columns = pd.MultiIndex.from_tuples(
+                        [
+                            (f"{col[0]} ({data_source})",) + col[1:]
+                            for col in source_frame.columns
+                        ]
+                    )
+                else:
+                    source_frame.columns = [
+                        f"{col} ({data_source})" for col in source_frame.columns
+                    ]
+                frames.append(source_frame)
+
+            df = pd.concat(frames, axis="columns")
+
+            if favorability_col is not None and favorability:
+                df["Favorability"] = favorability_col
+
+            if flat_index:
+                df = MetricsSummaryDisplay._flatten_index(df)
+
+            return df
+
         estimator_name = df["estimator_name"].iloc[0]
 
         df = MetricsSummaryDisplay._frame_estimator(

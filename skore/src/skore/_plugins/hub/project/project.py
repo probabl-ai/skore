@@ -18,7 +18,7 @@ from joblib import load as joblib_load
 from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from skore import THREADABLE, CrossValidationReport, EstimatorReport, console
-from skore._plugins.hub import switch_plt_backend
+from skore._plugins import switch_plt_backend
 from skore._plugins.hub.client.client import Client, HUBClient
 from skore._plugins.hub.exception import ForbiddenException, NotFoundException
 from skore._plugins.hub.json import dumps

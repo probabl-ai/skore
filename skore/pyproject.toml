@@ -57,7 +57,7 @@ test-base = [
   "scipy-stubs",
   "xdoctest",
   "respx",
-  "skore[hub, jupyter]",
+  "skore[hub, jupyter, mlflow]",
 ]
 test = ["polars", "pyarrow", "skore[test-base]"]
 test-lts-cpu = ["polars-lts-cpu", "skore[test-base]"]
@@ -90,7 +90,7 @@ hub = [
   "rich[jupyter]>=14.2",
   "scipy",
 ]
-mlflow = ["skore-mlflow-project>=0.0.2"]
+mlflow = ["mlflow>=2.20.4"]
 
 [project.entry-points."skore.plugins.login"]
 hub = "skore._plugins.hub.authentication.login:login"
@@ -98,6 +98,7 @@ hub = "skore._plugins.hub.authentication.login:login"
 [project.entry-points."skore.plugins.project"]
 local = "skore._plugins.local:Project"
 hub = "skore._plugins.hub.project.project:Project"
+mlflow = "skore._plugins.mlflow:Project"
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -136,6 +137,9 @@ addopts = [
 ]
 xfail_strict = true
 log_cli_level = "info"
+filterwarnings = [
+  'ignore:codecs\.open\(\) is deprecated.*:DeprecationWarning:mlflow',
+]
 
 [tool.coverage.run]
 branch = true
@@ -213,6 +217,7 @@ module = [
   "jinja2.*",
   "joblib.*",
   "js.*",
+  "mlflow.*",
   "pandas.*",
   "plotly.*",
   "pyodide.*",
