@@ -22,6 +22,7 @@ from sklearn.utils.validation import _num_samples, check_is_fitted
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.metrics import MetricRegistry
 from skore._sklearn.types import DataSource, PositiveLabel
@@ -364,7 +365,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "test_data": self._test_data,
             },
             "predictions": predictions,
-            "metric_registry": self._metric_registry,
+            "metric_registry_data": self._metric_registry.data,
             # ---------- OPTIONAL STATE ------------
             # this part is less structured and not crucial for reconstructing a report
             # so we won't try ensuring backward compatibility.
@@ -407,7 +408,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 for (data_source, name), val in state["predictions"].items()
             }
         )
-        report._metric_registry = state["metric_registry"]
+        report._metric_registry = MetricRegistry(report)
+        report._metric_registry.data = state["metric_registry_data"]
+        report._checks_registry = list(_BUILTIN_CHECKS)
 
         return report
 

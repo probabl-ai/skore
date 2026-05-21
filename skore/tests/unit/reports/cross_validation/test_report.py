@@ -1,3 +1,5 @@
+import pickle
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -15,7 +17,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils._testing import _convert_container
 from sklearn.utils.validation import check_is_fitted
 
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._sklearn._cross_validation.report import _generate_estimator_report
 from skore._utils._testing import MockEstimator
 
@@ -343,6 +345,9 @@ def test_from_state_bypasses_init_and_restores_state(
     _ = report.get_predictions(data_source="test")
     report.cache_predictions()
 
+    # check repr doesn't crash:
+    restored._repr_html_()
+
 
 def test_get_from_state_with_complex_data_op():
     X, y = make_classification(random_state=0)
@@ -384,6 +389,9 @@ def test_get_from_state_with_complex_data_op():
     for pred, expected_pred in zip(preds, expected_preds, strict=True):
         np.testing.assert_array_equal(pred, expected_pred)
 
+    # check repr doesn't crash:
+    restored._repr_html_()
+
 
 def test_from_state_rejects_unknown_version(logistic_binary_classification_data):
     estimator, X, y = logistic_binary_classification_data
@@ -392,3 +400,24 @@ def test_from_state_rejects_unknown_version(logistic_binary_classification_data)
 
     with pytest.raises(ValueError, match="Unexpected state version"):
         CrossValidationReport.from_state(state)
+
+
+def test_state_has_no_unexpected_data_copy():
+    estimator = DummyClassifier()
+
+    def state_nbytes_without_data(report):
+        state = report.get_state()
+        state.pop("data")
+        return len(pickle.dumps(state))
+
+    X, y = make_classification(n_samples=50_000, n_features=30)
+    report = evaluate(estimator, X, y, splitter=0.2)
+    assert state_nbytes_without_data(report) < X.nbytes
+    report = evaluate(estimator, X, y, splitter=3)
+    assert state_nbytes_without_data(report) < X.nbytes
+
+    estimator = DummyRegressor()
+    report = evaluate(estimator, X, y, splitter=0.2)
+    assert state_nbytes_without_data(report) < X.nbytes
+    report = evaluate(estimator, X, y, splitter=3)
+    assert state_nbytes_without_data(report) < X.nbytes
