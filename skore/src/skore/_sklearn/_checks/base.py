@@ -204,11 +204,7 @@ class Check(Protocol):
     title : str
         Short label shown for the finding when one is reported.
 
-    description : str
-        Longer summary of what the check detects; provided as the implementing
-        class docstring.
-
-    docs_url : str or None
+    docs_url : str or None, default=None
         Optional link or documentation anchor: a string starting with ``"http"``
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
         the automated checks user guide.
@@ -230,7 +226,7 @@ class Check(Protocol):
     code: CheckCode
     title: str
     report_type: ReportType
-    docs_url: str | None
+    docs_url: str | None = None
     severity: Literal["issue", "tip"]
 
     @abstractmethod

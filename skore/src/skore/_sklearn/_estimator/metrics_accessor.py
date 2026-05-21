@@ -237,16 +237,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             Default keyword arguments passed to the score function at call
             time. Only used when *metric* is a plain callable.
 
-        Returns
-        -------
-        None
-
-        Raises
-        ------
-        ValueError
-            If *metric* requires keyword arguments that were not passed to
-            :meth:`add`.
-
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -289,10 +279,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ----------
         name : str
             The name of the metric to remove.
-
-        Returns
-        -------
-        None
         """
         self._parent._metric_registry.remove(name)
 
@@ -873,7 +859,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.EstimatorReport.metrics")
+        return self._rich_repr(
+            class_name=f"skore.{self._parent.__class__.__name__}.metrics"
+        )
 
     ####################################################################################
     # Methods related to displays

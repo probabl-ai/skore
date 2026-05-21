@@ -211,10 +211,6 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             Default keyword arguments passed to the score function at call
             time.  Only used when *metric* is a plain callable.
 
-        Returns
-        -------
-        None
-
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -251,11 +247,6 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         ----------
         name : str
             The technical name of the metric to remove.
-
-        Raises
-        ------
-        KeyError
-            If *name* is not registered on an underlying report.
 
         See Also
         --------
@@ -350,13 +341,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "both"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metrics and
-              present them side-by-side.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -400,13 +389,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "both"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metrics and
-              present them side-by-side.
 
         average : {"binary", "macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -479,13 +466,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "both"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metrics and
-              present them side-by-side.
 
         average : {"binary","macro", "micro", "weighted", "samples"} or None, \
                 default=None
@@ -554,13 +539,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "both"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metrics and
-              present them side-by-side.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -603,13 +586,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "both"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metrics and
-              present them side-by-side.
 
         average : {"auto", "macro", "micro", "weighted", "samples"}, \
                 default=None
@@ -686,13 +667,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "both"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metrics and
-              present them side-by-side.
 
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
@@ -734,13 +713,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "both"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metrics and
-              present them side-by-side.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -794,13 +771,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "both"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metrics and
-              present them side-by-side.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -855,13 +830,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "both"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metrics and
-              present them side-by-side.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -916,13 +889,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train", "both"}, default="test"
+        data_source : {"test", "train"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets to compute the metrics and
-              present them side-by-side.
 
         multioutput : {"raw_values", "uniform_average"} or array-like of shape \
                 (n_outputs,), default="raw_values"
@@ -970,7 +941,9 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.ComparisonReport.metrics")
+        return self._rich_repr(
+            class_name=f"skore.{self._parent.__class__.__name__}.metrics"
+        )
 
     @available_if(
         _check_supported_ml_task(

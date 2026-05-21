@@ -175,10 +175,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Default keyword arguments passed to the score function at call
             time.  Only used when *metric* is a plain callable.
 
-        Returns
-        -------
-        None
-
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -215,10 +211,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         ----------
         name : str
             The name of the metric to remove.
-
-        Returns
-        -------
-        None
         """
         for report in self._parent.estimator_reports_:
             report.metrics.remove(name)
@@ -939,7 +931,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.CrossValidationReport.metrics")
+        return self._rich_repr(
+            class_name=f"skore.{self._parent.__class__.__name__}.metrics"
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "roc"))
     def roc(

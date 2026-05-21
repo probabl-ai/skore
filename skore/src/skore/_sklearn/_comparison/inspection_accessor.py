@@ -357,4 +357,6 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.ComparisonReport.inspection")
+        return self._rich_repr(
+            class_name=f"skore.{self._parent.__class__.__name__}.inspection"
+        )

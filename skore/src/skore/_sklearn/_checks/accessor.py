@@ -88,10 +88,6 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         ----------
         checks : list of Check
             Additional checks to register.
-
-        Returns
-        -------
-        None
         """
         report_types = [
             "cross-validation",
@@ -128,10 +124,6 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         ----------
         code : str
             The code of the check to remove.
-
-        Returns
-        -------
-        None
         """
         code = code.strip().upper()
         self._parent._checks_registry = [

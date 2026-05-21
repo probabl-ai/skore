@@ -77,11 +77,6 @@ def _get_deps_info() -> dict[str, Any]:
 def show_versions() -> None:
     """Print useful debugging information.
 
-    Returns
-    -------
-    None
-        This function prints to stdout and does not return a value.
-
     Notes
     -----
     The output includes system information and the installed versions of ``skore``
