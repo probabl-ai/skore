@@ -148,7 +148,7 @@ concurrency = ["thread", "multiprocessing"]
 parallel = true
 
 [tool.coverage.report]
-omit = ["*/_externals/*", "src/*", "tests/*"]
+omit = ["*/_externals/*"]
 show_missing = true
 exclude_also = [
     "raise NotImplementedError",

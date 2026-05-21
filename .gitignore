@@ -52,6 +52,7 @@ coverage.xml
 .pytest_cache/
 cover/
 pytest-coverage.txt
+skore/coverage/
 
 # Translations
 *.mo

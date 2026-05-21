@@ -40,7 +40,7 @@ skore = { path = "skore", editable = true, extras = ["test"] }
 [feature.test.tasks]
 tests = { cmd = "pytest src/ tests/ --no-cov", cwd = "skore" }
 tests-coverage = { cmd = "pytest src/ tests/ --showlocals --durations=20 --junitxml=coverage/pytest.xml -o junit_family=legacy --cov-config=pyproject.toml --cov=skore --cov-report=", cwd = "skore" }
-coverage-combine = { cmd = "coverage combine --append && coverage xml -o coverage/coverage.xml", cwd = "skore" }
+coverage-combine = { cmd = "(coverage combine --append || true) && coverage xml -o coverage/coverage.xml", cwd = "skore" }
 
 [feature.lint.dependencies]
 pre-commit = "*"
