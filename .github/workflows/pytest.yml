@@ -127,7 +127,14 @@ jobs:
       - name: Test with coverage
         if: ${{ matrix.coverage }}
         timeout-minutes: 20
+        env:
+          COVERAGE_PROCESS_START: ${{ github.workspace }}/skore/pyproject.toml
+          COVERAGE_CORE: sysmon
         run: pixi run -e ${{ matrix.environment }} tests-coverage
+
+      - name: Combine coverage reports from parallel test runners
+        if: ${{ matrix.coverage && !cancelled() }}
+        run: pixi run -e ${{ matrix.environment }} coverage-combine
 
       - name: Upload coverage to Codecov
         if: ${{ matrix.coverage && !cancelled() }}
@@ -135,10 +142,8 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: probabl-ai/skore
-          files: skore/coverage/pytest-coverage.xml
+          files: skore/coverage/coverage.xml
           disable_search: true
-          fail_ci_if_error: true
-          verbose: true
 
       - name: Upload test results to Codecov
         if: ${{ matrix.coverage && !cancelled() }}
@@ -148,8 +153,6 @@ jobs:
           slug: probabl-ai/skore
           files: skore/coverage/pytest.xml
           disable_search: true
-          fail_ci_if_error: true
-          verbose: true
 
   pytest:
     needs:
