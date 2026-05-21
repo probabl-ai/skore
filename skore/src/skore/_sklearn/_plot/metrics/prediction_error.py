@@ -25,15 +25,7 @@ MAX_N_LABELS = 6  # 5 + 1 for the perfect model line
 
 
 class PredictionErrorDisplay(DisplayMixin):
-    """Visualization of the prediction error of a regression model.
-
-    This tool can display "residuals vs predicted" or "actual vs predicted"
-    using scatter plots to qualitatively assess the behavior of a regressor,
-    preferably on held-out data points.
-
-    An instance of this class should be created by
-    `EstimatorReport.metrics.prediction_error()`.
-    You should not create an instance of this class directly.
+    """Plot the prediction error of a regression model.
 
     Parameters
     ----------
@@ -66,6 +58,28 @@ class PredictionErrorDisplay(DisplayMixin):
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
         The type of report.
+
+    Attributes
+    ----------
+    _prediction_error : DataFrame
+        Prediction error data in long format (true, predicted, residuals).
+    range_y_true : RangeData
+        Global range of the true target values.
+    range_y_pred : RangeData
+        Global range of the predicted values.
+    range_residuals : RangeData
+        Global range of the residuals.
+    data_source : DataSource or "both"
+        The data source used for the display.
+    ml_task : MLTask
+        The machine learning task.
+    report_type : ReportType
+        The type of report.
+
+    See Also
+    --------
+    EstimatorReport.metrics.prediction_error : Create this display from a report.
+    MetricsSummaryDisplay : Summarize scalar regression metrics.
 
     Examples
     --------
@@ -154,9 +168,7 @@ class PredictionErrorDisplay(DisplayMixin):
         ] = "residual_vs_predicted",
         despine: bool = True,
     ) -> Figure:
-        """Plot visualization.
-
-        Extra keyword arguments will be passed to matplotlib's ``plot``.
+        """Plot the prediction error.
 
         Parameters
         ----------

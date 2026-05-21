@@ -37,6 +37,13 @@ def compare(
     :class:`~skore.ComparisonReport`
         A comparison report containing the reports to compare.
 
+    See Also
+    --------
+    :func:`~skore.evaluate` :
+        Evaluate one or more estimators and obtain reports to compare.
+    :class:`~skore.ComparisonReport` :
+        Class implementing comparison report behavior.
+
     Examples
     --------
     >>> from sklearn.datasets import load_breast_cancer

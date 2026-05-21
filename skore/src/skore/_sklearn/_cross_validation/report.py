@@ -90,10 +90,10 @@ def _check_estimator_and_data(
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
-    """Report for cross-validation results.
+    """Provide a report of cross-validation results.
 
-    Upon initialization, `CrossValidationReport` will clone ``estimator`` according to
-    ``splitter`` and fit the generated estimators. The fitting is done in parallel.
+    Upon initialization, clones ``estimator`` according to ``splitter`` and fits each
+    fold in parallel.
 
     Refer to the :ref:`cross_validation_report` section of the user guide for more
     details.
@@ -160,6 +160,21 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     estimator_reports_ : list of EstimatorReport
         The estimator reports for each split.
+
+    ml_task : str
+        The machine learning task inferred from the data and estimator.
+
+    metrics : MetricsAccessor
+        Accessor for computing and plotting metrics aggregated over folds.
+
+    inspection : InspectionAccessor
+        Accessor for model inspection aggregated over folds.
+
+    data : DataAccessor
+        Accessor for dataset analysis.
+
+    checks : ChecksAccessor
+        Accessor for running diagnostic checks.
 
     See Also
     --------
@@ -432,7 +447,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train"}
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
@@ -504,6 +519,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             variables contained in the DataOp that was used to create this learner
             (e.g. ``{"X": X_df, "other_table": df, ...}``).
 
+        Returns
+        -------
+        :class:`~skore.EstimatorReport`
+            The estimator report.
+
         Examples
         --------
         >>> from sklearn.datasets import make_classification
@@ -527,11 +547,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ...     X_test=X_test, y_test=y_test
         ... )
         >>> final_report.metrics.summarize().frame()
-
-        Returns
-        -------
-        report : :class:`~skore.EstimatorReport`
-            The estimator report.
         """
         if self._initialized_with_data_op:
             report = EstimatorReport(

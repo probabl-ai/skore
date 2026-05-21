@@ -1,4 +1,8 @@
-"""Configure logging and global settings."""
+"""Evaluate and compare scikit-learn compatible models with rich reports.
+
+This package provides tools to evaluate estimators, compare models, persist
+experiment results, and inspect model behavior through interactive reports.
+"""
 
 from importlib.metadata import version
 from logging import INFO, NullHandler, getLogger
@@ -73,12 +77,10 @@ __all__ = [
     "PredictionErrorDisplay",
     "Project",
     "RocCurveDisplay",
-    "THREADABLE",
     "TableReportDisplay",
     "TrainTestSplit",
     "compare",
     "configuration",
-    "console",
     "evaluate",
     "login",
     "show_versions",

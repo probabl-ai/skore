@@ -198,7 +198,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         **kwargs: Any,
     ) -> None:
         """
-        Add a custom metric to in :meth:`~skore.EstimatorReport.metrics.summarize`.
+        Add a custom metric to :meth:`~skore.EstimatorReport.metrics.summarize`.
 
         Parameters
         ----------
@@ -216,13 +216,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
               If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
               :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
 
-        name : str, optional
-            Custom name for the metric. If not provided, the name is inferred
+        name : str or None, default=None
+            Custom name for the metric. If ``None``, the name is inferred
             from the metric (e.g. the function's ``__name__``).
 
-        verbose_name : str, optional
-            Custom verbose name for the metric which will be used for display purposes.
-            If not provided, will be inferred from the metric name.
+        verbose_name : str or None, default=None
+            Custom verbose name for the metric which will be used for display
+            purposes. If ``None``, the verbose name is inferred from the metric
+            name.
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -235,6 +236,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         **kwargs : Any
             Default keyword arguments passed to the score function at call
             time. Only used when *metric* is a plain callable.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If *metric* requires keyword arguments that were not passed to
+            :meth:`add`.
 
         Examples
         --------
@@ -278,6 +289,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ----------
         name : str
             The name of the metric to remove.
+
+        Returns
+        -------
+        None
         """
         self._parent._metric_registry.remove(name)
 
@@ -289,6 +304,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         cast : bool, default=True
             Whether to cast the return value to a float. If `False`, the return value
             is `None` when the estimator is not fitted.
+
+        Returns
+        -------
+        float or None
+            The fit time in seconds, or `None` when not available.
         """
         return FitTime()(report=self._parent, cast=cast)
 
@@ -302,9 +322,17 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Parameters
         ----------
+        data_source : {"test", "train"}, default="test"
+            The data source for which the prediction time was recorded.
+
         cast : bool, default=True
             Whether to cast the numbers to floats. If `False`, the return value
             is `None` when the predictions have never been computed.
+
+        Returns
+        -------
+        float or None
+            The prediction time in seconds, or `None` when not available.
         """
         return PredictTime()(report=self._parent, data_source=data_source, cast=cast)
 
@@ -362,7 +390,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train",}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
@@ -973,6 +1001,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         :class:`RocCurveDisplay`
             The ROC curve display.
 
+        See Also
+        --------
+        :class:`RocCurveDisplay` : Display class for ROC curve plots.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -1023,6 +1055,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         :class:`PrecisionRecallCurveDisplay`
             The precision-recall curve display.
 
+        See Also
+        --------
+        :class:`PrecisionRecallCurveDisplay` : Display class for precision-recall
+        curve plots.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -1062,8 +1099,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
-        Extra keyword arguments will be passed to matplotlib's `plot`.
-
         Parameters
         ----------
         data_source : {"test", "train", "both"}, default="test"
@@ -1089,6 +1124,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         :class:`PredictionErrorDisplay`
             The prediction error display.
+
+        See Also
+        --------
+        :class:`PredictionErrorDisplay` : Display class for prediction error plots.
 
         Examples
         --------
@@ -1141,6 +1180,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         :class:`ConfusionMatrixDisplay`
             The confusion matrix display.
+
+        See Also
+        --------
+        :class:`ConfusionMatrixDisplay` : Display class for confusion matrix plots.
 
         Examples
         --------

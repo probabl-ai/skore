@@ -115,10 +115,7 @@ def metric_score_to_rows(
 
 
 class MetricsSummaryDisplay(DisplayMixin):
-    """Display for summarize.
-
-    An instance of this class will be created by `Report.metrics.summarize()`.
-    This class should not be instantiated directly.
+    """Summarize evaluation metrics in a table.
 
     Parameters
     ----------
@@ -128,6 +125,28 @@ class MetricsSummaryDisplay(DisplayMixin):
     report_type : {"estimator", "comparison-estimator", "cross-validation", \
             "comparison-cross-validation"}
         The type of report.
+
+    Attributes
+    ----------
+    rows : list of MetricsSummaryRow
+        Metric scores and metadata for each row of the summary.
+    report_type : ReportType
+        The type of report.
+    data : pandas.DataFrame
+        Rows as a DataFrame (read-only property).
+
+    See Also
+    --------
+    EstimatorReport.metrics.summarize : Create this display from a report.
+    RocCurveDisplay : Plot ROC curves.
+    PrecisionRecallCurveDisplay : Plot precision-recall curves.
+    ConfusionMatrixDisplay : Display the confusion matrix.
+    PredictionErrorDisplay : Plot regression prediction error.
+
+    Notes
+    -----
+    For cross-validation and comparison reports, :meth:`frame` can aggregate
+    scores across splits or estimators using the ``aggregate`` parameter.
     """
 
     def __init__(
@@ -402,5 +421,16 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     @DisplayMixin.style_plot
     def plot(self) -> Figure:
-        """Not yet implemented."""
+        """Plot the metrics summary (not implemented).
+
+        Parameters
+        ----------
+        None
+            This method does not accept parameters.
+
+        Raises
+        ------
+        NotImplementedError
+            Plotting is not yet supported.
+        """
         raise NotImplementedError

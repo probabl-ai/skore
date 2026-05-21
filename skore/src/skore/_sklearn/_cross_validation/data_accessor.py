@@ -105,14 +105,14 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             the strategy set by ``subsample_strategy``. It must be a strictly positive
             integer. If ``None``, no subsampling is applied.
 
-        subsample_strategy : {'head', 'random'}, default='head',
+        subsample_strategy : {"head", "random"}, default="head"
             The strategy used to subsample the dataframe hold by the display. It only
             has an effect when ``subsample`` is not None.
 
             - If ``'head'``: subsample by taking the ``subsample`` first points of the
               dataframe, similar to Pandas: ``df.head(n)``.
-            - If ``'random'``: randomly subsample the dataframe by using a uniform
-              distribution. The random seed is controlled by ``random_state``.
+            - If ``"random"``: randomly subsample the dataframe by using a uniform
+              distribution. The random seed is controlled by ``seed``.
 
         seed : int, default=None
             The random seed to use when randomly subsampling. It only has an effect when

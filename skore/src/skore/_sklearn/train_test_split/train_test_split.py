@@ -46,6 +46,15 @@ class TrainTestSplit:
         If not ``None``, data is split in a stratified fashion using this
         as the class labels.
 
+    See Also
+    --------
+    :func:`sklearn.model_selection.train_test_split` :
+        Underlying scikit-learn helper used to generate the split.
+    :func:`~skore.train_test_split` :
+        Wrapper with additional data-quality warnings.
+    :func:`~skore.evaluate` :
+        Evaluate an estimator using this splitter via the ``splitter`` parameter.
+
     Examples
     --------
     >>> import numpy as np
@@ -182,58 +191,60 @@ def train_test_split(
         ``X_train``, ``X_test``, ``y_train``, and ``y_test``,
         each containing respective split data.
 
+    See Also
+    --------
+    :func:`sklearn.model_selection.train_test_split` :
+        Underlying scikit-learn helper function.
+    :class:`~skore.TrainTestSplit` :
+        Cross-validation compatible splitter wrapping the same logic.
+
     Examples
     --------
-    >>> # xdoctest: +SKIP
     >>> import numpy as np
     >>> X, y = np.arange(10).reshape((5, 2)), range(5)
 
-    >>> # Drop-in replacement for sklearn train_test_split
+    Drop-in replacement for sklearn ``train_test_split``:
+
     >>> from skore import train_test_split
-    >>> X_train, X_test, y_train, y_test = train_test_split(X, y,
-    ...     test_size=0.33, random_state=42)
-    >>> X_train
-    array([[4, 5],
-           [0, 1],
-           [6, 7]])
+    >>> X_train, X_test, y_train, y_test = train_test_split(
+    ...     X, y, test_size=0.33, random_state=42)
+    >>> X_train.shape
+    (3, 2)
 
-    >>> # Explicit X and y, makes detection of problems easier
-    >>> X_train, X_test, y_train, y_test = train_test_split(X=X, y=y,
-    ...     test_size=0.33, random_state=42)
-    >>> X_train
-    array([[4, 5],
-           [0, 1],
-           [6, 7]])
+    Explicit ``X`` and ``y`` make detection of problems easier:
 
-    >>> # When passing X and y explicitly, X is returned before y
+    >>> X_train, X_test, y_train, y_test = train_test_split(
+    ...     X=X, y=y, test_size=0.33, random_state=42)
+    >>> X_train.shape
+    (3, 2)
+
+    When passing ``X`` and ``y`` explicitly, ``X`` is returned before ``y``:
+
     >>> arr = np.arange(10).reshape((5, 2))
     >>> splits = train_test_split(
     ...     arr, y=y, X=X, test_size=0.33, random_state=42)
     >>> arr_train, arr_test, X_train, X_test, y_train, y_test = splits
-    >>> X_train
-    array([[4, 5],
-           [0, 1],
-           [6, 7]])
+    >>> X_train.shape
+    (3, 2)
 
-    >>> # Returns dictionary when as_dict is True, inputs must be keyword arguments.
+    Returns a dictionary when ``as_dict=True``; inputs must be keyword arguments:
+
     >>> sample_weights = np.arange(10).reshape((5, 2))
     >>> split_dict = train_test_split(
     ...     X=X, y=y, sample_weights=sample_weights, as_dict=True, random_state=0)
-    >>> split_dict
-    {'X_train': ..., 'X_test': ...,
-     'y_train': ..., 'y_test': ...,
-     'sample_weights_train': ..., 'sample_weights_test': ...}
+    >>> sorted(split_dict)  # doctest: +ELLIPSIS
+    ['X_test', 'X_train', ..., 'y_test', 'y_train']
 
-    >>> # With as_dict is True, the first 2 arguments are implicitly treated as X and y
-    >>> train_test_split(X, as_dict=True)
-    {'X_train': ..., 'X_test': ...}
-    >>> train_test_split(X, y, as_dict=True)
-    {'X_train': ..., 'X_test': ...,
-     'y_train': ..., 'y_test': ...}
-    >>> train_test_split(X, y, sample_weights=sample_weights, as_dict=True)
-    {'X_train': ..., 'X_test': ...,
-     'y_train': ..., 'y_test': ...,
-     'sample_weights_train': ..., 'sample_weights_test': ...}
+    With ``as_dict=True``, the first two positional arguments are implicitly treated
+    as ``X`` and ``y``:
+
+    >>> sorted(train_test_split(X, as_dict=True))
+    ['X_test', 'X_train']
+    >>> sorted(train_test_split(X, y, as_dict=True))
+    ['X_test', 'X_train', 'y_test', 'y_train']
+    >>> sorted(train_test_split(
+    ...     X, y, sample_weights=sample_weights, as_dict=True))  # doctest: +ELLIPSIS
+    ['X_test', 'X_train', ..., 'y_test', 'y_train']
     """
     import sklearn.model_selection
 

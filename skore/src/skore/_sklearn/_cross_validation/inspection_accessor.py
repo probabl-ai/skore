@@ -38,6 +38,10 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             The feature importance display containing model coefficients and
             intercept.
 
+        See Also
+        --------
+        :class:`CoefficientsDisplay` : Display class for coefficient plots.
+
         Examples
         --------
         >>> from sklearn.datasets import make_regression
@@ -155,6 +159,11 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -------
         :class:`PermutationImportanceDisplay`
             The permutation importance display.
+
+        See Also
+        --------
+        :class:`PermutationImportanceDisplay` : Display class for permutation
+        importance plots.
 
         Examples
         --------
@@ -277,6 +286,10 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -------
         :class:`ImpurityDecreaseDisplay`
             The impurity decrease display containing the feature importances.
+
+        See Also
+        --------
+        :class:`ImpurityDecreaseDisplay` : Display class for impurity decrease plots.
 
         Examples
         --------

@@ -6,20 +6,26 @@
 
    .. _Unreleased: https://github.com/probabl-ai/skore/compare/skore/<new-version>...HEAD
 
-   Release highlights
-   ------------------
+Release highlights
+------------------
 
-   Changed
-   -------
+Changed
+-------
 
-   Added
-   -----
+- Align public API docstrings with numpydoc and scikit-learn conventions across
+  reports, displays, accessors, project helpers, and checks.
 
-   Removed
-   -------
+Removed
+-------
 
-   Fixed
-   -----
+- Drop ``THREADABLE`` and ``console`` from :obj:`skore.__all__` (they remain
+  importable from the package module but are not part of the documented public API).
+
+Added
+-----
+
+Fixed
+-----
 
 .. The changelog follows conventions close to https://common-changelog.org
 
@@ -42,6 +48,9 @@ Release highlights
 Changed
 -------
 
+- Align public API docstrings with numpydoc and scikit-learn conventions across
+  reports, displays, accessors, project helpers, and checks.
+
 - **Breaking change:** The following methods now enforce keyword-only arguments
   (parameters must be passed by name, not by position):
   :meth:`EstimatorReport.data.analyze`,
@@ -54,6 +63,12 @@ Changed
   :meth:`RocCurveDisplay.frame`,
   :meth:`PrecisionRecallCurveDisplay.frame`.
   See :pr:`2877` by :user:`Direk Kakkar`.
+
+Removed
+-------
+
+- Drop ``THREADABLE`` and ``console`` from :obj:`skore.__all__` (they remain
+  importable from the package module but are not part of the documented public API).
 
 Added
 -----
