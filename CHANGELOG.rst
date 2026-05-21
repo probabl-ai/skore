@@ -66,6 +66,13 @@ Added
   high-cardinality features, tip) and SKD008 (highly correlated input features,
   issue). See :pr:`2883` by :user:`GaetandeCast`.
 
+- :meth:`~EstimatorReport.metrics.summarize` (and ``summarize`` on the other reports)
+  now includes a ``score`` row corresponding to the estimator's default score, obtained
+  by running ``estimator.score()``. It supports :class:`skrub.DataOp` estimators,
+  for which scorings can be registered with :meth:`~skrub.DataOp.skb.with_scoring`.
+  The reports also now have a :meth:`~EstimatorReport.metrics.score` method.
+  See :pr:`2884` by :user:`auguste-probabl`.
+
 Removed
 -------
 

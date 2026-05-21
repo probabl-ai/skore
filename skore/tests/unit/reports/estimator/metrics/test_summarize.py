@@ -81,6 +81,7 @@ def test_default(forest_binary_classification_with_test, metric):
             "Brier score",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="RandomForestClassifier",
     )
@@ -102,6 +103,7 @@ def test_default_binary_classification_svc(svc_binary_classification_with_test):
             "ROC AUC",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="SVC",
     )
@@ -125,6 +127,7 @@ def test_default_multiclass_classification_forest(
             "ROC AUC",
             "Predict time (s)",
             "Fit time (s)",
+            "Score",
         },
         expected_estimator_name="RandomForestClassifier",
     )
@@ -150,6 +153,7 @@ def test_default_multiclass_classification_svc(svc_multiclass_classification_wit
             "Recall",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="SVC",
     )
@@ -176,6 +180,7 @@ def test_default_regression(linear_regression_with_test):
             "MAPE",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="LinearRegression",
     )
@@ -199,6 +204,7 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
             "MAPE",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="LinearRegression",
     )
@@ -224,6 +230,7 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
             "Recall",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="CustomClassifierPredictOnly",
     )
@@ -266,6 +273,7 @@ def test_pos_label(forest_binary_classification_with_test):
             "Brier score",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="RandomForestClassifier",
     )
@@ -297,6 +305,7 @@ def test_pos_label_strings(forest_binary_classification_with_test):
         "Brier score",
         "Fit time (s)",
         "Predict time (s)",
+        "Score",
     }
 
     labels = display.data.set_index("metric_verbose_name").loc["Precision", "label"]
@@ -324,6 +333,7 @@ def test_pos_label_bool(forest_binary_classification_with_test):
         "Brier score",
         "Fit time (s)",
         "Predict time (s)",
+        "Score",
     }
 
     labels = display.data.set_index("metric_verbose_name").loc["Precision", "label"]
