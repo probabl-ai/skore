@@ -52,11 +52,11 @@ class Project:
     | The workspace can be set using kwargs or the environment variable
       ``SKORE_WORKSPACE``.
     | If not, it will be by default set to a ``skore/`` directory in the user
-      cache directory:
+      app directory:
 
     - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-    - on Linux, usually ``${HOME}/.cache/skore``,
-    - on macOS, usually ``${HOME}/Library/Caches/skore``.
+    - on Linux, usually ``${HOME}/.local/share/skore``,
+    - on macOS, usually ``${HOME}/Library/Application Support/skore``.
 
     .. rubric:: MLflow mode
 
@@ -178,26 +178,18 @@ class Project:
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
 
-        Raises
-        ------
-        ValueError
-            If ``mode`` is invalid or, in hub mode, ``name`` is not formatted as
-            ``"<workspace>/<name>"``.
-        RuntimeError
-            If the project already contains reports associated with more than one
-            ML task.
-
         Examples
         --------
         >>> from pathlib import Path
         >>> from tempfile import TemporaryDirectory
         >>> from skore import Project
-        >>> tmpdir = TemporaryDirectory().name
-        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir))
+        >>> tmpdir = TemporaryDirectory()
+        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
         >>> project.name
         'my-xp'
         >>> project.mode
         'local'
+        >>> tmpdir.cleanup()
         """
         plugin, parameters = Project.__setup_plugin(mode, name)
 
@@ -300,11 +292,6 @@ class Project:
         -------
         report : EstimatorReport or CrossValidationReport
             The report associated with ``id``.
-
-        Raises
-        ------
-        KeyError
-            If a non-existent ID is passed.
 
         Examples
         --------

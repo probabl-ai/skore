@@ -463,16 +463,5 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     @DisplayMixin.style_plot
     def plot(self) -> Figure:
-        """Plot the metrics summary (not implemented).
-
-        Parameters
-        ----------
-        None
-            This method does not accept parameters.
-
-        Raises
-        ------
-        NotImplementedError
-            Plotting is not yet supported.
-        """
+        """Plot the metrics summary (not implemented)."""
         raise NotImplementedError

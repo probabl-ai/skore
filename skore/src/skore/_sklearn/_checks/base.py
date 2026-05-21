@@ -115,12 +115,6 @@ class ChecksSummaryDisplay(DisplayHelpMixin):
             ``"title"``, ``"severity"``, ``"explanation"``, and
             ``"documentation_url"``. The ``"explanation"`` column is ``None``
             for checks that passed without reporting anything.
-
-        Raises
-        ------
-        ValueError
-            If ``severity`` is not one of ``"issue"``, ``"tip"``,
-            ``"passed"``, or ``"all"``.
         """
         match severity:
             case "issue" | "tip":
