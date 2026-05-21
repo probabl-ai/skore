@@ -48,12 +48,12 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train","both"}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test and show them side-by-side
+            - "both" : use both the train and test sets, showing them side-by-side.
 
         metric : str or list of str or None, default=None
             The metrics to report, from the list of registered metrics. None means show
