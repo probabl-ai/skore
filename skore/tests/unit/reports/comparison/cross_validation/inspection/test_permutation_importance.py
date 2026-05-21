@@ -13,7 +13,7 @@ def _children_cache_size(report):
     sizes = {
         len(estimator_report._cache)
         for cv_report in report.reports_.values()
-        for estimator_report in cv_report.estimator_reports_
+        for estimator_report in cv_report.reports_
     }
     msg = "In this test, we expect all children report to have the same cache size"
     assert len(sizes) == 1, msg
@@ -61,7 +61,7 @@ def test_cache_behavior(comparison_cv_report_ridge):
     report = comparison_cv_report_ridge
     assert _children_cache_size(report) == 0
 
-    child_report = next(iter(report.reports_.values())).estimator_reports_[0]
+    child_report = next(iter(report.reports_.values())).reports_[0]
     with check_cache_changed(child_report._cache):
         report.inspection.permutation_importance(seed=42, n_repeats=2)
 
@@ -119,7 +119,7 @@ def test_cache_parameter_in_cache(comparison_cv_report_ridge):
     report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test", metric="r2"
     )
-    child_report = next(iter(report.reports_.values())).estimator_reports_[0]
+    child_report = next(iter(report.reports_.values())).reports_[0]
     with check_cache_changed(child_report._cache):
         report.inspection.permutation_importance(
             seed=42,

@@ -103,10 +103,10 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                         data_source=data_source,
                         metric=metric,
                     )
-                    for report in self._parent.estimator_reports_
+                    for report in self._parent.reports_
                 ),
                 description="Compute metric for each split",
-                total=len(self._parent.estimator_reports_),
+                total=len(self._parent.reports_),
             )
         )
 
@@ -124,7 +124,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         list[str]
             The list of available metric names.
         """
-        return self._parent.estimator_reports_[0].metrics.available()
+        return self._parent.reports_[0].metrics.available()
 
     def add(
         self,
@@ -193,7 +193,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         ...
         Mean Absolute Error      ...       ...
         """
-        for report in self._parent.estimator_reports_:
+        for report in self._parent.reports_:
             report.metrics.add(
                 metric,
                 name=name,
@@ -211,7 +211,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         name : str
             The name of the metric to remove.
         """
-        for report in self._parent.estimator_reports_:
+        for report in self._parent.reports_:
             report.metrics.remove(name)
 
     def timings(
@@ -254,12 +254,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Predict time train (s)       ...       ...
         """
         timings: pd.DataFrame = pd.concat(
-            [
-                pd.Series(report.metrics.timings())
-                for report in self._parent.estimator_reports_
-            ],
+            [pd.Series(report.metrics.timings()) for report in self._parent.reports_],
             axis=1,
-            keys=[f"Split #{i}" for i in range(len(self._parent.estimator_reports_))],
+            keys=[f"Split #{i}" for i in range(len(self._parent.reports_))],
         )
         if aggregate:
             if isinstance(aggregate, str):
@@ -278,7 +275,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         This helper allows passing kwargs to the sub-reports, unlike :meth:`summarize`.
         """
-        reports = self._parent.estimator_reports_
+        reports = self._parent.reports_
         metric = reports[0]._metric_registry[metric_name]
 
         rows = []
@@ -967,9 +964,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         child_displays = [
             report.metrics.roc(data_source=data_source)
-            for report in self._parent.estimator_reports_
+            for report in self._parent.reports_
         ]
-        split_indices = range(len(self._parent.estimator_reports_))
+        split_indices = range(len(self._parent.reports_))
 
         display = RocCurveDisplay._concatenate(
             child_displays,
@@ -1012,9 +1009,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         child_displays = [
             report.metrics.precision_recall(data_source=data_source)
-            for report in self._parent.estimator_reports_
+            for report in self._parent.reports_
         ]
-        split_indices = range(len(self._parent.estimator_reports_))
+        split_indices = range(len(self._parent.reports_))
 
         display = PrecisionRecallCurveDisplay._concatenate(
             child_displays,
@@ -1072,7 +1069,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         if isinstance(subsample, numbers.Integral):
             # Preserve the total number of sub-samples:
-            n_children = len(self._parent.estimator_reports_)
+            n_children = len(self._parent.reports_)
             if 0 < subsample < n_children:
                 subsample = 1
             else:
@@ -1084,9 +1081,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 subsample=subsample,
                 seed=seed,
             )
-            for report in self._parent.estimator_reports_
+            for report in self._parent.reports_
         ]
-        split_indices = range(len(self._parent.estimator_reports_))
+        split_indices = range(len(self._parent.reports_))
 
         display = PredictionErrorDisplay._concatenate(
             child_displays,
@@ -1137,9 +1134,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         child_displays = [
             report.metrics.confusion_matrix(data_source=data_source)
-            for report in self._parent.estimator_reports_
+            for report in self._parent.reports_
         ]
-        split_indices = range(len(self._parent.estimator_reports_))
+        split_indices = range(len(self._parent.reports_))
 
         display = ConfusionMatrixDisplay._concatenate(
             child_displays,

@@ -43,7 +43,7 @@ def test_reuses_component_cached_results(report, monkeypatch):
     report.checks.summarize()
 
     for sub_report in report.reports_.values():
-        for estimator_report in getattr(sub_report, "estimator_reports_", [sub_report]):
+        for estimator_report in getattr(sub_report, "reports_", [sub_report]):
             for check in estimator_report._checks_registry:
                 monkeypatch.setattr(
                     check,

@@ -21,7 +21,7 @@ def test_display_binary_classification(
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, display)
     _ = getattr(report.metrics, display)()
-    child_cache = report.estimator_reports_[0]._cache
+    child_cache = report.reports_[0]._cache
     assert child_cache != {}
     with check_cache_unchanged(child_cache):
         _ = getattr(report.metrics, display)()
@@ -34,7 +34,7 @@ def test_display_regression(pyplot, linear_regression_data, display):
     report = CrossValidationReport(estimator, X, y, splitter=2)
     assert hasattr(report.metrics, display)
     _ = getattr(report.metrics, display)(seed=0)
-    child_cache = report.estimator_reports_[0]._cache
+    child_cache = report.reports_[0]._cache
     assert child_cache != {}
     with check_cache_unchanged(child_cache):
         _ = getattr(report.metrics, display)(seed=0)
@@ -75,6 +75,5 @@ def test_seed_none(linear_regression_data):
     # skore stores the predictions of the internal estimators, but not the
     # concatenated cross-validation display.
     assert all(
-        len(estimator_report._cache) == 2
-        for estimator_report in report.estimator_reports_
+        len(estimator_report._cache) == 2 for estimator_report in report.reports_
     )

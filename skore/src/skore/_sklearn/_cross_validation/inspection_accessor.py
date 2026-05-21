@@ -60,7 +60,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     report.inspection.coefficients()
                     .coefficients.copy()
                     .assign(split=split_idx)
-                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                    for split_idx, report in enumerate(self._parent.reports_)
                 ],
                 ignore_index=True,
             ),
@@ -255,7 +255,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                         n_jobs=n_jobs,
                         seed=seed,
                     ).importances.assign(split=split_idx)
-                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                    for split_idx, report in enumerate(self._parent.reports_)
                 ],
                 ignore_index=True,
             ),
@@ -303,7 +303,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     report.inspection.impurity_decrease()
                     .importances.copy()
                     .assign(split=split_idx)
-                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                    for split_idx, report in enumerate(self._parent.reports_)
                 ],
                 ignore_index=True,
             ),
