@@ -6,12 +6,14 @@ import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 
+from skore._sklearn.types import PositiveLabel
+
 if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
     from skore._sklearn._plot.metrics.metrics_summary_display import (
         MetricsSummaryRow,
     )
-    from skore._sklearn.types import DataSource, PositiveLabel
+    from skore._sklearn.types import DataSource
 
 _TIMING_METRICS = {"Fit time (s)", "Predict time (s)"}
 
