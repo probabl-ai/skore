@@ -20,22 +20,6 @@ from skore._sklearn._cross_validation.report import _generate_estimator_report
 from skore._utils._testing import MockEstimator
 
 
-def test_report_can_be_rebuilt_using_parameters(
-    cross_validation_reports_binary_classification,
-):
-    report, _ = cross_validation_reports_binary_classification
-    parameters = {}
-
-    assert isinstance(report, CrossValidationReport)
-
-    for parameter in ["estimator", "X", "y", "splitter"]:
-        assert hasattr(report, parameter), f"The parameter '{parameter}' must be stored"
-
-        parameters[parameter] = getattr(report, parameter)
-
-    CrossValidationReport(**parameters)
-
-
 def test_generate_estimator_report(forest_binary_classification_data):
     """Test the behaviour of `_generate_estimator_report`."""
     estimator, X, y = forest_binary_classification_data

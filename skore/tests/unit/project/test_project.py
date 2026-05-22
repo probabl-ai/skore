@@ -130,8 +130,9 @@ class TestProject:
         with raises(
             ValueError,
             match=escape(
-                "The mode `local` is not supported. You need to install "
-                "`skore-local-project` to use it."
+                "The mode `local` is not supported. "
+                "You can install the required dependencies with:\n"
+                '    pip install "skore[local]"'
             ),
         ):
             Project(mode="local", name="<name>")
@@ -144,6 +145,29 @@ class TestProject:
             return [f'{fake_library_name} ; extra == "local"']
 
         monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
+
+        with raises(
+            ImportError,
+            match=escape(
+                f"Missing library: `{fake_library_name}`. "
+                "You can fix this error by installing `skore[local]`."
+            ),
+        ):
+            Project(mode="local", name="<name>")
+
+    def test_init_local_missing_optional_dependency_without_plugin(self, monkeypatch):
+        """Non-regression test for missing extras before plugin discovery."""
+        fake_library_name = uuid4().hex
+
+        def fake_requires(name):
+            assert name == "skore"
+            return [f'{fake_library_name} ; extra == "local"']
+
+        monkeypatch.undo()
+        monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
+        monkeypatch.setattr(
+            "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
+        )
 
         with raises(
             ImportError,
@@ -193,8 +217,9 @@ class TestProject:
         with raises(
             ValueError,
             match=escape(
-                "The mode `hub` is not supported. You need to install "
-                "`skore-hub-project` to use it."
+                "The mode `hub` is not supported. "
+                "You can install the required dependencies with:\n"
+                '    pip install "skore[hub]"'
             ),
         ):
             Project(mode="hub", name="<workspace>/<name>")

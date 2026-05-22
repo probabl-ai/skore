@@ -334,6 +334,55 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
             return timings
 
+    @available_if(_check_any_sub_report_has_metric("score"))
+    def score(
+        self,
+        *,
+        data_source: DataSource = "test",
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> pd.DataFrame:
+        """Compute the estimator's default score.
+
+        This calls the underlying estimator's ``score`` method on the chosen data
+        source. For :class:`skrub.DataOp` estimators, scorings registered via
+        :meth:`~skrub.DataOp.skb.with_scoring` are used.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
+
+        Returns
+        -------
+        pd.DataFrame
+            The estimator's default score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
+        >>> comparison_report.metrics.score()
+        Estimator      LogisticRegression_1  LogisticRegression_2
+        Metric
+        Score                       0.94...               0.94...
+        """
+        return self._metric("score", data_source=data_source).frame(
+            aggregate=aggregate,
+        )
+
     @available_if(_check_any_sub_report_has_metric("accuracy"))
     def accuracy(
         self,
@@ -1182,10 +1231,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         """
         do_thresholds = True
         if not all(
-            hasattr(report._estimator, "predict_proba")
+            hasattr(report.learner_, "predict_proba")
             for report in self._parent.reports_.values()
         ) and not all(
-            hasattr(report._estimator, "decision_function")
+            hasattr(report.learner_, "decision_function")
             for report in self._parent.reports_.values()
         ):
             warnings.warn(

@@ -7,3 +7,5 @@
 - Update `README.md`
   - Badge
   - "You need Python>=3.x"
+- Update `CONTRIBUTING.rst`
+  - "You will need ``python >=3.x``"

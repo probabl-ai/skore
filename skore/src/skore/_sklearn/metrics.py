@@ -189,11 +189,44 @@ class Metric:
         if score is not None:
             return score
 
+        score = self._compute(report=report, data_source=data_source, **merged_kwargs)
+
+        if isinstance(score, np.ndarray):
+            score = cast(NDArray, score).tolist()
+
+        if hasattr(score, "item"):
+            score = cast(NDArray, score).item()
+        elif isinstance(score, list):
+            if len(score) == 1:
+                score = score[0]
+            elif "classification" in report._ml_task:
+                score = dict(
+                    zip(report.learner_.classes_.tolist(), score, strict=False)
+                )
+
+        report._cache[cache_key] = score
+        return cast(float | dict[PositiveLabel, float] | list[float], score)
+
+    def _compute(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource,
+        **kwargs: Any,
+    ) -> Any:
+        """Compute the raw uncached score.
+
+        Override this hook when a metric's score cannot be expressed as
+        ``self.function(...)`` (see :class:`Score`). Subclasses that only need
+        to tweak kwargs should override :meth:`__call__` and delegate to
+        ``super().__call__``; the cache and post-processing live in
+        :meth:`__call__` and run for every override of this hook.
+        """
         if self.function is None:
             raise ValueError(f"Metric {self.name!r} has no scoring function.")
 
         metric_params = inspect.signature(self.function).parameters
-        call_kwargs = merged_kwargs.copy()
+        call_kwargs = kwargs.copy()
         if "pos_label" in metric_params and "pos_label" not in call_kwargs:
             call_kwargs["pos_label"] = report.pos_label
 
@@ -207,33 +240,17 @@ class Metric:
                 pos_label=call_kwargs.get("pos_label", None),
             )
 
-            score = cast(MetricCallable, self.function)(y_true, y_pred, **call_kwargs)
-        elif self.function_kind == FunctionKind.SCORER:
-            data, y_true = report._get_data_and_y_true(data_source=data_source)
-            X = data["_skrub_X"]
+            return cast(MetricCallable, self.function)(y_true, y_pred, **call_kwargs)
 
-            score = cast(ScorerCallable, self.function)(
-                report.estimator_,
-                X,
-                y_true,
-                **call_kwargs,
-            )
-
-        if isinstance(score, np.ndarray):
-            score = cast(NDArray, score).tolist()
-
-        if hasattr(score, "item"):
-            score = cast(NDArray, score).item()
-        elif isinstance(score, list):
-            if len(score) == 1:
-                score = score[0]
-            elif "classification" in report._ml_task:
-                score = dict(
-                    zip(report._estimator.classes_.tolist(), score, strict=False)
-                )
-
-        report._cache[cache_key] = score
-        return cast(float | dict[PositiveLabel, float] | list[float], score)
+        assert self.function_kind == FunctionKind.SCORER
+        data, y_true = report._get_data_and_y_true(data_source=data_source)
+        X = data["_skrub_X"]
+        return cast(ScorerCallable, self.function)(
+            report.estimator_,
+            X,
+            y_true,
+            **call_kwargs,
+        )
 
     @staticmethod
     def new(
@@ -482,7 +499,7 @@ class Brier(Metric):
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task == "binary-classification" and hasattr(
-            report._estimator, "predict_proba"
+            report.learner_, "predict_proba"
         )
 
     def __call__(self, *, report: EstimatorReport, data_source="test", **kwargs):
@@ -492,7 +509,7 @@ class Brier(Metric):
         return super().__call__(
             report=report,
             data_source=data_source,
-            pos_label=report._estimator.classes_[-1],
+            pos_label=report.learner_.classes_[-1],
             **kwargs,
         )
 
@@ -506,8 +523,8 @@ class RocAuc(Metric):
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
-        has_predict_proba = hasattr(report._estimator, "predict_proba")
-        has_decision_function = hasattr(report._estimator, "decision_function")
+        has_predict_proba = hasattr(report.learner_, "predict_proba")
+        has_decision_function = hasattr(report.learner_, "decision_function")
         if report._ml_task == "binary-classification":
             return has_predict_proba or has_decision_function
         elif report._ml_task == "multiclass-classification":
@@ -551,7 +568,7 @@ class LogLoss(Metric):
         return report._ml_task in (
             "binary-classification",
             "multiclass-classification",
-        ) and hasattr(report._estimator, "predict_proba")
+        ) and hasattr(report.learner_, "predict_proba")
 
 
 class R2(Metric):
@@ -654,8 +671,35 @@ class Mape(Metric):
         )
 
 
+class Score(Metric):
+    name = "score"
+    verbose_name = "Score"
+    greater_is_better = True
+    function = None
+    function_kind = None
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return hasattr(report.estimator_, "score")
+
+    def _compute(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource,
+        **kwargs: Any,
+    ) -> Any:
+        # Both estimator paths accept the dict ``data`` directly:
+        # ``_LearnerAdapter`` unpacks ``_skrub_X``/``_skrub_y`` for sklearn
+        # estimators; ``SkrubLearner`` takes the full env, preserving vars
+        # beyond X/y (e.g. additional tables referenced by the DataOp).
+        data, _ = report._get_data_and_y_true(data_source=data_source)
+        return report.learner_.score(data)
+
+
 # Order matters for default display
 BUILTIN_METRICS: list[Metric] = [
+    Score(),
     Accuracy(),
     Precision(),
     Recall(),

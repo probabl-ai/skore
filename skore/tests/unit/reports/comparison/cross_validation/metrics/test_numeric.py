@@ -53,6 +53,17 @@ def case_timings_with_predictions(
 
 
 @pytest.fixture
+def case_score(comparison_cross_validation_reports_binary_classification):
+    expected_index = pd.Index(["Score"], name="Metric")
+    return (
+        comparison_cross_validation_reports_binary_classification,
+        "score",
+        expected_index,
+        expected_columns,
+    )
+
+
+@pytest.fixture
 def case_accuracy(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.Index(["Accuracy"], name="Metric")
     return (
@@ -181,6 +192,7 @@ def case(request):
     [
         "case_timings_no_predictions",
         "case_timings_with_predictions",
+        "case_score",
         "case_accuracy",
         "case_precision",
         "case_recall",
@@ -205,6 +217,7 @@ def test_metrics(case):
     [
         "case_timings_no_predictions",
         "case_timings_with_predictions",
+        "case_score",
         "case_accuracy",
         "case_precision",
         "case_recall",

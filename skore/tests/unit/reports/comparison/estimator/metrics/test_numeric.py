@@ -10,6 +10,17 @@ from skore import ComparisonReport, EstimatorReport
     "metric_name, expected",
     [
         (
+            "score",
+            pd.DataFrame(
+                [[0.45, 0.55]],
+                columns=pd.Index(
+                    ["DummyClassifier_1", "DummyClassifier_2"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["Score"], name="Metric"),
+            ),
+        ),
+        (
             "accuracy",
             pd.DataFrame(
                 [[0.45, 0.55]],
@@ -113,6 +124,17 @@ def test_binary_classification(
 @pytest.mark.parametrize(
     "metric_name, expected",
     [
+        (
+            "score",
+            pd.DataFrame(
+                [[-0.061173, -0.061173]],
+                columns=pd.Index(
+                    ["DummyRegressor_1", "DummyRegressor_2"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["Score"], name="Metric"),
+            ),
+        ),
         (
             "rmse",
             pd.DataFrame(

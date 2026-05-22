@@ -50,10 +50,9 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
 
     if mode not in plugins.names:
         raise ValueError(
-            f"The mode `{mode}` is not supported. You need to install "
-            f"`skore-{mode}-project` to use it. You can install it with pip:\n"
-            f'    pip install "skore[{mode}]"\n'
-            f"`skore-{mode}-project` is already included in `skore` conda package."
+            f"The mode `{mode}` is not supported. "
+            f"You can install the required dependencies with:\n"
+            f'    pip install "skore[{mode}]"'
         )
 
     return plugins[mode].load()

@@ -76,6 +76,7 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
         ("brier_score", 1),
         ("roc_auc", 1),
         ("log_loss", 1),
+        ("score", 1),
     ],
 )
 def test_binary_classification(forest_binary_classification_data, metric, nb_stats):
@@ -95,6 +96,7 @@ def test_binary_classification(forest_binary_classification_data, metric, nb_sta
         ("recall", 3),
         ("roc_auc", 3),
         ("log_loss", 1),
+        ("score", 1),
     ],
 )
 def test_multiclass_classification(
@@ -109,7 +111,14 @@ def test_multiclass_classification(
 
 
 @pytest.mark.parametrize(
-    "metric, nb_stats", [("r2", 1), ("rmse", 1), ("mae", 1), ("mape", 1)]
+    "metric, nb_stats",
+    [
+        ("r2", 1),
+        ("rmse", 1),
+        ("mae", 1),
+        ("mape", 1),
+        ("score", 1),
+    ],
 )
 def test_regression(linear_regression_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
@@ -119,7 +128,14 @@ def test_regression(linear_regression_data, metric, nb_stats):
 
 
 @pytest.mark.parametrize(
-    "metric, nb_stats", [("r2", 2), ("rmse", 2), ("mae", 2), ("mape", 2)]
+    "metric, nb_stats",
+    [
+        ("r2", 2),
+        ("rmse", 2),
+        ("mae", 2),
+        ("mape", 2),
+        ("score", 1),
+    ],
 )
 def test_regression_multioutput(linear_regression_multioutput_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
@@ -191,17 +207,3 @@ def test_precision_recall_pos_label_overwrite(
             (metric.capitalize(), "A"), (report.estimator_name_, "mean")
         ]
     )
-
-
-def test_data_source_both(logistic_binary_classification_data):
-    """
-    data_source="both" is not yet supported for CrossValidationReport.
-
-    Non regression test for https://github.com/probabl-ai/skore/issues/2546
-    """
-    classifier, X, y = logistic_binary_classification_data
-    report = CrossValidationReport(classifier, X, y)
-
-    error_msg = 'data_source="both" is not yet supported for CrossValidationReport'
-    with pytest.raises(NotImplementedError, match=error_msg):
-        report.metrics.summarize(data_source="both")

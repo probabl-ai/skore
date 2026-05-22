@@ -236,7 +236,7 @@ class HUBClient(Client):
 
         # Overload headers with package semantic versioning
         if PACKAGE_SEMVER:
-            headers.update({"X-Skore-Client": f"skore-hub-project/{PACKAGE_SEMVER}"})
+            headers.update({"X-Skore-Client": f"skore/{PACKAGE_SEMVER}"})
 
         # Prefix the request by the hub URI when ``url`` is not absolute
         url = urljoin(URI(), str(url))
