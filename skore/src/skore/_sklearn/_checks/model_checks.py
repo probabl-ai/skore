@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
 from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.ensemble import (
+    HistGradientBoostingClassifier,
+    HistGradientBoostingRegressor,
+)
 from sklearn.exceptions import UndefinedMetricWarning
+from sklearn.linear_model import LogisticRegression, RidgeCV
 
+from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._checks._utils import (
-    _TIMING_METRICS,
     CheckNotApplicable,
     check_score_gap_to_baseline,
+    collect_scores,
     detect_outliers_modified_zscore,
     get_preprocessed_data,
     majority_vote,
@@ -25,14 +31,21 @@ if TYPE_CHECKING:
     from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
 
+_TIMING_METRICS_FLAT = {"fit_time_s", "predict_time_s"}
 
-def _get_metrics_data(report: EstimatorReport) -> tuple:
-    """Compute report/baseline metrics data for SKD001 and SKD002.
 
-    Raises :class:`CheckNotApplicable` when train+test data is
-    unavailable.
+def _baseline_estimator_report(
+    report: EstimatorReport,
+    kind: Literal["dummy", "performance", "fast"],
+) -> EstimatorReport:
+    """Build a baseline EstimatorReport mirroring ``report``.
+
+    For ``kind="dummy"``, returns a plain ``DummyClassifier`` / ``DummyRegressor``
+    baseline. For ``kind="performance"`` and ``kind="fast"``, the estimator is
+    wrapped in :func:`skrub.tabular_pipeline`.
+
+    Raises :class:`CheckNotApplicable` for unsupported ml tasks.
     """
-    # Avoid circular import
     from skore._sklearn._estimator.report import EstimatorReport
 
     if (
@@ -43,10 +56,31 @@ def _get_metrics_data(report: EstimatorReport) -> tuple:
     ):
         raise CheckNotApplicable()
 
+    is_classification = report.ml_task in (
+        "binary-classification",
+        "multiclass-classification",
+    )
+    if not (is_classification or report.ml_task == "regression"):
+        raise CheckNotApplicable()
+    if kind == "dummy":
+        estimator = (
+            DummyClassifier(strategy="prior")
+            if is_classification
+            else DummyRegressor(strategy="mean")
+        )
+    elif kind == "performance":
+        estimator = tabular_pipeline(
+            HistGradientBoostingClassifier()
+            if is_classification
+            else HistGradientBoostingRegressor()
+        )
+    else:  # kind == "fast"
+        estimator = tabular_pipeline(
+            LogisticRegression(max_iter=1000) if is_classification else RidgeCV()
+        )
+
     baseline_report = EstimatorReport(
-        DummyClassifier(strategy="prior")
-        if "classification" in report.ml_task
-        else DummyRegressor(strategy="mean"),
+        estimator,
         X_train=report.X_train,
         y_train=report.y_train,
         X_test=report.X_test,
@@ -54,23 +88,7 @@ def _get_metrics_data(report: EstimatorReport) -> tuple:
         pos_label=report.pos_label,
     )
     baseline_report._metric_registry = report._metric_registry
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-        report_data = report.metrics.summarize(data_source="train").data.rename(
-            columns={"score": "score_train"}
-        )
-        report_data["score_test"] = report.metrics.summarize(data_source="test").data[
-            "score"
-        ]
-
-        baseline_data = baseline_report.metrics.summarize(
-            data_source="train"
-        ).data.rename(columns={"score": "score_train"})
-        baseline_data["score_test"] = baseline_report.metrics.summarize(
-            data_source="test"
-        ).data["score"]
-
-    return report_data, baseline_data
+    return baseline_report
 
 
 class CheckOverfitting(Check):
@@ -89,18 +107,28 @@ class CheckOverfitting(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        report_data, _baseline_data = _get_metrics_data(report)
+        if (
+            report.X_train is None
+            or report.y_train is None
+            or report.X_test is None
+            or report.y_test is None
+        ):
+            raise CheckNotApplicable()
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+            report_train = collect_scores(report, data_source="train")
+            report_test = collect_scores(report, data_source="test")
 
         votes = [
             check_score_gap_to_baseline(
-                score=report_data.loc[idx, "score_train"],
-                baseline=report_data.loc[idx, "score_test"],
-                greater_is_better=report_data.loc[idx, "greater_is_better"],
+                score=report_train[key]["score"],
+                baseline=report_test[key]["score"],
+                greater_is_better=report_train[key]["greater_is_better"],
                 floor=0.03,
                 fraction=0.10,
             )
-            for idx in range(len(report_data))
-            if report_data.loc[idx, "metric_verbose_name"] not in _TIMING_METRICS
+            for key in report_train.keys() & report_test.keys()
         ]
 
         majority, n_positive, total = majority_vote(votes)
@@ -128,25 +156,36 @@ class CheckUnderfitting(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        report_data, baseline_data = _get_metrics_data(report)
+        baseline = _baseline_estimator_report(report, kind="dummy")
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+            report_train = collect_scores(report, data_source="train")
+            report_test = collect_scores(report, data_source="test")
+            baseline_train = collect_scores(baseline, data_source="train")
+            baseline_test = collect_scores(baseline, data_source="test")
 
         votes = [
             not check_score_gap_to_baseline(
-                score=report_data.loc[idx, "score_train"],
-                baseline=baseline_data.loc[idx, "score_train"],
-                greater_is_better=baseline_data.loc[idx, "greater_is_better"],
+                score=report_train[key]["score"],
+                baseline=baseline_train[key]["score"],
+                greater_is_better=baseline_train[key]["greater_is_better"],
                 floor=0.01,
                 fraction=0.05,
             )
             and not check_score_gap_to_baseline(
-                score=report_data.loc[idx, "score_test"],
-                baseline=baseline_data.loc[idx, "score_test"],
-                greater_is_better=baseline_data.loc[idx, "greater_is_better"],
+                score=report_test[key]["score"],
+                baseline=baseline_test[key]["score"],
+                greater_is_better=baseline_test[key]["greater_is_better"],
                 floor=0.01,
                 fraction=0.05,
             )
-            for idx in range(len(report_data))
-            if report_data.loc[idx, "metric_verbose_name"] not in _TIMING_METRICS
+            for key in (
+                report_train.keys()
+                & report_test.keys()
+                & baseline_train.keys()
+                & baseline_test.keys()
+            )
         ]
         majority, n_positive, total = majority_vote(votes)
         if majority:
@@ -183,7 +222,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
             [
                 detect_outliers_modified_zscore(report_data.loc[idx])
                 for idx in report_data.index
-                if idx not in _TIMING_METRICS
+                if idx not in _TIMING_METRICS_FLAT
             ]
         )
         explanation = []
@@ -381,6 +420,102 @@ class CheckCorrelatedFeatures(Check):
         return None
 
 
+class CheckWorseThanBaseline(Check):
+    """Check whether the model is worse than a strong baseline (SKD009).
+
+    Compares test-set scores against a
+    :func:`skrub.tabular_pipeline`-wrapped HistGradientBoosting baseline.
+    """
+
+    code = "SKD009"
+    title = "Model worse than baseline"
+    report_type = "estimator"
+    docs_url = "skd009-worse-than-baseline"
+    severity = "issue"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        baseline = _baseline_estimator_report(report, kind="performance")
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+            report_test = collect_scores(report, data_source="test")
+            baseline_test = collect_scores(baseline, data_source="test")
+
+        votes = [
+            not check_score_gap_to_baseline(
+                score=report_test[key]["score"],
+                baseline=baseline_test[key]["score"],
+                greater_is_better=baseline_test[key]["greater_is_better"],
+                floor=0.01,
+                fraction=0.05,
+            )
+            for key in report_test.keys() & baseline_test.keys()
+        ]
+        majority, n_positive, total = majority_vote(votes)
+        if majority:
+            return (
+                "Test scores are not significantly better than a "
+                "HistGradientBoosting baseline for "
+                f"{n_positive}/{total} default predictive metrics."
+            )
+        return None
+
+
+class CheckSlowerThanBaseline(Check):
+    """Check whether the model is slower than a fast baseline (SKD010).
+
+    Compares fit time and test-set scores against a
+    :func:`skrub.tabular_pipeline`-wrapped fast linear baseline
+    (:class:`~sklearn.linear_model.RidgeCV` for regression,
+    :class:`~sklearn.linear_model.LogisticRegression` for classification).
+    The slowness gate triggers when the report's fit time is at least ``2x``
+    the baseline's, with an absolute gap of at least ``0.05s`` to avoid noise
+    on very fast fits.
+    """
+
+    code = "SKD010"
+    title = "Model slower than baseline"
+    report_type = "estimator"
+    docs_url = "skd010-slower-than-baseline"
+    severity = "issue"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        baseline = _baseline_estimator_report(report, kind="fast")
+
+        if report.fit_time_ is None or baseline.fit_time_ is None:
+            raise CheckNotApplicable()
+
+        slowness_ratio = report.fit_time_ / baseline.fit_time_
+        if slowness_ratio < 2.0 or report.fit_time_ - baseline.fit_time_ < 0.05:
+            return None
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+            report_test = collect_scores(report, data_source="test")
+            baseline_test = collect_scores(baseline, data_source="test")
+
+        votes = [
+            not check_score_gap_to_baseline(
+                score=report_test[key]["score"],
+                baseline=baseline_test[key]["score"],
+                greater_is_better=baseline_test[key]["greater_is_better"],
+                floor=0.01,
+                fraction=0.05,
+            )
+            for key in report_test.keys() & baseline_test.keys()
+        ]
+        majority, n_positive, total = majority_vote(votes)
+        if majority:
+            return (
+                f"Fit is ~{slowness_ratio:.1f}x slower than a fast linear baseline "
+                f"without significantly better test scores "
+                f"({n_positive}/{total} default predictive metrics)."
+            )
+        return None
+
+
 _BUILTIN_CHECKS = [
     CheckOverfitting(),
     CheckUnderfitting(),
@@ -390,4 +525,6 @@ _BUILTIN_CHECKS = [
     CheckCoefficientsInterpretation(),
     CheckMDIHighCardinalityBias(),
     CheckCorrelatedFeatures(),
+    CheckWorseThanBaseline(),
+    CheckSlowerThanBaseline(),
 ]

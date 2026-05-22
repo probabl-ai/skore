@@ -62,6 +62,7 @@ Added
   showing train and test metrics side by side with columns named
   ``"EstimatorName (train)"`` and ``"EstimatorName (test)"``.
   See :pr:`2904` by :user:`direkkakkar319-ops`.
+
 - Added two new automated checks: SKD007 (MDI feature importance bias with
   high-cardinality features, tip) and SKD008 (highly correlated input features,
   issue). See :pr:`2883` by :user:`GaetandeCast`.
@@ -72,6 +73,10 @@ Added
   for which scorings can be registered with :meth:`~skrub.DataOp.skb.with_scoring`.
   The reports also now have a :meth:`~EstimatorReport.metrics.score` method.
   See :pr:`2884` by :user:`auguste-probabl`.
+
+- Added two new automated checks: SKD009 (model worse than baseline, issue) and
+  SKD010 (model slower than baseline, issue). See :pr:`2906` by
+  :user:`GaetandeCast`.
 
 Removed
 -------
