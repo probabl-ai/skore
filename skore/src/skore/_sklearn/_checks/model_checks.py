@@ -79,14 +79,17 @@ def _baseline_estimator_report(
             LogisticRegression(max_iter=1000) if is_classification else RidgeCV()
         )
 
-    baseline_report = EstimatorReport(
-        estimator,
-        X_train=report.X_train,
-        y_train=report.y_train,
-        X_test=report.X_test,
-        y_test=report.y_test,
-        pos_label=report.pos_label,
-    )
+    try:
+        baseline_report = EstimatorReport(
+            estimator,
+            X_train=report.X_train,
+            y_train=report.y_train,
+            X_test=report.X_test,
+            y_test=report.y_test,
+            pos_label=report.pos_label,
+        )
+    except Exception as exc:
+        raise CheckNotApplicable() from exc
     baseline_report._metric_registry = report._metric_registry
     return baseline_report
 
