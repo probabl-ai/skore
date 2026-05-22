@@ -235,26 +235,21 @@ class CalibrationDisplay(DisplayMixin):
         label: PositiveLabel = None,
     ):
         if "label" in frame.columns:
-            # Multiple classes: let seaborn handle colours via hue
-            lineplot_kwargs = {k: v for k, v in lineplot_kwargs.items() if k != "color"}
-            facet = sns.relplot(
-                data=frame,
-                kind="line",
-                x="predicted_probability",
-                y="fraction_of_positives",
-                hue="label",
-                **lineplot_kwargs,
-            )
+            lineplot_kwargs["hue"] = "label"
         else:
-            facet = sns.relplot(
-                data=frame,
-                kind="line",
-                x="predicted_probability",
-                y="fraction_of_positives",
-                label=estimator_name,
-                hue=None,
-                **lineplot_kwargs,
-            )
+            lineplot_kwargs = {
+                k: v for k, v in lineplot_kwargs.items() if k != "palette"
+            }
+            lineplot_kwargs["label"] = estimator_name
+            lineplot_kwargs["hue"] = None
+
+        facet = sns.relplot(
+            data=frame,
+            kind="line",
+            x="predicted_probability",
+            y="fraction_of_positives",
+            **lineplot_kwargs,
+        )
 
         figure = facet.figure
         ax = facet.ax
