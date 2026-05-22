@@ -6,17 +6,45 @@ import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 
+from skore._sklearn.types import PositiveLabel
+
 if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
+    from skore._sklearn._plot.metrics.metrics_summary_display import (
+        MetricsSummaryRow,
+    )
+    from skore._sklearn.types import DataSource
 
-_TIMING_METRICS = {
-    "Fit time (s)",
-    "Predict time (s)",
-    "fit_time_s",
-    "predict_time_s",
-    "Fit time s",
-    "Predict time s",
-}
+_TIMING_METRICS = {"Fit time (s)", "Predict time (s)"}
+
+MetricName = str
+Label = PositiveLabel | None
+Average = str | None
+Output = int | None
+MetricKey = tuple[MetricName, Label, Average, Output]
+
+
+def _metric_key(row: MetricsSummaryRow) -> MetricKey:
+    """Identity tuple for a metric row (verbose name + label/average/output)."""
+    return (row["metric_verbose_name"], row["label"], row["average"], row["output"])
+
+
+def collect_scores(
+    report: EstimatorReport,
+    *,
+    data_source: DataSource,
+    include_timing: bool = False,
+) -> dict[MetricKey, MetricsSummaryRow]:
+    """Collect ``summarize`` rows keyed by metric identity for an estimator report.
+
+    Timing rows are filtered out by default.
+    """
+    rows = report.metrics.summarize(data_source=data_source).rows
+    return {
+        _metric_key(row): row
+        for row in rows
+        if include_timing or row["metric_verbose_name"] not in _TIMING_METRICS
+    }
 
 
 def adaptive_threshold(

@@ -146,6 +146,8 @@ class Project:
                 f'`mode` must be "hub", "local" or "mlflow" (found {mode})'
             )
 
+        assert_optional_dependencies_installed(mode)
+
         return plugin.get(group="skore.plugins.project", mode=mode), parameters
 
     def __init__(self, name: str, *, mode: ProjectMode = "local", **kwargs):
@@ -192,8 +194,6 @@ class Project:
         >>> tmpdir.cleanup()
         """
         plugin, parameters = Project.__setup_plugin(mode, name)
-
-        assert_optional_dependencies_installed(mode)
 
         self.__mode = mode
         self.__name = name
