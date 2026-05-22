@@ -313,7 +313,7 @@ class CheckCoefficientsInterpretation(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.estimator)
+        _, predictor = split_preprocessor_estimator(report.learner_)
         X = get_preprocessed_data(report, target="X", concatenate=True)
 
         if X is None or not hasattr(predictor, "coef_"):
@@ -349,7 +349,7 @@ class CheckMDIHighCardinalityBias(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.estimator)
+        _, predictor = split_preprocessor_estimator(report.learner_)
         X = get_preprocessed_data(report, target="X")
 
         if X is None or not hasattr(predictor, "feature_importances_"):

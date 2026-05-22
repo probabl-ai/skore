@@ -21,7 +21,7 @@ def test_aggregate_mean(forest_binary_classification_data):
 
     assert isinstance(result.columns, pd.MultiIndex)
     assert result.columns.tolist() == [("RandomForestClassifier", "mean")]
-    assert result.shape == (10, 1)
+    assert result.shape == (11, 1)
 
 
 def test_aggregate_mean_std(forest_binary_classification_data):
@@ -37,7 +37,7 @@ def test_aggregate_mean_std(forest_binary_classification_data):
         ("RandomForestClassifier", "mean"),
         ("RandomForestClassifier", "std"),
     ]
-    assert result.shape == (10, 2)
+    assert result.shape == (11, 2)
 
 
 def test_aggregate_none(forest_binary_classification_data):
@@ -53,7 +53,7 @@ def test_aggregate_none(forest_binary_classification_data):
         ("RandomForestClassifier", "Split #0"),
         ("RandomForestClassifier", "Split #1"),
     ]
-    assert result.shape == (10, 2)
+    assert result.shape == (11, 2)
 
 
 def test_favorability_with_aggregate_mean_std(forest_binary_classification_data):
@@ -113,6 +113,7 @@ def test_flat_index_binary_classification(forest_binary_classification_data):
     result_flat = display.frame(aggregate=["mean", "std"], flat_index=True)
     assert isinstance(result_flat.index, pd.Index)
     assert result_flat.index.tolist() == [
+        "score",
         "accuracy",
         "precision_0",
         "precision_1",
@@ -140,6 +141,7 @@ def test_multioutput_with_flat_index(linear_regression_multioutput_data):
     assert isinstance(result_flat.index, pd.Index)
     # Note: "R²" is lowercased
     assert result_flat.index.tolist() == [
+        "score",
         "r²_0",
         "r²_1",
         "rmse_0",
@@ -188,6 +190,60 @@ def test_flat_index_with_favorability(forest_binary_classification_data):
 
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
+        "score",
+        "accuracy",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "log_loss",
+        "brier_score",
+        "fit_time_s",
+        "predict_time_s",
+    ]
+
+
+def test_data_source_both_favorability(forest_binary_classification_data):
+    """Test favorability columns when data_source='both'."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    name = report.estimator_name_
+    display = report.metrics.summarize(data_source="both")
+
+    result = display.frame(favorability=False)
+    assert result.columns.tolist() == [
+        (f"{name} (train)", "mean"),
+        (f"{name} (train)", "std"),
+        (f"{name} (test)", "mean"),
+        (f"{name} (test)", "std"),
+    ]
+
+    result = display.frame(favorability=True)
+    assert result.columns.tolist() == [
+        (f"{name} (train)", "mean"),
+        (f"{name} (train)", "std"),
+        (f"{name} (test)", "mean"),
+        (f"{name} (test)", "std"),
+        ("Favorability", ""),
+    ]
+
+
+def test_data_source_both_flat_index(forest_binary_classification_data):
+    """Test flat_index columns and index when data_source='both'."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    name = report.estimator_name_.lower()
+    result = report.metrics.summarize(data_source="both").frame(flat_index=True)
+
+    assert result.columns.tolist() == [
+        f"{name}_(train)_mean",
+        f"{name}_(train)_std",
+        f"{name}_(test)_mean",
+        f"{name}_(test)_std",
+    ]
+    assert result.index.tolist() == [
+        "score",
         "accuracy",
         "precision_0",
         "precision_1",
@@ -211,7 +267,7 @@ def test_multiclass_classification(forest_multiclass_classification_data):
 
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Label"]
-    assert result.shape == (13, 2)
+    assert result.shape == (14, 2)
 
 
 def test_with_mixed_favorability(forest_binary_classification_data):
