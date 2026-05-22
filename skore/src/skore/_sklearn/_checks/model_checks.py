@@ -31,6 +31,8 @@ if TYPE_CHECKING:
     from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
 
+_TIMING_METRICS_FLAT = {"fit_time_s", "predict_time_s"}
+
 
 def _baseline_estimator_report(
     report: EstimatorReport,
@@ -220,7 +222,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
             [
                 detect_outliers_modified_zscore(report_data.loc[idx])
                 for idx in report_data.index
-                if idx not in ["fit_time_s", "predict_time_s"]
+                if idx not in _TIMING_METRICS_FLAT
             ]
         )
         explanation = []

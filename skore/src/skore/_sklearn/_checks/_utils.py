@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import pandas as pd
@@ -11,11 +11,15 @@ if TYPE_CHECKING:
     from skore._sklearn._plot.metrics.metrics_summary_display import (
         MetricsSummaryRow,
     )
-    from skore._sklearn.types import DataSource
+    from skore._sklearn.types import DataSource, PositiveLabel
 
 _TIMING_METRICS = {"Fit time (s)", "Predict time (s)"}
 
-MetricKey = tuple[str, Any, Any, Any]
+MetricName = str
+Label = PositiveLabel | None
+Average = str | None
+Output = int | None
+MetricKey = tuple[MetricName, Label, Average, Output]
 
 
 def _metric_key(row: MetricsSummaryRow) -> MetricKey:
