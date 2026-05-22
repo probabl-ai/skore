@@ -77,6 +77,7 @@ Added
 - Added two new automated checks: SKD009 (model worse than baseline, issue) and
   SKD010 (model slower than baseline, issue). See :pr:`2906` by
   :user:`GaetandeCast`.
+
 Removed
 -------
 
