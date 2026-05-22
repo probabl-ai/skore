@@ -830,7 +830,7 @@ class Score(Metric):
         self,
         *,
         report: EstimatorReport,
-        data_source: DataSource,
+        data_source: DataSource = "test",
         **kwargs: Any,
     ) -> Any:
         # Both estimator paths accept the dict ``data`` directly:
@@ -838,7 +838,7 @@ class Score(Metric):
         # estimators; ``SkrubLearner`` takes the full env, preserving vars
         # beyond X/y (e.g. additional tables referenced by the DataOp).
         data, _ = report._get_data_and_y_true(data_source=data_source)
-        return report.learner_.score(data)
+        return report.learner_.score(data, **kwargs)
 
 
 # Order matters for default display
