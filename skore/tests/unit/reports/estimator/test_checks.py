@@ -239,20 +239,17 @@ def test_exception_when_train_data_missing(regression_train_test_split):
                 check.check_function(report)
 
 
-def test_exception_when_baseline_report_creation_fails(
-    regression_train_test_split, monkeypatch
-):
+def test_exception_when_baseline_report_creation_fails(regression_data, monkeypatch):
     """Check that an exception is raised when the baseline report creation fails."""
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    estimator = LinearRegression().fit(X_train, y_train)
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
     monkeypatch.setattr(
         EstimatorReport,
         "_fit_estimator",
         lambda self, **kwargs: RuntimeError("Test error"),
     )
     for check in report._checks_registry:
-        if check.code in ["SKD001", "SKD002", "SKD009", "SKD010"]:
+        if check.code in ["SKD002", "SKD009", "SKD010"]:
             with pytest.raises(CheckNotApplicable):
                 check.check_function(report)
 
