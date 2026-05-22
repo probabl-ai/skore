@@ -16,6 +16,7 @@ from skore._sklearn._plot.inspection.permutation_importance import (
 from skore._sklearn.metrics import MetricLike
 from skore._sklearn.types import DataSource
 from skore._utils._accessor import (
+    _check_all_checks,
     _check_estimator_has_coef,
     _check_estimator_has_feature_importances,
     _check_estimator_has_method,
