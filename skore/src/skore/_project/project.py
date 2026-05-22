@@ -248,8 +248,8 @@ class Project:
         >>> from skore import Project, evaluate
         >>> X, y = make_regression(random_state=42)
         >>> report = evaluate(LinearRegression(), X, y, splitter=0.2)
-        >>> tmpdir = TemporaryDirectory().name
-        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir))
+        >>> tmpdir = TemporaryDirectory()
+        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
         >>> project.put("my-regression", report)
         >>> tmpdir.cleanup()
         """
@@ -303,8 +303,8 @@ class Project:
         >>> from skore import Project, evaluate
         >>> X, y = make_regression(random_state=42)
         >>> report = evaluate(LinearRegression(), X, y, splitter=0.2)
-        >>> tmpdir = TemporaryDirectory().name
-        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir))
+        >>> tmpdir = TemporaryDirectory()
+        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
         >>> project.put("my-regression", report)
         >>> summary = project.summarize()
         >>> report_id = summary.index.get_level_values("id")[0]

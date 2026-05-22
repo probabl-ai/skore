@@ -76,6 +76,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     skore.CrossValidationReport
         Report for the cross-validation of an estimator.
 
+    Notes
+    -----
+    Reports passed to :class:`~skore.ComparisonReport` are not copied. If you pass
+    a report to :class:`~skore.ComparisonReport`, and then modify the report outside
+    later, it will affect the report stored inside the :class:`~skore.ComparisonReport`
+    as well, which can lead to inconsistent results. For this reason, modifying
+    reports after creation is strongly discouraged.
+
     Examples
     --------
     >>> from sklearn.datasets import make_classification

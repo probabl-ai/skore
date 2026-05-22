@@ -220,7 +220,7 @@ class Check(Protocol):
 
     check_function : callable
         Method that inspects a report and returns a finding explanation or
-        ``None``; see :meth:`check_function`.
+        ``None``.
     """
 
     code: CheckCode

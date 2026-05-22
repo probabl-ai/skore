@@ -44,6 +44,8 @@ class Configuration:
 
     Examples
     --------
+    **Global configuration** using the ``configuration`` instance from skore:
+
     >>> # xdoctest: +SKIP
     >>> from skore import configuration
     >>> configuration.show_progress = False
@@ -138,7 +140,8 @@ class Configuration:
         plot_backend : str, default=unchanged
             Backend used for rendering plots (e.g. ``"matplotlib"``).
         ignore_checks : list of str, tuple of str, or None, default=unchanged
-            Global check codes ignored by :meth:`~skore.EstimatorReport.checks.summarize`.
+            Global check codes ignored by
+            :meth:`~skore.EstimatorReport.checks.summarize`.
 
         Notes
         -----
