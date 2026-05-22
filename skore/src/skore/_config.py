@@ -44,6 +44,7 @@ class Configuration:
 
     Examples
     --------
+    >>> # xdoctest: +SKIP
     >>> from skore import configuration
     >>> configuration.show_progress = False
     >>> configuration.plot_backend = "matplotlib"
@@ -137,7 +138,7 @@ class Configuration:
         plot_backend : str, default=unchanged
             Backend used for rendering plots (e.g. ``"matplotlib"``).
         ignore_checks : list of str, tuple of str, or None, default=unchanged
-            Global check codes ignored by ``report.checks.summarize(...)``.
+            Global check codes ignored by :meth:`~skore.EstimatorReport.checks.summarize`.
 
         Notes
         -----

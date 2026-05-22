@@ -61,8 +61,6 @@ class PredictionErrorDisplay(DisplayMixin):
 
     Attributes
     ----------
-    _prediction_error : DataFrame
-        Prediction error data in long format (true, predicted, residuals).
     range_y_true : RangeData
         Global range of the true target values.
     range_y_pred : RangeData

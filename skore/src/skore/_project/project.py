@@ -52,7 +52,7 @@ class Project:
     | The workspace can be set using kwargs or the environment variable
       ``SKORE_WORKSPACE``.
     | If not, it will be by default set to a ``skore/`` directory in the user
-      app directory:
+      data directory:
 
     - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
     - on Linux, usually ``${HOME}/.local/share/skore``,
@@ -251,6 +251,7 @@ class Project:
         >>> tmpdir = TemporaryDirectory().name
         >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir))
         >>> project.put("my-regression", report)
+        >>> tmpdir.cleanup()
         """
         from skore import CrossValidationReport, EstimatorReport
 
@@ -310,6 +311,7 @@ class Project:
         >>> retrieved = project.get(report_id)
         >>> type(retrieved).__name__
         'EstimatorReport'
+        >>> tmpdir.cleanup()
         """
         return self.__project.get(id)
 
