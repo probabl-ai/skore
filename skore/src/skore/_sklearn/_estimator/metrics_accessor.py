@@ -1072,11 +1072,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -----
         To keep the stored display lightweight, the precision-recall curve is
         downsampled to at most 500 points per class. Sampling is performed by
-        picking evenly-spaced indices on the sorted thresholds returned by
-        scikit-learn (quantile-based sampling that preserves the empirical
-        threshold distribution). Curve endpoints are always kept and no
-        interpolation is performed. The reported average precision is
-        computed on the full curve and is therefore unaffected.
+        picking evenly-spaced indices on the sorted thresholds.
 
         Examples
         --------
@@ -1201,12 +1197,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -----
         To keep the stored display lightweight, the thresholded one-vs-rest
         confusion matrices are downsampled to at most 500 points per class.
-        Sampling is performed by picking evenly-spaced indices on the sorted
-        thresholds returned by scikit-learn (quantile-based sampling that
-        preserves the empirical threshold distribution). Curve endpoints are
-        always kept and no interpolation is performed. Only the thresholded
-        matrices are affected; the predict-based ``n x n`` confusion matrix
-        is unchanged.
+        Sampling is performed by picking evenly-spaced indices on the sorted thresholds.
 
         Examples
         --------
