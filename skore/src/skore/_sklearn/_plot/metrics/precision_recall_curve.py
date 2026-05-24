@@ -15,6 +15,7 @@ from skore._sklearn._plot.utils import (
     _ClassifierDisplayMixin,
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
+    _downsample_thresholds_indices,
     _get_curve_plot_columns,
     _one_hot_encode,
     _validate_style_kwargs,
@@ -146,8 +147,9 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     def plot(
         self,
         *,
-        subplot_by: Literal["auto", "label", "estimator", "data_source"]
-        | None = "auto",
+        subplot_by: (
+            Literal["auto", "label", "estimator", "data_source"] | None
+        ) = "auto",
         despine: bool = True,
         label: PositiveLabel = _DEFAULT,
     ) -> Figure:
@@ -322,6 +324,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         data_source: DataSource,
         report_pos_label: PositiveLabel = None,
         drop_intermediate: bool = True,
+        max_n_thresholds: int | None = 500,
     ) -> "PrecisionRecallCurveDisplay":
         """Plot precision-recall curve given binary class predictions.
 
@@ -355,6 +358,15 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             on a plotted precision-recall curve. This is useful in order to
             create lighter precision-recall curves.
 
+        max_n_thresholds : int or None, default=500
+            Cap on the number of thresholds kept per class after the curve is
+            computed. When the number of thresholds returned by scikit-learn
+            exceeds ``max_n_thresholds``, the curve is downsampled by picking
+            evenly-spaced indices from the sorted thresholds (quantile-based
+            sampling that preserves the empirical threshold distribution).
+            Endpoints are always kept and no interpolation is performed.
+            ``None`` disables downsampling. Must be at least 2.
+
         Returns
         -------
         display : PrecisionRecallCurveDisplay
@@ -370,6 +382,7 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 y_true=y_true_onehot[:, class_idx],
                 y_pred=y_pred_arr[:, class_idx],
                 drop_intermediate=drop_intermediate,
+                max_n_thresholds=max_n_thresholds,
                 # metadata:
                 estimator=estimator_name,
                 data_source=data_source,
@@ -389,7 +402,9 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         )
 
     @staticmethod
-    def _compute_data_ovr(y_true, y_pred, drop_intermediate, **metadata):
+    def _compute_data_ovr(
+        y_true, y_pred, drop_intermediate, max_n_thresholds, **metadata
+    ):
         precision, recall, thresholds = precision_recall_curve(
             y_true,
             y_pred,
@@ -398,11 +413,20 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         )
         average_precision = average_precision_score(y_true, y_pred, pos_label=1)
 
+        precision = precision[:-1]
+        recall = recall[:-1]
+        indices = _downsample_thresholds_indices(thresholds.size, max_n_thresholds)
+        precision, recall, thresholds = (
+            precision[indices],
+            recall[indices],
+            thresholds[indices],
+        )
+
         curve_data = {
             **metadata,
             "threshold": thresholds,
-            "precision": precision[:-1],
-            "recall": recall[:-1],
+            "precision": precision,
+            "recall": recall,
         }
         n = thresholds.size
         for col in metadata:

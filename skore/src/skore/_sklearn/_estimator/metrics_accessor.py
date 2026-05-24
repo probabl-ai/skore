@@ -1012,6 +1012,12 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         :class:`RocCurveDisplay`
             The ROC curve display.
 
+        Notes
+        -----
+        To keep the stored display lightweight, the ROC curve is downsampled
+        to at most 500 points per class. Sampling is performed by picking
+        evenly-spaced indices on the sorted thresholds.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -1061,6 +1067,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         :class:`PrecisionRecallCurveDisplay`
             The precision-recall curve display.
+
+        Notes
+        -----
+        To keep the stored display lightweight, the precision-recall curve is
+        downsampled to at most 500 points per class. Sampling is performed by
+        picking evenly-spaced indices on the sorted thresholds returned by
+        scikit-learn (quantile-based sampling that preserves the empirical
+        threshold distribution). Curve endpoints are always kept and no
+        interpolation is performed. The reported average precision is
+        computed on the full curve and is therefore unaffected.
 
         Examples
         --------
@@ -1180,6 +1196,17 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         :class:`ConfusionMatrixDisplay`
             The confusion matrix display.
+
+        Notes
+        -----
+        To keep the stored display lightweight, the thresholded one-vs-rest
+        confusion matrices are downsampled to at most 500 points per class.
+        Sampling is performed by picking evenly-spaced indices on the sorted
+        thresholds returned by scikit-learn (quantile-based sampling that
+        preserves the empirical threshold distribution). Curve endpoints are
+        always kept and no interpolation is performed. Only the thresholded
+        matrices are affected; the predict-based ``n x n`` confusion matrix
+        is unchanged.
 
         Examples
         --------

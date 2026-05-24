@@ -15,6 +15,7 @@ from skore._sklearn._plot.utils import (
     _ClassifierDisplayMixin,
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
+    _downsample_thresholds_indices,
     _get_curve_plot_columns,
     _one_hot_encode,
     _validate_style_kwargs,
@@ -344,6 +345,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         data_source: DataSource,
         report_pos_label: PositiveLabel = None,
         drop_intermediate: bool = True,
+        max_n_thresholds: int | None = 500,
     ) -> "RocCurveDisplay":
         """Private method to create a RocCurveDisplay from predictions.
 
@@ -375,6 +377,15 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         drop_intermediate : bool, default=True
             Whether to drop intermediate points with identical value.
 
+        max_n_thresholds : int or None, default=500
+            Cap on the number of thresholds kept per class after the curve is
+            computed. When the number of thresholds returned by scikit-learn
+            exceeds ``max_n_thresholds``, the curve is downsampled by picking
+            evenly-spaced indices from the sorted thresholds (quantile-based
+            sampling that preserves the empirical threshold distribution).
+            Endpoints are always kept and no interpolation is performed.
+            ``None`` disables downsampling. Must be at least 2.
+
         Returns
         -------
         display : RocCurveDisplay
@@ -391,6 +402,7 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 y_true=y_true_onehot[:, class_idx],
                 y_pred=y_pred_arr[:, class_idx],
                 drop_intermediate=drop_intermediate,
+                max_n_thresholds=max_n_thresholds,
                 # metadata:
                 estimator=estimator_name,
                 data_source=data_source,
@@ -410,7 +422,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         )
 
     @staticmethod
-    def _compute_data_ovr(y_true, y_pred, drop_intermediate, **metadata):
+    def _compute_data_ovr(
+        y_true, y_pred, drop_intermediate, max_n_thresholds, **metadata
+    ):
         fpr, tpr, thresholds = roc_curve(
             y_true,
             y_pred,
@@ -418,6 +432,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             drop_intermediate=drop_intermediate,
         )
         roc_auc = auc(fpr, tpr)
+
+        indices = _downsample_thresholds_indices(fpr.size, max_n_thresholds)
+        fpr, tpr, thresholds = fpr[indices], tpr[indices], thresholds[indices]
 
         curve_data = {
             **metadata,
