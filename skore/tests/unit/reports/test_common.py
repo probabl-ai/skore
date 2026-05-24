@@ -1,7 +1,11 @@
 import jedi
 import pytest
 from pandas.testing import assert_frame_equal
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import make_scorer, mean_squared_error
+from sklearn.datasets import make_classification
+
+from skore import EstimatorReport
 
 
 @pytest.fixture(
@@ -68,3 +72,17 @@ def test_metrics_add_scorer(report):
 
     display = report.metrics.summarize()
     assert "Mean Squared Error" in display.data["metric_verbose_name"].values
+
+
+def test_estimator_report_repr_and_html():
+    X, y = make_classification(random_state=42)
+    estimator = LogisticRegression().fit(X, y)
+    report = EstimatorReport(estimator, fit=False, X_test=X, y_test=y)
+
+    text = repr(report)
+    assert isinstance(text, str)
+    assert "Estimator Report" in text
+
+    html = report._repr_html_()
+    assert isinstance(html, str)
+    assert "Estimator Report" in html

@@ -192,6 +192,32 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
     def __init__(self, summary: dict[str, Any]) -> None:
         self.summary = summary
 
+    def __repr__(self):
+        # Use the DataFrame's string representation for a wide-format table
+        if hasattr(self, "frame"):
+            try:
+                return self.frame().to_string()
+            except Exception:
+                pass
+        return super().__repr__()
+
+    def _repr_html_(self):
+        # Prefer plot if available, else fallback to DataFrame HTML
+        if hasattr(self, "plot"):
+            try:
+                self.plot()
+                return (
+                    "<div><em>To control the plot, call <code>.plot()</code> explicitly.</em></div>"
+                )
+            except Exception:
+                pass
+        if hasattr(self, "frame"):
+            try:
+                return self.frame().to_html()
+            except Exception:
+                pass
+        return super().__repr__()
+
     @classmethod
     def _compute_data_for_display(cls, dataset: pd.DataFrame) -> "TableReportDisplay":
         """Private method to create a TableReportDisplay from a dataset.

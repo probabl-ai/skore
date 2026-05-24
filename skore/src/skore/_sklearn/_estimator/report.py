@@ -801,11 +801,21 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
 
     def __repr__(self) -> str:
-        """Return a string representation."""
-        return f"""{self.__class__.__name__}:
-        {self.estimator_!r}
-
-        {self.metrics.summarize().frame()}"""
+        """Return a markdown summary of the report."""
+        fit_time = "N/A" if self.fit_time_ is None else f"{self.fit_time_:.6f}"
+        summary = [
+            "# Estimator Report",
+            "",
+            f"- **Estimator:** {self.estimator_name_}",
+            f"- **Fit time (s):** {fit_time}",
+            "",
+            "## Metrics",
+            "",
+            "```",
+            self.metrics.summarize().data.to_string(index=False),
+            "```",
+        ]
+        return "\n".join(summary)
 
     def _html_repr_fragments(self) -> dict[str, str]:
         """HTML snippets for the report body (metrics, estimator diagram, data table).
@@ -899,7 +909,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             {
                 "container_id": container_id,
                 "report_class_name": report_class_name,
-                "report_title": f"Report for {self.estimator_name_}",
+                "report_title": "Estimator Report",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,

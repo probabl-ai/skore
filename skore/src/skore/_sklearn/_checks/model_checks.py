@@ -257,7 +257,7 @@ class CheckHighClassImbalance(Check):
         if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
-        values, counts = np.unique_counts(y)
+        values, counts = np.unique(y, return_counts=True)
         overrepresented_class = values[counts >= 0.8 * counts.sum()]
 
         if overrepresented_class.size > 0:
@@ -289,7 +289,7 @@ class CheckUnderrepresentedClasses(Check):
         if report.ml_task != "multiclass-classification" or y is None:
             raise CheckNotApplicable()
 
-        values, counts = np.unique_counts(y)
+        values, counts = np.unique(y, return_counts=True)
         underrepresented_classes = values[counts <= 0.1 * counts.sum()]
         if underrepresented_classes.size > 0:
             return (

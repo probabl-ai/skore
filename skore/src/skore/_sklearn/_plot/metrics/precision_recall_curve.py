@@ -82,6 +82,32 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     >>> display.plot()
     """
 
+    def __repr__(self):
+        # Use the DataFrame's string representation for a wide-format table
+        if hasattr(self, "frame"):
+            try:
+                return self.frame().to_string()
+            except Exception:
+                pass
+        return super().__repr__()
+
+    def _repr_html_(self):
+        # Prefer plot if available, else fallback to DataFrame HTML
+        if hasattr(self, "plot"):
+            try:
+                self.plot()
+                return (
+                    "<div><em>To control the plot, call <code>.plot()</code> explicitly.</em></div>"
+                )
+            except Exception:
+                pass
+        if hasattr(self, "frame"):
+            try:
+                return self.frame().to_html()
+            except Exception:
+                pass
+        return super().__repr__()
+
     _default_relplot_kwargs: dict[str, Any] = {
         "height": 6,
         "aspect": 1,

@@ -29,3 +29,24 @@ def test_display_protocol(pyplot, capsys, plot_func, estimator, dataset):
     display = getattr(report.metrics, plot_func)()
 
     assert isinstance(display, Display)
+
+
+def test_display_repr_and_html(pyplot):
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    report = EstimatorReport(
+        LogisticRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.roc()
+
+    text = repr(display)
+    assert isinstance(text, str)
+    assert text
+
+    html = display._repr_html_()
+    assert isinstance(html, str)
+    assert "plot()" in html
