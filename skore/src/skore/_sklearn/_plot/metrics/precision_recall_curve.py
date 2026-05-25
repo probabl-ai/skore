@@ -171,9 +171,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     def plot(
         self,
         *,
-        subplot_by: (
-            Literal["auto", "label", "estimator", "data_source"] | None
-        ) = "auto",
+        subplot_by: Literal["auto", "label", "estimator", "data_source"]
+        | None = "auto",
         despine: bool = True,
         label: PositiveLabel = _DEFAULT,
     ) -> Figure:
