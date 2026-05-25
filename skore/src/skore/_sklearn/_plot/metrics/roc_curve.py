@@ -152,8 +152,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     def plot(
         self,
         *,
-        subplot_by: Literal["auto", "label", "estimator", "data_source"]
-        | None = "auto",
+        subplot_by: (
+            Literal["auto", "label", "estimator", "data_source"] | None
+        ) = "auto",
         plot_chance_level: bool = True,
         despine: bool = True,
         label: PositiveLabel = _DEFAULT,
@@ -165,18 +166,18 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         Parameters
         ----------
         subplot_by : {"auto", "label", "estimator", "data_source"} or None, \
-            default="auto"
+                default="auto"
             Column to use for creating subplots. Options:
 
-            - "auto": None for :class:`~skore.EstimatorReport` and \
-              :class:`~skore.CrossValidationReport`, "estimator" for \
+            - "auto": None for :class:`~skore.EstimatorReport` and
+              :class:`~skore.CrossValidationReport`, "estimator" for
               :class:`~skore.ComparisonReport`
             - "label": one subplot per class when plotting one-vs-rest curves
             - "estimator": one subplot per estimator (comparison only)
-            - "data_source": one subplot per data source \
+            - "data_source": one subplot per data source
               (:class:`~skore.EstimatorReport` with both data sources only)
-            - None: no subplots (Not available for comparison in classification \
-                with no specified label)
+            - None: no subplots (Not available for comparison in classification
+              with no specified label)
 
         plot_chance_level : bool, default=True
             Whether to plot the chance level.
