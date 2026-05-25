@@ -35,19 +35,9 @@ if TYPE_CHECKING:
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):
-    """Report for comparing reports.
-
-    This object can be used to compare several :class:`skore.EstimatorReport` instances,
-    or several :class:`~skore.CrossValidationReport` instances.
+    """Compare several estimator or cross-validation reports.
 
     Refer to the :ref:`comparison_report` section of the user guide for more details.
-
-    .. caution::
-       Reports passed to `ComparisonReport` are not copied. If you pass
-       a report to `ComparisonReport`, and then modify the report outside later, it
-       will affect the report stored inside the `ComparisonReport` as well, which
-       can lead to inconsistent results. For this reason, modifying reports after
-       creation is strongly discouraged.
 
     Parameters
     ----------
@@ -69,6 +59,15 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     reports_ : dict mapping names to reports
         The compared reports.
 
+    metrics : MetricsAccessor
+        Accessor for computing and plotting metrics across compared reports.
+
+    inspection : InspectionAccessor
+        Accessor for model inspection across compared reports.
+
+    checks : ChecksAccessor
+        Accessor for running diagnostic checks.
+
     See Also
     --------
     skore.EstimatorReport
@@ -76,6 +75,14 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     skore.CrossValidationReport
         Report for the cross-validation of an estimator.
+
+    Notes
+    -----
+    Reports passed to :class:`~skore.ComparisonReport` are not copied. If you pass
+    a report to :class:`~skore.ComparisonReport`, and then modify the report outside
+    later, it will affect the report stored inside the :class:`~skore.ComparisonReport`
+    as well, which can lead to inconsistent results. For this reason, modifying
+    reports after creation is strongly discouraged.
 
     Examples
     --------
@@ -244,17 +251,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         *,
         n_jobs: int | None = None,
     ) -> None:
-        """
-        ComparisonReport instance initializer.
-
-        Notes
-        -----
-        We check that the estimator reports can be compared:
-        - all reports are estimator reports,
-        - all estimators are in the same ML use case,
-        - all estimators have non-empty X_test and y_test,
-        - all estimators have the same X_test and y_test.
-        """
         super().__init__()
         self.reports_, self._report_type, self._pos_label = (
             ComparisonReport._validate_reports(reports)
@@ -327,7 +323,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train"}
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
@@ -424,6 +420,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             - the estimator is a skrub :class:`~skrub.SkrubLearner` or
             - the estimator was built from a skrub :class:`~skrub.DataOp`.
 
+        Returns
+        -------
+        :class:`~skore.EstimatorReport`
+            The estimator report.
+
         Examples
         --------
         >>> from sklearn.datasets import make_classification
@@ -441,17 +442,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ... )
         >>> comparison_report = ComparisonReport([linear_report, forest_report])
         >>> summary = comparison_report.metrics.summarize().frame()
-
-        >>> # Notice that e.g. the RandomForestClassifier performs best
         >>> final_report = comparison_report.create_estimator_report(
         ...     report_key="RandomForestClassifier", X_test=X_test, y_test=y_test
         ... )
         >>> final_report.metrics.summarize().frame()
-
-        Returns
-        -------
-        report : :class:`~skore.EstimatorReport`
-            The estimator report.
         """
         if report_key not in self.reports_:
             raise ValueError(

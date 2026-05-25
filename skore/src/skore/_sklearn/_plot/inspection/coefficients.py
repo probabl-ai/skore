@@ -22,11 +22,11 @@ from skore._utils._index import flatten_multi_index
 
 
 class CoefficientsDisplay(DisplayMixin):
-    """Display to inspect the coefficients of linear models.
+    """Display linear model coefficients.
 
     Parameters
     ----------
-    coefficients : DataFrame | list[DataFrame]
+    coefficients : DataFrame
         The coefficients data to display. The columns are:
 
         - `estimator`
@@ -38,6 +38,24 @@ class CoefficientsDisplay(DisplayMixin):
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
         Report type from which the display is created.
+
+    Attributes
+    ----------
+    coefficients : DataFrame
+        Coefficient values per feature, estimator, and split.
+    report_type : ReportType
+        The type of report.
+
+    See Also
+    --------
+    EstimatorReport.inspection.coefficients : Create this display from a report.
+    ImpurityDecreaseDisplay : Display tree-based MDI importances.
+    PermutationImportanceDisplay : Display permutation importances.
+
+    Notes
+    -----
+    For cross-validation and comparison reports, :meth:`frame` and :meth:`plot`
+    can aggregate coefficients across splits using the ``aggregate`` parameter.
 
     Examples
     --------
@@ -103,6 +121,10 @@ class CoefficientsDisplay(DisplayMixin):
 
         Parameters
         ----------
+        aggregate : {"mean", "std"}, ("mean", "std") or None, default=("mean", "std")
+            Aggregation functions to apply across cross-validation splits or
+            comparison estimators. When `None`, no aggregation is performed.
+
         include_intercept : bool, default=True
             Whether or not to include the intercept in the dataframe.
 

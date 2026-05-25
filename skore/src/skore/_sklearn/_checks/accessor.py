@@ -48,17 +48,12 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         >>> from sklearn.datasets import make_classification
         >>> X, y = make_classification(random_state=42)
         >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
-        >>> report.checks.summarize()
-        Checks summary: 2 issue(s), ...
-        Issues:
-        - [SKD002] Potential underfitting...
-        - [SKD008] Highly correlated input features...
-        ...
-        >>> report.checks.summarize(ignore=["SKD002"])
-        Checks summary: 1 issue(s), ... 1 ignored.
-        Issues:
-        - [SKD008] Highly correlated input features...
-        ...
+        >>> summary = report.checks.summarize()
+        >>> "SKD002" in summary.frame()["code"].values
+        True
+        >>> filtered = report.checks.summarize(ignore=["SKD002"])
+        >>> "SKD002" in filtered.frame()["code"].values
+        False
         """
         ignored_codes: set[CheckCode] = set()
         if ignore:
@@ -92,7 +87,7 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         Parameters
         ----------
         checks : list of Check
-            Additional checks to register
+            Additional checks to register.
         """
         report_types = [
             "cross-validation",

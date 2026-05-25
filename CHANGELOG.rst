@@ -57,17 +57,38 @@ Changed
 
 Added
 -----
+- Added :class:`CalibrationDisplay` to  EstimatoReport as an inspection
+  tool. Frames with columns "predicted_probability" and "true_probability",
+  "label" (depending on the task) are calculated and can be plotted. Both
+  multiclass and binary classification are supported, with the option to specify
+  a positive class.
+  See :pr:`2595` by :user:`snath-xoc`.
 
 - :meth:`CrossValidationReport.metrics.summarize` now supports ``data_source="both"``,
   showing train and test metrics side by side with columns named
   ``"EstimatorName (train)"`` and ``"EstimatorName (test)"``.
   See :pr:`2904` by :user:`direkkakkar319-ops`.
+
 - Added two new automated checks: SKD007 (MDI feature importance bias with
   high-cardinality features, tip) and SKD008 (highly correlated input features,
   issue). See :pr:`2883` by :user:`GaetandeCast`.
 
+- :meth:`~EstimatorReport.metrics.summarize` (and ``summarize`` on the other reports)
+  now includes a ``score`` row corresponding to the estimator's default score, obtained
+  by running ``estimator.score()``. It supports :class:`skrub.DataOp` estimators,
+  for which scorings can be registered with :meth:`~skrub.DataOp.skb.with_scoring`.
+  The reports also now have a :meth:`~EstimatorReport.metrics.score` method.
+  See :pr:`2884` by :user:`auguste-probabl`.
+
+- Added two new automated checks: SKD009 (model worse than baseline, issue) and
+  SKD010 (model slower than baseline, issue). See :pr:`2906` by
+  :user:`GaetandeCast`.
+
 Removed
 -------
+
+- Drop ``THREADABLE`` and ``console`` from :obj:`skore.__all__` (they remain
+  importable from the package module but are not part of the documented public API).
 
 Fixed
 -----

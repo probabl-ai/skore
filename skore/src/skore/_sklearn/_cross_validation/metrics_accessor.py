@@ -48,12 +48,12 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train","both"}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test and show them side-by-side
+            - "both" : use both the train and test sets, showing them side-by-side.
 
         metric : str or list of str or None, default=None
             The metrics to report, from the list of registered metrics. None means show
@@ -137,7 +137,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         **kwargs: Any,
     ) -> None:
         """
-        Add a custom metric to in :meth:`~skore.EstimatorReport.metrics.summarize`.
+        Add a custom metric to :meth:`~skore.CrossValidationReport.metrics.summarize`.
 
         Parameters
         ----------
@@ -155,13 +155,14 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
               If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
               :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
 
-        name : str, optional
-            Custom name for the metric. If not provided, the name is inferred
+        name : str or None, default=None
+            Custom name for the metric. If ``None``, the name is inferred
             from the metric (e.g. the function's ``__name__``).
 
-        verbose_name : str, optional
-            Custom verbose name for the metric which will be used for display purposes.
-            If not provided, will be inferred from the metric name.
+        verbose_name : str or None, default=None
+            Custom verbose name for the metric which will be used for display
+            purposes. If ``None``, the verbose name is inferred from the metric
+            name.
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -227,7 +228,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         Parameters
         ----------
-        aggregate : {"mean", "std"} or list of such str, default=None
+        aggregate : {"mean", "std"} or list of such str, default=("mean", "std")
             Function to aggregate the timings across the cross-validation splits.
 
         Returns
@@ -301,6 +302,58 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         return MetricsSummaryDisplay(rows=rows, report_type="cross-validation")
 
+    @available_if(_check_estimator_report_has_method("metrics", "score"))
+    def score(
+        self,
+        *,
+        data_source: DataSource = "test",
+        aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
+    ) -> pd.DataFrame:
+        """Compute the estimator's default score.
+
+        This calls the underlying estimator's ``score`` method on the chosen data
+        source. For :class:`skrub.DataOp` estimators, scorings registered via
+        :meth:`~skrub.DataOp.skb.with_scoring` are used.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        Returns
+        -------
+        pd.DataFrame
+            The estimator's default score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=2)
+        >>> report.metrics.score(flat_index=False)
+                LogisticRegression
+                            mean      std
+        Metric
+        Score              0.94...  0.00...
+        """
+        return self._metric("score", data_source=data_source).frame(
+            aggregate=aggregate, flat_index=flat_index
+        )
+
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(
         self,
@@ -323,7 +376,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
+        flat_index : bool, default=False
             Whether to return a flat index or a multi-index.
 
         Returns
@@ -400,7 +453,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
+        flat_index : bool, default=False
             Whether to return a flat index or a multi-index.
 
         Returns
@@ -479,7 +532,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
+        flat_index : bool, default=False
             Whether to return a flat index or a multi-index.
 
         Returns
@@ -528,7 +581,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
+        flat_index : bool, default=False
             Whether to return a flat index or a multi-index.
 
         Returns
@@ -611,7 +664,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
+        flat_index : bool, default=False
             Whether to return a flat index or a multi-index.
 
         Returns
@@ -659,7 +712,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
+        flat_index : bool, default=False
             Whether to return a flat index or a multi-index.
 
         Returns
@@ -719,7 +772,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
+        flat_index : bool, default=False
             Whether to return a flat index or a multi-index.
 
         Returns
@@ -778,7 +831,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
+        flat_index : bool, default=False
             Whether to return a flat index or a multi-index.
 
         Returns
@@ -838,7 +891,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
+        flat_index : bool, default=False
             Whether to return a flat index or a multi-index.
 
         Returns
@@ -898,7 +951,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
+        flat_index : bool, default=False
             Whether to return a flat index or a multi-index.
 
         Returns
@@ -930,7 +983,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.CrossValidationReport.metrics")
+        return self._rich_repr(
+            class_name=f"skore.{self._parent.__class__.__name__}.metrics"
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "roc"))
     def roc(
@@ -952,6 +1007,10 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -------
         :class:`RocCurveDisplay`
             The ROC curve display.
+
+        See Also
+        --------
+        :class:`RocCurveDisplay` : Display class for ROC curve plots.
 
         Examples
         --------
@@ -999,6 +1058,11 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         :class:`PrecisionRecallCurveDisplay`
             The precision-recall curve display.
 
+        See Also
+        --------
+        :class:`PrecisionRecallCurveDisplay`
+            Display class for precision-recall curve plots.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -1033,8 +1097,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
-        Extra keyword arguments will be passed to matplotlib's `plot`.
-
         Parameters
         ----------
         data_source : {"test", "train"}, default="test"
@@ -1057,6 +1119,10 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -------
         :class:`PredictionErrorDisplay`
             The prediction error display.
+
+        See Also
+        --------
+        :class:`PredictionErrorDisplay` : Display class for prediction error plots.
 
         Examples
         --------
@@ -1118,6 +1184,10 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -------
         :class:`ConfusionMatrixDisplay`
             The confusion matrix display.
+
+        See Also
+        --------
+        :class:`ConfusionMatrixDisplay` : Display class for confusion matrix plots.
 
         Examples
         --------

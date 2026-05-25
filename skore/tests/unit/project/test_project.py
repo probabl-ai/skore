@@ -155,6 +155,29 @@ class TestProject:
         ):
             Project(mode="local", name="<name>")
 
+    def test_init_local_missing_optional_dependency_without_plugin(self, monkeypatch):
+        """Non-regression test for missing extras before plugin discovery."""
+        fake_library_name = uuid4().hex
+
+        def fake_requires(name):
+            assert name == "skore"
+            return [f'{fake_library_name} ; extra == "local"']
+
+        monkeypatch.undo()
+        monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
+        monkeypatch.setattr(
+            "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
+        )
+
+        with raises(
+            ImportError,
+            match=escape(
+                f"Missing library: `{fake_library_name}`. "
+                "You can fix this error by installing `skore[local]`."
+            ),
+        ):
+            Project(mode="local", name="<name>")
+
     def test_init_hub(self, FakeHubProject, monkeypatch):
         monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 

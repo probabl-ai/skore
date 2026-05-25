@@ -6,17 +6,45 @@ import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 
+from skore._sklearn.types import PositiveLabel
+
 if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
+    from skore._sklearn._plot.metrics.metrics_summary_display import (
+        MetricsSummaryRow,
+    )
+    from skore._sklearn.types import DataSource
 
-_TIMING_METRICS = {
-    "Fit time (s)",
-    "Predict time (s)",
-    "fit_time_s",
-    "predict_time_s",
-    "Fit time s",
-    "Predict time s",
-}
+_TIMING_METRICS = {"Fit time (s)", "Predict time (s)"}
+
+MetricName = str
+Label = PositiveLabel | None
+Average = str | None
+Output = int | None
+MetricKey = tuple[MetricName, Label, Average, Output]
+
+
+def _metric_key(row: MetricsSummaryRow) -> MetricKey:
+    """Identity tuple for a metric row (verbose name + label/average/output)."""
+    return (row["metric_verbose_name"], row["label"], row["average"], row["output"])
+
+
+def collect_scores(
+    report: EstimatorReport,
+    *,
+    data_source: DataSource,
+    include_timing: bool = False,
+) -> dict[MetricKey, MetricsSummaryRow]:
+    """Collect ``summarize`` rows keyed by metric identity for an estimator report.
+
+    Timing rows are filtered out by default.
+    """
+    rows = report.metrics.summarize(data_source=data_source).rows
+    return {
+        _metric_key(row): row
+        for row in rows
+        if include_timing or row["metric_verbose_name"] not in _TIMING_METRICS
+    }
 
 
 def adaptive_threshold(
@@ -84,7 +112,29 @@ def detect_outliers_modified_zscore(scores, threshold=3):
 
 
 class CheckNotApplicable(Exception):
-    """Raised when a check cannot run on the given report."""
+    """Raised when a check cannot run on the given report.
+
+    Notes
+    -----
+    Check implementations raise this exception when required data, task type,
+    or model capabilities are missing. The check is skipped and does not appear
+    in :meth:`~skore.EstimatorReport.checks.summarize` results.
+
+    Examples
+    --------
+    >>> from skore import Check
+    >>> from skore._sklearn._checks._utils import CheckNotApplicable
+    >>> class MyCheck(Check):
+    ...     code = "TST001"
+    ...     title = "My check"
+    ...     report_type = "estimator"
+    ...     docs_url = None
+    ...     severity = "issue"
+    ...     def check_function(self, report):
+    ...         if report.X_test is None:
+    ...             raise CheckNotApplicable()
+    ...         return None
+    """
 
 
 def split_preprocessor_estimator(estimator):

@@ -161,15 +161,21 @@ def _resize_categorical_axis(
 
 
 class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
-    """Display reporting information about a given dataset.
-
-    This display summarizes the dataset and provides a way to visualize
-    the distribution of its columns.
+    """Summarize and plot dataset columns.
 
     Parameters
     ----------
     summary : dict
         The summary of the dataset, as returned by ``summarize_dataframe``.
+
+    Attributes
+    ----------
+    summary : dict
+        Dataset summary produced by skrub's ``summarize_dataframe``.
+
+    See Also
+    --------
+    EstimatorReport.data.analyze : Create this display from a report.
 
     Examples
     --------
