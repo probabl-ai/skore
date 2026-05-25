@@ -595,7 +595,7 @@ class CheckUselessFeatures(Check):
     """Check for useless features (SKD012).
 
     Flags features whose permutation importance is negligible: either the mean
-    importance is negative, below 1e-6, or its interval ``[mean - std,
+    importance is negative, below 1e-3, or its interval ``[mean - std,
     mean + std]`` contains zero.
 
     Permutation importance is computed via the inspection accessor with a
@@ -617,9 +617,10 @@ class CheckUselessFeatures(Check):
             importance_frame = report.inspection.permutation_importance(
                 data_source="test", seed=0, n_repeats=5
             ).frame()
-        except (ValueError, TypeError):
-            raise CheckNotApplicable() from None
+        except (ValueError, TypeError) as err:
+            raise CheckNotApplicable() from err
 
+        # group by feature and take the mean over metric/label/output
         per_feature = (
             importance_frame.groupby("feature")[["value_mean", "value_std"]]
             .mean()
@@ -627,8 +628,9 @@ class CheckUselessFeatures(Check):
         )
         mean = per_feature["value_mean"]
         std = per_feature["value_std"]
-        useless_mask = (mean <= 1e-6) | ((mean - std <= 0) & (mean + std >= 0))
-        useless = per_feature.loc[useless_mask, "feature"].tolist()
+        useless = per_feature.loc[
+            (mean <= 1e-3) | ((mean - std <= 0) & (mean + std >= 0)), "feature"
+        ].tolist()
         if useless:
             return (
                 f"Feature(s) {useless} have permutation importance overlapping "

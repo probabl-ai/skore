@@ -493,7 +493,7 @@ How it is detected
 `skore` uses permutation importance on the test set to assess each feature's
 contribution. A feature is flagged as *useless* when:
 
-- its mean importance is **below 1e-6** (catches negligible or negative
+- its mean importance is **below 1e-3** (catches negligible or negative
   values regardless of variance), or
 - its importance interval ``[mean - std, mean + std]`` **contains zero**.
 
