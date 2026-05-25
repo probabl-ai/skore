@@ -108,7 +108,6 @@ class CheckOverfitting(Check):
     report_type = "estimator"
     docs_url = "skd001-overfitting"
     severity = "issue"
-    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
@@ -156,7 +155,6 @@ class CheckUnderfitting(Check):
     report_type = "estimator"
     docs_url = "skd002-underfitting"
     severity = "issue"
-    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
@@ -211,7 +209,6 @@ class CheckMetricsConsistencyAcrossSplits(Check):
     report_type = "cross-validation"
     docs_url = "skd003-inconsistent-performance"
     severity = "issue"
-    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("CrossValidationReport", report)
@@ -248,7 +245,6 @@ class CheckHighClassImbalance(Check):
     report_type = "estimator"
     docs_url = "skd004-high-class-imbalance"
     severity = "issue"
-    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
@@ -280,7 +276,6 @@ class CheckUnderrepresentedClasses(Check):
     report_type = "estimator"
     docs_url = "skd005-underrepresented-classes"
     severity = "issue"
-    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
@@ -313,7 +308,6 @@ class CheckCoefficientsInterpretation(Check):
     report_type = "estimator"
     docs_url = "skd006-unscaled-coefficients"
     severity = "tip"
-    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
@@ -589,9 +583,10 @@ class CheckGoldenFeature(Check):
 
         if golden_features:
             return (
-                f"Feature(s) {golden_features} alone reach scores close to the "
-                "full model's on the default predictive metrics. This may "
-                "signal data leakage or excessive reliance on a single feature."
+                f"A model trained on feature(s) {golden_features} alone has similar "
+                "performance to a model trained on all the features, on the default "
+                "predictive metrics. This may signal data leakage or excessive "
+                "reliance on a single feature."
             )
         return None
 
@@ -659,7 +654,6 @@ class CheckTrainTestTimeOverlap(Check):
     report_type = "estimator"
     docs_url = "skd013-train-test-time-overlap"
     severity = "issue"
-    slow = False
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
@@ -686,9 +680,9 @@ class CheckTrainTestTimeOverlap(Check):
         if overlapping:
             return (
                 f"Datetime column(s) {overlapping} contain training timestamps "
-                "that are at or after the earliest test timestamp. Future "
-                "points may be leaking into the training set; consider a "
-                "time-based split."
+                "that are after the earliest test timestamp. Future points "
+                "may be leaking into the training set; consider a time-based "
+                "split."
             )
         return None
 

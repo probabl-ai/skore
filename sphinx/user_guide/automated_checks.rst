@@ -453,8 +453,8 @@ How it is detected
 ^^^^^^^^^^^^^^^^^^
 
 For each input feature, `skore` clones the report's estimator, refits it on
-that single feature, and scores it on the test set. A feature is reported as
-*golden* when its single-feature scores reach the full model's scores within
+that single feature, and scores it on the test set. A feature is considered as
+*golden* when its single-feature scores are close to the full model's scores within
 an adaptive threshold (``max(0.03, 0.10 * |full_score|)``) on a **strict
 majority** of the report's default predictive metrics (timing metrics
 excluded).
