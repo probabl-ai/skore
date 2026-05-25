@@ -109,6 +109,7 @@ class CheckOverfitting(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
+        """Detect significant gaps between train and test scores."""
         report = cast("EstimatorReport", report)
         if (
             report.X_train is None
@@ -158,6 +159,7 @@ class CheckUnderfitting(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
+        """Detect train and test scores close to a dummy baseline."""
         report = cast("EstimatorReport", report)
         baseline = _baseline_estimator_report(report, kind="dummy")
 
@@ -214,6 +216,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
+        """Detect outlier performance across cross-validation splits."""
         report = cast("CrossValidationReport", report)
 
         with warnings.catch_warnings():
@@ -252,6 +255,7 @@ class CheckHighClassImbalance(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
+        """Detect when the majority class exceeds 80% of samples."""
         report = cast("EstimatorReport", report)
         y = get_preprocessed_data(report, target="y", concatenate=True)
         if report.ml_task != "binary-classification" or y is None:
@@ -283,6 +287,7 @@ class CheckUnderrepresentedClasses(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
+        """Detect classes that each represent less than 10% of samples."""
         report = cast("EstimatorReport", report)
 
         y = get_preprocessed_data(report, target="y", concatenate=True)
@@ -315,6 +320,7 @@ class CheckCoefficientsInterpretation(Check):
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
+        """Assess whether linear-model coefficients are comparable and interpretable."""
         report = cast("EstimatorReport", report)
         _, predictor = split_preprocessor_estimator(report.learner_)
         X = get_preprocessed_data(report, target="X", concatenate=True)
@@ -351,6 +357,7 @@ class CheckMDIHighCardinalityBias(Check):
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
+        """Detect high-cardinality features that may bias MDI importances."""
         report = cast("EstimatorReport", report)
         _, predictor = split_preprocessor_estimator(report.learner_)
         X = get_preprocessed_data(report, target="X")
@@ -399,6 +406,16 @@ class CheckCorrelatedFeatures(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
+        """Detect pairs of numeric features with Spearman correlation above 0.9.
+
+        Returns
+        -------
+        str or None
+            Check result ``explanation`` when highly correlated features are
+            detected; ``None`` when the check passes. Raises
+            :class:`CheckNotApplicable` when feature data is unavailable or
+            fewer than two numeric features are present.
+        """
         report = cast("EstimatorReport", report)
         X = get_preprocessed_data(report, target="X")
 

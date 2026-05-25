@@ -28,7 +28,7 @@ from skore._sklearn.types import (
 
 
 class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
-    """Display for confusion matrix.
+    """Display the confusion matrix.
 
     Parameters
     ----------
@@ -63,8 +63,50 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     Attributes
     ----------
+    confusion_matrix_predict : pd.DataFrame
+        Predict-based confusion matrix data in long format.
+    confusion_matrix_ovr : pd.DataFrame or None
+        One-vs-rest confusion matrix data for multiclass classification.
+    confusion_matrix_thresholded : pd.DataFrame or None
+        Thresholded one-vs-rest confusion matrix data.
+    report_type : ReportType
+        The type of report.
+    ml_task : MLTask
+        The machine learning task.
+    data_source : DataSource
+        The data source used to compute the matrix.
+    report_pos_label : PositiveLabel
+        The default positive label for display.
     labels : list
         Available class labels.
+
+    See Also
+    --------
+    EstimatorReport.metrics.confusion_matrix : Create this display from a report.
+    RocCurveDisplay : Plot ROC curves for the same classifier.
+    PrecisionRecallCurveDisplay : Plot precision-recall curves.
+
+    Notes
+    -----
+    For multiclass problems, thresholded views use a one-vs-rest (OvR)
+    binary reformulation for each class label.
+
+    When ``threshold_value`` is a float, the display snaps to the closest
+    threshold available in the stored thresholded data.
+
+    For cross-validation reports, plotting with ``subplot_by`` other than
+    ``"split"`` aggregates counts across folds (mean and standard deviation).
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_breast_cancer
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import evaluate
+    >>> X, y = load_breast_cancer(return_X_y=True)
+    >>> classifier = LogisticRegression(max_iter=10_000)
+    >>> report = evaluate(classifier, X, y, splitter=0.2)
+    >>> display = report.metrics.confusion_matrix()
+    >>> display.plot()
     """
 
     _default_heatmap_kwargs: dict = {

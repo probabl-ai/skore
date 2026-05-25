@@ -52,7 +52,7 @@ class Project:
     | The workspace can be set using kwargs or the environment variable
       ``SKORE_WORKSPACE``.
     | If not, it will be by default set to a ``skore/`` directory in the user
-      cache directory:
+      data directory:
 
     - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
     - on Linux, usually ``${HOME}/.local/share/skore``,
@@ -119,6 +119,10 @@ class Project:
 
     See Also
     --------
+    :class:`~skore.Summary` :
+        Tabular view of metadata and metrics for persisted reports.
+    :func:`~skore.compare` :
+        Compare reports side by side.
     :meth:`Project.summarize` :
         Create a summary view to investigate persisted reports' metadata/metrics.
     """
@@ -175,6 +179,19 @@ class Project:
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
+
+        Examples
+        --------
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> from skore import Project
+        >>> tmpdir = TemporaryDirectory()
+        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
+        >>> project.name
+        'my-xp'
+        >>> project.mode
+        'local'
+        >>> tmpdir.cleanup()
         """
         plugin, parameters = Project.__setup_plugin(mode, name)
 
@@ -217,10 +234,24 @@ class Project:
         report : EstimatorReport | CrossValidationReport
             The report to associate with ``key`` in the project.
 
-        Raises
-        ------
-        TypeError
-            If the combination of parameters are not valid.
+        Returns
+        -------
+        None
+            The report is persisted in the project backend.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_regression
+        >>> from sklearn.linear_model import LinearRegression
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> from skore import Project, evaluate
+        >>> X, y = make_regression(random_state=42)
+        >>> report = evaluate(LinearRegression(), X, y, splitter=0.2)
+        >>> tmpdir = TemporaryDirectory()
+        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
+        >>> project.put("my-regression", report)
+        >>> tmpdir.cleanup()
         """
         from skore import CrossValidationReport, EstimatorReport
 
@@ -258,15 +289,47 @@ class Project:
         id : str
             The id of a report already put in the ``project``.
 
-        Raises
-        ------
-        KeyError
-            If a non-existent ID is passed.
+        Returns
+        -------
+        report : EstimatorReport or CrossValidationReport
+            The report associated with ``id``.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_regression
+        >>> from sklearn.linear_model import LinearRegression
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> from skore import Project, evaluate
+        >>> X, y = make_regression(random_state=42)
+        >>> report = evaluate(LinearRegression(), X, y, splitter=0.2)
+        >>> tmpdir = TemporaryDirectory()
+        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
+        >>> project.put("my-regression", report)
+        >>> summary = project.summarize()
+        >>> report_id = summary.index.get_level_values("id")[0]
+        >>> retrieved = project.get(report_id)
+        >>> type(retrieved).__name__
+        'EstimatorReport'
+        >>> tmpdir.cleanup()
         """
         return self.__project.get(id)
 
     def summarize(self) -> Summary:
-        """Obtain metadata/metrics for all persisted reports."""
+        """Obtain metadata/metrics for all persisted reports.
+
+        Returns
+        -------
+        summary : Summary
+            Metadata and metrics for every report persisted in the project.
+
+        See Also
+        --------
+        :class:`~skore.Summary` :
+            Tabular view with interactive filtering in Jupyter.
+        :func:`~skore.compare` :
+            Compare selected reports side by side.
+        """
         return Summary.factory(self.__project)
 
     def __repr__(self) -> str:  # noqa: D105

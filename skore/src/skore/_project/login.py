@@ -44,14 +44,25 @@ def login(*, mode: ProjectMode = "hub", **kwargs):
 
     Parameters
     ----------
-    mode : {"local", "hub", "mlflow"}, default="hub"
+    mode : {"hub", "local", "mlflow"}, default="hub"
         The mode of the storage backend to log in.
     **kwargs : dict
         Extra keyword arguments passed to the login function, depending on its mode.
 
         timeout : int, default=600
             The maximum time in second before raising an error when communicating with
-            the hub. Only available when `mode="hub"`.
+            the hub. Only available when ``mode="hub"``.
+
+    Returns
+    -------
+    None
+        For ``mode="local"`` and ``mode="mlflow"``. For ``mode="hub"``, the return
+        value depends on the hub login plugin.
+
+    Examples
+    --------
+    >>> from skore import login
+    >>> login(mode="local")
 
     See Also
     --------
