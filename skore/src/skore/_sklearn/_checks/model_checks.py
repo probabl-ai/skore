@@ -573,14 +573,17 @@ class CheckGoldenFeature(Check):
 
         golden_features: list[str] = []
         for i in range(X_train.shape[1]):
-            single_report = EstimatorReport(
-                clone(predictor_),
-                X_train=select_feature(X_train, i),
-                y_train=report.y_train,
-                X_test=select_feature(X_test, i),
-                y_test=report.y_test,
-                pos_label=report.pos_label,
-            )
+            try:
+                single_report = EstimatorReport(
+                    clone(predictor_),
+                    X_train=select_feature(X_train, i),
+                    y_train=report.y_train,
+                    X_test=select_feature(X_test, i),
+                    y_test=report.y_test,
+                    pos_label=report.pos_label,
+                )
+            except Exception as exc:
+                raise CheckNotApplicable() from exc
             single_report._metric_registry = report._metric_registry
             single_test = collect_scores(single_report, data_source="test")
 
