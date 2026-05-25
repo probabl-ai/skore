@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
@@ -12,7 +11,6 @@ from sklearn.ensemble import (
     HistGradientBoostingClassifier,
     HistGradientBoostingRegressor,
 )
-from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.linear_model import LogisticRegression, RidgeCV
 
 from skore._externals._skrub_compat import tabular_pipeline
@@ -122,10 +120,8 @@ class CheckOverfitting(Check):
         ):
             raise CheckNotApplicable()
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            report_train = collect_scores(report, data_source="train")
-            report_test = collect_scores(report, data_source="test")
+        report_train = collect_scores(report, data_source="train")
+        report_test = collect_scores(report, data_source="test")
 
         votes = [
             check_score_gap_to_baseline(
@@ -166,12 +162,10 @@ class CheckUnderfitting(Check):
         report = cast("EstimatorReport", report)
         baseline = _baseline_estimator_report(report, kind="dummy")
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            report_train = collect_scores(report, data_source="train")
-            report_test = collect_scores(report, data_source="test")
-            baseline_train = collect_scores(baseline, data_source="train")
-            baseline_test = collect_scores(baseline, data_source="test")
+        report_train = collect_scores(report, data_source="train")
+        report_test = collect_scores(report, data_source="test")
+        baseline_train = collect_scores(baseline, data_source="train")
+        baseline_test = collect_scores(baseline, data_source="test")
 
         votes = [
             not check_score_gap_to_baseline(
@@ -222,11 +216,9 @@ class CheckMetricsConsistencyAcrossSplits(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("CrossValidationReport", report)
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            report_data = report.metrics.summarize(data_source="test").frame(
-                aggregate=None, flat_index=True
-            )
+        report_data = report.metrics.summarize(data_source="test").frame(
+            aggregate=None, flat_index=True
+        )
         votes = np.array(
             [
                 detect_outliers_modified_zscore(report_data.loc[idx])
@@ -451,10 +443,8 @@ class CheckWorseThanBaseline(Check):
         report = cast("EstimatorReport", report)
         baseline = _baseline_estimator_report(report, kind="performance")
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            report_test = collect_scores(report, data_source="test")
-            baseline_test = collect_scores(baseline, data_source="test")
+        report_test = collect_scores(report, data_source="test")
+        baseline_test = collect_scores(baseline, data_source="test")
 
         votes = [
             not check_score_gap_to_baseline(
@@ -505,10 +495,8 @@ class CheckSlowerThanBaseline(Check):
         if slowness_ratio < 2.0 or report.fit_time_ - baseline.fit_time_ < 0.05:
             return None
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            report_test = collect_scores(report, data_source="test")
-            baseline_test = collect_scores(baseline, data_source="test")
+        report_test = collect_scores(report, data_source="test")
+        baseline_test = collect_scores(baseline, data_source="test")
 
         votes = [
             not check_score_gap_to_baseline(
@@ -549,8 +537,6 @@ class CheckGoldenFeature(Check):
         from skore._sklearn._estimator.report import EstimatorReport
 
         report = cast("EstimatorReport", report)
-        if report._initialized_with_data_op:
-            raise CheckNotApplicable()
         if (
             report.X_train is None
             or report.X_test is None
@@ -559,25 +545,23 @@ class CheckGoldenFeature(Check):
         ):
             raise CheckNotApplicable()
 
-        preprocessor_, predictor_ = split_preprocessor_estimator(report.estimator)
-        X_train, X_test = report.X_train, report.X_test
-        if preprocessor_ is not None and preprocessor_.steps:
-            X_train = preprocessor_.transform(X_train)
-            X_test = preprocessor_.transform(X_test)
-        if not isinstance(X_train, (np.ndarray, pd.DataFrame)) or X_train.shape[1] < 2:
+        preprocessor_, predictor_ = split_preprocessor_estimator(report.estimator_)
+        X_train = get_preprocessed_data(report, target="X", data_source="train")
+        X_test = get_preprocessed_data(report, target="X", data_source="test")
+        if X_train is None or X_test is None or X_train.shape[1] < 2:
             raise CheckNotApplicable()
 
-        n_features = X_train.shape[1]
         feature_names = _get_feature_names(
-            predictor_, transformer=preprocessor_, X=X_train, n_features=n_features
+            predictor_,
+            transformer=preprocessor_,
+            X=X_train,
+            n_features=X_train.shape[1],
         )
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            full_data = report.metrics.summarize(data_source="test").data
+        full_test = collect_scores(report, data_source="test")
 
         golden_features: list[str] = []
-        for i in range(n_features):
+        for i in range(X_train.shape[1]):
             single_report = EstimatorReport(
                 clone(predictor_),
                 X_train=select_feature(X_train, i),
@@ -587,20 +571,17 @@ class CheckGoldenFeature(Check):
                 pos_label=report.pos_label,
             )
             single_report._metric_registry = report._metric_registry
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-                single_data = single_report.metrics.summarize(data_source="test").data
+            single_test = collect_scores(single_report, data_source="test")
 
             votes = [
                 not check_score_gap_to_baseline(
-                    score=full_data.loc[idx, "score"],
-                    baseline=single_data.loc[idx, "score"],
-                    greater_is_better=full_data.loc[idx, "greater_is_better"],
+                    score=full_test[key]["score"],
+                    baseline=single_test[key]["score"],
+                    greater_is_better=full_test[key]["greater_is_better"],
                     floor=0.03,
                     fraction=0.10,
                 )
-                for idx in range(len(full_data))
-                if full_data.loc[idx, "metric_verbose_name"] not in _TIMING_METRICS_FLAT
+                for key in full_test.keys() & single_test.keys()
             ]
             majority, _, _ = majority_vote(votes)
             if majority:
