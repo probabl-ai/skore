@@ -94,6 +94,9 @@ Added
 Removed
 -------
 
+- Drop ``THREADABLE`` and ``console`` from :obj:`skore.__all__` (they remain
+  importable from the package module but are not part of the documented public API).
+
 Fixed
 -----
 

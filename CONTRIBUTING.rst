@@ -237,6 +237,7 @@ Contributing to the docstrings
 
 When writing documentation, whether it be online, docstrings or help messages in the CLI and in the UI, we strive to follow some conventions that are listed below. These might be updated as time goes on.
 
+#. We follow the `scikit-learn documentation conventions <https://scikit-learn.org/dev/developers/contributing.html#documentation>`_ for docstrings and narrative documentation.
 #. The docstring will be compiled using Sphinx numpydoc so use `RST (ReStructured Text) <https://docs.open-mpi.org/en/v5.0.x/developers/rst-for-markdown-expats.html>`_ for bold, URLs, etc.
 #. Argument descriptions should be written so that the following sentence makes sense: `Argument <argument> designates <argument description>`
 #. Argument descriptions start with lower case, and do not end with a period or other punctuation
