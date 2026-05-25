@@ -301,7 +301,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 )
             )
 
-    def get_state(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a serializable representation of the report state.
 
         This state is meant to ease serialization/deserialization of
@@ -309,7 +309,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         versions. In particular, this is more stable than pickling a report
         object directly, which can break when internal implementations change.
         """
-        sub_states = [report.get_state() for report in self.reports_]
+        sub_states = [report.to_dict() for report in self.reports_]
         for state in sub_states:
             # data can be reconstructed from X, y and split_indices
             state.pop("data")
@@ -328,8 +328,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         }
 
     @classmethod
-    def from_state(cls, state: dict[str, Any]) -> CrossValidationReport:
-        """Rebuild a report from :meth:`get_state` output."""
+    def from_dict(cls, state: dict[str, Any]) -> CrossValidationReport:
+        """Rebuild a report from :meth:`to_dict` output."""
         version = state.get("version", 0)
         if version != _STATE_VERSION:
             # in the future, we could support some BW compatibility instead of crashing
@@ -393,7 +393,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "test_data": split_data["test"],
                 },
             }
-            sub_report = EstimatorReport.from_state(sub_state_with_data)
+            sub_report = EstimatorReport.from_dict(sub_state_with_data)
             report.reports_.append(sub_report)
 
         return report

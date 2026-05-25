@@ -310,21 +310,21 @@ def test_create_estimator_report_with_data_op():
     assert 0.0 <= float(accuracy) <= 1.0
 
 
-def test_from_state_bypasses_init_and_restores_state(
+def test_from_dict_bypasses_init_and_restores_state(
     monkeypatch, logistic_binary_classification_data
 ):
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_accuracy = report.metrics.accuracy()
     report.cache_predictions()
-    state = report.get_state()
+    state = report.to_dict()
 
     def _unexpected_init(self, *args, **kwargs):
-        raise AssertionError("__init__ should not be called by from_state")
+        raise AssertionError("__init__ should not be called by from_dict")
 
     monkeypatch.setattr(CrossValidationReport, "__init__", _unexpected_init)
 
-    restored = CrossValidationReport.from_state(state)
+    restored = CrossValidationReport.from_dict(state)
 
     assert restored.id == report.id
     assert restored.X is report.X
@@ -347,7 +347,7 @@ def test_from_state_bypasses_init_and_restores_state(
     restored._repr_html_()
 
 
-def test_get_from_state_with_complex_data_op():
+def test_get_from_dict_with_complex_data_op():
     X, y = make_classification(random_state=0)
     left = pd.DataFrame(
         {
@@ -376,9 +376,9 @@ def test_get_from_state_with_complex_data_op():
     report = CrossValidationReport(data_op, splitter=2)
     expected_accuracy = report.metrics.accuracy()
     expected_preds = report.get_predictions(data_source="test")
-    state = report.get_state()
+    state = report.to_dict()
 
-    restored = CrossValidationReport.from_state(state)
+    restored = CrossValidationReport.from_dict(state)
 
     # check fresh computations still work after restoring from state:
     restored.clear_cache()
@@ -391,13 +391,13 @@ def test_get_from_state_with_complex_data_op():
     restored._repr_html_()
 
 
-def test_from_state_rejects_unknown_version(logistic_binary_classification_data):
+def test_from_dict_rejects_unknown_version(logistic_binary_classification_data):
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    state = report.get_state() | {"version": 999}
+    state = report.to_dict() | {"version": 999}
 
     with pytest.raises(ValueError, match="Unexpected state version"):
-        CrossValidationReport.from_state(state)
+        CrossValidationReport.from_dict(state)
 
 
 @pytest.mark.parametrize(
@@ -410,7 +410,7 @@ def test_state_has_no_unexpected_data_copy(estimator, splitter):
     """``state`` should only reference training data through ``state["data"]``."""
 
     def state_nbytes_without_data(report):
-        state = report.get_state()
+        state = report.to_dict()
         state.pop("data")
         return len(pickle.dumps(state))
 
