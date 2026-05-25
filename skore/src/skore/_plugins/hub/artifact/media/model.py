@@ -14,7 +14,7 @@ class EstimatorHtmlRepr(Media[Report]):  # noqa: D101
         import sklearn.utils
 
         estimator_html_repr: str = sklearn.utils.estimator_html_repr(
-            self.report.estimator
+            self.report.estimator_
         )
 
         return estimator_html_repr

@@ -34,6 +34,7 @@ from skore._sklearn.metrics import (
     Recall,
     Rmse,
     RocAuc,
+    Score,
 )
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._accessor import _check_supported_ml_task
@@ -102,6 +103,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ... )
                     LogisticRegression Favorability
         Metric
+        Score                  0.94...         (↗︎)
         Accuracy               0.94...         (↗︎)
         Precision              0.98...         (↗︎)
         Recall                 0.92...         (↗︎)
@@ -118,6 +120,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
         Metric
+        Score                           0.96...                     0.94...          (↗︎)
         Accuracy                        0.96...                     0.94...          (↗︎)
         Precision                       0.96...                     0.98...          (↗︎)
         Recall                          0.97...                     0.92...          (↗︎)
@@ -352,6 +355,42 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         }
 
         return fit_time | predict_times
+
+    def score(
+        self,
+        *,
+        data_source: DataSource = "test",
+    ) -> Any:
+        """Compute the estimator's default score.
+
+        This calls the underlying estimator's ``score`` method on the chosen data
+        source. For :class:`skrub.DataOp` estimators, scorings registered via
+        :meth:`~skrub.DataOp.skb.with_scoring` are used.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        Returns
+        -------
+        The default score of the estimator.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
+        >>> report.metrics.score()
+        0.94...
+        """
+        return Score()(report=self._parent, data_source=data_source)  # type: ignore[return-value]
 
     def accuracy(
         self,
@@ -1163,8 +1202,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 "data_source='both' is not supported for confusion_matrix."
             )
 
-        if hasattr(self._parent._estimator, "predict_proba") or hasattr(
-            self._parent._estimator, "decision_function"
+        if hasattr(self._parent.learner_, "predict_proba") or hasattr(
+            self._parent.learner_, "decision_function"
         ):
             y_scores = self._parent._get_predictions(
                 data_source=data_source,

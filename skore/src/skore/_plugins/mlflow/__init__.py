@@ -1,4 +1,4 @@
-"""Package that provides APIs to communicate between ``skore`` and MLflow."""
+"""Module that provides APIs to communicate between ``skore`` and MLflow."""
 
 from rich.console import Console
 from rich.theme import Theme

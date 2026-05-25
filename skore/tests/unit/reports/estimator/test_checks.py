@@ -8,7 +8,7 @@ from sklearn.compose import ColumnTransformer
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
+from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, RidgeCV
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeRegressor
@@ -183,6 +183,35 @@ def test_skd008_not_emitted_for_independent_features(regression_data):
     assert "SKD008" not in issues.index
 
 
+def test_skd009_detects_worse_than_baseline(regression_data):
+    """Check that the worse-than-baseline issue is detected on a dummy estimator."""
+    X, y = regression_data
+    report = evaluate(DummyRegressor(), X, y)
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD009" in issues.index
+    assert (
+        "not significantly better than a HistGradientBoosting baseline"
+        in issues.loc["SKD009", "explanation"]
+    )
+
+
+def test_skd009_not_detected_on_strong_model(regression_data):
+    """Check that SKD009 is not detected when the model beats HistGradientBoosting."""
+    X, y = make_regression(n_features=4, noise=0.1, random_state=0)
+    report = evaluate(RidgeCV(), X, y)
+    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    assert "SKD009" not in codes
+
+
+def test_skd010_detects_slower_than_baseline(regression_data):
+    """Check that SKD010 is detected when the model is slower with similar scores."""
+    X, y = regression_data
+    report = evaluate(RandomForestRegressor(n_estimators=200, random_state=0), X, y)
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD010" in issues.index
+    assert "slower than a fast linear baseline" in issues.loc["SKD010", "explanation"]
+
+
 @pytest.mark.parametrize(
     "estimator", [LinearRegression(), tabular_pipeline(LinearRegression())]
 )
@@ -277,6 +306,14 @@ def test_skd013_train_test_time_overlap():
     assert "SKD013" in set(summary.frame(severity="passed")["code"])
 
 
+def test_skd010_not_detected_for_fast_model(regression_data):
+    """Check that SKD010 does not fire when the model is not slower than baseline."""
+    X, y = regression_data
+    report = evaluate(RidgeCV(), X, y)
+    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    assert "SKD010" not in codes
+
+
 def test_ignore_checks(monkeypatch, regression_report):
     """Check that checks are ignored when ignore is passed."""
     monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
@@ -293,7 +330,22 @@ def test_exception_when_train_data_missing(regression_train_test_split):
     estimator = LinearRegression().fit(X_train, y_train)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     for check in report._checks_registry:
-        if check.code in ["SKD001", "SKD002"]:
+        if check.code in ["SKD001", "SKD002", "SKD009", "SKD010"]:
+            with pytest.raises(CheckNotApplicable):
+                check.check_function(report)
+
+
+def test_exception_when_baseline_report_creation_fails(regression_data, monkeypatch):
+    """Check that an exception is raised when the baseline report creation fails."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+
+    def failing_fit(self, **kwargs):
+        raise RuntimeError("Test error")
+
+    monkeypatch.setattr(EstimatorReport, "_fit_estimator", failing_fit)
+    for check in report._checks_registry:
+        if check.code in ["SKD002", "SKD009", "SKD010"]:
             with pytest.raises(CheckNotApplicable):
                 check.check_function(report)
 

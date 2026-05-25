@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator, clone, is_classifier
+from sklearn.base import clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
 
@@ -66,7 +66,7 @@ def _check_estimator_and_data(
     X: ArrayLike | None,
     y: ArrayLike | None,
     data: dict | None,
-) -> tuple[bool, EstimatorLike, dict]:
+) -> tuple[bool, skrub.SkrubLearner, dict]:
     if is_skrub_learner(estimator):
         initialized_with_data_op = True
         if X is not None or y is not None:
@@ -153,7 +153,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     Attributes
     ----------
     estimator_ : estimator object
-        The cloned or copied estimator.
+        The fitted estimator.
+
+    estimator : estimator object
+        The estimator that was given as input.
+
+    learner_ : skrub.SkrubLearner
+        The estimator wrapped in a skrub Learner.
 
     estimator_name_ : str
         The name of the estimator.
@@ -204,7 +210,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_jobs: int | None = None,
     ) -> None:
         super().__init__()
-        self._raw_estimator = estimator
+        self.estimator = estimator
         if isinstance(estimator, skrub.DataOp):
             if data is None:
                 data = estimator.skb.get_data()
@@ -214,7 +220,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "Clustering models are not supported yet. Please use a"
                 " classification or regression model instead."
             )
-        self._initialized_with_data_op, self._estimator, self._data = (
+        self._initialized_with_data_op, self.learner_, self._data = (
             _check_estimator_and_data(clone(estimator), X, y, data)
         )
         self._pos_label = pos_label
@@ -244,12 +250,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 track(
                     parallel(
                         delayed(EstimatorReport)(
-                            clone(self._estimator),
+                            clone(self.learner_),
                             train_data=split["train"],
                             test_data=split["test"],
                             pos_label=self._pos_label,
                         )
-                        for split in self._estimator.data_op.skb.iter_cv_splits(
+                        for split in self.learner_.data_op.skb.iter_cv_splits(
                             environment=self._data, cv=self.split_indices
                         )
                     ),
@@ -264,7 +270,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 track(
                     parallel(
                         delayed(_generate_estimator_report)(
-                            clone(self._raw_estimator),
+                            clone(self.estimator),
                             self.X,
                             self.y,
                             self.pos_label,
@@ -296,10 +302,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "version": _STATE_VERSION,
             "metadata": self._metadata,
             "initialized_with_data_op": self._initialized_with_data_op,
-            "raw_estimator": self._raw_estimator,
+            "estimator": self.estimator,
             "ml_task": self.ml_task,
             "pos_label": self.pos_label,
-            "estimator": self._estimator,
+            "learner": self.learner_,
             "data": self._data,
             "split_indices": self._split_indices,
             "estimator_reports": sub_states,
@@ -323,8 +329,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
         report._pos_label = state["pos_label"]
-        report._estimator = state["estimator"]
-        report._raw_estimator = state["raw_estimator"]
+        report.learner_ = state["learner"]
+        report.estimator = state["estimator"]
         report._data = state["data"]
         report._split_indices = state["split_indices"]
         # TODO? Include splitter in state?
@@ -333,7 +339,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         report.estimator_reports_ = []
         if report._initialized_with_data_op:
-            split_data_iterator = report._estimator.data_op.skb.iter_cv_splits(
+            split_data_iterator = report.learner_.data_op.skb.iter_cv_splits(
                 environment=report._data,
                 cv=report._split_indices,
             )
@@ -535,14 +541,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         """
         if self._initialized_with_data_op:
             report = EstimatorReport(
-                self._estimator,
+                self.learner_,
                 train_data=self._data,
                 test_data=test_data,
                 pos_label=self._pos_label,
             )
         else:
             report = EstimatorReport(
-                self._raw_estimator,
+                self.estimator,
                 X_train=self.X,
                 y_train=self.y,
                 X_test=X_test,
@@ -591,21 +597,18 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._ml_task
 
     @property
-    def estimator(self) -> BaseEstimator:
-        return self.estimator_
-
-    @property
-    def estimator_(self) -> BaseEstimator:
+    def estimator_(self) -> EstimatorLike:
+        """The report's fitted estimator."""
         if self._initialized_with_data_op:
-            return self._estimator
-        return to_estimator(self._estimator)
+            return self.learner_
+        return to_estimator(self.learner_)
 
     @property
     def estimator_name_(self) -> str:
-        if isinstance(self._raw_estimator, Pipeline):
-            name = self._raw_estimator[-1].__class__.__name__
+        if isinstance(self.estimator, Pipeline):
+            name = self.estimator[-1].__class__.__name__
         else:
-            name = self._raw_estimator.__class__.__name__
+            name = self.estimator.__class__.__name__
         return name
 
     @property

@@ -41,18 +41,19 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     def summarize(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         metric: str | list[str] | None = None,
     ) -> MetricsSummaryDisplay:
         """Report a set of metrics for our estimator.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train","both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "both" : use both the train and test and show them side-by-side
 
         metric : str or list of str or None, default=None
             The metrics to report, from the list of registered metrics. None means show
@@ -83,9 +84,11 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Recall              0.96...  0.02...         (↗︎)
         """
         if data_source == "both":
-            raise NotImplementedError(
-                'data_source="both" is not yet supported for CrossValidationReport'
-            )
+            train_summary = self.summarize(data_source="train", metric=metric)
+            test_summary = self.summarize(data_source="test", metric=metric)
+
+            combined = train_summary.rows + test_summary.rows
+            return MetricsSummaryDisplay(rows=combined, report_type="cross-validation")
 
         parallel = Parallel(
             **_validate_joblib_parallel_params(
@@ -297,6 +300,58 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             rows.extend(split_rows)
 
         return MetricsSummaryDisplay(rows=rows, report_type="cross-validation")
+
+    @available_if(_check_estimator_report_has_method("metrics", "score"))
+    def score(
+        self,
+        *,
+        data_source: DataSource = "test",
+        aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
+    ) -> pd.DataFrame:
+        """Compute the estimator's default score.
+
+        This calls the underlying estimator's ``score`` method on the chosen data
+        source. For :class:`skrub.DataOp` estimators, scorings registered via
+        :meth:`~skrub.DataOp.skb.with_scoring` are used.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        Returns
+        -------
+        pd.DataFrame
+            The estimator's default score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=2)
+        >>> report.metrics.score(flat_index=False)
+                LogisticRegression
+                            mean      std
+        Metric
+        Score              0.94...  0.00...
+        """
+        return self._metric("score", data_source=data_source).frame(
+            aggregate=aggregate, flat_index=flat_index
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
     def accuracy(
