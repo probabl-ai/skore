@@ -1227,9 +1227,9 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Notes
         -----
-        To keep the stored display lightweight, the thresholded one-vs-rest confusion
-        matrices are downsampled to at most 500 points per class and per child report.
-        Sampling is performed by picking evenly-spaced indices on the sorted thresholds.
+        To keep the stored display lightweight, the thresholded confusion matrices are
+        downsampled to at most 500 points per class and per child report. Sampling is
+        performed by picking evenly-spaced indices on the sorted thresholds.
 
         Examples
         --------
