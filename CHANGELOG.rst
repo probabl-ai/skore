@@ -57,6 +57,8 @@ Changed
 
 Added
 -----
+- Added automated check SKD014 (hyperparameters at search edge, issue) for
+  :class:`~sklearn.model_selection.BaseSearchCV` estimators.
 - Added :class:`CalibrationDisplay` to  EstimatoReport as an inspection
   tool. Frames with columns "predicted_probability" and "true_probability",
   "label" (depending on the task) are calculated and can be plotted. Both

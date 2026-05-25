@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numbers
 import warnings
 from typing import TYPE_CHECKING, Literal, cast
 
@@ -13,6 +14,7 @@ from sklearn.ensemble import (
 )
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.linear_model import LogisticRegression, RidgeCV
+from sklearn.model_selection._search import BaseSearchCV
 
 from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._checks._utils import (
@@ -536,6 +538,70 @@ class CheckSlowerThanBaseline(Check):
         return None
 
 
+class CheckHyperparamsAtSearchEdge(Check):
+    """Check whether tuned hyperparameters sit at the search boundary (SKD014).
+
+    For :class:`~sklearn.model_selection.BaseSearchCV` estimators, flags when any
+    numeric ``best_params_`` value equals the minimum or maximum distinct value
+    tried for that parameter. Non-numeric hyperparameters (``bool``, strings, ``None``,
+    and similar) are skipped because extending the search range is not meaningful.
+    """
+
+    code = "SKD014"
+    title = "Hyperparameters at search edge"
+    report_type = "estimator"
+    docs_url = "skd014-hyperparams-at-search-edge"
+    severity = "issue"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        estimator = report.estimator_
+        if not isinstance(estimator, BaseSearchCV):
+            raise CheckNotApplicable()
+
+        param_rows = estimator.cv_results_.get("params")
+        if param_rows is None:
+            raise CheckNotApplicable()
+
+        edge_params: list[tuple[str, str]] = []
+        for name, best_value in estimator.best_params_.items():
+            distinct = list(
+                dict.fromkeys(
+                    setting[name] for setting in param_rows if name in setting
+                )
+            )
+            if len(distinct) < 2 or not all(
+                isinstance(v, numbers.Real) and not isinstance(v, (bool, np.bool_))
+                for v in distinct
+            ):
+                continue
+            search_low, search_high = min(distinct), max(distinct)
+            if not isinstance(best_value, numbers.Real) or isinstance(
+                best_value, (bool, np.bool_)
+            ):
+                continue
+            if np.isclose(
+                float(best_value), float(search_low), rtol=0.0, atol=0.0, equal_nan=True
+            ):
+                edge_params.append((name, "minimum"))
+            elif np.isclose(
+                float(best_value),
+                float(search_high),
+                rtol=0.0,
+                atol=0.0,
+                equal_nan=True,
+            ):
+                edge_params.append((name, "maximum"))
+
+        if not edge_params:
+            return None
+        details = ", ".join(f"{name} ({bound})" for name, bound in edge_params)
+        return (
+            f"{len(edge_params)} hyperparameter(s) are on the edge of the explored"
+            f" search space: {details}. Consider extending the search range."
+        )
+
+
 _BUILTIN_CHECKS = [
     CheckOverfitting(),
     CheckUnderfitting(),
@@ -547,4 +613,5 @@ _BUILTIN_CHECKS = [
     CheckCorrelatedFeatures(),
     CheckWorseThanBaseline(),
     CheckSlowerThanBaseline(),
+    CheckHyperparamsAtSearchEdge(),
 ]

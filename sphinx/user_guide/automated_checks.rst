@@ -369,6 +369,9 @@ exceeds ``max(0.01, 0.05 * |baseline|)``.
 
 The check detects an issue when a **strict majority** of comparable metrics vote.
 
+Why it matters
+^^^^^^^^^^^^^^
+
 If the model does not match or beat a sensible off-the-shelf baseline, the modeling
 effort may not be worth its complexity: a simpler, well-tuned default could deliver the
 same quality with less risk of overfitting or maintenance burden.
@@ -408,6 +411,9 @@ the test set, with the same ``max(0.01, 0.05 * |baseline|)`` adaptive threshold.
 The check detects an issue when the slowness gate holds **and** a strict majority of
 comparable metrics vote.
 
+Why it matters
+^^^^^^^^^^^^^^
+
 A model that is much slower than a simple linear baseline but does not deliver
 better predictive quality wastes compute and engineering time. The added complexity
 is rarely justified when a fast linear model already captures the signal.
@@ -420,3 +426,47 @@ How to reduce the risk
   hyperparameter grids),
 - profile fit time to understand the dominant cost,
 - check that the input pipeline (encoding, scaling) is not the actual bottleneck.
+
+
+.. _skd014-hyperparams-at-search-edge:
+
+SKD014 - Hyperparameters at search edge
+---------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+
+The check runs only when the report's estimator is a fitted
+:class:`~sklearn.model_selection.BaseSearchCV` object (e.g.
+:class:`~sklearn.model_selection.GridSearchCV` or
+:class:`~sklearn.model_selection.RandomizedSearchCV`).
+
+The check applies only to **numeric** hyperparameters (integers and floats, not
+``bool``). For each such parameter, `skore` collects every distinct value
+evaluated during the search and flags an issue when the value selected in
+``best_params_`` matches the **minimum or maximum** of those values, i.e. the
+numeric extremes of what was explored, regardless of the order values appear in
+``param_grid``.
+
+A numeric parameter is **not** flagged when fewer than two distinct values were
+tried.
+
+The check detects an issue when at least one numeric hyperparameter is on the
+boundary of the explored search space.
+
+Why it matters
+^^^^^^^^^^^^^^
+
+When the best hyperparameters sit on the boundary of what was actually explored,
+the true optimum may lie outside the searched range. Extending the grid or
+distributions is often worthwhile before trusting the selected model.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- extend ``param_grid`` or ``param_distributions`` beyond the flagged bounds;
+- for :class:`~sklearn.model_selection.RandomizedSearchCV`, increase ``n_iter``
+  and sample from a wider range;
+- for successive halving searches, ensure early candidates cover a wide enough range;
+- re-run search after shifting bounds based on the flagged direction (minimum vs
+  maximum).
