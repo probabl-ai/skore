@@ -443,15 +443,14 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             estimator only supports predict.
 
         max_n_thresholds : int or None, default=500
-            Cap on the number of thresholds kept per class in the thresholded
-            one-vs-rest confusion matrices. When the number of thresholds
-            returned by scikit-learn exceeds ``max_n_thresholds``, the
-            thresholded view is downsampled by picking evenly-spaced indices
-            from the sorted thresholds (quantile-based sampling that preserves
-            the empirical threshold distribution). Endpoints are always kept
-            and no interpolation is performed. ``None`` disables downsampling.
-            Must be at least 2. Only affects the thresholded OvR matrices;
-            the predict-based ``n x n`` and OvR matrices are unchanged.
+            Cap on the number of thresholds kept per class in the thresholded confusion
+            matrices. When the number of thresholds returned by scikit-learn exceeds
+            ``max_n_thresholds``, the thresholded view is downsampled by picking
+            evenly-spaced indices from the sorted thresholds (quantile-based sampling
+            that preserves the empirical threshold distribution). Endpoints are always
+            kept and no interpolation is performed. ``None`` disables downsampling. Must
+            be at least 2. Only affects the thresholded matrices; the predict-based
+            matrices are unchanged.
 
         **kwargs : dict
             Additional keyword arguments ignored for compatibility.
