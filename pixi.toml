@@ -58,7 +58,7 @@ skore = { path = "skore", editable = true, extras = ["sphinx"] }
 docs = { cmd = "make html", cwd = "sphinx" }
 
 [feature.sphinx.target.osx-arm64.activation]
-scripts = ["activate_dot.sh"]
+scripts = ["scripts/activate_dot.sh"]
 
 [environments]
 py311-sklearn15 = ["py311", "sklearn15", "test"]
