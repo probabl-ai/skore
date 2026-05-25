@@ -44,6 +44,10 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             The feature importance display containing model coefficients and
             intercept.
 
+        See Also
+        --------
+        :class:`CoefficientsDisplay` : Display class for coefficient plots.
+
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
@@ -89,6 +93,10 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         :class:`ImpurityDecreaseDisplay`
             The feature importance display containing the mean decrease in impurity.
+
+        See Also
+        --------
+        :class:`ImpurityDecreaseDisplay` : Display class for impurity decrease plots.
 
         Examples
         --------
@@ -201,6 +209,11 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         :class:`PermutationImportanceDisplay`
             The permutation importance display.
+
+        See Also
+        --------
+        :class:`PermutationImportanceDisplay`
+            Display class for permutation importance plots.
 
         Examples
         --------
@@ -401,4 +414,6 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.EstimatorReport.inspection")
+        return self._rich_repr(
+            class_name=f"skore.{self._parent.__class__.__name__}.inspection"
+        )

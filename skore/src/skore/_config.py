@@ -55,13 +55,12 @@ class Configuration:
     **Temporary overrides** using the context manager (previous values are
     restored on exit):
 
-    >>> # xdoctest: +SKIP
+    >>> original = configuration.show_progress
     >>> with configuration(show_progress=False):
-    ...     report.fit(X, y)
-    >>> with configuration(plot_backend="plotly"):
-    ...     report.plot()
-    >>> with configuration(ignore_checks=["SKD002"]):
-    ...     report.checks.summarize()
+    ...     configuration.show_progress
+    False
+    >>> configuration.show_progress == original
+    True
     """
 
     def __init__(self):
@@ -132,6 +131,23 @@ class Configuration:
         plot_backend=...,
         ignore_checks=...,
     ):
+        """Context manager to temporarily override configuration options.
+
+        Parameters
+        ----------
+        show_progress : bool, default=unchanged
+            Whether to show progress bars for long-running operations.
+        plot_backend : str, default=unchanged
+            Backend used for rendering plots (e.g. ``"matplotlib"``).
+        ignore_checks : list of str, tuple of str, or None, default=unchanged
+            Global check codes ignored by
+            :meth:`~skore.EstimatorReport.checks.summarize`.
+
+        Notes
+        -----
+        On exit, every option passed to the context manager is restored to its
+        previous value, even if an exception is raised inside the block.
+        """
         show_progress_copy = self.show_progress
         plot_backend_copy = self.plot_backend
         ignore_checks_copy = self.ignore_checks

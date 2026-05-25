@@ -112,7 +112,29 @@ def detect_outliers_modified_zscore(scores, threshold=3):
 
 
 class CheckNotApplicable(Exception):
-    """Raised when a check cannot run on the given report."""
+    """Raised when a check cannot run on the given report.
+
+    Notes
+    -----
+    Check implementations raise this exception when required data, task type,
+    or model capabilities are missing. The check is skipped and does not appear
+    in :meth:`~skore.EstimatorReport.checks.summarize` results.
+
+    Examples
+    --------
+    >>> from skore import Check
+    >>> from skore._sklearn._checks._utils import CheckNotApplicable
+    >>> class MyCheck(Check):
+    ...     code = "TST001"
+    ...     title = "My check"
+    ...     report_type = "estimator"
+    ...     docs_url = None
+    ...     severity = "issue"
+    ...     def check_function(self, report):
+    ...         if report.X_test is None:
+    ...             raise CheckNotApplicable()
+    ...         return None
+    """
 
 
 def split_preprocessor_estimator(estimator):

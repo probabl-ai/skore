@@ -30,11 +30,7 @@ from skore._sklearn.types import (
 
 
 class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
-    """Precision Recall visualization.
-
-    An instance of this class should be created by
-    `EstimatorReport.metrics.precision_recall()`. You should not create an
-    instance of this class directly.
+    """Plot the precision-recall curve.
 
     Parameters
     ----------
@@ -69,6 +65,34 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
         The type of report.
+
+    Attributes
+    ----------
+    precision_recall : DataFrame
+        Precision-recall curve points per threshold.
+    average_precision : DataFrame
+        Average precision values per label and grouping column.
+    report_pos_label : PositiveLabel or None
+        Default positive label for plotting.
+    data_source : DataSource or "both"
+        The data source used to compute the curve.
+    ml_task : MLTask
+        The machine learning task.
+    report_type : ReportType
+        The type of report.
+    labels : list
+        Available class labels.
+
+    See Also
+    --------
+    EstimatorReport.metrics.precision_recall : Create this display from a report.
+    RocCurveDisplay : Plot ROC curves.
+    ConfusionMatrixDisplay : Display the confusion matrix.
+
+    Notes
+    -----
+    For multiclass classification, curves are computed in a one-vs-rest
+    fashion for each class label.
 
     Examples
     --------

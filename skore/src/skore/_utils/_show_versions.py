@@ -77,11 +77,18 @@ def _get_deps_info() -> dict[str, Any]:
 def show_versions() -> None:
     """Print useful debugging information.
 
+    Notes
+    -----
+    The output includes system information and the installed versions of ``skore``
+    and its main dependencies.
+
     Examples
     --------
-    >>> # xdoctest: +SKIP
     >>> from skore import show_versions
-    >>> show_versions()
+    >>> show_versions()  # doctest: +ELLIPSIS
+    <BLANKLINE>
+    System:
+    ...
     """
     sys_info = _get_sys_info()
     deps_info = _get_deps_info()
