@@ -57,6 +57,14 @@ Changed
 
 Added
 -----
+- :meth:`EstimatorReport.metrics.roc`,
+  :meth:`EstimatorReport.metrics.precision_recall`,
+  :meth:`EstimatorReport.metrics.confusion_matrix` and their counterparts on
+  :class:`CrossValidationReport` and :class:`ComparisonReport` now cap the
+  number of thresholds stored per class on the ROC, precision-recall and
+  thresholded confusion-matrix displays to ``500``.
+  See :pr:`2942` by :user:`glemaitre`.
+
 - Added :class:`CalibrationDisplay` to  EstimatoReport as an inspection
   tool. Frames with columns "predicted_probability" and "true_probability",
   "label" (depending on the task) are calculated and can be plotted. Both

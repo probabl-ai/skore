@@ -1012,6 +1012,12 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         --------
         :class:`RocCurveDisplay` : Display class for ROC curve plots.
 
+        Notes
+        -----
+        To keep the stored display lightweight, the ROC curve is downsampled to at most
+        500 points per class and per split. Sampling is performed by picking
+        evenly-spaced indices on the sorted thresholds.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -1062,6 +1068,12 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         --------
         :class:`PrecisionRecallCurveDisplay`
             Display class for precision-recall curve plots.
+
+        Notes
+        -----
+        To keep the stored display lightweight, the precision-recall curve is
+        downsampled to at most 500 points per class and per split. Sampling is performed
+        by picking evenly-spaced indices on the sorted thresholds.
 
         Examples
         --------
@@ -1188,6 +1200,12 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         See Also
         --------
         :class:`ConfusionMatrixDisplay` : Display class for confusion matrix plots.
+
+        Notes
+        -----
+        To keep the stored display lightweight, the thresholded confusion matrices are
+        downsampled to at most 500 points per class and per split. Sampling is performed
+        by picking evenly-spaced indices on the sorted thresholds.
 
         Examples
         --------
