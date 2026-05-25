@@ -379,7 +379,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """Rebuild a report from :meth:`get_state` output."""
         version = state.get("version")
         if version != _STATE_VERSION:
-            # in the future, we could support some BW compatibility instead of crashing
+            # For now, no backward compatibility
             raise ValueError(f"Unexpected state version: {version!r}")
 
         report_type = state["metadata"]["report_type"]

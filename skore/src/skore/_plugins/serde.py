@@ -1,69 +1,85 @@
 import io
-from collections.abc import Callable, Generator
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeAlias
 
 import joblib
+
+ArtifactId: TypeAlias = str
 
 
 @dataclass
 class ArtifactPointer:
-    artifact_id: str
+    """A lazy reference to a serialized artifact.
 
-    @staticmethod
-    def load(artifact_bytes: bytes) -> Any:
-        raise NotImplementedError()
-
-    @staticmethod
-    def dump(artifact: Any) -> bytes:
-        raise NotImplementedError()
-
-
-class JoblibPointer(ArtifactPointer):
-    @staticmethod
-    def load(artifact_bytes: bytes) -> Any:
-        with io.BytesIO(artifact_bytes) as stream:
-            return joblib.load(stream)
-
-    @staticmethod
-    def dump(artifact: Any) -> bytes:
-        with io.BytesIO() as stream:
-            joblib.dump(artifact, stream)
-            return stream.getvalue()
-
-
-def split_data_from_state(
-    state: dict[str, Any],
-) -> Generator[tuple[str, bytes], None, None]:
-    """Extract data artifacts from a report state.
-
-    The input ``state`` is updated in place: each entry in ``state["data"]`` is
-    replaced by an artifact pointer, and the serialized artifact bytes are yielded.
+    A pointer replaces a heavy payload inside a report state so the bytes can
+    live elsewhere (typically content-addressed storage that de-duplicates
+    identical payloads across reports).
     """
-    data = {}
+
+    artifact_id: ArtifactId
+
+
+def joblib_dump(artifact: Any) -> bytes:
+    """Serialize the artifact into bytes suitable for storage."""
+    with io.BytesIO() as stream:
+        joblib.dump(artifact, stream)
+        return stream.getvalue()
+
+
+def joblib_load(artifact_bytes: bytes) -> Any:
+    """Deserialize the artifact from its stored byte representation."""
+    with io.BytesIO(artifact_bytes) as stream:
+        return joblib.load(stream)
+
+
+def externalize(
+    state: dict[str, Any],
+    artifact_writer: Callable[[ArtifactId, bytes], None],
+) -> dict[str, Any]:
+    """Extract large artifacts in ``state`` to external storage.
+
+    Replace large artifacts in ``state`` with IDs.
+
+    Parameters
+    ----------
+    state : dict[str, Any]
+        Report state whose ``"data"`` entries should be externalized.
+
+    artifact_writer : callable
+        Called as ``artifact_writer(id, bytes)`` for each artifact extracted
+        from ``state``; responsible for persisting ``bytes`` under ``id``.
+    """
+    new_data: dict[str, ArtifactPointer] = {}
     for key, obj in state["data"].items():
-        obj_bytes = JoblibPointer.dump(obj)
-        bytes_id = joblib.hash(obj_bytes)
-        yield (bytes_id, obj_bytes)
-        data[key] = JoblibPointer(bytes_id)
-    state |= {"data": data}
+        obj_bytes = joblib_dump(obj)
+        artifact_id = joblib.hash(obj_bytes)
+        artifact_writer(artifact_id, obj_bytes)
+        new_data[key] = ArtifactPointer(artifact_id)
+    return state | {"data": new_data}
 
 
-def restore_data_in_state(
+def internalize(
     state: Any,
-    artifact_loader: Callable[[str], bytes],
+    artifact_reader: Callable[[ArtifactId], bytes],
 ) -> Any:
-    """Restore artifact pointers in a report state.
+    """Replace artifact pointers in ``state`` with the data they point to.
 
-    Pointers are loaded with ``artifact_loader`` and deserialized; dictionaries
-    and lists are traversed recursively while other values are returned unchanged.
+    Parameters
+    ----------
+    state : Any
+        Possibly-nested structure (dict, list, or scalar) that may contain
+        :class:`ArtifactPointer` instances; traversed recursively.
+
+    artifact_loader : callable
+        Called as ``artifact_loader(artifact_id)`` for each pointer encountered.
     """
     if isinstance(state, ArtifactPointer):
-        artifact_bytes = artifact_loader(state.artifact_id)
-        return state.load(artifact_bytes)
+        artifact_bytes = artifact_reader(state.artifact_id)
+        return joblib_load(artifact_bytes)
     elif isinstance(state, dict):
-        return {k: restore_data_in_state(v, artifact_loader) for k, v in state.items()}
+        return {k: internalize(v, artifact_reader) for k, v in state.items()}
     elif isinstance(state, list):
-        return [restore_data_in_state(v, artifact_loader) for v in state]
+        return [internalize(v, artifact_reader) for v in state]
     else:
         return state

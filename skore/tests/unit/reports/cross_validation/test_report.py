@@ -402,22 +402,30 @@ def test_from_state_rejects_unknown_version(logistic_binary_classification_data)
         CrossValidationReport.from_state(state)
 
 
-def test_state_has_no_unexpected_data_copy():
-    estimator = DummyClassifier()
+@pytest.mark.parametrize(
+    "estimator",
+    [DummyClassifier(), DummyRegressor()],
+    ids=["classification", "regression"],
+)
+@pytest.mark.parametrize("splitter", [0.2, 3], ids=["estimator", "cross-validation"])
+def test_state_has_no_unexpected_data_copy(estimator, splitter):
+    """``state`` should only reference training data through ``state["data"]``."""
 
     def state_nbytes_without_data(report):
         state = report.get_state()
         state.pop("data")
         return len(pickle.dumps(state))
 
+    # Large dataset to increase our chances that X is much larger than all the other
+    # report attributes
+    # We use a classification-oriented dataset even for regression to avoid making the
+    # test more complex
     X, y = make_classification(n_samples=50_000, n_features=30)
-    report = evaluate(estimator, X, y, splitter=0.2)
-    assert state_nbytes_without_data(report) < X.nbytes
-    report = evaluate(estimator, X, y, splitter=3)
-    assert state_nbytes_without_data(report) < X.nbytes
+    report = evaluate(estimator, X, y, splitter=splitter)
 
-    estimator = DummyRegressor()
-    report = evaluate(estimator, X, y, splitter=0.2)
-    assert state_nbytes_without_data(report) < X.nbytes
-    report = evaluate(estimator, X, y, splitter=3)
+    # If the state "without data" is bigger than X, then this likely means that
+    # the state somehow still contains X. This may be a sign that an attribute of the
+    # report still holds a reference to the report (e.g. the metrics registry).
+    # However, this is a heuristic; if this test fails, it may also be because the state
+    # size is no longer dominated by the size of X.
     assert state_nbytes_without_data(report) < X.nbytes

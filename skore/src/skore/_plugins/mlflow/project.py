@@ -26,7 +26,7 @@ from mlflow.utils.logging_utils import MLFLOW_LOGGING_STREAM
 from sklearn.base import BaseEstimator
 
 from skore import CrossValidationReport, EstimatorReport
-from skore._plugins.serde import restore_data_in_state, split_data_from_state
+from skore._plugins.serde import externalize, internalize
 
 from .reports import (
     Artifact,
@@ -175,10 +175,7 @@ class Project:
                 "is already open. Call mlflow.end_run() before calling Project.put()."
             )
 
-        state = report.get_state()
-        # NOTE: `split_data_from_state` updates the state in-place.
-        for obj_id, obj_bytes in split_data_from_state(state):
-            self._write_object_in_storage(obj_id, obj_bytes)
+        state = externalize(report.get_state(), self._write_object_in_storage)
 
         with (
             disable_discrete_autologging(["sklearn"]),
@@ -239,9 +236,7 @@ class Project:
         except MlflowException as exc:
             raise KeyError(id) from exc
 
-        state = restore_data_in_state(
-            joblib.load(pickle_path), self._load_object_from_storage
-        )
+        state = internalize(joblib.load(pickle_path), self._load_object_from_storage)
         report_type = state["metadata"]["report_type"]
         if report_type == "estimator":
             return EstimatorReport.from_state(state)
