@@ -2,10 +2,13 @@ from io import BytesIO
 from json import dumps, loads
 
 import joblib
+from httpx import Client as HTTPXClient
 from httpx import Response
 from pytest import fixture, mark, raises, warns
 
 from skore import CrossValidationReport, EstimatorReport
+from skore._plugins.hub.artifact.pickle import Pickle
+from skore._plugins.hub.artifact.upload import upload_artifacts
 from skore._plugins.hub.exception import ForbiddenException, NotFoundException
 from skore._plugins.hub.project.project import Project
 from skore._plugins.hub.report import (
@@ -40,6 +43,46 @@ def monkeypatch_table_report_representation(monkeypatch):
         "skore._plugins.hub.artifact.media.data.TableReport.content_to_upload",
         lambda self: None,
     )
+
+
+def _expected_payload_dump(Payload, project, key, report):
+    """Build the expected wire JSON, mirroring what ``put`` does."""
+    # Late import: ``monkeypatch_artifact_hub_client`` swaps the symbol in
+    # the upload module's namespace.
+    from skore._plugins.hub.artifact.upload import HubClient
+
+    payload = Payload(project=project, key=key, report=report)
+    media_artifacts = [
+        media_cls(project=project, report=report) for media_cls in payload.MEDIAS
+    ]
+    pickle_artifact = Pickle(project=project, report=report)
+
+    with HubClient() as hub_client, HTTPXClient() as storage_client:
+        plans = upload_artifacts(
+            hub_client=hub_client,
+            storage_client=storage_client,
+            workspace=project.workspace,
+            project_name=project.name,
+            artifacts=[*media_artifacts, pickle_artifact],
+        )
+
+    *media_plans, pickle_plan = plans
+    data = payload.model_dump()
+    data["medias"] = [
+        {
+            "content_type": media.content_type,
+            "name": media.name,
+            "data_source": media.data_source,
+            "checksum": plan.checksum,
+        }
+        for media, plan in zip(media_artifacts, media_plans, strict=True)
+        if plan is not None
+    ]
+    data["pickle"] = {
+        "content_type": pickle_artifact.content_type,
+        "checksum": pickle_plan.checksum if pickle_plan is not None else None,
+    }
+    return loads(dumps(data))
 
 
 @mark.filterwarnings(
@@ -196,17 +239,10 @@ class TestProject:
         project = Project(workspace="workspace", name="name")
         project.put("<key>", binary_classification)
 
-        # Retrieve the content of the request
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                EstimatorReportPayload(
-                    project=project, key="<key>", report=binary_classification
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            EstimatorReportPayload, project, "<key>", binary_classification
         )
-
-        # Compare content with the desired output
         assert content == desired
 
     @mark.filterwarnings(
@@ -247,15 +283,12 @@ class TestProject:
 
         # Retrieve the content of the request
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                CrossValidationReportPayload(
-                    project=project, key="<key>", report=small_cv_binary_classification
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            CrossValidationReportPayload,
+            project,
+            "<key>",
+            small_cv_binary_classification,
         )
-
-        # Compare content with the desired output
         assert content == desired
 
     @mark.respx()
@@ -289,12 +322,8 @@ class TestProject:
         project.put("<key>", report)
 
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                EstimatorReportPayload(
-                    project=project, key="<key>", report=report
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            EstimatorReportPayload, project, "<key>", report
         )
         assert content == desired
 
@@ -329,12 +358,8 @@ class TestProject:
         project.put("<key>", report)
 
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                EstimatorReportPayload(
-                    project=project, key="<key>", report=report
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            EstimatorReportPayload, project, "<key>", report
         )
         assert content == desired
 
@@ -373,12 +398,8 @@ class TestProject:
         project.put("<key>", report)
 
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                CrossValidationReportPayload(
-                    project=project, key="<key>", report=report
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            CrossValidationReportPayload, project, "<key>", report
         )
         assert content == desired
 
@@ -417,12 +438,8 @@ class TestProject:
         project.put("<key>", report)
 
         content = loads(respx_mock.calls.last.request.content.decode())
-        desired = loads(
-            dumps(
-                CrossValidationReportPayload(
-                    project=project, key="<key>", report=report
-                ).model_dump()
-            )
+        desired = _expected_payload_dump(
+            CrossValidationReportPayload, project, "<key>", report
         )
         assert content == desired
 
@@ -729,3 +746,48 @@ class TestProject:
 
         monkeypatch.setattr("rich.console.Console", assert_cv_report_url)
         project.put("<key>", cv_binary_classification)
+
+    @mark.respx()
+    def test_put_makes_one_artifacts_call(self, respx_mock, binary_classification):
+        """The whole point of Approach A: one batched POST /artifacts and one
+        batched POST /artifacts/complete per ``put``, regardless of how many
+        media artifacts the report produces."""
+        mocks = [
+            ("get", "/projects/workspace", Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/workspace/name"},
+                ),
+            ),
+            ("post", "projects/workspace/name/artifacts", Response(201, json=[])),
+            (
+                "post",
+                "projects/workspace/name/estimator-reports",
+                Response(201, json={"id": 42}),
+            ),
+        ]
+        for method, url, response in mocks:
+            respx_mock.request(method=method, url=url).mock(response)
+
+        project = Project(workspace="workspace", name="name")
+        project.put("<key>", binary_classification)
+
+        artifacts_calls = [
+            c
+            for c in respx_mock.calls
+            if c.request.method == "POST" and c.request.url.path.endswith("/artifacts")
+        ]
+        complete_calls = [
+            c
+            for c in respx_mock.calls
+            if c.request.url.path.endswith("/artifacts/complete")
+        ]
+        assert len(artifacts_calls) == 1, (
+            f"expected exactly one batched POST /artifacts; got {len(artifacts_calls)}"
+        )
+        # With the mock returning [], no chunks are uploaded so /complete is
+        # never called. The point is just that there's at most one.
+        assert len(complete_calls) <= 1

@@ -16,7 +16,7 @@ from skore._plugins.hub.authentication.uri import URI
 logger = getLogger(__name__)
 
 #
-# Global variable storing credentials used for authentication by the ``HUBClient``, both
+# Global variable storing credentials used for authentication by the ``HubClient``, both
 # with an API key or a temporary token.
 #
 # By default, it is empty and must be initialized by the user by calling explicitly the

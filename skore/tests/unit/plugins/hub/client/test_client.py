@@ -12,7 +12,7 @@ from pytest import mark, raises
 
 from skore._plugins.hub.authentication.login import login
 from skore._plugins.hub.authentication.uri import URI
-from skore._plugins.hub.client.client import Client, HUBClient, __semver
+from skore._plugins.hub.client.client import Client, HubClient, __semver
 
 DATETIME_MAX = datetime.max.replace(tzinfo=UTC).isoformat()
 
@@ -132,14 +132,14 @@ def test___semver():
     assert __semver("0.1.2rc10") == "0.1.2-rc.10"
 
 
-class TestHUBClient:
+class TestHubClient:
     @mark.respx()
     def test_request_with_api_key(self, monkeypatch, respx_mock):
         monkeypatch.setenv("SKORE_HUB_API_KEY", "<api-key>")
         respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
         login()
 
-        with HUBClient() as client:
+        with HubClient() as client:
             client.get("foo")
 
         assert "authorization" not in respx_mock.calls.last.request.headers
@@ -178,7 +178,7 @@ class TestHUBClient:
         respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
         login()
 
-        with HUBClient() as client:
+        with HubClient() as client:
             client.get("foo")
 
         assert "X-API-Key" not in respx_mock.calls.last.request.headers
@@ -186,7 +186,7 @@ class TestHUBClient:
 
     @mark.respx()
     def test_request_without_credentials(self):
-        with raises(RuntimeError, match="not logged in"), HUBClient() as client:
+        with raises(RuntimeError, match="not logged in"), HubClient() as client:
             client.get("foo")
 
     @mark.respx()
@@ -195,7 +195,7 @@ class TestHUBClient:
         respx_mock.get(urljoin(URI(), "foo")).mock(Response(404))
         login()
 
-        with raises(HTTPStatusError), HUBClient() as client:
+        with raises(HTTPStatusError), HubClient() as client:
             client.get("foo")
 
     @mark.respx()
@@ -211,7 +211,7 @@ class TestHUBClient:
         respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
         login()
 
-        with HUBClient() as client:
+        with HubClient() as client:
             client.get("foo")
 
         assert "X-Skore-Client" not in respx_mock.calls.last.request.headers
@@ -223,7 +223,7 @@ class TestHUBClient:
         respx_mock.get(urljoin(URI(), "foo")).mock(Response(200))
         login()
 
-        with HUBClient() as client:
+        with HubClient() as client:
             client.get("foo")
 
         assert respx_mock.calls.last.request.headers["X-Skore-Client"] == "skore/1.0.0"
@@ -237,5 +237,5 @@ class TestHUBClient:
         monkeypatch.setitem(modules, "pyodide.ffi", Mock())
         monkeypatch.setitem(modules, "pyodide.http.pyxhr", Mock())
 
-        with HUBClient() as client:
+        with HubClient() as client:
             assert client._transport.__class__.__name__ == "JupyterliteTransport"

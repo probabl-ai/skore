@@ -19,7 +19,8 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 
 from skore import THREADABLE, CrossValidationReport, EstimatorReport, console
 from skore._plugins import switch_plt_backend
-from skore._plugins.hub.client.client import Client, HUBClient
+from skore._plugins.hub.artifact.upload import upload_artifacts
+from skore._plugins.hub.client.client import Client, HubClient
 from skore._plugins.hub.exception import ForbiddenException, NotFoundException
 from skore._plugins.hub.json import dumps
 
@@ -92,7 +93,7 @@ def ensure_workspace_is_valid(method: Callable[P, R]) -> Callable[P, R]:
         # characters with specific meaning in the context of URLs (&?#/) that could
         # break URLs when used as path segment.
 
-        with HUBClient() as hub_client:
+        with HubClient() as hub_client:
             try:
                 hub_client.get(f"/projects/{workspace}")
             except HTTPStatusError as e:
@@ -207,7 +208,7 @@ class Project:
         name : str
             The name of the project.
         """
-        with HUBClient() as hub_client:
+        with HubClient() as hub_client:
             response = hub_client.post(f"projects/{workspace}/{name}")
 
         self.__workspace = workspace
@@ -243,7 +244,11 @@ class Project:
         TypeError
             If the combination of parameters are not valid.
         """
+        # Lazy imports to avoid circular dependencies: artifact / report modules
+        # both import Project at module load.
         import skore
+        from skore._plugins.hub.artifact.media.media import Media
+        from skore._plugins.hub.artifact.pickle import Pickle
         from skore._plugins.hub.report import (
             CrossValidationReportPayload,
             EstimatorReportPayload,
@@ -252,26 +257,37 @@ class Project:
         if not isinstance(key, str):
             raise TypeError(f"Key must be a string (found '{type(key)}').")
 
-        if not isinstance(report, EstimatorReport | CrossValidationReport):
-            raise TypeError(
-                f"Report must be a `skore.EstimatorReport` or "
-                f"`skore.CrossValidationReport` (found '{type(report)}')."
-            )
-
         payload: EstimatorReportPayload | CrossValidationReportPayload
+        media_artifacts: list[Media[Any]]
 
         if isinstance(report, EstimatorReport):
             payload = EstimatorReportPayload(project=self, key=key, report=report)
             endpoint = "estimator-reports"
             frontend_slug = "estimators"
-        else:  # CrossValidationReport
+            media_artifacts = [
+                media_cls(project=self, report=report) for media_cls in payload.MEDIAS
+            ]
+        elif isinstance(report, CrossValidationReport):
             payload = CrossValidationReportPayload(project=self, key=key, report=report)
             endpoint = "cross-validation-reports"
             frontend_slug = "cross-validations"
+            # Repeat so that mypy can narrow the type properly
+            media_artifacts = [
+                media_cls(project=self, report=report) for media_cls in payload.MEDIAS
+            ]
+        else:
+            raise TypeError(
+                f"Report must be a `skore.EstimatorReport` or "
+                f"`skore.CrossValidationReport` (found '{type(report)}')."
+            )
+
+        pickle_artifact = Pickle(project=self, report=report)
 
         with (
             skore.configuration(show_progress=False),
             switch_plt_backend(),
+            HubClient() as hub_client,
+            Client() as storage_client,
             Progress(
                 SpinnerColumn(),
                 TextColumn("{task.description}"),
@@ -285,25 +301,43 @@ class Project:
                 total=1,
             )
 
-            payload_dict = payload.model_dump()
-            # NOTE: `model_dump()` does more than serializing the payload to a
-            # JSON-like dict. It also evaluates computed fields with side effects:
-            # - `metrics`: computes the metrics
-            # - `medias`: computes and uploads displays/artifacts to artifact storage
-            # - `pickle`: pickles and uploads the report to artifact storage
-            # `payload_dict` does not contain artifact bytes; it contains artifact
-            # metadata including the bytes' checksum, which is used as identifier.
-            payload_json_bytes = dumps(payload_dict)
+            _ = payload.metrics  # realize before upload so progress is in order
 
-            with HUBClient() as hub_client:
-                response = hub_client.post(
-                    url=f"projects/{self.workspace}/{self.name}/{endpoint}",
-                    content=payload_json_bytes,
-                    headers={
-                        "Content-Length": str(len(payload_json_bytes)),
-                        "Content-Type": "application/json",
-                    },
-                )
+            plans = upload_artifacts(
+                hub_client=hub_client,
+                storage_client=storage_client,
+                workspace=self.workspace,
+                project_name=self.name,
+                artifacts=[*media_artifacts, pickle_artifact],
+            )
+            *media_plans, pickle_plan = plans
+
+            data = payload.model_dump()
+            data["medias"] = [
+                {
+                    "content_type": media.content_type,
+                    "name": media.name,
+                    "data_source": media.data_source,
+                    "checksum": plan.checksum,
+                }
+                for media, plan in zip(media_artifacts, media_plans, strict=True)
+                if plan is not None
+            ]
+            data["pickle"] = {
+                "content_type": pickle_artifact.content_type,
+                "checksum": pickle_plan.checksum if pickle_plan is not None else None,
+            }
+
+            payload_json_bytes = dumps(data)
+
+            response = hub_client.post(
+                url=f"projects/{self.workspace}/{self.name}/{endpoint}",
+                content=payload_json_bytes,
+                headers={
+                    "Content-Length": str(len(payload_json_bytes)),
+                    "Content-Type": "application/json",
+                },
+            )
 
             progress.advance(task)
             progress.refresh()
@@ -325,7 +359,7 @@ class Project:
             )
 
         # Retrieve presigned URL
-        with HUBClient() as hub_client:
+        with HubClient() as hub_client:
             response = hub_client.get(url=url)
             metadata = response.json()
             presigned_url = metadata["pickle"]["presigned_url"]
@@ -381,7 +415,7 @@ class Project:
                 "predict_time_mean": metrics.get("predict_time_mean"),
             }
 
-        with HUBClient() as hub_client:
+        with HubClient() as hub_client:
             responses = itertools.chain(
                 zip(
                     itertools.repeat("estimator"),
@@ -421,7 +455,7 @@ class Project:
         name : str
             The name of the project.
         """
-        with HUBClient() as hub_client:
+        with HubClient() as hub_client:
             try:
                 hub_client.delete(f"projects/{workspace}/{name}")
             except HTTPStatusError as e:
