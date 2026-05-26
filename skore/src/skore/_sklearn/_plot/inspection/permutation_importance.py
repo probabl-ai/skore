@@ -179,7 +179,7 @@ class PermutationImportanceDisplay(DisplayMixin):
 
         if issparse(X_transformed):
             X_transformed = cast(spmatrix, X_transformed)
-            X_transformed = X_transformed.todense()
+            X_transformed = np.asarray(X_transformed.todense())
 
         scores = permutation_importance(
             estimator=estimator,
