@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyRegressor
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import (
     KFold,
@@ -17,7 +18,7 @@ from sklearn.model_selection import (
     TimeSeriesSplit,
 )
 
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
@@ -34,38 +35,7 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.serializer import Serializer
-from skore._plugins.hub.metric import (
-    AccuracyTestMean,
-    AccuracyTestStd,
-    AccuracyTrainMean,
-    AccuracyTrainStd,
-    BrierScoreTestMean,
-    BrierScoreTestStd,
-    BrierScoreTrainMean,
-    BrierScoreTrainStd,
-    FitTimeMean,
-    FitTimeStd,
-    LogLossTestMean,
-    LogLossTestStd,
-    LogLossTrainMean,
-    LogLossTrainStd,
-    PrecisionTestMean,
-    PrecisionTestStd,
-    PrecisionTrainMean,
-    PrecisionTrainStd,
-    PredictTimeTestMean,
-    PredictTimeTestStd,
-    PredictTimeTrainMean,
-    PredictTimeTrainStd,
-    RecallTestMean,
-    RecallTestStd,
-    RecallTrainMean,
-    RecallTrainStd,
-    RocAucTestMean,
-    RocAucTestStd,
-    RocAucTrainMean,
-    RocAucTrainStd,
-)
+from skore._plugins.hub.metric import CrossValidationReportMetric
 from skore._plugins.hub.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
@@ -428,70 +398,131 @@ class TestCrossValidationReportPayload:
         }
 
     @mark.filterwarnings(
-        # ignore precision warning due to the low number of labels in
-        # `small_cv_binary_classification`, raised by `scikit-learn`
+        # `small_cv_binary_classification` has too few labels
         "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
     )
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
-        assert list(map(type, payload.metrics)) == [
-            AccuracyTestMean,
-            AccuracyTestStd,
-            AccuracyTrainMean,
-            AccuracyTrainStd,
-            BrierScoreTestMean,
-            BrierScoreTestStd,
-            BrierScoreTrainMean,
-            BrierScoreTrainStd,
-            LogLossTestMean,
-            LogLossTestStd,
-            LogLossTrainMean,
-            LogLossTrainStd,
-            PrecisionTestMean,
-            PrecisionTestStd,
-            PrecisionTrainMean,
-            PrecisionTrainStd,
-            RecallTestMean,
-            RecallTestStd,
-            RecallTrainMean,
-            RecallTrainStd,
-            RocAucTestMean,
-            RocAucTestStd,
-            RocAucTrainMean,
-            RocAucTrainStd,
-            FitTimeMean,
-            FitTimeStd,
-            PredictTimeTestMean,
-            PredictTimeTestStd,
-            PredictTimeTrainMean,
-            PredictTimeTrainStd,
+        assert all(isinstance(m, CrossValidationReportMetric) for m in payload.metrics)
+        assert [(m.name, m.data_source) for m in payload.metrics] == [
+            ("accuracy_mean", "test"),
+            ("accuracy_std", "test"),
+            ("accuracy_mean", "train"),
+            ("accuracy_std", "train"),
+            ("brier_score_mean", "test"),
+            ("brier_score_std", "test"),
+            ("brier_score_mean", "train"),
+            ("brier_score_std", "train"),
+            ("fit_time_mean", "train"),
+            ("fit_time_std", "train"),
+            ("log_loss_mean", "test"),
+            ("log_loss_std", "test"),
+            ("log_loss_mean", "train"),
+            ("log_loss_std", "train"),
+            ("predict_time_mean", "test"),
+            ("predict_time_std", "test"),
+            ("predict_time_mean", "train"),
+            ("predict_time_std", "train"),
+            ("roc_auc_mean", "test"),
+            ("roc_auc_std", "test"),
+            ("roc_auc_mean", "train"),
+            ("roc_auc_std", "train"),
+            ("score_mean", "test"),
+            ("score_std", "test"),
+            ("score_mean", "train"),
+            ("score_std", "train"),
         ]
 
-    @mark.respx(assert_all_called=False)
-    def test_metrics_raises_exception(self, monkeypatch, payload):
-        """
-        Since metrics compute is multi-threaded, ensure that any exceptions thrown in a
-        sub-thread are also thrown in the main thread.
-        """
-
-        def raise_exception(_):
-            raise Exception("test_metrics_raises_exception")
-
-        monkeypatch.setattr(
-            "skore._plugins.hub.report.cross_validation_report.CrossValidationReportPayload.METRICS",
-            [AccuracyTestMean],
+        test_accuracy_mean = next(
+            m.model_dump()
+            for m in payload.metrics
+            if m.name == "accuracy_mean" and m.data_source == "test"
         )
-        monkeypatch.setattr(
-            "skore._plugins.hub.metric.AccuracyTestMean.compute",
-            raise_exception,
-        )
+        assert test_accuracy_mean == {
+            "name": "accuracy_mean",
+            "verbose_name": "Accuracy - MEAN",
+            "data_source": "test",
+            "greater_is_better": True,
+            "position": 1,
+            "value": 0.4,
+        }
 
-        with raises(Exception, match="test_metrics_raises_exception"):
-            list(map(type, payload.metrics))
+        test_accuracy_std = next(
+            m.model_dump()
+            for m in payload.metrics
+            if m.name == "accuracy_std" and m.data_source == "test"
+        )
+        assert test_accuracy_std == {
+            "name": "accuracy_std",
+            "verbose_name": "Accuracy - STD",
+            "data_source": "test",
+            "greater_is_better": False,
+            "position": None,
+            "value": 0.0,
+        }
 
     @mark.filterwarnings(
-        # ignore deprecation warnings generated by the way `pandas` is used by
-        # `searborn` and `skore`
+        # `small_cv_binary_classification` has too few labels
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
+    @mark.respx(assert_all_called=False)
+    def test_metrics_custom(self, project):
+        def hello(estimator, X, y):
+            return 1
+
+        X, y = make_classification(random_state=42, n_samples=10)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y, splitter=2)
+
+        report.metrics.add(hello)
+
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        assert all(isinstance(m, CrossValidationReportMetric) for m in payload.metrics)
+        assert [m for m in payload.metrics if "hello" in m.name] == [
+            CrossValidationReportMetric(
+                name="hello_mean",
+                verbose_name="Hello - MEAN",
+                data_source="test",
+                greater_is_better=True,
+                position=0,
+                value=1.0,
+                report=report,
+            ),
+            CrossValidationReportMetric(
+                name="hello_std",
+                verbose_name="Hello - STD",
+                data_source="test",
+                greater_is_better=False,
+                position=None,
+                value=0.0,
+                report=report,
+            ),
+            CrossValidationReportMetric(
+                name="hello_mean",
+                verbose_name="Hello - MEAN",
+                data_source="train",
+                greater_is_better=True,
+                position=0,
+                value=1.0,
+                report=report,
+            ),
+            CrossValidationReportMetric(
+                name="hello_std",
+                verbose_name="Hello - STD",
+                data_source="train",
+                greater_is_better=False,
+                position=None,
+                value=0.0,
+                report=report,
+            ),
+        ]
+
+    @mark.filterwarnings(
+        # seaborn's use of pandas
         "ignore:The default of observed=False is deprecated.*:FutureWarning",
     )
     @mark.respx()

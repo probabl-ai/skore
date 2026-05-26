@@ -1,9 +1,12 @@
 """Class definition of the payload used to send a cross-validation report to ``hub``."""
 
+import statistics
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Sized
 from functools import cached_property
 from inspect import signature
+from itertools import groupby
+from operator import itemgetter
 from typing import Any, ClassVar, cast
 
 import numpy as np
@@ -38,49 +41,11 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.media.media import Media
-from skore._plugins.hub.metric import (
-    AccuracyTestMean,
-    AccuracyTestStd,
-    AccuracyTrainMean,
-    AccuracyTrainStd,
-    BrierScoreTestMean,
-    BrierScoreTestStd,
-    BrierScoreTrainMean,
-    BrierScoreTrainStd,
-    FitTimeMean,
-    FitTimeStd,
-    LogLossTestMean,
-    LogLossTestStd,
-    LogLossTrainMean,
-    LogLossTrainStd,
-    PrecisionTestMean,
-    PrecisionTestStd,
-    PrecisionTrainMean,
-    PrecisionTrainStd,
-    PredictTimeTestMean,
-    PredictTimeTestStd,
-    PredictTimeTrainMean,
-    PredictTimeTrainStd,
-    R2TestMean,
-    R2TestStd,
-    R2TrainMean,
-    R2TrainStd,
-    RecallTestMean,
-    RecallTestStd,
-    RecallTrainMean,
-    RecallTrainStd,
-    RmseTestMean,
-    RmseTestStd,
-    RmseTrainMean,
-    RmseTrainStd,
-    RocAucTestMean,
-    RocAucTestStd,
-    RocAucTrainMean,
-    RocAucTrainStd,
-)
-from skore._plugins.hub.metric.metric import Metric
+from skore._plugins.hub.metric import CrossValidationReportMetric
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
+
+from .estimator_report import _filter
 
 SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
 TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT = 100
@@ -101,7 +66,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
     Attributes
     ----------
-    METRICS : ClassVar[tuple[Metric, ...]]
+    metrics : list[CrossValidationMetric]
         The metric classes that have to be computed from the report.
     MEDIAS : ClassVar[tuple[Media, ...]]
         The media classes that have to be computed from the report.
@@ -113,47 +78,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         The key to associate to the report.
     """
 
-    METRICS: ClassVar[tuple[type[Metric[CrossValidationReport]], ...]] = (
-        AccuracyTestMean,
-        AccuracyTestStd,
-        AccuracyTrainMean,
-        AccuracyTrainStd,
-        BrierScoreTestMean,
-        BrierScoreTestStd,
-        BrierScoreTrainMean,
-        BrierScoreTrainStd,
-        LogLossTestMean,
-        LogLossTestStd,
-        LogLossTrainMean,
-        LogLossTrainStd,
-        PrecisionTestMean,
-        PrecisionTestStd,
-        PrecisionTrainMean,
-        PrecisionTrainStd,
-        R2TestMean,
-        R2TestStd,
-        R2TrainMean,
-        R2TrainStd,
-        RecallTestMean,
-        RecallTestStd,
-        RecallTrainMean,
-        RecallTrainStd,
-        RmseTestMean,
-        RmseTestStd,
-        RmseTrainMean,
-        RmseTrainStd,
-        RocAucTestMean,
-        RocAucTestStd,
-        RocAucTrainMean,
-        RocAucTrainStd,
-        # timings must be calculated last, or predictions must be cached before
-        FitTimeMean,
-        FitTimeStd,
-        PredictTimeTestMean,
-        PredictTimeTestStd,
-        PredictTimeTrainMean,
-        PredictTimeTrainStd,
-    )
     MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
         Coefficients,
         ConfusionMatrixDataFrameTestAll,
@@ -362,3 +286,62 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             )
             for report in self.report.reports_
         ]
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def metrics(self) -> list[CrossValidationReportMetric]:
+        """
+        The list of scalar metrics that have been computed from the report.
+
+        Notes
+        -----
+        All metrics whose value is not a scalar are currently ignored:
+        - ignore ``list[float]`` for multi-output ML task,
+        - ignore ``dict[str: float]`` for multi-classes ML task.
+
+        The position field is used to drive the ``hub``'s parallel coordinates plot:
+        - int [0, inf[, to be displayed at the position,
+        - None, not to be displayed.
+        """
+        rows = [
+            row
+            for row in self.report.metrics.summarize(data_source="both").rows
+            if _filter(row)
+        ]
+
+        first_report = self.report.reports_[0]
+        positions = {name: i for i, name in enumerate(first_report._metric_registry)}
+
+        result = []
+        key = itemgetter("metric_name", "data_source")
+        for (name, data_source), group_ in groupby(sorted(rows, key=key), key=key):
+            group = list(group_)
+            scores = [row["score"] for row in group]
+            mean = statistics.mean(scores)
+            std = statistics.stdev(scores, xbar=mean) if len(scores) > 1 else 0.0
+            verbose_name = group[0]["metric_verbose_name"]
+
+            result.extend(
+                [
+                    CrossValidationReportMetric(
+                        report=self.report,
+                        name=f"{name}_mean",
+                        verbose_name=f"{verbose_name} - MEAN",
+                        data_source=data_source,
+                        greater_is_better=group[0]["greater_is_better"],
+                        position=positions[name],
+                        value=mean,
+                    ),
+                    CrossValidationReportMetric(
+                        report=self.report,
+                        name=f"{name}_std",
+                        verbose_name=f"{verbose_name} - STD",
+                        data_source=data_source,
+                        greater_is_better=False,
+                        position=None,
+                        value=std,
+                    ),
+                ]
+            )
+
+        return result

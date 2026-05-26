@@ -1,8 +1,10 @@
 from joblib import hash
 from pydantic import ValidationError
 from pytest import fixture, mark, raises
+from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
 
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
@@ -20,23 +22,7 @@ from skore._plugins.hub.artifact.media import (
     TableReportTrain,
 )
 from skore._plugins.hub.artifact.serializer import Serializer
-from skore._plugins.hub.metric import (
-    AccuracyTest,
-    AccuracyTrain,
-    BrierScoreTest,
-    BrierScoreTrain,
-    FitTime,
-    LogLossTest,
-    LogLossTrain,
-    PrecisionTest,
-    PrecisionTrain,
-    PredictTimeTest,
-    PredictTimeTrain,
-    RecallTest,
-    RecallTrain,
-    RocAucTest,
-    RocAucTrain,
-)
+from skore._plugins.hub.metric import EstimatorReportMetric
 from skore._plugins.hub.report import EstimatorReportPayload
 
 
@@ -104,44 +90,60 @@ class TestEstimatorReportPayload:
 
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
-        assert list(map(type, payload.metrics)) == [
-            AccuracyTest,
-            AccuracyTrain,
-            BrierScoreTest,
-            BrierScoreTrain,
-            LogLossTest,
-            LogLossTrain,
-            PrecisionTest,
-            PrecisionTrain,
-            RecallTest,
-            RecallTrain,
-            RocAucTest,
-            RocAucTrain,
-            FitTime,
-            PredictTimeTest,
-            PredictTimeTrain,
+        assert all(isinstance(m, EstimatorReportMetric) for m in payload.metrics)
+        assert [(m.name, m.data_source) for m in payload.metrics] == [
+            ("score", "train"),
+            ("accuracy", "train"),
+            ("roc_auc", "train"),
+            ("log_loss", "train"),
+            ("brier_score", "train"),
+            ("fit_time", "train"),
+            ("predict_time", "train"),
+            ("score", "test"),
+            ("accuracy", "test"),
+            ("roc_auc", "test"),
+            ("log_loss", "test"),
+            ("brier_score", "test"),
+            ("predict_time", "test"),
         ]
 
     @mark.respx(assert_all_called=False)
-    def test_metrics_raises_exception(self, monkeypatch, payload):
-        """
-        Since metrics compute is multi-threaded, ensure that any exceptions thrown in a
-        sub-thread are also thrown in the main thread.
-        """
+    def test_metrics_custom(self, project):
+        def hello(estimator, X, y):
+            return 1
 
-        def raise_exception(_):
-            raise Exception("test_metrics_raises_exception")
+        X, y = make_classification(random_state=42)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y)
 
-        monkeypatch.setattr(
-            "skore._plugins.hub.report.estimator_report.EstimatorReportPayload.METRICS",
-            [AccuracyTest],
-        )
-        monkeypatch.setattr(
-            "skore._plugins.hub.metric.AccuracyTest.compute", raise_exception
+        report.metrics.add(hello)
+
+        payload = EstimatorReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
         )
 
-        with raises(Exception, match="test_metrics_raises_exception"):
-            list(map(type, payload.metrics))
+        assert all(isinstance(m, EstimatorReportMetric) for m in payload.metrics)
+        assert [m for m in payload.metrics if "hello" in m.name] == [
+            EstimatorReportMetric(
+                name="hello",
+                verbose_name="Hello",
+                data_source="train",
+                greater_is_better=True,
+                position=0,
+                value=1.0,
+                report=report,
+            ),
+            EstimatorReportMetric(
+                name="hello",
+                verbose_name="Hello",
+                data_source="test",
+                greater_is_better=True,
+                position=0,
+                value=1.0,
+                report=report,
+            ),
+        ]
 
     @mark.respx()
     def test_medias(self, payload):
