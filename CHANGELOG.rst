@@ -80,6 +80,13 @@ Added
 - Added two new automated checks: SKD007 (MDI feature importance bias with
   high-cardinality features, tip) and SKD008 (highly correlated input features,
   issue). See :pr:`2883` by :user:`GaetandeCast`.
+- Three new built-in checks: SKD011 (golden feature, slow), SKD012 (useless features
+  via permutation importance, slow), and SKD013 (train-test overlap in time
+  series). See :pr:`2917` by :user:`GaetandeCast`.
+- :meth:`EstimatorReport.checks.summarize`  now accept a ``fast_mode`` parameter that
+  skips expensive checks not yet in the cache while still surfacing cached slow results.
+  The HTML representation of a report uses ``fast_mode=True`` so it never triggers
+  costly computations. See :pr:`2917` by :user:`GaetandeCast`.
 
 - :meth:`~EstimatorReport.metrics.summarize` (and ``summarize`` on the other reports)
   now includes a ``score`` row corresponding to the estimator's default score, obtained

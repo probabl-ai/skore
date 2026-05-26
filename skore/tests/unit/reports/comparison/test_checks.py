@@ -23,7 +23,7 @@ def test_collects_component_issues(report, monkeypatch):
         monkeypatch.setattr(
             sub_report,
             "_get_results",
-            lambda ignored_codes, iss=issues: (iss, set(iss)),
+            lambda ignored_codes, *, fast_mode=False, iss=issues: (iss, set(iss)),
         )
     for attr in ("_check_results_cache", "_applicable_codes"):
         if hasattr(report, attr):

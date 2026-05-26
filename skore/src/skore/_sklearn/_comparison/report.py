@@ -535,14 +535,19 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ####################################################################################
 
     def _aggregate_checks(
-        self, ignored_codes: set[CheckCode]
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
     ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
         comparison_results: dict[CheckCode, dict] = {}
         reports_by_code: dict[CheckCode, list[str]] = {}
         all_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
             report.checks.add(self._checks_registry)
-            report_results, applicable_codes = report._get_results(ignored_codes)
+            report_results, applicable_codes = report._get_results(
+                ignored_codes, fast_mode=fast_mode
+            )
             all_applicable_codes |= applicable_codes
 
             for code, result in report_results.items():
