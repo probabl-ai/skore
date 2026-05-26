@@ -20,14 +20,14 @@ class ArtifactPointer:
     artifact_id: ArtifactId
 
 
-def joblib_dump(artifact: Any) -> bytes:
+def dumps(artifact: Any) -> bytes:
     """Serialize the artifact into bytes suitable for storage."""
     with io.BytesIO() as stream:
         joblib.dump(artifact, stream)
         return stream.getvalue()
 
 
-def joblib_load(artifact_bytes: bytes) -> Any:
+def loads(artifact_bytes: bytes) -> Any:
     """Deserialize the artifact from its stored byte representation."""
     with io.BytesIO(artifact_bytes) as stream:
         return joblib.load(stream)
@@ -52,7 +52,7 @@ def externalize(
     """
     new_data: dict[str, ArtifactPointer] = {}
     for key, obj in state["data"].items():
-        obj_bytes = joblib_dump(obj)
+        obj_bytes = dumps(obj)
         artifact_id = joblib.hash(obj_bytes)
         artifact_writer(artifact_id, obj_bytes)
         new_data[key] = ArtifactPointer(artifact_id)
@@ -76,7 +76,7 @@ def internalize(
     """
     if isinstance(state, ArtifactPointer):
         artifact_bytes = artifact_reader(state.artifact_id)
-        return joblib_load(artifact_bytes)
+        return loads(artifact_bytes)
     elif isinstance(state, dict):
         return {k: internalize(v, artifact_reader) for k, v in state.items()}
     elif isinstance(state, list):
