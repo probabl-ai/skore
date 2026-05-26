@@ -39,12 +39,12 @@ def externalize(
 ) -> dict[str, Any]:
     """Extract large artifacts in ``state`` to external storage.
 
-    Replace large artifacts in ``state`` with IDs.
+    Replace large artifacts in ``state`` with pointers.
 
     Parameters
     ----------
     state : dict[str, Any]
-        Report state whose ``"data"`` entries should be externalized.
+        Report state.
 
     artifact_writer : callable
         Called as ``artifact_writer(id, bytes)`` for each artifact extracted
