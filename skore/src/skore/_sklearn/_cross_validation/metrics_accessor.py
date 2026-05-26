@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import numbers
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import pandas as pd
 from joblib import Parallel
@@ -18,7 +18,7 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn._plot.metrics.metrics_summary_display import metric_score_to_rows
+from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._sklearn.metrics import MetricLike
 from skore._sklearn.types import Aggregate
 from skore._utils._accessor import _check_estimator_report_has_method
@@ -276,26 +276,22 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         This helper allows passing kwargs to the sub-reports, unlike :meth:`summarize`.
         """
-        reports = self._parent.reports_
-        metric = reports[0]._metric_registry[metric_name]
-
-        rows = []
-        for split_idx, report in enumerate(reports):
-            score = getattr(report.metrics, metric_name)(
-                data_source=data_source, **kwargs
+        rows: list[MetricsSummaryRow] = []
+        for split_idx, report in enumerate(self._parent.reports_):
+            metric = report._metric_registry[metric_name]
+            metric_rows = metric.rows(report=report, data_source=data_source, **kwargs)
+            rows.extend(
+                cast(
+                    MetricsSummaryRow,
+                    row
+                    | {
+                        "estimator_name": report.estimator_name_,
+                        "data_source": data_source,
+                        "split": split_idx,
+                    },
+                )
+                for row in metric_rows
             )
-            split_rows = metric_score_to_rows(
-                score,
-                metric=metric,
-                ml_task=report._ml_task,
-                data_source=data_source,
-                estimator_name=report.estimator_name_,
-                pos_label=report.pos_label,
-                kwargs=kwargs or None,
-            )
-            for r in split_rows:
-                r["split"] = split_idx
-            rows.extend(split_rows)
 
         return MetricsSummaryDisplay(rows=rows, report_type="cross-validation")
 

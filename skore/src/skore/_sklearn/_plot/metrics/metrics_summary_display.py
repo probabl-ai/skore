@@ -4,11 +4,9 @@ import pandas as pd
 from matplotlib.figure import Figure
 
 from skore._sklearn._plot.base import DisplayMixin
-from skore._sklearn.metrics import Metric
 from skore._sklearn.types import (
     Aggregate,
     DataSource,
-    MLTask,
     PositiveLabel,
     ReportType,
 )
@@ -49,69 +47,6 @@ class MetricsSummaryRow(TypedDict):
     average: str | None
     output: int | None
     split: NotRequired[int]
-
-
-def metric_score_to_rows(
-    score: float | list | dict,
-    *,
-    metric: Metric,
-    ml_task: MLTask,
-    data_source: DataSource,
-    estimator_name: str,
-    pos_label: PositiveLabel = None,
-    kwargs: dict[str, Any] | None = None,
-) -> list[MetricsSummaryRow]:
-    """Expand a metric score into display rows based on the ML task.
-
-    Parameters
-    ----------
-    score : float, dict, or list
-        The metric score.
-
-    metric : Metric
-        The metric instance (provides ``verbose_name``, ``icon``,
-        and default ``kwargs``).
-
-    ml_task : str
-        The ML task (e.g. ``"binary-classification"``).
-
-    data_source : {"test", "train"}
-        The data source to use.
-
-    estimator_name : str
-        Name shown in the display.
-
-    pos_label : label, default=None
-        Positive label for binary classification.
-
-    kwargs : dict, optional
-        Keyword arguments used for the score call. Default is ``metric.kwargs``.
-    """
-    if kwargs is None:
-        kwargs = metric.kwargs
-
-    row: MetricsSummaryRow = {
-        "metric_verbose_name": metric.verbose_name,
-        "estimator_name": estimator_name,
-        "data_source": data_source,
-        "greater_is_better": metric.greater_is_better,
-        "label": None,
-        "average": None,
-        "output": None,
-        "score": score,
-    }
-
-    if ml_task == "binary-classification" and kwargs.get("average") == "binary":
-        return [{**row, "label": kwargs.get("pos_label", pos_label)}]
-    if ml_task in ("binary-classification", "multiclass-classification"):
-        if isinstance(score, dict):
-            return [{**row, "label": label, "score": score[label]} for label in score]
-        return [{**row, "average": kwargs.get("average")}]
-    if ml_task == "multioutput-regression":
-        if isinstance(score, list):
-            return [{**row, "output": idx, "score": s} for idx, s in enumerate(score)]
-        return [{**row, "average": kwargs.get("multioutput")}]
-    return [row]
 
 
 class MetricsSummaryDisplay(DisplayMixin):

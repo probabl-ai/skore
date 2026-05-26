@@ -95,6 +95,9 @@ Added
   The reports also now have a :meth:`~EstimatorReport.metrics.score` method.
   See :pr:`2884` by :user:`auguste-probabl`.
 
+- The report metrics API now supports multimetric scorers in the form of
+  functions returning dictionaries. See :pr:`2933` by :user:`auguste-probabl`.
+
 - Added two new automated checks: SKD009 (model worse than baseline, issue) and
   SKD010 (model slower than baseline, issue). See :pr:`2906` by
   :user:`GaetandeCast`.
