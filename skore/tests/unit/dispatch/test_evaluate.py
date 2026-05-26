@@ -45,7 +45,7 @@ def test_int_splitter(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=3)
     assert isinstance(report, CrossValidationReport)
-    assert len(report.estimator_reports_) == 3
+    assert len(report.reports_) == 3
 
 
 def test_cv_object_splitter(regression_data):
@@ -53,7 +53,7 @@ def test_cv_object_splitter(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=KFold(n_splits=4))
     assert isinstance(report, CrossValidationReport)
-    assert len(report.estimator_reports_) == 4
+    assert len(report.reports_) == 4
 
 
 def test_multiple_estimators(regression_data):
@@ -224,7 +224,7 @@ def test_classification_cv(binary_classification_data):
     X, y = binary_classification_data
     report = evaluate(LogisticRegression(), X, y, splitter=StratifiedKFold(n_splits=3))
     assert isinstance(report, CrossValidationReport)
-    assert len(report.estimator_reports_) == 3
+    assert len(report.reports_) == 3
 
 
 def test_pos_label(binary_classification_data):

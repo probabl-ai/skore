@@ -61,13 +61,13 @@ def test_attributes(fixture_name, request, cv, n_jobs):
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=cv, n_jobs=n_jobs)
     assert isinstance(report, CrossValidationReport)
-    assert isinstance(report.estimator_reports_, list)
-    for estimator_report in report.estimator_reports_:
+    assert isinstance(report.reports_, list)
+    for estimator_report in report.reports_:
         assert isinstance(estimator_report, EstimatorReport)
     assert report.X is X
     assert report.y is y
     assert report.n_jobs == n_jobs
-    assert len(report.estimator_reports_) == cv
+    assert len(report.reports_) == cv
     if isinstance(estimator, Pipeline):
         assert report.estimator_name_ == estimator[-1].__class__.__name__
     else:
@@ -99,16 +99,16 @@ def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
     """Check that calling cache_predictions fills the cache."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
-    for estimator_report in report.estimator_reports_:
+    for estimator_report in report.reports_:
         assert estimator_report._cache == {}
 
     report.cache_predictions()
 
-    for estimator_report in report.estimator_reports_:
+    for estimator_report in report.reports_:
         assert len(estimator_report._cache) == expected_n_keys
 
     report.clear_cache()
-    for estimator_report in report.estimator_reports_:
+    for estimator_report in report.reports_:
         assert estimator_report._cache == {}
 
 
@@ -137,10 +137,10 @@ def test_get_predictions(
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_len = len(report.estimator_reports_[split_idx].y_train)
+            expected_len = len(report.reports_[split_idx].y_train)
         else:
             assert data_source == "test"
-            expected_len = len(report.estimator_reports_[split_idx].y_test)
+            expected_len = len(report.reports_[split_idx].y_test)
         if response_method == "predict_proba" and pos_label is None:
             assert split_predictions.shape == (expected_len, 2)
         else:
@@ -332,8 +332,8 @@ def test_from_state_bypasses_init_and_restores_state(
     assert restored.ml_task == report.ml_task
     assert restored.pos_label == report.pos_label
     assert restored._split_indices == report._split_indices
-    assert len(restored.estimator_reports_) == len(report.estimator_reports_)
-    assert restored.estimator_reports_[0]._cache == report.estimator_reports_[0]._cache
+    assert len(restored.reports_) == len(report.reports_)
+    assert restored.reports_[0]._cache == report.reports_[0]._cache
     assert state["estimator_reports"][0]["predictions"]
     assert state["estimator_reports"][0]["optional"]["cache"]
     assert restored.metrics.accuracy().equals(expected_accuracy)

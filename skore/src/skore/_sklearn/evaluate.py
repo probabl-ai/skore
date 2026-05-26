@@ -229,7 +229,7 @@ def evaluate(
                 splitter=splitter,
                 n_jobs=n_jobs,
             )
-        return report.estimator_reports_[0]
+        return report.reports_[0]
 
     return CrossValidationReport(
         estimator,
