@@ -15,6 +15,7 @@ from skore._sklearn._plot.utils import (
     _check_label,
     _ClassifierDisplayMixin,
     _concat_frames_with_column_data,
+    _downsample_thresholds_indices,
     _one_hot_encode,
     _validate_style_kwargs,
 )
@@ -449,6 +450,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         data_source: DataSource | Literal["both"],
         report_pos_label: PositiveLabel | None = None,
         y_scores: NDArray | None = None,
+        max_n_thresholds: int | None = 500,
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
         """Compute the confusion matrix data for display.
@@ -481,6 +483,16 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         y_scores : ndarray of shape (n_samples, n_classes) or None
             Probability estimates or decision function values. None when the
             estimator only supports predict.
+
+        max_n_thresholds : int or None, default=500
+            Cap on the number of thresholds kept per class in the thresholded confusion
+            matrices. When the number of thresholds returned by scikit-learn exceeds
+            ``max_n_thresholds``, the thresholded view is downsampled by picking
+            evenly-spaced indices from the sorted thresholds (quantile-based sampling
+            that preserves the empirical threshold distribution). Endpoints are always
+            kept and no interpolation is performed. ``None`` disables downsampling. Must
+            be at least 2. Only affects the thresholded matrices; the predict-based
+            matrices are unchanged.
 
         **kwargs : dict
             Additional keyword arguments ignored for compatibility.
@@ -536,6 +548,17 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     y_score=y_scores_arr[:, class_idx],
                     pos_label=1,
                 )
+                indices = _downsample_thresholds_indices(
+                    thresholds.size, max_n_thresholds
+                )
+                tns, fps, fns, tps, thresholds = (
+                    tns[indices],
+                    fps[indices],
+                    fns[indices],
+                    tps[indices],
+                    thresholds[indices],
+                )
+
                 cm = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
                 df = cls._build_confusion_frame(
                     cm=cm,

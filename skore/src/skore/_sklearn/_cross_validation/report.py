@@ -573,7 +573,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return report
 
     def _aggregate_checks(
-        self, ignored_codes: set[CheckCode]
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
     ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
         total_splits = len(self.estimator_reports_)
         all_applicable_codes: set[CheckCode] = set()
@@ -581,7 +584,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         for estimator_report in self.estimator_reports_:
             estimator_report.checks.add(self._checks_registry)
-            results, applicable_codes = estimator_report._get_results(ignored_codes)
+            results, applicable_codes = estimator_report._get_results(
+                ignored_codes, fast_mode=fast_mode
+            )
             all_applicable_codes |= applicable_codes
             for code, check_result in results.items():
                 if check_result["explanation"] is not None:
@@ -695,7 +700,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        checks_summary = self.checks.summarize()
+        checks_summary = self.checks.summarize(fast_mode=True)
         checks_summary_html = (
             "<div class='report-checks-summary-details'>"
             f"{len(checks_summary.frame(severity='issue'))} issue(s), "
