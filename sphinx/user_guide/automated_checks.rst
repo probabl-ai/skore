@@ -441,7 +441,6 @@ How to reduce the risk
 - check that the input pipeline (encoding, scaling) is not the actual bottleneck.
 
 
-
 .. _skd011-golden-feature:
 
 SKD011 - Golden feature
@@ -449,7 +448,6 @@ SKD011 - Golden feature
 
 This check is *slow*: it requires fitting one model per feature. Skip it with
 ``fast_mode=True``.
-
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^
@@ -553,10 +551,7 @@ How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - use a time-based splitter such as
-  :class:`~sklearn.model_selection.TimeSeriesSplit`,
-- sort the data chronologically and split on a fixed cut-off date,
-- exclude rows whose timestamps fall after the chosen training window.
-
+  :class:`~sklearn.model_selection.TimeSeriesSplit` or similar.
 
 .. _skd014-hyperparams-at-search-edge:
 
@@ -570,31 +565,19 @@ The check runs only when the report's estimator is a fitted
 :class:`~sklearn.model_selection.GridSearchCV` or
 :class:`~sklearn.model_selection.RandomizedSearchCV`).
 
-The check applies only to **numeric** hyperparameters (integers and floats, not
-``bool``). For each such parameter, `skore` collects every distinct value
-evaluated during the search and flags an issue when the value selected in
-``best_params_`` matches the **minimum or maximum** of those values, i.e. the
-numeric extremes of what was explored, regardless of the order values appear in
-``param_grid``.
-
-A numeric parameter is **not** flagged when fewer than two distinct values were
-tried.
-
-The check detects an issue when at least one numeric hyperparameter is on the
-boundary of the explored search space.
+Only numeric hyperparameters are considered. For each one, `skore` flags an
+issue when ``best_params_`` equals the **minimum or maximum** distinct value
+tried during the search. Order in ``param_grid`` does not matter.
 
 Why it matters
 ^^^^^^^^^^^^^^
 When the best hyperparameters sit on the boundary of what was actually explored,
 the true optimum may lie outside the searched range. Extending the grid or
-distributions is often worthwhile before trusting the selected model.
+distributions is often worthwhile.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- extend ``param_grid`` or ``param_distributions`` beyond the flagged bounds;
+- extend ``param_grid`` or ``param_distributions`` beyond the flagged bounds,
 - for :class:`~sklearn.model_selection.RandomizedSearchCV`, increase ``n_iter``
-  and sample from a wider range;
-- for successive halving searches, ensure early candidates cover a wide enough range;
-- re-run search after shifting bounds based on the flagged direction (minimum vs
-  maximum).
+  and sample from a wider range.
