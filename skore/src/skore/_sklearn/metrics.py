@@ -140,8 +140,8 @@ class Metric:
     -----
     A metric's value flows through four layers, from raw to human-readable:
 
-    - :meth:`raw` performs the actual computation.
-    - :meth:`raw_cached` wraps :meth:`raw` and caches the result.
+    - :meth:`_raw` performs the actual computation.
+    - :meth:`_raw_cached` wraps :meth:`_raw` and caches the result.
     - :meth:`rows` outputs metric scores in a structured format.
     - :meth:`pretty` outputs metric scores in a human-readable format, which may
       differ from what the base metric returned.
@@ -344,7 +344,7 @@ class Metric:
         """
         return True
 
-    def raw(
+    def _raw(
         self,
         *,
         report: EstimatorReport,
@@ -355,7 +355,7 @@ class Metric:
 
         Override this when the score cannot be expressed as ``self.function(...)``
         (see :class:`Score`, :class:`FitTime`, :class:`PredictTime`). Subclasses that
-        only need to adjust kwargs before delegating should call ``super().raw(...)``
+        only need to adjust kwargs before delegating should call ``super()._raw(...)``
         (see :class:`Precision`, :class:`Brier`, :class:`RocAuc`).
 
         Parameters
@@ -405,7 +405,7 @@ class Metric:
             **call_kwargs,
         )
 
-    def raw_cached(
+    def _raw_cached(
         self,
         *,
         report: EstimatorReport,
@@ -416,7 +416,7 @@ class Metric:
         cache_key = make_cache_key(data_source, self.name, kwargs)
         score = report._cache.get(cache_key)
         if score is None:
-            score = self.raw(report=report, data_source=data_source, **kwargs)
+            score = self._raw(report=report, data_source=data_source, **kwargs)
 
             report._cache[cache_key] = score
 
@@ -492,9 +492,28 @@ class Metric:
         data_source: DataSource,
         **kwargs: Any,
     ) -> list[MetricRow]:
-        """Compute the metric and expand it into one or more rows."""
+        """Compute the metric and expand it into one or more rows.
+
+        Parameters
+        ----------
+        report : EstimatorReport
+            The report to compute the metric for.
+
+        data_source : {"test", "train"}, default="test"
+            Which data split to use.
+
+        **kwargs
+            Additional keyword arguments passed to the scoring function.
+
+        Returns
+        -------
+        list of :class:`MetricRow`
+            The computed metric value(s).
+        """
         merged_kwargs = self.kwargs | kwargs
-        score = self.raw_cached(report=report, data_source=data_source, **merged_kwargs)
+        score = self._raw_cached(
+            report=report, data_source=data_source, **merged_kwargs
+        )
         return self._to_rows(score, report=report, **merged_kwargs)
 
     def _to_pretty(self, rows: list[MetricRow]) -> Any:
@@ -543,7 +562,7 @@ class FitTime(Metric):
     def available(report: EstimatorReport) -> bool:
         return True
 
-    def raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
+    def _raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
         if cast and report.fit_time_ is None:
             return float("nan")
         return report.fit_time_
@@ -560,7 +579,7 @@ class PredictTime(Metric):
     def available(report: EstimatorReport) -> bool:
         return True
 
-    def raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
+    def _raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
         predict_time_cache_key = make_cache_key(data_source, "predict_time")
         return report._cache.get(
             predict_time_cache_key, (float("nan") if cast else None)
@@ -592,7 +611,7 @@ class Precision(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
-    def raw(
+    def _raw(
         self, *, report: EstimatorReport, data_source="test", average=None, **kwargs
     ):
         if report._ml_task == "binary-classification":
@@ -601,7 +620,7 @@ class Precision(Metric):
             elif average != "binary":
                 kwargs["pos_label"] = None
 
-        return super().raw(
+        return super()._raw(
             report=report, data_source=data_source, average=average, **kwargs
         )
 
@@ -618,7 +637,7 @@ class Recall(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
-    def raw(
+    def _raw(
         self, *, report: EstimatorReport, data_source="test", average=None, **kwargs
     ):
         if report._ml_task == "binary-classification":
@@ -627,7 +646,7 @@ class Recall(Metric):
             elif average != "binary":
                 kwargs["pos_label"] = None
 
-        return super().raw(
+        return super()._raw(
             report=report, data_source=data_source, average=average, **kwargs
         )
 
@@ -646,11 +665,11 @@ class Brier(Metric):
             report.learner_, "predict_proba"
         )
 
-    def raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
+    def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
         # The Brier score in scikit-learn requests `pos_label` to ensure that
         # the integral encoding of `y_true` corresponds to the probabilities of
         # the `pos_label`.
-        return super().raw(
+        return super()._raw(
             report=report,
             data_source=data_source,
             pos_label=report.learner_.classes_[-1],
@@ -681,7 +700,7 @@ class RocAuc(Metric):
             y_score = y_score[:, 1]
         return sklearn.metrics.roc_auc_score(y_true, y_score, **kwargs)
 
-    def raw(
+    def _raw(
         self,
         *,
         report: EstimatorReport,
@@ -690,7 +709,7 @@ class RocAuc(Metric):
         multi_class="ovr",
         **kwargs,
     ):
-        return super().raw(
+        return super()._raw(
             report=report,
             data_source=data_source,
             average=average,
@@ -727,7 +746,7 @@ class R2(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
-    def raw(
+    def _raw(
         self,
         *,
         report: EstimatorReport,
@@ -735,7 +754,7 @@ class R2(Metric):
         multioutput="raw_values",
         **kwargs,
     ):
-        return super().raw(
+        return super()._raw(
             report=report, data_source=data_source, multioutput=multioutput, **kwargs
         )
 
@@ -752,7 +771,7 @@ class Rmse(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
-    def raw(
+    def _raw(
         self,
         *,
         report: EstimatorReport,
@@ -760,7 +779,7 @@ class Rmse(Metric):
         multioutput="raw_values",
         **kwargs,
     ):
-        return super().raw(
+        return super()._raw(
             report=report, data_source=data_source, multioutput=multioutput, **kwargs
         )
 
@@ -777,7 +796,7 @@ class Mae(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
-    def raw(
+    def _raw(
         self,
         *,
         report: EstimatorReport,
@@ -785,7 +804,7 @@ class Mae(Metric):
         multioutput="raw_values",
         **kwargs,
     ):
-        return super().raw(
+        return super()._raw(
             report=report, data_source=data_source, multioutput=multioutput, **kwargs
         )
 
@@ -802,7 +821,7 @@ class Mape(Metric):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
 
-    def raw(
+    def _raw(
         self,
         *,
         report: EstimatorReport,
@@ -810,7 +829,7 @@ class Mape(Metric):
         multioutput="raw_values",
         **kwargs,
     ):
-        return super().raw(
+        return super()._raw(
             report=report, data_source=data_source, multioutput=multioutput, **kwargs
         )
 
@@ -826,7 +845,7 @@ class Score(Metric):
     def available(report: EstimatorReport) -> bool:
         return hasattr(report.estimator_, "score")
 
-    def raw(
+    def _raw(
         self,
         *,
         report: EstimatorReport,

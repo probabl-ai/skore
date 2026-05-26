@@ -1001,12 +1001,12 @@ def test_available_default(binary_classification_report):
     assert m.available(binary_classification_report) is True
 
 
-def test_raw_no_function(binary_classification_report):
-    """Test that calling `Metric.raw` with no function raises."""
+def test_no_function(binary_classification_report):
+    """Test that calling `Metric.rows` with no function raises."""
     m = Metric(name="abstract_metric", function=None)
     err_msg = "Metric 'abstract_metric' has no scoring function."
     with pytest.raises(ValueError, match=err_msg):
-        m.raw(report=binary_classification_report, data_source="test")
+        m.rows(report=binary_classification_report, data_source="test")
 
 
 def test_metric_registry_repr(binary_classification_report):
