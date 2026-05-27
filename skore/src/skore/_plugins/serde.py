@@ -9,8 +9,8 @@ ArtifactId: TypeAlias = str
 
 
 @dataclass
-class ArtifactPointer:
-    """A lazy reference to a serialized artifact.
+class JoblibPicklePointer:
+    """A lazy reference to an artifact serialized with joblib.
 
     A pointer replaces a heavy payload inside a report state so the bytes can
     live elsewhere (typically content-addressed storage that de-duplicates
@@ -50,12 +50,12 @@ def externalize(
         Called as ``artifact_writer(id, bytes)`` for each artifact extracted
         from ``state``; responsible for persisting ``bytes`` under ``id``.
     """
-    new_data: dict[str, ArtifactPointer] = {}
+    new_data: dict[str, JoblibPicklePointer] = {}
     for key, obj in state["data"].items():
         obj_bytes = dumps(obj)
         artifact_id = joblib.hash(obj_bytes)
         artifact_writer(artifact_id, obj_bytes)
-        new_data[key] = ArtifactPointer(artifact_id)
+        new_data[key] = JoblibPicklePointer(artifact_id)
     return state | {"data": new_data}
 
 
@@ -69,12 +69,12 @@ def internalize(
     ----------
     state : Any
         Possibly-nested structure (dict, list, or scalar) that may contain
-        :class:`ArtifactPointer` instances; traversed recursively.
+        :class:`JoblibPicklePointer` instances; traversed recursively.
 
     artifact_loader : callable
         Called as ``artifact_loader(artifact_id)`` for each pointer encountered.
     """
-    if isinstance(state, ArtifactPointer):
+    if isinstance(state, JoblibPicklePointer):
         artifact_bytes = artifact_reader(state.artifact_id)
         return loads(artifact_bytes)
     elif isinstance(state, dict):
