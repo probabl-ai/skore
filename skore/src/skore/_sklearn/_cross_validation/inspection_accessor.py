@@ -120,7 +120,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
 
         metric : str, callable, scorer, or list of such instances or dict of such \
-            instances, default=None
+                instances, default=None
             The metric to pass to :func:`sklearn.inspection.permutation_importance`.
 
             - if ``None``, a suitable default will be used.

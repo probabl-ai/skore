@@ -89,7 +89,7 @@ def evaluate(
     Returns
     -------
     report : :class:`~skore.EstimatorReport`, :class:`~skore.CrossValidationReport` \
-        or :class:`~skore.ComparisonReport`
+            or :class:`~skore.ComparisonReport`
         The report corresponding to the evaluation strategy.
 
     See Also
