@@ -418,7 +418,7 @@ class CheckCorrelatedFeatures(Check):
             raise CheckNotApplicable()
         if isinstance(X, pd.DataFrame):
             X = X.select_dtypes(include="number")
-        if X.shape[1] < 2:
+        if X.shape[1] < 2 or X.shape[1] > 1000:
             raise CheckNotApplicable()
 
         corr = np.abs(spearmanr(X).statistic)
