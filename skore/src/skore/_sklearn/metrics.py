@@ -147,6 +147,8 @@ class Metric:
       differ from what the base metric returned.
     """
 
+    kwargs: dict[str, Any] = {}
+
     def __init__(
         self,
         *,
@@ -166,7 +168,7 @@ class Metric:
         # When name is None, the metric is being instantiated from a subclass
         # (e.g. Accuracy()) whose fields are defined as class attributes.
         # Only `kwargs` needs to be set as an instance attribute.
-        self.kwargs = kwargs or {}
+        self.kwargs = kwargs or self.kwargs
 
         if name is None:
             return
@@ -557,13 +559,14 @@ class FitTime(Metric):
     greater_is_better = False
     function = None
     function_kind = None
+    kwargs = {"cast": True}
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return True
 
-    def _raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
-        if cast and report._fit_time is None:
+    def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
+        if kwargs["cast"] and report._fit_time is None:
             return float("nan")
         return report._fit_time
 
@@ -574,6 +577,7 @@ class PredictTime(Metric):
     greater_is_better = False
     function = None
     function_kind = None
+    kwargs = {"cast": True}
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -603,23 +607,20 @@ class Precision(Metric):
     response_method = "predict"
     greater_is_better = True
     function_kind = FunctionKind.METRIC
+    kwargs = {"average": None}
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
-    def _raw(
-        self, *, report: EstimatorReport, data_source="test", average=None, **kwargs
-    ):
+    def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
         if report._ml_task == "binary-classification":
-            if average is None and report.pos_label is not None:
-                average = "binary"
-            elif average != "binary":
+            if kwargs["average"] is None and report.pos_label is not None:
+                kwargs["average"] = "binary"
+            elif kwargs["average"] != "binary":
                 kwargs["pos_label"] = None
 
-        return super()._raw(
-            report=report, data_source=data_source, average=average, **kwargs
-        )
+        return super()._raw(report=report, data_source=data_source, **kwargs)
 
 
 class Recall(Metric):
@@ -629,23 +630,20 @@ class Recall(Metric):
     response_method = "predict"
     greater_is_better = True
     function_kind = FunctionKind.METRIC
+    kwargs = {"average": None}
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("binary-classification", "multiclass-classification")
 
-    def _raw(
-        self, *, report: EstimatorReport, data_source="test", average=None, **kwargs
-    ):
+    def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
         if report._ml_task == "binary-classification":
-            if average is None and report.pos_label is not None:
-                average = "binary"
-            elif average != "binary":
+            if kwargs["average"] is None and report.pos_label is not None:
+                kwargs["average"] = "binary"
+            elif kwargs["average"] != "binary":
                 kwargs["pos_label"] = None
 
-        return super()._raw(
-            report=report, data_source=data_source, average=average, **kwargs
-        )
+        return super()._raw(report=report, data_source=data_source, **kwargs)
 
 
 class Brier(Metric):
@@ -680,6 +678,7 @@ class RocAuc(Metric):
     response_method = ("predict_proba", "decision_function")
     greater_is_better = True
     function_kind = FunctionKind.METRIC
+    kwargs = {"average": None, "multi_class": "ovr"}
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
@@ -696,23 +695,6 @@ class RocAuc(Metric):
         if y_score.ndim == 2 and y_score.shape[1] == 2:
             y_score = y_score[:, 1]
         return sklearn.metrics.roc_auc_score(y_true, y_score, **kwargs)
-
-    def _raw(
-        self,
-        *,
-        report: EstimatorReport,
-        data_source="test",
-        average=None,
-        multi_class="ovr",
-        **kwargs,
-    ):
-        return super()._raw(
-            report=report,
-            data_source=data_source,
-            average=average,
-            multi_class=multi_class,
-            **kwargs,
-        )
 
 
 class LogLoss(Metric):
@@ -738,22 +720,11 @@ class R2(Metric):
     response_method = "predict"
     greater_is_better = True
     function_kind = FunctionKind.METRIC
+    kwargs = {"multioutput": "raw_values"}
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
-
-    def _raw(
-        self,
-        *,
-        report: EstimatorReport,
-        data_source="test",
-        multioutput="raw_values",
-        **kwargs,
-    ):
-        return super()._raw(
-            report=report, data_source=data_source, multioutput=multioutput, **kwargs
-        )
 
 
 class Rmse(Metric):
@@ -763,22 +734,11 @@ class Rmse(Metric):
     response_method = "predict"
     greater_is_better = False
     function_kind = FunctionKind.METRIC
+    kwargs = {"multioutput": "raw_values"}
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
-
-    def _raw(
-        self,
-        *,
-        report: EstimatorReport,
-        data_source="test",
-        multioutput="raw_values",
-        **kwargs,
-    ):
-        return super()._raw(
-            report=report, data_source=data_source, multioutput=multioutput, **kwargs
-        )
 
 
 class Mae(Metric):
@@ -788,22 +748,11 @@ class Mae(Metric):
     response_method = "predict"
     greater_is_better = False
     function_kind = FunctionKind.METRIC
+    kwargs = {"multioutput": "raw_values"}
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
-
-    def _raw(
-        self,
-        *,
-        report: EstimatorReport,
-        data_source="test",
-        multioutput="raw_values",
-        **kwargs,
-    ):
-        return super()._raw(
-            report=report, data_source=data_source, multioutput=multioutput, **kwargs
-        )
 
 
 class Mape(Metric):
@@ -813,22 +762,11 @@ class Mape(Metric):
     response_method = "predict"
     greater_is_better = False
     function_kind = FunctionKind.METRIC
+    kwargs = {"multioutput": "raw_values"}
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task in ("regression", "multioutput-regression")
-
-    def _raw(
-        self,
-        *,
-        report: EstimatorReport,
-        data_source="test",
-        multioutput="raw_values",
-        **kwargs,
-    ):
-        return super()._raw(
-            report=report, data_source=data_source, multioutput=multioutput, **kwargs
-        )
 
 
 class Score(Metric):
