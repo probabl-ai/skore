@@ -9,7 +9,11 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, RidgeCV
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import (
+    GridSearchCV,
+    RandomizedSearchCV,
+    train_test_split,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeRegressor
 from skrub import DatetimeEncoder, tabular_pipeline
@@ -20,6 +24,7 @@ from skore._sklearn._checks.base import (
     ChecksSummaryDisplay,
     _get_issue_documentation_url,
 )
+from skore._sklearn._checks.model_checks import CheckHyperparamsAtSearchEdge
 
 
 @pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
@@ -312,6 +317,97 @@ def test_skd010_not_detected_for_fast_model(regression_data):
     report = evaluate(RidgeCV(), X, y)
     codes = set(report.checks.summarize().frame(severity="issue")["code"])
     assert "SKD010" not in codes
+
+
+def _prefit_grid_search_report(X, y, search):
+    search.fit(X, y)
+    return evaluate(search, X, y, splitter="prefit")
+
+
+@pytest.mark.parametrize(
+    "param_grid", [{"alpha": [0.1, 1.0, 10.0]}, {"alpha": [10.0, 0.1, 1.0]}]
+)
+def test_skd014_raises_at_numeric_edge(regression_data, monkeypatch, param_grid):
+    """SKD014 flags when best is at the numeric min/max of tried values."""
+    X, y = regression_data
+    report = _prefit_grid_search_report(
+        X, y, GridSearchCV(Ridge(), param_grid=param_grid, cv=2)
+    )
+    monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 0.1})
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD014" in issues.index
+    explanation = issues.loc["SKD014", "explanation"]
+    assert "alpha" in explanation
+    assert "minimum" in explanation
+
+
+@pytest.mark.parametrize(
+    "param_grid", [{"alpha": [1.0, 2.0, 3.0]}, {"alpha": [3.0, 1.0, 2.0]}]
+)
+def test_skd014_not_raised_for_interior_best(regression_data, monkeypatch, param_grid):
+    """SKD014 is absent when the best value is not at the tried min or max."""
+    X, y = regression_data
+    report = _prefit_grid_search_report(
+        X, y, GridSearchCV(Ridge(), param_grid=param_grid, cv=2)
+    )
+    monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 2.0})
+    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    assert "SKD014" not in codes
+
+
+@pytest.mark.parametrize("prefit", [True, False])
+def test_skd014_prefit_and_evaluate_fit(regression_data, monkeypatch, prefit):
+    """SKD014 runs for prefit and evaluate-fitted GridSearchCV reports."""
+    X, y = regression_data
+    search = GridSearchCV(Ridge(), param_grid={"alpha": [10.0, 0.1, 1.0]}, cv=2)
+    if prefit:
+        report = _prefit_grid_search_report(X, y, search)
+    else:
+        report = evaluate(search, X, y)
+    monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 0.1})
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD014" in issues.index
+    assert "minimum" in issues.loc["SKD014", "explanation"]
+
+
+def test_skd014_not_applicable_for_plain_estimator(regression_data):
+    """SKD014 raises CheckNotApplicable when the report estimator isn't BaseSearchCV."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    with pytest.raises(CheckNotApplicable):
+        CheckHyperparamsAtSearchEdge().check_function(report)
+
+
+@pytest.mark.parametrize(
+    "param_grid", [{"fit_intercept": [False, True]}, {"solver": ["svd", "cholesky"]}]
+)
+def test_skd014_skips_non_numeric_hyperparameters(regression_data, param_grid):
+    """SKD014 ignores bool, string, and other non-numeric search parameters."""
+    X, y = regression_data
+    report = _prefit_grid_search_report(
+        X, y, GridSearchCV(Ridge(), param_grid=param_grid, cv=2)
+    )
+    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    assert "SKD014" not in codes
+
+
+@pytest.mark.parametrize(
+    "search",
+    [
+        GridSearchCV(Ridge(), param_grid={"alpha": [0.1, 1.0, 10.0]}, cv=2),
+        RandomizedSearchCV(
+            Ridge(), param_distributions={"alpha": [0.1, 1.0, 10.0]}, cv=2
+        ),
+    ],
+)
+def test_skd014_search_classes(regression_data, monkeypatch, search):
+    """SKD014 runs for GridSearchCV and RandomizedSearchCV using cv_results_."""
+    X, y = regression_data
+    report = _prefit_grid_search_report(X, y, search)
+    monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 0.1})
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD014" in issues.index
+    assert "minimum" in issues.loc["SKD014", "explanation"]
 
 
 def test_ignore_checks(monkeypatch, regression_report):
