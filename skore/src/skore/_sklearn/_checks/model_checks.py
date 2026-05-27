@@ -421,6 +421,9 @@ class CheckCorrelatedFeatures(Check):
         if X.shape[1] < 2:
             raise CheckNotApplicable()
 
+        if X.shape[1] > 1000:
+            raise CheckNotApplicable()
+
         corr = np.abs(spearmanr(X).statistic)
         if corr.ndim < 2:
             return None
