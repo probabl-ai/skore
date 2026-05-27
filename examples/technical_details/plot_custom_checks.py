@@ -110,7 +110,7 @@ class CustomCheck2(Check):
         """Flag high score variance across CV splits."""
         frames = [
             sub_report.metrics.summarize(data_source="test").data
-            for sub_report in report.estimator_reports_
+            for sub_report in report.reports_
         ]
         scores = pd.concat(frames, ignore_index=True)
 

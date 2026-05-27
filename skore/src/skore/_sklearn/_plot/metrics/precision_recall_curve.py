@@ -171,8 +171,9 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     def plot(
         self,
         *,
-        subplot_by: Literal["auto", "label", "estimator", "data_source"]
-        | None = "auto",
+        subplot_by: (
+            Literal["auto", "label", "estimator", "data_source"] | None
+        ) = "auto",
         despine: bool = True,
         label: PositiveLabel = _DEFAULT,
     ) -> Figure:
@@ -181,17 +182,17 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         Parameters
         ----------
         subplot_by : {"auto", "label", "estimator", "data_source"} or None, \
-            default="auto"
+                default="auto"
             Column to use for creating subplots. Options:
 
-            - "auto": None for EstimatorReport and Cross-Validation Report, \
+            - "auto": None for EstimatorReport and Cross-Validation Report,
               "estimator" for ComparisonReport
             - "label": one subplot per class when plotting one-vs-rest curves
             - "estimator": one subplot per estimator (comparison only)
-            - "data_source": one subplot per data source (EstimatorReport with both \
-                data sources only)
-            - None: no subplots (Not available for comparison in classification \
-                with no specified label)
+            - "data_source": one subplot per data source (EstimatorReport with both
+              data sources only)
+            - None: no subplots (Not available for comparison in classification
+              with no specified label)
 
         despine : bool, default=True
             Whether to remove the top and right spines from the plot.

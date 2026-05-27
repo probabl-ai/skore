@@ -192,7 +192,7 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
 
     yield _dataset_from_Xy(report.X, report.y)
 
-    for split_id, estimator_report in enumerate(report.estimator_reports_):
+    for split_id, estimator_report in enumerate(report.reports_):
         yield (
             f"split_{split_id}",
             itertools.chain(

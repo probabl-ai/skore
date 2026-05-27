@@ -84,22 +84,3 @@ def test_login_hub(monkeypatch, FakeLogin):
     assert FakeLogin.called
     assert not FakeLogin.call_args.args
     assert FakeLogin.call_args.kwargs == {"arg1": 1, "arg2": 2}
-
-
-def test_login_hub_unknown_plugin(monkeypatch):
-    monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
-    monkeypatch.setattr(
-        "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
-    )
-
-    from skore import login
-
-    with raises(
-        ValueError,
-        match=escape(
-            "The mode `hub` is not supported. "
-            "You can install the required dependencies with:\n"
-            '    pip install "skore[hub]"'
-        ),
-    ):
-        login(arg1=1, arg2=2)

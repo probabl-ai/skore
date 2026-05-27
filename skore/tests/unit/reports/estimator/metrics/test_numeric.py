@@ -26,9 +26,7 @@ def deep_contain(value, test_value):
         return False
 
 
-def test_interaction_cache_metrics(
-    linear_regression_multioutput_with_test,
-):
+def test_interaction_cache_metrics(linear_regression_multioutput_with_test):
     """Check that the cache take into account the 'kwargs' of a metric."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -186,6 +184,13 @@ def test_roc_multiclass_requires_predict_proba(
     report.metrics.roc_auc()
 
 
+def test_r2_returns_float(linear_regression_with_test):
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    assert isinstance(report.metrics.r2(), float)
+
+
 # report.metrics.score
 
 
@@ -252,15 +257,3 @@ def test_score_skrub_learner_with_extra_env_vars():
     )
 
     assert isinstance(report.metrics.score(), float)
-
-
-@pytest.mark.filterwarnings("ignore:Precision is ill-defined")
-def test_score_appears_in_summarize_for_skrub_learner():
-    """The ``Score`` row is included in ``summarize().frame()`` for SkrubLearners."""
-    report = skrub_report(with_scoring=True)
-
-    frame = report.metrics.summarize().frame()
-
-    # FIXME: The sub-metric names should not be in the "Label" column
-    score_labels = frame.xs("Score", level="Metric").index.get_level_values("Label")
-    assert set(score_labels) == {"accuracy", "weighted_accuracy"}

@@ -159,8 +159,9 @@ class PredictionErrorDisplay(DisplayMixin):
     def plot(
         self,
         *,
-        subplot_by: Literal["auto", "data_source", "split", "estimator", "output"]
-        | None = "auto",
+        subplot_by: (
+            Literal["auto", "data_source", "split", "estimator", "output"] | None
+        ) = "auto",
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
@@ -220,8 +221,9 @@ class PredictionErrorDisplay(DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: Literal["auto", "data_source", "split", "estimator", "output"]
-        | None = "auto",
+        subplot_by: (
+            Literal["auto", "data_source", "split", "estimator", "output"] | None
+        ) = "auto",
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",

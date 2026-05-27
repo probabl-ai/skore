@@ -131,7 +131,7 @@ def test_check_estimator_report_has_coef():
 
     class MockParent:
         def __init__(self, estimator):
-            self.estimator_reports_ = [MockReport(estimator)]
+            self.reports_ = [MockReport(estimator)]
 
     class MockAccessor:
         def __init__(self, parent):

@@ -46,13 +46,4 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
     assert group in GROUPS, f"`group` must be in {GROUPS} (found {group})"
     assert mode in MODES, f"`mode` must be in {MODES} (found {mode})"
 
-    plugins = entry_points(group=group)
-
-    if mode not in plugins.names:
-        raise ValueError(
-            f"The mode `{mode}` is not supported. "
-            f"You can install the required dependencies with:\n"
-            f'    pip install "skore[{mode}]"'
-        )
-
-    return plugins[mode].load()
+    return entry_points(group=group)[mode].load()

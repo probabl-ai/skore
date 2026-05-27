@@ -31,7 +31,7 @@ def test_with_pipeline(pyplot, forest_binary_classification_data):
     assert df["estimator"].unique().tolist() == list(report.reports_.keys())
 
     for report_name, cv_report in report.reports_.items():
-        for split_index, estimator_report in enumerate(cv_report.estimator_reports_):
+        for split_index, estimator_report in enumerate(cv_report.reports_):
             fitted_predictor = estimator_report.estimator_.named_steps["predictor"]
             feature_importances = fitted_predictor.feature_importances_
 
