@@ -516,6 +516,17 @@ def test_report_with_data_op():
     assert isinstance(report.metrics.accuracy(), float)
 
 
+def test_get_state_after_predict_time(logistic_binary_classification_with_test):
+    """get_state should not fail after `predict_time` was called.
+
+    Non-regression test for https://github.com/probabl-ai/skore/pull/2950
+    """
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.predict_time()
+    report.get_state()
+
+
 def test_from_state_bypasses_init_and_restores_state(
     monkeypatch, logistic_binary_classification_with_test
 ):
