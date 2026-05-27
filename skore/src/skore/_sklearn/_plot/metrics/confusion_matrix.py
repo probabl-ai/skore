@@ -15,6 +15,7 @@ from skore._sklearn._plot.utils import (
     _check_label,
     _ClassifierDisplayMixin,
     _concat_frames_with_column_data,
+    _downsample_thresholds_indices,
     _one_hot_encode,
     _validate_style_kwargs,
 )
@@ -28,7 +29,7 @@ from skore._sklearn.types import (
 
 
 class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
-    """Display for confusion matrix.
+    """Display the confusion matrix.
 
     Parameters
     ----------
@@ -63,8 +64,50 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
     Attributes
     ----------
+    confusion_matrix_predict : pd.DataFrame
+        Predict-based confusion matrix data in long format.
+    confusion_matrix_ovr : pd.DataFrame or None
+        One-vs-rest confusion matrix data for multiclass classification.
+    confusion_matrix_thresholded : pd.DataFrame or None
+        Thresholded one-vs-rest confusion matrix data.
+    report_type : ReportType
+        The type of report.
+    ml_task : MLTask
+        The machine learning task.
+    data_source : DataSource
+        The data source used to compute the matrix.
+    report_pos_label : PositiveLabel
+        The default positive label for display.
     labels : list
         Available class labels.
+
+    See Also
+    --------
+    EstimatorReport.metrics.confusion_matrix : Create this display from a report.
+    RocCurveDisplay : Plot ROC curves for the same classifier.
+    PrecisionRecallCurveDisplay : Plot precision-recall curves.
+
+    Notes
+    -----
+    For multiclass problems, thresholded views use a one-vs-rest (OvR)
+    binary reformulation for each class label.
+
+    When ``threshold_value`` is a float, the display snaps to the closest
+    threshold available in the stored thresholded data.
+
+    For cross-validation reports, plotting with ``subplot_by`` other than
+    ``"split"`` aggregates counts across folds (mean and standard deviation).
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_breast_cancer
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import evaluate
+    >>> X, y = load_breast_cancer(return_X_y=True)
+    >>> classifier = LogisticRegression(max_iter=10_000)
+    >>> report = evaluate(classifier, X, y, splitter=0.2)
+    >>> display = report.metrics.confusion_matrix()
+    >>> display.plot()
     """
 
     _default_heatmap_kwargs: dict = {
@@ -407,6 +450,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         data_source: DataSource | Literal["both"],
         report_pos_label: PositiveLabel | None = None,
         y_scores: NDArray | None = None,
+        max_n_thresholds: int | None = 500,
         **kwargs,
     ) -> "ConfusionMatrixDisplay":
         """Compute the confusion matrix data for display.
@@ -439,6 +483,16 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
         y_scores : ndarray of shape (n_samples, n_classes) or None
             Probability estimates or decision function values. None when the
             estimator only supports predict.
+
+        max_n_thresholds : int or None, default=500
+            Cap on the number of thresholds kept per class in the thresholded confusion
+            matrices. When the number of thresholds returned by scikit-learn exceeds
+            ``max_n_thresholds``, the thresholded view is downsampled by picking
+            evenly-spaced indices from the sorted thresholds (quantile-based sampling
+            that preserves the empirical threshold distribution). Endpoints are always
+            kept and no interpolation is performed. ``None`` disables downsampling. Must
+            be at least 2. Only affects the thresholded matrices; the predict-based
+            matrices are unchanged.
 
         **kwargs : dict
             Additional keyword arguments ignored for compatibility.
@@ -494,6 +548,17 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
                     y_score=y_scores_arr[:, class_idx],
                     pos_label=1,
                 )
+                indices = _downsample_thresholds_indices(
+                    thresholds.size, max_n_thresholds
+                )
+                tns, fps, fns, tps, thresholds = (
+                    tns[indices],
+                    fps[indices],
+                    fns[indices],
+                    tps[indices],
+                    thresholds[indices],
+                )
+
                 cm = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
                 df = cls._build_confusion_frame(
                     cm=cm,

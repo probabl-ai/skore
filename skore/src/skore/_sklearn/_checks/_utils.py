@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import pandas as pd
+from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn.types import PositiveLabel
@@ -39,7 +41,9 @@ def collect_scores(
 
     Timing rows are filtered out by default.
     """
-    rows = report.metrics.summarize(data_source=data_source).rows
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=UndefinedMetricWarning)
+        rows = report.metrics.summarize(data_source=data_source).rows
     return {
         _metric_key(row): row
         for row in rows
@@ -112,7 +116,29 @@ def detect_outliers_modified_zscore(scores, threshold=3):
 
 
 class CheckNotApplicable(Exception):
-    """Raised when a check cannot run on the given report."""
+    """Raised when a check cannot run on the given report.
+
+    Notes
+    -----
+    Check implementations raise this exception when required data, task type,
+    or model capabilities are missing. The check is skipped and does not appear
+    in :meth:`~skore.EstimatorReport.checks.summarize` results.
+
+    Examples
+    --------
+    >>> from skore import Check
+    >>> from skore._sklearn._checks._utils import CheckNotApplicable
+    >>> class MyCheck(Check):
+    ...     code = "TST001"
+    ...     title = "My check"
+    ...     report_type = "estimator"
+    ...     docs_url = None
+    ...     severity = "issue"
+    ...     def check_function(self, report):
+    ...         if report.X_test is None:
+    ...             raise CheckNotApplicable()
+    ...         return None
+    """
 
 
 def split_preprocessor_estimator(estimator):
@@ -131,6 +157,7 @@ def get_preprocessed_data(
     *,
     target: Literal["X", "y"] = "X",
     concatenate: bool = False,
+    data_source: Literal["train", "test"] | None = None,
 ) -> np.ndarray | pd.DataFrame | pd.Series | None:
     """Return feature matrix or target vector from a report.
 
@@ -154,6 +181,10 @@ def get_preprocessed_data(
         when true and both train and test are available, return their
         concatenation. Otherwise return train if available, else test.
 
+    data_source : {"train", "test"}, default=None
+        when set, return only the train or test split. Ignored when
+        ``concatenate`` is true.
+
     Returns
     -------
     np.ndarray, pd.DataFrame, or None
@@ -167,11 +198,18 @@ def get_preprocessed_data(
             if isinstance(train, pd.DataFrame)
             else np.concatenate([train, test])
         )
+    elif data_source == "train":
+        data = train
+    elif data_source == "test":
+        data = test
     elif train is not None:
         data = train
     elif test is not None:
         data = test
     else:
+        return None
+
+    if data is None:
         return None
 
     if target == "X":
@@ -182,3 +220,10 @@ def get_preprocessed_data(
     if not isinstance(data, (np.ndarray, pd.DataFrame, pd.Series)):
         return None
     return data
+
+
+def select_feature(X, i: int):
+    """Return X reduced to a single feature index, preserving DataFrame/array kind."""
+    if hasattr(X, "iloc"):
+        return X.iloc[:, [i]]
+    return X[:, [i]]

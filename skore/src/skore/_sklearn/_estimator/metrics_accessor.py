@@ -16,7 +16,7 @@ from skore._sklearn._plot import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn._plot.metrics.metrics_summary_display import metric_score_to_rows
+from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._sklearn.metrics import (
     BUILTIN_METRICS,
     R2,
@@ -142,24 +142,21 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             parsed_metrics = [registry[m] for m in metric]
         else:
             parsed_metrics = list(registry.values())
-        parsed_metrics = cast(list[Metric], parsed_metrics)
 
-        rows = []
+        rows: list[MetricsSummaryRow] = []
         for parsed_metric in parsed_metrics:
-            score = parsed_metric(
+            metric_rows = parsed_metric.rows(
                 report=self._parent,
                 data_source=data_source,
                 **parsed_metric.kwargs,
             )
             rows.extend(
-                metric_score_to_rows(
-                    score,
-                    metric=parsed_metric,
-                    ml_task=self._parent._ml_task,
-                    data_source=data_source,
-                    estimator_name=self._parent.estimator_name_,
-                    pos_label=self._parent.pos_label,
-                )
+                row
+                | {
+                    "estimator_name": self._parent.estimator_name_,
+                    "data_source": data_source,
+                }
+                for row in metric_rows
             )
 
         return MetricsSummaryDisplay(rows=rows, report_type="estimator")
@@ -169,15 +166,19 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     ) -> MetricsSummaryDisplay:
         """Compute a single metric, forwarding *kwargs* to the score function."""
         metric = self._parent._metric_registry[metric_name]
-        rows = metric_score_to_rows(
-            score=metric(report=self._parent, data_source=data_source, **kwargs),
-            metric=metric,
-            ml_task=self._parent._ml_task,
-            data_source=data_source,
-            estimator_name=self._parent.estimator_name_,
-            pos_label=self._parent.pos_label,
-            kwargs=kwargs or None,
-        )
+        rows = [
+            cast(
+                MetricsSummaryRow,
+                row
+                | {
+                    "estimator_name": self._parent.estimator_name_,
+                    "data_source": data_source,
+                },
+            )
+            for row in metric.rows(
+                report=self._parent, data_source=data_source, **kwargs
+            )
+        ]
         return MetricsSummaryDisplay(rows=rows, report_type="estimator")
 
     def available(self) -> list[str]:
@@ -201,7 +202,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         **kwargs: Any,
     ) -> None:
         """
-        Add a custom metric to in :meth:`~skore.EstimatorReport.metrics.summarize`.
+        Add a custom metric to :meth:`~skore.EstimatorReport.metrics.summarize`.
 
         Parameters
         ----------
@@ -219,13 +220,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
               If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
               :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
 
-        name : str, optional
-            Custom name for the metric. If not provided, the name is inferred
+        name : str or None, default=None
+            Custom name for the metric. If ``None``, the name is inferred
             from the metric (e.g. the function's ``__name__``).
 
-        verbose_name : str, optional
-            Custom verbose name for the metric which will be used for display purposes.
-            If not provided, will be inferred from the metric name.
+        verbose_name : str or None, default=None
+            Custom verbose name for the metric which will be used for display
+            purposes. If ``None``, the verbose name is inferred from the metric
+            name.
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -292,8 +294,13 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         cast : bool, default=True
             Whether to cast the return value to a float. If `False`, the return value
             is `None` when the estimator is not fitted.
+
+        Returns
+        -------
+        float or None
+            The fit time in seconds, or `None` when not available.
         """
-        return FitTime()(report=self._parent, cast=cast)
+        return FitTime().pretty(report=self._parent, cast=cast)
 
     def predict_time(
         self,
@@ -305,11 +312,21 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Parameters
         ----------
+        data_source : {"test", "train"}, default="test"
+            The data source for which the prediction time was recorded.
+
         cast : bool, default=True
             Whether to cast the numbers to floats. If `False`, the return value
             is `None` when the predictions have never been computed.
+
+        Returns
+        -------
+        float or None
+            The prediction time in seconds, or `None` when not available.
         """
-        return PredictTime()(report=self._parent, data_source=data_source, cast=cast)
+        return PredictTime().pretty(
+            report=self._parent, data_source=data_source, cast=cast
+        )
 
     def timings(self) -> dict:
         """Get all measured processing times related to the estimator.
@@ -390,7 +407,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.score()
         0.94...
         """
-        return Score()(report=self._parent, data_source=data_source)  # type: ignore[return-value]
+        return Score().pretty(report=self._parent, data_source=data_source)
 
     def accuracy(
         self,
@@ -401,7 +418,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train",}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
@@ -423,7 +440,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.accuracy()
         0.94...
         """
-        return Accuracy()(report=self._parent, data_source=data_source)  # type: ignore[return-value]
+        return Accuracy().pretty(report=self._parent, data_source=data_source)
 
     def precision(
         self,
@@ -480,7 +497,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.precision()
         0.98...
         """
-        return Precision()(
+        return Precision().pretty(
             report=self._parent, data_source=data_source, average=average
         )
 
@@ -545,7 +562,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.recall()
         0.92...
         """
-        return Recall()(report=self._parent, data_source=data_source, average=average)
+        return Recall().pretty(
+            report=self._parent, data_source=data_source, average=average
+        )
 
     def brier_score(
         self,
@@ -578,7 +597,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.brier_score()
         0.03...
         """
-        return Brier()(report=self._parent, data_source=data_source)
+        return Brier().pretty(report=self._parent, data_source=data_source)
 
     def roc_auc(
         self,
@@ -646,7 +665,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.roc_auc()
         0.99...
         """
-        return RocAuc()(
+        return RocAuc().pretty(
             report=self._parent,
             data_source=data_source,
             average=average,
@@ -684,7 +703,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.log_loss()
         0.11...
         """
-        return LogLoss()(report=self._parent, data_source=data_source)  # type: ignore[return-value]
+        return LogLoss().pretty(report=self._parent, data_source=data_source)
 
     def r2(
         self,
@@ -730,7 +749,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.r2()
         0.34...
         """
-        return R2()(
+        return R2().pretty(
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
@@ -778,7 +797,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.rmse()
         58.1...
         """
-        return Rmse()(
+        return Rmse().pretty(
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
@@ -826,7 +845,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.mae()
         46.5...
         """
-        return Mae()(
+        return Mae().pretty(
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
@@ -874,7 +893,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.mape()
         0.3...
         """
-        return Mape()(
+        return Mape().pretty(
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
@@ -884,7 +903,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.EstimatorReport.metrics")
+        return self._rich_repr(
+            class_name=f"skore.{self._parent.__class__.__name__}.metrics"
+        )
 
     ####################################################################################
     # Methods related to displays
@@ -1012,6 +1033,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         :class:`RocCurveDisplay`
             The ROC curve display.
 
+        See Also
+        --------
+        :class:`RocCurveDisplay` : Display class for ROC curve plots.
+
+        Notes
+        -----
+        To keep the stored display lightweight, the ROC curve is downsampled
+        to at most 500 points per class. Sampling is performed by picking
+        evenly-spaced indices on the sorted thresholds.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -1062,6 +1093,17 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         :class:`PrecisionRecallCurveDisplay`
             The precision-recall curve display.
 
+        See Also
+        --------
+        :class:`PrecisionRecallCurveDisplay`
+            Display class for precision-recall curve plots.
+
+        Notes
+        -----
+        To keep the stored display lightweight, the precision-recall curve is
+        downsampled to at most 500 points per class. Sampling is performed by
+        picking evenly-spaced indices on the sorted thresholds.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -1101,8 +1143,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
-        Extra keyword arguments will be passed to matplotlib's `plot`.
-
         Parameters
         ----------
         data_source : {"test", "train", "both"}, default="test"
@@ -1128,6 +1168,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         :class:`PredictionErrorDisplay`
             The prediction error display.
+
+        See Also
+        --------
+        :class:`PredictionErrorDisplay` : Display class for prediction error plots.
 
         Examples
         --------
@@ -1180,6 +1224,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         -------
         :class:`ConfusionMatrixDisplay`
             The confusion matrix display.
+
+        See Also
+        --------
+        :class:`ConfusionMatrixDisplay` : Display class for confusion matrix plots.
+
+        Notes
+        -----
+        To keep the stored display lightweight, the thresholded confusion matrices are
+        downsampled to at most 500 points per class. Sampling is performed by picking
+        evenly-spaced indices on the sorted thresholds.
 
         Examples
         --------

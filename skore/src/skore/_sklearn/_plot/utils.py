@@ -486,3 +486,35 @@ def _check_label(labels: list, label: PositiveLabel, default_label: PositiveLabe
         # Ex: with `labels=[0, 1]` and `label=True`:
         # `label in labels` is true but `df.query("label == @label")` is empty.
         return labels[labels.index(label)]
+
+
+def _downsample_thresholds_indices(n_total: int, max_n: int | None) -> NDArray:
+    """Compute the indices to keep when downsampling a sorted threshold array.
+
+    Picks ``max_n`` evenly-spaced indices in ``[0, n_total - 1]``, which is
+    equivalent to quantile sampling on the empirical distribution of the
+    original thresholds. The first and last indices are always preserved so
+    that the endpoints of the curve are kept.
+
+    Parameters
+    ----------
+    n_total : int
+        Total number of available thresholds (i.e. length of the sorted
+        threshold array returned by scikit-learn).
+
+    max_n : int or None
+        Maximum number of thresholds to keep. ``None`` disables downsampling
+        and returns ``np.arange(n_total)``. Otherwise must be at least 2.
+
+    Returns
+    -------
+    indices : ndarray of int
+        Sorted, unique indices in ``[0, n_total - 1]`` to keep. When
+        ``max_n is None`` or ``n_total <= max_n``, the returned array is
+        ``np.arange(n_total)``.
+    """
+    if max_n is not None and max_n < 2:
+        raise ValueError(f"`max_n_thresholds` must be at least 2 (got {max_n}).")
+    if max_n is None or n_total <= max_n:
+        return np.arange(n_total)
+    return np.linspace(0, n_total - 1, max_n).astype(int)

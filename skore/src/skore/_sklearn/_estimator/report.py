@@ -85,10 +85,7 @@ def _check_estimator_and_data(
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
-    """Report for a fitted estimator.
-
-    This class provides a set of tools to quickly validate and inspect a scikit-learn
-    compatible estimator.
+    """Provide tools to validate and inspect a fitted estimator.
 
     Refer to the :ref:`estimator_report` section of the user guide for more details.
 
@@ -163,6 +160,21 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     fit_time_ : float or None
         The time taken to fit the estimator, in seconds. If the estimator is not
         internally fitted, the value is `None`.
+
+    ml_task : str
+        The machine learning task inferred from the data and estimator.
+
+    metrics : MetricsAccessor
+        Accessor for computing and plotting metrics.
+
+    inspection : InspectionAccessor
+        Accessor for model inspection (coefficients, feature importance, etc.).
+
+    data : DataAccessor
+        Accessor for dataset analysis.
+
+    checks : ChecksAccessor
+        Accessor for running diagnostic checks.
 
     See Also
     --------
@@ -636,7 +648,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train"}
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
@@ -855,7 +867,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        checks_summary = self.checks.summarize()
+        checks_summary = self.checks.summarize(fast_mode=True)
         checks_summary_html = (
             "<div class='report-checks-summary-details'>"
             f"{len(checks_summary.frame(severity='issue'))} issue(s), "

@@ -38,6 +38,10 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             The feature importance display containing model coefficients and
             intercept.
 
+        See Also
+        --------
+        :class:`CoefficientsDisplay` : Display class for coefficient plots.
+
         Examples
         --------
         >>> from sklearn.datasets import make_regression
@@ -60,7 +64,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     report.inspection.coefficients()
                     .coefficients.copy()
                     .assign(split=split_idx)
-                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                    for split_idx, report in enumerate(self._parent.reports_)
                 ],
                 ignore_index=True,
             ),
@@ -155,6 +159,11 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -------
         :class:`PermutationImportanceDisplay`
             The permutation importance display.
+
+        See Also
+        --------
+        :class:`PermutationImportanceDisplay`
+            Display class for permutation importance plots.
 
         Examples
         --------
@@ -255,7 +264,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                         n_jobs=n_jobs,
                         seed=seed,
                     ).importances.assign(split=split_idx)
-                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                    for split_idx, report in enumerate(self._parent.reports_)
                 ],
                 ignore_index=True,
             ),
@@ -277,6 +286,10 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -------
         :class:`ImpurityDecreaseDisplay`
             The impurity decrease display containing the feature importances.
+
+        See Also
+        --------
+        :class:`ImpurityDecreaseDisplay` : Display class for impurity decrease plots.
 
         Examples
         --------
@@ -303,7 +316,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     report.inspection.impurity_decrease()
                     .importances.copy()
                     .assign(split=split_idx)
-                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                    for split_idx, report in enumerate(self._parent.reports_)
                 ],
                 ignore_index=True,
             ),
@@ -316,4 +329,6 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.CrossValidationReport.inspection")
+        return self._rich_repr(
+            class_name=f"skore.{self._parent.__class__.__name__}.inspection"
+        )

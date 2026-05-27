@@ -92,6 +92,17 @@ def evaluate(
             or :class:`~skore.ComparisonReport`
         The report corresponding to the evaluation strategy.
 
+    See Also
+    --------
+    :func:`~skore.compare` :
+        Compare already evaluated reports.
+    :class:`~skore.EstimatorReport` :
+        Report for a fitted estimator on a test set.
+    :class:`~skore.CrossValidationReport` :
+        Report for cross-validation of an estimator.
+    :class:`~skore.ComparisonReport` :
+        Report comparing several evaluated models.
+
     Examples
     --------
     >>> from sklearn.datasets import make_classification
@@ -218,7 +229,7 @@ def evaluate(
                 splitter=splitter,
                 n_jobs=n_jobs,
             )
-        return report.estimator_reports_[0]
+        return report.reports_[0]
 
     return CrossValidationReport(
         estimator,
