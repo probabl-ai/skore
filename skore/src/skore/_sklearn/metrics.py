@@ -580,10 +580,7 @@ class PredictTime(Metric):
         return True
 
     def _raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
-        predict_time_cache_key = make_cache_key(data_source, "predict_time")
-        return report._cache.get(
-            predict_time_cache_key, (float("nan") if cast else None)
-        )
+        return report._predict_time.get(data_source, float("nan") if cast else None)
 
 
 class Accuracy(Metric):

@@ -6,7 +6,7 @@ import uuid
 import warnings
 from dataclasses import asdict
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 import numpy as np
 import skrub
@@ -42,6 +42,11 @@ if TYPE_CHECKING:
 
 
 _STATE_VERSION = 1
+
+
+class PredictTime(TypedDict):
+    train: NotRequired[float]
+    test: NotRequired[float]
 
 
 def _check_estimator_and_data(
@@ -293,6 +298,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:  # fit is False
             self.learner_ = estimator
 
+        self._predict_time: PredictTime = {}
         self._pos_label = pos_label
         self.fit_time_ = self._fit_time
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
@@ -322,10 +328,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         versions. In particular, this is more stable than pickling a report
         object directly, which can break when internal implementations change.
         """
-        # split the cache between predictions and results:
+        # split the cache between predictions and results
         pred_key_names = {
             "predict",
-            "predict_time",
             "decision_function",
             "predict_proba",
             "predict_log_proba",
@@ -351,6 +356,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "ml_task": self._ml_task,
             "fit": self._fit,
             "fit_time": self.fit_time_,
+            "predict_time": self._predict_time,
             "pos_label": self._pos_label,
             "learner": self.learner_,
             "data": {
@@ -386,6 +392,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report._ml_task = state["ml_task"]
         report._fit = state["fit"]
         report.fit_time_ = state["fit_time"]
+        report._predict_time = state["predict_time"]
         report._pos_label = state["pos_label"]
         report.learner_ = state["learner"]
         report.estimator = state["estimator"]
@@ -469,8 +476,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
 
         pred_key = make_cache_key(data_source, "predict")
-        time_key = make_cache_key(data_source, "predict_time")
-
         if pred_key in self._cache:
             return
 
@@ -479,7 +484,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if not self._can_skip_predict:
             with MeasureTime() as pred_time:
                 self._cache[pred_key] = self.learner_.predict(data)
-            self._cache[time_key] = pred_time()
+            self._predict_time[data_source] = pred_time()
 
         has_proba = hasattr(self.learner_, "predict_proba")
         has_decision = hasattr(self.learner_, "decision_function")
@@ -496,7 +501,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             decision_key = make_cache_key(data_source, "decision_function")
             self._cache[decision_key] = response
             if self._can_skip_predict:
-                self._cache[time_key] = pred_time
+                self._predict_time[data_source] = pred_time
                 self._cache[pred_key] = predictions
 
         if has_proba:
@@ -514,7 +519,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             with np.errstate(divide="ignore"):
                 self._cache[log_key] = np.log(response)
             if self._can_skip_predict:
-                self._cache[time_key] = pred_time
+                self._predict_time[data_source] = pred_time
                 self._cache[pred_key] = predictions
 
     def _get_response_and_derived_predictions(

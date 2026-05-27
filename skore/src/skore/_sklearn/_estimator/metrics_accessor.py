@@ -360,18 +360,12 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.timings()
         {'fit_time': ..., 'predict_time_test': ...}
         """
-        fit_time_ = self.fit_time(cast=False)
-        fit_time = {"fit_time": fit_time_} if fit_time_ is not None else {}
-
-        # predict_time cache keys are of the form
-        # (data_source, "predict_time", None)
-        predict_times = {
-            f"predict_time_{data_source}": v
-            for (data_source, name, _), v in self._parent._cache.items()
-            if name == "predict_time"
+        times = {
+            "fit_time": self.fit_time(cast=False),
+            "predict_time_train": self.predict_time(data_source="train", cast=False),
+            "predict_time_test": self.predict_time(data_source="test", cast=False),
         }
-
-        return fit_time | predict_times
+        return {k: v for k, v in times.items() if v is not None}
 
     def score(
         self,
