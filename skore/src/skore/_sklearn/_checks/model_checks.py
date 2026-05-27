@@ -732,31 +732,32 @@ class CheckHyperparamsAtSearchEdge(Check):
         if not isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable()
 
-        param_rows = estimator.cv_results_.get("params")
-        if param_rows is None:
+        param_combinations = estimator.cv_results_.get("params")
+        if param_combinations is None:
             raise CheckNotApplicable()
 
-        edge_params: list[tuple[str, str]] = []
-        for name, best_value in estimator.best_params_.items():
-            distinct = list(
-                dict.fromkeys(
-                    setting[name] for setting in param_rows if name in setting
-                )
-            )
-            if len(distinct) < 2 or not all(
-                isinstance(v, numbers.Real) and not isinstance(v, (bool, np.bool_))
-                for v in distinct
+        edge_params = []
+        for param_name, best_value in estimator.best_params_.items():
+            tried = [
+                param_combination[param_name]
+                for param_combination in param_combinations
+                if param_name in param_combination
+            ]
+            if len(set(tried)) < 2 or not all(
+                isinstance(value, numbers.Real)
+                and not isinstance(value, bool | np.bool_)
+                for value in tried
             ):
                 continue
-            search_low, search_high = min(distinct), max(distinct)
+            search_low, search_high = min(tried), max(tried)
             if not isinstance(best_value, numbers.Real) or isinstance(
-                best_value, (bool, np.bool_)
+                best_value, bool | np.bool_
             ):
                 continue
             if np.isclose(
                 float(best_value), float(search_low), rtol=0.0, atol=0.0, equal_nan=True
             ):
-                edge_params.append((name, "minimum"))
+                edge_params.append((param_name, "minimum"))
             elif np.isclose(
                 float(best_value),
                 float(search_high),
@@ -764,7 +765,7 @@ class CheckHyperparamsAtSearchEdge(Check):
                 atol=0.0,
                 equal_nan=True,
             ):
-                edge_params.append((name, "maximum"))
+                edge_params.append((param_name, "maximum"))
 
         if not edge_params:
             return None
