@@ -11,9 +11,8 @@ from typing import TYPE_CHECKING, Any, Literal
 import numpy as np
 import skrub
 from numpy.typing import ArrayLike
-from sklearn.base import clone
+from sklearn.base import MetaEstimatorMixin, clone
 from sklearn.exceptions import NotFittedError
-from sklearn.model_selection._search import BaseSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import (
     _check_response_method,
@@ -815,22 +814,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
 
     def __repr__(self) -> str:
-        """Return a short string representation of the report."""
-        lines = [f"{self.__class__.__name__}: {self.estimator_name_}", ""]
-        data_source = self._markdown_repr_data_source()
-        if data_source is None:
-            lines.append("No data provided.")
-        else:
-            metric_source: Literal["train", "test"] = (
-                "train" if data_source == "train" else "test"
-            )
-            lines.append(str(self.metrics.summarize(data_source=metric_source).frame()))
-        lines += [
-            "",
-            "Call `report.to_markdown()` for a markdown summary of the report's "
-            "contents.",
-        ]
-        return "\n".join(lines)
+        """Return a string representation."""
+        return f"""{self.__class__.__name__}:
+        {self.estimator_name_!r}
+
+        {self.metrics.summarize(data_source=self._repr_data_source()).frame()}
+        Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
     def to_markdown(self) -> str:
         """Return a markdown summary of the report, suitable for agent consumption.
@@ -854,29 +843,27 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
         )
 
-    def _markdown_repr_data_source(self) -> Literal["train", "test", "both"] | None:
-        match self.X_train, self.X_test:
-            case None, None:
-                return None
-            case _, None:
-                return "train"
-            case None, _:
-                return "test"
-            case _:
-                return "both"
-
     def _markdown_estimator_kind(self) -> str:
         est = self.estimator
         if isinstance(est, skrub.DataOp):
             return "skrub DataOp"
         if is_skrub_learner(est):
             return "skrub SkrubLearner"
-        if isinstance(est, BaseSearchCV):
-            inner = type(getattr(est, "best_estimator_", est.estimator)).__name__
-            return f"meta-estimator {type(est).__name__} wrapping {inner}"
         if isinstance(est, Pipeline):
             return "Pipeline"
-        return "sklearn estimator"
+        if isinstance(est, MetaEstimatorMixin):
+            inner = getattr(est, "best_estimator_", None) or getattr(
+                est, "estimator", None
+            )
+            if inner is not None:
+                return (
+                    f"meta-estimator {type(est).__name__} "
+                    f"wrapping {type(inner).__name__}"
+                )
+            return f"meta-estimator {type(est).__name__}"
+        if type(est).__module__.startswith("sklearn."):
+            return "scikit-learn estimator"
+        return f"{type(est).__module__.split('.')[0]} estimator"
 
     def _markdown_estimator_section(self) -> str:
         lines = [
@@ -895,23 +882,19 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return "\n".join(lines)
 
     def _markdown_metrics_section(self) -> str:
-        lines = ["## Metrics", ""]
-        data_source = self._markdown_repr_data_source()
-        if data_source is None:
-            lines.append("No data provided.")
-        else:
-            metric_source: Literal["train", "test"] = (
-                "train" if data_source == "train" else "test"
-            )
-            lines.append(f"Computed on the {metric_source} set.")
-            lines += [
+        return "\n".join(
+            (
+                "## Metrics",
                 "",
                 "```text",
-                self.metrics.summarize(data_source=metric_source).frame().to_string(),
+                self.metrics.summarize(data_source=self._repr_data_source())
+                .frame()
+                .to_string(),
                 "```",
-            ]
-        lines += ["", "Full metrics: `report.metrics.summarize().frame()`."]
-        return "\n".join(lines)
+                "",
+                "Full metrics: `report.metrics.summarize().frame()`.",
+            )
+        )
 
     def _markdown_checks_section(self) -> str:
         return "\n".join(
@@ -928,42 +911,40 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def _markdown_data_section(self) -> str:
         lines = ["## Data", ""]
-        data_source = self._markdown_repr_data_source()
-        if data_source is None:
-            lines.append("No data provided.")
-        else:
-            summary = summarize_dataframe(
-                self.data._prepare_dataframe_for_display(
-                    data_source=data_source,
-                    with_y=True,
-                    subsample=None,
-                    subsample_strategy="head",
-                    seed=None,
-                ),
-                with_plots=False,
-                with_associations=False,
-                verbose=0,
-            )
-            label = {"train": "train", "test": "test", "both": "train+test"}[
-                data_source
-            ]
+        data_source = self._repr_data_source()
+        summary = summarize_dataframe(
+            self.data._prepare_dataframe_for_display(
+                data_source=data_source,
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            with_plots=False,
+            with_associations=False,
+            verbose=0,
+        )
+        label = {"train": "train", "test": "test", "both": "train+test"}[data_source]
+        lines.append(
+            f"Computed on the {label} dataset "
+            f"(n_rows={summary['n_rows']}, n_columns={summary['n_columns']}, "
+            f"n_constant_columns={summary['n_constant_columns']})."
+        )
+        lines += [
+            "",
+            "| column | dtype | null_count | n_unique |",
+            "| ------ | ----- | ---------- | -------- |",
+        ]
+        for col in summary["columns"]:
             lines.append(
-                f"Computed on the {label} dataset "
-                f"(n_rows={summary['n_rows']}, n_columns={summary['n_columns']}, "
-                f"n_constant_columns={summary['n_constant_columns']})."
+                f"| {col['name']} | {col['dtype']} | "
+                f"{col.get('null_count', '')} | {col.get('n_unique', '')} |"
             )
-            lines += [
-                "",
-                "| column | dtype | null_count | n_unique |",
-                "| ------ | ----- | ---------- | -------- |",
-            ]
-            for col in summary["columns"]:
-                lines.append(
-                    f"| {col['name']} | {col['dtype']} | "
-                    f"{col.get('null_count', '')} | {col.get('n_unique', '')} |"
-                )
         lines += ["", "Full analysis: `report.data.analyze()`."]
         return "\n".join(lines)
+
+    def _repr_data_source(self) -> Literal["test", "both"]:
+        return "test" if self.X_train is None else "both"
 
     def _html_repr_fragments(self) -> dict[str, str]:
         """HTML snippets for the report body (metrics, estimator diagram, data table).
@@ -971,41 +952,27 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
         one report's views in the comparison HTML repr.
         """
-        match self.X_train, self.X_test:
-            case None, None:
-                data_source = None
-            case _, None:
-                data_source = "train"
-            case None, _:
-                data_source = "test"
-            case _:
-                data_source = "both"
-        if data_source is None:
-            table_report_html = "<p>No data provided</p>"
-            metrics_html = "<p>No data provided</p>"
-        else:
-            table_report = skrub.TableReport(
-                self.data._prepare_dataframe_for_display(
-                    data_source=data_source,
-                    with_y=True,
-                    subsample=None,
-                    subsample_strategy="head",
-                    seed=None,
-                ),
-                max_plot_columns=0,
-                max_association_columns=0,
-                verbose=False,
-            )
-            table_report._set_minimal_mode()
-            table_report_html = table_report.html_snippet()
-            metrics_html = (
-                self.metrics.summarize(
-                    data_source="train" if data_source == "train" else "test"
-                )
-                .frame()
-                .reset_index()
-                .to_html(index=False)
-            )
+        data_source = self._repr_data_source()
+        table_report = skrub.TableReport(
+            self.data._prepare_dataframe_for_display(
+                data_source=data_source,
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            max_plot_columns=0,
+            max_association_columns=0,
+            verbose=False,
+        )
+        table_report._set_minimal_mode()
+        table_report_html = table_report.html_snippet()
+        metrics_html = (
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .reset_index()
+            .to_html(index=False)
+        )
         try:
             estimator_html = repair_estimator_html_for_slotted_host(
                 self.estimator_._repr_html_()
