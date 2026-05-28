@@ -501,11 +501,11 @@ class CheckSlowerThanBaseline(Check):
         report = cast("EstimatorReport", report)
         baseline = _baseline_estimator_report(report, kind="fast")
 
-        if report.fit_time_ is None or baseline.fit_time_ is None:
+        if report._fit_time is None or baseline._fit_time is None:
             raise CheckNotApplicable()
 
-        slowness_ratio = report.fit_time_ / baseline.fit_time_
-        if slowness_ratio < 2.0 or report.fit_time_ - baseline.fit_time_ < 0.05:
+        slowness_ratio = report._fit_time / baseline._fit_time
+        if slowness_ratio < 2.0 or report._fit_time - baseline._fit_time < 0.05:
             return None
 
         report_test = collect_scores(report, data_source="test")

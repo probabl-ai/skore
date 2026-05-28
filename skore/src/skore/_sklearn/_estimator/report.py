@@ -162,10 +162,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
-    fit_time_ : float or None
-        The time taken to fit the estimator, in seconds. If the estimator is not
-        internally fitted, the value is `None`.
-
     ml_task : str
         The machine learning task inferred from the data and estimator.
 
@@ -300,7 +296,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         self._predict_time: PredictTime = {}
         self._pos_label = pos_label
-        self.fit_time_ = self._fit_time
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
         self._cache = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
@@ -355,7 +350,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "estimator": self.estimator,
             "ml_task": self._ml_task,
             "fit": self._fit,
-            "fit_time": self.fit_time_,
+            "fit_time": self._fit_time,
             "predict_time": self._predict_time,
             "pos_label": self._pos_label,
             "learner": self.learner_,
@@ -391,7 +386,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
         report._fit = state["fit"]
-        report.fit_time_ = state["fit_time"]
+        report._fit_time = state["fit_time"]
         report._predict_time = state["predict_time"]
         report._pos_label = state["pos_label"]
         report.learner_ = state["learner"]

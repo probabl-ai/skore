@@ -553,7 +553,7 @@ def test_from_state_bypasses_init_and_restores_state(
 
     assert restored.id == report.id
     assert restored.fit == report.fit
-    assert restored.fit_time_ == report.fit_time_
+    assert restored._fit_time == report._fit_time
     assert restored.X_test is report.X_test
     assert restored.ml_task == report.ml_task
     assert restored.pos_label == report.pos_label

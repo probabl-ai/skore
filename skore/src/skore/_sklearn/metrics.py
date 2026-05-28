@@ -563,9 +563,9 @@ class FitTime(Metric):
         return True
 
     def _raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
-        if cast and report.fit_time_ is None:
+        if cast and report._fit_time is None:
             return float("nan")
-        return report.fit_time_
+        return report._fit_time
 
 
 class PredictTime(Metric):
