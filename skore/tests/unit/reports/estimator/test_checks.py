@@ -27,6 +27,7 @@ from skore._sklearn._checks.base import (
     _get_issue_documentation_url,
 )
 from skore._sklearn._checks.model_checks import (
+    CheckEstimatorNotTuned,
     CheckHyperparamsAtSearchEdge,
     CheckSearchParamsToTune,
 )
@@ -423,7 +424,7 @@ def test_skd015_suggests_missing_params(regression_data):
         param_grid={"n_estimators": [10, 50]},
         cv=2,
     )
-    report = EstimatorReport(search, X_train=X, y_train=y)
+    report = evaluate(search, X, y)
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
@@ -441,7 +442,7 @@ def test_skd015_passes_when_all_recommended_covered(regression_data):
         param_grid={"alpha": [0.1, 1.0, 10.0]},
         cv=2,
     )
-    report = EstimatorReport(search, X_train=X, y_train=y)
+    report = evaluate(search, X, y)
     summary = report.checks.summarize()
     assert "SKD015" in set(summary.frame(severity="passed")["code"])
 
@@ -462,7 +463,7 @@ def test_skd015_not_applicable_unknown_estimator(regression_data):
         param_grid={"strategy": ["mean", "median"]},
         cv=2,
     )
-    report = EstimatorReport(search, X_train=X, y_train=y)
+    report = evaluate(search, X, y)
     with pytest.raises(CheckNotApplicable):
         CheckSearchParamsToTune().check_function(report)
 
@@ -472,7 +473,7 @@ def test_skd015_pipeline_single_step(regression_data):
     X, y = regression_data
     pipe = Pipeline([("scaler", StandardScaler()), ("rf", RandomForestRegressor())])
     search = GridSearchCV(pipe, param_grid={"rf__n_estimators": [10, 50]}, cv=2)
-    report = EstimatorReport(search, X_train=X, y_train=y)
+    report = evaluate(search, X, y)
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
@@ -493,7 +494,7 @@ def test_skd015_pipeline_multi_step(binary_classification_data):
         },
         cv=2,
     )
-    report = EstimatorReport(search, X_train=X, y_train=y)
+    report = evaluate(search, X, y)
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
@@ -508,7 +509,7 @@ def test_skd015_pipeline_flags_untuned_step(regression_data):
     X, y = regression_data
     pipe = Pipeline([("pca", PCA()), ("ridge", Ridge())])
     search = GridSearchCV(pipe, param_grid={"ridge__alpha": [0.1, 1.0]}, cv=2)
-    report = EstimatorReport(search, X_train=X, y_train=y)
+    report = evaluate(search, X, y)
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
@@ -525,13 +526,73 @@ def test_skd015_equivalent_params_not_suggested(regression_data):
         param_grid={"max_depth": [3, 5, 10]},
         cv=2,
     )
-    report = EstimatorReport(search, X_train=X, y_train=y)
+    report = evaluate(search, X, y)
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
     assert "min_samples_leaf" not in explanation
     assert "min_samples_split" not in explanation
     assert "max_features" in explanation
+
+
+def test_skd016_fires_on_default_estimator(regression_data):
+    """SKD016 fires when the estimator is left at sklearn defaults."""
+    X, y = regression_data
+    report = evaluate(RandomForestRegressor(), X, y)
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    assert "SKD016" in tips.index
+    explanation = tips.loc["SKD016", "explanation"]
+    assert "RandomForestRegressor" in explanation
+    assert "max_features" in explanation
+    assert "min_samples_leaf" in explanation
+    assert "max_samples" in explanation
+
+
+def test_skd016_passed_when_tuned(regression_data):
+    """SKD016 passes once any recommended-or-other model param is set."""
+    X, y = regression_data
+    report = evaluate(RandomForestRegressor(max_depth=5), X, y)
+    assert "SKD016" in set(report.checks.summarize().frame(severity="passed")["code"])
+
+
+def test_skd016_ignores_infrastructure(regression_data):
+    """Setting only infrastructure params (random_state) still triggers SKD016."""
+    X, y = regression_data
+    report = evaluate(Ridge(random_state=42), X, y)
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    assert "SKD016" in tips.index
+    assert "alpha" in tips.loc["SKD016", "explanation"]
+
+
+def test_skd016_not_applicable_unknown_estimator(regression_data):
+    """SKD016 raises CheckNotApplicable for estimators not in the table."""
+    X, y = regression_data
+    report = evaluate(DummyRegressor(), X, y)
+    with pytest.raises(CheckNotApplicable):
+        CheckEstimatorNotTuned().check_function(report)
+
+
+def test_skd016_not_applicable_search(regression_data):
+    """SKD016 defers to SKD015 when the estimator is a search."""
+    X, y = regression_data
+    search = GridSearchCV(Ridge(), param_grid={"alpha": [0.1, 1.0]}, cv=2)
+    report = evaluate(search, X, y)
+    with pytest.raises(CheckNotApplicable):
+        CheckEstimatorNotTuned().check_function(report)
+
+
+def test_skd016_pipeline_walks_steps(regression_data):
+    """SKD016 reports only the pipeline steps that are still at defaults."""
+    X, y = regression_data
+    pipe = Pipeline([("pca", PCA()), ("ridge", Ridge(alpha=2.0))])
+    report = evaluate(pipe, X, y)
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    assert "SKD016" in tips.index
+    explanation = tips.loc["SKD016", "explanation"]
+    assert "PCA" in explanation
+    assert "n_components" in explanation
+    assert "whiten" in explanation
+    assert "Ridge" not in explanation
 
 
 def test_ignore_checks(monkeypatch, regression_report):

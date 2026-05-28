@@ -13,6 +13,21 @@ EQUIVALENT_PARAM_GROUPS: list[tuple[ParameterName, ...]] = [
 ]
 
 
+# Init params that don't change the learned model in a hyperparameter-tuning
+# sense: reproducibility, parallelism, logging, memory, class re-weighting.
+# Setting any of these should NOT count as "the estimator has been tuned".
+INFRASTRUCTURE_PARAMS: set[ParameterName] = {
+    "random_state",
+    "n_jobs",
+    "verbose",
+    "warm_start",
+    "class_weight",
+    "copy",
+    "copy_X",
+    "cache_size",
+}
+
+
 # Hyperparameters worth tuning for sklearn estimators.
 # Primary sources:
 #  - Probst, Boulesteix & Bischl (2019), "Tunability: Importance of Hyperparameters
