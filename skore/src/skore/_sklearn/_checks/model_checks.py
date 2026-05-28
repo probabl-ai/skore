@@ -12,10 +12,19 @@ from sklearn.ensemble import (
     HistGradientBoostingRegressor,
 )
 from sklearn.linear_model import LogisticRegression, RidgeCV
+from sklearn.model_selection._search import BaseSearchCV
+from sklearn.pipeline import Pipeline
 
 from skore._externals._skrub_compat import tabular_pipeline
+from skore._sklearn._checks._tunable_hyperparameters import (
+    EQUIVALENT_PARAM_GROUPS,
+    TUNABLE_HYPERPARAMETERS,
+)
 from skore._sklearn._checks._utils import (
     CheckNotApplicable,
+    ClassName,
+    ParameterName,
+    StepName,
     check_score_gap_to_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
@@ -709,6 +718,81 @@ class CheckTrainTestTimeOverlap(Check):
         return None
 
 
+class CheckSearchParamsToTune(Check):
+    """Check for hyperparameters worth tuning in a search (SKD015).
+
+    For :class:`~sklearn.model_selection.BaseSearchCV` estimators, compares the
+    parameters being searched against a set of important hyperparameters and suggests
+    any that are missing.
+
+    When the search wraps a :class:`~sklearn.pipeline.Pipeline`, each step
+    whose class appears in the recommendation table is checked independently,
+    regardless of whether the search currently tunes any of its parameters.
+    """
+
+    code = "SKD015"
+    title = "Hyperparameters worth tuning"
+    report_type = "estimator"
+    docs_url = "skd015-hyperparameters-worth-tuning"
+    severity = "tip"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        search = report.estimator_
+        if not isinstance(search, BaseSearchCV):
+            raise CheckNotApplicable()
+
+        searched_keys = {
+            key for params in search.cv_results_["params"] for key in params
+        }
+        estimator = search.estimator
+        if isinstance(estimator, Pipeline):
+            searched_params_by_step: dict[StepName, set[ParameterName]] = {}
+            for key in searched_keys:
+                if "__" in key:
+                    step_name, suffix = key.split("__", 1)
+                    searched_params_by_step.setdefault(step_name, set()).add(suffix)
+            searched_by_estimator: list[tuple[ClassName, set[ParameterName]]] = [
+                (type(step).__name__, searched_params_by_step.get(name, set()))
+                for name, step in estimator.steps
+                if type(step).__name__ in TUNABLE_HYPERPARAMETERS
+            ]
+        else:
+            class_name = type(estimator).__name__
+            if class_name not in TUNABLE_HYPERPARAMETERS:
+                raise CheckNotApplicable()
+            searched_by_estimator = [(class_name, searched_keys)]
+
+        if not searched_by_estimator:
+            raise CheckNotApplicable()
+
+        messages: list[str] = []
+        for class_name, searched in searched_by_estimator:
+            missing = TUNABLE_HYPERPARAMETERS[class_name] - searched
+            # Equivalent params (e.g. tree-complexity regularizers) cover each
+            # other: if the user tunes any group member, drop the whole group
+            # from `missing`; otherwise keep a single representative so we
+            # don't suggest several near-duplicate params.
+            for group in EQUIVALENT_PARAM_GROUPS:
+                group_set = set(group)
+                if searched & group_set:
+                    missing -= group_set
+                else:
+                    missing_in_group = [param for param in group if param in missing]
+                    if len(missing_in_group) > 1:
+                        missing -= group_set
+                        missing.add(missing_in_group[0])
+            if missing:
+                messages.append(f"[{', '.join(sorted(missing))}] for {class_name}")
+        if not messages:
+            return None
+        messages.sort()
+        return (
+            "These hyperparameters are not in the grid and may be worth tuning: "
+            + f"{'; '.join(messages)}."
+        )
+
+
 _BUILTIN_CHECKS = [
     CheckOverfitting(),
     CheckUnderfitting(),
@@ -723,4 +807,5 @@ _BUILTIN_CHECKS = [
     CheckGoldenFeature(),
     CheckUselessFeatures(),
     CheckTrainTestTimeOverlap(),
+    CheckSearchParamsToTune(),
 ]
