@@ -57,6 +57,10 @@ Changed
 
 Added
 -----
+- Added automated check SKD014 (hyperparameters at search edge, issue) for
+  :class:`~sklearn.model_selection.BaseSearchCV` estimators.
+  See :pr:`2944` by :user:`GaetandeCast`.
+
 - :meth:`EstimatorReport.metrics.roc`,
   :meth:`EstimatorReport.metrics.precision_recall`,
   :meth:`EstimatorReport.metrics.confusion_matrix` and their counterparts on

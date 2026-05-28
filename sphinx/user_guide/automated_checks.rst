@@ -551,6 +551,33 @@ How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - use a time-based splitter such as
-  :class:`~sklearn.model_selection.TimeSeriesSplit`,
-- sort the data chronologically and split on a fixed cut-off date,
-- exclude rows whose timestamps fall after the chosen training window.
+  :class:`~sklearn.model_selection.TimeSeriesSplit` or similar.
+
+.. _skd014-hyperparams-at-search-edge:
+
+SKD014 - Hyperparameters at search edge
+---------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+The check runs only when the report's estimator is a fitted
+:class:`~sklearn.model_selection.BaseSearchCV` object (e.g.
+:class:`~sklearn.model_selection.GridSearchCV` or
+:class:`~sklearn.model_selection.RandomizedSearchCV`).
+
+Only numeric hyperparameters are considered. For each one, `skore` flags an
+issue when ``best_params_`` equals the **minimum or maximum** distinct value
+tried during the search. Order in ``param_grid`` does not matter.
+
+Why it matters
+^^^^^^^^^^^^^^
+When the best hyperparameters sit on the boundary of what was actually explored,
+the true optimum may lie outside the searched range. Extending the grid or
+distributions is often worthwhile.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- extend ``param_grid`` or ``param_distributions`` beyond the flagged bounds,
+- for :class:`~sklearn.model_selection.RandomizedSearchCV`, increase ``n_iter``
+  and sample from a wider range.

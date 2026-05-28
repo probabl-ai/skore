@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numbers
 from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
@@ -718,6 +719,71 @@ class CheckTrainTestTimeOverlap(Check):
         return None
 
 
+class CheckHyperparamsAtSearchEdge(Check):
+    """Check whether tuned hyperparameters sit at the search boundary (SKD014).
+
+    For :class:`~sklearn.model_selection.BaseSearchCV` estimators, flags when any
+    numeric ``best_params_`` value equals the minimum or maximum distinct value
+    tried for that parameter. Non-numeric hyperparameters (``bool``, strings, ``None``,
+    and similar) are skipped because extending the search range is not meaningful.
+    """
+
+    code = "SKD014"
+    title = "Hyperparameters at search edge"
+    report_type = "estimator"
+    docs_url = "skd014-hyperparams-at-search-edge"
+    severity = "issue"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        estimator = report.estimator_
+        if not isinstance(estimator, BaseSearchCV):
+            raise CheckNotApplicable()
+
+        param_combinations = estimator.cv_results_.get("params")
+        if param_combinations is None:
+            raise CheckNotApplicable()
+
+        edge_params = []
+        for param_name, best_value in estimator.best_params_.items():
+            tried = [
+                param_combination[param_name]
+                for param_combination in param_combinations
+                if param_name in param_combination
+            ]
+            if len(set(tried)) < 2 or not all(
+                isinstance(value, numbers.Real)
+                and not isinstance(value, bool | np.bool_)
+                for value in tried
+            ):
+                continue
+            search_low, search_high = min(tried), max(tried)
+            if not isinstance(best_value, numbers.Real) or isinstance(
+                best_value, bool | np.bool_
+            ):
+                continue
+            if np.isclose(
+                float(best_value), float(search_low), rtol=0.0, atol=0.0, equal_nan=True
+            ):
+                edge_params.append((param_name, "minimum"))
+            elif np.isclose(
+                float(best_value),
+                float(search_high),
+                rtol=0.0,
+                atol=0.0,
+                equal_nan=True,
+            ):
+                edge_params.append((param_name, "maximum"))
+
+        if not edge_params:
+            return None
+        details = ", ".join(f"{name} ({bound})" for name, bound in edge_params)
+        return (
+            f"{len(edge_params)} hyperparameter(s) are on the edge of the explored"
+            f" search space: {details}. Consider extending the search range."
+        )
+
+
 class CheckSearchParamsToTune(Check):
     """Check for hyperparameters worth tuning in a search (SKD015).
 
@@ -807,5 +873,6 @@ _BUILTIN_CHECKS = [
     CheckGoldenFeature(),
     CheckUselessFeatures(),
     CheckTrainTestTimeOverlap(),
+    CheckHyperparamsAtSearchEdge(),
     CheckSearchParamsToTune(),
 ]
