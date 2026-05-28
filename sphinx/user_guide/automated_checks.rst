@@ -122,7 +122,8 @@ How to reduce the risk
 
 - increase model capacity,
 - improve data representation and features,
-- tune hyperparameters,
+- tune hyperparameters (see :ref:`SKD015 <skd015-hyperparameters-worth-tuning>`
+  and :ref:`SKD016 <skd016-estimator-not-tuned>`),
 - collect richer data if possible.
 
 
@@ -393,7 +394,9 @@ How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - revisit feature engineering and preprocessing,
-- tune the model's hyperparameters,
+- tune the model's hyperparameters (see
+  :ref:`SKD015 <skd015-hyperparameters-worth-tuning>` and
+  :ref:`SKD016 <skd016-estimator-not-tuned>`),
 - check whether the model family is appropriate for the data,
 - consider switching to a stronger default such as
   :class:`~sklearn.ensemble.HistGradientBoostingClassifier` /
@@ -580,4 +583,71 @@ How to reduce the risk
 
 - extend ``param_grid`` or ``param_distributions`` beyond the flagged bounds,
 - for :class:`~sklearn.model_selection.RandomizedSearchCV`, increase ``n_iter``
-  and sample from a wider range.
+  and sample from a wider range,
+- if :ref:`SKD015 <skd015-hyperparameters-worth-tuning>` also fires, address
+  both together: the search space is too narrow on at least one axis and is
+  also missing recommended axes entirely.
+
+.. _skd015-hyperparameters-worth-tuning:
+
+SKD015 - Hyperparameters worth tuning
+-------------------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+The check runs only when the report's estimator is a fitted
+:class:`~sklearn.model_selection.BaseSearchCV` object. The searched parameters
+are read from ``cv_results_["params"]`` and compared, per estimator class, to a
+curated table of hyperparameters considered most impactful in the tuning
+literature (Probst, Boulesteix & Bischl 2019; van Rijn & Hutter 2018).
+
+When the search wraps a :class:`~sklearn.pipeline.Pipeline`, every step whose
+class is in the table is checked independently, regardless of whether the search
+currently tunes any of its parameters. Recommended axes that play the same role
+(e.g. ``max_depth`` and ``min_samples_leaf`` for tree complexity) are collapsed
+to a single suggestion.
+
+Why it matters
+^^^^^^^^^^^^^^
+Searching only a handful of axes often leaves the most impactful hyperparameters
+untouched, so the reported best score may not reflect what the model can
+realistically achieve.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- add the suggested parameters to ``param_grid`` or ``param_distributions``,
+- for :class:`~sklearn.model_selection.RandomizedSearchCV`, sample from a
+  distribution covering the new axes rather than enumerating values.
+
+.. _skd016-estimator-not-tuned:
+
+SKD016 - Estimator not tuned
+----------------------------
+
+How it is detected
+^^^^^^^^^^^^^^^^^^
+The check runs on plain estimators and :class:`~sklearn.pipeline.Pipeline`
+objects; it defers to :ref:`SKD015 <skd015-hyperparameters-worth-tuning>` when
+the wrapped estimator is a :class:`~sklearn.model_selection.BaseSearchCV`.
+
+For every step whose class is in the recommendation table, `skore` lists the
+init params that differ from their scikit-learn default. Infrastructure params
+that do not affect the learned model (``random_state``, ``n_jobs``, ``verbose``,
+``warm_start``, ``class_weight``, ``copy`` / ``copy_X``, ``cache_size``) are
+ignored. When every remaining param of a step is still at its default, the
+check reports a tip suggesting the recommended tuning axes for that class.
+
+Why it matters
+^^^^^^^^^^^^^^
+Default hyperparameters are rarely optimal, and an estimator left fully at
+defaults usually under-performs a lightly tuned alternative. Spotting this early
+prevents reporting performance numbers that a quick search would improve.
+
+How to reduce the risk
+^^^^^^^^^^^^^^^^^^^^^^
+
+- wrap the estimator in :class:`~sklearn.model_selection.GridSearchCV` or
+  :class:`~sklearn.model_selection.RandomizedSearchCV` over the suggested
+  parameters,
+- or set sensible non-default values manually, based on the tuning literature.
