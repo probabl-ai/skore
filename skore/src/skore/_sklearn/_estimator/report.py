@@ -818,133 +818,23 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return f"""{self.__class__.__name__}:
         {self.estimator_name_!r}
 
-        {self.metrics.summarize(data_source=self._repr_data_source()).frame()}
+        {
+            "No data provided."
+            if (data_source := self._repr_data_source()) is None
+            else self.metrics.summarize(data_source=data_source).frame()
+        }
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
-    def to_markdown(self) -> str:
-        """Return a markdown summary of the report, suitable for agent consumption.
-
-        The summary contains four sections (Estimator, Metrics, Checks, Data) that
-        mirror the tabs of the HTML representation. Each section ends with a pointer
-        to the corresponding accessor for full details.
-
-        Returns
-        -------
-        str
-            The markdown summary of the report.
-        """
-        return "\n\n".join(
-            (
-                f"# {self.__class__.__name__}: {self.estimator_name_}",
-                self._markdown_estimator_section(),
-                self._markdown_metrics_section(),
-                self._markdown_checks_section(),
-                self._markdown_data_section(),
-            )
-        )
-
-    def _markdown_estimator_kind(self) -> str:
-        est = self.estimator
-        if isinstance(est, skrub.DataOp):
-            return "skrub DataOp"
-        if is_skrub_learner(est):
-            return "skrub SkrubLearner"
-        if isinstance(est, Pipeline):
-            return "Pipeline"
-        if isinstance(est, MetaEstimatorMixin):
-            inner = getattr(est, "best_estimator_", None) or getattr(
-                est, "estimator", None
-            )
-            if inner is not None:
-                return (
-                    f"meta-estimator {type(est).__name__} "
-                    f"wrapping {type(inner).__name__}"
-                )
-            return f"meta-estimator {type(est).__name__}"
-        if type(est).__module__.startswith("sklearn."):
-            return "scikit-learn estimator"
-        return f"{type(est).__module__.split('.')[0]} estimator"
-
-    def _markdown_estimator_section(self) -> str:
-        lines = [
-            "## Estimator",
-            "",
-            f"- name: `{self.estimator_name_}`",
-            f"- kind: {self._markdown_estimator_kind()}",
-            f"- ml task: {self._ml_task}",
-        ]
-        if self.fit_time_ is not None:
-            lines.append(f"- fit time: {self.fit_time_:.3g} s")
-        if self._ml_task == "binary-classification" and self._pos_label is not None:
-            lines.append(f"- pos_label: {self._pos_label!r}")
-        lines += ["", "```text", repr(self.estimator_), "```", ""]
-        lines.append("Full estimator info: `report.estimator_`.")
-        return "\n".join(lines)
-
-    def _markdown_metrics_section(self) -> str:
-        return "\n".join(
-            (
-                "## Metrics",
-                "",
-                "```text",
-                self.metrics.summarize(data_source=self._repr_data_source())
-                .frame()
-                .to_string(),
-                "```",
-                "",
-                "Full metrics: `report.metrics.summarize().frame()`.",
-            )
-        )
-
-    def _markdown_checks_section(self) -> str:
-        return "\n".join(
-            (
-                "## Checks",
-                "",
-                "```text",
-                repr(self.checks.summarize()),
-                "```",
-                "",
-                "Full checks: `report.checks.summarize()`.",
-            )
-        )
-
-    def _markdown_data_section(self) -> str:
-        lines = ["## Data", ""]
-        data_source = self._repr_data_source()
-        summary = summarize_dataframe(
-            self.data._prepare_dataframe_for_display(
-                data_source=data_source,
-                with_y=True,
-                subsample=None,
-                subsample_strategy="head",
-                seed=None,
-            ),
-            with_plots=False,
-            with_associations=False,
-            verbose=0,
-        )
-        label = {"train": "train", "test": "test", "both": "train+test"}[data_source]
-        lines.append(
-            f"Computed on the {label} dataset "
-            f"(n_rows={summary['n_rows']}, n_columns={summary['n_columns']}, "
-            f"n_constant_columns={summary['n_constant_columns']})."
-        )
-        lines += [
-            "",
-            "| column | dtype | null_count | n_unique |",
-            "| ------ | ----- | ---------- | -------- |",
-        ]
-        for col in summary["columns"]:
-            lines.append(
-                f"| {col['name']} | {col['dtype']} | "
-                f"{col.get('null_count', '')} | {col.get('n_unique', '')} |"
-            )
-        lines += ["", "Full analysis: `report.data.analyze()`."]
-        return "\n".join(lines)
-
-    def _repr_data_source(self) -> Literal["test", "both"]:
-        return "test" if self.X_train is None else "both"
+    def _repr_data_source(self) -> Literal["train", "test", "both"] | None:
+        match self.X_train, self.X_test:
+            case None, None:
+                return None
+            case _, None:
+                return "train"
+            case None, _:
+                return "test"
+            case _:
+                return "both"
 
     def _html_repr_fragments(self) -> dict[str, str]:
         """HTML snippets for the report body (metrics, estimator diagram, data table).
@@ -953,26 +843,30 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         one report's views in the comparison HTML repr.
         """
         data_source = self._repr_data_source()
-        table_report = skrub.TableReport(
-            self.data._prepare_dataframe_for_display(
-                data_source=data_source,
-                with_y=True,
-                subsample=None,
-                subsample_strategy="head",
-                seed=None,
-            ),
-            max_plot_columns=0,
-            max_association_columns=0,
-            verbose=False,
-        )
-        table_report._set_minimal_mode()
-        table_report_html = table_report.html_snippet()
-        metrics_html = (
-            self.metrics.summarize(data_source="test")
-            .frame()
-            .reset_index()
-            .to_html(index=False)
-        )
+        if data_source is None:
+            table_report_html = "<p>No data provided</p>"
+            metrics_html = "<p>No data provided</p>"
+        else:
+            table_report = skrub.TableReport(
+                self.data._prepare_dataframe_for_display(
+                    data_source=data_source,
+                    with_y=True,
+                    subsample=None,
+                    subsample_strategy="head",
+                    seed=None,
+                ),
+                max_plot_columns=0,
+                max_association_columns=0,
+                verbose=False,
+            )
+            table_report._set_minimal_mode()
+            table_report_html = table_report.html_snippet()
+            metrics_html = (
+                self.metrics.summarize(data_source=data_source)
+                .frame()
+                .reset_index()
+                .to_html(index=False)
+            )
         try:
             estimator_html = repair_estimator_html_for_slotted_host(
                 self.estimator_._repr_html_()
@@ -1039,3 +933,128 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         output = {"text/plain": repr(self)}
         output["text/html"] = self._repr_html_()
         return output
+
+    def to_markdown(self) -> str:
+        """Return a markdown summary of the report, suitable for agent consumption.
+
+        The summary contains four sections (Estimator, Metrics, Checks, Data) that
+        mirror the tabs of the HTML representation. Each section ends with a pointer
+        to the corresponding accessor for full details.
+
+        Returns
+        -------
+        str
+            The markdown summary of the report.
+        """
+        return "\n\n".join(
+            (
+                f"# {self.__class__.__name__}: {self.estimator_name_}",
+                self._markdown_estimator_section(),
+                self._markdown_metrics_section(),
+                self._markdown_checks_section(),
+                self._markdown_data_section(),
+            )
+        )
+
+    def _markdown_estimator_kind(self) -> str:
+        est = self.estimator
+        if isinstance(est, skrub.DataOp):
+            return "skrub DataOp"
+        if is_skrub_learner(est):
+            return "skrub SkrubLearner"
+        if isinstance(est, Pipeline):
+            return "Pipeline"
+        if isinstance(est, MetaEstimatorMixin):
+            inner = getattr(est, "best_estimator_", None) or getattr(
+                est, "estimator", None
+            )
+            if inner is not None:
+                return (
+                    f"meta-estimator {type(est).__name__} "
+                    f"wrapping {type(inner).__name__}"
+                )
+            return f"meta-estimator {type(est).__name__}"
+        if type(est).__module__.startswith("sklearn."):
+            return "scikit-learn estimator"
+        return f"{type(est).__module__.split('.')[0]} estimator"
+
+    def _markdown_estimator_section(self) -> str:
+        lines = [
+            "## Estimator",
+            "",
+            f"- name: `{self.estimator_name_}`",
+            f"- kind: {self._markdown_estimator_kind()}",
+            f"- ml task: {self._ml_task}",
+        ]
+        if self.fit_time_ is not None:
+            lines.append(f"- fit time: {self.fit_time_:.3g} s")
+        if self._ml_task == "binary-classification" and self._pos_label is not None:
+            lines.append(f"- pos_label: {self._pos_label!r}")
+        lines += ["", "```text", repr(self.estimator_), "```", ""]
+        lines.append("Full estimator info: `report.estimator_`.")
+        return "\n".join(lines)
+
+    def _markdown_metrics_section(self) -> str:
+        lines = ["## Metrics", ""]
+        data_source = self._repr_data_source()
+        if data_source is None:
+            lines.append("No data provided.")
+        else:
+            lines += [
+                "```text",
+                self.metrics.summarize(data_source=data_source).frame().to_string(),
+                "```",
+            ]
+        lines += ["", "Full metrics: `report.metrics.summarize().frame()`."]
+        return "\n".join(lines)
+
+    def _markdown_checks_section(self) -> str:
+        return "\n".join(
+            (
+                "## Checks (fast mode)",
+                "",
+                "```text",
+                repr(self.checks.summarize(fast_mode=True)),
+                "```",
+                "",
+                "Full checks: `report.checks.summarize()`.",
+            )
+        )
+
+    def _markdown_data_section(self) -> str:
+        lines = ["## Data", ""]
+        data_source = self._repr_data_source()
+        if data_source is None:
+            lines.append("No data provided.")
+            lines += ["", "Full analysis: `report.data.analyze()`."]
+            return "\n".join(lines)
+        summary = summarize_dataframe(
+            self.data._prepare_dataframe_for_display(
+                data_source=data_source,
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            with_plots=False,
+            with_associations=False,
+            verbose=0,
+        )
+        label = {"train": "train", "test": "test", "both": "train+test"}[data_source]
+        lines.append(
+            f"Computed on the {label} dataset "
+            f"(n_rows={summary['n_rows']}, n_columns={summary['n_columns']}, "
+            f"n_constant_columns={summary['n_constant_columns']})."
+        )
+        lines += [
+            "",
+            "| column | dtype | null_count | n_unique |",
+            "| ------ | ----- | ---------- | -------- |",
+        ]
+        for col in summary["columns"]:
+            lines.append(
+                f"| {col['name']} | {col['dtype']} | "
+                f"{col.get('null_count', '')} | {col.get('n_unique', '')} |"
+            )
+        lines += ["", "Full analysis: `report.data.analyze()`."]
+        return "\n".join(lines)

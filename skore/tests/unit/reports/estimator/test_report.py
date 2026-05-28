@@ -374,6 +374,73 @@ class _DummyClassifierBadRepr(DummyClassifier):
         raise TypeError("error")
 
 
+@pytest.fixture
+def prefit_regression_report():
+    X, y = make_regression(random_state=42)
+    estimator = LinearRegression().fit(X, y)
+    return EstimatorReport(estimator, fit=False)
+
+
+@pytest.mark.parametrize(
+    "x_train, x_test, expected",
+    [
+        (None, None, None),
+        ("train", None, "train"),
+        (None, "test", "test"),
+        ("train", "test", "both"),
+    ],
+)
+def test_repr_data_source(x_train, x_test, expected, regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    estimator = LinearRegression().fit(X_train, y_train)
+    kwargs = {}
+    if x_train is not None:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    if x_test is not None:
+        kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    assert report._repr_data_source() == expected
+
+
+def test_repr_prefit_no_data(prefit_regression_report):
+    repr_str = repr(prefit_regression_report)
+    assert "No data provided." in repr_str
+    assert "to_markdown()" in repr_str
+
+
+def test_to_markdown_prefit_no_data(prefit_regression_report):
+    markdown = prefit_regression_report.to_markdown()
+    assert markdown.startswith("# EstimatorReport: LinearRegression")
+    for section in ("## Estimator", "## Metrics", "## Checks (fast mode)", "## Data"):
+        assert section in markdown
+    assert markdown.count("No data provided.") == 2
+    assert "LinearRegression()" in markdown
+
+
+def test_html_repr_prefit_no_data(prefit_regression_report):
+    fragments = prefit_regression_report._html_repr_fragments()
+    assert fragments["metrics_summary"] == "<p>No data provided</p>"
+    assert fragments["table_report"] == "<p>No data provided</p>"
+
+
+def test_to_markdown_with_data(regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    estimator = LinearRegression().fit(X_train, y_train)
+    report = EstimatorReport(
+        estimator,
+        fit=False,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    markdown = report.to_markdown()
+    assert "## Estimator" in markdown
+    assert "## Metrics" in markdown
+    assert "train+test" in markdown
+    assert "No data provided." not in markdown
+
+
 def _assert_estimator_report_repr_html(
     html_out: str, expected_estimator_name: str
 ) -> None:
