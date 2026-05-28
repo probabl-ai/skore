@@ -4,12 +4,19 @@ from urllib.parse import urlparse
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.compose import ColumnTransformer
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression, LogisticRegression, RidgeCV
+from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, RidgeCV
+from sklearn.model_selection import (
+    GridSearchCV,
+    RandomizedSearchCV,
+    train_test_split,
+)
+from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeRegressor
-from skrub import tabular_pipeline
+from skrub import DatetimeEncoder, tabular_pipeline
 
 from skore import Check, EstimatorReport, configuration, evaluate
 from skore._sklearn._checks._utils import CheckNotApplicable
@@ -17,20 +24,20 @@ from skore._sklearn._checks.base import (
     ChecksSummaryDisplay,
     _get_issue_documentation_url,
 )
+from skore._sklearn._checks.model_checks import CheckHyperparamsAtSearchEdge
 
 
 @pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
 def regression_report(request, regression_data):
-    estimator = request.param
     X, y = regression_data
     return evaluate(
-        estimator,
+        request.param,
         pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
         pd.Series(y),
     )
 
 
-def mock_issue(report, ignored_codes):
+def mock_issue(report, ignored_codes, *, fast_mode=False):
     return (
         {
             "SKD001": {
@@ -210,12 +217,197 @@ def test_skd010_detects_slower_than_baseline(regression_data):
     assert "slower than a fast linear baseline" in issues.loc["SKD010", "explanation"]
 
 
+@pytest.mark.parametrize(
+    "estimator", [LinearRegression(), tabular_pipeline(LinearRegression())]
+)
+def test_skd011_detects_golden_feature(estimator):
+    """Features correlated with the target get flagged as golden."""
+    rng = np.random.RandomState(0)
+    n_samples = 200
+    X = rng.normal(size=(n_samples, 4))
+    y = X[:, 0] * 10
+    X[:, 1] = y + rng.normal(scale=0.01, size=n_samples)
+    report = evaluate(
+        estimator,
+        pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])]),
+        pd.Series(y),
+        splitter=0.2,
+    )
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    assert "SKD011" in tips.index
+    explanation = tips.loc["SKD011", "explanation"]
+    assert "Feature 0" in explanation
+    assert "Feature 1" in explanation
+    assert "Feature 2" not in explanation
+    assert "Feature 3" not in explanation
+
+
+def test_skd012_detects_useless_features():
+    """Noise features are flagged when permutation importance is negligible."""
+    X, y = make_regression(
+        n_samples=300,
+        n_features=6,
+        n_informative=2,
+        noise=0.1,
+        shuffle=False,
+        random_state=0,
+    )
+    report = evaluate(Ridge(), X, y, splitter=0.2)
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    assert "SKD012" in tips.index
+    explanation = tips.loc["SKD012", "explanation"]
+    assert "permutation importance" in explanation
+    assert "Feature #0" not in explanation
+    assert "Feature #1" not in explanation
+    assert "Feature #2" in explanation
+    assert "Feature #3" in explanation
+    assert "Feature #4" in explanation
+    assert "Feature #5" in explanation
+
+
+def test_skd013_train_test_time_overlap():
+    """Shuffled split triggers overlap; proper temporal split passes."""
+    n = 200
+    X = pd.DataFrame(
+        {
+            "feat": np.arange(n, dtype=float),
+            "date": pd.date_range("2026-12-01", periods=n, freq="D"),
+        }
+    )
+    y = np.arange(n, dtype=float)
+    pipe = Pipeline(
+        [
+            (
+                "preprocess",
+                ColumnTransformer(
+                    [("date", DatetimeEncoder(), ["date"])],
+                    remainder="passthrough",
+                ),
+            ),
+            ("reg", LinearRegression()),
+        ]
+    )
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, shuffle=True, random_state=0
+    )
+    report = EstimatorReport(
+        pipe, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD013" in issues.index
+    assert "date" in issues.loc["SKD013", "explanation"]
+
+    split = int(n * 0.8)
+    report = EstimatorReport(
+        pipe,
+        X_train=X.iloc[:split],
+        y_train=y[:split],
+        X_test=X.iloc[split:],
+        y_test=y[split:],
+    )
+    summary = report.checks.summarize()
+    assert "SKD013" not in set(summary.frame(severity="issue")["code"])
+    assert "SKD013" in set(summary.frame(severity="passed")["code"])
+
+
 def test_skd010_not_detected_for_fast_model(regression_data):
     """Check that SKD010 does not fire when the model is not slower than baseline."""
     X, y = regression_data
     report = evaluate(RidgeCV(), X, y)
     codes = set(report.checks.summarize().frame(severity="issue")["code"])
     assert "SKD010" not in codes
+
+
+def _prefit_grid_search_report(X, y, search):
+    search.fit(X, y)
+    return evaluate(search, X, y, splitter="prefit")
+
+
+@pytest.mark.parametrize(
+    "param_grid", [{"alpha": [0.1, 1.0, 10.0]}, {"alpha": [10.0, 0.1, 1.0]}]
+)
+def test_skd014_raises_at_numeric_edge(regression_data, monkeypatch, param_grid):
+    """SKD014 flags when best is at the numeric min/max of tried values."""
+    X, y = regression_data
+    report = _prefit_grid_search_report(
+        X, y, GridSearchCV(Ridge(), param_grid=param_grid, cv=2)
+    )
+    monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 0.1})
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD014" in issues.index
+    explanation = issues.loc["SKD014", "explanation"]
+    assert "alpha" in explanation
+    assert "minimum" in explanation
+
+
+@pytest.mark.parametrize(
+    "param_grid", [{"alpha": [1.0, 2.0, 3.0]}, {"alpha": [3.0, 1.0, 2.0]}]
+)
+def test_skd014_not_raised_for_interior_best(regression_data, monkeypatch, param_grid):
+    """SKD014 is absent when the best value is not at the tried min or max."""
+    X, y = regression_data
+    report = _prefit_grid_search_report(
+        X, y, GridSearchCV(Ridge(), param_grid=param_grid, cv=2)
+    )
+    monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 2.0})
+    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    assert "SKD014" not in codes
+
+
+@pytest.mark.parametrize("prefit", [True, False])
+def test_skd014_prefit_and_evaluate_fit(regression_data, monkeypatch, prefit):
+    """SKD014 runs for prefit and evaluate-fitted GridSearchCV reports."""
+    X, y = regression_data
+    search = GridSearchCV(Ridge(), param_grid={"alpha": [10.0, 0.1, 1.0]}, cv=2)
+    if prefit:
+        report = _prefit_grid_search_report(X, y, search)
+    else:
+        report = evaluate(search, X, y)
+    monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 0.1})
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD014" in issues.index
+    assert "minimum" in issues.loc["SKD014", "explanation"]
+
+
+def test_skd014_not_applicable_for_plain_estimator(regression_data):
+    """SKD014 raises CheckNotApplicable when the report estimator isn't BaseSearchCV."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    with pytest.raises(CheckNotApplicable):
+        CheckHyperparamsAtSearchEdge().check_function(report)
+
+
+@pytest.mark.parametrize(
+    "param_grid", [{"fit_intercept": [False, True]}, {"solver": ["svd", "cholesky"]}]
+)
+def test_skd014_skips_non_numeric_hyperparameters(regression_data, param_grid):
+    """SKD014 ignores bool, string, and other non-numeric search parameters."""
+    X, y = regression_data
+    report = _prefit_grid_search_report(
+        X, y, GridSearchCV(Ridge(), param_grid=param_grid, cv=2)
+    )
+    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    assert "SKD014" not in codes
+
+
+@pytest.mark.parametrize(
+    "search",
+    [
+        GridSearchCV(Ridge(), param_grid={"alpha": [0.1, 1.0, 10.0]}, cv=2),
+        RandomizedSearchCV(
+            Ridge(), param_distributions={"alpha": [0.1, 1.0, 10.0]}, cv=2
+        ),
+    ],
+)
+def test_skd014_search_classes(regression_data, monkeypatch, search):
+    """SKD014 runs for GridSearchCV and RandomizedSearchCV using cv_results_."""
+    X, y = regression_data
+    report = _prefit_grid_search_report(X, y, search)
+    monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 0.1})
+    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    assert "SKD014" in issues.index
+    assert "minimum" in issues.loc["SKD014", "explanation"]
 
 
 def test_ignore_checks(monkeypatch, regression_report):
@@ -259,7 +451,7 @@ def test_no_issues(monkeypatch, regression_report):
     monkeypatch.setattr(
         EstimatorReport,
         "_get_results",
-        lambda report, ignored_codes: ({}, {"SKD001", "SKD002"}),
+        lambda report, ignored_codes, *, fast_mode=False: ({}, {"SKD001", "SKD002"}),
     )
     assert regression_report.checks.summarize().frame(severity="issue").empty
 
@@ -515,3 +707,81 @@ def test_html_has_three_tabs(regression_report):
     assert "Issues (" in html
     assert "Tips (" in html
     assert "Passed (" in html
+
+
+class SlowMockCheck(Check):
+    code = "TSTSLOW"
+    title = "Slow mock check"
+    report_type = "estimator"
+    docs_url = "tstslow"
+    slow = True
+
+    def __init__(self, *, fail=False):
+        self.calls = 0
+        self._fail = fail
+
+    def check_function(self, report):
+        if self._fail:
+            raise AssertionError("slow check should not have been called")
+        self.calls += 1
+        return "Slow finding."
+
+
+def test_summarize_fast_mode_skips_uncached_slow_checks(regression_report):
+    """fast_mode=True skips slow checks that are not cached."""
+    slow_check = SlowMockCheck()
+    regression_report.checks.add([slow_check])
+    codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
+    assert "TSTSLOW" not in codes
+    assert slow_check.calls == 0
+
+
+def test_summarize_fast_mode_uses_cached_slow_results(regression_report):
+    """fast_mode=True surfaces slow results that were already cached."""
+    slow_check = SlowMockCheck()
+    regression_report.checks.add([slow_check])
+    regression_report.checks.summarize()
+    assert slow_check.calls == 1
+    issues = (
+        regression_report.checks.summarize(fast_mode=True)
+        .frame(severity="issue")
+        .set_index("code")
+    )
+    assert "TSTSLOW" in issues.index
+    assert slow_check.calls == 1
+
+
+def test_html_repr_does_not_compute_slow(regression_report):
+    """The HTML repr never invokes slow check functions."""
+    regression_report.checks.add([SlowMockCheck(fail=True)])
+    fragments = regression_report._html_repr_fragments()
+    assert "checks_summary" in fragments
+
+
+def test_html_repr_shows_cached_slow(regression_report):
+    """A cached slow result is reflected in the HTML repr summary."""
+    slow_check = SlowMockCheck()
+    regression_report.checks.add([slow_check])
+    regression_report.checks.summarize()
+    fragments = regression_report._html_repr_fragments()
+    assert "1 issue(s)" in fragments["checks_summary"]
+
+
+def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):
+    """Subclass of Check without `slow` inherits the protocol default."""
+
+    class CheckNoSlowAttr(Check):
+        code = "TSTFAST"
+        title = "No slow attr"
+        report_type = "estimator"
+        docs_url = "tstfast"
+        severity = "issue"
+
+        def check_function(self, report):
+            return "Found."
+
+    check = CheckNoSlowAttr()
+    assert check.slow is False
+    regression_report.checks.add([check])
+    codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
+    assert "TSTFAST" in codes

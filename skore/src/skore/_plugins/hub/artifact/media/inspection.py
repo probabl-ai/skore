@@ -82,7 +82,7 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
                 PermutationImportance.__display_from_estimator_report(
                     data_source, report
                 )
-                for report in report.estimator_reports_
+                for report in report.reports_
             ):
                 if display is None:
                     return None

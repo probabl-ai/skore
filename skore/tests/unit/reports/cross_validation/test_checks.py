@@ -21,7 +21,7 @@ class CVCheck(Check):
     docs_url = "cvcustom"
 
     def check_function(self, report):
-        return f"Ran on {len(report.estimator_reports_)} splits."
+        return f"Ran on {len(report.reports_)} splits."
 
 
 class EstimatorCheck(Check):
@@ -81,7 +81,7 @@ def test_reuses_split_cached_results(monkeypatch, regression_report):
     """Check that check results are cached and reused across splits."""
     regression_report.checks.summarize()
 
-    for sub_report in regression_report.estimator_reports_:
+    for sub_report in regression_report.reports_:
         for check in sub_report._checks_registry:
             monkeypatch.setattr(
                 check,

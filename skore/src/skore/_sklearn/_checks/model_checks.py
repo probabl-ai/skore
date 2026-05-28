@@ -1,18 +1,19 @@
 from __future__ import annotations
 
-import warnings
+import numbers
 from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
+from sklearn.base import clone
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import (
     HistGradientBoostingClassifier,
     HistGradientBoostingRegressor,
 )
-from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.linear_model import LogisticRegression, RidgeCV
+from sklearn.model_selection._search import BaseSearchCV
 
 from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._checks._utils import (
@@ -22,9 +23,11 @@ from skore._sklearn._checks._utils import (
     detect_outliers_modified_zscore,
     get_preprocessed_data,
     majority_vote,
+    select_feature,
     split_preprocessor_estimator,
 )
 from skore._sklearn._checks.base import Check
+from skore._sklearn.feature_names import _get_feature_names
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -119,10 +122,8 @@ class CheckOverfitting(Check):
         ):
             raise CheckNotApplicable()
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            report_train = collect_scores(report, data_source="train")
-            report_test = collect_scores(report, data_source="test")
+        report_train = collect_scores(report, data_source="train")
+        report_test = collect_scores(report, data_source="test")
 
         votes = [
             check_score_gap_to_baseline(
@@ -163,12 +164,10 @@ class CheckUnderfitting(Check):
         report = cast("EstimatorReport", report)
         baseline = _baseline_estimator_report(report, kind="dummy")
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            report_train = collect_scores(report, data_source="train")
-            report_test = collect_scores(report, data_source="test")
-            baseline_train = collect_scores(baseline, data_source="train")
-            baseline_test = collect_scores(baseline, data_source="test")
+        report_train = collect_scores(report, data_source="train")
+        report_test = collect_scores(report, data_source="test")
+        baseline_train = collect_scores(baseline, data_source="train")
+        baseline_test = collect_scores(baseline, data_source="test")
 
         votes = [
             not check_score_gap_to_baseline(
@@ -219,11 +218,9 @@ class CheckMetricsConsistencyAcrossSplits(Check):
         """Detect outlier performance across cross-validation splits."""
         report = cast("CrossValidationReport", report)
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            report_data = report.metrics.summarize(data_source="test").frame(
-                aggregate=None, flat_index=True
-            )
+        report_data = report.metrics.summarize(data_source="test").frame(
+            aggregate=None, flat_index=True
+        )
         votes = np.array(
             [
                 detect_outliers_modified_zscore(report_data.loc[idx])
@@ -423,10 +420,12 @@ class CheckCorrelatedFeatures(Check):
             raise CheckNotApplicable()
         if isinstance(X, pd.DataFrame):
             X = X.select_dtypes(include="number")
-        if X.shape[1] < 2:
+        if X.shape[1] < 2 or X.shape[1] > 1000:
             raise CheckNotApplicable()
 
         corr = np.abs(spearmanr(X).statistic)
+        if corr.ndim < 2:
+            return None
         np.fill_diagonal(corr, 0)
         n_pairs = int(np.count_nonzero(corr >= 0.9) // 2)
 
@@ -457,10 +456,8 @@ class CheckWorseThanBaseline(Check):
         report = cast("EstimatorReport", report)
         baseline = _baseline_estimator_report(report, kind="performance")
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            report_test = collect_scores(report, data_source="test")
-            baseline_test = collect_scores(baseline, data_source="test")
+        report_test = collect_scores(report, data_source="test")
+        baseline_test = collect_scores(baseline, data_source="test")
 
         votes = [
             not check_score_gap_to_baseline(
@@ -511,10 +508,8 @@ class CheckSlowerThanBaseline(Check):
         if slowness_ratio < 2.0 or report.fit_time_ - baseline.fit_time_ < 0.05:
             return None
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-            report_test = collect_scores(report, data_source="test")
-            baseline_test = collect_scores(baseline, data_source="test")
+        report_test = collect_scores(report, data_source="test")
+        baseline_test = collect_scores(baseline, data_source="test")
 
         votes = [
             not check_score_gap_to_baseline(
@@ -536,6 +531,251 @@ class CheckSlowerThanBaseline(Check):
         return None
 
 
+class CheckGoldenFeature(Check):
+    """Check for a golden feature (SKD011).
+
+    Detects a single feature that, used alone to refit the estimator, reaches
+    scores close to the full model on the report's default predictive metrics.
+    This often signals data leakage or excessive reliance on one feature.
+    """
+
+    code = "SKD011"
+    title = "Golden feature"
+    report_type = "estimator"
+    docs_url = "skd011-golden-feature"
+    severity = "tip"
+    slow = True
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        from skore._sklearn._estimator.report import EstimatorReport
+
+        report = cast("EstimatorReport", report)
+        if (
+            report.X_train is None
+            or report.X_test is None
+            or report.y_train is None
+            or report.y_test is None
+        ):
+            raise CheckNotApplicable()
+
+        preprocessor_, predictor_ = split_preprocessor_estimator(report.estimator_)
+        X_train = get_preprocessed_data(report, target="X", data_source="train")
+        X_test = get_preprocessed_data(report, target="X", data_source="test")
+        if X_train is None or X_test is None or X_train.shape[1] < 2:
+            raise CheckNotApplicable()
+
+        feature_names = _get_feature_names(
+            predictor_,
+            transformer=preprocessor_,
+            X=X_train,
+            n_features=X_train.shape[1],
+        )
+
+        full_test = collect_scores(report, data_source="test")
+
+        golden_features: list[str] = []
+        for i in range(X_train.shape[1]):
+            try:
+                single_report = EstimatorReport(
+                    clone(predictor_),
+                    X_train=select_feature(X_train, i),
+                    y_train=report.y_train,
+                    X_test=select_feature(X_test, i),
+                    y_test=report.y_test,
+                    pos_label=report.pos_label,
+                )
+            except Exception as exc:
+                raise CheckNotApplicable() from exc
+            single_report._metric_registry = report._metric_registry
+            single_test = collect_scores(single_report, data_source="test")
+
+            votes = [
+                not check_score_gap_to_baseline(
+                    score=full_test[key]["score"],
+                    baseline=single_test[key]["score"],
+                    greater_is_better=full_test[key]["greater_is_better"],
+                    floor=0.03,
+                    fraction=0.10,
+                )
+                for key in full_test.keys() & single_test.keys()
+            ]
+            majority, _, _ = majority_vote(votes)
+            if majority:
+                golden_features.append(str(feature_names[i]))
+
+        if golden_features:
+            return (
+                f"A model trained on feature(s) {golden_features} alone has similar "
+                "performance to a model trained on all the features, on the default "
+                "predictive metrics. This may signal data leakage or excessive "
+                "reliance on a single feature."
+            )
+        return None
+
+
+class CheckUselessFeatures(Check):
+    """Check for useless features (SKD012).
+
+    Flags features whose permutation importance is negligible: either the mean
+    importance is negative, below 1e-3, or its interval ``[mean - std,
+    mean + std]`` contains zero.
+
+    Permutation importance is computed via the inspection accessor with a
+    fixed seed so the result is cached and shared with explicit calls to
+    :meth:`~skore.EstimatorReport.inspection.permutation_importance`.
+    """
+
+    code = "SKD012"
+    title = "Useless features"
+    report_type = "estimator"
+    docs_url = "skd012-useless-features"
+    severity = "tip"
+    slow = True
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+
+        try:
+            importance_frame = report.inspection.permutation_importance(
+                data_source="test", seed=0, n_repeats=5
+            ).frame()
+        except (ValueError, TypeError) as err:
+            raise CheckNotApplicable() from err
+
+        # group by feature and take the mean over metric/label/output
+        per_feature = (
+            importance_frame.groupby("feature")[["value_mean", "value_std"]]
+            .mean()
+            .reset_index()
+        )
+        mean = per_feature["value_mean"]
+        std = per_feature["value_std"]
+        useless = per_feature.loc[
+            (mean <= 1e-3) | ((mean - std <= 0) & (mean + std >= 0)), "feature"
+        ].tolist()
+        if useless:
+            return (
+                f"Feature(s) {useless} have permutation importance overlapping "
+                "with zero and could likely be dropped without degrading "
+                "performance."
+            )
+        return None
+
+
+class CheckTrainTestTimeOverlap(Check):
+    """Check for train/test temporal overlap (SKD013).
+
+    Flags datetime columns where the latest train timestamp is at or after
+    the earliest test timestamp, indicating that future points leak into
+    the training set (e.g. data was shuffled before splitting a time series).
+
+    Raises :class:`CheckNotApplicable` when train and test inputs are not
+    pandas DataFrames or contain no datetime column.
+    """
+
+    code = "SKD013"
+    title = "Train-test overlap in time series"
+    report_type = "estimator"
+    docs_url = "skd013-train-test-time-overlap"
+    severity = "issue"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        if not isinstance(report.X_train, pd.DataFrame) or not isinstance(
+            report.X_test, pd.DataFrame
+        ):
+            raise CheckNotApplicable()
+
+        datetime_columns = [
+            col
+            for col in report.X_train.columns
+            if col in report.X_test.columns
+            and pd.api.types.is_datetime64_any_dtype(report.X_train[col])
+            and pd.api.types.is_datetime64_any_dtype(report.X_test[col])
+        ]
+        if not datetime_columns:
+            raise CheckNotApplicable()
+
+        overlapping = [
+            col
+            for col in datetime_columns
+            if report.X_train[col].max() >= report.X_test[col].min()
+        ]
+        if overlapping:
+            return (
+                f"Datetime column(s) {overlapping} contain training timestamps "
+                "that are after the earliest test timestamp. Future points "
+                "may be leaking into the training set; consider a time-based "
+                "split."
+            )
+        return None
+
+
+class CheckHyperparamsAtSearchEdge(Check):
+    """Check whether tuned hyperparameters sit at the search boundary (SKD014).
+
+    For :class:`~sklearn.model_selection.BaseSearchCV` estimators, flags when any
+    numeric ``best_params_`` value equals the minimum or maximum distinct value
+    tried for that parameter. Non-numeric hyperparameters (``bool``, strings, ``None``,
+    and similar) are skipped because extending the search range is not meaningful.
+    """
+
+    code = "SKD014"
+    title = "Hyperparameters at search edge"
+    report_type = "estimator"
+    docs_url = "skd014-hyperparams-at-search-edge"
+    severity = "issue"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        estimator = report.estimator_
+        if not isinstance(estimator, BaseSearchCV):
+            raise CheckNotApplicable()
+
+        param_combinations = estimator.cv_results_.get("params")
+        if param_combinations is None:
+            raise CheckNotApplicable()
+
+        edge_params = []
+        for param_name, best_value in estimator.best_params_.items():
+            tried = [
+                param_combination[param_name]
+                for param_combination in param_combinations
+                if param_name in param_combination
+            ]
+            if len(set(tried)) < 2 or not all(
+                isinstance(value, numbers.Real)
+                and not isinstance(value, bool | np.bool_)
+                for value in tried
+            ):
+                continue
+            search_low, search_high = min(tried), max(tried)
+            if not isinstance(best_value, numbers.Real) or isinstance(
+                best_value, bool | np.bool_
+            ):
+                continue
+            if np.isclose(
+                float(best_value), float(search_low), rtol=0.0, atol=0.0, equal_nan=True
+            ):
+                edge_params.append((param_name, "minimum"))
+            elif np.isclose(
+                float(best_value),
+                float(search_high),
+                rtol=0.0,
+                atol=0.0,
+                equal_nan=True,
+            ):
+                edge_params.append((param_name, "maximum"))
+
+        if not edge_params:
+            return None
+        details = ", ".join(f"{name} ({bound})" for name, bound in edge_params)
+        return (
+            f"{len(edge_params)} hyperparameter(s) are on the edge of the explored"
+            f" search space: {details}. Consider extending the search range."
+        )
+
+
 _BUILTIN_CHECKS = [
     CheckOverfitting(),
     CheckUnderfitting(),
@@ -547,4 +787,8 @@ _BUILTIN_CHECKS = [
     CheckCorrelatedFeatures(),
     CheckWorseThanBaseline(),
     CheckSlowerThanBaseline(),
+    CheckGoldenFeature(),
+    CheckUselessFeatures(),
+    CheckTrainTestTimeOverlap(),
+    CheckHyperparamsAtSearchEdge(),
 ]

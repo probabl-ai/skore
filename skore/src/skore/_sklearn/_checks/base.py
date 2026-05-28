@@ -218,9 +218,12 @@ class Check(Protocol):
         ``"tip"`` invites caution (e.g. on the interpretation of a result)
         without signaling a defect.
 
-    check_function : callable
-        Method that inspects a report and returns a finding explanation or
-        ``None``.
+    slow : bool, default=False
+        Whether the check is expensive to run (e.g. requires refits or
+        permutation predictions). Slow checks are skipped when
+        :meth:`~skore.EstimatorReport.checks.summarize` is called with
+        ``fast_mode=True``, and are not computed by the HTML report repr
+        (only cached results are surfaced).
     """
 
     code: CheckCode
@@ -228,6 +231,7 @@ class Check(Protocol):
     report_type: ReportType
     docs_url: str | None = None
     severity: Literal["issue", "tip"]
+    slow: bool = False
 
     @abstractmethod
     def check_function(self, report: _BaseReport) -> str | None:

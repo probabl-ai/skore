@@ -164,7 +164,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     estimator_name_ : str
         The name of the estimator.
 
-    estimator_reports_ : list of EstimatorReport
+    reports_ : list of EstimatorReport
         The estimator reports for each split.
 
     ml_task : str
@@ -243,8 +243,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._split_indices = tuple(self._splitter.split(self.X, self.y))
         self.n_jobs = n_jobs
 
-        self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
-        self._ml_task = self.estimator_reports_[0].ml_task
+        self.reports_: list[EstimatorReport] = self._fit_estimator_reports()
+        self._ml_task = self.reports_[0].ml_task
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
@@ -308,7 +308,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         versions. In particular, this is more stable than pickling a report
         object directly, which can break when internal implementations change.
         """
-        sub_states = [report.get_state() for report in self.estimator_reports_]
+        sub_states = [report.get_state() for report in self.reports_]
         for state in sub_states:
             # data can be reconstructed from X, y and split_indices
             state.pop("data")
@@ -352,7 +352,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         report._splitter = None
         report.n_jobs = None
 
-        report.estimator_reports_ = []
+        report.reports_ = []
         if report._initialized_with_data_op:
             split_data_iterator = report.learner_.data_op.skb.iter_cv_splits(
                 environment=report._data,
@@ -392,7 +392,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 },
             }
             sub_report = EstimatorReport.from_state(sub_state_with_data)
-            report.estimator_reports_.append(sub_report)
+            report.reports_.append(sub_report)
 
         return report
 
@@ -409,10 +409,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
         >>> report.clear_cache()
-        >>> report.estimator_reports_[0]._cache
+        >>> report.reports_[0]._cache
         {}
         """
-        for report in self.estimator_reports_:
+        for report in self.reports_:
             report.clear_cache()
 
     def cache_predictions(
@@ -429,11 +429,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
-        >>> report.estimator_reports_[0]._cache
+        >>> report.reports_[0]._cache
         {...}
         """
         for estimator_report in track(
-            self.estimator_reports_,
+            self.reports_,
             description="Cross-validation predictions for split",
         ):
             estimator_report.cache_predictions()
@@ -495,7 +495,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 data_source=data_source,
                 response_method=response_method,
             )
-            for report in self.estimator_reports_
+            for report in self.reports_
         ]
 
     def create_estimator_report(
@@ -573,15 +573,20 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return report
 
     def _aggregate_checks(
-        self, ignored_codes: set[CheckCode]
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
     ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
-        total_splits = len(self.estimator_reports_)
+        total_splits = len(self.reports_)
         all_applicable_codes: set[CheckCode] = set()
         positives_by_code: dict[CheckCode, list[dict]] = {}
 
-        for estimator_report in self.estimator_reports_:
+        for estimator_report in self.reports_:
             estimator_report.checks.add(self._checks_registry)
-            results, applicable_codes = estimator_report._get_results(ignored_codes)
+            results, applicable_codes = estimator_report._get_results(
+                ignored_codes, fast_mode=fast_mode
+            )
             all_applicable_codes |= applicable_codes
             for code, check_result in results.items():
                 if check_result["explanation"] is not None:
@@ -695,7 +700,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        checks_summary = self.checks.summarize()
+        checks_summary = self.checks.summarize(fast_mode=True)
         checks_summary_html = (
             "<div class='report-checks-summary-details'>"
             f"{len(checks_summary.frame(severity='issue'))} issue(s), "

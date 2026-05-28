@@ -266,12 +266,12 @@ def _get_curve_plot_columns(
 
     Rules:
     - Default ("auto"): None for EstimatorReport and Cross-Validation Report,
-        "estimator" for ComparisonReport
+      "estimator" for ComparisonReport
     - subplot_by=None disallowed for comparison when plotting one-vs-rest curves
     - subplot_by="estimator" only allowed for comparison reports
     - subplot_by="label" only allowed when plotting one-vs-rest curves
-    - subplot_by="data_source" only allowed for EstimatorReport with both data \
-        sources
+    - subplot_by="data_source" only allowed for EstimatorReport with both data
+      sources
     - hue priority: estimator > label > data_source (excluding col)
 
     Returns (col, hue, style) tuple where each can be None if not applicable.
