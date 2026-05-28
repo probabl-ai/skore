@@ -597,9 +597,8 @@ How it is detected
 ^^^^^^^^^^^^^^^^^^
 The check runs only when the report's estimator is a fitted
 :class:`~sklearn.model_selection.BaseSearchCV` object. The searched parameters
-are read from ``cv_results_["params"]`` and compared, per estimator class, to a
-curated table of hyperparameters considered most impactful in the tuning
-literature (Probst, Boulesteix & Bischl 2019; van Rijn & Hutter 2018).
+are compared to a curated table of hyperparameters considered most impactful in
+the tuning literature (Probst, Boulesteix & Bischl 2019; van Rijn & Hutter 2018).
 
 When the search wraps a :class:`~sklearn.pipeline.Pipeline`, every step whose
 class is in the table is checked independently, regardless of whether the search
@@ -609,16 +608,12 @@ to a single suggestion.
 
 Why it matters
 ^^^^^^^^^^^^^^
-Searching only a handful of axes often leaves the most impactful hyperparameters
-untouched, so the reported best score may not reflect what the model can
-realistically achieve.
+Not tuning the most impactful hyperparameters leaves performance on the table.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- add the suggested parameters to ``param_grid`` or ``param_distributions``,
-- for :class:`~sklearn.model_selection.RandomizedSearchCV`, sample from a
-  distribution covering the new axes rather than enumerating values.
+- add the suggested parameters to ``param_grid`` or ``param_distributions``.
 
 .. _skd016-estimator-not-tuned:
 
@@ -628,8 +623,7 @@ SKD016 - Estimator not tuned
 How it is detected
 ^^^^^^^^^^^^^^^^^^
 The check runs on plain estimators and :class:`~sklearn.pipeline.Pipeline`
-objects; it defers to :ref:`SKD015 <skd015-hyperparameters-worth-tuning>` when
-the wrapped estimator is a :class:`~sklearn.model_selection.BaseSearchCV`.
+object.
 
 For every step whose class is in the recommendation table, `skore` lists the
 init params that differ from their scikit-learn default. Infrastructure params
@@ -641,8 +635,7 @@ check reports a tip suggesting the recommended tuning axes for that class.
 Why it matters
 ^^^^^^^^^^^^^^
 Default hyperparameters are rarely optimal, and an estimator left fully at
-defaults usually under-performs a lightly tuned alternative. Spotting this early
-prevents reporting performance numbers that a quick search would improve.
+defaults usually under-performs a tuned one.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -650,4 +643,4 @@ How to reduce the risk
 - wrap the estimator in :class:`~sklearn.model_selection.GridSearchCV` or
   :class:`~sklearn.model_selection.RandomizedSearchCV` over the suggested
   parameters,
-- or set sensible non-default values manually, based on the tuning literature.
+- or set sensible non-default values manually.
