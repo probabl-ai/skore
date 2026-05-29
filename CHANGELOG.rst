@@ -57,6 +57,11 @@ Changed
 
 Added
 -----
+- Added :meth:`EstimatorReport.to_markdown` to produce a markdown summary of the
+  report (estimator, metrics, checks, and data), suitable for agent consumption.
+  The plain-text :meth:`~object.__repr__` now points to this method for full details.
+  See :pr:`2955` by :user:`GaetandeCast`.
+
 - Added automated check SKD014 (hyperparameters at search edge, issue) for
   :class:`~sklearn.model_selection.BaseSearchCV` estimators.
   See :pr:`2944` by :user:`GaetandeCast`.
