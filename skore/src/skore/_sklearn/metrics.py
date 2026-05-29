@@ -583,8 +583,11 @@ class PredictTime(Metric):
     def available(report: EstimatorReport) -> bool:
         return True
 
-    def _raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
-        return report._predict_time.get(data_source, float("nan") if cast else None)
+    def _raw(self, *, report: EstimatorReport, data_source="test", **kwargs):
+        predict_time = report._predict_time.get(data_source)
+        if predict_time is None:
+            return float("nan") if kwargs["cast"] else None
+        return predict_time
 
 
 class Accuracy(Metric):
