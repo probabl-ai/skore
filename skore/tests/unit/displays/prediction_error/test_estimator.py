@@ -2,6 +2,7 @@ import matplotlib as mpl
 import pytest
 
 from skore import EstimatorReport
+from skore._utils._testing import check_cache_unchanged
 
 
 @pytest.mark.parametrize(
@@ -153,11 +154,12 @@ def test_pass_kind_to_plot(pyplot, estimator_reports_regression):
         display.plot(kind="invalid")
 
 
-def test_random_state(linear_regression_with_train_test):
-    """If random_state is None (the default) the call should not be cached."""
+def test_seed_none(linear_regression_with_train_test):
+    """If seed is None (the default) the call should not be cached."""
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    report.metrics.prediction_error()
-    assert len(report._cache) == 2
+    report.cache_predictions()
+    with check_cache_unchanged(report._cache):
+        report.metrics.prediction_error()

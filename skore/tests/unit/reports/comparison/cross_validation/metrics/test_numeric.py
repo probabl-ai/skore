@@ -38,7 +38,7 @@ def case_timings_with_predictions(
     comparison_cross_validation_reports_binary_classification,
 ):
     expected_index = pd.Index(
-        ["Fit time (s)", "Predict time test (s)", "Predict time train (s)"],
+        ["Fit time (s)", "Predict time train (s)", "Predict time test (s)"],
         name="Metric",
     )
 

@@ -145,17 +145,17 @@ def test_check_support_plot(
     "fixture_name, pass_train_data, expected_n_keys",
     [
         # expected n keys:
-        # (result + time for 'predict'
-        #  & result for 'predict_proba'/'predict_log_proba' or 'decision_function')
+        # (result for 'predict' or 'predict_proba' or 'predict_log_proba' or
+        # 'decision_function')
         # x train, test
-        ("forest_binary_classification_with_test", True, 8),
-        ("svc_binary_classification_with_test", True, 6),
-        ("forest_multiclass_classification_with_test", True, 8),
-        ("linear_regression_with_test", True, 4),
-        ("forest_binary_classification_with_test", False, 4),
-        ("svc_binary_classification_with_test", False, 3),
-        ("forest_multiclass_classification_with_test", False, 4),
-        ("linear_regression_with_test", False, 2),
+        ("forest_binary_classification_with_test", True, 6),
+        ("svc_binary_classification_with_test", True, 4),
+        ("forest_multiclass_classification_with_test", True, 6),
+        ("linear_regression_with_test", True, 2),
+        ("forest_binary_classification_with_test", False, 3),
+        ("svc_binary_classification_with_test", False, 2),
+        ("forest_multiclass_classification_with_test", False, 3),
+        ("linear_regression_with_test", False, 1),
     ],
 )
 def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_keys):
@@ -169,12 +169,13 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
         report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     assert report._cache == {}
+
     report.cache_predictions()
     assert len(report._cache) == expected_n_keys
     assert report._cache != {}
+
     stored_cache = deepcopy(report._cache)
     report.cache_predictions()
-    # check that the keys are exactly the same
     assert report._cache.keys() == stored_cache.keys()
 
 
@@ -573,6 +574,17 @@ def test_report_with_data_op():
     assert isinstance(report.metrics.accuracy(), float)
 
 
+def test_get_state_after_predict_time(logistic_binary_classification_with_test):
+    """get_state should not fail after `predict_time` was called.
+
+    Non-regression test for https://github.com/probabl-ai/skore/pull/2950
+    """
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.predict_time()
+    report.get_state()
+
+
 def test_from_state_bypasses_init_and_restores_state(
     monkeypatch, logistic_binary_classification_with_test
 ):
@@ -598,7 +610,7 @@ def test_from_state_bypasses_init_and_restores_state(
 
     assert restored.id == report.id
     assert restored.fit == report.fit
-    assert restored.fit_time_ == report.fit_time_
+    assert restored._fit_time == report._fit_time
     assert restored.X_test is report.X_test
     assert restored.ml_task == report.ml_task
     assert restored.pos_label == report.pos_label
