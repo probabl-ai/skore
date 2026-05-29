@@ -1,0 +1,130 @@
+<div class="container summary-container">
+    <header class="title">{{ report_title | e }}</header>
+    {% if not has_rows %}
+    <p class="summary-empty">No report found in the project. Use the <code>put</code> method to add reports.</p>
+    {% else %}
+    <div class="skore-summary-toolbar">
+        <div class="skore-summary-filter">
+            <button type="button" class="skore-summary-filter-toggle" aria-haspopup="true" aria-expanded="false">Filter</button>
+            <div class="skore-summary-filter-panel" hidden>
+                {% for filter in filters %}
+                <div class="skore-summary-filter-field">
+                    <button type="button" class="skore-summary-filter-field-toggle" aria-haspopup="true" data-field="{{ filter.field | e }}">
+                        <span class="skore-summary-filter-field-label">{{ filter.label | e }}</span>
+                        <span class="skore-summary-filter-arrow" aria-hidden="true"></span>
+                    </button>
+                    <div class="skore-summary-filter-submenu">
+                        {% for value in filter["options"] %}
+                        <label class="skore-summary-filter-option"{% if value.title %} title="{{ value.title | e }}"{% endif %}>
+                            <input type="checkbox" class="skore-summary-filter-value" data-filter-field="{{ filter.field | e }}" data-filter-value="{{ value.value | e }}" checked>
+                            {{ value.label | e }}
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="skore-summary-filter-field">
+                    <button type="button" class="skore-summary-filter-field-toggle" aria-haspopup="true" data-field="date">
+                        <span class="skore-summary-filter-field-label">Date</span>
+                        <span class="skore-summary-filter-arrow" aria-hidden="true"></span>
+                    </button>
+                    <div class="skore-summary-filter-submenu skore-summary-date-submenu">
+                        <label class="skore-summary-date-field">
+                            <span>Start</span>
+                            <input type="datetime-local" step="1" class="skore-summary-date-start">
+                        </label>
+                        <label class="skore-summary-date-field">
+                            <span>End</span>
+                            <input type="datetime-local" step="1" class="skore-summary-date-end">
+                        </label>
+                        <button type="button" class="skore-summary-date-clear">Clear</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="skore-summary-search">
+            <svg class="skore-summary-search-icon" viewBox="0 0 512 512" width="14" height="14" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/>
+            </svg>
+            <input type="search" class="skore-summary-search-input" placeholder="Search reports..." aria-label="Search reports">
+        </div>
+    </div>
+    <div class="summary-controls">
+        <div class="skore-summary-groupby">
+            <button type="button" class="skore-summary-groupby-toggle" aria-haspopup="true" aria-expanded="false">Group by</button>
+            <div class="skore-summary-groupby-panel" hidden>
+                <div class="skore-summary-filter-field">
+                    <button type="button" class="skore-summary-filter-field-toggle" aria-haspopup="true" data-field="group-date">
+                        <span class="skore-summary-filter-field-label">Date</span>
+                        <span class="skore-summary-filter-arrow" aria-hidden="true"></span>
+                    </button>
+                    <div class="skore-summary-filter-submenu">
+                        <button type="button" class="skore-summary-group-option" data-group="date" data-unit="day">Day</button>
+                        <button type="button" class="skore-summary-group-option" data-group="date" data-unit="hour">Hour</button>
+                        <div class="skore-summary-group-custom">
+                            <span class="skore-summary-group-custom-title">Custom: every</span>
+                            <div class="skore-summary-group-custom-row">
+                                <input type="number" min="1" value="1" class="skore-summary-group-n" aria-label="Interval count">
+                                <select class="skore-summary-group-unit" aria-label="Interval unit">
+                                    <option value="second">second</option>
+                                    <option value="minute">minute</option>
+                                    <option value="hour">hour</option>
+                                    <option value="day">day</option>
+                                    <option value="week">week</option>
+                                    <option value="month">month</option>
+                                </select>
+                            </div>
+                            <button type="button" class="skore-summary-group-option skore-summary-group-custom-apply" data-group="date" data-unit="custom">Apply</button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="skore-summary-group-option" data-group="learner">Learner</button>
+                <button type="button" class="skore-summary-group-option" data-group="report_type">Estimator type</button>
+                <button type="button" class="skore-summary-group-option skore-summary-group-none" data-group="none">None</button>
+            </div>
+        </div>
+        <div class="skore-summary-query-bar">
+            <code class="skore-summary-query" data-empty="Tick rows to build a query string.">Tick rows to build a query string.</code>
+            <button type="button" class="skore-summary-copy" aria-label="Copy query string" title="Copy query string">
+                <svg viewBox="0 0 448 512" width="14" height="14" aria-hidden="true" focusable="false">
+                    <path fill="currentColor" d="M384 336l-192 0c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l140.1 0L400 115.9 400 320c0 8.8-7.2 16-16 16zM192 384l192 0c35.3 0 64-28.7 64-64l0-204.1c0-12.7-5.1-24.9-14.1-33.9L366.1 14.1c-9-9-21.2-14.1-33.9-14.1L192 0c-35.3 0-64 28.7-64 64l0 256c0 35.3 28.7 64 64 64zM64 128c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-32-48 0 0 32c0 8.8-7.2 16-16 16L64 464c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l32 0 0-48-32 0z"/>
+                </svg>
+            </button>
+        </div>
+        <button type="button" class="report-tab-help skore-summary-help" aria-label="How to use the query string">
+            ?
+            <span class="tooltip-text skore-summary-help-tip">
+                Tick the rows you want to keep to build a query string, copy it, and pass
+                it to <code>Summary.query(...)</code> to recover the corresponding reports.
+            </span>
+        </button>
+    </div>
+    <div class="summary-table-wrap">
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th class="summary-select-col"></th>
+                    {% for column in columns %}
+                    <th class="summary-sortable" data-column-index="{{ loop.index }}" data-sort-kind="{{ column.kind }}" tabindex="0" role="button" aria-sort="none">
+                        <span class="summary-th-label">{{ column.label | e }}</span>
+                        <span class="summary-sort-ind" aria-hidden="true"></span>
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr data-report-type="{{ row.report_type | e }}" data-learner="{{ row.learner | e }}" data-dataset="{{ row.dataset | e }}" data-date="{{ row.date | e }}">
+                    <td class="summary-select-col">
+                        <input type="checkbox" class="skore-summary-row" data-id="{{ row.id | e }}" aria-label="Select report {{ row.id | e }}">
+                    </td>
+                    {% for cell in row.cells %}
+                    <td data-sort="{{ cell.sort | e }}"{% if cell.title %} title="{{ cell.title | e }}"{% endif %}>{{ cell.display | e }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>

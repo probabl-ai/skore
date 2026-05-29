@@ -303,10 +303,9 @@ class TestProject:
         summary = project.summarize()
 
         assert project._Project__project.summarize.called
-        assert isinstance(summary, DataFrame)
         assert isinstance(summary, Summary)
         assert DataFrame.equals(
-            summary,
+            summary.frame(),
             DataFrame(
                 data={
                     "learner": Series(
@@ -321,7 +320,7 @@ class TestProject:
         )
 
     def test_summarize_with_skore_local_project(self, monkeypatch, tmpdir):
-        """Smoke test to check that ModelExplorerWidget can be shown."""
+        """Smoke test to check that the summary HTML repr can be shown."""
         from IPython.core.interactiveshell import InteractiveShell
 
         snippet = f"""
@@ -347,7 +346,8 @@ class TestProject:
 
         project = Project(mode="local", name="<project>", workspace=Path(r"{tmpdir}"))
         project.put("<report>", regression)
-        project.summarize()
+        summary = project.summarize()
+        summary._repr_mimebundle_()
         """
 
         monkeypatch.undo()

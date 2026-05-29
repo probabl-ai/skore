@@ -307,7 +307,7 @@ class Project:
         >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
         >>> project.put("my-regression", report)
         >>> summary = project.summarize()
-        >>> report_id = summary.index.get_level_values("id")[0]
+        >>> report_id = summary.frame().index.get_level_values("id")[0]
         >>> retrieved = project.get(report_id)
         >>> type(retrieved).__name__
         'EstimatorReport'

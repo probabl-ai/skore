@@ -338,3 +338,477 @@
     padding: 0.2em 0.45em;
     max-width: min(100%, 28rem);
 }
+
+.summary-container {
+    max-width: 100%;
+}
+
+/* Toolbar row holding the search bar, Filter and Group by buttons */
+.skore-summary-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5em 0.6em;
+    margin-bottom: 0.5em;
+}
+
+/* Free-text search bar */
+.skore-summary-search {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    flex: 1 1 14em;
+    min-width: 0;
+    padding: 0.25em 0.6em;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+}
+
+.skore-summary-search-icon {
+    flex: 0 0 auto;
+    color: var(--color-text);
+    opacity: 0.6;
+}
+
+.skore-summary-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background-color: transparent;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.skore-summary-search-input::placeholder {
+    color: var(--color-text);
+    opacity: 0.5;
+}
+
+.summary-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5em 0.75em;
+    margin-bottom: 0.65em;
+    color: var(--color-text);
+}
+
+/* Filter / Group by buttons and popovers */
+.skore-summary-filter,
+.skore-summary-groupby {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.skore-summary-filter-toggle,
+.skore-summary-groupby-toggle {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: var(--color-blue);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-blue);
+    border-radius: 4px;
+    padding: 0.25em 0.7em;
+    cursor: pointer;
+}
+
+.skore-summary-filter-toggle:hover,
+.skore-summary-groupby-toggle:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.skore-summary-filter-panel,
+.skore-summary-groupby-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 10;
+    min-width: 11em;
+    padding: 0.25em;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+/* First level: one entry per filterable column */
+.skore-summary-filter-field {
+    position: relative;
+}
+
+.skore-summary-filter-field-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75em;
+    width: 100%;
+    padding: 0.3em 0.5em;
+    border: none;
+    border-radius: 4px;
+    background-color: transparent;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.skore-summary-filter-field:hover .skore-summary-filter-field-toggle,
+.skore-summary-filter-field:focus-within .skore-summary-filter-field-toggle {
+    background-color: var(--color-blue-hover);
+}
+
+.skore-summary-filter-arrow::after {
+    content: "\25B8";
+    opacity: 0.7;
+}
+
+/* Second level: scrollable list of values, opening to the right on hover.
+   Anchored past the panel's right padding/border with a 4px gap (matching the
+   button-to-panel gap); a transparent bridge keeps hover continuous. */
+.skore-summary-filter-submenu {
+    display: none;
+    position: absolute;
+    top: -0.25em;
+    left: calc(100% + 0.25em + 5px);
+    z-index: 11;
+    min-width: 11em;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 0.25em 0.5em;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.skore-summary-filter-submenu::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 100%;
+    width: calc(0.25em + 5px);
+    height: 100%;
+}
+
+.skore-summary-filter-field:hover .skore-summary-filter-submenu,
+.skore-summary-filter-field:focus-within .skore-summary-filter-submenu {
+    display: block;
+}
+
+.skore-summary-filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.15em 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* Date range submenu (start/end native datetime pickers) */
+.skore-summary-date-submenu {
+    min-width: 13em;
+}
+
+.skore-summary-date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    padding: 0.2em 0;
+    color: var(--color-text);
+}
+
+.skore-summary-date-field input {
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    padding: 0.15em 0.3em;
+}
+
+.skore-summary-date-clear {
+    margin-top: 0.35em;
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--color-blue);
+    background-color: transparent;
+    border: 1px solid var(--color-blue);
+    border-radius: 4px;
+    padding: 0.1em 0.5em;
+    cursor: pointer;
+}
+
+.skore-summary-date-clear:hover {
+    background-color: var(--color-blue-hover);
+}
+
+/* Group-by options (direct entries in the Group by panel) */
+.skore-summary-group-option {
+    display: block;
+    width: 100%;
+    padding: 0.3em 0.5em;
+    border: none;
+    border-radius: 4px;
+    background-color: transparent;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.skore-summary-group-option:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.skore-summary-group-option--active {
+    color: var(--color-blue);
+    font-weight: 600;
+}
+
+.skore-summary-group-none {
+    margin-top: 0.15em;
+    border-top: 1px solid var(--color-orange);
+}
+
+.skore-summary-group-custom {
+    padding: 0.25em 0;
+    border-top: 1px solid var(--color-orange);
+    margin-top: 0.15em;
+}
+
+.skore-summary-group-custom-title {
+    display: block;
+    color: var(--color-text);
+    margin-bottom: 0.25em;
+}
+
+.skore-summary-group-custom-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    margin-bottom: 0.3em;
+}
+
+.skore-summary-group-n {
+    width: 3.5em;
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    padding: 0.1em 0.25em;
+}
+
+.skore-summary-group-unit {
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    padding: 0.1em 0.25em;
+}
+
+.skore-summary-group-custom-apply {
+    color: var(--color-blue);
+    border: 1px solid var(--color-blue);
+    text-align: center;
+}
+
+/* Group header rows that separate grouped sets of rows */
+.summary-table tbody tr.summary-group-header td {
+    position: sticky;
+    left: 0;
+    padding: 0.4em 0.75em;
+    font-weight: 700;
+    color: var(--color-blue);
+    background-color: var(--color-row-stripe);
+    border-top: 2px solid var(--color-orange);
+}
+
+.summary-table tbody tr.summary-group-header:hover td {
+    background-color: var(--color-row-stripe);
+}
+
+/* Query string bar with embedded copy icon */
+.skore-summary-query-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 18em;
+    min-width: 0;
+    background-color: var(--color-row-stripe);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+}
+
+.skore-summary-query {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 0.3em 0.5em;
+    color: var(--color-text);
+    font-family: monospace;
+}
+
+.skore-summary-copy {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25em 0.4em;
+    margin-right: 0.15em;
+    border: none;
+    border-radius: 4px;
+    background-color: transparent;
+    color: var(--color-blue);
+    cursor: pointer;
+}
+
+.skore-summary-copy:hover {
+    background-color: var(--color-blue-hover);
+}
+
+/* "?" help button, reusing .report-tab-help, with a left-opening tooltip */
+.skore-summary-help {
+    flex: 0 0 auto;
+}
+
+.skore-summary-help:hover .tooltip-text,
+.skore-summary-help:focus-within .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.skore-summary-help .skore-summary-help-tip {
+    top: 50%;
+    left: auto;
+    right: 100%;
+    margin-left: 0;
+    margin-right: 8px;
+    transform: translateY(-50%);
+}
+
+.skore-summary-help .skore-summary-help-tip::before {
+    right: auto;
+    left: 100%;
+    border-right-color: transparent;
+    border-left-color: var(--color-orange);
+}
+
+/* Scrollable table */
+.summary-table-wrap {
+    max-height: 450px;
+    overflow: auto;
+    max-width: 100%;
+}
+
+.summary-table {
+    width: 100%;
+    border: none;
+    border-collapse: collapse;
+    border-spacing: 0;
+    color: var(--color-text);
+    font-size: 12px;
+    font-family: sans-serif;
+}
+
+.summary-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background-color: var(--color-background);
+    border-bottom: 1px solid var(--color-text);
+}
+
+.summary-table th,
+.summary-table td {
+    text-align: left;
+    white-space: nowrap;
+    padding: 0.35em 0.75em;
+    border: none;
+    vertical-align: middle;
+}
+
+.summary-table th {
+    font-weight: 600;
+}
+
+.summary-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.summary-sortable:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.summary-sort-ind::after {
+    content: "\2195";
+    margin-left: 0.3em;
+    opacity: 0.4;
+}
+
+.summary-sortable[aria-sort="ascending"] .summary-sort-ind::after {
+    content: "\25B2";
+    opacity: 1;
+}
+
+.summary-sortable[aria-sort="descending"] .summary-sort-ind::after {
+    content: "\25BC";
+    opacity: 1;
+}
+
+.summary-table tbody tr:nth-child(even) {
+    background-color: var(--color-row-stripe);
+}
+
+.summary-table tbody tr:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.summary-table .summary-select-col {
+    text-align: center;
+    width: 1.5em;
+}
+
+/* Keep the selection column always visible while scrolling horizontally.
+   The stripe/hover theme colors are translucent, so we keep a solid
+   background underneath and layer the tint on top to stay fully opaque. */
+.summary-table td.summary-select-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background-color: var(--color-background);
+}
+
+.summary-table tbody tr:nth-child(even) td.summary-select-col {
+    background-image: linear-gradient(
+        var(--color-row-stripe),
+        var(--color-row-stripe)
+    );
+}
+
+.summary-table tbody tr:hover td.summary-select-col {
+    background-image: linear-gradient(
+        var(--color-blue-hover),
+        var(--color-blue-hover)
+    );
+}
+
+.summary-table thead th.summary-select-col {
+    left: 0;
+    z-index: 4;
+}

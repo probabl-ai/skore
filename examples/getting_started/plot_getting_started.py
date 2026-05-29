@@ -428,35 +428,25 @@ project.put("advanced_pipeline_cv", advanced_cv_report)
 
 # %%
 summary = project.summarize()
-# Uncomment the next line to display the widget in an interactive environment:
+# Uncomment the next line to display the interactive table in an interactive
+# environment:
 # summary
 
 # %%
 # .. note::
-#     Calling `summary` in a Jupyter notebook cell will show the following parallel
-#     coordinate plot to help you select models that you want to retrieve:
-#
-#     .. image:: /_static/images/screenshot_getting_started.png
-#       :alt: Screenshot of the widget in a Jupyter notebook
-#
-#     Each line represents a model, and we can select models by clicking on lines
-#     or dragging on metric axes to filter by performance.
-#
-#     In the screenshot, we selected only the cross-validation reports;
-#     this allows us to retrieve exactly those reports programmatically.
+#     Calling `summary` in a Jupyter notebook cell shows an interactive table of the
+#     stored reports. You can filter by report type and tick the checkbox of each row
+#     you want to keep; this builds a query string that you can copy and pass to
+#     :meth:`~skore.project._summary.Summary.query` to retrieve exactly those reports.
 
 # %%
-# Supposing you selected "Cross-validation" in the "Report type" tab, if you now call
-# :meth:`~skore.project._summary.Summary.reports`, you get only the
+# Once you filtered the summary (e.g. to keep only the cross-validation reports), if
+# you now call :meth:`~skore.project._summary.Summary.reports`, you get only the
 # :class:`~skore.CrossValidationReport` objects, which
 # you can directly put in the form of a :class:`~skore.ComparisonReport`:
 
 # %%
-
-# sphinx_gallery_start_ignore
-# Pretend that the cross-validation reports were selected in the widget
 summary = summary.query('report_type == "cross-validation"')
-# sphinx_gallery_end_ignore
 
 new_report = summary.reports(return_as="comparison")
 new_report.help()
