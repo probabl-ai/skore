@@ -185,10 +185,11 @@ def test_dict_estimators_prefit_X_none(regression_data):
     assert set(report.reports_) == {"a", "b"}
 
 
-def test_empty_dict_raises():
+def test_empty_dict_raises(regression_data):
     """An empty estimator dict raises ValueError."""
+    X, y = regression_data
     with pytest.raises(ValueError, match="Expected.*reports to compare"):
-        evaluate({}, None, None)
+        evaluate({}, X, y)
 
 
 def test_single_estimator_list_X_raises(regression_data):
@@ -233,3 +234,12 @@ def test_pos_label(binary_classification_data):
     report = evaluate(LogisticRegression(), X, y, splitter=0.2, pos_label=0)
     assert isinstance(report, EstimatorReport)
     assert report.pos_label == 0
+
+
+def test_no_data_raises():
+    """No data provided raises ValueError."""
+    with pytest.raises(
+        ValueError,
+        match="Provide data through X and y or through data to evaluate your estimator",
+    ):
+        evaluate(LinearRegression())
