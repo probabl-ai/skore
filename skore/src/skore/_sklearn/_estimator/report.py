@@ -22,6 +22,7 @@ from sklearn.utils.validation import _num_samples, check_is_fitted
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.metrics import MetricRegistry
 from skore._sklearn.types import DataSource, PositiveLabel
@@ -373,7 +374,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         """Rebuild a report from :meth:`get_state` output."""
         version = state.get("version")
         if version != _STATE_VERSION:
-            # in the future, we could support some BW compatibility instead of crashing
+            # For now, no backward compatibility
             raise ValueError(f"Unexpected state version: {version!r}")
 
         report_type = state["metadata"]["report_type"]
@@ -403,6 +404,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             }
         )
         report._metric_registry = state["metric_registry"]
+        report._checks_registry = list(_BUILTIN_CHECKS)
 
         return report
 

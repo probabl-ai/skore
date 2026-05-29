@@ -17,6 +17,7 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
 from skore._sklearn._checks.base import CheckCode
+from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -348,6 +349,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         report.estimator = state["estimator"]
         report._data = state["data"]
         report._split_indices = state["split_indices"]
+        report._checks_registry = list(_BUILTIN_CHECKS)
         # TODO? Include splitter in state?
         report._splitter = None
         report.n_jobs = None

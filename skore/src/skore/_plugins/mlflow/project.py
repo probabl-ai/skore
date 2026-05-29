@@ -6,9 +6,10 @@ import logging
 import re
 import warnings
 from collections.abc import Iterable, Iterator
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from datetime import UTC, datetime
 from importlib.metadata import version
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any, TypedDict, cast
@@ -18,11 +19,14 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 from mlflow.entities import Run as MLFlowRun
-from mlflow.exceptions import MlflowException
+from mlflow.exceptions import MlflowException, RestException
+from mlflow.tracking import MlflowClient
 from mlflow.utils.autologging_utils import disable_discrete_autologging
+from mlflow.utils.logging_utils import MLFLOW_LOGGING_STREAM
 from sklearn.base import BaseEstimator
 
 from skore import CrossValidationReport, EstimatorReport
+from skore._plugins.serde import externalize, internalize
 
 from .reports import (
     Artifact,
@@ -35,6 +39,16 @@ from .reports import (
     iter_cv,
     iter_estimator,
 )
+
+try:
+    from mlflow.utils.logging_utils import (
+        suppress_logs_in_thread as _suppress_logs_in_thread,
+    )
+except ImportError:
+
+    @contextmanager
+    def _suppress_logs_in_thread() -> Iterator[None]:
+        yield
 
 
 class Metadata(TypedDict):  # noqa: D101
@@ -98,6 +112,14 @@ class Project:
             mlflow.set_tracking_uri(tracking_uri)
 
         self.__tracking_uri = mlflow.get_tracking_uri()
+        try:
+            self.__storage_experiment_id = mlflow.create_experiment("__skore-storage__")
+        except RestException:
+            storage_experiment = mlflow.get_experiment_by_name("__skore-storage__")
+            if storage_experiment is None:
+                raise
+            self.__storage_experiment_id = storage_experiment.experiment_id
+        self.__mlflow_client = MlflowClient()
         self.__name = name
         experiment = mlflow.set_experiment(name)
         self.__experiment_id = cast(str, experiment.experiment_id)
@@ -153,6 +175,8 @@ class Project:
                 "is already open. Call mlflow.end_run() before calling Project.put()."
             )
 
+        state = externalize(report.get_state(), self._write_object_in_storage)
+
         with (
             disable_discrete_autologging(["sklearn"]),
             mlflow.start_run(run_name=key, experiment_id=self.experiment_id),
@@ -170,7 +194,7 @@ class Project:
 
             with TemporaryDirectory() as tmp_dir:
                 pickle_path = Path(tmp_dir) / "report.pkl"
-                joblib.dump(report, pickle_path)
+                joblib.dump(state, pickle_path)
                 mlflow.log_artifact(local_path=str(pickle_path))
 
             mlflow.set_tag("skore_status", "completed")
@@ -212,7 +236,12 @@ class Project:
         except MlflowException as exc:
             raise KeyError(id) from exc
 
-        return cast(EstimatorReport | CrossValidationReport, joblib.load(pickle_path))
+        state = internalize(joblib.load(pickle_path), self._load_object_from_storage)
+        report_type = state["metadata"]["report_type"]
+        if report_type == "estimator":
+            return EstimatorReport.from_state(state)
+        else:
+            return CrossValidationReport.from_state(state)
 
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted models in insertion order."""
@@ -295,6 +324,47 @@ class Project:
             f"tracking_uri='{self.tracking_uri}')"
         )
 
+    def _write_object_in_storage(self, obj_id: str, obj_bytes: bytes) -> None:
+        with _suppress_mlflow_output():
+            runs = cast(
+                pd.DataFrame,
+                mlflow.search_runs(
+                    experiment_ids=[self.__storage_experiment_id],
+                    filter_string=f"attributes.run_name = '{obj_id}'",
+                ),
+            )
+            if not runs.empty:
+                return
+            with (
+                mlflow.start_run(
+                    run_name=obj_id, experiment_id=self.__storage_experiment_id
+                ),
+                TemporaryDirectory() as tmp_dir,
+            ):
+                bytes_path = Path(tmp_dir) / "obj"
+                with open(bytes_path, mode="wb") as f:
+                    f.write(obj_bytes)
+                mlflow.log_artifact(local_path=str(bytes_path))
+
+    def _load_object_from_storage(self, obj_id: str) -> bytes:
+        runs = cast(
+            pd.DataFrame,
+            mlflow.search_runs(
+                experiment_ids=[self.__storage_experiment_id],
+                filter_string=f"attributes.run_name = '{obj_id}'",
+            ),
+        )
+        if runs.empty:
+            raise FileNotFoundError()
+
+        run_id = runs.iloc[0]["run_id"]
+        local_path = self.__mlflow_client.download_artifacts(run_id, "obj")
+
+        with open(local_path, "rb") as f:
+            obj_bytes = f.read()
+
+        return obj_bytes
+
 
 ## Helpers for logging in MLFlow:
 
@@ -344,6 +414,22 @@ def _filterwarnings(category: type[Warning], msg: str) -> Iterator[None]:
             category=category,
         )
         yield
+
+
+@contextmanager
+def _suppress_mlflow_output() -> Iterator[None]:
+    """Silence MLflow event logs and stream output for internal storage writes."""
+    was_logging_enabled = MLFLOW_LOGGING_STREAM.enabled
+    MLFLOW_LOGGING_STREAM.enabled = False
+    try:
+        with (
+            _suppress_logs_in_thread(),
+            redirect_stdout(StringIO()),
+            redirect_stderr(StringIO()),
+        ):
+            yield
+    finally:
+        MLFLOW_LOGGING_STREAM.enabled = was_logging_enabled
 
 
 @contextmanager
