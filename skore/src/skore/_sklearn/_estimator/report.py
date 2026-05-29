@@ -935,7 +935,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return output
 
     def to_markdown(self) -> str:
-        """Return a markdown summary of the report, suitable for agent consumption.
+        """Return a markdown summary of the report.
 
         The summary contains four sections (Estimator, Metrics, Checks, Data) that
         mirror the tabs of the HTML representation. Each section ends with a pointer
@@ -957,26 +957,25 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         )
 
     def _markdown_estimator_kind(self) -> str:
-        est = self.estimator
-        if isinstance(est, skrub.DataOp):
+        if isinstance(self.estimator, skrub.DataOp):
             return "skrub DataOp"
-        if is_skrub_learner(est):
+        if is_skrub_learner(self.estimator):
             return "skrub SkrubLearner"
-        if isinstance(est, Pipeline):
+        if isinstance(self.estimator, Pipeline):
             return "Pipeline"
-        if isinstance(est, MetaEstimatorMixin):
-            inner = getattr(est, "best_estimator_", None) or getattr(
-                est, "estimator", None
+        if isinstance(self.estimator, MetaEstimatorMixin):
+            inner = getattr(self.estimator, "best_estimator_", None) or getattr(
+                self.estimator, "estimator", None
             )
             if inner is not None:
                 return (
-                    f"meta-estimator {type(est).__name__} "
+                    f"meta-estimator {type(self.estimator).__name__} "
                     f"wrapping {type(inner).__name__}"
                 )
-            return f"meta-estimator {type(est).__name__}"
-        if type(est).__module__.startswith("sklearn."):
+            return f"meta-estimator {type(self.estimator).__name__}"
+        if type(self.estimator).__module__.startswith("sklearn."):
             return "scikit-learn estimator"
-        return f"{type(est).__module__.split('.')[0]} estimator"
+        return f"{type(self.estimator).__module__.split('.')[0]} estimator"
 
     def _markdown_estimator_section(self) -> str:
         lines = [
