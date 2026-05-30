@@ -399,13 +399,15 @@
 
 /* Filter / Group by buttons and popovers */
 .skore-summary-filter,
-.skore-summary-groupby {
+.skore-summary-groupby,
+.skore-summary-columns {
     position: relative;
     flex: 0 0 auto;
 }
 
 .skore-summary-filter-toggle,
-.skore-summary-groupby-toggle {
+.skore-summary-groupby-toggle,
+.skore-summary-columns-toggle {
     font-family: inherit;
     font-size: inherit;
     line-height: inherit;
@@ -418,8 +420,41 @@
 }
 
 .skore-summary-filter-toggle:hover,
-.skore-summary-groupby-toggle:hover {
+.skore-summary-groupby-toggle:hover,
+.skore-summary-columns-toggle:hover {
     background-color: var(--color-blue-hover);
+}
+
+.skore-summary-columns-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 10;
+    min-width: 11em;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 0.25em;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.skore-summary-columns-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.3em 0.5em;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.skore-summary-columns-option:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.summary-col-hidden {
+    display: none;
 }
 
 .skore-summary-filter-panel,
@@ -473,7 +508,8 @@
    Anchored past the panel's right padding/border with a 4px gap (matching the
    button-to-panel gap); a transparent bridge keeps hover continuous. */
 .skore-summary-filter-submenu {
-    display: none;
+    visibility: hidden;
+    opacity: 0;
     position: absolute;
     top: -0.25em;
     left: calc(100% + 0.25em + 5px);
@@ -486,20 +522,27 @@
     border: 1px solid var(--color-orange);
     border-radius: 4px;
     box-shadow: 0 2px 10px color-mix(in srgb, var(--color-text) 14%, transparent);
+    /* Keep the submenu open briefly after the pointer leaves so it does not
+       close while crossing the gap to reach it (hover-intent pattern). */
+    transition: visibility 0s linear 0.25s, opacity 0.12s linear;
 }
 
+/* Transparent bridge spanning the gap; it overlaps a few px into the parent
+   button to absorb sub-pixel gaps that would otherwise drop the hover. */
 .skore-summary-filter-submenu::before {
     content: "";
     position: absolute;
-    top: 0;
+    top: -4px;
     right: 100%;
-    width: calc(0.25em + 5px);
-    height: 100%;
+    width: calc(0.25em + 11px);
+    height: calc(100% + 8px);
 }
 
 .skore-summary-filter-field:hover .skore-summary-filter-submenu,
 .skore-summary-filter-field:focus-within .skore-summary-filter-submenu {
-    display: block;
+    visibility: visible;
+    opacity: 1;
+    transition-delay: 0s;
 }
 
 .skore-summary-filter-option {
@@ -681,6 +724,24 @@
     background-color: var(--color-blue-hover);
 }
 
+.skore-summary-clear {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25em 0.4em;
+    margin-right: 0.15em;
+    border: none;
+    border-radius: 4px;
+    background-color: transparent;
+    color: var(--color-blue);
+    cursor: pointer;
+}
+
+.skore-summary-clear:hover {
+    background-color: var(--color-blue-hover);
+}
+
 /* "?" help button, reusing .report-tab-help, with a left-opening tooltip */
 .skore-summary-help {
     flex: 0 0 auto;
@@ -755,20 +816,33 @@
     background-color: var(--color-blue-hover);
 }
 
-.summary-sort-ind::after {
-    content: "\2195";
+.summary-sort-ind {
+    display: inline-flex;
+    align-items: center;
     margin-left: 0.3em;
+    vertical-align: middle;
+}
+
+.summary-sort-icon {
+    display: none;
+    line-height: 0;
+}
+
+.summary-sort-icon svg {
+    display: block;
+    width: 13px;
+    height: 13px;
+}
+
+/* Show the matching sort icon for the current header state. */
+.summary-sortable[aria-sort="none"] .summary-sort-icon--none {
+    display: inline-flex;
     opacity: 0.4;
 }
 
-.summary-sortable[aria-sort="ascending"] .summary-sort-ind::after {
-    content: "\25B2";
-    opacity: 1;
-}
-
-.summary-sortable[aria-sort="descending"] .summary-sort-ind::after {
-    content: "\25BC";
-    opacity: 1;
+.summary-sortable[aria-sort="ascending"] .summary-sort-icon--asc,
+.summary-sortable[aria-sort="descending"] .summary-sort-icon--desc {
+    display: inline-flex;
 }
 
 .summary-table tbody tr:nth-child(even) {
@@ -811,4 +885,174 @@
 .summary-table thead th.summary-select-col {
     left: 0;
     z-index: 4;
+}
+
+/* Table / Plot view toggle (segmented control) */
+.summary-view-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    border: 1px solid var(--color-blue);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.summary-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: var(--color-blue);
+    background-color: var(--color-background);
+    border: none;
+    padding: 0.3em 0.6em;
+    cursor: pointer;
+}
+
+/* Inline icons replacing the former text labels / Font Awesome glyphs. */
+.summary-view-btn svg,
+.skore-summary-filter-toggle svg,
+.skore-summary-groupby-toggle svg,
+.skore-summary-columns-toggle svg,
+.skore-summary-copy svg,
+.skore-summary-clear svg {
+    display: block;
+    width: 15px;
+    height: 15px;
+}
+
+.skore-summary-filter-toggle,
+.skore-summary-groupby-toggle,
+.skore-summary-columns-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.summary-select-eye {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+}
+
+.summary-select-eye svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+}
+
+.summary-view-btn:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.summary-view-btn--active {
+    color: var(--color-background);
+    background-color: var(--color-blue);
+}
+
+.summary-view-btn--active:hover {
+    background-color: var(--color-blue);
+}
+
+/* View visibility, driven by the container's data-view attribute. The first
+   toolbar row (view toggle, Filter, query string, help) is shared by both
+   views; only the second row (Group by, Search) and the table are table-only. */
+.summary-container[data-view="plot"] .summary-controls,
+.summary-container[data-view="plot"] .summary-table-wrap {
+    display: none;
+}
+
+.summary-container:not([data-view="plot"]) .summary-plot-wrap {
+    display: none;
+}
+
+/* Parallel-coordinates plot view */
+.summary-plot-wrap {
+    max-width: 100%;
+}
+
+.skore-summary-color-metric-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    margin-bottom: 0.6em;
+    color: var(--color-text);
+}
+
+.skore-summary-color-metric {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-blue);
+    border-radius: 4px;
+    padding: 0.2em 0.4em;
+    cursor: pointer;
+}
+
+.summary-plot {
+    width: 100%;
+}
+
+.summary-plot svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.summary-plot-axis-line {
+    stroke: var(--color-text);
+    stroke-opacity: 0.4;
+}
+
+.summary-plot-axis-label {
+    fill: var(--color-text);
+    font-family: sans-serif;
+    font-size: 11px;
+}
+
+.summary-plot-tick {
+    fill: var(--color-text);
+    fill-opacity: 0.6;
+    font-family: sans-serif;
+    font-size: 10px;
+}
+
+.summary-plot-line {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-opacity: 0.55;
+}
+
+.summary-plot-line:hover {
+    stroke-width: 2.5;
+    stroke-opacity: 1;
+}
+
+.summary-plot-line--dim {
+    stroke-opacity: 0.08;
+}
+
+/* Invisible drag target sitting on each axis to capture range brushing */
+.summary-plot-brush-track {
+    fill: transparent;
+    cursor: ns-resize;
+    pointer-events: all;
+}
+
+/* The selected range rectangle drawn over an axis */
+.summary-plot-brush {
+    fill: var(--color-blue);
+    fill-opacity: 0.2;
+    stroke: var(--color-blue);
+    stroke-opacity: 0.6;
+    pointer-events: none;
+}
+
+.summary-plot-empty {
+    color: var(--color-text);
+    opacity: 0.7;
 }

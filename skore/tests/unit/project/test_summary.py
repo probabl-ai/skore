@@ -279,6 +279,8 @@ class TestSummary:
         # Sortable headers with verbose labels (incl. the synthetic ``ID`` column).
         assert 'class="summary-sortable"' in html
         assert "data-sort-kind=" in html
+        # The column key is exposed so the plot can build a pandas query.
+        assert "data-column-key=" in html
         assert ">ID<" in html
         # The Filter button with a two-level menu: one entry per column, each
         # opening a scrollable submenu of values.
@@ -316,10 +318,48 @@ class TestSummary:
         # The query-string box, the inline SVG copy icon button and the help tooltip.
         assert 'class="skore-summary-query"' in html
         assert 'class="skore-summary-copy"' in html
+        # The clear-selection button (icon + tooltip).
+        assert 'class="skore-summary-clear"' in html
+        assert 'aria-label="Clear selection"' in html
         assert "<svg" in html
         assert 'class="report-tab-help skore-summary-help"' in html
         assert "tooltip-text" in html
         assert "skoreInitSummary" in html
+        # The Table/Plot view toggle and the parallel-coordinates plot container
+        # (matched on the markup rather than the bundled CSS class definitions).
+        assert '<div class="summary-view-toggle"' in html
+        assert 'data-view="plot" aria-pressed="false" aria-label="Plot view"' in html
+        assert '<div class="summary-plot-wrap">' in html
+        assert '<div class="summary-plot">' in html
+        assert '<select class="skore-summary-color-metric"' in html
+        # Inline SVG icons replace the text labels / Font Awesome (no external dep).
+        assert 'class="summary-select-eye"' in html
+        assert 'class="summary-sort-icon summary-sort-icon--asc"' in html
+        # The columns menu lets the user toggle which columns are shown.
+        assert 'class="skore-summary-columns-toggle"' in html
+        assert 'aria-label="Show columns"' in html
+        assert 'class="skore-summary-column-toggle"' in html
+        # Default-unchecked columns: their column-menu checkbox is unchecked,
+        # which on the client moves them to the rightmost positions.
+        panel_start = html.index('class="skore-summary-columns-panel"')
+        panel_end = html.index("</div>", panel_start)
+        panel = html[panel_start:panel_end]
+        for label, default_checked in (
+            ("Learner", False),
+            ("Dataset", False),
+            ("Report type", False),
+            ("RMSE", True),
+            ("Date", True),
+        ):
+            entry = panel[: panel.index(label)]
+            entry = entry[entry.rindex("<input") :]
+            assert ("checked" in entry) is default_checked, label
+        # ``date`` is rendered after the metric columns in the template; the
+        # default-unchecked columns are still emitted in their natural place
+        # because the JS handles the right-shift on the client.
+        assert html.index('data-column-key="date"') > html.index(
+            'data-column-key="fit_time"'
+        )
         # ``ml_task`` is never displayed.
         assert "ml_task" not in html
         assert "Ml task" not in html

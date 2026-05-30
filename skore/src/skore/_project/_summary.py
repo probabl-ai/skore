@@ -21,6 +21,8 @@ if TYPE_CHECKING:
 _METADATA_COLUMNS = ["key", "date", "learner", "dataset", "ml_task", "report_type"]
 # Columns that are never shown to the user (e.g. constant within a project).
 _HIDDEN_COLUMNS = ["ml_task"]
+# Columns hidden by default in the HTML table but toggleable from the columns menu.
+_DEFAULT_HIDDEN_COLUMNS = ["learner", "dataset", "report_type"]
 # Columns rendered with a middle ellipsis in the HTML table.
 _ELLIPSIS_COLUMNS = ["id", "dataset"]
 
@@ -267,19 +269,25 @@ class Summary(ReprHTMLMixin):
         """Show the HTML representation of the summary as a table."""
         container_id = f"skore-summary-{uuid.uuid4().hex[:8]}"
 
-        columns: list[dict[str, str]] = []
+        columns: list[dict[str, Any]] = []
         rows: list[dict[str, Any]] = []
         filters: list[dict[str, Any]] = []
 
         if not self._summary.empty:
             frame = self.frame()
 
-            data_columns = ["id", *frame.columns]
+            # Column order: id, then metadata/metrics, with ``date`` pushed to the
+            # very end so the metrics sit right after the identifiers.
+            ordered_columns = [column for column in frame.columns if column != "date"]
+            if "date" in frame.columns:
+                ordered_columns.append("date")
+            data_columns = ["id", *ordered_columns]
             columns = [
                 {
                     "key": column,
                     "label": _verbose_name(column),
                     "kind": _column_kind(column),
+                    "hidden": column in _DEFAULT_HIDDEN_COLUMNS,
                 }
                 for column in data_columns
             ]
@@ -307,11 +315,10 @@ class Summary(ReprHTMLMixin):
                 frame.iterrows(),
                 strict=True,
             ):
-                cells = [self._cell("id", id)]
-                cells.extend(
-                    self._cell(column, value)
-                    for column, value in zip(frame.columns, row, strict=True)
-                )
+                cells = [
+                    self._cell(column, id if column == "id" else row[column])
+                    for column in data_columns
+                ]
                 date = row["date"]
                 date_value = (
                     ""

@@ -1,11 +1,15 @@
-<div class="container summary-container">
+<div class="container summary-container" data-view="table">
     <header class="title">{{ report_title | e }}</header>
     {% if not has_rows %}
     <p class="summary-empty">No report found in the project. Use the <code>put</code> method to add reports.</p>
     {% else %}
     <div class="skore-summary-toolbar">
+        <div class="summary-view-toggle" role="group" aria-label="View">
+            <button type="button" class="summary-view-btn summary-view-btn--active" data-view="table" aria-pressed="true" aria-label="Table view" title="Table view">{% include "assests/icons/table.svg" %}</button>
+            <button type="button" class="summary-view-btn" data-view="plot" aria-pressed="false" aria-label="Plot view" title="Plot view">{% include "assests/icons/chart-3.svg" %}</button>
+        </div>
         <div class="skore-summary-filter">
-            <button type="button" class="skore-summary-filter-toggle" aria-haspopup="true" aria-expanded="false">Filter</button>
+            <button type="button" class="skore-summary-filter-toggle" aria-haspopup="true" aria-expanded="false" aria-label="Filter" title="Filter">{% include "assests/icons/filter.svg" %}</button>
             <div class="skore-summary-filter-panel" hidden>
                 {% for filter in filters %}
                 <div class="skore-summary-filter-field">
@@ -42,16 +46,23 @@
                 </div>
             </div>
         </div>
-        <div class="skore-summary-search">
-            <svg class="skore-summary-search-icon" viewBox="0 0 512 512" width="14" height="14" aria-hidden="true" focusable="false">
-                <path fill="currentColor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/>
-            </svg>
-            <input type="search" class="skore-summary-search-input" placeholder="Search reports..." aria-label="Search reports">
+        <div class="skore-summary-query-bar">
+            <code class="skore-summary-query" data-empty="Tick rows to build a query string.">Tick rows to build a query string.</code>
+            <button type="button" class="skore-summary-copy" aria-label="Copy query string" title="Copy query string">{% include "assests/icons/copy.svg" %}</button>
+            <button type="button" class="skore-summary-clear" aria-label="Clear selection" title="Clear selection">{% include "assests/icons/circle-cross.svg" %}</button>
         </div>
+        <button type="button" class="report-tab-help skore-summary-help" aria-label="How to use the query string">
+            ?
+            <span class="tooltip-text skore-summary-help-tip">
+                Select reports by ticking rows in Table view or brushing axes in Plot
+                view; the selection is shared by both. Copy the query string and pass
+                it to <code>Summary.query(...)</code> to recover the selected reports.
+            </span>
+        </button>
     </div>
     <div class="summary-controls">
         <div class="skore-summary-groupby">
-            <button type="button" class="skore-summary-groupby-toggle" aria-haspopup="true" aria-expanded="false">Group by</button>
+            <button type="button" class="skore-summary-groupby-toggle" aria-haspopup="true" aria-expanded="false" aria-label="Group by" title="Group by">{% include "assests/icons/divider.svg" %}</button>
             <div class="skore-summary-groupby-panel" hidden>
                 <div class="skore-summary-filter-field">
                     <button type="button" class="skore-summary-filter-field-toggle" aria-haspopup="true" data-field="group-date">
@@ -83,31 +94,39 @@
                 <button type="button" class="skore-summary-group-option skore-summary-group-none" data-group="none">None</button>
             </div>
         </div>
-        <div class="skore-summary-query-bar">
-            <code class="skore-summary-query" data-empty="Tick rows to build a query string.">Tick rows to build a query string.</code>
-            <button type="button" class="skore-summary-copy" aria-label="Copy query string" title="Copy query string">
-                <svg viewBox="0 0 448 512" width="14" height="14" aria-hidden="true" focusable="false">
-                    <path fill="currentColor" d="M384 336l-192 0c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l140.1 0L400 115.9 400 320c0 8.8-7.2 16-16 16zM192 384l192 0c35.3 0 64-28.7 64-64l0-204.1c0-12.7-5.1-24.9-14.1-33.9L366.1 14.1c-9-9-21.2-14.1-33.9-14.1L192 0c-35.3 0-64 28.7-64 64l0 256c0 35.3 28.7 64 64 64zM64 128c-35.3 0-64 28.7-64 64L0 448c0 35.3 28.7 64 64 64l192 0c35.3 0 64-28.7 64-64l0-32-48 0 0 32c0 8.8-7.2 16-16 16L64 464c-8.8 0-16-7.2-16-16l0-256c0-8.8 7.2-16 16-16l32 0 0-48-32 0z"/>
-                </svg>
-            </button>
+        <div class="skore-summary-columns">
+            <button type="button" class="skore-summary-columns-toggle" aria-haspopup="true" aria-expanded="false" aria-label="Show columns" title="Show columns">{% include "assests/icons/more-v.svg" %}</button>
+            <div class="skore-summary-columns-panel" hidden>
+                {% for column in columns %}
+                <label class="skore-summary-columns-option">
+                    <input type="checkbox" class="skore-summary-column-toggle" data-column-index="{{ loop.index }}"{% if not column.hidden %} checked{% endif %}>
+                    {{ column.label | e }}
+                </label>
+                {% endfor %}
+            </div>
         </div>
-        <button type="button" class="report-tab-help skore-summary-help" aria-label="How to use the query string">
-            ?
-            <span class="tooltip-text skore-summary-help-tip">
-                Tick the rows you want to keep to build a query string, copy it, and pass
-                it to <code>Summary.query(...)</code> to recover the corresponding reports.
-            </span>
-        </button>
+        <div class="skore-summary-search">
+            <svg class="skore-summary-search-icon" viewBox="0 0 512 512" width="14" height="14" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/>
+            </svg>
+            <input type="search" class="skore-summary-search-input" placeholder="Search reports..." aria-label="Search reports">
+        </div>
     </div>
     <div class="summary-table-wrap">
         <table class="summary-table">
             <thead>
                 <tr>
-                    <th class="summary-select-col"></th>
+                    <th class="summary-select-col">
+                        <span class="summary-select-eye" title="Row selection" aria-label="Row selection">{% include "assests/icons/eye.svg" %}</span>
+                    </th>
                     {% for column in columns %}
-                    <th class="summary-sortable" data-column-index="{{ loop.index }}" data-sort-kind="{{ column.kind }}" tabindex="0" role="button" aria-sort="none">
+                    <th class="summary-sortable" data-column-index="{{ loop.index }}" data-column-key="{{ column.key | e }}" data-sort-kind="{{ column.kind }}" tabindex="0" role="button" aria-sort="none">
                         <span class="summary-th-label">{{ column.label | e }}</span>
-                        <span class="summary-sort-ind" aria-hidden="true"></span>
+                        <span class="summary-sort-ind" aria-hidden="true">
+                            <span class="summary-sort-icon summary-sort-icon--none">{% include "assests/icons/sort.svg" %}</span>
+                            <span class="summary-sort-icon summary-sort-icon--asc">{% include "assests/icons/sort-up.svg" %}</span>
+                            <span class="summary-sort-icon summary-sort-icon--desc">{% include "assests/icons/sort-down.svg" %}</span>
+                        </span>
                     </th>
                     {% endfor %}
                 </tr>
@@ -119,12 +138,19 @@
                         <input type="checkbox" class="skore-summary-row" data-id="{{ row.id | e }}" aria-label="Select report {{ row.id | e }}">
                     </td>
                     {% for cell in row.cells %}
-                    <td data-sort="{{ cell.sort | e }}"{% if cell.title %} title="{{ cell.title | e }}"{% endif %}>{{ cell.display | e }}</td>
+                    <td data-column-index="{{ loop.index }}" data-sort="{{ cell.sort | e }}"{% if cell.title %} title="{{ cell.title | e }}"{% endif %}>{{ cell.display | e }}</td>
                     {% endfor %}
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+    <div class="summary-plot-wrap">
+        <label class="skore-summary-color-metric-field">Color by
+            <select class="skore-summary-color-metric" aria-label="Color metric"></select>
+        </label>
+        <div class="summary-plot"></div>
+        <p class="summary-plot-empty" hidden>Parallel coordinates need at least two metric columns.</p>
     </div>
     {% endif %}
 </div>
