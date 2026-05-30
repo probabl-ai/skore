@@ -957,15 +957,36 @@
 }
 
 /* View visibility, driven by the container's data-view attribute. The first
-   toolbar row (view toggle, Filter, query string, help) is shared by both
-   views; only the second row (Group by, Search) and the table are table-only. */
+   toolbar row (view toggle, Filter, query string, help) is shared by all
+   views. The table and the parallel-coordinates plot hide the second control
+   row entirely; the trend plot keeps it but only to expose Group by (which
+   drives its polylines), hiding the table-only Columns and Search controls. */
 .summary-container[data-view="plot"] .summary-controls,
-.summary-container[data-view="plot"] .summary-table-wrap {
+.summary-container[data-view="plot"] .summary-table-wrap,
+.summary-container[data-view="trend"] .summary-table-wrap {
     display: none;
 }
 
-.summary-container:not([data-view="plot"]) .summary-plot-wrap {
+.summary-container[data-view="trend"] .skore-summary-columns,
+.summary-container[data-view="trend"] .skore-summary-search {
     display: none;
+}
+
+/* Show each plot only in its own view. */
+.summary-plot-wrap {
+    display: none;
+}
+
+.summary-container[data-view="plot"] .summary-plot-wrap {
+    display: block;
+}
+
+.summary-trend-wrap {
+    display: none;
+}
+
+.summary-container[data-view="trend"] .summary-trend-wrap {
+    display: block;
 }
 
 /* Parallel-coordinates plot view */
@@ -981,7 +1002,8 @@
     color: var(--color-text);
 }
 
-.skore-summary-color-metric {
+.skore-summary-color-metric,
+.skore-summary-trend-metric {
     font-family: inherit;
     font-size: inherit;
     line-height: inherit;
@@ -991,6 +1013,19 @@
     border-radius: 4px;
     padding: 0.2em 0.4em;
     cursor: pointer;
+}
+
+/* The trend Y-metric selector lives next to Group by and only shows in the
+   trend view (Group by drives its polylines). */
+.skore-summary-trend-metric-field {
+    display: none;
+    align-items: center;
+    gap: 0.4em;
+    color: var(--color-text);
+}
+
+.summary-container[data-view="trend"] .skore-summary-trend-metric-field {
+    display: inline-flex;
 }
 
 .summary-plot {
@@ -1053,6 +1088,105 @@
 }
 
 .summary-plot-empty {
+    color: var(--color-text);
+    opacity: 0.7;
+}
+
+/* Trend plot view (metric over an ordinal, date-ordered x-axis) */
+.summary-trend-wrap {
+    max-width: 100%;
+}
+
+.summary-trend {
+    position: relative;
+    width: 100%;
+}
+
+.summary-trend svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Immediate hover box for a marker, showing its (ellipsized) report id */
+.summary-trend-tooltip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 10;
+    padding: 0.25em 0.4em;
+    font-family: inherit;
+    font-size: 11px;
+    white-space: nowrap;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-blue);
+    border-radius: 0;
+}
+
+.summary-trend-line {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-opacity: 0.8;
+}
+
+.summary-trend-line--dim {
+    stroke-opacity: 0.08;
+}
+
+.summary-trend-point {
+    stroke: var(--color-background);
+    stroke-width: 1;
+    cursor: pointer;
+}
+
+.summary-trend-point--dim {
+    opacity: 0.12;
+}
+
+/* Emphasize the hovered marker (also lifts a dimmed one back to full opacity) */
+.summary-trend-point--hover {
+    opacity: 1;
+    stroke: var(--color-text);
+    stroke-width: 2;
+}
+
+/* Dotted guide line marking a range cursor's position */
+.summary-trend-cursor {
+    stroke: var(--color-blue);
+    stroke-width: 1;
+    stroke-dasharray: 2 3;
+    stroke-opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Short grip handle (the drag target) carrying a direction arrow */
+.summary-trend-grip {
+    touch-action: none;
+}
+
+.summary-trend-grip--x {
+    cursor: ew-resize;
+}
+
+.summary-trend-grip--y {
+    cursor: ns-resize;
+}
+
+.summary-trend-grip-box {
+    fill: var(--color-background);
+    stroke: var(--color-blue);
+    stroke-width: 1;
+}
+
+.summary-trend-grip-arrow {
+    fill: var(--color-blue);
+    font-family: sans-serif;
+    font-size: 11px;
+    pointer-events: none;
+    user-select: none;
+}
+
+.summary-trend-empty {
     color: var(--color-text);
     opacity: 0.7;
 }

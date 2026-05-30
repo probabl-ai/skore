@@ -7,6 +7,7 @@
         <div class="summary-view-toggle" role="group" aria-label="View">
             <button type="button" class="summary-view-btn summary-view-btn--active" data-view="table" aria-pressed="true" aria-label="Table view" title="Table view">{% include "project/icons/table.svg" %}</button>
             <button type="button" class="summary-view-btn" data-view="plot" aria-pressed="false" aria-label="Plot view" title="Plot view">{% include "project/icons/chart-3.svg" %}</button>
+            <button type="button" class="summary-view-btn" data-view="trend" aria-pressed="false" aria-label="Trend view" title="Metric over time">{% include "project/icons/chart.svg" %}</button>
         </div>
         {% include "project/components/filter.html.j2" %}
         <div class="skore-summary-query-bar">
@@ -25,6 +26,9 @@
     </div>
     <div class="summary-controls">
         {% include "project/components/group-by.html.j2" %}
+        <label class="skore-summary-trend-metric-field">Metric
+            <select class="skore-summary-trend-metric" aria-label="Metric"></select>
+        </label>
         {% include "project/components/columns.html.j2" %}
         <div class="skore-summary-search">
             <svg class="skore-summary-search-icon" viewBox="0 0 512 512" width="14" height="14" aria-hidden="true" focusable="false">
@@ -35,5 +39,6 @@
     </div>
     {% include "project/components/table.html.j2" %}
     {% include "project/components/plot.html.j2" %}
+    {% include "project/components/trend.html.j2" %}
     {% endif %}
 </div>

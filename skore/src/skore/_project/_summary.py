@@ -328,6 +328,7 @@ class Summary(ReprHTMLMixin):
                 rows.append(
                     {
                         "id": id,
+                        "key": str(row["key"]),
                         "report_type": str(row["report_type"]),
                         "learner": str(row["learner"]),
                         "dataset": str(row["dataset"]),

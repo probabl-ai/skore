@@ -19,7 +19,7 @@
         </thead>
         <tbody>
             {% for row in rows %}
-            <tr data-report-type="{{ row.report_type | e }}" data-learner="{{ row.learner | e }}" data-dataset="{{ row.dataset | e }}" data-date="{{ row.date | e }}">
+            <tr data-report-type="{{ row.report_type | e }}" data-learner="{{ row.learner | e }}" data-dataset="{{ row.dataset | e }}" data-date="{{ row.date | e }}" data-key="{{ row.key | e }}">
                 <td class="summary-select-col">
                     <input type="checkbox" class="skore-summary-row" data-id="{{ row.id | e }}" aria-label="Select report {{ row.id | e }}">
                 </td>

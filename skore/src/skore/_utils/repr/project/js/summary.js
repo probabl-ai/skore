@@ -40,9 +40,13 @@ function skoreInitSummary(containerId) {
     let currentView = "table";
     let queryIsEmpty = true;
     const selectedIds = new Set();
+    // Independent axis brushes for the trend view: an ordinal date-order range
+    // and a metric-value range, AND-combined to drive the shared selection.
+    let trendXBrush = null;
+    let trendYBrush = null;
 
     function emptyMessage() {
-        if (currentView === "plot") {
+        if (currentView === "plot" || currentView === "trend") {
             return "Brush an axis to select reports.";
         }
         return queryBox ? queryBox.dataset.empty : "";
@@ -149,6 +153,8 @@ function skoreInitSummary(containerId) {
             syncCheckboxes();
             if (currentView === "plot") {
                 renderPlot();
+            } else if (currentView === "trend") {
+                renderTrend();
             }
             updateQuery();
         });
@@ -512,6 +518,9 @@ function skoreInitSummary(containerId) {
                 markActiveGroup(option);
             }
             refresh();
+            if (currentView === "trend") {
+                renderTrend();
+            }
             closeMenus();
         });
     });
@@ -664,6 +673,8 @@ function skoreInitSummary(containerId) {
         for (const key in brushes) {
             delete brushes[key];
         }
+        trendXBrush = null;
+        trendYBrush = null;
     }
 
     function rowMatchesBrushes(row) {
@@ -985,6 +996,483 @@ function skoreInitSummary(containerId) {
         plotArea.replaceChildren(svg);
     }
 
+    // --------------------------------------------------------------- trend view
+    // A metric plotted over an ordinal, date-ordered x-axis. The x-axis spaces
+    // experiments at regular intervals (so it shows order, not elapsed time);
+    // one colored polyline is drawn per Group-by group, or a single line when
+    // ungrouped. Two independent brushes (date-order on x, metric on y) feed the
+    // shared selection. Shares the Filter/search/group state with the others.
+    const trendArea = shadowRoot.querySelector(".summary-trend");
+    const trendEmpty = shadowRoot.querySelector(".summary-trend-empty");
+    const trendMetricSelect = shadowRoot.querySelector(".skore-summary-trend-metric");
+    const TREND_PALETTE = [
+        "rgb(59, 76, 192)",
+        "rgb(230, 97, 1)",
+        "rgb(27, 158, 119)",
+        "rgb(180, 4, 38)",
+        "rgb(117, 112, 179)",
+        "rgb(8, 145, 178)",
+        "rgb(217, 119, 6)",
+        "rgb(102, 102, 102)",
+    ];
+
+    if (trendMetricSelect) {
+        numericColumns.forEach((column, i) => {
+            const option = document.createElement("option");
+            option.value = String(i);
+            option.textContent = column.label;
+            trendMetricSelect.appendChild(option);
+        });
+    }
+
+    // Mirror the Python ``_middle_ellipsis`` so the hover box stays short.
+    function middleEllipsis(value, head = 8, tail = 6) {
+        if (value.length <= head + tail + 3) {
+            return value;
+        }
+        return value.slice(0, head) + "..." + value.slice(-tail);
+    }
+
+    // Dated rows in chronological order; their position defines the x ordinal.
+    function datedRowsSorted() {
+        return dataRows
+            .map((row) => ({ row, time: new Date(row.dataset.date || "").getTime() }))
+            .filter((entry) => entry.row.dataset.date && !Number.isNaN(entry.time))
+            .sort((a, b) => a.time - b.time)
+            .map((entry) => entry.row);
+    }
+
+    function trendMetric() {
+        if (numericColumns.length === 0) {
+            return null;
+        }
+        const idx = trendMetricSelect ? parseInt(trendMetricSelect.value, 10) || 0 : 0;
+        return numericColumns[Math.min(idx, numericColumns.length - 1)];
+    }
+
+    // Recompute the shared selection from the trend brushes, restricted to the
+    // rows the Filter / search currently keep visible.
+    function applyTrendSelection() {
+        selectedIds.clear();
+        if (!trendXBrush && !trendYBrush) {
+            return;
+        }
+        const metric = trendMetric();
+        const activeByField = collectCheckboxFilters();
+        const term = currentSearchTerm();
+        const ordered = datedRowsSorted();
+        ordered.forEach((row, i) => {
+            const checkbox = row.querySelector(".skore-summary-row");
+            if (!checkbox) {
+                return;
+            }
+            if (
+                !passesCheckboxFilters(row, activeByField) ||
+                !passesDateRange(row) ||
+                !rowMatchesSearch(row, term)
+            ) {
+                return;
+            }
+            if (trendXBrush && (i < trendXBrush.low || i > trendXBrush.high)) {
+                return;
+            }
+            if (trendYBrush && metric) {
+                const value = parseFloat(cellAt(row, metric.index).dataset.sort);
+                if (Number.isNaN(value) || value < trendYBrush.low || value > trendYBrush.high) {
+                    return;
+                }
+            }
+            selectedIds.add(checkbox.dataset.id);
+        });
+    }
+
+    function renderTrend() {
+        if (!trendArea) {
+            return;
+        }
+        const metric = trendMetric();
+        if (!metric) {
+            if (trendEmpty) {
+                trendEmpty.hidden = false;
+            }
+            trendArea.replaceChildren();
+            return;
+        }
+        if (trendEmpty) {
+            trendEmpty.hidden = true;
+        }
+
+        const ordered = datedRowsSorted();
+        const indexOf = new Map();
+        ordered.forEach((row, i) => indexOf.set(row, i));
+
+        const width = trendArea.clientWidth || 600;
+        const height = 360;
+        const margin = { top: 24, right: 24, bottom: 56, left: 60 };
+        const innerW = Math.max(1, width - margin.left - margin.right);
+        const innerH = Math.max(1, height - margin.top - margin.bottom);
+
+        let min = Infinity;
+        let max = -Infinity;
+        ordered.forEach((row) => {
+            const value = parseFloat(cellAt(row, metric.index).dataset.sort);
+            if (!Number.isNaN(value)) {
+                if (value < min) min = value;
+                if (value > max) max = value;
+            }
+        });
+        if (min === Infinity) {
+            min = 0;
+            max = 1;
+        } else if (min === max) {
+            min -= 0.5;
+            max += 0.5;
+        }
+
+        const n = ordered.length;
+        // Pad the domains so data never sits on the spines: the first/last points
+        // are inset from the y-axis and the plot edges, keeping markers clear of
+        // the axis lines and their tick labels.
+        const xPad = n <= 1 ? 0 : Math.min(24, innerW * 0.06);
+        const yPad = Math.min(16, innerH * 0.06);
+        const xSpan = Math.max(1, innerW - 2 * xPad);
+        const ySpan = Math.max(1, innerH - 2 * yPad);
+        const xAt = (i) => (n <= 1 ? innerW / 2 : xPad + (xSpan * i) / (n - 1));
+        const indexFromX = (x) => {
+            if (n <= 1) {
+                return 0;
+            }
+            const clamped = Math.min(xPad + xSpan, Math.max(xPad, x));
+            return Math.round(((clamped - xPad) / xSpan) * (n - 1));
+        };
+        const valueY = (value) => innerH - yPad - ((value - min) / (max - min)) * ySpan;
+        const valueFromY = (y) => min + ((innerH - yPad - y) / ySpan) * (max - min);
+
+        const activeByField = collectCheckboxFilters();
+        const term = currentSearchTerm();
+        function rowVisible(row) {
+            return (
+                passesCheckboxFilters(row, activeByField) &&
+                passesDateRange(row) &&
+                rowMatchesSearch(row, term)
+            );
+        }
+
+        const hasSelection = selectedIds.size > 0;
+
+        // Bucket visible, valued points into groups (first-appearance order in
+        // date order), so each group becomes one polyline with a palette color.
+        const groups = [];
+        const byKey = new Map();
+        ordered.forEach((row) => {
+            if (!rowVisible(row)) {
+                return;
+            }
+            const value = parseFloat(cellAt(row, metric.index).dataset.sort);
+            if (Number.isNaN(value)) {
+                return;
+            }
+            const info = groupState ? groupInfo(row) : { key: "__all__", label: "" };
+            let group = byKey.get(info.key);
+            if (!group) {
+                group = { label: info.label, points: [] };
+                byKey.set(info.key, group);
+                groups.push(group);
+            }
+            const checkbox = row.querySelector(".skore-summary-row");
+            group.points.push({
+                x: xAt(indexOf.get(row)),
+                y: valueY(value),
+                id: checkbox ? checkbox.dataset.id : "",
+                key: row.dataset.key || "",
+            });
+        });
+
+        const svg = document.createElementNS(SVG_NS, "svg");
+        svg.setAttribute("viewBox", "0 0 " + width + " " + height);
+        svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+        const plotG = document.createElementNS(SVG_NS, "g");
+        plotG.setAttribute(
+            "transform",
+            "translate(" + margin.left + ", " + margin.top + ")"
+        );
+        svg.appendChild(plotG);
+
+        function localPoint(evt) {
+            const point = svg.createSVGPoint();
+            point.x = evt.clientX;
+            point.y = evt.clientY;
+            const ctm = svg.getScreenCTM();
+            if (!ctm) {
+                return { x: 0, y: 0 };
+            }
+            const local = point.matrixTransform(ctm.inverse());
+            return { x: local.x - margin.left, y: local.y - margin.top };
+        }
+
+        // Immediate hover box (native <title> is delayed and was too long); it
+        // tracks the cursor and shows the marker's ellipsized report id.
+        const tooltip = document.createElement("div");
+        tooltip.className = "summary-trend-tooltip";
+        tooltip.hidden = true;
+
+        function setTooltipContent(id, key) {
+            const idLine = document.createElement("div");
+            idLine.textContent = "ID: " + middleEllipsis(id);
+            const keyLine = document.createElement("div");
+            keyLine.textContent = "Key: " + key;
+            tooltip.replaceChildren(idLine, keyLine);
+        }
+
+        function positionTooltip(evt) {
+            const rect = trendArea.getBoundingClientRect();
+            tooltip.style.left = evt.clientX - rect.left + 12 + "px";
+            tooltip.style.top = evt.clientY - rect.top + 12 + "px";
+        }
+
+        // Axes.
+        const yAxis = document.createElementNS(SVG_NS, "line");
+        yAxis.setAttribute("class", "summary-plot-axis-line");
+        yAxis.setAttribute("x1", 0);
+        yAxis.setAttribute("y1", 0);
+        yAxis.setAttribute("x2", 0);
+        yAxis.setAttribute("y2", innerH);
+        plotG.appendChild(yAxis);
+
+        const xAxis = document.createElementNS(SVG_NS, "line");
+        xAxis.setAttribute("class", "summary-plot-axis-line");
+        xAxis.setAttribute("x1", 0);
+        xAxis.setAttribute("y1", innerH);
+        xAxis.setAttribute("x2", innerW);
+        xAxis.setAttribute("y2", innerH);
+        plotG.appendChild(xAxis);
+
+        appendText(plotG, "summary-plot-axis-label", 0, -10, "start", metric.label);
+        appendText(plotG, "summary-plot-tick", -8, valueY(max) + 4, "end", formatTick(max));
+        appendText(plotG, "summary-plot-tick", -8, valueY(min), "end", formatTick(min));
+
+        // A few evenly spaced date tick labels along the x-axis.
+        if (n > 0) {
+            const tickCount = Math.min(n, 5);
+            for (let t = 0; t < tickCount; t += 1) {
+                const i = tickCount === 1 ? 0 : Math.round((t * (n - 1)) / (tickCount - 1));
+                const row = ordered[i];
+                const date = new Date(row.dataset.date);
+                const label = Number.isNaN(date.getTime())
+                    ? row.dataset.date
+                    : formatBucket(date, "minute");
+                const x = xAt(i);
+                const node = document.createElementNS(SVG_NS, "text");
+                node.setAttribute("class", "summary-plot-tick");
+                node.setAttribute("x", x);
+                node.setAttribute("y", innerH + 8);
+                node.setAttribute("text-anchor", "end");
+                node.setAttribute("transform", "rotate(-30 " + x + " " + (innerH + 8) + ")");
+                node.textContent = label;
+                plotG.appendChild(node);
+            }
+        }
+
+        // Lines + markers.
+        groups.forEach((group, gi) => {
+            const color = groupState
+                ? TREND_PALETTE[gi % TREND_PALETTE.length]
+                : TREND_PALETTE[0];
+            if (group.points.length > 1) {
+                let d = "";
+                group.points.forEach((pt, i) => {
+                    d += (i === 0 ? "M" : " L") + pt.x + " " + pt.y;
+                });
+                const path = document.createElementNS(SVG_NS, "path");
+                path.setAttribute(
+                    "class",
+                    hasSelection
+                        ? "summary-trend-line summary-trend-line--dim"
+                        : "summary-trend-line"
+                );
+                path.setAttribute("d", d);
+                path.setAttribute("stroke", color);
+                plotG.appendChild(path);
+            }
+            group.points.forEach((pt) => {
+                const selected = selectedIds.has(pt.id);
+                const dim = hasSelection && !selected;
+                const circle = document.createElementNS(SVG_NS, "circle");
+                circle.setAttribute(
+                    "class",
+                    dim ? "summary-trend-point summary-trend-point--dim" : "summary-trend-point"
+                );
+                circle.setAttribute("cx", pt.x);
+                circle.setAttribute("cy", pt.y);
+                circle.setAttribute("r", 4);
+                circle.setAttribute("fill", color);
+                circle.addEventListener("mouseenter", (evt) => {
+                    circle.setAttribute("r", 6);
+                    circle.classList.add("summary-trend-point--hover");
+                    setTooltipContent(pt.id, pt.key);
+                    tooltip.hidden = false;
+                    positionTooltip(evt);
+                });
+                circle.addEventListener("mousemove", positionTooltip);
+                circle.addEventListener("mouseleave", () => {
+                    circle.setAttribute("r", 4);
+                    circle.classList.remove("summary-trend-point--hover");
+                    tooltip.hidden = true;
+                });
+                plotG.appendChild(circle);
+            });
+        });
+
+        // Range cursors: two draggable vertical cursors set the date-order range
+        // and two horizontal cursors set the metric range; the selection is their
+        // AND. Dragging a cursor back to the axis extreme releases that axis, and
+        // the Clear button resets all four (via clearBrushes).
+        const eps = (max - min) * 1e-9 || 1e-9;
+        let xLow = trendXBrush ? trendXBrush.low : 0;
+        let xHigh = trendXBrush ? trendXBrush.high : n - 1;
+        let yHighVal = trendYBrush ? trendYBrush.high : max;
+        let yLowVal = trendYBrush ? trendYBrush.low : min;
+
+        function commitX() {
+            trendXBrush = xLow <= 0 && xHigh >= n - 1 ? null : { low: xLow, high: xHigh };
+        }
+
+        function commitY() {
+            trendYBrush =
+                yLowVal <= min + eps && yHighVal >= max - eps
+                    ? null
+                    : { low: yLowVal, high: yHighVal };
+        }
+
+        // Build one draggable cursor; ``orientation`` is "x" (vertical line) or
+        // "y" (horizontal line). The position is shown by a dotted guide line and
+        // a small grip handle carrying a left-right (x) or up-down (y) arrow that
+        // is the drag target. ``read`` returns the current position, ``write``
+        // clamps + stores the dragged position, and ``commit`` runs on drop.
+        function makeCursor(orientation, read, write, commit) {
+            const line = document.createElementNS(SVG_NS, "line");
+            line.setAttribute("class", "summary-trend-cursor");
+
+            const handle = document.createElementNS(SVG_NS, "g");
+            handle.setAttribute(
+                "class",
+                "summary-trend-grip summary-trend-grip--" + orientation
+            );
+            const grip = document.createElementNS(SVG_NS, "rect");
+            grip.setAttribute("class", "summary-trend-grip-box");
+            grip.setAttribute("rx", 3);
+            const arrow = document.createElementNS(SVG_NS, "text");
+            arrow.setAttribute("class", "summary-trend-grip-arrow");
+            arrow.setAttribute("text-anchor", "middle");
+            arrow.setAttribute("dominant-baseline", "central");
+            arrow.textContent = orientation === "x" ? "\u2194" : "\u2195";
+            handle.appendChild(grip);
+            handle.appendChild(arrow);
+
+            // Grips ride the data edges (the spines are offset away from them).
+            function place() {
+                if (orientation === "x") {
+                    const x = xAt(read());
+                    line.setAttribute("x1", x);
+                    line.setAttribute("y1", 0);
+                    line.setAttribute("x2", x);
+                    line.setAttribute("y2", innerH);
+                    grip.setAttribute("x", x - 11);
+                    grip.setAttribute("y", -7);
+                    grip.setAttribute("width", 22);
+                    grip.setAttribute("height", 14);
+                    arrow.setAttribute("x", x);
+                    arrow.setAttribute("y", 0);
+                } else {
+                    const y = valueY(read());
+                    line.setAttribute("x1", 0);
+                    line.setAttribute("y1", y);
+                    line.setAttribute("x2", innerW);
+                    line.setAttribute("y2", y);
+                    grip.setAttribute("x", -8);
+                    grip.setAttribute("y", y - 11);
+                    grip.setAttribute("width", 16);
+                    grip.setAttribute("height", 22);
+                    arrow.setAttribute("x", 0);
+                    arrow.setAttribute("y", y);
+                }
+            }
+            place();
+
+            let dragging = false;
+            handle.addEventListener("pointerdown", (evt) => {
+                evt.preventDefault();
+                handle.setPointerCapture(evt.pointerId);
+                dragging = true;
+            });
+            handle.addEventListener("pointermove", (evt) => {
+                if (!dragging) {
+                    return;
+                }
+                const local = localPoint(evt);
+                if (orientation === "x") {
+                    write(indexFromX(local.x));
+                } else {
+                    const clampedY = Math.min(innerH, Math.max(0, local.y));
+                    write(valueFromY(clampedY));
+                }
+                place();
+            });
+            function end() {
+                if (!dragging) {
+                    return;
+                }
+                dragging = false;
+                commit();
+                applyTrendSelection();
+                syncCheckboxes();
+                renderTrend();
+                updateQuery();
+            }
+            handle.addEventListener("pointerup", end);
+            handle.addEventListener("pointercancel", end);
+
+            plotG.appendChild(line);
+            plotG.appendChild(handle);
+        }
+
+        makeCursor(
+            "x",
+            () => xLow,
+            (idx) => {
+                xLow = Math.max(0, Math.min(idx, xHigh));
+            },
+            commitX
+        );
+        makeCursor(
+            "x",
+            () => xHigh,
+            (idx) => {
+                xHigh = Math.min(n - 1, Math.max(idx, xLow));
+            },
+            commitX
+        );
+        makeCursor(
+            "y",
+            () => yHighVal,
+            (value) => {
+                yHighVal = Math.min(max, Math.max(value, yLowVal));
+            },
+            commitY
+        );
+        makeCursor(
+            "y",
+            () => yLowVal,
+            (value) => {
+                yLowVal = Math.max(min, Math.min(value, yHighVal));
+            },
+            commitY
+        );
+
+        trendArea.replaceChildren(svg, tooltip);
+    }
+
     function setView(view) {
         currentView = view;
         if (container) {
@@ -997,6 +1485,8 @@ function skoreInitSummary(containerId) {
         });
         if (view === "plot") {
             renderPlot();
+        } else if (view === "trend") {
+            renderTrend();
         } else {
             syncCheckboxes();
         }
@@ -1009,33 +1499,57 @@ function skoreInitSummary(containerId) {
 
     if (colorSelect) {
         colorSelect.addEventListener("change", () => {
-            if (container && container.dataset.view === "plot") {
+            if (currentView === "plot") {
                 renderPlot();
             }
         });
     }
 
-    if (plotArea && typeof ResizeObserver !== "undefined") {
-        const observer = new ResizeObserver(() => {
-            if (container && container.dataset.view === "plot") {
-                renderPlot();
+    if (trendMetricSelect) {
+        trendMetricSelect.addEventListener("change", () => {
+            if (currentView === "trend") {
+                renderTrend();
             }
         });
-        observer.observe(plotArea);
     }
 
-    // Keep the plot and the selection in sync with the shared Filter menu while
-    // in Plot view: an active brush re-selects within the now-visible rows.
+    if (typeof ResizeObserver !== "undefined") {
+        if (plotArea) {
+            const observer = new ResizeObserver(() => {
+                if (currentView === "plot") {
+                    renderPlot();
+                }
+            });
+            observer.observe(plotArea);
+        }
+        if (trendArea) {
+            const observer = new ResizeObserver(() => {
+                if (currentView === "trend") {
+                    renderTrend();
+                }
+            });
+            observer.observe(trendArea);
+        }
+    }
+
+    // Keep whichever plot view is active and the selection in sync with the
+    // shared Filter menu: an active brush re-selects within the visible rows.
     function refreshPlotIfActive() {
-        if (currentView !== "plot") {
-            return;
+        if (currentView === "plot") {
+            if (Object.keys(brushes).length > 0) {
+                applyBrushSelection();
+                syncCheckboxes();
+            }
+            renderPlot();
+            updateQuery();
+        } else if (currentView === "trend") {
+            if (trendXBrush || trendYBrush) {
+                applyTrendSelection();
+                syncCheckboxes();
+            }
+            renderTrend();
+            updateQuery();
         }
-        if (Object.keys(brushes).length > 0) {
-            applyBrushSelection();
-            syncCheckboxes();
-        }
-        renderPlot();
-        updateQuery();
     }
     filterValues.forEach((checkbox) => {
         checkbox.addEventListener("change", refreshPlotIfActive);
