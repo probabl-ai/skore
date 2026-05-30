@@ -1108,7 +1108,7 @@
     height: auto;
 }
 
-/* Immediate hover box for a marker, showing its (ellipsized) report id */
+/* Immediate hover box for a marker (ID and key) */
 .summary-trend-tooltip {
     position: absolute;
     pointer-events: none;
@@ -1187,6 +1187,11 @@
 }
 
 .summary-trend-empty {
+    color: var(--color-text);
+    opacity: 0.7;
+}
+
+.summary-trend-undated-empty {
     color: var(--color-text);
     opacity: 0.7;
 }

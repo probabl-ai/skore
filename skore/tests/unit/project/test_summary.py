@@ -333,11 +333,18 @@ class TestSummary:
         assert '<div class="summary-plot">' in html
         assert '<select class="skore-summary-color-metric"' in html
         # The third view toggle and the trend-plot container (metric over time),
-        # with its own Y-metric selector and per-row key for the hover tooltip.
+        # with its Metric selector in the controls row and per-row key for tooltips.
         assert 'data-view="trend" aria-pressed="false" aria-label="Trend view"' in html
         assert '<div class="summary-trend-wrap">' in html
         assert '<div class="summary-trend">' in html
+        assert 'class="skore-summary-trend-metric-field"' in html
+        assert 'aria-label="Metric"' in html
+        assert html.index('class="skore-summary-trend-metric-field"') < html.index(
+            '<div class="summary-table-wrap">'
+        )
         assert '<select class="skore-summary-trend-metric"' in html
+        assert 'class="summary-trend-undated-empty"' in html
+        assert "No dated reports to plot." in html
         assert "data-key=" in html
         # Inline SVG icons replace the text labels / Font Awesome (no external dep).
         assert 'class="summary-select-eye"' in html

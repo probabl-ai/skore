@@ -46,8 +46,11 @@ function skoreInitSummary(containerId) {
     let trendYBrush = null;
 
     function emptyMessage() {
-        if (currentView === "plot" || currentView === "trend") {
+        if (currentView === "plot") {
             return "Brush an axis to select reports.";
+        }
+        if (currentView === "trend") {
+            return "Drag the range cursors to select reports.";
         }
         return queryBox ? queryBox.dataset.empty : "";
     }
@@ -463,9 +466,6 @@ function skoreInitSummary(containerId) {
     filterValues.forEach((checkbox) => {
         checkbox.addEventListener("change", refresh);
     });
-    if (searchInput) {
-        searchInput.addEventListener("input", refresh);
-    }
     if (dateStart) {
         dateStart.addEventListener("input", refresh);
     }
@@ -1004,6 +1004,7 @@ function skoreInitSummary(containerId) {
     // shared selection. Shares the Filter/search/group state with the others.
     const trendArea = shadowRoot.querySelector(".summary-trend");
     const trendEmpty = shadowRoot.querySelector(".summary-trend-empty");
+    const trendUndatedEmpty = shadowRoot.querySelector(".summary-trend-undated-empty");
     const trendMetricSelect = shadowRoot.querySelector(".skore-summary-trend-metric");
     const TREND_PALETTE = [
         "rgb(59, 76, 192)",
@@ -1095,14 +1096,33 @@ function skoreInitSummary(containerId) {
             if (trendEmpty) {
                 trendEmpty.hidden = false;
             }
+            if (trendUndatedEmpty) {
+                trendUndatedEmpty.hidden = true;
+            }
+            trendArea.replaceChildren();
+            return;
+        }
+
+        const ordered = datedRowsSorted();
+        if (ordered.length === 0) {
+            trendXBrush = null;
+            trendYBrush = null;
+            if (trendEmpty) {
+                trendEmpty.hidden = true;
+            }
+            if (trendUndatedEmpty) {
+                trendUndatedEmpty.hidden = false;
+            }
             trendArea.replaceChildren();
             return;
         }
         if (trendEmpty) {
             trendEmpty.hidden = true;
         }
+        if (trendUndatedEmpty) {
+            trendUndatedEmpty.hidden = true;
+        }
 
-        const ordered = datedRowsSorted();
         const indexOf = new Map();
         ordered.forEach((row, i) => indexOf.set(row, i));
 
@@ -1211,8 +1231,7 @@ function skoreInitSummary(containerId) {
             return { x: local.x - margin.left, y: local.y - margin.top };
         }
 
-        // Immediate hover box (native <title> is delayed and was too long); it
-        // tracks the cursor and shows the marker's ellipsized report id.
+        // Immediate hover box for a marker (ID and key).
         const tooltip = document.createElement("div");
         tooltip.className = "summary-trend-tooltip";
         tooltip.hidden = true;
@@ -1284,10 +1303,11 @@ function skoreInitSummary(containerId) {
                 group.points.forEach((pt, i) => {
                     d += (i === 0 ? "M" : " L") + pt.x + " " + pt.y;
                 });
+                const lineSelected = group.points.some((pt) => selectedIds.has(pt.id));
                 const path = document.createElementNS(SVG_NS, "path");
                 path.setAttribute(
                     "class",
-                    hasSelection
+                    hasSelection && !lineSelected
                         ? "summary-trend-line summary-trend-line--dim"
                         : "summary-trend-line"
                 );
@@ -1370,7 +1390,7 @@ function skoreInitSummary(containerId) {
             handle.appendChild(grip);
             handle.appendChild(arrow);
 
-            // Grips ride the data edges (the spines are offset away from them).
+            // Grips ride the data edges; dotted lines mark each cursor position.
             function place() {
                 if (orientation === "x") {
                     const x = xAt(read());
@@ -1507,9 +1527,14 @@ function skoreInitSummary(containerId) {
 
     if (trendMetricSelect) {
         trendMetricSelect.addEventListener("change", () => {
-            if (currentView === "trend") {
-                renderTrend();
+            if (currentView !== "trend") {
+                return;
             }
+            trendYBrush = null;
+            applyTrendSelection();
+            syncCheckboxes();
+            updateQuery();
+            renderTrend();
         });
     }
 
@@ -1563,6 +1588,12 @@ function skoreInitSummary(containerId) {
     const plotDateClear = shadowRoot.querySelector(".skore-summary-date-clear");
     if (plotDateClear) {
         plotDateClear.addEventListener("click", refreshPlotIfActive);
+    }
+    if (searchInput) {
+        searchInput.addEventListener("input", () => {
+            refresh();
+            refreshPlotIfActive();
+        });
     }
 
     refresh();
