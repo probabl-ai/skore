@@ -7,11 +7,11 @@ Local skore Project
 
 This example shows how to use :class:`~skore.Project` in **local** mode: store
 reports on your machine and inspect them. A key point is that
-:meth:`~skore.Project.summarize` returns a :class:`~skore.project._summary.Summary`,
-which stores the metadata and metrics as a :class:`pandas.DataFrame` accessible
-through its :meth:`~skore.project._summary.Summary.frame` method. In Jupyter it
-renders as an interactive table where you can select reports to build a query
-string.
+:meth:`~skore.Project.summarize` returns a ``Summary`` object that holds the
+metadata and metrics of every report. In Jupyter it renders as an interactive
+table with three views (Table, parallel-coordinates Plot, and Trend) where you
+can filter and pick reports to build a query string; the underlying
+:class:`pandas.DataFrame` is accessible through its ``frame`` method.
 """
 
 # %%
@@ -57,15 +57,16 @@ for regularization in np.logspace(-7, 7, 31):
 # Summarize: you get a Summary
 # ============================
 #
-# :meth:`~skore.Project.summarize` returns a :class:`~skore.project._summary.Summary`.
-# In a Jupyter environment it renders as an interactive table where you can filter by
-# report type and select rows to build a query string.
+# :meth:`~skore.Project.summarize` returns a ``Summary`` object. In a Jupyter
+# environment it renders as an interactive table where you can filter rows and
+# pick reports across the Table, parallel-coordinates Plot, and Trend views; the
+# selection produces a query string ready to pass to ``Summary.query(...)``.
 summary = project.summarize()
 summary
 
 # %%
 # To work with the underlying table (e.g. in scripts or when you prefer a
-# :class:`pandas.DataFrame`), use :meth:`~skore.project._summary.Summary.frame`:
+# :class:`pandas.DataFrame`), use the ``frame`` method:
 summary.frame()
 
 # %%
@@ -79,8 +80,8 @@ summary.frame().info()
 summary.query("log_loss < 0.1").frame()["key"].tolist()
 
 # %%
-# Use :meth:`~skore.project._summary.Summary.reports` to load the corresponding
-# reports from the project (optionally after filtering the summary).
+# Use ``Summary.reports`` to load the corresponding reports from the project
+# (optionally after filtering the summary).
 reports = summary.query("log_loss < 0.1").reports(return_as="comparison")
 len(reports.reports_)
 

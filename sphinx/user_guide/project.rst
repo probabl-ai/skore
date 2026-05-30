@@ -16,12 +16,15 @@ Once a project is created, store :class:`EstimatorReport` via the method
 :meth:`Project.put`.
 
 To retrieve the reports stored in the project, use the project summary by calling the
-method :meth:`Project.summarize`. This method returns a summary table with a rich HTML
-representation in interactive Jupyter-like environments.
+method :meth:`Project.summarize`. This method returns a ``Summary`` object that holds
+the metadata and metrics of the stored reports and renders as an interactive table in
+Jupyter-like environments.
 
-The summary view allows filtering reports using a parallel coordinates plot. Once the
-reports are filtered, retrieve them by calling the ``reports`` method on the object
-returned by :meth:`Project.summarize`. This method returns a list of
+The interactive view has three modes (Table, parallel-coordinates Plot, and Trend)
+and lets you filter rows and pick reports across any of them; the selection produces
+a query string ready to pass to ``Summary.query(...)``. Once the reports are filtered,
+retrieve them by calling the ``reports`` method on the object returned by
+:meth:`Project.summarize`. This method returns a list of
 :class:`EstimatorReport` instances.
 
 To retrieve a specific report for which you have its `id`, use the method

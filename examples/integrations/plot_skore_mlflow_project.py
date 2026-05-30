@@ -119,11 +119,11 @@ if tmp_dir is not None:
 
 # sphinx_gallery_end_ignore
 
-import pandas as pd
-
+# In MLflow mode, ``summarize`` exposes the same ``Summary`` API as in local
+# and hub mode: use ``frame()`` to get the underlying :class:`pandas.DataFrame`.
 summary = project.summarize()
-pandas_summary = pd.DataFrame(summary).reset_index()
-pandas_summary[["id", "key", "report_type", "learner", "ml_task", "dataset"]]
+pandas_summary = summary.frame().reset_index()
+pandas_summary[["id", "key", "report_type", "learner", "dataset"]]
 
 # %%
 # Then, you can retrieve a Skore report using the `"id"` column:

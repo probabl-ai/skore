@@ -428,20 +428,19 @@ project.put("advanced_pipeline_cv", advanced_cv_report)
 
 # %%
 summary = project.summarize()
-# Uncomment the next line to display the interactive table in an interactive
-# environment:
-# summary
+summary
 
 # %%
 # .. note::
-#     Calling `summary` in a Jupyter notebook cell shows an interactive table of the
-#     stored reports. You can filter by report type and tick the checkbox of each row
-#     you want to keep; this builds a query string that you can copy and pass to
-#     :meth:`~skore.project._summary.Summary.query` to retrieve exactly those reports.
+#     :meth:`~skore.Project.summarize` returns a ``Summary`` object. In a Jupyter
+#     environment it renders as an interactive table where you can filter rows and
+#     pick reports across the Table, parallel-coordinates Plot, and Trend views;
+#     the selection produces a query string ready to pass to ``Summary.query(...)``
+#     so you can recover exactly those reports.
 
 # %%
 # Once you filtered the summary (e.g. to keep only the cross-validation reports), if
-# you now call :meth:`~skore.project._summary.Summary.reports`, you get only the
+# you now call ``Summary.reports``, you get only the
 # :class:`~skore.CrossValidationReport` objects, which
 # you can directly put in the form of a :class:`~skore.ComparisonReport`:
 

@@ -7,9 +7,11 @@ Store and retrieve reports on Skore Hub
 
 This example shows how to use :class:`~skore.Project` in **hub** mode: store
 reports remotely and inspect them. A key point is that
-:meth:`~skore.Project.summarize` returns a :class:`~skore.project._summary.Summary`,
-which is a :class:`pandas.DataFrame`. In Jupyter you get an interactive widget, but
-you can always inspect and filter the summary as a DataFrame if you prefer.
+:meth:`~skore.Project.summarize` returns a ``Summary`` object that holds the
+metadata and metrics of every report. In Jupyter it renders as an interactive
+table with three views (Table, parallel-coordinates Plot, and Trend) where you
+can filter and pick rows to build a query string; outside of Jupyter you can
+work with the underlying :class:`pandas.DataFrame` via its ``frame`` method.
 
 Examples
 --------
@@ -120,31 +122,30 @@ for regularization in logspace(-3, 3, 5):
 #
 # Retrieving a report on Skore Hub is similar to retrieving a report in local mode.
 #
-# :meth:`~skore.Project.summarize` returns a :class:`~skore.project._summary.Summary`,
-# which subclasses :class:`pandas.DataFrame`. In a Jupyter environment it renders
-# an interactive parallel-coordinates widget by default.
+# :meth:`~skore.Project.summarize` returns a ``Summary`` object. In a Jupyter
+# environment it renders as an interactive table where you can filter rows and
+# tick reports (or brush/drag cursors in the Plot and Trend views); the
+# selection produces a query string ready to pass to ``Summary.query(...)``.
 summary = project.summarize()
+summary
 
 # %%
 #
-# To see the normal DataFrame table instead of the widget (e.g. in scripts or
-# when you prefer the table), wrap the summary in :class:`pandas.DataFrame`:
-import pandas as pd
-
-pandas_summary = pd.DataFrame(summary)
-pandas_summary
+# To work with the underlying table (e.g. in scripts or when you prefer a
+# :class:`pandas.DataFrame`), use the ``frame`` method:
+summary.frame()
 
 # %%
 #
 # Basically, our summary contains metadata related to various information that we need
 # to quickly help filtering the reports.
-summary.info()
+summary.frame().info()
 
 # %%
 #
 # Filter reports by metric (e.g. keep only those above a given accuracy) and
 # work with the result as a table.
-summary.query("log_loss < 0.2")["key"].tolist()
+summary.query("log_loss < 0.2").frame()["key"].tolist()
 
 # %%
 #
