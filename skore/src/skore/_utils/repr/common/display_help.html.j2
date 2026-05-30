@@ -1,16 +1,16 @@
 <div id="{{ container_id }}-wrapper">
     <template id="{{ container_id }}-template">
         <style>
-{% include "theme.css" %}
-{% include "help.css" %}
+{% include "common/css/theme.css" %}
+{% include "common/css/help.css" %}
         </style>
-        {% include "display_help-content.html.j2" %}
+        {% include "common/display_help-content.html.j2" %}
     </template>
 
     <div id="{{ container_id }}"></div>
 
     <script>
-{% include "report_theme.js" %}
+{% include "common/js/report_theme.js" %}
     </script>
 </div>
 

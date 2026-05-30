@@ -347,7 +347,6 @@ function skoreInitSummary(containerId) {
             const value = row.dataset.reportType || "(none)";
             return { key: "report_type:" + value, label: value };
         }
-        // Date grouping.
         const iso = row.dataset.date;
         if (!iso) {
             return { key: "date:none", label: "(no date)" };
@@ -618,8 +617,8 @@ function skoreInitSummary(containerId) {
     const viewButtons = shadowRoot.querySelectorAll(".summary-view-btn");
     const SVG_NS = "http://www.w3.org/2000/svg";
 
-    // The plot axes are the numeric metric columns; their child index in each
-    // row matches the header's data-column-index.
+    // The plot axes are the numeric metric columns; cellAt() reads each row's
+    // value via the column's stable data-column-index.
     const numericColumns = [];
     shadowRoot.querySelectorAll("thead th.summary-sortable").forEach((header) => {
         if (header.dataset.sortKind === "number") {

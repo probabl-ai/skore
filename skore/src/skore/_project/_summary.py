@@ -337,7 +337,7 @@ class Summary(ReprHTMLMixin):
                 )
 
         return render_template(
-            "summary.html.j2",
+            "project/summary.html.j2",
             {
                 "container_id": container_id,
                 "report_title": "Project summary",
