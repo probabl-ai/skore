@@ -27,7 +27,6 @@ function skoreInitSummary(containerId) {
 
     const tbody = table.querySelector("tbody");
     const dataRows = Array.from(tbody.querySelectorAll("tr"));
-    const columnCount = table.querySelectorAll("thead th").length;
 
     // Current sort/group state (null means "no sort"/"no grouping").
     let sortState = null;
@@ -96,9 +95,15 @@ function skoreInitSummary(containerId) {
         });
         checkbox.addEventListener("click", (event) => {
             if (event.shiftKey && lastClickedRow && lastClickedRow !== checkbox) {
+                // Only rows the user actually sees take part in the range, so a
+                // shift-click never ticks reports hidden by an active filter,
+                // search or date range.
                 const visibleCheckboxes = Array.from(
                     tbody.querySelectorAll(".skore-summary-row")
-                );
+                ).filter((cb) => {
+                    const tr = cb.closest("tr");
+                    return tr && tr.style.display !== "none";
+                });
                 const current = visibleCheckboxes.indexOf(checkbox);
                 const anchor = visibleCheckboxes.indexOf(lastClickedRow);
                 if (current >= 0 && anchor >= 0) {
@@ -155,6 +160,10 @@ function skoreInitSummary(containerId) {
     const dateStart = shadowRoot.querySelector(".skore-summary-date-start");
     const dateEnd = shadowRoot.querySelector(".skore-summary-date-end");
 
+    function currentSearchTerm() {
+        return searchInput ? searchInput.value.trim().toLowerCase() : "";
+    }
+
     function rowMatchesSearch(row, term) {
         if (!term) {
             return true;
@@ -199,8 +208,13 @@ function skoreInitSummary(containerId) {
     }
 
     function passesDateRange(row) {
-        const start = dateStart && dateStart.value ? new Date(dateStart.value).getTime() : null;
-        const end = dateEnd && dateEnd.value ? new Date(dateEnd.value).getTime() : null;
+        // Report dates are stored as UTC ISO strings, so the wall-clock entered
+        // in the (timezone-less) datetime-local inputs is read as UTC too by
+        // appending "Z"; this keeps the table column, grouping and filter aligned.
+        const start =
+            dateStart && dateStart.value ? new Date(dateStart.value + "Z").getTime() : null;
+        const end =
+            dateEnd && dateEnd.value ? new Date(dateEnd.value + "Z").getTime() : null;
         if (start === null && end === null) {
             return true;
         }
@@ -281,26 +295,30 @@ function skoreInitSummary(containerId) {
 
     function formatBucket(date, unit) {
         const day =
-            date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate());
+            date.getUTCFullYear() +
+            "-" +
+            pad(date.getUTCMonth() + 1) +
+            "-" +
+            pad(date.getUTCDate());
         if (unit === "second") {
             return (
                 day +
                 " " +
-                pad(date.getHours()) +
+                pad(date.getUTCHours()) +
                 ":" +
-                pad(date.getMinutes()) +
+                pad(date.getUTCMinutes()) +
                 ":" +
-                pad(date.getSeconds())
+                pad(date.getUTCSeconds())
             );
         }
         if (unit === "minute") {
-            return day + " " + pad(date.getHours()) + ":" + pad(date.getMinutes());
+            return day + " " + pad(date.getUTCHours()) + ":" + pad(date.getUTCMinutes());
         }
         if (unit === "hour") {
-            return day + " " + pad(date.getHours()) + ":00";
+            return day + " " + pad(date.getUTCHours()) + ":00";
         }
         if (unit === "month") {
-            return date.getFullYear() + "-" + pad(date.getMonth() + 1);
+            return date.getUTCFullYear() + "-" + pad(date.getUTCMonth() + 1);
         }
         return day;
     }
@@ -308,9 +326,9 @@ function skoreInitSummary(containerId) {
     function customBucketLabel(date, count, unit) {
         const step = Math.max(1, count);
         if (unit === "month") {
-            const months = date.getFullYear() * 12 + date.getMonth();
+            const months = date.getUTCFullYear() * 12 + date.getUTCMonth();
             const bucket = Math.floor(months / step) * step;
-            const start = new Date(Math.floor(bucket / 12), bucket % 12, 1);
+            const start = new Date(Date.UTC(Math.floor(bucket / 12), bucket % 12, 1));
             return formatBucket(start, "month");
         }
         const unitMs = {
@@ -366,9 +384,7 @@ function skoreInitSummary(containerId) {
 
     // ------------------------------------------------------------- main render
     function refresh() {
-        tbody.querySelectorAll(".summary-group-header").forEach((header) => header.remove());
-
-        const term = searchInput ? searchInput.value.trim().toLowerCase() : "";
+        const term = currentSearchTerm();
         const activeByField = collectCheckboxFilters();
         const visible = new Map();
         dataRows.forEach((row) => {
@@ -396,6 +412,11 @@ function skoreInitSummary(containerId) {
         tbody.replaceChildren();
 
         if (groupState) {
+            // Group separators span only the columns currently shown so the bar
+            // never overshoots when columns are hidden.
+            const visibleColumnCount = shadowRoot.querySelectorAll(
+                "thead th:not(.summary-col-hidden)"
+            ).length;
             const groups = [];
             const byKey = new Map();
             ordered.forEach((row) => {
@@ -411,7 +432,7 @@ function skoreInitSummary(containerId) {
                 const header = document.createElement("tr");
                 header.className = "summary-group-header";
                 const cell = document.createElement("td");
-                cell.colSpan = columnCount;
+                cell.colSpan = visibleColumnCount;
                 cell.textContent = groupPrefix() + group.label + " (" + shown + ")";
                 header.appendChild(cell);
                 if (shown === 0) {
@@ -664,12 +685,17 @@ function skoreInitSummary(containerId) {
             return;
         }
         const activeByField = collectCheckboxFilters();
+        const term = currentSearchTerm();
         dataRows.forEach((row) => {
             const checkbox = row.querySelector(".skore-summary-row");
             if (!checkbox) {
                 return;
             }
-            if (!passesCheckboxFilters(row, activeByField) || !passesDateRange(row)) {
+            if (
+                !passesCheckboxFilters(row, activeByField) ||
+                !passesDateRange(row) ||
+                !rowMatchesSearch(row, term)
+            ) {
                 return;
             }
             if (rowMatchesBrushes(row)) {
@@ -798,11 +824,17 @@ function skoreInitSummary(containerId) {
 
         const hasSelection = selectedIds.size > 0;
 
-        // The Filter menu (categorical values + date range) narrows which lines
-        // are drawn, mirroring how it subsets rows in the table view.
+        // The Filter menu (categorical values + date range) and the search term
+        // narrow which lines are drawn, mirroring how they subset rows in the
+        // table view so both stay consistent.
         const activeByField = collectCheckboxFilters();
+        const term = currentSearchTerm();
         function rowVisible(row) {
-            return passesCheckboxFilters(row, activeByField) && passesDateRange(row);
+            return (
+                passesCheckboxFilters(row, activeByField) &&
+                passesDateRange(row) &&
+                rowMatchesSearch(row, term)
+            );
         }
 
         const colorIndex = colorSelect ? parseInt(colorSelect.value, 10) || 0 : 0;
