@@ -901,10 +901,12 @@ if sklearn_version < parse_version("1.9"):
         minversion=None,
         categorical_feature_names=None,
     ):
+        if constructor_name == "pandas" and sklearn_version < parse_version("1.8"):
+            constructor_name = "dataframe"
         return _sk_convert_container(
             container,
             constructor_name,
-            column_name=column_names,
+            columns_name=column_names,
             dtype=dtype,
             minversion=minversion,
             categorical_feature_names=categorical_feature_names,

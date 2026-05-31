@@ -1,4 +1,5 @@
 import sys
+import types
 from unittest.mock import patch
 
 import pytest
@@ -55,12 +56,24 @@ def test_get_environment_info_jupyter(mock_get_ipython):
     assert info["details"]["ipython_shell"] == "ZMQInteractiveShell"
 
 
-def test_is_environment_notebook_like():
+@patch.dict("os.environ", {}, clear=True)
+@patch("skore._utils._environment.get_ipython", create=True, side_effect=NameError)
+def test_is_environment_notebook_like(_mock_get_ipython):
     """Test notebook-like environment detection"""
-    with patch.dict("os.environ", {"VSCODE_PID": "12345"}):
+    non_interactive_sys = types.SimpleNamespace(
+        executable=sys.executable,
+        version=sys.version,
+    )
+    with (
+        patch("skore._utils._environment.os.environ", {"VSCODE_PID": "12345"}),
+        patch("skore._utils._environment.sys", non_interactive_sys),
+    ):
         assert is_environment_notebook_like() is False
 
-    with patch.dict("os.environ", {}, clear=True):
+    with (
+        patch("skore._utils._environment.os.environ", {}),
+        patch("skore._utils._environment.sys", non_interactive_sys),
+    ):
         assert is_environment_notebook_like() is False
 
 
