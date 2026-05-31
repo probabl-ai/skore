@@ -58,10 +58,19 @@ def test_get_environment_info_jupyter(mock_get_ipython):
 def test_is_environment_notebook_like():
     """Test notebook-like environment detection"""
     with patch.dict("os.environ", {"VSCODE_PID": "12345"}):
-        assert is_environment_notebook_like() is True
+        assert is_environment_notebook_like() is False
 
     with patch.dict("os.environ", {}, clear=True):
         assert is_environment_notebook_like() is False
+
+
+@patch("skore._utils._environment.os.environ", {"VSCODE_PID": "12345"})
+@patch("skore._utils._environment.sys")
+def test_is_environment_notebook_like_vscode_interactive(mock_sys):
+    """VS Code interactive window uses notebook-like rendering."""
+    mock_sys.ps1 = True
+
+    assert is_environment_notebook_like() is True
 
 
 @patch("skore._utils._environment.get_ipython", create=True)

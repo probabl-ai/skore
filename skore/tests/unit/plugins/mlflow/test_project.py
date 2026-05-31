@@ -211,9 +211,16 @@ class TestProject:
         assert metadata["dataset"]
         assert metadata["roc_auc_mean"] is not None
         assert metadata["fit_time_mean"] is not None
+        assert metadata["roc_auc_std"] is not None
+        assert metadata["fit_time_std"] is not None
+        assert metadata["predict_time_std"] is not None
 
         run = mlflow.get_run(metadata["id"])
         assert run.data.metrics["roc_auc"] == pytest.approx(metadata["roc_auc_mean"])
+        assert run.data.metrics["roc_auc_std"] == pytest.approx(metadata["roc_auc_std"])
+        assert run.data.metrics["fit_time_std"] == pytest.approx(
+            metadata["fit_time_std"]
+        )
         assert "random_state" in run.data.params
         assert run.data.params["random_state"] == "42"
 

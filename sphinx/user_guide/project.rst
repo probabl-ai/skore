@@ -23,9 +23,10 @@ Jupyter-like environments.
 The interactive view has three modes (Table, parallel-coordinates Plot, and Trend)
 and lets you filter rows and pick reports across any of them; the selection produces
 a query string ready to pass to ``Summary.query(...)``. Once the reports are filtered,
-retrieve them by calling the ``reports`` method on the object returned by
+retrieve them by calling the ``compare`` method on the object returned by
 :meth:`Project.summarize`. This method returns a list of
-:class:`EstimatorReport` instances.
+:class:`EstimatorReport` instances (or a :class:`ComparisonReport` when called with
+``return_as="report"``).
 
 To retrieve a specific report for which you have its `id`, use the method
 :meth:`Project.get` to retrieve the :class:`EstimatorReport`.

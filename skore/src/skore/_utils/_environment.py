@@ -55,9 +55,15 @@ def get_environment_info() -> dict[str, Any]:
 
 
 def is_environment_notebook_like() -> bool:
-    """Return `True` if the execution context can render HTML. `False` otherwise."""
+    """Return ``True`` when Jupyter-style HTML rendering is appropriate.
+
+    VS Code scripts and test runners set ``VSCODE_PID`` but are not notebook
+    contexts; only Jupyter kernels and the VS Code *interactive* window qualify.
+    """
     info = get_environment_info()
-    return info["is_vscode"] or info["is_jupyter"]
+    if info["is_jupyter"]:
+        return True
+    return info["environment_name"] == "vscode_interactive"
 
 
 def is_environment_sphinx_build() -> bool:

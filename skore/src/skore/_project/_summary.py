@@ -250,8 +250,14 @@ class Summary(ReprHTMLMixin):
         else:
             text = str(value)
             cell = {"display": text, "sort": text.lower()}
-        if f"{column}_std" in record:
-            cell["std"] = repr(float(record[f"{column}_std"]))
+        std_column = f"{column}_std"
+        if std_column in record:
+            std_value = record[std_column]
+            cell["std"] = (
+                repr(float(std_value))
+                if std_value is not None and not isna(std_value)
+                else "nan"
+            )
         return cell
 
     def _html_repr(self) -> str:
