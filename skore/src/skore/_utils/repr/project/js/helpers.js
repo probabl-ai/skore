@@ -122,29 +122,38 @@ function formatTick(value) {
     return Number.parseFloat(value.toPrecision(4)).toString();
 }
 
-function colorFor(t) {
-    // Map t in [0, 1] across a blue -> light gray -> red gradient; NaN is gray.
+function parseColor(value) {
+    const hex = value.trim().replace("#", "");
+    return [
+        parseInt(hex.slice(0, 2), 16),
+        parseInt(hex.slice(2, 4), 16),
+        parseInt(hex.slice(4, 6), 16),
+    ];
+}
+
+function themeColor(container, name, fallback) {
+    const raw = container
+        ? getComputedStyle(container).getPropertyValue(name).trim()
+        : "";
+    return raw ? parseColor(raw) : fallback;
+}
+
+function colorFor(t, container) {
+    // Map t in [0, 1] across theme blue -> theme orange; NaN is gray.
     if (Number.isNaN(t)) {
         return "rgb(150, 150, 150)";
     }
-    const stops = [
-        [59, 76, 192],
-        [221, 221, 221],
-        [180, 4, 38],
-    ];
+    const low = themeColor(container, "--color-blue", [48, 67, 240]);
+    const high = themeColor(container, "--color-orange", [249, 115, 22]);
     const clamped = Math.min(1, Math.max(0, t));
-    const scaled = clamped * (stops.length - 1);
-    const lower = Math.floor(scaled);
-    const upper = Math.min(stops.length - 1, lower + 1);
-    const frac = scaled - lower;
-    const mix = (a, b) => Math.round(a + (b - a) * frac);
+    const mix = (a, b) => Math.round(a + (b - a) * clamped);
     return (
         "rgb(" +
-        mix(stops[lower][0], stops[upper][0]) +
+        mix(low[0], high[0]) +
         ", " +
-        mix(stops[lower][1], stops[upper][1]) +
+        mix(low[1], high[1]) +
         ", " +
-        mix(stops[lower][2], stops[upper][2]) +
+        mix(low[2], high[2]) +
         ")"
     );
 }

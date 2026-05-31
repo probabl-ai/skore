@@ -185,7 +185,10 @@ function setupPlot(ctx) {
                 dim ? "summary-plot-line summary-plot-line--dim" : "summary-plot-line"
             );
             path.setAttribute("d", d.trim());
-            path.setAttribute("stroke", colorFor(Number.isNaN(colorValue) ? NaN : t));
+            path.setAttribute(
+                "stroke",
+                colorFor(Number.isNaN(colorValue) ? NaN : t, ctx.container)
+            );
             const title = document.createElementNS(SVG_NS, "title");
             title.textContent = checkbox ? checkbox.dataset.id : "";
             path.appendChild(title);

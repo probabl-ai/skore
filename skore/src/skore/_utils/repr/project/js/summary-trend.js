@@ -1,13 +1,17 @@
-const TREND_PALETTE = [
-    "rgb(59, 76, 192)",
-    "rgb(230, 97, 1)",
-    "rgb(27, 158, 119)",
-    "rgb(180, 4, 38)",
-    "rgb(117, 112, 179)",
-    "rgb(8, 145, 178)",
-    "rgb(217, 119, 6)",
-    "rgb(102, 102, 102)",
-];
+function trendPalette(container) {
+    const blue = themeColor(container, "--color-blue", [48, 67, 240]);
+    const orange = themeColor(container, "--color-orange", [249, 115, 22]);
+    const toRgb = (c) => "rgb(" + c[0] + ", " + c[1] + ", " + c[2] + ")";
+    return [
+        toRgb(blue),
+        toRgb(orange),
+        "rgb(27, 158, 119)",
+        "rgb(180, 4, 38)",
+        "rgb(117, 112, 179)",
+        "rgb(8, 145, 178)",
+        "rgb(102, 102, 102)",
+    ];
+}
 
 function setupTrend(ctx) {
     const { dataRows } = ctx;
@@ -302,10 +306,12 @@ function setupTrend(ctx) {
             }
         }
 
+        const palette = trendPalette(ctx.container);
+
         groups.forEach((group, gi) => {
             const color = ctx.groupState
-                ? TREND_PALETTE[gi % TREND_PALETTE.length]
-                : TREND_PALETTE[0];
+                ? palette[gi % palette.length]
+                : palette[0];
             if (group.points.length > 1) {
                 let d = "";
                 group.points.forEach((pt, i) => {
