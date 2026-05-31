@@ -17,8 +17,13 @@ if TYPE_CHECKING:
     from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
 
-# Columns that are never shown to the user (e.g. constant within a project).
-_HIDDEN_COLUMNS = ["ml_task"]
+_IGNORED_COLUMNS = ["ml_task"]
+_METADATA_COLUMNS = frozenset(
+    {"key", "date", "learner", "dataset", "ml_task", "report_type"}
+)
+# Order of columns in the HTML table; metric columns are inserted at ``...``.
+_COLUMN_ORDER = ("id", "key", ..., "date", "learner", "dataset", "report_type")
+_HIDDEN_COLUMNS = ("learner", "dataset", "report_type")
 
 _COLUMN_LABELS = {
     "id": "ID",
@@ -33,29 +38,6 @@ _COLUMN_LABELS = {
     "fit_time": "Fit time (s)",
     "predict_time": "Predict time (s)",
 }
-
-
-def _verbose_name(column: str) -> str:
-    """Return a human-readable name for ``column``."""
-    if column in _COLUMN_LABELS:
-        return _COLUMN_LABELS[column]
-    for suffix, qualifier in (("_mean", "mean"), ("_std", "std")):
-        if column.endswith(suffix):
-            base = column[: -len(suffix)]
-            return f"{_verbose_name(base)} ({qualifier})"
-    return column.replace("_", " ").capitalize()
-
-
-def _dtype_to_html_kind(column: str, dataframe: DataFrame) -> str:
-    """Map a frame column to the HTML table sort kind."""
-    if column == "id":
-        return "text"
-    dtype = dataframe.dtypes[column]
-    if is_datetime64_any_dtype(dtype):
-        return "date"
-    if is_numeric_dtype(dtype):
-        return "number"
-    return "text"
 
 
 class Summary(ReprHTMLMixin):
@@ -86,8 +68,64 @@ class Summary(ReprHTMLMixin):
             dataframe["learner"] = Categorical(dataframe["learner"])
             for column in ("key", "dataset", "ml_task", "report_type"):
                 dataframe[column] = dataframe[column].astype("string")
+            dataframe = self._coalesce_mean_metrics(dataframe)
         self._summary = dataframe
         self.project = project
+
+    @staticmethod
+    def _verbose_name(column: str) -> str:
+        """Return a human-readable name for ``column``."""
+        if column in _COLUMN_LABELS:
+            return _COLUMN_LABELS[column]
+        if column.endswith("_std"):
+            base = column[: -len("_std")]
+            return f"{Summary._verbose_name(base)} (std)"
+        return column.replace("_", " ").capitalize()
+
+    @staticmethod
+    def _coalesce_mean_metrics(dataframe: DataFrame) -> DataFrame:
+        """Merge ``metric_mean`` columns into the matching ``metric`` column."""
+        for mean_column in [
+            column for column in dataframe.columns if column.endswith("_mean")
+        ]:
+            base = mean_column[: -len("_mean")]
+            if base not in dataframe.columns:
+                dataframe = dataframe.rename(columns={mean_column: base})
+                continue
+            if not dataframe[mean_column].isna().all():
+                if dataframe[base].isna().all():
+                    dataframe[base] = dataframe[mean_column]
+                else:
+                    dataframe[base] = dataframe[base].combine_first(
+                        dataframe[mean_column]
+                    )
+            dataframe = dataframe.drop(columns=mean_column)
+        return dataframe
+
+    @staticmethod
+    def _column_role(column: str) -> str:
+        """Return ``metadata``, ``metric``, or ``std`` for a frame column."""
+        if column in _METADATA_COLUMNS:
+            return "metadata"
+        if column.endswith("_std"):
+            return "std"
+        return "metric"
+
+    @staticmethod
+    def _is_hidden_by_default(column: str) -> bool:
+        """Return whether ``column`` should start hidden in the HTML table."""
+        return column in _HIDDEN_COLUMNS or column.endswith("_std")
+
+    def _dtype_to_html_kind(self, column: str) -> str:
+        """Map a frame column to the HTML table sort kind."""
+        if column == "id":
+            return "text"
+        dtype = self._summary.dtypes[column]
+        if is_datetime64_any_dtype(dtype):
+            return "date"
+        if is_numeric_dtype(dtype):
+            return "number"
+        return "text"
 
     def frame(
         self, *, report_type: Literal["estimator", "cross-validation"] | None = None
@@ -104,24 +142,19 @@ class Summary(ReprHTMLMixin):
         Returns
         -------
         frame : pandas.DataFrame
-            The metadata and metrics of the reports. Metric columns that are entirely
-            empty (e.g. metrics not applicable to the selected report type or ML task)
-            are dropped to only keep useful information. The ``ml_task`` column is
-            dropped as well, as it is constant within a project.
+            The metadata and metrics of the reports.
         """
         frame = self._summary
 
         if report_type is not None:
             frame = frame[frame["report_type"] == report_type]
 
-        metric_columns = frame.select_dtypes(include="number").columns
-        kept_metrics = frame[metric_columns].dropna(axis="columns", how="all").columns
         return frame[
             [
                 column
                 for column in frame.columns
-                if column not in _HIDDEN_COLUMNS
-                and (column not in metric_columns or column in kept_metrics)
+                if column not in _IGNORED_COLUMNS
+                and (column in _METADATA_COLUMNS or not frame[column].isna().all())
             ]
         ]
 
@@ -174,9 +207,6 @@ class Summary(ReprHTMLMixin):
         if self._summary.empty:
             return []
 
-        if self.project is None or "id" not in self._summary.index.names:
-            raise RuntimeError("Bad condition: it is not a valid `Summary` object.")
-
         reports = [
             self.project.get(id) for id in self._summary.index.get_level_values("id")
         ]
@@ -206,18 +236,16 @@ class Summary(ReprHTMLMixin):
     def __repr__(self) -> str:
         return repr(self._summary)
 
-    def _cell(self, column: str, value: object) -> dict[str, str]:
+    @staticmethod
+    def _cell(value: object) -> dict[str, str]:
         """Build the display/sort parts of a single HTML table cell."""
-        if value is None or isna(value):
+        if isna(value):
             return {"display": "", "sort": ""}
-
         if isinstance(value, Timestamp):
             text = value.isoformat()
             return {"display": text, "sort": text}
-
         if isinstance(value, float):
             return {"display": f"{value:.6g}", "sort": repr(value)}
-
         text = str(value)
         return {"display": text, "sort": text.lower()}
 
@@ -232,17 +260,21 @@ class Summary(ReprHTMLMixin):
         if not self._summary.empty:
             frame = self.frame()
 
-            # Column order: id, then metadata/metrics, with ``date`` pushed to the
-            # very end so the metrics sit right after the identifiers.
-            ordered_columns = [column for column in frame.columns if column != "date"]
-            if "date" in frame.columns:
-                ordered_columns.append("date")
-            data_columns = ["id", *ordered_columns]
+            known = {column for column in _COLUMN_ORDER if column is not ...}
+            metric_columns = [column for column in frame.columns if column not in known]
+            data_columns = []
+            for column in _COLUMN_ORDER:
+                if column is ...:
+                    data_columns.extend(metric_columns)
+                elif column == "id" or column in frame.columns:
+                    data_columns.append(column)
             columns = [
                 {
                     "key": column,
-                    "label": _verbose_name(column),
-                    "kind": _dtype_to_html_kind(column, self._summary),
+                    "label": self._verbose_name(column),
+                    "kind": self._dtype_to_html_kind(column),
+                    "role": self._column_role(column),
+                    "hidden_by_default": self._is_hidden_by_default(column),
                 }
                 for column in data_columns
             ]
@@ -254,20 +286,34 @@ class Summary(ReprHTMLMixin):
                 filters.append(
                     {
                         "field": field,
-                        "label": _verbose_name(field),
+                        "label": self._verbose_name(field),
                         "options": options,
                     }
                 )
+
+            def std_for(column: str, row: object) -> str:
+                std_column = f"{column}_std"
+                if std_column not in frame.columns:
+                    return ""
+                std_value = row[std_column]  # type: ignore[index]
+                if isna(std_value):
+                    return ""
+                return repr(float(std_value))
 
             for id, (_, row) in zip(
                 frame.index.get_level_values("id"),
                 frame.iterrows(),
                 strict=True,
             ):
-                cells = [
-                    self._cell(column, id if column == "id" else row[column])
-                    for column in data_columns
-                ]
+                cells = []
+                for column in data_columns:
+                    value = id if column == "id" else row[column]
+                    cell = self._cell(value)
+                    if column != "id":
+                        std_text = std_for(column, row)
+                        if std_text:
+                            cell["std"] = std_text
+                    cells.append(cell)
                 date = row["date"]
                 date_value = (
                     ""

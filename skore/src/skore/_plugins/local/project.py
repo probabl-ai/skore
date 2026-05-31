@@ -43,6 +43,11 @@ if TYPE_CHECKING:
         roc_auc_mean: float | None
         fit_time_mean: float | None
         predict_time_mean: float | None
+        rmse_std: float | None
+        log_loss_std: float | None
+        roc_auc_std: float | None
+        fit_time_std: float | None
+        predict_time_std: float | None
 
 
 def ensure_project_is_not_deleted(method: Callable[P, R]) -> Callable[P, R]:
@@ -259,6 +264,11 @@ class Project:
                 "roc_auc_mean": value.get("roc_auc_mean"),
                 "fit_time_mean": value.get("fit_time_mean"),
                 "predict_time_mean": value.get("predict_time_mean"),
+                "rmse_std": value.get("rmse_std"),
+                "log_loss_std": value.get("log_loss_std"),
+                "roc_auc_std": value.get("roc_auc_std"),
+                "fit_time_std": value.get("fit_time_std"),
+                "predict_time_std": value.get("predict_time_std"),
             }
             for value in self.__metadata_storage.values()
             if value["project_name"] == self.name

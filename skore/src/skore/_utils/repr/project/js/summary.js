@@ -1,9 +1,4 @@
 const SKORE_SUMMARY_ELLIPSIS_COLUMNS = new Set(["id", "dataset"]);
-const SKORE_SUMMARY_DEFAULT_HIDDEN_COLUMNS = new Set([
-    "learner",
-    "dataset",
-    "report_type",
-]);
 
 function middleEllipsis(text, head = 8, tail = 6) {
     if (text.length <= head + tail + 3) {
@@ -650,24 +645,19 @@ function skoreInitSummary(containerId) {
     shadowRoot.addEventListener("click", closeMenus);
     // The per-column value submenus open on hover/focus (handled in CSS).
 
-    // ------------------------------------------------------ column ordering
+    // ------------------------------------------------------ column visibility
     // Each cell carries a stable ``data-column-index`` matching its header, so
-    // ``cellAt(row, naturalIndex)`` keeps working even after the DOM has been
-    // reshuffled (it never relies on the cell's current child position).
+    // ``cellAt(row, naturalIndex)`` does not rely on the cell's child position.
     function cellAt(row, naturalIndex) {
         return row.querySelector(
             'td[data-column-index="' + naturalIndex + '"]'
         );
     }
 
-    // Unchecked columns are hidden. When the user re-checks one, its header
-    // and cells are appended to the end of their row so the newly-shown column
-    // appears on the rightmost side of the visible columns; cells stay
-    // addressable by their stable ``data-column-index`` regardless of order.
+    // Column visibility is a CSS toggle only; Python emits the final order.
     const columnToggles = Array.from(
         shadowRoot.querySelectorAll(".skore-summary-column-toggle")
     );
-    const headerRow = shadowRoot.querySelector("thead tr");
 
     function headerAt(naturalIndex) {
         return shadowRoot.querySelector(
@@ -677,46 +667,20 @@ function skoreInitSummary(containerId) {
 
     function setColumnVisible(naturalIndex, visible) {
         const header = headerAt(naturalIndex);
-        if (visible && header && headerRow) {
-            headerRow.appendChild(header);
-        }
         if (header) {
             header.classList.toggle("summary-col-hidden", !visible);
         }
         dataRows.forEach((row) => {
             const cell = cellAt(row, naturalIndex);
-            if (!cell) {
-                return;
+            if (cell) {
+                cell.classList.toggle("summary-col-hidden", !visible);
             }
-            if (visible) {
-                row.appendChild(cell);
-            }
-            cell.classList.toggle("summary-col-hidden", !visible);
         });
     }
 
     columnToggles.forEach((toggle) => {
-        if (SKORE_SUMMARY_DEFAULT_HIDDEN_COLUMNS.has(toggle.dataset.columnKey)) {
-            toggle.checked = false;
-        }
-    });
-
-    columnToggles.forEach((toggle) => {
         const index = toggle.dataset.columnIndex;
-        // Apply the initial visibility: default-unchecked columns start hidden
-        // in place (no reorder); they only move to the right once promoted.
-        if (!toggle.checked) {
-            const header = headerAt(index);
-            if (header) {
-                header.classList.add("summary-col-hidden");
-            }
-            dataRows.forEach((row) => {
-                const cell = cellAt(row, index);
-                if (cell) {
-                    cell.classList.add("summary-col-hidden");
-                }
-            });
-        }
+        setColumnVisible(index, toggle.checked);
         toggle.addEventListener("change", () => {
             setColumnVisible(index, toggle.checked);
         });
@@ -734,7 +698,10 @@ function skoreInitSummary(containerId) {
     // value via the column's stable data-column-index.
     const numericColumns = [];
     shadowRoot.querySelectorAll("thead th.summary-sortable").forEach((header) => {
-        if (header.dataset.sortKind === "number") {
+        if (
+            header.dataset.sortKind === "number" &&
+            header.dataset.columnRole !== "std"
+        ) {
             const label = header.querySelector(".summary-th-label");
             numericColumns.push({
                 index: parseInt(header.dataset.columnIndex, 10),
@@ -855,6 +822,17 @@ function skoreInitSummary(containerId) {
         node.setAttribute("text-anchor", anchor);
         node.textContent = text;
         group.appendChild(node);
+    }
+
+    function appendLine(group, x1, y1, x2, y2, stroke, className) {
+        const line = document.createElementNS(SVG_NS, "line");
+        line.setAttribute("class", className);
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.setAttribute("stroke", stroke);
+        group.appendChild(line);
     }
 
     function renderPlot() {
@@ -1218,10 +1196,20 @@ function skoreInitSummary(containerId) {
         let min = Infinity;
         let max = -Infinity;
         ordered.forEach((row) => {
-            const value = parseFloat(cellAt(row, metric.index).dataset.sort);
-            if (!Number.isNaN(value)) {
-                if (value < min) min = value;
-                if (value > max) max = value;
+            const cell = cellAt(row, metric.index);
+            const value = parseFloat(cell.dataset.sort);
+            if (Number.isNaN(value)) {
+                return;
+            }
+            const stdRaw = cell.dataset.std;
+            const std = stdRaw ? parseFloat(stdRaw) : NaN;
+            const lo = Number.isFinite(std) ? value - std : value;
+            const hi = Number.isFinite(std) ? value + std : value;
+            if (lo < min) {
+                min = lo;
+            }
+            if (hi > max) {
+                max = hi;
             }
         });
         if (min === Infinity) {
@@ -1271,10 +1259,13 @@ function skoreInitSummary(containerId) {
             if (!rowVisible(row)) {
                 return;
             }
-            const value = parseFloat(cellAt(row, metric.index).dataset.sort);
+            const cell = cellAt(row, metric.index);
+            const value = parseFloat(cell.dataset.sort);
             if (Number.isNaN(value)) {
                 return;
             }
+            const stdRaw = cell.dataset.std;
+            const std = stdRaw ? parseFloat(stdRaw) : NaN;
             const info = groupState ? groupInfo(row) : { key: "__all__", label: "" };
             let group = byKey.get(info.key);
             if (!group) {
@@ -1288,6 +1279,8 @@ function skoreInitSummary(containerId) {
                 y: valueY(value),
                 id: checkbox ? checkbox.dataset.id : "",
                 key: row.dataset.key || "",
+                value,
+                std,
             });
         });
 
@@ -1319,12 +1312,20 @@ function skoreInitSummary(containerId) {
         tooltip.className = "summary-trend-tooltip";
         tooltip.hidden = true;
 
-        function setTooltipContent(id, key) {
+        function setTooltipContent(id, key, value, std) {
             const idLine = document.createElement("div");
             idLine.textContent = "ID: " + middleEllipsis(id);
             const keyLine = document.createElement("div");
             keyLine.textContent = "Key: " + key;
-            tooltip.replaceChildren(idLine, keyLine);
+            const valueLine = document.createElement("div");
+            const text = formatTick(value);
+            valueLine.textContent =
+                metric.label +
+                ": " +
+                (Number.isFinite(std) && std > 0
+                    ? text + " \u00b1 " + formatTick(std)
+                    : text);
+            tooltip.replaceChildren(idLine, keyLine, valueLine);
         }
 
         function positionTooltip(evt) {
@@ -1401,6 +1402,38 @@ function skoreInitSummary(containerId) {
             group.points.forEach((pt) => {
                 const selected = selectedIds.has(pt.id);
                 const dim = hasSelection && !selected;
+                if (Number.isFinite(pt.std) && pt.std > 0) {
+                    const yTop = valueY(pt.value + pt.std);
+                    const yBot = valueY(pt.value - pt.std);
+                    const capW = 4;
+                    appendLine(
+                        plotG,
+                        pt.x,
+                        yTop,
+                        pt.x,
+                        yBot,
+                        color,
+                        "summary-trend-errorbar"
+                    );
+                    appendLine(
+                        plotG,
+                        pt.x - capW,
+                        yTop,
+                        pt.x + capW,
+                        yTop,
+                        color,
+                        "summary-trend-errorbar"
+                    );
+                    appendLine(
+                        plotG,
+                        pt.x - capW,
+                        yBot,
+                        pt.x + capW,
+                        yBot,
+                        color,
+                        "summary-trend-errorbar"
+                    );
+                }
                 const circle = document.createElementNS(SVG_NS, "circle");
                 circle.setAttribute(
                     "class",
@@ -1413,7 +1446,7 @@ function skoreInitSummary(containerId) {
                 circle.addEventListener("mouseenter", (evt) => {
                     circle.setAttribute("r", 6);
                     circle.classList.add("summary-trend-point--hover");
-                    setTooltipContent(pt.id, pt.key);
+                    setTooltipContent(pt.id, pt.key, pt.value, pt.std);
                     tooltip.hidden = false;
                     positionTooltip(evt);
                 });

@@ -3,7 +3,7 @@
     <div class="skore-summary-columns-panel" hidden>
         {% for column in columns %}
         <label class="skore-summary-columns-option">
-            <input type="checkbox" class="skore-summary-column-toggle" data-column-index="{{ loop.index }}" data-column-key="{{ column.key | e }}" checked>
+            <input type="checkbox" class="skore-summary-column-toggle" data-column-index="{{ loop.index }}" data-column-key="{{ column.key | e }}" data-column-role="{{ column.role | e }}"{% if not column.hidden_by_default %} checked{% endif %}>
             {{ column.label | e }}
         </label>
         {% endfor %}

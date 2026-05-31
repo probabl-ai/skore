@@ -1150,6 +1150,13 @@
     stroke-width: 2;
 }
 
+.summary-trend-errorbar {
+    fill: none;
+    stroke-width: 1;
+    stroke-opacity: 0.55;
+    pointer-events: none;
+}
+
 /* Dotted guide line marking a range cursor's position */
 .summary-trend-cursor {
     stroke: var(--color-blue);
