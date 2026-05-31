@@ -237,102 +237,87 @@ class Summary(ReprHTMLMixin):
         return repr(self._summary)
 
     @staticmethod
-    def _cell(value: object) -> dict[str, str]:
+    def _cell(record: dict[str, Any], column: str) -> dict[str, str]:
         """Build the display/sort parts of a single HTML table cell."""
+        value = record[column]
         if isna(value):
-            return {"display": "", "sort": ""}
-        if isinstance(value, Timestamp):
+            cell = {"display": "", "sort": ""}
+        elif isinstance(value, Timestamp):
             text = value.isoformat()
-            return {"display": text, "sort": text}
-        if isinstance(value, float):
-            return {"display": f"{value:.6g}", "sort": repr(value)}
-        text = str(value)
-        return {"display": text, "sort": text.lower()}
+            cell = {"display": text, "sort": text}
+        elif isinstance(value, float):
+            cell = {"display": "", "sort": repr(float(value))}
+        else:
+            text = str(value)
+            cell = {"display": text, "sort": text.lower()}
+        if f"{column}_std" in record:
+            cell["std"] = repr(float(record[f"{column}_std"]))
+        return cell
 
     def _html_repr(self) -> str:
         """Show the HTML representation of the summary as a table."""
         container_id = f"skore-summary-{uuid.uuid4().hex[:8]}"
 
-        columns: list[dict[str, Any]] = []
-        rows: list[dict[str, Any]] = []
-        filters: list[dict[str, Any]] = []
-
-        if not self._summary.empty:
-            frame = self.frame()
-
-            known = {column for column in _COLUMN_ORDER if column is not ...}
-            metric_columns = [column for column in frame.columns if column not in known]
-            data_columns = []
-            for column in _COLUMN_ORDER:
-                if column is ...:
-                    data_columns.extend(metric_columns)
-                elif column == "id" or column in frame.columns:
-                    data_columns.append(column)
-            columns = [
+        if self._summary.empty:
+            return render_template(
+                "project/summary.html.j2",
                 {
-                    "key": column,
-                    "label": self._verbose_name(column),
-                    "kind": self._dtype_to_html_kind(column),
-                    "role": self._column_role(column),
-                    "hidden_by_default": self._is_hidden_by_default(column),
-                }
-                for column in data_columns
-            ]
+                    "container_id": container_id,
+                    "report_title": "Project summary",
+                    "columns": [],
+                    "rows": [],
+                    "filters": [],
+                    "has_rows": False,
+                },
+            )
 
-            for field in ("report_type", "learner", "dataset"):
-                options = [
+        frame = self.frame()
+
+        known = {column for column in _COLUMN_ORDER if column is not ...}
+        metric_columns = [column for column in frame.columns if column not in known]
+        data_columns = []
+        for column in _COLUMN_ORDER:
+            if column is ...:
+                data_columns.extend(metric_columns)
+            elif column == "id" or column in frame.columns:
+                data_columns.append(column)
+
+        columns = [
+            {
+                "key": column,
+                "label": self._verbose_name(column),
+                "kind": self._dtype_to_html_kind(column),
+                "role": self._column_role(column),
+                "hidden_by_default": self._is_hidden_by_default(column),
+            }
+            for column in data_columns
+        ]
+
+        filters = [
+            {
+                "field": field,
+                "label": self._verbose_name(field),
+                "options": [
                     {"value": str(value)} for value in sorted(frame[field].unique())
-                ]
-                filters.append(
-                    {
-                        "field": field,
-                        "label": self._verbose_name(field),
-                        "options": options,
-                    }
-                )
+                ],
+            }
+            for field in ("report_type", "learner", "dataset")
+        ]
 
-            def std_for(column: str, row: object) -> str:
-                std_column = f"{column}_std"
-                if std_column not in frame.columns:
-                    return ""
-                std_value = row[std_column]  # type: ignore[index]
-                if isna(std_value):
-                    return ""
-                return repr(float(std_value))
-
-            for id, (_, row) in zip(
-                frame.index.get_level_values("id"),
-                frame.iterrows(),
-                strict=True,
-            ):
-                cells = []
-                for column in data_columns:
-                    value = id if column == "id" else row[column]
-                    cell = self._cell(value)
-                    if column != "id":
-                        std_text = std_for(column, row)
-                        if std_text:
-                            cell["std"] = std_text
-                    cells.append(cell)
-                date = row["date"]
-                date_value = (
-                    ""
-                    if isna(date)
-                    else (
-                        date.isoformat() if isinstance(date, Timestamp) else str(date)
-                    )
-                )
-                rows.append(
-                    {
-                        "id": id,
-                        "key": str(row["key"]),
-                        "report_type": str(row["report_type"]),
-                        "learner": str(row["learner"]),
-                        "dataset": str(row["dataset"]),
-                        "date": date_value,
-                        "cells": cells,
-                    }
-                )
+        rows = [
+            {
+                "id": record["id"],
+                "key": str(record["key"]),
+                "report_type": str(record["report_type"]),
+                "learner": str(record["learner"]),
+                "dataset": str(record["dataset"]),
+                "date": self._cell(record, "date")["display"],
+                "cells": [self._cell(record, column) for column in data_columns],
+            }
+            for record in frame.assign(id=frame.index.get_level_values("id")).to_dict(
+                orient="records"
+            )
+        ]
 
         return render_template(
             "project/summary.html.j2",

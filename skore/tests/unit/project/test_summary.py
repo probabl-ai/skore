@@ -313,6 +313,32 @@ class TestSummary:
 
         assert 'data-std="' not in html
 
+    def test_html_repr_sends_raw_numbers(self):
+        frame = DataFrame(
+            {
+                "key": ["k0", "k1"],
+                "date": ["2024-01-01", "2024-01-02"],
+                "learner": ["LinearRegression", "LinearRegression"],
+                "dataset": ["d0", "d0"],
+                "ml_task": ["regression", "regression"],
+                "report_type": ["cross-validation", "cross-validation"],
+                "rmse_mean": [1.0, 2.0],
+                "rmse_std": [0.1, None],
+            }
+        )
+        frame.index = MultiIndex.from_arrays(
+            [RangeIndex(2), Index(["cv0", "cv1"], name="id", dtype=str)]
+        )
+        html = Summary(frame)._html_repr()
+
+        # Numbers are emitted raw in ``data-sort`` with an empty cell body; the
+        # client renders the visible value and the NA fallback.
+        assert 'data-sort="1.0" data-std="0.1"></td>' in html
+        # ``data-std`` is always present for a metric paired with ``*_std`` and
+        # carries the raw value (``nan`` for NA), leaving the rendering to the
+        # client.
+        assert 'data-sort="2.0" data-std="nan"></td>' in html
+
     def test_query(self, estimator_report_regression):
         project = FakeProject(estimator_report_regression)
         summary = _summary_from_project(project)

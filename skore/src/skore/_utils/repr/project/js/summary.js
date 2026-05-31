@@ -28,6 +28,17 @@ function formatDate(value) {
     );
 }
 
+function formatNumber(raw) {
+    if (!raw) {
+        return "";
+    }
+    const value = Number.parseFloat(raw);
+    if (!Number.isFinite(value)) {
+        return "";
+    }
+    return Number.parseFloat(value.toPrecision(6)).toString();
+}
+
 function skoreInitSummary(containerId) {
     const wrapper = document.getElementById(containerId + "-wrapper");
     const host = document.getElementById(containerId);
@@ -62,13 +73,22 @@ function skoreInitSummary(containerId) {
         const columnKey = th.dataset.columnKey;
         const columnIndex = parseInt(th.dataset.columnIndex, 10);
         const ellipsize = SKORE_SUMMARY_ELLIPSIS_COLUMNS.has(columnKey);
-        const isDate = th.dataset.sortKind === "date";
-        if (!ellipsize && !isDate) {
+        const kind = th.dataset.sortKind;
+        if (!ellipsize && kind !== "date" && kind !== "number") {
             return;
         }
         dataRows.forEach((row) => {
             const cell = row.querySelector(`td[data-column-index='${columnIndex}']`);
-            if (!cell || !cell.textContent) {
+            if (!cell) {
+                return;
+            }
+            // Numbers are sent raw in ``data-sort``; render the visible value here
+            // (and an empty cell for NA) so formatting is not duplicated in Python.
+            if (kind === "number") {
+                cell.textContent = formatNumber(cell.dataset.sort);
+                return;
+            }
+            if (!cell.textContent) {
                 return;
             }
             if (ellipsize) {
