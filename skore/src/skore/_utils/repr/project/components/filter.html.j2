@@ -9,9 +9,9 @@
             </button>
             <div class="skore-summary-filter-submenu">
                 {% for value in filter["options"] %}
-                <label class="skore-summary-filter-option"{% if value.title %} title="{{ value.title | e }}"{% endif %}>
+                <label class="skore-summary-filter-option">
                     <input type="checkbox" class="skore-summary-filter-value" data-filter-field="{{ filter.field | e }}" data-filter-value="{{ value.value | e }}" checked>
-                    {{ value.label | e }}
+                    <span class="skore-summary-filter-option-label">{{ value.value | e }}</span>
                 </label>
                 {% endfor %}
             </div>

@@ -24,7 +24,7 @@
                     <input type="checkbox" class="skore-summary-row" data-id="{{ row.id | e }}" aria-label="Select report {{ row.id | e }}">
                 </td>
                 {% for cell in row.cells %}
-                <td data-column-index="{{ loop.index }}" data-sort="{{ cell.sort | e }}"{% if cell.title %} title="{{ cell.title | e }}"{% endif %}>{{ cell.display | e }}</td>
+                <td data-column-index="{{ loop.index }}" data-sort="{{ cell.sort | e }}">{{ cell.display | e }}</td>
                 {% endfor %}
             </tr>
             {% endfor %}

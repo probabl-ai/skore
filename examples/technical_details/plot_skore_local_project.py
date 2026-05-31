@@ -48,7 +48,7 @@ for regularization in np.logspace(-7, 7, 31):
         clone(estimator).set_params(logisticregression__C=regularization),
         X,
         y,
-        splitter=0.2,
+        splitter=5,
         pos_label=1,
     )
     project.put(f"lr-regularization-{regularization:.1e}", report)

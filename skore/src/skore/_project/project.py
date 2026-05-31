@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
+from pandas import DataFrame, Index, MultiIndex, RangeIndex
+
 from skore._project import plugin
 from skore._project._summary import Summary
 from skore._project.dependencies import assert_optional_dependencies_installed
@@ -330,7 +332,15 @@ class Project:
         :func:`~skore.compare` :
             Compare selected reports side by side.
         """
-        return Summary.factory(self.__project)
+        frame = DataFrame(self.__project.summarize(), copy=False)
+        if not frame.empty:
+            frame.index = MultiIndex.from_arrays(
+                [
+                    RangeIndex(len(frame)),
+                    Index(frame.pop("id"), name="id", dtype=str),
+                ]
+            )
+        return Summary(frame, self.__project)
 
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()

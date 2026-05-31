@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import math
 import uuid
-from datetime import datetime
 from typing import TYPE_CHECKING
 
-from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
+from pandas import Categorical, DataFrame, Timestamp, isna, to_datetime
+from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 
 from skore._utils.repr import ReprHTMLMixin
 from skore._utils.repr.html_repr import render_template
@@ -18,13 +17,8 @@ if TYPE_CHECKING:
     from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
 
-_METADATA_COLUMNS = ["key", "date", "learner", "dataset", "ml_task", "report_type"]
 # Columns that are never shown to the user (e.g. constant within a project).
 _HIDDEN_COLUMNS = ["ml_task"]
-# Columns hidden by default in the HTML table but toggleable from the columns menu.
-_DEFAULT_HIDDEN_COLUMNS = ["learner", "dataset", "report_type"]
-# Columns rendered with a middle ellipsis in the HTML table.
-_ELLIPSIS_COLUMNS = ["id", "dataset"]
 
 _COLUMN_LABELS = {
     "id": "ID",
@@ -52,28 +46,16 @@ def _verbose_name(column: str) -> str:
     return column.replace("_", " ").capitalize()
 
 
-def _column_kind(column: str) -> str:
-    """Return the sort kind (``number``, ``date`` or ``text``) for ``column``."""
-    if column == "date":
-        return "date"
-    if column in _METADATA_COLUMNS or column == "id":
+def _dtype_to_html_kind(column: str, dataframe: DataFrame) -> str:
+    """Map a frame column to the HTML table sort kind."""
+    if column == "id":
         return "text"
-    return "number"
-
-
-def _format_date(value: object) -> str:
-    """Format an ISO date string, truncating the time to ``HH:MM:SS``."""
-    try:
-        return datetime.fromisoformat(str(value)).strftime("%Y-%m-%d %H:%M:%S")
-    except (TypeError, ValueError):
-        return str(value)
-
-
-def _middle_ellipsis(value: str, head: int = 8, tail: int = 6) -> str:
-    """Truncate the middle of ``value``, keeping its start and end."""
-    if len(value) <= head + tail + 3:
-        return value
-    return f"{value[:head]}...{value[-tail:]}"
+    dtype = dataframe.dtypes[column]
+    if is_datetime64_any_dtype(dtype):
+        return "date"
+    if is_numeric_dtype(dtype):
+        return "number"
+    return "text"
 
 
 class Summary(ReprHTMLMixin):
@@ -99,41 +81,13 @@ class Summary(ReprHTMLMixin):
     """
 
     def __init__(self, dataframe: DataFrame, project: Any = None) -> None:
+        if not dataframe.empty:
+            dataframe["date"] = to_datetime(dataframe["date"], errors="coerce")
+            dataframe["learner"] = Categorical(dataframe["learner"])
+            for column in ("key", "dataset", "ml_task", "report_type"):
+                dataframe[column] = dataframe[column].astype("string")
         self._summary = dataframe
         self.project = project
-
-    @staticmethod
-    def factory(project, /) -> Summary:
-        """
-        Construct a summary object from ``project`` at a given moment.
-
-        Parameters
-        ----------
-        project : ``skore._plugins.local.Project`` | ``skore._plugins.hub.Project``
-            The project from which the summary object is to be constructed.
-
-        Returns
-        -------
-        summary : Summary
-            Metadata and metrics for every report persisted in ``project``.
-
-        Notes
-        -----
-        This function is not intended for direct use. Instead simply use the accessor
-        :meth:`skore.Project.summarize`.
-        """
-        summary = DataFrame(project.summarize(), copy=False)
-
-        if not summary.empty:
-            summary["learner"] = Categorical(summary["learner"])
-            summary.index = MultiIndex.from_arrays(
-                [
-                    RangeIndex(len(summary)),
-                    Index(summary.pop("id"), name="id", dtype=str),
-                ]
-            )
-
-        return Summary(summary, project)
 
     def frame(
         self, *, report_type: Literal["estimator", "cross-validation"] | None = None
@@ -160,16 +114,14 @@ class Summary(ReprHTMLMixin):
         if report_type is not None:
             frame = frame[frame["report_type"] == report_type]
 
-        metric_columns = [
-            column for column in frame.columns if column not in _METADATA_COLUMNS
-        ]
+        metric_columns = frame.select_dtypes(include="number").columns
         kept_metrics = frame[metric_columns].dropna(axis="columns", how="all").columns
         return frame[
             [
                 column
                 for column in frame.columns
                 if column not in _HIDDEN_COLUMNS
-                and (column in _METADATA_COLUMNS or column in kept_metrics)
+                and (column not in metric_columns or column in kept_metrics)
             ]
         ]
 
@@ -255,25 +207,19 @@ class Summary(ReprHTMLMixin):
         return repr(self._summary)
 
     def _cell(self, column: str, value: object) -> dict[str, str]:
-        """Build the display/sort/title parts of a single HTML table cell."""
-        if value is None or (isinstance(value, float) and math.isnan(value)):
-            return {"display": "", "sort": "", "title": ""}
+        """Build the display/sort parts of a single HTML table cell."""
+        if value is None or isna(value):
+            return {"display": "", "sort": ""}
 
-        if column == "date":
-            display = _format_date(value)
-            return {"display": display, "sort": str(value), "title": ""}
+        if isinstance(value, Timestamp):
+            text = value.isoformat()
+            return {"display": text, "sort": text}
 
         if isinstance(value, float):
-            return {"display": f"{value:.6g}", "sort": repr(value), "title": ""}
+            return {"display": f"{value:.6g}", "sort": repr(value)}
 
         text = str(value)
-        if column in _ELLIPSIS_COLUMNS:
-            return {
-                "display": _middle_ellipsis(text),
-                "sort": text.lower(),
-                "title": text,
-            }
-        return {"display": text, "sort": text.lower(), "title": ""}
+        return {"display": text, "sort": text.lower()}
 
     def _html_repr(self) -> str:
         """Show the HTML representation of the summary as a table."""
@@ -296,28 +242,21 @@ class Summary(ReprHTMLMixin):
                 {
                     "key": column,
                     "label": _verbose_name(column),
-                    "kind": _column_kind(column),
-                    "hidden": column in _DEFAULT_HIDDEN_COLUMNS,
+                    "kind": _dtype_to_html_kind(column, self._summary),
                 }
                 for column in data_columns
             ]
 
-            # Each filterable column exposes its sorted unique values; long hashes
-            # (e.g. ``dataset``) are middle-ellipsized for display but matched in full.
             for field in ("report_type", "learner", "dataset"):
-                ellipsize = field in _ELLIPSIS_COLUMNS
-                options = []
-                for value in sorted(frame[field].unique()):
-                    text = str(value)
-                    options.append(
-                        {
-                            "value": text,
-                            "label": _middle_ellipsis(text) if ellipsize else text,
-                            "title": text if ellipsize else "",
-                        }
-                    )
+                options = [
+                    {"value": str(value)} for value in sorted(frame[field].unique())
+                ]
                 filters.append(
-                    {"field": field, "label": _verbose_name(field), "options": options}
+                    {
+                        "field": field,
+                        "label": _verbose_name(field),
+                        "options": options,
+                    }
                 )
 
             for id, (_, row) in zip(
@@ -332,8 +271,10 @@ class Summary(ReprHTMLMixin):
                 date = row["date"]
                 date_value = (
                     ""
-                    if date is None or (isinstance(date, float) and math.isnan(date))
-                    else str(date)
+                    if isna(date)
+                    else (
+                        date.isoformat() if isinstance(date, Timestamp) else str(date)
+                    )
                 )
                 rows.append(
                     {

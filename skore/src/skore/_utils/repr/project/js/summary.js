@@ -1,3 +1,38 @@
+const SKORE_SUMMARY_ELLIPSIS_COLUMNS = new Set(["id", "dataset"]);
+const SKORE_SUMMARY_DEFAULT_HIDDEN_COLUMNS = new Set([
+    "learner",
+    "dataset",
+    "report_type",
+]);
+
+function middleEllipsis(text, head = 8, tail = 6) {
+    if (text.length <= head + tail + 3) {
+        return text;
+    }
+    return text.slice(0, head) + "..." + text.slice(-tail);
+}
+
+function formatDate(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    const pad = (n) => String(n).padStart(2, "0");
+    return (
+        date.getUTCFullYear() +
+        "-" +
+        pad(date.getUTCMonth() + 1) +
+        "-" +
+        pad(date.getUTCDate()) +
+        " " +
+        pad(date.getUTCHours()) +
+        ":" +
+        pad(date.getUTCMinutes()) +
+        ":" +
+        pad(date.getUTCSeconds())
+    );
+}
+
 function skoreInitSummary(containerId) {
     const wrapper = document.getElementById(containerId + "-wrapper");
     const host = document.getElementById(containerId);
@@ -27,6 +62,48 @@ function skoreInitSummary(containerId) {
 
     const tbody = table.querySelector("tbody");
     const dataRows = Array.from(tbody.querySelectorAll("tr"));
+
+    shadowRoot.querySelectorAll(".summary-sortable").forEach((th) => {
+        const columnKey = th.dataset.columnKey;
+        const columnIndex = parseInt(th.dataset.columnIndex, 10);
+        const ellipsize = SKORE_SUMMARY_ELLIPSIS_COLUMNS.has(columnKey);
+        const isDate = th.dataset.sortKind === "date";
+        if (!ellipsize && !isDate) {
+            return;
+        }
+        dataRows.forEach((row) => {
+            const cell = row.querySelector(`td[data-column-index='${columnIndex}']`);
+            if (!cell || !cell.textContent) {
+                return;
+            }
+            if (ellipsize) {
+                const full = cell.textContent;
+                cell.title = full;
+                cell.textContent = middleEllipsis(full);
+            } else {
+                cell.textContent = formatDate(cell.textContent);
+            }
+        });
+    });
+
+    shadowRoot.querySelectorAll(".skore-summary-filter-field-toggle").forEach((toggle) => {
+        if (!SKORE_SUMMARY_ELLIPSIS_COLUMNS.has(toggle.dataset.field)) {
+            return;
+        }
+        const field = toggle.closest(".skore-summary-filter-field");
+        if (!field) {
+            return;
+        }
+        field.querySelectorAll(".skore-summary-filter-option").forEach((label) => {
+            const span = label.querySelector(".skore-summary-filter-option-label");
+            if (!span) {
+                return;
+            }
+            const full = span.textContent;
+            label.title = full;
+            span.textContent = middleEllipsis(full);
+        });
+    });
 
     // Current sort/group state (null means "no sort"/"no grouping").
     let sortState = null;
@@ -617,6 +694,12 @@ function skoreInitSummary(containerId) {
             cell.classList.toggle("summary-col-hidden", !visible);
         });
     }
+
+    columnToggles.forEach((toggle) => {
+        if (SKORE_SUMMARY_DEFAULT_HIDDEN_COLUMNS.has(toggle.dataset.columnKey)) {
+            toggle.checked = false;
+        }
+    });
 
     columnToggles.forEach((toggle) => {
         const index = toggle.dataset.columnIndex;

@@ -2,6 +2,7 @@ from copy import deepcopy
 
 from joblib import hash as joblib_hash
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
+from pandas.api.types import is_datetime64_any_dtype
 from pandas.testing import assert_index_equal
 from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
@@ -106,8 +107,21 @@ class FakeProject:
         ]
 
 
+def _summary_from_project(project) -> Summary:
+    """Mirror :meth:`Project.summarize` for unit tests using ``FakeProject``."""
+    frame = DataFrame(project.summarize(), copy=False)
+    if not frame.empty:
+        frame.index = MultiIndex.from_arrays(
+            [
+                RangeIndex(len(frame)),
+                Index(frame.pop("id"), name="id", dtype=str),
+            ]
+        )
+    return Summary(frame, project)
+
+
 class TestSummary:
-    def test_factory(
+    def test_summarize(
         self,
         estimator_report_regression,
         cross_validation_report_regression,
@@ -116,7 +130,7 @@ class TestSummary:
             estimator_report_regression,
             cross_validation_report_regression,
         )
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
         assert isinstance(summary, Summary)
         assert summary.project is project
@@ -130,9 +144,15 @@ class TestSummary:
             ),
         )
 
-    def test_factory_empty(self):
+    def test_summarize_date_dtype(self, estimator_report_regression):
+        project = FakeProject(estimator_report_regression)
+        summary = _summary_from_project(project)
+
+        assert is_datetime64_any_dtype(summary.frame()["date"])
+
+    def test_summarize_empty(self):
         project = FakeProject()
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
         assert isinstance(summary, Summary)
         assert summary.project is project
@@ -147,7 +167,7 @@ class TestSummary:
             estimator_report_regression,
             cross_validation_report_regression,
         )
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
         # Without filtering, both rows are present.
         assert len(summary.frame()) == 2
@@ -169,7 +189,7 @@ class TestSummary:
 
     def test_query(self, estimator_report_regression):
         project = FakeProject(estimator_report_regression)
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
         # Query with no match.
         empty = summary.query("ml_task == '<ml_task>'")
@@ -192,7 +212,7 @@ class TestSummary:
             estimator_report_regression,
             cross_validation_report_regression,
         )
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
         selected = summary.query("id in ['0']")
         assert list(selected.frame().index.get_level_values("id")) == ["0"]
@@ -207,7 +227,7 @@ class TestSummary:
             estimator_report_regression,
             cross_validation_report_regression,
         )
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
         assert summary.compare() == [
             estimator_report_regression,
@@ -219,7 +239,7 @@ class TestSummary:
         ]
 
     def test_compare_empty(self):
-        summary = Summary.factory(FakeProject())
+        summary = _summary_from_project(FakeProject())
 
         assert len(summary.frame()) == 0
         assert summary.compare() == []
@@ -227,7 +247,7 @@ class TestSummary:
     def test_compare_return_as_report(self, estimator_report_regression):
         regression1 = estimator_report_regression
         regression2 = deepcopy(estimator_report_regression)
-        summary = Summary.factory(FakeProject(regression1, regression2))
+        summary = _summary_from_project(FakeProject(regression1, regression2))
         comparison = summary.compare(return_as="report")
 
         assert isinstance(comparison, ComparisonReport)
@@ -249,7 +269,7 @@ class TestSummary:
         project = FakeProject(
             estimator_report_regression, estimator_report_binary_classification
         )
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
         with raises(
             RuntimeError,
@@ -273,7 +293,7 @@ class TestSummary:
             estimator_report_regression,
             cross_validation_report_regression,
         )
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
         html = summary._html_repr()
 
@@ -319,6 +339,17 @@ class TestSummary:
         assert 'data-group="none"' in html
         # Each row carries its full date for client-side filtering/grouping.
         assert "data-date=" in html
+        # Date and ellipsis formatting is applied on the client (see summary.js).
+        assert "SKORE_SUMMARY_ELLIPSIS_COLUMNS" in html
+        assert 'class="skore-summary-filter-option-label"' in html
+        assert "function middleEllipsis" in html
+        assert "function formatDate" in html
+        # Dataset filter options expose the full hash in the label (not pre-truncated).
+        dataset_hash = html.split('data-dataset="')[1].split('"')[0]
+        assert (
+            f'<span class="skore-summary-filter-option-label">{dataset_hash}</span>'
+            in html
+        )
         # The query-string box, the inline SVG copy icon button and the help tooltip.
         assert 'class="skore-summary-query"' in html
         assert 'class="skore-summary-copy"' in html
@@ -357,21 +388,20 @@ class TestSummary:
         assert 'class="skore-summary-columns-toggle"' in html
         assert 'aria-label="Show columns"' in html
         assert 'class="skore-summary-column-toggle"' in html
-        # Default-unchecked columns: their column-menu checkbox is unchecked,
-        # which on the client moves them to the rightmost positions.
+        # Default-hidden columns are configured on the client (see summary.js).
         panel_start = html.index('class="skore-summary-columns-panel"')
         panel_end = html.index("</div>", panel_start)
         panel = html[panel_start:panel_end]
-        for label, default_checked in (
-            ("Learner", False),
-            ("Dataset", False),
-            ("Report type", False),
-            ("RMSE", True),
-            ("Date", True),
-        ):
-            entry = panel[: panel.index(label)]
-            entry = entry[entry.rindex("<input") :]
-            assert ("checked" in entry) is default_checked, label
+        inputs = [
+            chunk
+            for chunk in panel.split("<input")
+            if "skore-summary-column-toggle" in chunk
+        ]
+        assert inputs, "expected at least one column toggle"
+        assert all("checked" in chunk for chunk in inputs)
+        assert "SKORE_SUMMARY_DEFAULT_HIDDEN_COLUMNS" in html
+        for key in ("learner", "dataset", "report_type"):
+            assert f'"{key}"' in html
         # ``date`` is rendered after the metric columns in the template; the
         # default-unchecked columns are still emitted in their natural place
         # because the JS handles the right-shift on the client.
@@ -387,7 +417,7 @@ class TestSummary:
         assert "text/plain" in mimebundle
 
     def test_html_repr_empty(self):
-        summary = Summary.factory(FakeProject())
+        summary = _summary_from_project(FakeProject())
 
         html = summary._html_repr()
 
