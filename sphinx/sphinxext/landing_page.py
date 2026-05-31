@@ -45,9 +45,9 @@ import numpy as np
 project = skore.Project(
     name="adult_census_survey", mode="local"
 )
-for alpha in np.logspace(-2, 2, 5):
+for alpha in np.logspace(-5, 5, 11):
     model = skrub.tabular_pipeline(sklearn.linear_model.Ridge(alpha=alpha))
-    project.put(f"ridge-{alpha:g}", skore.evaluate(model, df, y, splitter=5))"""
+    project.put(f"ridge-{alpha:g}", skore.evaluate(model, df, y, splitter=3))"""
 
 
 def _code_block(app: Sphinx, code: str) -> str:
