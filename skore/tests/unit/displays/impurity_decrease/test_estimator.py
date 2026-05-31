@@ -3,9 +3,9 @@ import numpy as np
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.utils._testing import _convert_container
 
 from skore import EstimatorReport, ImpurityDecreaseDisplay
+from skore._externals._sklearn_compat import _convert_container
 
 
 def test_with_pipeline(pyplot, forest_binary_classification_with_train_test):
@@ -14,8 +14,8 @@ def test_with_pipeline(pyplot, forest_binary_classification_with_train_test):
     )
     estimator = clone(estimator)
     columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(X_train, "dataframe", columns_name=columns_names)
-    X_test = _convert_container(X_test, "dataframe", columns_name=columns_names)
+    X_train = _convert_container(X_train, "pandas", column_names=columns_names)
+    X_test = _convert_container(X_test, "pandas", column_names=columns_names)
     model = Pipeline(
         [
             ("scaler", StandardScaler()),

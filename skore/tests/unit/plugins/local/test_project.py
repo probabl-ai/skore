@@ -86,9 +86,8 @@ def monkeypatch_metrics(monkeypatch, Datetime):
         "skore.CrossValidationReport.metrics.rmse",
         lambda _, data_source, aggregate: DataFrame.from_dict(
             {
-                ("Ridge", "mean"): {
-                    "RMSE": float(hash(f"<rmse_{aggregate}_{data_source}>"))
-                }
+                ("Ridge", "mean"): {"RMSE": float(hash(f"<rmse_mean_{data_source}>"))},
+                ("Ridge", "std"): {"RMSE": float(hash(f"<rmse_std_{data_source}>"))},
             }
         ),
     )
@@ -97,14 +96,15 @@ def monkeypatch_metrics(monkeypatch, Datetime):
         lambda _, aggregate: DataFrame.from_dict(
             {
                 "mean": {
-                    "Fit time (s)": float(hash(f"<fit_time_{aggregate}>")),
-                    "Predict time train (s)": float(
-                        hash(f"<predict_time_{aggregate}_train>")
-                    ),
-                    "Predict time test (s)": float(
-                        hash(f"<predict_time_{aggregate}_test>")
-                    ),
-                }
+                    "Fit time (s)": float(hash("<fit_time_mean>")),
+                    "Predict time train (s)": float(hash("<predict_time_mean_train>")),
+                    "Predict time test (s)": float(hash("<predict_time_mean_test>")),
+                },
+                "std": {
+                    "Fit time (s)": float(hash("<fit_time_std>")),
+                    "Predict time train (s)": float(hash("<predict_time_std_train>")),
+                    "Predict time test (s)": float(hash("<predict_time_std_test>")),
+                },
             }
         ),
     )
@@ -270,6 +270,11 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": float(hash("<fit_time_mean>")),
                 "predict_time_mean": float(hash("<predict_time_mean_test>")),
+                "rmse_std": float(hash("<rmse_std_test>")),
+                "log_loss_std": None,
+                "roc_auc_std": None,
+                "fit_time_std": float(hash("<fit_time_std>")),
+                "predict_time_std": float(hash("<predict_time_std_test>")),
             }
         ]
 
@@ -336,6 +341,11 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "rmse_std": None,
+                "log_loss_std": None,
+                "roc_auc_std": None,
+                "fit_time_std": None,
+                "predict_time_std": None,
             },
             {
                 "id": str(regression.id),
@@ -355,6 +365,11 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "rmse_std": None,
+                "log_loss_std": None,
+                "roc_auc_std": None,
+                "fit_time_std": None,
+                "predict_time_std": None,
             },
             {
                 "id": str(cv_regression.id),
@@ -374,6 +389,11 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": float(hash("<fit_time_mean>")),
                 "predict_time_mean": float(hash("<predict_time_mean_test>")),
+                "rmse_std": float(hash("<rmse_std_test>")),
+                "log_loss_std": None,
+                "roc_auc_std": None,
+                "fit_time_std": float(hash("<fit_time_std>")),
+                "predict_time_std": float(hash("<predict_time_std_test>")),
             },
         ]
 

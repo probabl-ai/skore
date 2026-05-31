@@ -14,13 +14,13 @@ from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
-from sklearn.utils._testing import _convert_container
 
 from skore import (
     ComparisonReport,
     CrossValidationReport,
     EstimatorReport,
 )
+from skore._externals._sklearn_compat import _convert_container
 
 
 def test_pickle(tmp_path, report):
@@ -111,8 +111,8 @@ def test_comparison_report_pos_label_multiclass_is_none():
 @pytest.mark.parametrize(
     ("container_types", "concatenate_train_and_test"),
     [
-        (("dataframe", "series"), False),
-        (("dataframe", "series"), True),
+        (("pandas", "series"), False),
+        (("pandas", "series"), True),
         (("array", "array"), False),
         (("array", "array"), True),
     ],
@@ -174,9 +174,7 @@ def test_create_estimator_report_from_estimator_reports(
         assert joblib.hash(est_report_w_test.y_train) == joblib.hash(expected_y_train)
 
 
-@pytest.mark.parametrize(
-    "container_types", [("dataframe", "series"), ("array", "array")]
-)
+@pytest.mark.parametrize("container_types", [("pandas", "series"), ("array", "array")])
 def test_create_estimator_report_from_cross_validation_reports(
     container_types, binary_classification_data
 ):

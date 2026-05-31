@@ -14,10 +14,10 @@ from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.utils._testing import _convert_container
 from sklearn.utils.validation import check_is_fitted
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
+from skore._externals._sklearn_compat import _convert_container
 from skore._sklearn._cross_validation.report import _generate_estimator_report
 from skore._utils._testing import MockEstimator
 
@@ -200,9 +200,7 @@ def test_clustering():
         CrossValidationReport(KMeans(), X=np.random.rand(10, 5), y=None)
 
 
-@pytest.mark.parametrize(
-    "container_types", [("dataframe", "series"), ("array", "array")]
-)
+@pytest.mark.parametrize("container_types", [("pandas", "series"), ("array", "array")])
 def test_create_estimator_report(container_types, forest_binary_classification_data):
     """Test the `create_estimator_report` method."""
     estimator, X, y = forest_binary_classification_data

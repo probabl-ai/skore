@@ -3,7 +3,7 @@ from re import escape
 from unittest.mock import Mock
 from uuid import uuid4
 
-from pandas import DataFrame, MultiIndex, Series
+from pandas import DataFrame, MultiIndex, Series, Timestamp
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -294,9 +294,14 @@ class TestProject:
         project = Project(mode="local", name="<name>")
         project._Project__project.summarize.return_value = [
             {
-                "learner": "<learner>",
-                "accuracy": 1.0,
                 "id": "<id>",
+                "key": "<key>",
+                "date": "2024-01-01T00:00:00",
+                "learner": "<learner>",
+                "ml_task": "regression",
+                "report_type": "estimator",
+                "dataset": "<dataset>",
+                "accuracy": 1.0,
             }
         ]
 
@@ -308,10 +313,20 @@ class TestProject:
             summary.frame(),
             DataFrame(
                 data={
+                    "key": Series(["<key>"], dtype="string", index=[(0, "<id>")]),
+                    "date": Series(
+                        [Timestamp("2024-01-01T00:00:00")], index=[(0, "<id>")]
+                    ),
                     "learner": Series(
                         ["<learner>"],
                         dtype="category",
                         index=[(0, "<id>")],
+                    ),
+                    "report_type": Series(
+                        ["estimator"], dtype="string", index=[(0, "<id>")]
+                    ),
+                    "dataset": Series(
+                        ["<dataset>"], dtype="string", index=[(0, "<id>")]
                     ),
                     "accuracy": Series([1.0], index=[(0, "<id>")]),
                 },

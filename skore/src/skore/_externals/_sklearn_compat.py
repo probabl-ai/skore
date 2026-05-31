@@ -23,6 +23,7 @@ from typing import Callable, Literal, Union
 
 import sklearn
 from sklearn.utils.fixes import parse_version
+from sklearn.utils._testing import _convert_container as _sk_convert_container
 
 sklearn_version = parse_version(parse_version(sklearn.__version__).base_version)
 
@@ -885,3 +886,28 @@ if sklearn_version < parse_version("1.8"):
         return tns, fps, fns, tps, thresholds
 else:
     from sklearn.metrics._ranking import confusion_matrix_at_thresholds  # noqa: F401
+
+########################################################################################
+# Upgrading for scikit-learn 1.9
+########################################################################################
+
+if sklearn_version < parse_version("1.9"):
+
+    def _convert_container(
+        container,
+        constructor_name,
+        column_names=None,
+        dtype=None,
+        minversion=None,
+        categorical_feature_names=None,
+    ):
+        return _sk_convert_container(
+            container,
+            constructor_name,
+            column_name=column_names,
+            dtype=dtype,
+            minversion=minversion,
+            categorical_feature_names=categorical_feature_names,
+        )
+else:
+    _convert_container = _sk_convert_container
