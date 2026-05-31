@@ -82,7 +82,7 @@ summary.query("log_loss < 0.1").frame()["key"].tolist()
 # %%
 # Use ``Summary.reports`` to load the corresponding reports from the project
 # (optionally after filtering the summary).
-reports = summary.query("log_loss < 0.1").reports(return_as="comparison")
+reports = summary.query("log_loss < 0.1").compare(return_as="report")
 len(reports.reports_)
 
 # %%

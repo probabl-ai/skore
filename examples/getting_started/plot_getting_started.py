@@ -447,7 +447,7 @@ summary
 # %%
 summary = summary.query('report_type == "cross-validation"')
 
-new_report = summary.reports(return_as="comparison")
+new_report = summary.compare(return_as="report")
 new_report.help()
 
 # %%

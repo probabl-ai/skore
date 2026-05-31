@@ -196,9 +196,9 @@ class TestSummary:
 
         selected = summary.query("id in ['0']")
         assert list(selected.frame().index.get_level_values("id")) == ["0"]
-        assert selected.reports() == [estimator_report_regression]
+        assert selected.compare() == [estimator_report_regression]
 
-    def test_reports(
+    def test_compare(
         self,
         estimator_report_regression,
         cross_validation_report_regression,
@@ -209,26 +209,26 @@ class TestSummary:
         )
         summary = Summary.factory(project)
 
-        assert summary.reports() == [
+        assert summary.compare() == [
             estimator_report_regression,
             cross_validation_report_regression,
         ]
 
-        assert summary.query("report_type == 'estimator'").reports() == [
+        assert summary.query("report_type == 'estimator'").compare() == [
             estimator_report_regression
         ]
 
-    def test_reports_empty(self):
+    def test_compare_empty(self):
         summary = Summary.factory(FakeProject())
 
         assert len(summary.frame()) == 0
-        assert summary.reports() == []
+        assert summary.compare() == []
 
-    def test_reports_return_as_comparison(self, estimator_report_regression):
+    def test_compare_return_as_report(self, estimator_report_regression):
         regression1 = estimator_report_regression
         regression2 = deepcopy(estimator_report_regression)
         summary = Summary.factory(FakeProject(regression1, regression2))
-        comparison = summary.reports(return_as="comparison")
+        comparison = summary.compare(return_as="report")
 
         assert isinstance(comparison, ComparisonReport)
         assert comparison.reports_ == {
@@ -236,14 +236,14 @@ class TestSummary:
             "LinearRegression_2": regression2,
         }
 
-    def test_reports_exception_invalid_object(self):
+    def test_compare_exception_invalid_object(self):
         with raises(
             RuntimeError,
             match="Bad condition: it is not a valid `Summary` object.",
         ):
-            Summary(DataFrame([{"<column>": "<value>"}])).reports()
+            Summary(DataFrame([{"<column>": "<value>"}])).compare()
 
-    def test_reports_exception_different_datasets(
+    def test_compare_exception_different_datasets(
         self, estimator_report_regression, estimator_report_binary_classification
     ):
         project = FakeProject(
@@ -254,11 +254,15 @@ class TestSummary:
         with raises(
             RuntimeError,
             match=(
-                "Bad condition: the comparison mode is only applicable when reports "
+                "Bad condition: the report mode is only applicable when reports "
                 "have the same dataset."
             ),
         ):
-            summary.reports(return_as="comparison")
+            summary.compare(return_as="report")
+
+    def test_plot_not_implemented(self):
+        with raises(NotImplementedError):
+            Summary(DataFrame()).plot()
 
     def test_html_repr(
         self,

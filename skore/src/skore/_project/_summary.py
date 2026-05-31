@@ -87,7 +87,7 @@ class Summary(ReprHTMLMixin):
     string that can be copied and passed to :meth:`query` to recover a subset of
     reports.
 
-    Use :meth:`query` to filter the reports and :meth:`reports` to load the
+    Use :meth:`query` to filter the reports and :meth:`compare` to load the
     corresponding report objects from the project.
 
     See Also
@@ -191,17 +191,17 @@ class Summary(ReprHTMLMixin):
         """
         return Summary(self._summary.query(expr), self.project)
 
-    def reports(
+    def compare(
         self,
         *,
-        return_as: Literal["list", "comparison"] = "list",
+        return_as: Literal["list", "report"] = "list",
     ) -> list[EstimatorReport | CrossValidationReport] | ComparisonReport:
         """
         Return the reports referenced by the summary object from the project.
 
         Parameters
         ----------
-        return_as : {"list", "comparison"}, default="list"
+        return_as : {"list", "report"}, default="list"
             In what form the reports should be returned.
 
         Returns
@@ -210,7 +210,7 @@ class Summary(ReprHTMLMixin):
             If ``return_as="list"``, a list of
             :class:`~skore.EstimatorReport` or
             :class:`~skore.CrossValidationReport` objects.
-            If ``return_as="comparison"``, a :class:`~skore.ComparisonReport`.
+            If ``return_as="report"``, a :class:`~skore.ComparisonReport`.
 
         See Also
         --------
@@ -229,17 +229,27 @@ class Summary(ReprHTMLMixin):
             self.project.get(id) for id in self._summary.index.get_level_values("id")
         ]
 
-        if return_as == "comparison":
+        if return_as == "report":
             try:
                 return ComparisonReport(reports)
             except ValueError as e:
                 raise RuntimeError(
-                    f"Bad condition: the comparison mode is only applicable when "
+                    f"Bad condition: the report mode is only applicable when "
                     f"reports have the same dataset.\n"
                     f"Found '{self._summary['dataset'].unique()}'.\n"
                     f"Please query the summary to make your selection."
                 ) from e
         return reports
+
+    def plot(self) -> None:
+        """Plot a visual summary of the reports referenced by this object.
+
+        Raises
+        ------
+        NotImplementedError
+            This method is not implemented yet.
+        """
+        raise NotImplementedError
 
     def __repr__(self) -> str:
         return repr(self._summary)

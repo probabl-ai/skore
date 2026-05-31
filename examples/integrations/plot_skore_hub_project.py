@@ -151,7 +151,7 @@ summary.query("log_loss < 0.2").frame()["key"].tolist()
 #
 # Use :meth:`~skore.project._summary.Summary.reports` to load the corresponding
 # reports from the project (optionally after filtering the summary).
-reports = summary.query("log_loss < 0.2").reports(return_as="comparison")
+reports = summary.query("log_loss < 0.2").compare(return_as="report")
 len(reports.reports_)
 
 # %%

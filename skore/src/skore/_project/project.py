@@ -115,7 +115,7 @@ class Project:
 
     >>> summary = local_project.summarize()
     >>> summary = summary.query("rmse < 67")
-    >>> reports = summary.reports()
+    >>> reports = summary.compare()
 
     See Also
     --------
