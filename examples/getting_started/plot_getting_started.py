@@ -432,23 +432,23 @@ summary
 
 # %%
 # .. note::
-#     :meth:`~skore.Project.summarize` returns a ``Summary`` object. In a Jupyter
-#     environment it renders as an interactive table where you can filter rows and
-#     pick reports across the Table, parallel-coordinates Plot, and Trend views;
-#     the selection produces a query string ready to pass to ``Summary.query(...)``
-#     so you can recover exactly those reports.
+#     :meth:`~skore.Project.summarize` returns a :class:`~skore.Summary` object. In a
+#     Jupyter environment it renders as an interactive table where you can filter rows
+#     and pick reports across the different views; the selection produces a query string
+#     ready to pass to :meth:`~skore.Summary.query` so you can recover exactly those
+#     reports.
 
 # %%
 # Once you filtered the summary (e.g. to keep only the cross-validation reports), if
-# you now call ``Summary.reports``, you get only the
+# you now call :meth:`~skore.Summary.compare`, you get only the
 # :class:`~skore.CrossValidationReport` objects, which
 # you can directly put in the form of a :class:`~skore.ComparisonReport`:
 
 # %%
-summary = summary.query('report_type == "cross-validation"')
-
-new_report = summary.compare(return_as="report")
-new_report.help()
+new_report = summary.query('report_type == "cross-validation"').compare(
+    return_as="report"
+)
+new_report
 
 # %%
 # .. admonition:: Stay tuned!

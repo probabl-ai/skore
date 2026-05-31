@@ -1,6 +1,6 @@
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-function middleEllipsis(text, head = 8, tail = 6) {
+function middleEllipsis(text, head = 5, tail = 5) {
     if (text.length <= head + tail + 3) {
         return text;
     }

@@ -20,11 +20,10 @@ method :meth:`Project.summarize`. This method returns a ``Summary`` object that 
 the metadata and metrics of the stored reports and renders as an interactive table in
 Jupyter-like environments.
 
-The interactive view has three modes (Table, parallel-coordinates Plot, and Trend)
-and lets you filter rows and pick reports across any of them; the selection produces
-a query string ready to pass to ``Summary.query(...)``. Once the reports are filtered,
-retrieve them by calling the ``compare`` method on the object returned by
-:meth:`Project.summarize`. This method returns a list of
+The interactive view provides different views to sort, group by, and filter the reports;
+the selection produces a query string ready to pass to ``Summary.query(...)``. Once the
+reports are filtered, retrieve them by calling the ``compare`` method on the object
+returned by :meth:`Project.summarize`. This method returns a list of
 :class:`EstimatorReport` instances (or a :class:`ComparisonReport` when called with
 ``return_as="report"``).
 

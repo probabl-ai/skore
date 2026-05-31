@@ -7,11 +7,11 @@ Store and retrieve reports on Skore Hub
 
 This example shows how to use :class:`~skore.Project` in **hub** mode: store
 reports remotely and inspect them. A key point is that
-:meth:`~skore.Project.summarize` returns a ``Summary`` object that holds the
-metadata and metrics of every report. In Jupyter it renders as an interactive
-table with three views (Table, parallel-coordinates Plot, and Trend) where you
-can filter and pick rows to build a query string; outside of Jupyter you can
-work with the underlying :class:`pandas.DataFrame` via its ``frame`` method.
+:meth:`~skore.Project.summarize` returns a :class:`~skore.Summary` object that
+holds the metadata and metrics of every report. In Jupyter it renders as an
+interactive table with different views where you can filter and pick rows to
+build a query string; outside of Jupyter you can work with the underlying
+:class:`pandas.DataFrame` via its :meth:`~skore.Summary.frame` method.
 
 Examples
 --------
@@ -122,17 +122,17 @@ for regularization in logspace(-3, 3, 5):
 #
 # Retrieving a report on Skore Hub is similar to retrieving a report in local mode.
 #
-# :meth:`~skore.Project.summarize` returns a ``Summary`` object. In a Jupyter
-# environment it renders as an interactive table where you can filter rows and
-# tick reports (or brush/drag cursors in the Plot and Trend views); the
-# selection produces a query string ready to pass to ``Summary.query(...)``.
+# :meth:`~skore.Project.summarize` returns a :class:`~skore.Summary` object. In a
+# Jupyter environment it renders as an interactive table where you can filter rows and
+# pick reports across the different views; the selection produces a query string ready
+# to pass to :meth:`~skore.Summary.query`.
 summary = project.summarize()
 summary
 
 # %%
 #
 # To work with the underlying table (e.g. in scripts or when you prefer a
-# :class:`pandas.DataFrame`), use the ``frame`` method:
+# :class:`pandas.DataFrame`), use the :meth:`~skore.Summary.frame` method:
 summary.frame()
 
 # %%
@@ -149,8 +149,9 @@ summary.query("log_loss < 0.2").frame()["key"].tolist()
 
 # %%
 #
-# Use :meth:`~skore.project._summary.Summary.reports` to load the corresponding
-# reports from the project (optionally after filtering the summary).
+# Use :meth:`~skore.Summary.compare` to load the corresponding reports from the
+# project (optionally after filtering the summary). Passing ``return_as="report"``
+# returns a :class:`~skore.ComparisonReport` built from those reports.
 reports = summary.query("log_loss < 0.2").compare(return_as="report")
 len(reports.reports_)
 

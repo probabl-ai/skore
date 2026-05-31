@@ -48,7 +48,7 @@ for regularization in np.logspace(-7, 7, 31):
         clone(estimator).set_params(logisticregression__C=regularization),
         X,
         y,
-        splitter=2,
+        splitter=0.2,
         pos_label=1,
     )
     project.put(f"lr-regularization-{regularization:.1e}", report)
@@ -57,38 +57,24 @@ for regularization in np.logspace(-7, 7, 31):
 # Summarize: you get a Summary
 # ============================
 #
-# :meth:`~skore.Project.summarize` returns a ``Summary`` object. In a Jupyter
-# environment it renders as an interactive table where you can filter rows and
-# pick reports across the Table, parallel-coordinates Plot, and Trend views; the
-# selection produces a query string ready to pass to ``Summary.query(...)``.
+# :meth:`~skore.Project.summarize` returns a :class:`~skore.Summary` object. In a
+# Jupyter environment it renders as an interactive table where you can filter rows and
+# pick reports across the different views; the selection produces a query string ready
+# to pass to :meth:`~skore.Summary.query`.
 summary = project.summarize()
 summary
 
 # %%
-# To work with the underlying table (e.g. in scripts or when you prefer a
-# :class:`pandas.DataFrame`), use the ``frame`` method:
-summary.frame()
-
-# %%
-# Basically, our summary contains metadata related to various information that we need
-# to quickly help filtering the reports.
-summary.frame().info()
-
-# %%
 # Filter reports by metric (e.g. keep only those above a given accuracy) and
 # work with the result as a table.
-summary.query("log_loss < 0.1").frame()["key"].tolist()
+summary.query("log_loss < 0.1")
 
 # %%
-# Use ``Summary.reports`` to load the corresponding reports from the project
-# (optionally after filtering the summary).
+# Use :meth:`~skore.Summary.compare` to load the corresponding reports from the
+# project (optionally after filtering the summary). Passing ``return_as="report"``
+# returns a :class:`~skore.ComparisonReport` built from those reports.
 reports = summary.query("log_loss < 0.1").compare(return_as="report")
-len(reports.reports_)
-
-# %%
-# Since we got a :class:`~skore.ComparisonReport`, we can use the metrics accessor
-# to summarize the metrics across the reports.
-reports.metrics.summarize().frame()
+reports
 
 # %%
 _ = reports.metrics.roc().plot(subplot_by=None)
