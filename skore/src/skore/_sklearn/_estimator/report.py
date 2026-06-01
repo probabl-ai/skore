@@ -946,15 +946,66 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         str
             The markdown summary of the report.
         """
-        return "\n\n".join(
-            (
-                f"# {self.__class__.__name__}: {self.estimator_name_}",
-                self._markdown_estimator_section(),
-                self._markdown_metrics_section(),
-                self._markdown_checks_section(),
-                self._markdown_data_section(),
+        return render_template("estimator_report_markdown.j2", self._markdown_context())
+
+    def _markdown_context(self) -> dict[str, object]:
+        data_source = self._repr_data_source()
+        context: dict[str, object] = {
+            "report_class_name": self.__class__.__name__,
+            "estimator_name": self.estimator_name_,
+            "estimator_kind": self._markdown_estimator_kind(),
+            "ml_task": self._ml_task,
+            "fit_time": self._fit_time,
+            "pos_label_repr": (
+                repr(self._pos_label) if self._pos_label is not None else None
+            ),
+            "estimator_repr": repr(self.estimator_),
+            "data_source": data_source,
+            "metrics_text": (
+                None
+                if data_source is None
+                else self.metrics.summarize(data_source=data_source).frame().to_string()
+            ),
+            "checks_text": repr(self.checks.summarize(fast_mode=True)),
+            "data_label": None,
+            "data_n_rows": None,
+            "data_n_columns": None,
+            "data_n_constant_columns": None,
+            "data_columns": None,
+        }
+        if data_source is not None:
+            summary = summarize_dataframe(
+                self.data._prepare_dataframe_for_display(
+                    data_source=data_source,
+                    with_y=True,
+                    subsample=None,
+                    subsample_strategy="head",
+                    seed=None,
+                ),
+                with_plots=False,
+                with_associations=False,
+                verbose=0,
             )
-        )
+            context.update(
+                {
+                    "data_label": "train+test"
+                    if data_source == "both"
+                    else data_source,
+                    "data_n_rows": summary["n_rows"],
+                    "data_n_columns": summary["n_columns"],
+                    "data_n_constant_columns": summary["n_constant_columns"],
+                    "data_columns": [
+                        {
+                            "name": col["name"],
+                            "dtype": col["dtype"],
+                            "null_count": col.get("null_count", ""),
+                            "n_unique": col.get("n_unique", ""),
+                        }
+                        for col in summary["columns"]
+                    ],
+                }
+            )
+        return context
 
     def _markdown_estimator_kind(self) -> str:
         if isinstance(self.estimator, skrub.DataOp):
@@ -976,84 +1027,3 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if type(self.estimator).__module__.startswith("sklearn."):
             return "scikit-learn estimator"
         return f"{type(self.estimator).__module__.split('.')[0]} estimator"
-
-    def _markdown_estimator_section(self) -> str:
-        lines = [
-            "## Estimator",
-            "",
-            f"- name: `{self.estimator_name_}`",
-            f"- kind: {self._markdown_estimator_kind()}",
-            f"- ml task: {self._ml_task}",
-        ]
-        if self._fit_time is not None:
-            lines.append(f"- fit time: {self._fit_time:.3g} s")
-        if self._ml_task == "binary-classification" and self._pos_label is not None:
-            lines.append(f"- pos_label: {self._pos_label!r}")
-        lines += ["", "```text", repr(self.estimator_), "```", ""]
-        lines.append("Full estimator info: `report.estimator_`.")
-        return "\n".join(lines)
-
-    def _markdown_metrics_section(self) -> str:
-        lines = ["## Metrics", ""]
-        data_source = self._repr_data_source()
-        if data_source is None:
-            lines.append("No data provided.")
-        else:
-            lines += [
-                "```text",
-                self.metrics.summarize(data_source=data_source).frame().to_string(),
-                "```",
-            ]
-        lines += ["", "Full metrics: `report.metrics.summarize().frame()`."]
-        return "\n".join(lines)
-
-    def _markdown_checks_section(self) -> str:
-        return "\n".join(
-            (
-                "## Checks (fast mode)",
-                "",
-                "```text",
-                repr(self.checks.summarize(fast_mode=True)),
-                "```",
-                "",
-                "Full checks: `report.checks.summarize()`.",
-            )
-        )
-
-    def _markdown_data_section(self) -> str:
-        lines = ["## Data", ""]
-        data_source = self._repr_data_source()
-        if data_source is None:
-            lines.append("No data provided.")
-            lines += ["", "Full analysis: `report.data.analyze()`."]
-            return "\n".join(lines)
-        summary = summarize_dataframe(
-            self.data._prepare_dataframe_for_display(
-                data_source=data_source,
-                with_y=True,
-                subsample=None,
-                subsample_strategy="head",
-                seed=None,
-            ),
-            with_plots=False,
-            with_associations=False,
-            verbose=0,
-        )
-        label = {"train": "train", "test": "test", "both": "train+test"}[data_source]
-        lines.append(
-            f"Computed on the {label} dataset "
-            f"(n_rows={summary['n_rows']}, n_columns={summary['n_columns']}, "
-            f"n_constant_columns={summary['n_constant_columns']})."
-        )
-        lines += [
-            "",
-            "| column | dtype | null_count | n_unique |",
-            "| ------ | ----- | ---------- | -------- |",
-        ]
-        for col in summary["columns"]:
-            lines.append(
-                f"| {col['name']} | {col['dtype']} | "
-                f"{col.get('null_count', '')} | {col.get('n_unique', '')} |"
-            )
-        lines += ["", "Full analysis: `report.data.analyze()`."]
-        return "\n".join(lines)
