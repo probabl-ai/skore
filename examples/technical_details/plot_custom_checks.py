@@ -45,7 +45,7 @@ class CustomCheck1(Check):
         if report.X_test is None:
             raise CheckNotApplicable()
 
-        n_features = X.shape[1]
+        n_features = report.X_test.shape[1]
         if n_features > 50:
             return (
                 f"The dataset has {n_features} features which may hurt model performance. "
@@ -64,12 +64,15 @@ class CustomCheck1(Check):
 #
 # We can then find the new check in the Tips tab of the checks summary, along another tip
 # informing us that the dataset is not standardized.
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 from skore import evaluate
 
 rng = np.random.default_rng(42)
-X = rng.normal(size=(200, 80))
-y = X[:, 0] + rng.normal(scale=0.1, size=200)
+X = pd.DataFrame(
+    rng.normal(size=(200, 80)), columns=[f"feature_{i}" for i in range(80)]
+)
+y = pd.Series(X.iloc[:, 0] + rng.normal(scale=0.1, size=200))
 
 report = evaluate(LinearRegression(), X, y)
 report.checks.add([CustomCheck1()])
