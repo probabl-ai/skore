@@ -1,3 +1,5 @@
+import pickle
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -15,7 +17,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils._testing import _convert_container
 from sklearn.utils.validation import check_is_fitted
 
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._sklearn._cross_validation.report import _generate_estimator_report
 from skore._utils._testing import MockEstimator
 
@@ -85,13 +87,13 @@ def test_attributes(fixture_name, request, cv, n_jobs):
     "fixture_name, expected_n_keys",
     [
         # expected n keys:
-        # (result + time for 'predict'
-        #  & result for 'predict_proba'/'predict_log_proba' or 'decision_function')
+        # (result for 'predict' or 'predict_proba' or 'predict_log_proba' or
+        # 'decision_function')
         # x train, test
-        ("forest_binary_classification_data", 8),
-        ("svc_binary_classification_data", 6),
-        ("forest_multiclass_classification_data", 8),
-        ("linear_regression_data", 4),
+        ("forest_binary_classification_data", 6),
+        ("svc_binary_classification_data", 4),
+        ("forest_multiclass_classification_data", 6),
+        ("linear_regression_data", 2),
     ],
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
@@ -343,6 +345,9 @@ def test_from_state_bypasses_init_and_restores_state(
     _ = report.get_predictions(data_source="test")
     report.cache_predictions()
 
+    # check repr doesn't crash:
+    restored._repr_html_()
+
 
 def test_get_from_state_with_complex_data_op():
     X, y = make_classification(random_state=0)
@@ -384,6 +389,9 @@ def test_get_from_state_with_complex_data_op():
     for pred, expected_pred in zip(preds, expected_preds, strict=True):
         np.testing.assert_array_equal(pred, expected_pred)
 
+    # check repr doesn't crash:
+    restored._repr_html_()
+
 
 def test_from_state_rejects_unknown_version(logistic_binary_classification_data):
     estimator, X, y = logistic_binary_classification_data
@@ -392,3 +400,32 @@ def test_from_state_rejects_unknown_version(logistic_binary_classification_data)
 
     with pytest.raises(ValueError, match="Unexpected state version"):
         CrossValidationReport.from_state(state)
+
+
+@pytest.mark.parametrize(
+    "estimator",
+    [DummyClassifier(), DummyRegressor()],
+    ids=["classification", "regression"],
+)
+@pytest.mark.parametrize("splitter", [0.2, 3], ids=["estimator", "cross-validation"])
+def test_state_has_no_unexpected_data_copy(estimator, splitter):
+    """``state`` should only reference training data through ``state["data"]``."""
+
+    def state_nbytes_without_data(report):
+        state = report.get_state()
+        state.pop("data")
+        return len(pickle.dumps(state))
+
+    # Large dataset to increase our chances that X is much larger than all the other
+    # report attributes
+    # We use a classification-oriented dataset even for regression to avoid making the
+    # test more complex
+    X, y = make_classification(n_samples=50_000, n_features=30)
+    report = evaluate(estimator, X, y, splitter=splitter)
+
+    # If the state "without data" is bigger than X, then this likely means that
+    # the state somehow still contains X. This may be a sign that an attribute of the
+    # report still holds a reference to the report (e.g. the metrics registry).
+    # However, this is a heuristic; if this test fails, it may also be because the state
+    # size is no longer dominated by the size of X.
+    assert state_nbytes_without_data(report) < X.nbytes

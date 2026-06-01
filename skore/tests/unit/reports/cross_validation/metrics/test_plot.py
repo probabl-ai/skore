@@ -73,12 +73,10 @@ def test_seed_none(linear_regression_data):
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
-    report.metrics.prediction_error(seed=None)
-    # skore stores the predictions of the internal estimators, but not the
-    # concatenated cross-validation display.
-    assert all(
-        len(estimator_report._cache) == 2 for estimator_report in report.reports_
-    )
+    report.cache_predictions()
+
+    with check_cache_unchanged([r._cache for r in report.reports_]):
+        report.metrics.prediction_error(seed=None)
 
 
 @pytest.fixture(scope="module")

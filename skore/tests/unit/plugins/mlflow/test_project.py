@@ -183,6 +183,24 @@ class TestProject:
         assert len(predictions) == len(reg_report.X_test)
         assert predictions == pytest.approx(expected_predictions)
 
+    def test_storage_deduplicates_data_artifacts(self):
+        project = Project("<project>")
+
+        project._write_object_in_storage("<object-id>", b"payload")
+        project._write_object_in_storage("<object-id>", b"payload")
+
+        storage_runs = mlflow.search_runs(
+            experiment_ids=[project._Project__storage_experiment_id],
+            filter_string="attributes.run_name = '<object-id>'",
+            output_format="list",
+        )
+
+        assert len(storage_runs) == 1
+        artifact_path = project._Project__mlflow_client.download_artifacts(
+            storage_runs[0].info.run_id, "obj"
+        )
+        assert Path(artifact_path).read_bytes() == b"payload"
+
     def test_put_cross_validation(self, cv_mclf_report):
         project = Project("<project>")
         project.put("<key>", cv_mclf_report)

@@ -563,9 +563,9 @@ class FitTime(Metric):
         return True
 
     def _raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
-        if cast and report.fit_time_ is None:
+        if cast and report._fit_time is None:
             return float("nan")
-        return report.fit_time_
+        return report._fit_time
 
 
 class PredictTime(Metric):
@@ -580,10 +580,7 @@ class PredictTime(Metric):
         return True
 
     def _raw(self, *, report: EstimatorReport, data_source="test", cast=True, **kwargs):
-        predict_time_cache_key = make_cache_key(data_source, "predict_time")
-        return report._cache.get(
-            predict_time_cache_key, (float("nan") if cast else None)
-        )
+        return report._predict_time.get(data_source, float("nan") if cast else None)
 
 
 class Accuracy(Metric):
@@ -896,9 +893,8 @@ class MetricRegistry(UserDict[str, Metric]):
         characteristics (e.g. the ML task and the estimator's prediction methods).
         """
         super().__init__()
-        self._report = report
 
-        # Needs to be called ``data`` since we inherit from :class:`UserDict`.
+        # Needs to be called ``data`` since we inherit from :class:`UserDict`
         self.data = OrderedDict(
             (metric.name, metric)
             for metric in BUILTIN_METRICS
@@ -945,7 +941,7 @@ class MetricRegistry(UserDict[str, Metric]):
         if position == "first":
             self.data.move_to_end(metric.name, last=False)
 
-    def remove(self, name: str) -> None:
+    def remove(self, *, report: EstimatorReport, name: str) -> None:
         """Remove a metric from the registry.
 
         Built-in metrics may be removed; they stay absent for the lifetime of this
@@ -961,11 +957,8 @@ class MetricRegistry(UserDict[str, Metric]):
         KeyError
             If `name` is not registered.
         """
-        if name not in self.data:
-            raise KeyError(name)
-
-        keys_to_delete = [k for k in self._report._cache if k[1] == name]
-        for k in keys_to_delete:
-            del self._report._cache[k]
-
         del self.data[name]
+
+        keys_to_delete = [k for k in report._cache if k[1] == name]
+        for k in keys_to_delete:
+            del report._cache[k]
