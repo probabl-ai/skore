@@ -6,12 +6,12 @@
 - name: `{{ estimator_name }}`
 - kind: {{ estimator_kind }}
 - ml task: {{ ml_task }}
-{% if fit_time is not none %}
+{%- if fit_time is not none %}
 - fit time: {{ "%.3g"|format(fit_time) }} s
-{% endif %}
-{% if pos_label_repr is not none %}
+{%- endif %}
+{%- if pos_label_repr is not none %}
 - pos_label: {{ pos_label_repr }}
-{% endif %}
+{%- endif %}
 
 ```text
 {{ estimator_repr }}
@@ -21,13 +21,14 @@ Full estimator info: `report.estimator_`.
 
 ## Metrics
 
-{% if data_source is none %}
+{%- if data_source is none %}
 No data provided.
-{% else %}
+{%- else %}
+
 ```text
 {{ metrics_text }}
 ```
-{% endif %}
+{%- endif %}
 
 Full metrics: `report.metrics.summarize().frame()`.
 
@@ -41,19 +42,20 @@ Full checks: `report.checks.summarize()`.
 
 ## Data
 
-{% if data_source is none %}
+{%- if data_source is none %}
 No data provided.
 
 Full analysis: `report.data.analyze()`.
 {% else %}
+
 Computed on the {{ data_label }} dataset (n_rows={{ data_n_rows }}, n_columns={{ data_n_columns }}, n_constant_columns={{ data_n_constant_columns }}).
 
 | column | dtype | null_count | n_unique |
 | ------ | ----- | ---------- | -------- |
-{% for col in data_columns %}
+{%- for col in data_columns %}
 | {{ col.name }} | {{ col.dtype }} | {{ col.null_count }} | {{ col.n_unique }} |
-{% endfor %}
+{%- endfor %}
 
 Full analysis: `report.data.analyze()`.
-{% endif -%}
+{% endif %}
 {%- endautoescape %}
