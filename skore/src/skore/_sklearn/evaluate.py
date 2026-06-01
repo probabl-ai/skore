@@ -142,6 +142,11 @@ def evaluate(
             " or dict."
         )
 
+    if X is None and y is None and data is None:
+        raise ValueError(
+            "Provide data through X and y or through data to evaluate your estimator."
+        )
+
     if isinstance(estimator, (list, dict)):
         if isinstance(estimator, dict):
             names = list(estimator.keys())
