@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numbers
+from collections import defaultdict
 from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
@@ -18,16 +19,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils._pprint import _changed_params
 
 from skore._externals._skrub_compat import tabular_pipeline
-from skore._sklearn._checks._tunable_hyperparameters import (
-    EQUIVALENT_PARAM_GROUPS,
-    INFRASTRUCTURE_PARAMS,
-    TUNABLE_HYPERPARAMETERS,
-)
 from skore._sklearn._checks._utils import (
     CheckNotApplicable,
     ClassName,
     ParameterName,
-    StepName,
     check_score_gap_to_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
@@ -37,6 +32,11 @@ from skore._sklearn._checks._utils import (
     split_preprocessor_estimator,
 )
 from skore._sklearn._checks.base import Check
+from skore._sklearn._checks.tunable_hyperparameters import (
+    EQUIVALENT_PARAM_GROUPS,
+    INFRASTRUCTURE_PARAMS,
+    TUNABLE_HYPERPARAMETERS,
+)
 from skore._sklearn.feature_names import _get_feature_names
 
 if TYPE_CHECKING:
@@ -828,33 +828,31 @@ class CheckSearchParamsToTune(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        search = report.estimator_
-        if not isinstance(search, BaseSearchCV):
+        if not isinstance(report.estimator_, BaseSearchCV):
             raise CheckNotApplicable()
 
         searched_keys = {
-            key for params in search.cv_results_["params"] for key in params
+            key for params in report.estimator_.cv_results_["params"] for key in params
         }
-        estimator = search.estimator
+        estimator = report.estimator_.estimator
         if isinstance(estimator, Pipeline):
-            searched_params_by_step: dict[StepName, set[ParameterName]] = {}
+            searched_params_by_step = defaultdict(set)
             for key in searched_keys:
                 if "__" in key:
                     step_name, suffix = key.split("__", 1)
-                    searched_params_by_step.setdefault(step_name, set()).add(suffix)
+                    searched_params_by_step[step_name].add(suffix)
             searched_by_estimator: list[tuple[ClassName, set[ParameterName]]] = [
                 (type(step).__name__, searched_params_by_step.get(name, set()))
                 for name, step in estimator.steps
                 if type(step).__name__ in TUNABLE_HYPERPARAMETERS
             ]
+            if not searched_by_estimator:
+                raise CheckNotApplicable()
         else:
             class_name = type(estimator).__name__
             if class_name not in TUNABLE_HYPERPARAMETERS:
                 raise CheckNotApplicable()
             searched_by_estimator = [(class_name, searched_keys)]
-
-        if not searched_by_estimator:
-            raise CheckNotApplicable()
 
         messages: list[str] = []
         for class_name, searched in searched_by_estimator:
@@ -862,13 +860,13 @@ class CheckSearchParamsToTune(Check):
                 TUNABLE_HYPERPARAMETERS[class_name], searched
             )
             if missing:
-                messages.append(f"[{', '.join(sorted(missing))}] for {class_name}")
+                messages.append(f"{sorted(missing)} for {class_name}")
         if not messages:
             return None
         messages.sort()
         return (
             "These hyperparameters are not in the grid and may be worth tuning: "
-            + f"{'; '.join(messages)}."
+            f"{'; '.join(messages)}."
         )
 
 
@@ -903,14 +901,13 @@ class CheckEstimatorNotTuned(Check):
                 for _, step in estimator.steps
                 if type(step).__name__ in TUNABLE_HYPERPARAMETERS
             ]
+            if not candidates:
+                raise CheckNotApplicable()
         else:
             class_name = type(estimator).__name__
             if class_name not in TUNABLE_HYPERPARAMETERS:
                 raise CheckNotApplicable()
             candidates = [(class_name, estimator)]
-
-        if not candidates:
-            raise CheckNotApplicable()
 
         messages: list[str] = []
         for class_name, step in candidates:
@@ -919,14 +916,14 @@ class CheckEstimatorNotTuned(Check):
             recommended = _collapse_equivalents(
                 TUNABLE_HYPERPARAMETERS[class_name], set()
             )
-            messages.append(f"[{', '.join(sorted(recommended))}] for {class_name}")
+            messages.append(f"{sorted(recommended)} for {class_name}")
 
         if not messages:
             return None
         messages.sort()
         return (
             "Estimator(s) left at default settings; consider tuning: "
-            + f"{'; '.join(sorted(messages))}."
+            f"{'; '.join(sorted(messages))}."
         )
 
 
