@@ -16,7 +16,7 @@ from sklearn.model_selection import (
     train_test_split,
 )
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import QuantileTransformer, StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from skrub import DatetimeEncoder, tabular_pipeline
 
@@ -485,7 +485,14 @@ def test_skd015_pipeline_single_step(regression_data):
 def test_skd015_pipeline_multi_step(binary_classification_data):
     """SKD015 reports missing params for multiple pipeline steps."""
     X, y = binary_classification_data
-    pipe = Pipeline([("pca", PCA()), ("clf", RandomForestClassifier(random_state=0))])
+    pipe = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("pca", PCA()),
+            ("q_transformer", QuantileTransformer()),
+            ("clf", RandomForestClassifier(random_state=0)),
+        ]
+    )
     search = GridSearchCV(
         pipe,
         param_grid={
@@ -498,8 +505,11 @@ def test_skd015_pipeline_multi_step(binary_classification_data):
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
+    assert "StandardScaler" not in explanation
     assert "PCA" in explanation
     assert "whiten" in explanation
+    assert "QuantileTransformer" in explanation
+    assert "n_quantiles" in explanation
     assert "RandomForestClassifier" in explanation
     assert "max_features" in explanation
 
