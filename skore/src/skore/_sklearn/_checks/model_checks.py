@@ -23,6 +23,7 @@ from skore._sklearn._checks._utils import (
     CheckNotApplicable,
     ClassName,
     ParameterName,
+    StepName,
     check_score_gap_to_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
@@ -791,9 +792,10 @@ def _collapse_equivalents(
 ) -> set[ParameterName]:
     """Return ``recommended - searched``, collapsing equivalence groups.
 
-    Equivalent params (e.g. tree-complexity regularizers) cover each other:
-    if the user tuned any group member, drop the whole group; otherwise keep
-    a single representative so we don't suggest several near-duplicate params.
+    Some parameters serve the same purpose (e.g. ``max_depth``, ``min_samples_leaf``,
+    ``min_samples_split``, ``max_leaf_nodes`` all limit tree depth). If any group
+    member is already searched, drop the others; otherwise keep only the first
+    missing member of the group.
     """
     missing = recommended - searched
     for group in EQUIVALENT_PARAM_GROUPS:
@@ -836,7 +838,9 @@ class CheckSearchParamsToTune(Check):
         }
         estimator = report.estimator_.estimator
         if isinstance(estimator, Pipeline):
-            searched_params_by_step = defaultdict(set)
+            searched_params_by_step: dict[StepName, set[ParameterName]] = defaultdict(
+                set
+            )
             for key in searched_keys:
                 if "__" in key:
                     step_name, suffix = key.split("__", 1)
