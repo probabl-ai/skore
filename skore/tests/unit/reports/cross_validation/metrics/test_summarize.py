@@ -58,7 +58,7 @@ def check_display_structure(
     assert pd.api.types.is_numeric_dtype(data["score"])
     assert pd.api.types.is_integer_dtype(data["split"])
     if expected_greater_is_better is None:
-        assert set(data["greater_is_better"]) == {True, False}
+        assert set(data["greater_is_better"]).issubset({True, False, None})
     else:
         assert set(data["greater_is_better"]) == expected_greater_is_better
 

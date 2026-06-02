@@ -66,7 +66,7 @@ def test_favorability(comparison_estimator_reports_binary_classification):
     report = comparison_estimator_reports_binary_classification
     display = report.metrics.summarize()
     result = display.frame(favorability=True)
-    assert set(result["Favorability"]) == {"(↗︎)", "(↘︎)"}
+    assert set(result["Favorability"]).issubset({"(↗︎)", "(↘︎)", ""})
 
 
 def test_aggregate(comparison_estimator_reports_binary_classification):

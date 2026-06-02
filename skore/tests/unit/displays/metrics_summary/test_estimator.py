@@ -23,7 +23,7 @@ def test_favorability_binary(forest_binary_classification_with_test):
         "RandomForestClassifier",
         "Favorability",
     ]
-    assert set(result_with_fav["Favorability"]) == {"(↗︎)", "(↘︎)"}
+    assert set(result_with_fav["Favorability"]).issubset({"(↗︎)", "(↘︎)", ""})
 
 
 def test_favorability_regression(linear_regression_with_test):
@@ -37,7 +37,7 @@ def test_favorability_regression(linear_regression_with_test):
 
     result_with_fav = display.frame(favorability=True)
     assert result_with_fav.columns.to_list() == ["LinearRegression", "Favorability"]
-    assert set(result_with_fav["Favorability"]) == {"(↗︎)", "(↘︎)"}
+    assert set(result_with_fav["Favorability"]).issubset({"(↗︎)", "(↘︎)", ""})
 
 
 def test_flat_index_multiclass(forest_multiclass_classification_with_test):

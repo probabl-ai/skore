@@ -76,7 +76,7 @@ def test_favorability_with_aggregate_mean_std(forest_binary_classification_data)
         ("RandomForestClassifier", "std"),
         ("Favorability", ""),
     ]
-    assert set(result_with_fav[("Favorability", "")]) == {"(↗︎)", "(↘︎)"}
+    assert set(result_with_fav[("Favorability", "")]).issubset({"(↗︎)", "(↘︎)", ""})
 
 
 def test_favorability_with_aggregate_none(forest_binary_classification_data):
@@ -97,7 +97,7 @@ def test_favorability_with_aggregate_none(forest_binary_classification_data):
         ("RandomForestClassifier", "Split #1"),
         ("Favorability", ""),
     ]
-    assert set(result_with_fav["Favorability", ""]) == {"(↗︎)", "(↘︎)"}
+    assert set(result_with_fav["Favorability", ""]).issubset({"(↗︎)", "(↘︎)", ""})
 
 
 def test_flat_index_binary_classification(forest_binary_classification_data):

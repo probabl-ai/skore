@@ -44,7 +44,7 @@ def test_favorability_undefined_metrics(report):
     assert "Brier score" in metrics_df.index
     assert "Favorability" in metrics_df.columns
     assert not metrics_df["Favorability"].isna().any()
-    expected_values = {"(↗︎)", "(↘︎)"}
+    expected_values = {"(↗︎)", "(↘︎)", ""}
     actual_values = set(metrics_df["Favorability"].to_numpy())
     assert actual_values.issubset(expected_values)
 

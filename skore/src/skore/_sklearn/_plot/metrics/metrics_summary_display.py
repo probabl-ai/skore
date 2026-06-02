@@ -144,7 +144,8 @@ class MetricsSummaryDisplay(DisplayMixin):
     ) -> pd.DataFrame:
         """Process estimator report data into a formatted dataframe."""
         df = data.copy()
-        df = df.dropna(axis="columns", how="all")
+        cols_to_check = df.columns.difference(["greater_is_better"])
+        df = df.drop(columns=cols_to_check[df[cols_to_check].isna().all(axis="index")])
 
         for col in df.columns.intersection(["label", "output", "average"]):
             df[col] = df[col].astype("string").fillna("")

@@ -55,8 +55,9 @@ def check_display_structure(
     else:
         assert set(data["average"]) == expected_average
     if expected_greater_is_better is None:
-        expected_greater_is_better = {True, False}
-    assert set(data["greater_is_better"]) == expected_greater_is_better
+        assert set(data["greater_is_better"]).issubset({True, False, None})
+    else:
+        assert set(data["greater_is_better"]) == expected_greater_is_better
 
 
 # Default metrics

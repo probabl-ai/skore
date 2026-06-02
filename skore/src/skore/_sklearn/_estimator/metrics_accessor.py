@@ -103,7 +103,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ... )
                     LogisticRegression Favorability
         Metric
-        Score                  0.94...         (↗︎)
+        Score                  0.94...
         Accuracy               0.94...         (↗︎)
         Precision              0.98...         (↗︎)
         Recall                 0.92...         (↗︎)
@@ -118,15 +118,15 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.summarize(
         ...    data_source="both"
         ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
-                     LogisticRegression (train)  LogisticRegression (test)  Favorability
+                     LogisticRegression (train)  LogisticRegression (test) Favorability
         Metric
-        Score                           0.96...                     0.94...          (↗︎)
-        Accuracy                        0.96...                     0.94...          (↗︎)
-        Precision                       0.96...                     0.98...          (↗︎)
-        Recall                          0.97...                     0.92...          (↗︎)
-        ROC AUC                         0.99...                     0.99...          (↗︎)
-        Log loss                        0.08...                     0.11...          (↘︎)
-        Brier score                     0.02...                     0.03...          (↘︎)
+        Score                           0.96...                     0.94...
+        Accuracy                        0.96...                     0.94...        (↗︎)
+        Precision                       0.96...                     0.98...        (↗︎)
+        Recall                          0.97...                     0.92...        (↗︎)
+        ROC AUC                         0.99...                     0.99...        (↗︎)
+        Log loss                        0.08...                     0.11...        (↘︎)
+        Brier score                     0.02...                     0.03...        (↘︎)
         """
         if data_source == "both":
             train_summary = self.summarize(data_source="train", metric=metric)

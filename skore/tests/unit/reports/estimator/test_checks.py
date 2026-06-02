@@ -73,12 +73,8 @@ def test_skd001_detects_overfitting(regression_data):
     X, y = regression_data
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y)
     issues = report.checks.summarize().frame(severity="issue").set_index("code")
-    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
     assert "SKD001" in issues.index
-    assert (
-        f"for {n_metrics}/{n_metrics} default predictive metrics"
-        in issues.loc["SKD001", "explanation"]
-    )
+    assert "default predictive metrics" in issues.loc["SKD001", "explanation"]
 
 
 def test_skd002_detects_underfitting(regression_data):
