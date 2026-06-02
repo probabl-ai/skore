@@ -834,7 +834,7 @@ class Mape(Metric):
 class Score(Metric):
     name = "score"
     verbose_name = "Score"
-    greater_is_better = True
+    greater_is_better = None
     function = None
     function_kind = None
 
