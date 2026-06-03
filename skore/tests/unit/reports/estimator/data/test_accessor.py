@@ -164,6 +164,19 @@ def test_analyze_subsampling(
         assert display.summary["dataframe"].index.to_list() != list(range(10))
 
 
+def test_analyze_deprecation(forest_binary_classification_with_test):
+    """Check that data.analyze() emits a FutureWarning and delegates to summarize."""
+    classifier, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
+
+    with pytest.warns(FutureWarning, match="data.analyze() is deprecated"):
+        display = report.data.analyze(data_source="test")
+
+    from skore._sklearn._plot import TableReportDisplay
+
+    assert isinstance(display, TableReportDisplay)
+
+
 def test_normalize_X_as_dataframe_sparse():
     """Check that _normalize_X_as_dataframe rejects sparse matrices."""
     X_sparse = sp.csr_matrix(np.random.rand(10, 2))
