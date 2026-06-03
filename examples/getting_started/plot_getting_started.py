@@ -145,7 +145,7 @@ simple_cv_report.help()
 # For example, we can examine the training data, which excludes the held-out data:
 
 # %%
-simple_cv_report.data.analyze()
+simple_cv_report.data.summarize()
 
 # %%
 # Additionally we can run automatic checks on the model and get a summary of the findings:
