@@ -18,7 +18,7 @@ def cross_validation_report():
 
 @pytest.fixture(scope="module")
 def display(cross_validation_report):
-    return cross_validation_report.data.analyze()
+    return cross_validation_report.data.summarize()
 
 
 def test_table_report_display_constructor(display):
@@ -84,13 +84,13 @@ def test_table_report_display_frame(cross_validation_report, display):
 def test_display_creation(X, y):
     """Check that the display can be created with different types of X and y."""
     report = CrossValidationReport(tabular_pipeline(DummyRegressor()), X=X, y=y)
-    display = report.data.analyze()
+    display = report.data.summarize()
     assert isinstance(display, TableReportDisplay)
 
 
 def test_without_y(cross_validation_report):
     """Check that the data accessor works without y."""
-    display = cross_validation_report.data.analyze(with_y=False)
+    display = cross_validation_report.data.summarize(with_y=False)
     assert isinstance(display, TableReportDisplay)
 
     df = display.frame(kind="dataset")
@@ -109,7 +109,7 @@ def test_analyze_with_subsample(
     cross_validation_report, sumbsample, subsample_strategy, seed
 ):
     """Check that the analyze method works with subsampling."""
-    display = cross_validation_report.data.analyze(
+    display = cross_validation_report.data.summarize(
         subsample=sumbsample,
         subsample_strategy=subsample_strategy,
         seed=seed,
@@ -121,7 +121,7 @@ def test_analyze_with_subsample(
 def test_analyze_with_invalid_subsample_strategy(cross_validation_report):
     """Check that an error is raised with an invalid subsample strategy."""
     with pytest.raises(ValueError):
-        cross_validation_report.data.analyze(
+        cross_validation_report.data.summarize(
             subsample=10,
             subsample_strategy="invalid_strategy",
         )
