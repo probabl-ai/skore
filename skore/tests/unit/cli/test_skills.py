@@ -1,0 +1,520 @@
+import asyncio
+import json
+
+from click.testing import CliRunner
+from textual.widgets import RadioButton, RadioSet, SelectionList
+
+from skore._cli import cli
+from skore._cli.skills import _commands as _skills
+from skore._cli.skills._catalog import fetch_release
+from skore._cli.skills._commands import ProbablSkillsFinder, ProbablSkillsInstaller
+
+SIDECAR = ".skore-skill.json"
+
+
+def _invoke(args):
+    return CliRunner().invoke(cli, args)
+
+
+def test_install_skill_project(release, workspace):
+    result = _invoke(["skills", "install", "alpha"])
+
+    assert result.exit_code == 0
+    skill_dir = workspace.project / ".agents" / "skills" / "alpha"
+    assert (skill_dir / "SKILL.md").is_file()
+
+    sidecar = json.loads((skill_dir / SIDECAR).read_text())
+    assert sidecar == {"id": "alpha", "release": "0.1.0", "hash": "hash-alpha-1"}
+
+
+def test_install_workflow_expands_to_skills(release, workspace):
+    result = _invoke(["skills", "install", "flow"])
+
+    assert result.exit_code == 0
+    skills_dir = workspace.project / ".agents" / "skills"
+    assert (skills_dir / "alpha" / "SKILL.md").is_file()
+    assert (skills_dir / "beta" / "SKILL.md").is_file()
+
+
+def test_install_list_only_does_not_install(release, workspace):
+    result = _invoke(["skills", "install", "-l"])
+
+    assert result.exit_code == 0
+    assert "flow" in result.output
+    assert "alpha" in result.output
+    assert not (workspace.project / ".agents").exists()
+
+
+def test_install_unknown_identifier(release, workspace):
+    result = _invoke(["skills", "install", "does-not-exist"])
+
+    assert result.exit_code != 0
+    assert "Unknown skill or workflow" in result.output
+
+
+def test_install_explicit_agent(release, workspace):
+    result = _invoke(["skills", "install", "alpha", "-a", "cursor"])
+
+    assert result.exit_code == 0
+    assert (workspace.project / ".cursor" / "skills" / "alpha").is_dir()
+    assert not (workspace.project / ".agents").exists()
+
+
+def test_install_global_scope(release, workspace):
+    result = _invoke(["skills", "install", "alpha", "-g"])
+
+    assert result.exit_code == 0
+    assert (workspace.home / ".agents" / "skills" / "alpha").is_dir()
+    assert not (workspace.project / ".agents").exists()
+
+
+def test_install_all_without_ids_installs_everything(release, workspace):
+    result = _invoke(["skills", "install", "--all"])
+
+    assert result.exit_code == 0
+    skills_dir = workspace.project / ".agents" / "skills"
+    assert (skills_dir / "alpha" / "SKILL.md").is_file()
+    assert (skills_dir / "beta" / "SKILL.md").is_file()
+
+
+def test_install_agent_without_selection_errors(release, workspace):
+    result = _invoke(["skills", "install", "-a", "cursor"])
+
+    assert result.exit_code != 0
+    assert "non-interactively" in result.output
+    assert not (workspace.project / ".cursor").exists()
+
+
+def test_install_global_without_selection_errors(release, workspace):
+    result = _invoke(["skills", "install", "-g"])
+
+    assert result.exit_code != 0
+    assert not (workspace.home / ".agents").exists()
+
+
+def test_install_interactive_selection(release, workspace, monkeypatch):
+    monkeypatch.setattr(
+        _skills,
+        "_interactive_install_options",
+        lambda catalog, *, agent, default_global: (
+            [_skills._index(catalog)[0]["alpha"]],
+            ["agents"],
+            False,
+        ),
+    )
+
+    result = _invoke(["skills", "install"])
+
+    assert result.exit_code == 0
+    skills_dir = workspace.project / ".agents" / "skills"
+    assert (skills_dir / "alpha" / "SKILL.md").is_file()
+    assert not (skills_dir / "beta").exists()
+
+
+def test_install_interactive_agent_and_global(release, workspace, monkeypatch):
+    monkeypatch.setattr(
+        _skills,
+        "_interactive_install_options",
+        lambda catalog, *, agent, default_global: (
+            [_skills._index(catalog)[0]["alpha"]],
+            ["cursor"],
+            True,
+        ),
+    )
+
+    result = _invoke(["skills", "install"])
+
+    assert result.exit_code == 0
+    assert (workspace.home / ".cursor" / "skills" / "alpha").is_dir()
+    assert not (workspace.project / ".cursor").exists()
+
+
+def test_install_interactive_cancelled(release, workspace, monkeypatch):
+    monkeypatch.setattr(
+        _skills,
+        "_interactive_install_options",
+        lambda catalog, *, agent, default_global: None,
+    )
+
+    result = _invoke(["skills", "install"])
+
+    assert result.exit_code == 0
+    assert "Nothing selected" in result.output
+    assert not (workspace.project / ".agents").exists()
+
+
+def _fake_app(result):
+    class _FakeApp:
+        def __init__(self, catalog, *, agent, default_global):
+            self.result = result
+
+        def run(self):
+            return None
+
+    return _FakeApp
+
+
+def _fake_find_app(result):
+    class _FakeFindApp:
+        def __init__(self, catalog):
+            self.result = result
+
+        def run(self):
+            return None
+
+    return _FakeFindApp
+
+
+def test_interactive_options_expands_workflow(release, monkeypatch):
+    _, _, catalog = fetch_release()
+    monkeypatch.setattr(
+        _skills, "ProbablSkillsInstaller", _fake_app((["flow"], ["agents"], False))
+    )
+
+    selected, agents, global_ = _skills._interactive_install_options(
+        catalog, agent=(), default_global=False
+    )
+
+    assert {skill["id"] for skill in selected} == {"alpha", "beta"}
+    assert agents == ["agents"]
+    assert global_ is False
+
+
+def test_interactive_options_individual_global(release, monkeypatch):
+    _, _, catalog = fetch_release()
+    monkeypatch.setattr(
+        _skills, "ProbablSkillsInstaller", _fake_app((["beta"], ["cursor"], True))
+    )
+
+    selected, agents, global_ = _skills._interactive_install_options(
+        catalog, agent=(), default_global=False
+    )
+
+    assert {skill["id"] for skill in selected} == {"beta"}
+    assert agents == ["cursor"]
+    assert global_ is True
+
+
+def test_interactive_options_cancelled(release, monkeypatch):
+    _, _, catalog = fetch_release()
+    monkeypatch.setattr(_skills, "ProbablSkillsInstaller", _fake_app(None))
+
+    assert (
+        _skills._interactive_install_options(catalog, agent=(), default_global=False)
+        is None
+    )
+
+
+def test_interactive_options_empty_selection(release, monkeypatch):
+    _, _, catalog = fetch_release()
+    monkeypatch.setattr(
+        _skills, "ProbablSkillsInstaller", _fake_app(([], ["agents"], False))
+    )
+
+    assert (
+        _skills._interactive_install_options(catalog, agent=(), default_global=False)
+        is None
+    )
+
+
+def test_wizard_app_full_flow(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+        async with app.run_test() as pilot:
+            app.query_one("#sel-workflows", SelectionList).select_all()
+            await pilot.pause()
+            await pilot.press("enter")  # confirm skills -> agents
+            await pilot.pause()
+            await pilot.press("enter")  # confirm agents -> scope
+            await pilot.pause()
+            await pilot.press("enter")  # confirm scope -> install
+            await pilot.pause()
+        return app.result
+
+    selected_ids, agents, global_ = asyncio.run(scenario())
+
+    assert set(selected_ids) == {"flow", "alpha", "beta"}
+    assert agents == ["agents"]
+    assert global_ is False
+
+
+def test_wizard_app_selecting_workflow_selects_its_skills(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+        async with app.run_test() as pilot:
+            app.query_one("#sel-workflows", SelectionList).select_all()
+            await pilot.pause()
+            return list(app.query_one("#sel-skills", SelectionList).selected)
+
+    assert set(asyncio.run(scenario())) == {"alpha", "beta"}
+
+
+def test_wizard_app_deselecting_workflow_deselects_its_skills(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+        async with app.run_test() as pilot:
+            workflows = app.query_one("#sel-workflows", SelectionList)
+            workflows.select_all()
+            await pilot.pause()
+            workflows.deselect_all()
+            await pilot.pause()
+            return list(app.query_one("#sel-skills", SelectionList).selected)
+
+    assert asyncio.run(scenario()) == []
+
+
+def test_wizard_app_single_agent_choice(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+        async with app.run_test() as pilot:
+            app.query_one("#sel-workflows", SelectionList).select_all()
+            await pilot.pause()
+            await pilot.press("enter")  # confirm skills -> agents
+            await pilot.pause()
+            radio = app.query_one("#agents", RadioSet)
+            list(radio.query(RadioButton))[1].value = True
+            await pilot.pause()
+            await pilot.press("enter")  # confirm agents -> scope
+            await pilot.pause()
+            await pilot.press("enter")  # confirm scope -> install
+            await pilot.pause()
+        return app.result
+
+    _, agents, _ = asyncio.run(scenario())
+
+    assert agents == ["claude-code"]
+
+
+def test_wizard_app_skips_agent_step_when_provided(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsInstaller(catalog, agent=("cursor",), default_global=True)
+        async with app.run_test() as pilot:
+            app.query_one("#sel-skills", SelectionList).select_all()
+            await pilot.pause()
+            await pilot.press("enter")  # confirm skills -> scope (agents skipped)
+            await pilot.pause()
+            await pilot.press("enter")  # confirm scope -> install
+            await pilot.pause()
+        return app.result
+
+    selected_ids, agents, global_ = asyncio.run(scenario())
+
+    assert set(selected_ids) == {"alpha", "beta"}
+    assert agents == ["cursor"]
+    assert global_ is True
+
+
+def test_wizard_app_cancel(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+        async with app.run_test() as pilot:
+            await pilot.press("escape")
+            await pilot.pause()
+        return app.result
+
+    assert asyncio.run(scenario()) is None
+
+
+def test_wizard_app_requires_selection(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+        async with app.run_test() as pilot:
+            await pilot.press("enter")  # nothing selected -> stay on skills
+            await pilot.pause()
+            active = app.query_one("#wizard").active
+            await pilot.press("escape")
+            await pilot.pause()
+        return active
+
+    assert asyncio.run(scenario()) == "step-skills"
+
+
+def test_find_lists_all(release, workspace):
+    result = _invoke(["skills", "find"])
+
+    assert result.exit_code == 0
+    assert "alpha" in result.output
+    assert "beta" in result.output
+    assert "flow" in result.output
+
+
+def test_find_filters_by_query(release, workspace):
+    result = _invoke(["skills", "find", "tooling"])
+
+    assert result.exit_code == 0
+    assert "alpha" in result.output
+    assert "beta" not in result.output
+
+
+def test_find_interactive_renders_selection(release, workspace, monkeypatch):
+    monkeypatch.setattr(_skills, "_is_interactive", lambda: True)
+    monkeypatch.setattr(_skills, "ProbablSkillsFinder", _fake_find_app(["alpha"]))
+
+    result = _invoke(["skills", "find"])
+
+    assert result.exit_code == 0
+    assert "alpha" in result.output
+    assert "beta" not in result.output
+
+
+def test_find_interactive_cancelled(release, workspace, monkeypatch):
+    monkeypatch.setattr(_skills, "_is_interactive", lambda: True)
+    monkeypatch.setattr(_skills, "ProbablSkillsFinder", _fake_find_app(None))
+
+    result = _invoke(["skills", "find"])
+
+    assert result.exit_code == 0
+    assert "alpha" not in result.output
+
+
+def test_finder_app_returns_selection(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsFinder(catalog)
+        async with app.run_test() as pilot:
+            app.query_one("#sel-workflows", SelectionList).select_all()
+            await pilot.pause()
+            await pilot.press("enter")
+            await pilot.pause()
+        return app.result
+
+    assert set(asyncio.run(scenario())) == {"flow", "alpha", "beta"}
+
+
+def test_finder_app_requires_selection(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsFinder(catalog)
+        async with app.run_test() as pilot:
+            await pilot.press("enter")
+            await pilot.pause()
+            still_running = app.is_running
+            await pilot.press("escape")
+            await pilot.pause()
+        return still_running, app.result
+
+    still_running, result = asyncio.run(scenario())
+    assert still_running is True
+    assert result is None
+
+
+def test_finder_app_cancel(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsFinder(catalog)
+        async with app.run_test() as pilot:
+            await pilot.press("escape")
+            await pilot.pause()
+        return app.result
+
+    assert asyncio.run(scenario()) is None
+
+
+def test_list_installed(release, workspace):
+    _invoke(["skills", "install", "alpha"])
+    result = _invoke(["skills", "list"])
+
+    assert result.exit_code == 0
+    assert "alpha" in result.output
+
+
+def test_list_when_empty(release, workspace):
+    result = _invoke(["skills", "list"])
+
+    assert result.exit_code == 0
+    assert "No skills installed" in result.output
+
+
+def test_update_reinstalls_changed_skill(release, workspace):
+    _invoke(["skills", "install", "alpha"])
+    release["catalog"]["skills"][0]["hash"] = "hash-alpha-2"
+
+    result = _invoke(["skills", "update", "--all"])
+
+    assert result.exit_code == 0
+    assert "updated" in result.output
+
+    sidecar = json.loads(
+        (workspace.project / ".agents" / "skills" / "alpha" / SIDECAR).read_text()
+    )
+    assert sidecar["hash"] == "hash-alpha-2"
+
+
+def test_update_specific_id(release, workspace):
+    _invoke(["skills", "install", "alpha", "beta"])
+    release["catalog"]["skills"][0]["hash"] = "hash-alpha-2"
+    release["catalog"]["skills"][1]["hash"] = "hash-beta-2"
+
+    result = _invoke(["skills", "update", "alpha"])
+
+    assert result.exit_code == 0
+    assert "alpha" in result.output
+    assert "beta" not in result.output
+
+
+def test_update_when_up_to_date(release, workspace):
+    _invoke(["skills", "install", "alpha"])
+
+    result = _invoke(["skills", "update", "--all"])
+
+    assert result.exit_code == 0
+    assert "up to date" in result.output
+
+
+def test_update_without_ids_errors(release, workspace):
+    _invoke(["skills", "install", "alpha"])
+
+    result = _invoke(["skills", "update"])
+
+    assert result.exit_code != 0
+    assert "Specify skill ids to update or pass --all" in result.output
+
+
+def test_remove_skill(release, workspace):
+    _invoke(["skills", "install", "alpha"])
+    skill_dir = workspace.project / ".agents" / "skills" / "alpha"
+    assert skill_dir.is_dir()
+
+    result = _invoke(["skills", "remove", "alpha", "-y"])
+
+    assert result.exit_code == 0
+    assert not skill_dir.exists()
+
+
+def test_remove_all_removes_every_skill(release, workspace):
+    _invoke(["skills", "install", "alpha", "beta"])
+    skills_dir = workspace.project / ".agents" / "skills"
+    assert (skills_dir / "alpha").is_dir()
+    assert (skills_dir / "beta").is_dir()
+
+    result = _invoke(["skills", "remove", "--all", "-y"])
+
+    assert result.exit_code == 0
+    assert not (skills_dir / "alpha").exists()
+    assert not (skills_dir / "beta").exists()
+
+
+def test_remove_without_ids_errors(release, workspace):
+    _invoke(["skills", "install", "alpha"])
+
+    result = _invoke(["skills", "remove"])
+
+    assert result.exit_code != 0
+    assert "Specify skill ids to remove or pass --all" in result.output
