@@ -449,6 +449,26 @@ def test_list_when_empty(release, workspace):
     assert "No skills installed" in result.output
 
 
+def test_list_includes_non_default_agents(release, workspace):
+    """Skills installed to a non-default agent are still listed by default."""
+    _invoke(["skills", "install", "alpha", "-a", "cursor"])
+
+    result = _invoke(["skills", "list"])
+
+    assert result.exit_code == 0
+    assert "alpha" in result.output
+
+
+def test_list_agent_restricts_scan(release, workspace):
+    """``--agent`` narrows the scan to the requested agent only."""
+    _invoke(["skills", "install", "alpha", "-a", "cursor"])
+
+    result = _invoke(["skills", "list", "-a", "agents"])
+
+    assert result.exit_code == 0
+    assert "No skills installed" in result.output
+
+
 def test_update_reinstalls_changed_skill(release, workspace):
     _invoke(["skills", "install", "alpha"])
     release["catalog"]["skills"][0]["hash"] = "hash-alpha-2"
@@ -494,6 +514,22 @@ def test_update_without_ids_errors(release, workspace):
     assert "Specify skill ids to update or pass --all" in _plain_output(result.output)
 
 
+def test_update_non_default_agent(release, workspace):
+    """A skill installed to a non-default agent is updated without ``--agent``."""
+    _invoke(["skills", "install", "alpha", "-a", "cursor"])
+    release["catalog"]["skills"][0]["hash"] = "hash-alpha-2"
+
+    result = _invoke(["skills", "update", "--all"])
+
+    assert result.exit_code == 0
+    assert "updated" in result.output
+
+    sidecar = json.loads(
+        (workspace.project / ".cursor" / "skills" / "alpha" / SIDECAR).read_text()
+    )
+    assert sidecar["hash"] == "hash-alpha-2"
+
+
 def test_remove_skill(release, workspace):
     _invoke(["skills", "install", "alpha"])
     skill_dir = workspace.project / ".agents" / "skills" / "alpha"
@@ -525,3 +561,29 @@ def test_remove_without_ids_errors(release, workspace):
 
     assert result.exit_code != 0
     assert "Specify skill ids to remove or pass --all" in _plain_output(result.output)
+
+
+def test_remove_non_default_agent(release, workspace):
+    """A skill installed to a non-default agent is removable without ``--agent``."""
+    _invoke(["skills", "install", "alpha", "-a", "cursor"])
+    skill_dir = workspace.project / ".cursor" / "skills" / "alpha"
+    assert skill_dir.is_dir()
+
+    result = _invoke(["skills", "remove", "alpha", "-y"])
+
+    assert result.exit_code == 0
+    assert not skill_dir.exists()
+
+
+def test_fetch_failure_reports_clean_error(workspace, monkeypatch):
+    """Network/parse failures surface as a clean error, not a raw traceback."""
+
+    def boom():
+        raise OSError("network down")
+
+    monkeypatch.setattr(_skills, "fetch_release", boom)
+
+    result = _invoke(["skills", "find"])
+
+    assert result.exit_code != 0
+    assert "Could not fetch the latest skills release" in _plain_output(result.output)

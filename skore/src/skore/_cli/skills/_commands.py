@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import shutil
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -15,7 +17,7 @@ from rich.tree import Tree
 
 from skore._cli._style import console
 from skore._cli.skills._agents import AGENT_NAMES, DEFAULT_AGENT, resolve_targets
-from skore._cli.skills._catalog import fetch_release
+from skore._cli.skills._catalog import GITHUB_REPO, fetch_release
 from skore._cli.skills.app import ProbablSkillsFinder, ProbablSkillsInstaller
 
 SIDECAR = ".skore-skill.json"
@@ -48,6 +50,51 @@ def _global_option(func):
     )(func)
 
 
+def _manage_agent_option(func):
+    return click.option(
+        "--agent",
+        "-a",
+        multiple=True,
+        type=click.Choice(AGENT_NAMES),
+        help="Restrict to specific agent(s). Defaults to all known agents.",
+    )(func)
+
+
+def _manage_targets(agent: tuple[str, ...], *, global_: bool) -> list[tuple[str, Path]]:
+    """Resolve the directories scanned by ``list``/``update``/``remove``.
+
+    With no explicit ``--agent`` every known agent is scanned so that skills
+    installed into any client directory remain discoverable and manageable.
+    """
+    agent_names = list(agent) if agent else AGENT_NAMES
+    return resolve_targets(agent_names, global_=global_)
+
+
+@contextmanager
+def _release() -> Iterator[tuple[str, Path, dict[str, Any]]]:
+    """Fetch the latest release and clean up its extracted files afterwards.
+
+    Surfaces network/parsing failures as a :class:`click.ClickException` rather
+    than a raw traceback, and removes the temporary extraction directory once
+    the wrapped command is done with it.
+    """
+    with console.status("Fetching latest skills release...", spinner="dots"):
+        try:
+            tag, root, catalog = fetch_release()
+        except (OSError, ValueError, KeyError) as error:
+            raise click.ClickException(
+                f"Could not fetch the latest skills release from GitHub "
+                f"({GITHUB_REPO}): {error}"
+            ) from error
+
+    try:
+        yield tag, root, catalog
+    finally:
+        # ``download_release`` extracts into a dedicated temporary directory and
+        # returns its single child, so ``root.parent`` is that temporary dir.
+        shutil.rmtree(root.parent, ignore_errors=True)
+
+
 def _index(catalog: dict[str, Any]) -> tuple[dict, dict]:
     skills = {skill["id"]: skill for skill in catalog.get("skills", [])}
     workflows = {workflow["id"]: workflow for workflow in catalog.get("workflows", [])}
@@ -58,8 +105,14 @@ def _expand(ids: list[str], skills: dict, workflows: dict) -> list[dict]:
     selected: dict[str, dict] = {}
     for identifier in ids:
         if identifier in workflows:
-            for skill_id in workflows[identifier]["includes"]:
-                selected[skill_id] = skills[skill_id]
+            for skill_id in workflows[identifier].get("includes", []):
+                skill = skills.get(skill_id)
+                if skill is None:
+                    raise click.ClickException(
+                        f"Workflow {identifier!r} references unknown skill "
+                        f"{skill_id!r}."
+                    )
+                selected[skill_id] = skill
         elif identifier in skills:
             selected[identifier] = skills[identifier]
         else:
@@ -229,59 +282,58 @@ def install(ids, agent, global_, all_, list_only) -> None:
     optionally with ``--agent`` and ``--global`` to choose the targets and
     scope. ``--agent``/``--global`` require an explicit selection.
     """
-    with console.status("Fetching latest skills release...", spinner="dots"):
-        tag, root, catalog = fetch_release()
-
-    if list_only:
-        _render_catalog(catalog)
-        return
-
-    skills_by_id, workflows_by_id = _index(catalog)
-    ids = list(ids)
-
-    if ids or all_ or agent or global_:
-        if not (ids or all_):
-            raise click.UsageError(
-                "Specify skill/workflow ids or --all to install non-interactively."
-            )
-        selected = (
-            list(skills_by_id.values())
-            if all_
-            else _expand(ids, skills_by_id, workflows_by_id)
-        )
-        agent_names = _resolve_agent_names(agent)
-    else:
-        options = _interactive_install_options(
-            catalog, agent=agent, default_global=global_
-        )
-        if not options:
-            console.print("Nothing selected.")
+    with _release() as (tag, root, catalog):
+        if list_only:
+            _render_catalog(catalog)
             return
-        selected, agent_names, global_ = options
 
-    targets = resolve_targets(agent_names, global_=global_)
+        skills_by_id, workflows_by_id = _index(catalog)
+        ids = list(ids)
 
-    tree = Tree(f"Installing {len(selected)} skill(s) from release {tag}")
-    for _, target in targets:
-        branch = tree.add(f"[skore.path]{target}[/]")
-        for skill in selected:
-            branch.add(
-                f"[skore.skill]{skill['id']}[/]  [skore.muted]{skill['summary']}[/]"
+        if ids or all_ or agent or global_:
+            if not (ids or all_):
+                raise click.UsageError(
+                    "Specify skill/workflow ids or --all to install non-interactively."
+                )
+            selected = (
+                list(skills_by_id.values())
+                if all_
+                else _expand(ids, skills_by_id, workflows_by_id)
             )
-    console.print(tree)
+            agent_names = _resolve_agent_names(agent)
+        else:
+            options = _interactive_install_options(
+                catalog, agent=agent, default_global=global_
+            )
+            if not options:
+                console.print("Nothing selected.")
+                return
+            selected, agent_names, global_ = options
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("{task.description}"),
-        BarColumn(),
-        console=console,
-        transient=True,
-    ) as progress:
-        task = progress.add_task("Installing", total=len(selected) * len(targets))
+        targets = resolve_targets(agent_names, global_=global_)
+
+        tree = Tree(f"Installing {len(selected)} skill(s) from release {tag}")
         for _, target in targets:
+            branch = tree.add(f"[skore.path]{target}[/]")
             for skill in selected:
-                _install_skill(skill, root, target, tag)
-                progress.advance(task)
+                branch.add(
+                    f"[skore.skill]{skill['id']}[/]  "
+                    f"[skore.muted]{skill.get('summary', '')}[/]"
+                )
+        console.print(tree)
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("{task.description}"),
+            BarColumn(),
+            console=console,
+            transient=True,
+        ) as progress:
+            task = progress.add_task("Installing", total=len(selected) * len(targets))
+            for _, target in targets:
+                for skill in selected:
+                    _install_skill(skill, root, target, tag)
+                    progress.advance(task)
 
     console.print(
         f"[skore.ok]+[/] installed [skore.skill]{len(selected)}[/] skill(s) "
@@ -290,10 +342,14 @@ def install(ids, agent, global_, all_, list_only) -> None:
 
 
 @skills.command("list")
+@_manage_agent_option
 @_global_option
-def list_skills(global_) -> None:
-    """List installed skills."""
-    targets = resolve_targets([DEFAULT_AGENT], global_=global_)
+def list_skills(agent, global_) -> None:
+    """List installed skills.
+
+    Scans every known agent by default; pass ``--agent`` to restrict the scan.
+    """
+    targets = _manage_targets(agent, global_=global_)
 
     table = Table(title="Installed skills")
     table.add_column("id", style="skore.skill")
@@ -321,24 +377,24 @@ def find(query) -> None:
     launched and the chosen entries are rendered; otherwise the matching
     catalog entries are listed.
     """
-    with console.status("Fetching latest skills release...", spinner="dots"):
-        _, _, catalog = fetch_release()
+    with _release() as (_, _, catalog):
+        if query is None and _is_interactive():
+            _interactive_find(catalog)
+            return
 
-    if query is None and _is_interactive():
-        _interactive_find(catalog)
-        return
-
-    _render_catalog(catalog, query=query)
+        _render_catalog(catalog, query=query)
 
 
 @skills.command("update")
 @click.argument("ids", nargs=-1)
+@_manage_agent_option
 @_global_option
 @click.option("--all", "all_", is_flag=True, help="Update every installed skill.")
-def update(ids, global_, all_) -> None:
+def update(ids, agent, global_, all_) -> None:
     """Update installed skills to the latest release.
 
     Pass skill ids to update, or ``--all`` to update every installed skill.
+    Scans every known agent by default; pass ``--agent`` to restrict the scan.
     Run ``skore skills find`` to discover ids.
     """
     if not all_ and not ids:
@@ -347,25 +403,23 @@ def update(ids, global_, all_) -> None:
             "Run `skore skills find` to discover ids."
         )
 
-    with console.status("Fetching latest skills release...", spinner="dots"):
-        tag, root, catalog = fetch_release()
-    skills_by_id, _ = _index(catalog)
-    targets = resolve_targets([DEFAULT_AGENT], global_=global_)
-
+    targets = _manage_targets(agent, global_=global_)
     requested = set(ids)
     updated = []
-    for _, target in targets:
-        for _, sidecar in _installed(target):
-            skill_id = sidecar["id"]
-            if not all_ and skill_id not in requested:
-                continue
+    with _release() as (tag, root, catalog):
+        skills_by_id, _ = _index(catalog)
+        for _, target in targets:
+            for _, sidecar in _installed(target):
+                skill_id = sidecar["id"]
+                if not all_ and skill_id not in requested:
+                    continue
 
-            skill = skills_by_id.get(skill_id)
-            if skill is None or sidecar.get("hash") == skill["hash"]:
-                continue
+                skill = skills_by_id.get(skill_id)
+                if skill is None or sidecar.get("hash") == skill["hash"]:
+                    continue
 
-            _install_skill(skill, root, target, tag)
-            updated.append((skill_id, target))
+                _install_skill(skill, root, target, tag)
+                updated.append((skill_id, target))
 
     if updated:
         for skill_id, target in updated:
@@ -379,13 +433,15 @@ def update(ids, global_, all_) -> None:
 
 @skills.command("remove")
 @click.argument("ids", nargs=-1)
+@_manage_agent_option
 @_global_option
 @click.option("--all", "all_", is_flag=True, help="Remove every installed skill.")
 @click.option("--yes", "-y", is_flag=True, help="Skip confirmation prompts.")
-def remove(ids, global_, all_, yes) -> None:
+def remove(ids, agent, global_, all_, yes) -> None:
     """Remove installed skills.
 
     Pass skill ids to remove, or ``--all`` to remove every installed skill.
+    Scans every known agent by default; pass ``--agent`` to restrict the scan.
     Run ``skore skills find`` to discover ids.
     """
     if not all_ and not ids:
@@ -394,7 +450,7 @@ def remove(ids, global_, all_, yes) -> None:
             "Run `skore skills find` to discover ids."
         )
 
-    targets = resolve_targets([DEFAULT_AGENT], global_=global_)
+    targets = _manage_targets(agent, global_=global_)
 
     to_remove = []
     for _, target in targets:
