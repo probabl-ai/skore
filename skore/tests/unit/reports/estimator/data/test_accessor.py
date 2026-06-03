@@ -24,7 +24,7 @@ def test_analyze_error(forest_binary_classification_with_test, params, err_msg):
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
     with pytest.raises(ValueError, match=err_msg):
-        report.data.analyze(**params)
+        report.data.summarize(**params)
 
 
 def test_analyze_data_source_not_available(
@@ -37,11 +37,11 @@ def test_analyze_data_source_not_available(
 
     err_msg = "X_train is required when `data_source='train'`"
     with pytest.raises(ValueError, match=err_msg):
-        report.data.analyze(data_source="train")
+        report.data.summarize(data_source="train")
 
     err_msg = "X_train is required when `data_source='both'`"
     with pytest.raises(ValueError, match=err_msg):
-        report.data.analyze(data_source="both")
+        report.data.summarize(data_source="both")
 
 
 def test_analyze_data_source_without_y():
@@ -57,13 +57,13 @@ def test_analyze_data_source_without_y():
         classifier, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.data.analyze(data_source="train", with_y=False)
+    display = report.data.summarize(data_source="train", with_y=False)
     pd.testing.assert_frame_equal(display.summary["dataframe"], X_train)
 
-    display = report.data.analyze(data_source="test", with_y=False)
+    display = report.data.summarize(data_source="test", with_y=False)
     pd.testing.assert_frame_equal(display.summary["dataframe"], X_test)
 
-    display = report.data.analyze(data_source="both", with_y=False)
+    display = report.data.summarize(data_source="both", with_y=False)
     pd.testing.assert_frame_equal(display.summary["dataframe"], X)
 
 
@@ -81,17 +81,17 @@ def test_analyze_data_source_with_y():
         classifier, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.data.analyze(data_source="train")
+    display = report.data.summarize(data_source="train")
     pd.testing.assert_frame_equal(
         display.summary["dataframe"], pd.concat([X_train, y_train], axis=1)
     )
 
-    display = report.data.analyze(data_source="test")
+    display = report.data.summarize(data_source="test")
     pd.testing.assert_frame_equal(
         display.summary["dataframe"], pd.concat([X_test, y_test], axis=1)
     )
 
-    display = report.data.analyze(data_source="both")
+    display = report.data.summarize(data_source="both")
     pd.testing.assert_frame_equal(
         display.summary["dataframe"], pd.concat([X, y], axis=1)
     )
@@ -107,7 +107,7 @@ def test_analyze_sequence(X, y):
     report = EstimatorReport(
         DecisionTreeRegressor(), X_train=X, y_train=y, X_test=X, y_test=y
     )
-    report.data.analyze(data_source="train")  # should not crash
+    report.data.summarize(data_source="train")  # should not crash
 
 
 @pytest.mark.parametrize("data_source", ["train", "test", "both"])
@@ -129,12 +129,12 @@ def test_analyze_numpy_array(data_source, n_targets, target_column_names):
         classifier, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
-    display = report.data.analyze(data_source=data_source, with_y=False)
+    display = report.data.summarize(data_source=data_source, with_y=False)
     assert display.summary["dataframe"].columns.to_list() == [
         f"Feature {i}" for i in range(X_train.shape[1])
     ]
 
-    display = report.data.analyze(data_source=data_source, with_y=True)
+    display = report.data.summarize(data_source=data_source, with_y=True)
     assert (
         display.summary["dataframe"].columns.to_list()
         == [f"Feature {i}" for i in range(X_train.shape[1])] + target_column_names
@@ -153,7 +153,7 @@ def test_analyze_subsampling(
     y_test = pd.Series(y_test, name="Target")
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    display = report.data.analyze(
+    display = report.data.summarize(
         data_source="test", subsample=10, subsample_strategy=subsample_strategy, seed=42
     )
     assert display.summary["dataframe"].shape[0] == 10
