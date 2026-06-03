@@ -41,7 +41,7 @@ case $1 in
         shift
         ;;
     "--sphinx-requirements")
-        COMBINATIONS+=('skore|sphinx|3.14|["scikit-learn==1.8.*"]')
+        COMBINATIONS+=('skore|sphinx|3.14|["scikit-learn==1.9.*"]')
         shift
         ;;
     *)

@@ -362,7 +362,7 @@ respx==0.23.1
     # via skore (skore/pyproject.toml)
 rich[jupyter]==15.0.0
     # via skore (skore/pyproject.toml)
-scikit-learn==1.7.2
+scikit-learn==1.6.1
     # via
     #   --override skore/overrides.txt
     #   skore (skore/pyproject.toml)
