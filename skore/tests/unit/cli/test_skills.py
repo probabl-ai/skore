@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 
 from click.testing import CliRunner
 from textual.widgets import RadioButton, RadioSet, SelectionList
@@ -10,10 +11,16 @@ from skore._cli.skills._catalog import fetch_release
 from skore._cli.skills._commands import ProbablSkillsFinder, ProbablSkillsInstaller
 
 SIDECAR = ".skore-skill.json"
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
 
 
 def _invoke(args):
     return CliRunner().invoke(cli, args)
+
+
+def _plain_output(output: str) -> str:
+    """Strip ANSI codes from rich-click error panels for stable assertions."""
+    return _ANSI_ESCAPE.sub("", output)
 
 
 def test_install_skill_project(release, workspace):
@@ -484,7 +491,7 @@ def test_update_without_ids_errors(release, workspace):
     result = _invoke(["skills", "update"])
 
     assert result.exit_code != 0
-    assert "Specify skill ids to update or pass --all" in result.output
+    assert "Specify skill ids to update or pass --all" in _plain_output(result.output)
 
 
 def test_remove_skill(release, workspace):
@@ -517,4 +524,4 @@ def test_remove_without_ids_errors(release, workspace):
     result = _invoke(["skills", "remove"])
 
     assert result.exit_code != 0
-    assert "Specify skill ids to remove or pass --all" in result.output
+    assert "Specify skill ids to remove or pass --all" in _plain_output(result.output)
