@@ -59,6 +59,16 @@ def _build_tarball(catalog):
 
 
 @pytest.fixture
+def catalog_dict():
+    return copy.deepcopy(CATALOG)
+
+
+@pytest.fixture
+def release_tarball(catalog_dict):
+    return _build_tarball(catalog_dict)
+
+
+@pytest.fixture
 def release(monkeypatch):
     """Serve a fake ``probabl-ai/skills`` release from an in-memory tarball."""
     state = {"tag": "0.1.0", "catalog": copy.deepcopy(CATALOG)}
