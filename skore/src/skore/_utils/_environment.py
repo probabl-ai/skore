@@ -57,7 +57,7 @@ def get_environment_info() -> dict[str, Any]:
 def is_environment_notebook_like() -> bool:
     """Return `True` if the execution context can render HTML. `False` otherwise."""
     info = get_environment_info()
-    return info["is_vscode"] or info["is_jupyter"]
+    return info["is_jupyter"] or (info["is_vscode"] and info["is_interactive"])
 
 
 def is_environment_sphinx_build() -> bool:
