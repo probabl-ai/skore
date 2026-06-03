@@ -4,7 +4,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
-from skore._externals._sklearn_compat import _convert_container
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn.feature_names import _get_feature_names
 
 
@@ -41,7 +41,7 @@ def test_get_feature_names_minimal_model(container_type):
     """Test feature names inference for minimal models with numpy and pandas inputs."""
     X, y = np.random.randn(10, 10), np.random.randint(0, 2, size=10)
     columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
-    X = _convert_container(X, container_type, column_names=columns_names)
+    X = convert_container(X, container_type, column_names=columns_names)
 
     y = np.random.randint(0, 2, size=10)
     minimal_model = make_pipeline(Transformer(), Predictor()).fit(X, y)
@@ -71,7 +71,7 @@ def test_get_feature_names_sklearn_model(container_type):
     n_samples = 100
     X, y = np.random.randn(n_samples, 10), np.random.randint(0, 2, size=n_samples)
     columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
-    X = _convert_container(X, container_type, column_names=columns_names)
+    X = convert_container(X, container_type, column_names=columns_names)
     sklearn_model = make_pipeline(StandardScaler(), LogisticRegression()).fit(X, y)
 
     if container_type == "array":

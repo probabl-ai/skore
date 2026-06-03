@@ -1,5 +1,4 @@
 import sys
-import types
 from unittest.mock import patch
 
 import pytest
@@ -56,34 +55,26 @@ def test_get_environment_info_jupyter(mock_get_ipython):
     assert info["details"]["ipython_shell"] == "ZMQInteractiveShell"
 
 
-@patch.dict("os.environ", {}, clear=True)
-@patch("skore._utils._environment.get_ipython", create=True, side_effect=NameError)
-def test_is_environment_notebook_like(_mock_get_ipython):
+def test_is_environment_notebook_like(mock_sys_attributes):
     """Test notebook-like environment detection"""
-    non_interactive_sys = types.SimpleNamespace(
-        executable=sys.executable,
-        version=sys.version,
-    )
-    with (
-        patch("skore._utils._environment.os.environ", {"VSCODE_PID": "12345"}),
-        patch("skore._utils._environment.sys", non_interactive_sys),
-    ):
-        assert is_environment_notebook_like() is False
+    # VSCode with an interactive prompt (e.g. interactive window) renders HTML.
+    with patch.dict("os.environ", {"VSCODE_PID": "12345"}):
+        assert is_environment_notebook_like() is True
 
-    with (
-        patch("skore._utils._environment.os.environ", {}),
-        patch("skore._utils._environment.sys", non_interactive_sys),
-    ):
+    with patch.dict("os.environ", {}, clear=True):
         assert is_environment_notebook_like() is False
 
 
-@patch("skore._utils._environment.os.environ", {"VSCODE_PID": "12345"})
 @patch("skore._utils._environment.sys")
-def test_is_environment_notebook_like_vscode_interactive(mock_sys):
-    """VS Code interactive window uses notebook-like rendering."""
-    mock_sys.ps1 = True
+def test_is_environment_notebook_like_vscode_script(mock_sys):
+    """A non-interactive script/pytest run under VSCode is not notebook-like.
 
-    assert is_environment_notebook_like() is True
+    A bare ``VSCODE_PID`` (set for any process spawned by VSCode, including the
+    integrated terminal) must not be treated as an HTML-rendering context.
+    """
+    del mock_sys.ps1  # non-interactive: ``hasattr(sys, "ps1")`` is False
+    with patch.dict("os.environ", {"VSCODE_PID": "12345"}, clear=True):
+        assert is_environment_notebook_like() is False
 
 
 @patch("skore._utils._environment.get_ipython", create=True)

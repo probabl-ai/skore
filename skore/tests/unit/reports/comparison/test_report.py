@@ -20,7 +20,7 @@ from skore import (
     CrossValidationReport,
     EstimatorReport,
 )
-from skore._externals._sklearn_compat import _convert_container
+from skore._externals._sklearn_compat import convert_container
 
 
 def test_pickle(tmp_path, report):
@@ -123,8 +123,8 @@ def test_create_estimator_report_from_estimator_reports(
     """Test creating an estimator report from a comparison report with
     EstimatorReports."""
     X, y = binary_classification_data
-    X = _convert_container(X, container_types[0])
-    y = _convert_container(y, container_types[1])
+    X = convert_container(X, container_types[0])
+    y = convert_container(y, container_types[1])
     X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
@@ -181,8 +181,8 @@ def test_create_estimator_report_from_cross_validation_reports(
     """Test creating an estimator report from a comparison report with
     CrossValidationReports."""
     X, y = binary_classification_data
-    X = _convert_container(X, container_types[0])
-    y = _convert_container(y, container_types[1])
+    X = convert_container(X, container_types[0])
+    y = convert_container(y, container_types[1])
     X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
         X, y, test_size=0.2, random_state=42, shuffle=False
     )

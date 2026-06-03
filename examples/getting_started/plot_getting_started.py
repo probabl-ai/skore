@@ -148,6 +148,12 @@ simple_cv_report.help()
 simple_cv_report.data.analyze()
 
 # %%
+# Additionally we can run automatic checks on the model and get a summary of the findings:
+
+# %%
+simple_cv_report.checks.summarize()
+
+# %%
 # But we can also quickly get an overview of the performance of our model,
 # using :meth:`~skore.CrossValidationReport.metrics.summarize`:
 

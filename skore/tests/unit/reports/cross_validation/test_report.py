@@ -17,7 +17,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
-from skore._externals._sklearn_compat import _convert_container
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._cross_validation.report import _generate_estimator_report
 from skore._utils._testing import MockEstimator
 
@@ -204,8 +204,8 @@ def test_clustering():
 def test_create_estimator_report(container_types, forest_binary_classification_data):
     """Test the `create_estimator_report` method."""
     estimator, X, y = forest_binary_classification_data
-    X = _convert_container(X, container_types[0])
-    y = _convert_container(y, container_types[1])
+    X = convert_container(X, container_types[0])
+    y = convert_container(y, container_types[1])
     X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
