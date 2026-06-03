@@ -35,8 +35,8 @@ from skore._sklearn._checks._utils import (
 from skore._sklearn._checks.base import Check
 from skore._sklearn._checks.tunable_hyperparameters import (
     EQUIVALENT_PARAM_GROUPS,
+    HYPERPARAMETERS_TO_TUNE,
     INFRASTRUCTURE_PARAMS,
-    TUNABLE_HYPERPARAMETERS,
 )
 from skore._sklearn.feature_names import _get_feature_names
 
@@ -785,6 +785,7 @@ class CheckHyperparamsAtSearchEdge(Check):
             f"{len(edge_params)} hyperparameter(s) are on the edge of the explored"
             f" search space: {details}. Consider extending the search range."
         )
+        # or increase n_iter for randomized search
 
 
 def _collapse_equivalents(
@@ -848,20 +849,20 @@ class CheckSearchParamsToTune(Check):
             searched_by_estimator: list[tuple[ClassName, set[ParameterName]]] = [
                 (type(step).__name__, searched_params_by_step.get(name, set()))
                 for name, step in estimator.steps
-                if type(step).__name__ in TUNABLE_HYPERPARAMETERS
+                if type(step).__name__ in HYPERPARAMETERS_TO_TUNE
             ]
             if not searched_by_estimator:
                 raise CheckNotApplicable()
         else:
             class_name = type(estimator).__name__
-            if class_name not in TUNABLE_HYPERPARAMETERS:
+            if class_name not in HYPERPARAMETERS_TO_TUNE:
                 raise CheckNotApplicable()
             searched_by_estimator = [(class_name, searched_keys)]
 
         messages: list[str] = []
         for class_name, searched in searched_by_estimator:
             missing = _collapse_equivalents(
-                TUNABLE_HYPERPARAMETERS[class_name], searched
+                HYPERPARAMETERS_TO_TUNE[class_name], searched
             )
             if missing:
                 messages.append(f"{sorted(missing)} for {class_name}")
@@ -880,7 +881,7 @@ class CheckEstimatorNotTuned(Check):
     Fires when every parameter of the estimator (or, for pipelines, of every
     step whose class is in the recommendation table) is at scikit-learn's
     default value, ignoring infrastructure params (random_state, n_jobs, ...).
-    Suggests the recommended tuning axes from ``TUNABLE_HYPERPARAMETERS``.
+    Suggests the recommended tuning axes from ``HYPERPARAMETERS_TO_TUNE``.
 
     Skipped (:class:`CheckNotApplicable`) when the estimator is a
     :class:`~sklearn.model_selection.BaseSearchCV` instance, since SKD015
@@ -903,13 +904,13 @@ class CheckEstimatorNotTuned(Check):
             candidates = [
                 (type(step).__name__, step)
                 for _, step in estimator.steps
-                if type(step).__name__ in TUNABLE_HYPERPARAMETERS
+                if type(step).__name__ in HYPERPARAMETERS_TO_TUNE
             ]
             if not candidates:
                 raise CheckNotApplicable()
         else:
             class_name = type(estimator).__name__
-            if class_name not in TUNABLE_HYPERPARAMETERS:
+            if class_name not in HYPERPARAMETERS_TO_TUNE:
                 raise CheckNotApplicable()
             candidates = [(class_name, estimator)]
 
@@ -918,7 +919,7 @@ class CheckEstimatorNotTuned(Check):
             if set(_changed_params(step)) - INFRASTRUCTURE_PARAMS:
                 continue
             recommended = _collapse_equivalents(
-                TUNABLE_HYPERPARAMETERS[class_name], set()
+                HYPERPARAMETERS_TO_TUNE[class_name], set()
             )
             messages.append(f"{sorted(recommended)} for {class_name}")
 

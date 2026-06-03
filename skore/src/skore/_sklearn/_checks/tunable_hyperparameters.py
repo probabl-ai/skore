@@ -10,8 +10,7 @@ if TYPE_CHECKING:
 # When several members of a group are missing, they are collapsed to a single
 # suggestion: the first member that is actually missing for the estimator.
 EQUIVALENT_PARAM_GROUPS: list[tuple[ParameterName, ...]] = [
-    ("min_samples_leaf", "max_depth", "min_samples_split", "max_leaf_nodes"),
-    ("l1_ratio", "penalty"),
+    ("max_leaf_nodes", "min_samples_leaf", "max_depth", "min_samples_split"),
 ]
 
 
@@ -33,24 +32,22 @@ INFRASTRUCTURE_PARAMS: set[ParameterName] = {
 # Hyperparameters worth tuning for sklearn estimators.
 # Focuses on hyperparameters that have no obvious default value and that are always
 # worth tuning, for estimators that are commonly used in practice.
-TUNABLE_HYPERPARAMETERS: dict[ClassName, set[ParameterName]] = {
+HYPERPARAMETERS_TO_TUNE: dict[ClassName, set[ParameterName]] = {
     # ===== LINEAR MODELS =====
     "Ridge": {"alpha"},
     "RidgeClassifier": {"alpha"},
     "Lasso": {"alpha"},
     "ElasticNet": {"alpha", "l1_ratio"},
-    "LogisticRegression": {"C", "penalty", "l1_ratio"},
+    "LogisticRegression": {"C"},  # Add l1_ratio with condition on solver choice
     # ===== TREES =====
     "DecisionTreeClassifier": {
         "max_depth",
-        "min_samples_split",
         "min_samples_leaf",
         "max_features",
         "ccp_alpha",
     },
     "DecisionTreeRegressor": {
         "max_depth",
-        "min_samples_split",
         "min_samples_leaf",
         "max_features",
         "ccp_alpha",
@@ -60,13 +57,11 @@ TUNABLE_HYPERPARAMETERS: dict[ClassName, set[ParameterName]] = {
         "max_features",
         "min_samples_leaf",
         "max_depth",
-        "max_samples",
     },
     "RandomForestRegressor": {
         "max_features",
         "min_samples_leaf",
         "max_depth",
-        "max_samples",
     },
     "ExtraTreesClassifier": {
         "max_features",
@@ -81,16 +76,16 @@ TUNABLE_HYPERPARAMETERS: dict[ClassName, set[ParameterName]] = {
     # ===== GRADIENT BOOSTING =====
     "GradientBoostingClassifier": {
         "learning_rate",
+        "max_leaf_nodes",
         "max_depth",
         "min_samples_leaf",
-        "subsample",
         "max_features",
     },
     "GradientBoostingRegressor": {
         "learning_rate",
+        "max_leaf_nodes",
         "max_depth",
         "min_samples_leaf",
-        "subsample",
         "max_features",
     },
     "HistGradientBoostingClassifier": {
@@ -122,14 +117,12 @@ TUNABLE_HYPERPARAMETERS: dict[ClassName, set[ParameterName]] = {
     "KernelPCA": {"n_components"},
     "SparsePCA": {"n_components"},
     # ===== KERNEL APPROXIMATION =====
-    "Nystroem": {"n_components", "kernel", "gamma", "degree", "coef0"},
+    "Nystroem": {"n_components"},  # Add gamma with condition on kernel choice
     "RBFSampler": {"n_components", "gamma"},
     "SkewedChi2Sampler": {"n_components", "skewedness"},
     "AdditiveChi2Sampler": {"sample_steps"},
-    "PolynomialCountSketch": {"n_components", "degree", "gamma", "coef0"},
+    "PolynomialCountSketch": {"n_components", "degree", "gamma"},
     # ===== PREPROCESSING =====
-    "QuantileTransformer": {"n_quantiles"},
-    "PowerTransformer": {"method"},
     "KBinsDiscretizer": {"n_bins"},
     "SplineTransformer": {"n_knots"},
     # ===== IMPUTATION =====
