@@ -288,6 +288,42 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # need to have the report as an attribute, which would be a circular reference
         self._parent._metric_registry.remove(report=self._parent, name=name)
 
+    def get(
+        self,
+        name: str,
+        data_source: DataSource = "test",
+        **kwargs,
+    ) -> float | None:
+        """Get a metric value.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        Returns
+        -------
+        The metric value, or None if the metric is not available.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
+        >>> report.metrics.get("precision")
+        {0: 0.90..., 1: 0.98...}
+        """
+        metric = self._parent._metric_registry.get(name)
+        if metric is None:
+            return None
+        return metric.pretty(report=self._parent, data_source=data_source, **kwargs)
+
     def fit_time(self, *, cast: bool = True) -> float | None:
         """Get time to fit the estimator.
 

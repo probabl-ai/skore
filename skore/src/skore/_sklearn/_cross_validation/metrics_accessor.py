@@ -215,6 +215,55 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         for report in self._parent.reports_:
             report.metrics.remove(name)
 
+    def get(
+        self,
+        name: str,
+        data_source: DataSource = "test",
+        aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
+        **kwargs,
+    ) -> pd.DataFrame | None:
+        """Get a metric value.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        Returns
+        -------
+        pd.DataFrame
+            The metric values, or None if the metric is not available.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=2)
+        >>> report.metrics.get("precision", flat_index=False)
+                        LogisticRegression
+                                      mean       std
+        Metric    Label
+        Precision 0                0.93...   0.04...
+                  1                0.94...   0.02...
+        """
+        return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
+            aggregate=aggregate, flat_index=flat_index
+        )
+
     def timings(
         self,
         *,
