@@ -27,6 +27,8 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
+  "click",
+  "rich-click>=1.9",
   "jinja2",
   "joblib",
   "matplotlib",
@@ -38,6 +40,7 @@ dependencies = [
   "seaborn",
   "skore[local]",
   "skrub>=0.9",
+  "textual",
 ]
 
 [project.optional-dependencies]
@@ -91,6 +94,9 @@ hub = [
   "scipy",
 ]
 mlflow = ["mlflow>=2.20.4"]
+
+[project.scripts]
+skore = "skore._cli:cli"
 
 [project.entry-points."skore.plugins.login"]
 hub = "skore._plugins.hub.authentication.login:login"

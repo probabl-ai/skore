@@ -45,9 +45,11 @@ repos:
           - pandas
           - plotly
           - rich
+          - rich-click
           - scikit-learn
           - seaborn
           - skrub
+          - textual
           # from test dependencies
           - polars
           - pyarrow
