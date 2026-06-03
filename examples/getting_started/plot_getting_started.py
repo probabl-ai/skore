@@ -70,8 +70,8 @@ X_experiment, X_holdout, y_experiment, y_holdout = train_test_split(
 # We will investigate two different families of models using cross-validation.
 #
 # 1. A :class:`~sklearn.linear_model.LogisticRegression` which is a linear model
-# 2. A :class:`~sklearn.ensemble.HistGradientBoostingClassifier` which is a more
-#    powerful model (gradient boosting).
+# 2. A :class:`~sklearn.ensemble.RandomForestClassifier` which is a more
+#    powerful model.
 #
 # In both cases, we rely on :func:`skrub.tabular_pipeline` to choose the proper
 # preprocessing depending on the kind of model.
