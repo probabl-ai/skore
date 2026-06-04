@@ -2,7 +2,7 @@ accessible-pygments==0.0.5
     # via pydata-sphinx-theme
 aiohappyeyeballs==2.6.2
     # via aiohttp
-aiohttp==3.13.5
+aiohttp==3.14.0
     # via mlflow
 aiosignal==1.4.0
     # via aiohttp
