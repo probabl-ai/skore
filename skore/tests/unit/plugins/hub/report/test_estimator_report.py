@@ -104,6 +104,7 @@ class TestEstimatorReportPayload:
             ("roc_auc", "test"),
             ("log_loss", "test"),
             ("brier_score", "test"),
+            ("fit_time", "test"),
             ("predict_time", "test"),
         ]
 

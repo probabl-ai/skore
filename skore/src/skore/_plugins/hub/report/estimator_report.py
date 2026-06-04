@@ -35,12 +35,7 @@ def _filter(row: MetricsSummaryRow) -> bool:
     """Condition to keep a metric row."""
     return (
         # Ignore non-float metrics for now
-        (row["label"] is None and row["output"] is None and row["average"] is None)
-        # Quick fix for a skore quirk: "fit_time" is computed for
-        # data_source="test" even though that doesn't make sense,
-        # because it needs to be shown in report.metrics.summarize().frame()
-        # which by default has data_source="test"
-        and not (row["metric_name"] == "fit_time" and row["data_source"] == "test")
+        row["label"] is None and row["output"] is None and row["average"] is None
     )
 
 

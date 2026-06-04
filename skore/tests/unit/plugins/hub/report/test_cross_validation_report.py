@@ -413,6 +413,8 @@ class TestCrossValidationReportPayload:
             ("brier_score_std", "test"),
             ("brier_score_mean", "train"),
             ("brier_score_std", "train"),
+            ("fit_time_mean", "test"),
+            ("fit_time_std", "test"),
             ("fit_time_mean", "train"),
             ("fit_time_std", "train"),
             ("log_loss_mean", "test"),
