@@ -1,4 +1,3 @@
-from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.base import Check, ChecksSummaryDisplay
+from skore._externals import _lazy_loader as lazy
 
-__all__ = ["Check", "ChecksSummaryDisplay", "CheckNotApplicable"]
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)

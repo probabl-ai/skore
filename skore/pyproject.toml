@@ -31,6 +31,7 @@ dependencies = [
   "joblib",
   "matplotlib",
   "numpy",
+  "packaging",
   "pandas",
   "plotly",
   "rich>=14.2",
@@ -180,6 +181,7 @@ convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
+"*.pyi" = ["D", "F401", "I001"]
 
 [tool.mypy]
 exclude = ["src/skore/_externals/", "hatch/", "tests/"]
