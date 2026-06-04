@@ -46,6 +46,20 @@ async def _wait_wizard_step(app, pilot, step_id: str) -> None:
     raise AssertionError(f"wizard step {step_id!r} not ready")
 
 
+async def _wait_workflow_skills_sync(
+    app, pilot, expected: set[str], *, max_attempts: int = 50
+) -> None:
+    """Wait until workflow-driven skill selection matches ``expected``."""
+    skill_list = app.query_one("#sel-skills", SelectionList)
+    for _ in range(max_attempts):
+        await pilot.pause(delay=0)
+        if set(skill_list.selected) == expected:
+            return
+    raise AssertionError(
+        f"expected skills {expected!r}, got {set(skill_list.selected)!r}"
+    )
+
+
 def test_install_skill_project(release, workspace):
     result = _invoke(["skills", "install", "alpha"])
 
@@ -299,7 +313,7 @@ def test_wizard_app_selecting_workflow_selects_its_skills(release):
         app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
         async with app.run_test() as pilot:
             app.query_one("#sel-workflows", SelectionList).select_all()
-            await pilot.pause()
+            await _wait_workflow_skills_sync(app, pilot, {"alpha", "beta"})
             return list(app.query_one("#sel-skills", SelectionList).selected)
 
     assert set(asyncio.run(scenario())) == {"alpha", "beta"}
@@ -313,9 +327,9 @@ def test_wizard_app_deselecting_workflow_deselects_its_skills(release):
         async with app.run_test() as pilot:
             workflows = app.query_one("#sel-workflows", SelectionList)
             workflows.select_all()
-            await pilot.pause()
+            await _wait_workflow_skills_sync(app, pilot, {"alpha", "beta"})
             workflows.deselect_all()
-            await pilot.pause()
+            await _wait_workflow_skills_sync(app, pilot, set())
             return list(app.query_one("#sel-skills", SelectionList).selected)
 
     assert asyncio.run(scenario()) == []
