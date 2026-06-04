@@ -242,6 +242,7 @@ orjson==3.11.9
     #   kaleido
 packaging==26.2
     # via
+    #   skore (skore/pyproject.toml)
     #   altair
     #   gunicorn
     #   kaleido

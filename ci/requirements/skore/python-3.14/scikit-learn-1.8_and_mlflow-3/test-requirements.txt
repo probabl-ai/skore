@@ -236,6 +236,7 @@ orjson==3.11.9
     # via skore (skore/pyproject.toml)
 packaging==26.2
     # via
+    #   skore (skore/pyproject.toml)
     #   gunicorn
     #   matplotlib
     #   mlflow-skinny
