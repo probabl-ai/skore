@@ -86,23 +86,23 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         environment:
-          - py311-sklearn15
-          - py311-sklearn15-mlflow2
-          - py311-sklearn18
-          - py312-sklearn15
-          - py312-sklearn18
-          - py313-sklearn15
-          - py313-sklearn18
+          - py311-sklearn16
+          - py311-sklearn16-mlflow2
+          - py311-sklearn19
+          - py312-sklearn19
+          - py313-sklearn16
+          - py313-sklearn19
           - py314-sklearn17
           - py314-sklearn18
-          - py314-sklearn18-pandas2
-          - py314-sklearn18-mlflow3
+          - py314-sklearn19
+          - py314-sklearn19-pandas2
+          - py314-sklearn19-mlflow3
         exclude:
           - os: windows-latest
-            environment: py314-sklearn18-pandas2
+            environment: py314-sklearn19-pandas2
         include:
           - os: ubuntu-latest
-            environment: py314-sklearn18
+            environment: py314-sklearn19
             coverage: true
     runs-on: ${{ matrix.os }}
     permissions:
