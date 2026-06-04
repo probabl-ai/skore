@@ -57,9 +57,11 @@ Changed
 
 Added
 -----
-- Added :meth:`EstimatorReport.to_markdown` to produce a markdown summary of the
+- Added :meth:`EstimatorReport.to_markdown` and
+  :meth:`CrossValidationReport.to_markdown` to produce a markdown summary of each
   report (estimator, metrics, checks, and data).
-  The plain-text :meth:`~object.__repr__` now points to this method for full details.
+  The plain-text :meth:`~object.__repr__` on both report types now points to this
+  method for full details.
   See :pr:`2955` by :user:`GaetandeCast`.
 
 - Added two new automated checks: SKD015 (hyperparameters worth tuning in a

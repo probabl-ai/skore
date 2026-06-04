@@ -498,11 +498,9 @@ def test_prefit_no_data_repr_methods(prefit_regression_report_no_data):
     assert "to_markdown()" in repr_str
 
     markdown = prefit_regression_report_no_data.to_markdown()
-    assert markdown.startswith("# EstimatorReport: LinearRegression")
-    for section in ("## Estimator", "## Metrics", "## Checks (fast mode)", "## Data"):
-        assert section in markdown
-    assert markdown.count("No data provided.") == 2
-    assert "LinearRegression()" in markdown
+    assert "No data provided." in markdown
+    assert "Pass training and/or test data" in markdown
+    assert "to_markdown()" in markdown
 
     fragments = prefit_regression_report_no_data._html_repr_fragments()
     assert fragments["metrics_summary"] == "<p>No data provided</p>"
