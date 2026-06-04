@@ -284,7 +284,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         name : str
             The name of the metric to remove.
         """
-        self._parent._metric_registry.remove(name)
+        # `remove` takes the report as input so that the MetricRegistry does not
+        # need to have the report as an attribute, which would be a circular reference
+        self._parent._metric_registry.remove(report=self._parent, name=name)
 
     def fit_time(self, *, cast: bool = True) -> float | None:
         """Get time to fit the estimator.

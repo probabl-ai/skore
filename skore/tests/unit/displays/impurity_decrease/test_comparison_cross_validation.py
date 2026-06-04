@@ -3,15 +3,15 @@ import numpy as np
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.utils._testing import _convert_container
 
 from skore import ComparisonReport, CrossValidationReport, ImpurityDecreaseDisplay
+from skore._externals._sklearn_compat import convert_container
 
 
 def test_with_pipeline(pyplot, forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
     columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
-    X = _convert_container(X, "dataframe", columns_name=columns_names)
+    X = convert_container(X, "pandas", column_names=columns_names)
     splitter = 2
 
     predictor = clone(estimator)

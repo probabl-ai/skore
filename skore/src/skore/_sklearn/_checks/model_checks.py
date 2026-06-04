@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numbers
+from collections import defaultdict
 from typing import TYPE_CHECKING, Literal, cast
 
 import numpy as np
@@ -14,10 +15,15 @@ from sklearn.ensemble import (
 )
 from sklearn.linear_model import LogisticRegression, RidgeCV
 from sklearn.model_selection._search import BaseSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.utils._pprint import _changed_params
 
 from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._checks._utils import (
     CheckNotApplicable,
+    ClassName,
+    ParameterName,
+    StepName,
     check_score_gap_to_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
@@ -27,6 +33,11 @@ from skore._sklearn._checks._utils import (
     split_preprocessor_estimator,
 )
 from skore._sklearn._checks.base import Check
+from skore._sklearn._checks.tunable_hyperparameters import (
+    EQUIVALENT_PARAM_GROUPS,
+    INFRASTRUCTURE_PARAMS,
+    TUNABLE_HYPERPARAMETERS,
+)
 from skore._sklearn.feature_names import _get_feature_names
 
 if TYPE_CHECKING:
@@ -776,6 +787,150 @@ class CheckHyperparamsAtSearchEdge(Check):
         )
 
 
+def _collapse_equivalents(
+    recommended: set[ParameterName], searched: set[ParameterName]
+) -> set[ParameterName]:
+    """Return ``recommended - searched``, collapsing equivalence groups.
+
+    Some parameters serve the same purpose (e.g. ``max_depth``, ``min_samples_leaf``,
+    ``min_samples_split``, ``max_leaf_nodes`` all limit tree depth). If any group
+    member is already searched, drop the others; otherwise keep only the first
+    missing member of the group.
+    """
+    missing = recommended - searched
+    for group in EQUIVALENT_PARAM_GROUPS:
+        group_set = set(group)
+        if searched & group_set:
+            missing -= group_set
+        else:
+            in_group = [param for param in group if param in missing]
+            if len(in_group) > 1:
+                missing -= group_set
+                missing.add(in_group[0])
+    return missing
+
+
+class CheckSearchParamsToTune(Check):
+    """Check for hyperparameters worth tuning in a search (SKD015).
+
+    For :class:`~sklearn.model_selection.BaseSearchCV` estimators, compares the
+    parameters being searched against a set of important hyperparameters and suggests
+    any that are missing.
+
+    When the search wraps a :class:`~sklearn.pipeline.Pipeline`, each step
+    whose class appears in the recommendation table is checked independently,
+    regardless of whether the search currently tunes any of its parameters.
+    """
+
+    code = "SKD015"
+    title = "Hyperparameters worth tuning"
+    report_type = "estimator"
+    docs_url = "skd015-hyperparameters-worth-tuning"
+    severity = "tip"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        if not isinstance(report.estimator_, BaseSearchCV):
+            raise CheckNotApplicable()
+
+        searched_keys = {
+            key for params in report.estimator_.cv_results_["params"] for key in params
+        }
+        estimator = report.estimator_.estimator
+        if isinstance(estimator, Pipeline):
+            searched_params_by_step: dict[StepName, set[ParameterName]] = defaultdict(
+                set
+            )
+            for key in searched_keys:
+                if "__" in key:
+                    step_name, suffix = key.split("__", 1)
+                    searched_params_by_step[step_name].add(suffix)
+            searched_by_estimator: list[tuple[ClassName, set[ParameterName]]] = [
+                (type(step).__name__, searched_params_by_step.get(name, set()))
+                for name, step in estimator.steps
+                if type(step).__name__ in TUNABLE_HYPERPARAMETERS
+            ]
+            if not searched_by_estimator:
+                raise CheckNotApplicable()
+        else:
+            class_name = type(estimator).__name__
+            if class_name not in TUNABLE_HYPERPARAMETERS:
+                raise CheckNotApplicable()
+            searched_by_estimator = [(class_name, searched_keys)]
+
+        messages: list[str] = []
+        for class_name, searched in searched_by_estimator:
+            missing = _collapse_equivalents(
+                TUNABLE_HYPERPARAMETERS[class_name], searched
+            )
+            if missing:
+                messages.append(f"{sorted(missing)} for {class_name}")
+        if not messages:
+            return None
+        messages.sort()
+        return (
+            "These hyperparameters are not in the grid and may be worth tuning: "
+            f"{'; '.join(messages)}."
+        )
+
+
+class CheckEstimatorNotTuned(Check):
+    """Check that the estimator has at least some non-default hyperparameters (SKD016).
+
+    Fires when every parameter of the estimator (or, for pipelines, of every
+    step whose class is in the recommendation table) is at scikit-learn's
+    default value, ignoring infrastructure params (random_state, n_jobs, ...).
+    Suggests the recommended tuning axes from ``TUNABLE_HYPERPARAMETERS``.
+
+    Skipped (:class:`CheckNotApplicable`) when the estimator is a
+    :class:`~sklearn.model_selection.BaseSearchCV` instance, since SKD015
+    covers that case.
+    """
+
+    code = "SKD016"
+    title = "Estimator not tuned"
+    report_type = "estimator"
+    docs_url = "skd016-estimator-not-tuned"
+    severity = "tip"
+
+    def check_function(self, report: _BaseReport) -> str | None:
+        report = cast("EstimatorReport", report)
+        estimator = report.estimator_
+        if isinstance(estimator, BaseSearchCV):
+            raise CheckNotApplicable()
+
+        if isinstance(estimator, Pipeline):
+            candidates = [
+                (type(step).__name__, step)
+                for _, step in estimator.steps
+                if type(step).__name__ in TUNABLE_HYPERPARAMETERS
+            ]
+            if not candidates:
+                raise CheckNotApplicable()
+        else:
+            class_name = type(estimator).__name__
+            if class_name not in TUNABLE_HYPERPARAMETERS:
+                raise CheckNotApplicable()
+            candidates = [(class_name, estimator)]
+
+        messages: list[str] = []
+        for class_name, step in candidates:
+            if set(_changed_params(step)) - INFRASTRUCTURE_PARAMS:
+                continue
+            recommended = _collapse_equivalents(
+                TUNABLE_HYPERPARAMETERS[class_name], set()
+            )
+            messages.append(f"{sorted(recommended)} for {class_name}")
+
+        if not messages:
+            return None
+        messages.sort()
+        return (
+            "Estimator(s) left at default settings; consider tuning: "
+            f"{'; '.join(sorted(messages))}."
+        )
+
+
 _BUILTIN_CHECKS = [
     CheckOverfitting(),
     CheckUnderfitting(),
@@ -791,4 +946,6 @@ _BUILTIN_CHECKS = [
     CheckUselessFeatures(),
     CheckTrainTestTimeOverlap(),
     CheckHyperparamsAtSearchEdge(),
+    CheckSearchParamsToTune(),
+    CheckEstimatorNotTuned(),
 ]

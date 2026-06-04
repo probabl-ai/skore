@@ -117,7 +117,10 @@ def cv_mreg_report() -> CrossValidationReport:
     X, y = load_diabetes(return_X_y=True, as_frame=True)
     y: pd.Series
     multi_target_y = pd.concat(
-        [y, y + y.sample(len(y))],
+        [
+            y.rename("target_0"),
+            (y + y.sample(len(y))).rename("target_1"),
+        ],
         axis=1,
     )
     return CrossValidationReport(

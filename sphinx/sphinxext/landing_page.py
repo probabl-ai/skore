@@ -15,9 +15,10 @@ import matplotlib.pyplot as plt
 from jinja2 import Environment, FileSystemLoader
 from sphinx.application import Sphinx
 
+# Use California housing dataset for reproducibility, see https://github.com/probabl-ai/skore/issues/2963
 DATA_LOADING_CODE = """\
-from skrub.datasets import fetch_employee_salaries
-dataset = fetch_employee_salaries()
+from skrub.datasets import fetch_california_housing
+dataset = fetch_california_housing()
 df = dataset.X
 y = dataset.y"""
 

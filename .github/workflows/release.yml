@@ -73,7 +73,7 @@ jobs:
           python -m twine check dist/*
 
       - name: Upload package distributions
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ env.UUID }}
           path: ${{ needs.tag-decomposition.outputs.package }}/dist/
@@ -104,7 +104,7 @@ jobs:
     continue-on-error: true
     steps:
       - name: Post to slack
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
         with:
           method: chat.postMessage
           token: ${{ secrets.SLACK_BOT_TOKEN }}
