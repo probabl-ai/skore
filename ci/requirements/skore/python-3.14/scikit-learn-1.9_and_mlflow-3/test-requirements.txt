@@ -178,7 +178,9 @@ matplotlib-inline==0.2.2
 mdurl==0.1.2
     # via markdown-it-py
 mlflow==3.13.0
-    # via skore (skore/pyproject.toml)
+    # via
+    #   --override skore/overrides.txt
+    #   skore (skore/pyproject.toml)
 mlflow-skinny==3.13.0
     # via mlflow
 mlflow-tracing==3.13.0
@@ -188,7 +190,9 @@ multidict==6.7.1
     #   aiohttp
     #   yarl
 narwhals==2.22.0
-    # via plotly
+    # via
+    #   plotly
+    #   scikit-learn
 nodeenv==1.10.0
     # via pre-commit
 numpy==2.4.6
@@ -355,7 +359,7 @@ respx==0.23.1
     # via skore (skore/pyproject.toml)
 rich[jupyter]==15.0.0
     # via skore (skore/pyproject.toml)
-scikit-learn==1.8.0
+scikit-learn==1.9.0
     # via
     #   --override skore/overrides.txt
     #   skore (skore/pyproject.toml)

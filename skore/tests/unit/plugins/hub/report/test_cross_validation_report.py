@@ -19,20 +19,14 @@ from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
-    ConfusionMatrixSVGTest,
-    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
     PermutationImportanceTrain,
     PrecisionRecallDataFrameTest,
     PrecisionRecallDataFrameTrain,
-    PrecisionRecallSVGTest,
-    PrecisionRecallSVGTrain,
     RocDataFrameTest,
     RocDataFrameTrain,
-    RocSVGTest,
-    RocSVGTrain,
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.serializer import Serializer
@@ -477,20 +471,14 @@ class TestCrossValidationReportPayload:
         assert list(map(type, payload.medias)) == [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
-            ConfusionMatrixSVGTest,
-            ConfusionMatrixSVGTrain,
             EstimatorHtmlRepr,
             ImpurityDecrease,
             PermutationImportanceTest,
             PermutationImportanceTrain,
             PrecisionRecallDataFrameTest,
             PrecisionRecallDataFrameTrain,
-            PrecisionRecallSVGTest,
-            PrecisionRecallSVGTrain,
             RocDataFrameTest,
             RocDataFrameTrain,
-            RocSVGTest,
-            RocSVGTrain,
             TableReport,
         ]
 

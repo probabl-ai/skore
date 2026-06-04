@@ -6,47 +6,11 @@ from abc import ABC
 from collections.abc import Callable
 from functools import reduce
 from inspect import signature
-from io import BytesIO
 from typing import ClassVar, Literal, cast
-
-from matplotlib import pyplot as plt
 
 from skore import Display
 from skore._plugins.hub.artifact.media.media import Media, Report
 from skore._plugins.hub.json import dumps
-
-
-class PerformanceSVG(Media[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str]
-    content_type: Literal["image/svg+xml"] = "image/svg+xml"
-
-    def content_to_upload(self) -> bytes | None:  # noqa: D102
-        try:
-            function = cast(
-                "Callable[..., Display]",
-                reduce(getattr, self.accessor.split("."), self.report),
-            )
-        except AttributeError:
-            return None
-
-        display = (
-            function()
-            if self.data_source is None
-            else function(data_source=self.data_source)
-        )
-
-        with BytesIO() as stream:
-            fig = display.plot()
-            if fig is None:
-                # NOTE: backward compatibility for when `figure_` was stored as an
-                # attribute in the display object instead of being returned by `plot`.
-                fig = display.figure_
-            fig.savefig(stream, format="svg", bbox_inches="tight")
-            plt.close(fig)
-
-            figure_bytes = stream.getvalue()
-
-        return figure_bytes
 
 
 class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
@@ -89,35 +53,17 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
         return kwargs
 
 
-class PrecisionRecallSVG(PerformanceSVG[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str] = "metrics.precision_recall"
-    name: Literal["precision_recall"] = "precision_recall"
-
-
 class PrecisionRecallDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision_recall"
     name: Literal["precision_recall"] = "precision_recall"
-
-
-class PrecisionRecallSVGTrain(PrecisionRecallSVG[Report]):  # noqa: D101
-    data_source: Literal["train"] = "train"
 
 
 class PrecisionRecallDataFrameTrain(PrecisionRecallDataFrame[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PrecisionRecallSVGTest(PrecisionRecallSVG[Report]):  # noqa: D101
-    data_source: Literal["test"] = "test"
-
-
 class PrecisionRecallDataFrameTest(PrecisionRecallDataFrame[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
-
-
-class PredictionErrorSVG(PerformanceSVG[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str] = "metrics.prediction_error"
-    name: Literal["prediction_error"] = "prediction_error"
 
 
 class PredictionErrorDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
@@ -125,25 +71,12 @@ class PredictionErrorDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     name: Literal["prediction_error"] = "prediction_error"
 
 
-class PredictionErrorSVGTrain(PredictionErrorSVG[Report]):  # noqa: D101
-    data_source: Literal["train"] = "train"
-
-
 class PredictionErrorDataFrameTrain(PredictionErrorDataFrame[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PredictionErrorSVGTest(PredictionErrorSVG[Report]):  # noqa: D101
-    data_source: Literal["test"] = "test"
-
-
 class PredictionErrorDataFrameTest(PredictionErrorDataFrame[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
-
-
-class RocSVG(PerformanceSVG[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str] = "metrics.roc"
-    name: Literal["roc"] = "roc"
 
 
 class RocDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
@@ -151,25 +84,12 @@ class RocDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     name: Literal["roc"] = "roc"
 
 
-class RocSVGTrain(RocSVG[Report]):  # noqa: D101
-    data_source: Literal["train"] = "train"
-
-
 class RocDataFrameTrain(RocDataFrame[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class RocSVGTest(RocSVG[Report]):  # noqa: D101
-    data_source: Literal["test"] = "test"
-
-
 class RocDataFrameTest(RocDataFrame[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
-
-
-class ConfusionMatrixSVG(PerformanceSVG[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str] = "metrics.confusion_matrix"
-    name: Literal["confusion_matrix"] = "confusion_matrix"
 
 
 class ConfusionMatrixDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
@@ -177,16 +97,8 @@ class ConfusionMatrixDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     name: Literal["confusion_matrix"] = "confusion_matrix"
 
 
-class ConfusionMatrixSVGTrain(ConfusionMatrixSVG[Report]):  # noqa: D101
-    data_source: Literal["train"] = "train"
-
-
 class ConfusionMatrixDataFrameTrain(ConfusionMatrixDataFrame[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
-
-
-class ConfusionMatrixSVGTest(ConfusionMatrixSVG[Report]):  # noqa: D101
-    data_source: Literal["test"] = "test"
 
 
 class ConfusionMatrixDataFrameTest(ConfusionMatrixDataFrame[Report]):  # noqa: D101
