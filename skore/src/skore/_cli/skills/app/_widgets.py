@@ -16,7 +16,7 @@ class AutoRadioSet(RadioSet):
     def _sync_pressed_from_selected(self) -> None:
         if self._selected is not None:
             button = self._nodes[self._selected]
-            if isinstance(button, RadioButton) and not button.value:
+            if isinstance(button, RadioButton):
                 button.value = True
 
     def select_index(self, index: int) -> None:

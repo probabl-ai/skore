@@ -117,6 +117,22 @@ class ProbablSkillsInstaller(App[None]):
         index = self.query_one("#agents", AutoRadioSet).pressed_index
         return [AGENT_NAMES[index]] if index >= 0 else []
 
+    def _ensure_agents_selected(self) -> None:
+        radio = self.query_one("#agents", AutoRadioSet)
+        if radio.pressed_index < 0:
+            radio.select_index(AGENT_NAMES.index(DEFAULT_AGENT))
+
+    def _ensure_scope_selected(self) -> None:
+        radio = self.query_one("#scope", AutoRadioSet)
+        if radio.pressed_index < 0:
+            radio.select_index(1 if self._default_global else 0)
+
+    def on_tabbed_content_tab_activated(
+        self, event: TabbedContent.TabActivated
+    ) -> None:
+        if event.tabbed_content.id == "wizard":
+            self._focus_active_step()
+
     def _focus_active_step(self) -> None:
         active = self.query_one("#wizard", TabbedContent).active
         if active == "step-agents":
@@ -127,6 +143,7 @@ class ProbablSkillsInstaller(App[None]):
             radio.select_index(1 if self._default_global else 0)
 
     def _finish(self) -> None:
+        self._ensure_scope_selected()
         agent_names = (
             self._selected_agents() if self._ask_agent else self._agent_names_cli
         )
@@ -145,12 +162,15 @@ class ProbablSkillsInstaller(App[None]):
                 )
                 return
             wizard.active = "step-agents" if self._ask_agent else "step-scope"
+            self._focus_active_step()
             self.call_after_refresh(self._focus_active_step)
         elif active == "step-agents":
+            self._ensure_agents_selected()
             if not self._selected_agents():
                 self.notify("Select an agent.", severity="warning")
                 return
             wizard.active = "step-scope"
+            self._focus_active_step()
             self.call_after_refresh(self._focus_active_step)
         elif active == "step-scope":
             self._finish()

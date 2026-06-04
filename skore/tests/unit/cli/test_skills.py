@@ -3,7 +3,7 @@ import json
 import re
 
 from click.testing import CliRunner
-from textual.widgets import SelectionList
+from textual.widgets import SelectionList, TabbedContent
 
 from skore._cli import cli
 from skore._cli.skills import _commands as _skills
@@ -25,6 +25,25 @@ def _invoke(args):
 def _plain_output(output: str) -> str:
     """Strip ANSI codes from rich-click error panels for stable assertions."""
     return _ANSI_ESCAPE.sub("", output)
+
+
+async def _wait_wizard_step(app, pilot, step_id: str) -> None:
+    wizard = app.query_one("#wizard", TabbedContent)
+    for _ in range(50):
+        await pilot.pause()
+        if wizard.active != step_id:
+            continue
+        if step_id == "step-agents":
+            radio = app.query_one("#agents", AutoRadioSet)
+            if radio.has_focus and radio.pressed_index >= 0:
+                return
+        elif step_id == "step-scope":
+            radio = app.query_one("#scope", AutoRadioSet)
+            if radio.has_focus and radio.pressed_index >= 0:
+                return
+        else:
+            return
+    raise AssertionError(f"wizard step {step_id!r} not ready")
 
 
 def test_install_skill_project(release, workspace):
@@ -259,9 +278,9 @@ def test_wizard_app_full_flow(release):
             app.query_one("#sel-workflows", SelectionList).select_all()
             await pilot.pause()
             await pilot.press("enter")  # confirm skills -> agents
-            await pilot.pause()
+            await _wait_wizard_step(app, pilot, "step-agents")
             await pilot.press("enter")  # confirm agents -> scope
-            await pilot.pause()
+            await _wait_wizard_step(app, pilot, "step-scope")
             await pilot.press("enter")  # confirm scope -> install
             await pilot.pause()
         return app.result
@@ -311,11 +330,11 @@ def test_wizard_app_single_agent_choice(release):
             app.query_one("#sel-workflows", SelectionList).select_all()
             await pilot.pause()
             await pilot.press("enter")  # confirm skills -> agents
-            await pilot.pause()
+            await _wait_wizard_step(app, pilot, "step-agents")
             await pilot.press("down")
             await pilot.pause()
             await pilot.press("enter")  # confirm agents -> scope
-            await pilot.pause()
+            await _wait_wizard_step(app, pilot, "step-scope")
             await pilot.press("enter")  # confirm scope -> install
             await pilot.pause()
         return app.result
@@ -334,7 +353,7 @@ def test_wizard_app_skips_agent_step_when_provided(release):
             app.query_one("#sel-skills", SelectionList).select_all()
             await pilot.pause()
             await pilot.press("enter")  # confirm skills -> scope (agents skipped)
-            await pilot.pause()
+            await _wait_wizard_step(app, pilot, "step-scope")
             await pilot.press("enter")  # confirm scope -> install
             await pilot.pause()
         return app.result
