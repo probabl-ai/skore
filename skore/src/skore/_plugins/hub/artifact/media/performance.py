@@ -89,35 +89,17 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
         return kwargs
 
 
-class PrecisionRecallSVG(PerformanceSVG[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str] = "metrics.precision_recall"
-    name: Literal["precision_recall"] = "precision_recall"
-
-
 class PrecisionRecallDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision_recall"
     name: Literal["precision_recall"] = "precision_recall"
-
-
-class PrecisionRecallSVGTrain(PrecisionRecallSVG[Report]):  # noqa: D101
-    data_source: Literal["train"] = "train"
 
 
 class PrecisionRecallDataFrameTrain(PrecisionRecallDataFrame[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PrecisionRecallSVGTest(PrecisionRecallSVG[Report]):  # noqa: D101
-    data_source: Literal["test"] = "test"
-
-
 class PrecisionRecallDataFrameTest(PrecisionRecallDataFrame[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
-
-
-class PredictionErrorSVG(PerformanceSVG[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str] = "metrics.prediction_error"
-    name: Literal["prediction_error"] = "prediction_error"
 
 
 class PredictionErrorDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
@@ -125,25 +107,12 @@ class PredictionErrorDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     name: Literal["prediction_error"] = "prediction_error"
 
 
-class PredictionErrorSVGTrain(PredictionErrorSVG[Report]):  # noqa: D101
-    data_source: Literal["train"] = "train"
-
-
 class PredictionErrorDataFrameTrain(PredictionErrorDataFrame[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class PredictionErrorSVGTest(PredictionErrorSVG[Report]):  # noqa: D101
-    data_source: Literal["test"] = "test"
-
-
 class PredictionErrorDataFrameTest(PredictionErrorDataFrame[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
-
-
-class RocSVG(PerformanceSVG[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str] = "metrics.roc"
-    name: Literal["roc"] = "roc"
 
 
 class RocDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
@@ -151,25 +120,12 @@ class RocDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     name: Literal["roc"] = "roc"
 
 
-class RocSVGTrain(RocSVG[Report]):  # noqa: D101
-    data_source: Literal["train"] = "train"
-
-
 class RocDataFrameTrain(RocDataFrame[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
 
 
-class RocSVGTest(RocSVG[Report]):  # noqa: D101
-    data_source: Literal["test"] = "test"
-
-
 class RocDataFrameTest(RocDataFrame[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
-
-
-class ConfusionMatrixSVG(PerformanceSVG[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str] = "metrics.confusion_matrix"
-    name: Literal["confusion_matrix"] = "confusion_matrix"
 
 
 class ConfusionMatrixDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
@@ -177,16 +133,8 @@ class ConfusionMatrixDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     name: Literal["confusion_matrix"] = "confusion_matrix"
 
 
-class ConfusionMatrixSVGTrain(ConfusionMatrixSVG[Report]):  # noqa: D101
-    data_source: Literal["train"] = "train"
-
-
 class ConfusionMatrixDataFrameTrain(ConfusionMatrixDataFrame[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
-
-
-class ConfusionMatrixSVGTest(ConfusionMatrixSVG[Report]):  # noqa: D101
-    data_source: Literal["test"] = "test"
 
 
 class ConfusionMatrixDataFrameTest(ConfusionMatrixDataFrame[Report]):  # noqa: D101
