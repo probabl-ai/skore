@@ -338,10 +338,13 @@ pyparsing==3.3.2
 pytest==9.0.3
     # via
     #   skore (skore/pyproject.toml)
+    #   pytest-asyncio
     #   pytest-cov
     #   pytest-order
     #   pytest-randomly
     #   pytest-xdist
+pytest-asyncio==1.4.0
+    # via skore (skore/pyproject.toml)
 pytest-cov==7.1.0
     # via skore (skore/pyproject.toml)
 pytest-order==1.4.0
@@ -446,6 +449,7 @@ typing-extensions==4.15.0
     #   optype
     #   pydantic
     #   pydantic-core
+    #   pytest-asyncio
     #   sqlalchemy
     #   starlette
     #   textual

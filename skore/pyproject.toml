@@ -53,6 +53,7 @@ test-base = [
   "jedi",
   "pre-commit",
   "pytest",
+  "pytest-asyncio",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
@@ -142,6 +143,7 @@ addopts = [
   "--durations=25",
 ]
 xfail_strict = true
+asyncio_mode = "auto"
 log_cli_level = "info"
 filterwarnings = [
   'ignore:codecs\.open\(\) is deprecated.*:DeprecationWarning:mlflow',

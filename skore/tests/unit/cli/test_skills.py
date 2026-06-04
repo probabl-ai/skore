@@ -1,4 +1,3 @@
-import asyncio
 import json
 import re
 
@@ -283,129 +282,117 @@ def test_interactive_options_empty_selection(release, monkeypatch):
     )
 
 
-def test_wizard_app_full_flow(release):
+async def test_wizard_app_full_flow(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
-        async with app.run_test() as pilot:
-            app.query_one("#sel-workflows", SelectionList).select_all()
-            await pilot.pause()
-            await pilot.press("enter")  # confirm skills -> agents
-            await _wait_wizard_step(app, pilot, "step-agents")
-            await pilot.press("enter")  # confirm agents -> scope
-            await _wait_wizard_step(app, pilot, "step-scope")
-            await pilot.press("enter")  # confirm scope -> install
-            await pilot.pause()
-        return app.result
+    app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+    async with app.run_test() as pilot:
+        app.query_one("#sel-workflows", SelectionList).select_all()
+        await pilot.pause()
+        await pilot.press("enter")  # confirm skills -> agents
+        await _wait_wizard_step(app, pilot, "step-agents")
+        await pilot.press("enter")  # confirm agents -> scope
+        await _wait_wizard_step(app, pilot, "step-scope")
+        await pilot.press("enter")  # confirm scope -> install
+        await pilot.pause()
 
-    selected_ids, agents, global_ = asyncio.run(scenario())
+    selected_ids, agents, global_ = app.result
 
     assert set(selected_ids) == {"flow", "alpha", "beta"}
     assert agents == ["agents"]
     assert global_ is False
 
 
-def test_wizard_app_selecting_workflow_selects_its_skills(release):
+async def test_wizard_app_selecting_workflow_selects_its_skills(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
-        async with app.run_test() as pilot:
-            app.query_one("#sel-workflows", SelectionList).select_all()
-            await _wait_workflow_skills_sync(app, pilot, {"alpha", "beta"})
-            return list(app.query_one("#sel-skills", SelectionList).selected)
+    app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+    async with app.run_test() as pilot:
+        app.query_one("#sel-workflows", SelectionList).select_all()
+        await _wait_workflow_skills_sync(app, pilot, {"alpha", "beta"})
+        selected = list(app.query_one("#sel-skills", SelectionList).selected)
 
-    assert set(asyncio.run(scenario())) == {"alpha", "beta"}
+    assert set(selected) == {"alpha", "beta"}
 
 
-def test_wizard_app_deselecting_workflow_deselects_its_skills(release):
+async def test_wizard_app_deselecting_workflow_deselects_its_skills(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
-        async with app.run_test() as pilot:
-            workflows = app.query_one("#sel-workflows", SelectionList)
-            workflows.select_all()
-            await _wait_workflow_skills_sync(app, pilot, {"alpha", "beta"})
-            workflows.deselect_all()
-            await _wait_workflow_skills_sync(app, pilot, set())
-            return list(app.query_one("#sel-skills", SelectionList).selected)
+    app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+    async with app.run_test() as pilot:
+        workflows = app.query_one("#sel-workflows", SelectionList)
+        workflows.select_all()
+        await _wait_workflow_skills_sync(app, pilot, {"alpha", "beta"})
+        workflows.deselect_all()
+        await _wait_workflow_skills_sync(app, pilot, set())
+        selected = list(app.query_one("#sel-skills", SelectionList).selected)
 
-    assert asyncio.run(scenario()) == []
+    assert selected == []
 
 
-def test_wizard_app_single_agent_choice(release):
+async def test_wizard_app_single_agent_choice(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
-        async with app.run_test() as pilot:
-            app.query_one("#sel-workflows", SelectionList).select_all()
-            await pilot.pause()
-            await pilot.press("enter")  # confirm skills -> agents
-            await _wait_wizard_step(app, pilot, "step-agents")
-            await pilot.press("down")
-            await pilot.pause()
-            await pilot.press("enter")  # confirm agents -> scope
-            await _wait_wizard_step(app, pilot, "step-scope")
-            await pilot.press("enter")  # confirm scope -> install
-            await pilot.pause()
-        return app.result
+    app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+    async with app.run_test() as pilot:
+        app.query_one("#sel-workflows", SelectionList).select_all()
+        await pilot.pause()
+        await pilot.press("enter")  # confirm skills -> agents
+        await _wait_wizard_step(app, pilot, "step-agents")
+        await pilot.press("down")
+        await pilot.pause()
+        await pilot.press("enter")  # confirm agents -> scope
+        await _wait_wizard_step(app, pilot, "step-scope")
+        await pilot.press("enter")  # confirm scope -> install
+        await pilot.pause()
 
-    _, agents, _ = asyncio.run(scenario())
+    _, agents, _ = app.result
 
     assert agents == ["claude-code"]
 
 
-def test_wizard_app_skips_agent_step_when_provided(release):
+async def test_wizard_app_skips_agent_step_when_provided(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsInstaller(catalog, agent=("cursor",), default_global=True)
-        async with app.run_test() as pilot:
-            app.query_one("#sel-skills", SelectionList).select_all()
-            await pilot.pause()
-            await pilot.press("enter")  # confirm skills -> scope (agents skipped)
-            await _wait_wizard_step(app, pilot, "step-scope")
-            await pilot.press("enter")  # confirm scope -> install
-            await pilot.pause()
-        return app.result
+    app = ProbablSkillsInstaller(catalog, agent=("cursor",), default_global=True)
+    async with app.run_test() as pilot:
+        app.query_one("#sel-skills", SelectionList).select_all()
+        await pilot.pause()
+        await pilot.press("enter")  # confirm skills -> scope (agents skipped)
+        await _wait_wizard_step(app, pilot, "step-scope")
+        await pilot.press("enter")  # confirm scope -> install
+        await pilot.pause()
 
-    selected_ids, agents, global_ = asyncio.run(scenario())
+    selected_ids, agents, global_ = app.result
 
     assert set(selected_ids) == {"alpha", "beta"}
     assert agents == ["cursor"]
     assert global_ is True
 
 
-def test_wizard_app_cancel(release):
+async def test_wizard_app_cancel(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
-        async with app.run_test() as pilot:
-            await pilot.press("escape")
-            await pilot.pause()
-        return app.result
+    app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+    async with app.run_test() as pilot:
+        await pilot.press("escape")
+        await pilot.pause()
 
-    assert asyncio.run(scenario()) is None
+    assert app.result is None
 
 
-def test_wizard_app_requires_selection(release):
+async def test_wizard_app_requires_selection(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
-        async with app.run_test() as pilot:
-            await pilot.press("enter")  # nothing selected -> stay on skills
-            await pilot.pause()
-            active = app.query_one("#wizard").active
-            await pilot.press("escape")
-            await pilot.pause()
-        return active
+    app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+    async with app.run_test() as pilot:
+        await pilot.press("enter")  # nothing selected -> stay on skills
+        await pilot.pause()
+        active = app.query_one("#wizard").active
+        await pilot.press("escape")
+        await pilot.pause()
 
-    assert asyncio.run(scenario()) == "step-skills"
+    assert active == "step-skills"
 
 
 def test_find_lists_all(release, workspace):
@@ -446,50 +433,42 @@ def test_find_interactive_cancelled(release, workspace, monkeypatch):
     assert "alpha" not in result.output
 
 
-def test_finder_app_returns_selection(release):
+async def test_finder_app_returns_selection(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsFinder(catalog)
-        async with app.run_test() as pilot:
-            app.query_one("#sel-workflows", SelectionList).select_all()
-            await pilot.pause()
-            await pilot.press("enter")
-            await pilot.pause()
-        return app.result
+    app = ProbablSkillsFinder(catalog)
+    async with app.run_test() as pilot:
+        app.query_one("#sel-workflows", SelectionList).select_all()
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
 
-    assert set(asyncio.run(scenario())) == {"flow", "alpha", "beta"}
+    assert set(app.result) == {"flow", "alpha", "beta"}
 
 
-def test_finder_app_requires_selection(release):
+async def test_finder_app_requires_selection(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsFinder(catalog)
-        async with app.run_test() as pilot:
-            await pilot.press("enter")
-            await pilot.pause()
-            still_running = app.is_running
-            await pilot.press("escape")
-            await pilot.pause()
-        return still_running, app.result
+    app = ProbablSkillsFinder(catalog)
+    async with app.run_test() as pilot:
+        await pilot.press("enter")
+        await pilot.pause()
+        assert app.is_running is True
+        await pilot.press("escape")
+        await pilot.pause()
 
-    still_running, result = asyncio.run(scenario())
-    assert still_running is True
-    assert result is None
+    assert app.result is None
 
 
-def test_finder_app_cancel(release):
+async def test_finder_app_cancel(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsFinder(catalog)
-        async with app.run_test() as pilot:
-            await pilot.press("escape")
-            await pilot.pause()
-        return app.result
+    app = ProbablSkillsFinder(catalog)
+    async with app.run_test() as pilot:
+        await pilot.press("escape")
+        await pilot.pause()
 
-    assert asyncio.run(scenario()) is None
+    assert app.result is None
 
 
 def test_list_installed(release, workspace):
@@ -674,23 +653,22 @@ def test_skills_menu_dispatches_install(release, workspace, monkeypatch):
     assert (workspace.project / ".agents" / "skills" / "alpha").is_dir()
 
 
-def test_auto_radio_set_selects_on_arrow(release):
+async def test_auto_radio_set_selects_on_arrow(release):
     _, _, catalog = fetch_release()
 
-    async def scenario():
-        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
-        async with app.run_test() as pilot:
-            app.query_one("#sel-workflows", SelectionList).select_all()
-            await pilot.pause()
-            await pilot.press("enter")
-            await pilot.pause()
-            radio = app.query_one("#agents", AutoRadioSet)
-            assert radio.pressed_index == 0
-            await pilot.press("down")
-            await pilot.pause()
-            return radio.pressed_index
+    app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+    async with app.run_test() as pilot:
+        app.query_one("#sel-workflows", SelectionList).select_all()
+        await pilot.pause()
+        await pilot.press("enter")
+        await pilot.pause()
+        radio = app.query_one("#agents", AutoRadioSet)
+        assert radio.pressed_index == 0
+        await pilot.press("down")
+        await pilot.pause()
+        pressed_index = radio.pressed_index
 
-    assert asyncio.run(scenario()) == 1
+    assert pressed_index == 1
 
 
 def test_update_interactive_selection(release, workspace, monkeypatch):
