@@ -316,14 +316,7 @@ def skills(ctx) -> None:
     is_flag=True,
     help="Install every skill from the latest release (non-interactive).",
 )
-@click.option(
-    "--list",
-    "-l",
-    "list_only",
-    is_flag=True,
-    help="List available skills and workflows without installing.",
-)
-def install(ids, agent, global_, all_, list_only) -> None:
+def install(ids, agent, global_, all_) -> None:
     """Install skill(s) or workflow(s) from the latest release.
 
     Run without arguments to launch the interactive installer (a tabbed wizard
@@ -334,10 +327,6 @@ def install(ids, agent, global_, all_, list_only) -> None:
     scope. ``--agent``/``--global`` require an explicit selection.
     """
     with _release() as (tag, root, catalog):
-        if list_only:
-            _render_catalog(catalog)
-            return
-
         skills_by_id, workflows_by_id = _index(catalog)
         ids = list(ids)
 

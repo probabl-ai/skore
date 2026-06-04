@@ -79,15 +79,6 @@ def test_install_workflow_expands_to_skills(release, workspace):
     assert (skills_dir / "beta" / "SKILL.md").is_file()
 
 
-def test_install_list_only_does_not_install(release, workspace):
-    result = _invoke(["skills", "install", "-l"])
-
-    assert result.exit_code == 0
-    assert "flow" in result.output
-    assert "alpha" in result.output
-    assert not (workspace.project / ".agents").exists()
-
-
 def test_install_unknown_identifier(release, workspace):
     result = _invoke(["skills", "install", "does-not-exist"])
 
