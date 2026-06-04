@@ -1,6 +1,6 @@
 import numbers
 from collections import namedtuple
-from typing import Literal, cast
+from typing import Literal
 
 import numpy as np
 import seaborn as sns
@@ -505,8 +505,8 @@ class PredictionErrorDisplay(DisplayMixin):
                 _safe_indexing(y_pred, indices, axis=0), ensure_2d=False
             )
         else:
-            y_true_sample = cast(np.typing.NDArray, y_true)
-            y_pred_sample = cast(np.typing.NDArray, y_pred)
+            y_true_sample = check_array(y_true, ensure_2d=False)
+            y_pred_sample = check_array(y_pred, ensure_2d=False)
 
         residuals_sample = y_true_sample - y_pred_sample
         n = len(y_true_sample)
