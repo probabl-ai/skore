@@ -25,6 +25,10 @@ Average = str | None
 Output = int | None
 MetricKey = tuple[MetricName, Label, Average, Output]
 
+ClassName = str
+ParameterName = str
+StepName = str
+
 
 def _metric_key(row: MetricsSummaryRow) -> MetricKey:
     """Identity tuple for a metric row (verbose name + label/average/output)."""
