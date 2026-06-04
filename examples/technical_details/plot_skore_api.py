@@ -58,7 +58,7 @@ report = evaluate(estimator, X, y, splitter=0.2)
 # Data accessor: ``report.data.summarize()`` returns a display
 # ----------------------------------------------------------
 #
-# The **data** accessor provides dataset summaries. Its ``analyze()`` method
+# The **data** accessor provides dataset summaries. Its ``summarize()`` method
 # returns a :class:`~skore._sklearn._plot.data.table_report.TableReportDisplay`.
 data_display = report.data.summarize()
 data_display.help()
