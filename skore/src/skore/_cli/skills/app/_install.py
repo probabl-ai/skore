@@ -121,12 +121,10 @@ class ProbablSkillsInstaller(App[None]):
         active = self.query_one("#wizard", TabbedContent).active
         if active == "step-agents":
             radio = self.query_one("#agents", AutoRadioSet)
-            radio.focus()
-            radio._selected = AGENT_NAMES.index(DEFAULT_AGENT)
+            radio.select_index(AGENT_NAMES.index(DEFAULT_AGENT))
         elif active == "step-scope":
             radio = self.query_one("#scope", AutoRadioSet)
-            radio.focus()
-            radio._selected = 1 if self._default_global else 0
+            radio.select_index(1 if self._default_global else 0)
 
     def _finish(self) -> None:
         agent_names = (
