@@ -16,14 +16,17 @@ python = "3.13.*"
 [feature.py314.dependencies]
 python = "3.14.*"
 
-[feature.sklearn15.dependencies]
-scikit-learn = "1.5.*"
+[feature.sklearn16.dependencies]
+scikit-learn = "1.6.*"
 
 [feature.sklearn17.dependencies]
 scikit-learn = "1.7.*"
 
 [feature.sklearn18.dependencies]
 scikit-learn = "1.8.*"
+
+[feature.sklearn19.dependencies]
+scikit-learn = "1.9.*"
 
 [feature.mlflow2.dependencies]
 mlflow = "2.*"
@@ -61,16 +64,16 @@ docs = { cmd = "make html", cwd = "sphinx" }
 scripts = ["scripts/activate_dot.sh"]
 
 [environments]
-py311-sklearn15 = ["py311", "sklearn15", "test"]
-py311-sklearn15-mlflow2 = ["py311", "sklearn15", "mlflow2", "test"]
-py311-sklearn18 = ["py311", "sklearn18", "test"]
-py312-sklearn15 = ["py312", "sklearn15", "test"]
-py312-sklearn18 = ["py312", "sklearn18", "test"]
-py313-sklearn15 = ["py313", "sklearn15", "test"]
-py313-sklearn18 = ["py313", "sklearn18", "test"]
+py311-sklearn16 = ["py311", "sklearn16", "test"]
+py311-sklearn16-mlflow2 = ["py311", "sklearn16", "mlflow2", "test"]
+py311-sklearn19 = ["py311", "sklearn19", "test"]
+py312-sklearn19 = ["py312", "sklearn19", "test"]
+py313-sklearn16 = ["py313", "sklearn16", "test"]
+py313-sklearn19 = ["py313", "sklearn19", "test"]
 py314-sklearn17 = ["py314", "sklearn17", "test"]
 py314-sklearn18 = ["py314", "sklearn18", "test"]
-py314-sklearn18-pandas2 = ["py314", "sklearn18", "pandas2", "test"]
-py314-sklearn18-mlflow3 = ["py314", "sklearn18", "mlflow3", "test"]
-sphinx = ["py314", "sklearn18", "sphinx"]
+py314-sklearn19 = ["py314", "sklearn19", "test"]
+py314-sklearn19-pandas2 = ["py314", "sklearn19", "pandas2", "test"]
+py314-sklearn19-mlflow3 = ["py314", "sklearn19", "mlflow3", "test"]
+sphinx = ["py314", "sklearn19", "sphinx"]
 lint = ["py312", "lint"]

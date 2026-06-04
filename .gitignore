@@ -208,3 +208,5 @@ mlflow.db
 mlruns
 
 .claude
+
+.pixi

@@ -119,6 +119,17 @@ jobs:
           cache: true
           locked: true
 
+      # Cache the datasets downloaded by `skrub.datasets.fetch_*` (default `~/skrub_data`)
+      # to avoid re-downloading them on every run. The `github.run_id` in the key combined
+      # with the prefix `restore-keys` keeps the cache fresh while accumulating new datasets.
+      - name: Cache fetched datasets
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/skrub_data
+          key: skrub-data-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            skrub-data-${{ runner.os }}-
+
       - name: Test without coverage
         if: ${{ ! matrix.coverage }}
         timeout-minutes: 20
