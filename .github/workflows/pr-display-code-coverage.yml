@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: ["skore", "skore-mlflow-project"]
+        package: ["skore"]
     permissions:
       actions: read
       contents: read
@@ -46,7 +46,7 @@ jobs:
 
       - name: Display coverage reports
         if: ${{ steps.download-coverage-reports.outcome == 'success' }}
-        uses: MishaKav/pytest-coverage-comment@287292879eaaff04116f36d3eb1a670f6e5df1a4 # v1.7.1
+        uses: MishaKav/pytest-coverage-comment@dd5b80bde6d16941f336518e92929e89069d8451 # v1.7.2
         with:
           issue-number: ${{ steps.acquire-pr-context.outputs.pr-number }}
           pytest-xml-coverage-path: coverage/pytest-coverage.xml

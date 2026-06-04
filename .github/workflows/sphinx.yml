@@ -239,7 +239,6 @@ jobs:
       - name: Install all packages from local branch
         run: |
           python -m pip install --force-reinstall --no-deps skore/
-          python -m pip install --force-reinstall --no-deps skore-mlflow-project/
 
       - name: Build documentation
         working-directory: sphinx
@@ -254,7 +253,7 @@ jobs:
           SPHINX_EXAMPLE_BASE_URL: ${{ vars.DOCUMENTATION_EXAMPLE_BASE_URL }}
 
       - name: Upload documentation
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sphinx-html-artifact
           path: sphinx/build/html/
@@ -419,7 +418,7 @@ jobs:
     needs: [sphinx-deploy-html, sphinx-deploy-root-files, sphinx-deploy-stable]
     steps:
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
         with:
           role-to-assume: ${{ vars.AWS_ROLE }}
           aws-region: ${{ vars.AWS_REGION }}

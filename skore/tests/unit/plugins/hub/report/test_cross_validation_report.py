@@ -19,20 +19,14 @@ from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
-    ConfusionMatrixSVGTest,
-    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
     PermutationImportanceTrain,
     PrecisionRecallDataFrameTest,
     PrecisionRecallDataFrameTrain,
-    PrecisionRecallSVGTest,
-    PrecisionRecallSVGTrain,
     RocDataFrameTest,
     RocDataFrameTrain,
-    RocSVGTest,
-    RocSVGTrain,
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.serializer import Serializer
@@ -75,7 +69,7 @@ from skore._plugins.hub.report import (
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
-    reports = [object] + getattr(object, "estimator_reports_", [])
+    reports = [object] + getattr(object, "reports_", [])
     reports_with_cache = [
         (report, report._cache) for report in reports if hasattr(report, "_cache")
     ]
@@ -364,16 +358,16 @@ class TestCrossValidationReportPayload:
     @mark.respx()
     def test_estimators(self, project, payload, upload_mock):
         payload.report.cache_predictions()
-        assert len(payload.estimators) == len(payload.report.estimator_reports_)
+        assert len(payload.estimators) == len(payload.report.reports_)
 
         for i, estimator in enumerate(payload.estimators):
             # Ensure payload is well constructed
             assert isinstance(estimator, EstimatorReportPayload)
             assert estimator.project == project
-            assert estimator.report == payload.report.estimator_reports_[i]
+            assert estimator.report == payload.report.reports_[i]
 
             # ensure `upload` is well called
-            pickle, checksum = serialize(payload.report.estimator_reports_[i])
+            pickle, checksum = serialize(payload.report.reports_[i])
 
             estimator.model_dump()
 
@@ -477,20 +471,14 @@ class TestCrossValidationReportPayload:
         assert list(map(type, payload.medias)) == [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
-            ConfusionMatrixSVGTest,
-            ConfusionMatrixSVGTrain,
             EstimatorHtmlRepr,
             ImpurityDecrease,
             PermutationImportanceTest,
             PermutationImportanceTrain,
             PrecisionRecallDataFrameTest,
             PrecisionRecallDataFrameTrain,
-            PrecisionRecallSVGTest,
-            PrecisionRecallSVGTrain,
             RocDataFrameTest,
             RocDataFrameTrain,
-            RocSVGTest,
-            RocSVGTrain,
             TableReport,
         ]
 

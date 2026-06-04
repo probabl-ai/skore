@@ -885,3 +885,27 @@ if sklearn_version < parse_version("1.8"):
         return tns, fps, fns, tps, thresholds
 else:
     from sklearn.metrics._ranking import confusion_matrix_at_thresholds  # noqa: F401
+
+
+########################################################################################
+# Upgrading for scikit-learn 1.9
+########################################################################################
+
+if sklearn_version < parse_version("1.9"):
+
+    def convert_container(
+        container, constructor_name, column_names=None, dtype=None, minversion=None
+    ):
+        from sklearn.utils._testing import _convert_container
+
+        return _convert_container(
+            container,
+            constructor_name,
+            columns_name=column_names,
+            dtype=dtype,
+            minversion=minversion,
+        )
+else:
+    from sklearn.utils._testing import (  # noqa: F401
+        _convert_container as convert_container,
+    )

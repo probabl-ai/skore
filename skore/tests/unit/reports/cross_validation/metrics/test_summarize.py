@@ -7,6 +7,7 @@ without depending on MetricsSummaryDisplay.frame().
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.testing import assert_array_equal
 
 from skore import CrossValidationReport, MetricsSummaryDisplay
 
@@ -85,6 +86,7 @@ def test_binary_classification_forest(forest_binary_classification_data):
             "Brier score",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="RandomForestClassifier",
     )
@@ -118,6 +120,7 @@ def test_binary_classification_svc(svc_binary_classification_data):
             "ROC AUC",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="SVC",
     )
@@ -142,6 +145,7 @@ def test_multiclass_classification_forest(forest_multiclass_classification_data)
             "ROC AUC",
             "Predict time (s)",
             "Fit time (s)",
+            "Score",
         },
         expected_estimator_name="RandomForestClassifier",
     )
@@ -172,6 +176,7 @@ def test_multiclass_classification_svc(svc_multiclass_classification_data):
             "Recall",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="SVC",
     )
@@ -198,6 +203,7 @@ def test_regression(linear_regression_data):
             "MAPE",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="LinearRegression",
     )
@@ -221,6 +227,7 @@ def test_multioutput_regression(linear_regression_multioutput_data):
             "MAPE",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="LinearRegression",
     )
@@ -246,9 +253,27 @@ def test_without_predict_proba(custom_classifier_no_predict_proba_data):
             "Recall",
             "Fit time (s)",
             "Predict time (s)",
+            "Score",
         },
         expected_estimator_name="CustomClassifierPredictOnly",
     )
+
+
+def test_data_source_both(forest_binary_classification_data):
+    """`data_source='both'` should keep train and test metrics separate."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    train_display = report.metrics.summarize(data_source="train")
+    test_display = report.metrics.summarize(data_source="test")
+    both_display = report.metrics.summarize(data_source="both")
+
+    assert set(both_display.data["data_source"]) == {"train", "test"}
+
+    train_data = both_display.data[both_display.data["data_source"] == "train"]
+    assert_array_equal(train_data["score"], train_display.data["score"])
+
+    test_data = both_display.data[both_display.data["data_source"] == "test"]
+    assert_array_equal(test_data["score"], test_display.data["score"])
 
 
 # Tests about default metric behavior

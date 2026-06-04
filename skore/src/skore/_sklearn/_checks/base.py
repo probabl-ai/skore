@@ -45,7 +45,7 @@ class ChecksSummaryDisplay(DisplayHelpMixin):
     """Display for the checks summary.
 
     An instance of this class will be created by
-    :meth:`~skore.EstimatorReport.checks.summarize`.This class should not be
+    :meth:`~skore.EstimatorReport.checks.summarize`. This class should not be
     instantiated directly.
 
     The display object has an HTML representation organized in three tabs
@@ -165,6 +165,7 @@ class ChecksSummaryDisplay(DisplayHelpMixin):
         return {"text/plain": self.__repr__(), "text/html": self._repr_html_()}
 
     def __repr__(self) -> str:
+        """Return a plain-text summary of check results."""
         if self._check_results.empty:
             return self._header + "\nAll checks were either ignored or not applicable."
         lines = [self._header]
@@ -194,35 +195,43 @@ class Check(Protocol):
     given :attr:`title` and :attr:`severity`. Checks are scoped to a single report
     type via :attr:`report_type` so they only run on matching reports.
 
-    Parameters
+    Attributes
     ----------
     code : str
-        Unique identifier for this check , used in
-        :meth:`~skore.EstimatorReport.checks.summarize` and `ignore` lists.
+        Unique identifier for this check, used in
+        :meth:`~skore.EstimatorReport.checks.summarize` and ``ignore`` lists.
 
     title : str
         Short label shown for the finding when one is reported.
 
-    report_type : str
-        Must be one of `"cross-validation"`, `"estimator"`,
-        `"comparison-estimator"`, or `"comparison-cross-validation"`.
-
     docs_url : str or None, default=None
-        Optional link or documentation anchor: a string starting with `"http"`
+        Optional link or documentation anchor: a string starting with ``"http"``
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
         the automated checks user guide.
+
+    report_type : str
+        Must be one of ``"cross-validation"``, ``"estimator"``,
+        ``"comparison-estimator"``, or ``"comparison-cross-validation"``.
 
     severity : {"issue", "tip"}
         Severity of the finding. ``"issue"`` flags a modeling problem to fix;
         ``"tip"`` invites caution (e.g. on the interpretation of a result)
         without signaling a defect.
+
+    slow : bool, default=False
+        Whether the check is expensive to run (e.g. requires refits or
+        permutation predictions). Slow checks are skipped when
+        :meth:`~skore.EstimatorReport.checks.summarize` is called with
+        ``fast_mode=True``, and are not computed by the HTML report repr
+        (only cached results are surfaced).
     """
 
     code: CheckCode
     title: str
     report_type: ReportType
-    docs_url: str | None
+    docs_url: str | None = None
     severity: Literal["issue", "tip"]
+    slow: bool = False
 
     @abstractmethod
     def check_function(self, report: _BaseReport) -> str | None:

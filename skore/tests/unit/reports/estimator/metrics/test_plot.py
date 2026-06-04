@@ -175,3 +175,41 @@ def test_display_regression_switching_data_source(
     assert report._cache != {}
     display_second_call = getattr(report.metrics, display)(data_source="train", seed=0)
     assert display_first_call is not display_second_call
+
+
+@pytest.fixture(scope="module")
+def large_binary_classification_report():
+    """Binary classifier on a noisy dataset large enough to produce more than
+    500 distinct thresholds on the ROC, precision-recall and thresholded
+    confusion-matrix displays (so the internal 500-point cap actually fires)."""
+    X, y = make_classification(
+        n_samples=4_000, n_features=4, flip_y=0.4, class_sep=0.3, random_state=0
+    )
+    estimator = LogisticRegression().fit(X, y)
+    return EstimatorReport(estimator, X_test=X, y_test=y)
+
+
+@pytest.mark.parametrize("metric", ["roc", "precision_recall"])
+def test_curve_capped_to_500_points(large_binary_classification_report, metric):
+    """The ROC and precision-recall curve displays are downsampled to at most
+    500 points per class on the public API. The fixture is calibrated so that
+    the underlying scikit-learn curve has more than 500 thresholds, so the
+    assertion would fail if the cap was not enforced."""
+    display = getattr(large_binary_classification_report.metrics, metric)()
+    frame = display.frame()
+    sizes = frame.groupby("label", observed=True).size()
+    assert sizes.max() == 500
+
+
+def test_confusion_matrix_capped_to_500_thresholds(
+    large_binary_classification_report,
+):
+    """The thresholded confusion matrix display is downsampled to at most
+    500 thresholds per class on the public API. The fixture is calibrated so
+    that the underlying scikit-learn curve has more than 500 thresholds, so
+    the assertion would fail if the cap was not enforced."""
+    display = large_binary_classification_report.metrics.confusion_matrix()
+    df = display.confusion_matrix_thresholded
+    assert df is not None
+    n_thresholds = df.groupby("label", observed=True)["threshold"].nunique()
+    assert n_thresholds.max() == 500

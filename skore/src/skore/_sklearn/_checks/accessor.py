@@ -22,6 +22,7 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         self,
         *,
         ignore: list[CheckCode] | tuple[CheckCode, ...] | None = None,
+        fast_mode: bool = False,
     ) -> ChecksSummaryDisplay:
         """Run checks and return a summary with detected issues.
 
@@ -33,6 +34,10 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         ----------
         ignore : list of str or tuple of str or None, default=None
             Check codes to exclude from the results, e.g. `["SKD001"]`.
+
+        fast_mode : bool, default=False
+            When True, skip the expensive checks that are not already in the
+            cache. Cached slow results from a previous call are still surfaced.
 
         Returns
         -------
@@ -48,14 +53,12 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         >>> from sklearn.datasets import make_classification
         >>> X, y = make_classification(random_state=42)
         >>> report = evaluate(DummyClassifier(), X, y, splitter=0.2)
-        >>> report.checks.summarize()
-        Checks summary: 1 issue(s), ...
-        Issues:
-        - [SKD002] Potential underfitting...
-        ...
-        >>> report.checks.summarize(ignore=["SKD002"])
-        Checks summary: 0 issue(s), ... 1 ignored.
-        ...
+        >>> summary = report.checks.summarize()
+        >>> "SKD002" in summary.frame()["code"].values
+        True
+        >>> filtered = report.checks.summarize(ignore=["SKD002"])
+        >>> "SKD002" in filtered.frame()["code"].values
+        False
         """
         ignored_codes: set[CheckCode] = set()
         if ignore:
@@ -68,7 +71,9 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 for code in configuration.ignore_checks
                 if code.strip()
             )
-        check_results, applicable_codes = self._parent._get_results(ignored_codes)
+        check_results, applicable_codes = self._parent._get_results(
+            ignored_codes, fast_mode=fast_mode
+        )
         return ChecksSummaryDisplay(
             check_results={
                 code: check_result
@@ -89,7 +94,7 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         Parameters
         ----------
         checks : list of Check
-            Additional checks to register
+            Additional checks to register.
         """
         report_types = [
             "cross-validation",

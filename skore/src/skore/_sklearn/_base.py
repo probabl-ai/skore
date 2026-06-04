@@ -10,9 +10,9 @@ from rich.console import Console
 from rich.panel import Panel
 
 from skore._project.git import git_commit
+from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
-from skore._sklearn._checks.utils import CheckNotApplicable
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
@@ -33,7 +33,10 @@ class _BaseReport(ReportHelpMixin):
     ]
 
     def _aggregate_checks(
-        self, ignored_codes: set[CheckCode]
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
     ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
         """Aggregate EstimatorReport checks.
 
@@ -44,7 +47,10 @@ class _BaseReport(ReportHelpMixin):
         return ({}, set())
 
     def _get_results(
-        self, ignored_codes: set[CheckCode]
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
     ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
         """Get the check results from the cache or compute them.
 
@@ -52,6 +58,11 @@ class _BaseReport(ReportHelpMixin):
         ----------
         ignored_codes : set of CheckCode
             Check codes to exclude from the results, e.g. ``{"SKD001"}``.
+
+        fast_mode : bool, default=False
+            When True, skip slow checks that are not already in the cache
+            (their `check_function` is never invoked). Cached slow results
+            are still surfaced.
 
         Returns ``(check_results, applicable_codes)`` where ``applicable_codes``
         contains the codes of the checks that actually ran on the report,
@@ -70,6 +81,8 @@ class _BaseReport(ReportHelpMixin):
                 or check.code in ignored_codes
             ):
                 continue
+            if fast_mode and getattr(check, "slow", False):
+                continue
             try:
                 explanation = check.check_function(self)
                 self._applicable_codes.add(check.code)
@@ -83,7 +96,9 @@ class _BaseReport(ReportHelpMixin):
             }
 
         if "cross-validation" in self._report_type or "comparison" in self._report_type:
-            agg_check_results, agg_applicable = self._aggregate_checks(ignored_codes)
+            agg_check_results, agg_applicable = self._aggregate_checks(
+                ignored_codes, fast_mode=fast_mode
+            )
             return (
                 self._check_results_cache | agg_check_results,
                 self._applicable_codes | agg_applicable,

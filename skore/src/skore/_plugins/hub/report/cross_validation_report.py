@@ -23,24 +23,16 @@ from skore._plugins.hub.artifact.media import (
     Coefficients,
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
-    ConfusionMatrixSVGTest,
-    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
     PermutationImportanceTrain,
     PrecisionRecallDataFrameTest,
     PrecisionRecallDataFrameTrain,
-    PrecisionRecallSVGTest,
-    PrecisionRecallSVGTrain,
     PredictionErrorDataFrameTest,
     PredictionErrorDataFrameTrain,
-    PredictionErrorSVGTest,
-    PredictionErrorSVGTrain,
     RocDataFrameTest,
     RocDataFrameTrain,
-    RocSVGTest,
-    RocSVGTrain,
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.media.media import Media
@@ -164,24 +156,16 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         Coefficients,
         ConfusionMatrixDataFrameTest,
         ConfusionMatrixDataFrameTrain,
-        ConfusionMatrixSVGTest,
-        ConfusionMatrixSVGTrain,
         EstimatorHtmlRepr,
         ImpurityDecrease,
         PermutationImportanceTest,
         PermutationImportanceTrain,
         PrecisionRecallDataFrameTest,
         PrecisionRecallDataFrameTrain,
-        PrecisionRecallSVGTest,
-        PrecisionRecallSVGTrain,
         PredictionErrorDataFrameTest,
         PredictionErrorDataFrameTrain,
-        PredictionErrorSVGTest,
-        PredictionErrorSVGTrain,
         RocDataFrameTest,
         RocDataFrameTrain,
-        RocSVGTest,
-        RocSVGTrain,
         TableReport,
     )
 
@@ -370,5 +354,5 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 report=report,
                 key=f"{self.key}:estimator-report",
             )
-            for report in self.report.estimator_reports_
+            for report in self.report.reports_
         ]

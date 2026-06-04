@@ -46,6 +46,10 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
             The feature importance display containing model coefficients and
             intercept.
 
+        See Also
+        --------
+        :class:`CoefficientsDisplay` : Display class for coefficient plots.
+
         Examples
         --------
         >>> from sklearn.datasets import load_diabetes
@@ -106,7 +110,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
 
         This method is available for estimators that expose a `feature_importances_`
         attribute. See for example
-        :attr:`sklearn.ensemble.GradientBoostingClassifier.inspections_`.
+        :attr:`sklearn.ensemble.GradientBoostingClassifier.feature_importances_`.
 
         In particular, note that the MDI is computed at fit time, i.e. using the
         training data.
@@ -119,6 +123,10 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         -------
         :class:`ImpurityDecreaseDisplay`
             The impurity decrease display containing the feature importances.
+
+        See Also
+        --------
+        :class:`ImpurityDecreaseDisplay` : Display class for impurity decrease plots.
 
         Examples
         --------
@@ -217,7 +225,7 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
             Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
 
         metric : str, callable, scorer, or list of such instances or dict of such \
-            instances, default=None
+                instances, default=None
             The metric to pass to :func:`sklearn.inspection.permutation_importance`.
 
             - if ``None``, a suitable default will be used.
@@ -256,6 +264,11 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         -------
         :class:`PermutationImportanceDisplay`
             The permutation importance display.
+
+        See Also
+        --------
+        :class:`PermutationImportanceDisplay`
+            Display class for permutation importance plots.
 
         Examples
         --------
@@ -344,4 +357,6 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.EstimatorReport.inspection")
+        return self._rich_repr(
+            class_name=f"skore.{self._parent.__class__.__name__}.inspection"
+        )

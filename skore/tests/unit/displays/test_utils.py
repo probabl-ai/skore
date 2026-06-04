@@ -5,6 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from skore import evaluate
 from skore._sklearn._plot.utils import (
     _adjust_fig_size,
+    _downsample_thresholds_indices,
     _get_adjusted_fig_size,
     _rotate_ticklabels,
     _validate_style_kwargs,
@@ -116,3 +117,41 @@ def test_apostrophe_in_label(binary_classification_data):
     fig = display.plot()
     legend_text = [t.get_text() for t in fig.axes[0].get_legend().get_texts()]
     assert any("A'B" in text for text in legend_text)
+
+
+@pytest.mark.parametrize("n_total", [0, 1, 5, 10, 1_000])
+def test_downsample_thresholds_indices_none(n_total):
+    """With ``max_n=None``, the helper returns ``np.arange(n_total)``."""
+    indices = _downsample_thresholds_indices(n_total, None)
+    np.testing.assert_array_equal(indices, np.arange(n_total))
+
+
+@pytest.mark.parametrize("n_total, max_n", [(5, 5), (5, 10), (0, 2), (1, 2)])
+def test_downsample_thresholds_indices_no_downsampling(n_total, max_n):
+    """When ``n_total <= max_n``, all indices are kept."""
+    indices = _downsample_thresholds_indices(n_total, max_n)
+    np.testing.assert_array_equal(indices, np.arange(n_total))
+
+
+@pytest.mark.parametrize(
+    "n_total, max_n", [(10, 5), (1_000, 100), (1_234, 500), (97, 3)]
+)
+def test_downsample_thresholds_indices_downsampling(n_total, max_n):
+    """When ``n_total > max_n``, exactly ``max_n`` indices are returned and
+    endpoints (0 and ``n_total - 1``) are preserved; indices are sorted and
+    strictly increasing.
+    """
+    indices = _downsample_thresholds_indices(n_total, max_n)
+    assert indices.shape == (max_n,)
+    assert indices[0] == 0
+    assert indices[-1] == n_total - 1
+    # The indices are sorted and strictly increasing (no duplicates) when
+    # ``max_n <= n_total``.
+    assert np.all(np.diff(indices) >= 1)
+
+
+@pytest.mark.parametrize("max_n", [0, 1, -3])
+def test_downsample_thresholds_indices_invalid(max_n):
+    """`max_n_thresholds` smaller than 2 raises a clear ``ValueError``."""
+    with pytest.raises(ValueError, match="must be at least 2"):
+        _downsample_thresholds_indices(10, max_n)

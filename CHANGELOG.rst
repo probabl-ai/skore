@@ -57,9 +57,64 @@ Changed
 
 Added
 -----
+- Added two new automated checks: SKD015 (hyperparameters worth tuning in a
+  search, tip) and SKD016 (estimator left at default settings, tip).
+  See :pr:`2951` by :user:`GaetandeCast`.
+
+- Added automated check SKD014 (hyperparameters at search edge, issue) for
+  :class:`~sklearn.model_selection.BaseSearchCV` estimators.
+  See :pr:`2944` by :user:`GaetandeCast`.
+
+- :meth:`EstimatorReport.metrics.roc`,
+  :meth:`EstimatorReport.metrics.precision_recall`,
+  :meth:`EstimatorReport.metrics.confusion_matrix` and their counterparts on
+  :class:`CrossValidationReport` and :class:`ComparisonReport` now cap the
+  number of thresholds stored per class on the ROC, precision-recall and
+  thresholded confusion-matrix displays to ``500``.
+  See :pr:`2942` by :user:`glemaitre`.
+
+- Added :class:`CalibrationDisplay` to  EstimatoReport as an inspection
+  tool. Frames with columns "predicted_probability" and "true_probability",
+  "label" (depending on the task) are calculated and can be plotted. Both
+  multiclass and binary classification are supported, with the option to specify
+  a positive class.
+  See :pr:`2595` by :user:`snath-xoc`.
+
+- :meth:`CrossValidationReport.metrics.summarize` now supports ``data_source="both"``,
+  showing train and test metrics side by side with columns named
+  ``"EstimatorName (train)"`` and ``"EstimatorName (test)"``.
+  See :pr:`2904` by :user:`direkkakkar319-ops`.
+
+- Added two new automated checks: SKD007 (MDI feature importance bias with
+  high-cardinality features, tip) and SKD008 (highly correlated input features,
+  issue). See :pr:`2883` by :user:`GaetandeCast`.
+- Three new built-in checks: SKD011 (golden feature, slow), SKD012 (useless features
+  via permutation importance, slow), and SKD013 (train-test overlap in time
+  series). See :pr:`2917` by :user:`GaetandeCast`.
+- :meth:`EstimatorReport.checks.summarize`  now accept a ``fast_mode`` parameter that
+  skips expensive checks not yet in the cache while still surfacing cached slow results.
+  The HTML representation of a report uses ``fast_mode=True`` so it never triggers
+  costly computations. See :pr:`2917` by :user:`GaetandeCast`.
+
+- :meth:`~EstimatorReport.metrics.summarize` (and ``summarize`` on the other reports)
+  now includes a ``score`` row corresponding to the estimator's default score, obtained
+  by running ``estimator.score()``. It supports :class:`skrub.DataOp` estimators,
+  for which scorings can be registered with :meth:`~skrub.DataOp.skb.with_scoring`.
+  The reports also now have a :meth:`~EstimatorReport.metrics.score` method.
+  See :pr:`2884` by :user:`auguste-probabl`.
+
+- The report metrics API now supports multimetric scorers in the form of
+  functions returning dictionaries. See :pr:`2933` by :user:`auguste-probabl`.
+
+- Added two new automated checks: SKD009 (model worse than baseline, issue) and
+  SKD010 (model slower than baseline, issue). See :pr:`2906` by
+  :user:`GaetandeCast`.
 
 Removed
 -------
+
+- Drop ``THREADABLE`` and ``console`` from :obj:`skore.__all__` (they remain
+  importable from the package module but are not part of the documented public API).
 
 Fixed
 -----

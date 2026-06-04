@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from logging import getLogger
+from os import environ
 
 from rich.align import Align
 from rich.live import Live
@@ -25,7 +26,16 @@ credentials: Callable[[], dict[str, str]] | None = None
 
 
 def login(*, timeout: int = 600) -> None:
-    """Login to ``skore hub``."""
+    """Login to ``skore hub``.
+
+    This function is a no op if SKORE_HUB_JUPYTERLITE
+    """
+    is_running_in_hub_jupyterlite = environ.get(
+        "SKORE_HUB_JUPYTERLITE", ""
+    ).lower() in ("1", "true", "yes")
+    if is_running_in_hub_jupyterlite:
+        return
+
     global credentials
 
     if credentials is not None:

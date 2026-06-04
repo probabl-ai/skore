@@ -1,9 +1,9 @@
-def test_random_state(comparison_estimator_reports_regression):
-    """If random_state is None (the default) the call should not be cached."""
+from skore._utils._testing import check_cache_unchanged
+
+
+def test_seed_none(comparison_estimator_reports_regression):
+    """If seed is None (the default) the call should not be cached."""
     report = comparison_estimator_reports_regression
-    report.metrics.prediction_error()
-    # skore stores the predictions of the child estimator reports, but not the
-    # concatenated comparison display.
-    assert all(
-        len(child_report._cache) == 2 for child_report in report.reports_.values()
-    )
+    report.cache_predictions()
+    with check_cache_unchanged([r._cache for r in report.reports_.values()]):
+        report.metrics.prediction_error()

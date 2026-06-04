@@ -313,11 +313,12 @@ def monkeypatch_sklearn_estimator_html_repr(monkeypatch):
 
     https://github.com/scikit-learn/scikit-learn/blob/main/sklearn/utils/_repr_html/estimator.py#L21
     """
-    from importlib.metadata import version
+    import sklearn
+    from sklearn.utils.fixes import parse_version
 
-    package_version = [int(number) for number in version("scikit-learn").split(".")]
+    sklearn_version = parse_version(parse_version(sklearn.__version__).base_version)
 
-    if package_version >= [1, 7, 0]:
+    if sklearn_version >= parse_version("1.7"):
         importpath = "sklearn.utils._repr_html.estimator._IDCounter.get_id"
     else:
         importpath = "sklearn.utils._estimator_html_repr._IDCounter.get_id"
