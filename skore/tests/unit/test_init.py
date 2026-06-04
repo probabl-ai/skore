@@ -11,7 +11,12 @@ import skore
 def test_warning_old_joblib(monkeypatch):
     configuration = Mock()
 
-    monkeypatch.setattr("joblib.__version__", "1.3.0")
+    def _version(name):
+        if name == "joblib":
+            return "1.3.0"
+        return version(name)
+
+    monkeypatch.setattr("importlib.metadata.version", _version)
     monkeypatch.setattr("skore._config.configuration", configuration)
     monkeypatch.delitem(modules, "skore")
 

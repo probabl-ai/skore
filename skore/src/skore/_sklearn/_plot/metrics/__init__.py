@@ -1,15 +1,3 @@
-from skore._sklearn._plot.metrics.confusion_matrix import ConfusionMatrixDisplay
-from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryDisplay
-from skore._sklearn._plot.metrics.precision_recall_curve import (
-    PrecisionRecallCurveDisplay,
-)
-from skore._sklearn._plot.metrics.prediction_error import PredictionErrorDisplay
-from skore._sklearn._plot.metrics.roc_curve import RocCurveDisplay
+from skore._externals import _lazy_loader as lazy
 
-__all__ = [
-    "ConfusionMatrixDisplay",
-    "PrecisionRecallCurveDisplay",
-    "PredictionErrorDisplay",
-    "RocCurveDisplay",
-    "MetricsSummaryDisplay",
-]
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)

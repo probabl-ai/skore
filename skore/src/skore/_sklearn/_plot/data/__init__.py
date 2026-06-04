@@ -1,3 +1,3 @@
-from skore._sklearn._plot.data.table_report import TableReportDisplay
+from skore._externals import _lazy_loader as lazy
 
-__all__ = ["TableReportDisplay"]
+__getattr__, __dir__, __all__ = lazy.attach_stub(__name__, __file__)
