@@ -958,6 +958,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "estimator_kind": self._markdown_estimator_kind(),
             "ml_task": self._ml_task,
             "fit_time": self._fit_time,
+            "predict_time": None,
             "pos_label_repr": (
                 repr(self._pos_label) if self._pos_label is not None else None
             ),
@@ -990,6 +991,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
             context.update(
                 {
+                    "predict_time": self._predict_time["train"]
+                    if data_source == "train"
+                    else self._predict_time["test"],
                     "data_label": "train+test"
                     if data_source == "both"
                     else data_source,

@@ -8,6 +8,7 @@
 - ml task: {{ ml_task }}
 {%- if fit_time is not none %}
 - fit time: {{ "%.3g"|format(fit_time) }} s
+- predict time: {{ "%.3g"|format(predict_time) }} s
 {%- endif %}
 {%- if pos_label_repr is not none %}
 - pos_label: {{ pos_label_repr }}
