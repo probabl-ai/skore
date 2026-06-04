@@ -10,7 +10,7 @@
 - fit time: {{ "%.3g"|format(fit_time) }} s
 {%- endif %}
 {%- if predict_time is not none %}
-- predict time: {{ "%.3g"|format(predict_time) }} s
+- predict time (on {{ predict_label }} set): {{ "%.3g"|format(predict_time) }} s
 {%- endif %}
 {%- if pos_label_repr is not none %}
 - pos_label: {{ pos_label_repr }}

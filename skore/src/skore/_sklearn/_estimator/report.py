@@ -994,6 +994,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     "predict_time": self._predict_time["train"]
                     if data_source == "train"
                     else self._predict_time["test"],
+                    "predict_label": "train" if data_source == "train" else "test",
                     "data_label": "train+test"
                     if data_source == "both"
                     else data_source,
