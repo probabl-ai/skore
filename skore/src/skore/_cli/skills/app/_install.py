@@ -11,43 +11,38 @@ from textual.widgets import (
     Header,
     Label,
     RadioButton,
-    RadioSet,
     SelectionList,
     TabbedContent,
     TabPane,
 )
 
 from skore._cli.skills._agents import AGENT_NAMES, DEFAULT_AGENT
-from skore._cli.skills.app._widgets import SkillSelection
+from skore._cli.skills.app._widgets import AutoRadioSet, SkillSelection
 
 _SKILLS_INTRO = (
-    "[b]Workflows[/b] bundle several related skills; selecting a workflow also "
-    "selects its [b]individual skills[/b] below.\n"
-    "Use [b]↑/↓[/b] to move, [b]Space[/b] to (de)select, [b]Tab[/b] to switch "
-    "between the two lists, and [b]Enter[/b] to confirm."
+    "Workflows bundle several related skills; selecting a workflow also selects "
+    "its individual skills below.\n"
+    "[reverse] ↑/↓ [/] move  [reverse] Space [/] (de)select  "
+    "[reverse] Tab [/] switch lists  [reverse] Enter [/] confirm"
 )
 
 _AGENTS_INTRO = (
-    "Choose the [b]agent[/b] to install for.\n"
-    "[b]agents[/b] targets the [b].agents/[/b] directory, the cross-client open "
-    "standard, and is recommended.\n"
-    "Use [b]↑/↓[/b] and [b]Space[/b] to choose one, then [b]Enter[/b] to confirm."
+    "Choose the agent to install for.\n"
+    "agents targets the .agents/ directory, the cross-client open standard, "
+    "and is recommended.\n"
+    "[reverse] ↑/↓ [/] choose  [reverse] Enter [/] confirm"
 )
 
 _SCOPE_INTRO = (
-    "[b]Project (local)[/b] installs into the current repository only.\n"
-    "[b]User (global)[/b] installs into your home directory so every project "
-    "can use the skills.\n"
-    "Use [b]↑/↓[/b] and [b]Space[/b] to choose one, then [b]Enter[/b] to confirm."
+    "Project (local) installs into the current repository only.\n"
+    "User (global) installs into your home directory so every project can use "
+    "the skills.\n"
+    "[reverse] ↑/↓ [/] choose  [reverse] Enter [/] confirm"
 )
 
 
 class ProbablSkillsInstaller(App[None]):
-    """A tabbed wizard to pick skills, target agents and the install scope.
-
-    Navigation mirrors a question flow: arrows move within a list, ``Space``
-    toggles an entry and ``Enter`` always confirms the current step.
-    """
+    """A tabbed wizard to pick skills, target agents and the install scope."""
 
     CSS = """
     Screen {
@@ -61,7 +56,7 @@ class ProbablSkillsInstaller(App[None]):
         margin: 1 1;
         color: $text-muted;
     }
-    RadioSet {
+    AutoRadioSet {
         margin: 1 1;
         width: 100%;
     }
@@ -69,6 +64,8 @@ class ProbablSkillsInstaller(App[None]):
 
     BINDINGS = [
         Binding("enter", "confirm", "Confirm", priority=True),
+        Binding("tab", "focus_next", "Switch list", show=True),
+        Binding("shift+tab", "focus_previous", "Switch list", show=True),
         Binding("escape", "cancel", "Cancel"),
     ]
 
@@ -94,7 +91,7 @@ class ProbablSkillsInstaller(App[None]):
             if self._ask_agent:
                 with TabPane("2 · Agents", id="step-agents"):
                     yield Label(_AGENTS_INTRO, classes="step-intro")
-                    with RadioSet(id="agents"):
+                    with AutoRadioSet(id="agents"):
                         for name in AGENT_NAMES:
                             recommended = name == DEFAULT_AGENT
                             label = (
@@ -105,7 +102,7 @@ class ProbablSkillsInstaller(App[None]):
                             yield RadioButton(label, value=recommended)
             with TabPane("3 · Scope", id="step-scope"):
                 yield Label(_SCOPE_INTRO, classes="step-intro")
-                with RadioSet(id="scope"):
+                with AutoRadioSet(id="scope"):
                     yield RadioButton("Project (local)", value=not self._default_global)
                     yield RadioButton("User (global)", value=self._default_global)
         yield Footer()
@@ -117,21 +114,25 @@ class ProbablSkillsInstaller(App[None]):
         return self.query_one(SkillSelection).selected_ids()
 
     def _selected_agents(self) -> list[str]:
-        index = self.query_one("#agents", RadioSet).pressed_index
+        index = self.query_one("#agents", AutoRadioSet).pressed_index
         return [AGENT_NAMES[index]] if index >= 0 else []
 
     def _focus_active_step(self) -> None:
         active = self.query_one("#wizard", TabbedContent).active
         if active == "step-agents":
-            self.query_one("#agents", RadioSet).focus()
+            radio = self.query_one("#agents", AutoRadioSet)
+            radio.focus()
+            radio._selected = AGENT_NAMES.index(DEFAULT_AGENT)
         elif active == "step-scope":
-            self.query_one("#scope", RadioSet).focus()
+            radio = self.query_one("#scope", AutoRadioSet)
+            radio.focus()
+            radio._selected = 1 if self._default_global else 0
 
     def _finish(self) -> None:
         agent_names = (
             self._selected_agents() if self._ask_agent else self._agent_names_cli
         )
-        global_ = self.query_one("#scope", RadioSet).pressed_index == 1
+        global_ = self.query_one("#scope", AutoRadioSet).pressed_index == 1
         self.result = (self._selected_ids(), agent_names, global_)
         self.exit()
 
@@ -141,7 +142,7 @@ class ProbablSkillsInstaller(App[None]):
         if active == "step-skills":
             if not self._selected_ids():
                 self.notify(
-                    "Select at least one workflow or skill (press Space).",
+                    "Select at least one workflow or skill.",
                     severity="warning",
                 )
                 return
@@ -149,9 +150,7 @@ class ProbablSkillsInstaller(App[None]):
             self.call_after_refresh(self._focus_active_step)
         elif active == "step-agents":
             if not self._selected_agents():
-                self.notify(
-                    "Select at least one agent (press Space).", severity="warning"
-                )
+                self.notify("Select an agent.", severity="warning")
                 return
             wizard.active = "step-scope"
             self.call_after_refresh(self._focus_active_step)

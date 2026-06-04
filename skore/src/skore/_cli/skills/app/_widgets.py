@@ -6,8 +6,19 @@ from typing import Any
 
 from textual.app import ComposeResult
 from textual.containers import Vertical
-from textual.widgets import Label, SelectionList
+from textual.widgets import Label, RadioButton, RadioSet, SelectionList
 from textual.widgets.selection_list import Selection
+
+
+class AutoRadioSet(RadioSet):
+    """A radio set that selects the highlighted option on arrow navigation."""
+
+    def watch__selected(self) -> None:
+        super().watch__selected()
+        if self._selected is not None:
+            button = self._nodes[self._selected]
+            if isinstance(button, RadioButton) and not button.value:
+                button.value = True
 
 
 class SkillSelection(Vertical):
@@ -23,9 +34,12 @@ class SkillSelection(Vertical):
     }
     SkillSelection > SelectionList {
         height: 1fr;
-        border: round $accent;
+        border: round $surface-lighten-2;
         padding: 0 1;
         margin: 0 1;
+    }
+    SkillSelection > SelectionList:focus {
+        border: thick $accent;
     }
     SkillSelection > .skills-intro {
         margin: 1 1;

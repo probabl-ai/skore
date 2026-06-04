@@ -11,10 +11,10 @@ from textual.widgets import Footer, Header, SelectionList
 from skore._cli.skills.app._widgets import SkillSelection
 
 _FIND_INTRO = (
-    "Browse the catalog and pick the [b]workflows[/b] and [b]individual "
-    "skills[/b] you want to preview.\n"
-    "Use [b]↑/↓[/b] to move, [b]Space[/b] to (de)select, [b]Tab[/b] to switch "
-    "between the two lists, and [b]Enter[/b] to show their details."
+    "Browse the catalog and pick the workflows and individual skills you want "
+    "to preview.\n"
+    "[reverse] ↑/↓ [/] move  [reverse] Space [/] (de)select  "
+    "[reverse] Tab [/] switch lists  [reverse] Enter [/] show details"
 )
 
 
@@ -37,6 +37,8 @@ class ProbablSkillsFinder(App[None]):
 
     BINDINGS = [
         Binding("enter", "confirm", "Confirm", priority=True),
+        Binding("tab", "focus_next", "Switch list", show=True),
+        Binding("shift+tab", "focus_previous", "Switch list", show=True),
         Binding("escape", "cancel", "Cancel"),
     ]
 
@@ -57,7 +59,7 @@ class ProbablSkillsFinder(App[None]):
         selected = self.query_one(SkillSelection).selected_ids()
         if not selected:
             self.notify(
-                "Select at least one workflow or skill (press Space).",
+                "Select at least one workflow or skill.",
                 severity="warning",
             )
             return

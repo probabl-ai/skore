@@ -3,12 +3,16 @@ import json
 import re
 
 from click.testing import CliRunner
-from textual.widgets import RadioButton, RadioSet, SelectionList
+from textual.widgets import SelectionList
 
 from skore._cli import cli
 from skore._cli.skills import _commands as _skills
 from skore._cli.skills._catalog import fetch_release
-from skore._cli.skills._commands import ProbablSkillsFinder, ProbablSkillsInstaller
+from skore._cli.skills._commands import (
+    ProbablSkillsFinder,
+    ProbablSkillsInstaller,
+)
+from skore._cli.skills.app._widgets import AutoRadioSet
 
 SIDECAR = ".skore-skill.json"
 _ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
@@ -172,6 +176,28 @@ def _fake_find_app(result):
     return _FakeFindApp
 
 
+def _fake_menu(choice):
+    class _FakeMenu:
+        def __init__(self):
+            self.result = choice
+
+        def run(self):
+            return None
+
+    return _FakeMenu
+
+
+def _fake_manage_picker(result):
+    class _FakePicker:
+        def __init__(self, skill_ids, *, title):
+            self.result = result
+
+        def run(self):
+            return None
+
+    return _FakePicker
+
+
 def test_interactive_options_expands_workflow(release, monkeypatch):
     _, _, catalog = fetch_release()
     monkeypatch.setattr(
@@ -286,8 +312,7 @@ def test_wizard_app_single_agent_choice(release):
             await pilot.pause()
             await pilot.press("enter")  # confirm skills -> agents
             await pilot.pause()
-            radio = app.query_one("#agents", RadioSet)
-            list(radio.query(RadioButton))[1].value = True
+            await pilot.press("down")
             await pilot.pause()
             await pilot.press("enter")  # confirm agents -> scope
             await pilot.pause()
@@ -587,3 +612,101 @@ def test_fetch_failure_reports_clean_error(workspace, monkeypatch):
 
     assert result.exit_code != 0
     assert "Could not fetch the latest skills release" in _plain_output(result.output)
+
+
+def test_skills_no_subcommand_shows_help(release, workspace):
+    result = _invoke(["skills"])
+
+    assert result.exit_code == 0
+    assert "install" in result.output
+    assert "find" in result.output
+
+
+def test_skills_menu_dispatches_install(release, workspace, monkeypatch):
+    monkeypatch.setattr(_skills, "_is_interactive", lambda: True)
+    monkeypatch.setattr(_skills, "SkillsMenu", _fake_menu("install"))
+    monkeypatch.setattr(
+        _skills,
+        "_interactive_install_options",
+        lambda catalog, *, agent, default_global: (
+            [_skills._index(catalog)[0]["alpha"]],
+            ["agents"],
+            False,
+        ),
+    )
+
+    result = _invoke(["skills"])
+
+    assert result.exit_code == 0
+    assert (workspace.project / ".agents" / "skills" / "alpha").is_dir()
+
+
+def test_auto_radio_set_selects_on_arrow(release):
+    _, _, catalog = fetch_release()
+
+    async def scenario():
+        app = ProbablSkillsInstaller(catalog, agent=(), default_global=False)
+        async with app.run_test() as pilot:
+            app.query_one("#sel-workflows", SelectionList).select_all()
+            await pilot.pause()
+            await pilot.press("enter")
+            await pilot.pause()
+            radio = app.query_one("#agents", AutoRadioSet)
+            assert radio.pressed_index == 0
+            await pilot.press("down")
+            await pilot.pause()
+            return radio.pressed_index
+
+    assert asyncio.run(scenario()) == 1
+
+
+def test_update_interactive_selection(release, workspace, monkeypatch):
+    _invoke(["skills", "install", "alpha"])
+    release["catalog"]["skills"][0]["hash"] = "hash-alpha-2"
+    monkeypatch.setattr(_skills, "_is_interactive", lambda: True)
+    monkeypatch.setattr(
+        _skills, "InstalledSkillsPicker", _fake_manage_picker(["alpha"])
+    )
+
+    result = _invoke(["skills", "update"])
+
+    assert result.exit_code == 0
+    assert "updated" in result.output
+
+
+def test_update_interactive_cancelled(release, workspace, monkeypatch):
+    _invoke(["skills", "install", "alpha"])
+    monkeypatch.setattr(_skills, "_is_interactive", lambda: True)
+    monkeypatch.setattr(_skills, "InstalledSkillsPicker", _fake_manage_picker(None))
+
+    result = _invoke(["skills", "update"])
+
+    assert result.exit_code == 0
+    assert "Nothing selected" in result.output
+
+
+def test_remove_interactive_selection(release, workspace, monkeypatch):
+    _invoke(["skills", "install", "alpha"])
+    skill_dir = workspace.project / ".agents" / "skills" / "alpha"
+    monkeypatch.setattr(_skills, "_is_interactive", lambda: True)
+    monkeypatch.setattr(
+        _skills, "InstalledSkillsPicker", _fake_manage_picker(["alpha"])
+    )
+
+    result = _invoke(["skills", "remove", "-y"])
+
+    assert result.exit_code == 0
+    assert not skill_dir.exists()
+
+
+def test_remove_interactive_cancelled(release, workspace, monkeypatch):
+    _invoke(["skills", "install", "alpha"])
+    skill_dir = workspace.project / ".agents" / "skills" / "alpha"
+    monkeypatch.setattr(_skills, "_is_interactive", lambda: True)
+    monkeypatch.setattr(_skills, "InstalledSkillsPicker", _fake_manage_picker(None))
+
+    result = _invoke(["skills", "remove"])
+
+    assert result.exit_code == 0
+    assert "Nothing selected" in result.output
+    assert skill_dir.is_dir()

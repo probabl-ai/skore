@@ -18,7 +18,12 @@ from rich.tree import Tree
 from skore._cli._style import console
 from skore._cli.skills._agents import AGENT_NAMES, DEFAULT_AGENT, resolve_targets
 from skore._cli.skills._catalog import GITHUB_REPO, fetch_release
-from skore._cli.skills.app import ProbablSkillsFinder, ProbablSkillsInstaller
+from skore._cli.skills.app import (
+    InstalledSkillsPicker,
+    ProbablSkillsFinder,
+    ProbablSkillsInstaller,
+    SkillsMenu,
+)
 
 SIDECAR = ".skore-skill.json"
 
@@ -143,6 +148,32 @@ def _installed(target: Path):
             yield child, json.loads(sidecar.read_text())
 
 
+def _installed_skill_ids(
+    targets: list[tuple[str, Path]],
+) -> list[str]:
+    """Return sorted unique installed skill ids across the given targets."""
+    ids: set[str] = set()
+    for _, target in targets:
+        for _, sidecar in _installed(target):
+            ids.add(sidecar["id"])
+    return sorted(ids)
+
+
+def _interactive_manage_picker(
+    skill_ids: list[str],
+    *,
+    title: str,
+) -> list[str] | None:
+    """Run the installed-skills picker and return the chosen ids."""
+    if not skill_ids:
+        console.print("No skills installed.")
+        return None
+
+    app = InstalledSkillsPicker(skill_ids, title=title)
+    app.run()
+    return app.result
+
+
 def _matches(entry: dict, query: str) -> bool:
     fields = (
         entry.get("id"),
@@ -250,9 +281,29 @@ def _interactive_find(catalog: dict[str, Any]) -> None:
     _render_catalog(catalog, ids=app.result)
 
 
-@click.group()
-def skills() -> None:
+@click.group(invoke_without_command=True)
+@click.pass_context
+def skills(ctx) -> None:
     """Install and manage Agent Skills from the probabl-ai/skills release."""
+    if ctx.invoked_subcommand is not None:
+        return
+    if not _is_interactive():
+        click.echo(ctx.get_help())
+        return
+    app = SkillsMenu()
+    app.run()
+    choice = app.result
+    if choice is None:
+        return
+    command = {
+        "find": find,
+        "list": list_skills,
+        "install": install,
+        "update": update,
+        "remove": remove,
+    }.get(choice)
+    if command is not None:
+        ctx.invoke(command)
 
 
 @skills.command("install")
@@ -397,13 +448,24 @@ def update(ids, agent, global_, all_) -> None:
     Scans every known agent by default; pass ``--agent`` to restrict the scan.
     Run ``skore skills find`` to discover ids.
     """
-    if not all_ and not ids:
-        raise click.UsageError(
-            "Specify skill ids to update or pass --all. "
-            "Run `skore skills find` to discover ids."
-        )
-
     targets = _manage_targets(agent, global_=global_)
+
+    if not all_ and not ids:
+        if _is_interactive():
+            selected = _interactive_manage_picker(
+                _installed_skill_ids(targets),
+                title="Select skills to update.",
+            )
+            if not selected:
+                console.print("Nothing selected.")
+                return
+            ids = selected
+        else:
+            raise click.UsageError(
+                "Specify skill ids to update or pass --all. "
+                "Run `skore skills find` to discover ids."
+            )
+
     requested = set(ids)
     updated = []
     with _release() as (tag, root, catalog):
@@ -444,13 +506,23 @@ def remove(ids, agent, global_, all_, yes) -> None:
     Scans every known agent by default; pass ``--agent`` to restrict the scan.
     Run ``skore skills find`` to discover ids.
     """
-    if not all_ and not ids:
-        raise click.UsageError(
-            "Specify skill ids to remove or pass --all. "
-            "Run `skore skills find` to discover ids."
-        )
-
     targets = _manage_targets(agent, global_=global_)
+
+    if not all_ and not ids:
+        if _is_interactive():
+            selected = _interactive_manage_picker(
+                _installed_skill_ids(targets),
+                title="Select skills to remove.",
+            )
+            if not selected:
+                console.print("Nothing selected.")
+                return
+            ids = selected
+        else:
+            raise click.UsageError(
+                "Specify skill ids to remove or pass --all. "
+                "Run `skore skills find` to discover ids."
+            )
 
     to_remove = []
     for _, target in targets:
