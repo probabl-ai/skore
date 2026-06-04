@@ -1,4 +1,5 @@
 import matplotlib as mpl
+import pandas as pd
 import pytest
 
 from skore import EstimatorReport
@@ -163,3 +164,25 @@ def test_seed_none(linear_regression_with_train_test):
     report.cache_predictions()
     with check_cache_unchanged(report._cache):
         report.metrics.prediction_error()
+
+
+def test_multioutput_regression_dataframe_y(
+    linear_regression_multioutput_with_train_test,
+):
+    """It should work when y is a DataFrame.
+
+    Non-regression test for https://github.com/probabl-ai/skore/pull/2962
+    """
+    estimator, X_train, X_test, y_train, y_test = (
+        linear_regression_multioutput_with_train_test
+    )
+
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=pd.DataFrame(y_train),
+        X_test=X_test,
+        y_test=pd.DataFrame(y_test),
+    )
+
+    report.metrics.prediction_error()
