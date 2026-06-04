@@ -82,7 +82,6 @@ sphinx-base = [
 sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
 sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
 dev = ["ipykernel", "nbformat"]
-local = ["diskcache", "platformdirs"]
 hub = [
   "httpx",
   "orjson",
@@ -212,7 +211,6 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
-  "diskcache.*",
   "ipywidgets.*",
   "jinja2.*",
   "joblib.*",

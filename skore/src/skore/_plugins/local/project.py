@@ -1,317 +1,220 @@
-"""Class definition of the ``skore`` local project."""
-
-from __future__ import annotations
-
-import io
-import os
-from functools import wraps
+import contextlib
+import json
+import pickle
+import shutil
+from datetime import datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, ParamSpec, Protocol, TypeVar, cast, runtime_checkable
-from uuid import uuid4
+from typing import Any
 
 import joblib
-import platformdirs
 
-from .metadata import CrossValidationReportMetadata, EstimatorReportMetadata
-from .storage import DiskCacheStorage
-
-P = ParamSpec("P")
-R = TypeVar("R")
+from ... import EstimatorReport
 
 
-if TYPE_CHECKING:
-    from collections.abc import Callable
-    from typing import TypedDict
-
-    from skore import CrossValidationReport, EstimatorReport
-
-    class Metadata(TypedDict):  # noqa: D101
-        id: str
-        key: str
-        date: str
-        learner: str
-        ml_task: str
-        report_type: str
-        dataset: str
-        rmse: float | None
-        log_loss: float | None
-        roc_auc: float | None
-        fit_time: float | None
-        predict_time: float | None
-        rmse_mean: float | None
-        log_loss_mean: float | None
-        roc_auc_mean: float | None
-        fit_time_mean: float | None
-        predict_time_mean: float | None
+def init_data_dir(parent_dir: str | Path = ".", project_name: str = "default") -> Path:
+    data_dir = Path(parent_dir) / "skore_data"
+    if data_dir.is_dir():
+        return data_dir
+    data_dir.mkdir()
+    (data_dir / ".SKORE_DATA_DIRECTORY").touch()
+    (data_dir / "projects").mkdir()
+    (data_dir / "datasets").mkdir()
+    return data_dir
 
 
-def ensure_project_is_not_deleted(method: Callable[P, R]) -> Callable[P, R]:
-    """Ensure project is not deleted, before executing any other operation."""
+def find_data_dir() -> Path:
+    start = Path(".").resolve()
+    for candidate in [start, *start.parents[::-1]]:
+        data_dir = candidate / "skore_data"
+        if data_dir.is_dir() and (data_dir / ".SKORE_DATA_DIRECTORY").exists():
+            return data_dir
+    return init_data_dir(Path.home())
 
-    @runtime_checkable
-    class Project(Protocol):
-        name: str
-        _Project__projects_storage: DiskCacheStorage
 
-    @wraps(method)
-    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
-        project = args[0]
+def init_project_dir(data_dir: Path, project_name: str) -> Path:
+    project_dir = data_dir / "projects" / project_name
+    if project_dir.is_dir():
+        return project_dir
+    project_dir.mkdir()
+    (project_dir / "reports").mkdir()
+    return project_dir
 
-        assert isinstance(project, Project), "You can only wrap `Project` methods"
 
-        if project.name not in project._Project__projects_storage:
-            raise RuntimeError(
-                f"Skore could not proceed because {project!r} does not exist anymore."
-            )
+def export(
+    report: EstimatorReport,
+    *,
+    root_data_dir: Path | None = None,
+    project_name: str = "default",
+    name: str | None = None,
+) -> Path:
+    root_data_dir = find_data_dir() if root_data_dir is None else Path(root_data_dir)
+    project_dir = init_project_dir(root_data_dir, project_name)
+    reports_dir = project_dir / "reports"
+    date_str = (
+        datetime.fromisoformat(str(report._metadata["creation-date"]))
+        .replace(tzinfo=None)
+        .isoformat()
+        .replace(":", "-")
+    )
+    name_str = "" if name is None else f"__{name}"
+    output_dir = (
+        reports_dir / f"{date_str}__{report._metadata['id']:x}__"
+        f"{report._metadata['report_type']}{name_str}"
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    symlink = reports_dir / f"latest{name_str}"
+    with contextlib.suppress(FileNotFoundError):
+        symlink.unlink()
+    with contextlib.suppress(OSError):
+        symlink.symlink_to(output_dir)
+    (output_dir / "metadata.json").write_text(
+        json.dumps(report._metadata, indent=2), "UTF-8"
+    )
+    state = report.get_state()
+    (output_dir / "state.json").write_text(
+        json.dumps(
+            {
+                k: v
+                for k, v in state.items()
+                if k
+                not in (
+                    "estimator",
+                    "learner",
+                    "data",
+                    "predictions",
+                    "metric_registry",
+                    "optional",
+                )
+            }
+            | {"export-format-version": 1}
+        ),
+        "UTF-8",
+    )
+    with open(output_dir / "estimator.pickle", "wb") as f:
+        pickle.dump(report.estimator, f)
+    with open(output_dir / "estimator_.pickle", "wb") as f:
+        pickle.dump(report.estimator_, f)
+    with open(output_dir / "learner_.pickle", "wb") as f:
+        pickle.dump(report.learner_, f)
 
-        return method(*args, **kwargs)
+    user_dir = output_dir / "user"
+    user_dir.mkdir(exist_ok=True)
+    (user_dir / "README").write_text(
+        "This directory is not used by skore, use it to store arbitrary "
+        "additional data or notes attached to this report.\n"
+    )
 
-    return wrapper
+    metrics_dir = output_dir / "metrics"
+    metrics_dir.mkdir(exist_ok=True)
+    report.metrics.summarize().frame(flat_index=True).to_csv(
+        metrics_dir / "summarize.csv"
+    )
+    with open(metrics_dir / "registry.pickle", "wb") as f:
+        pickle.dump(report._metric_registry, f)
+
+    checks_dir = output_dir / "checks"
+    checks_dir.mkdir(exist_ok=True)
+    report.checks.summarize().frame().to_csv(checks_dir / "summarize.csv", index=False)
+
+    data_dir = output_dir / "data"
+    data_dir.mkdir(exist_ok=True)
+
+    for subset_name, subset in state["data"].items():
+        subset_refs = {}
+        if subset is not None:
+            for key, val in subset.items():
+                subset_refs[key] = get_data_ref(val, root_data_dir)
+            refs_file = data_dir / f"{subset_name.removeprefix('_')}.json"
+            refs_file.write_text(json.dumps(subset_refs), "UTF-8")
+
+    predictions_dir = output_dir / "predictions"
+    predictions_dir.mkdir(exist_ok=True)
+    for (subset_name, meth_name), val in report.get_state()["predictions"].items():
+        with open(predictions_dir / f"{subset_name}__{meth_name}.joblib", "wb") as f:
+            joblib.dump(val, f)
+
+    inspection_dir = output_dir / "inspection"
+    inspection_dir.mkdir(exist_ok=True)
+    permutation_displays = [
+        (k, v) for k, v in report._cache.items() if k[1] == "permutation_importance"
+    ]
+    for k, display in permutation_displays:
+        display_dir = inspection_dir / f"{k[0]}__{k[2][1][0][1]}"
+        # TODO handle multiple permutations for the same thing: keep the one
+        # with most repeats, add suffix to dir, ...
+        #
+        # Store creation params in cache and in display object
+        display_dir.mkdir(exist_ok=True)
+        display.importances.to_csv(display_dir / "importances.csv", index=False)
+    return output_dir
+
+
+def load(report_dir: Path) -> EstimatorReport:
+    report_dir = Path(report_dir)
+    state = json.loads((report_dir / "state.json").read_text("UTF-8"))
+    with open(report_dir / "estimator.pickle", "rb") as f:
+        state["estimator"] = pickle.load(f)
+    with open(report_dir / "learner_.pickle", "rb") as f:
+        state["learner"] = pickle.load(f)
+    state["predictions"] = {}
+    for pred_file in (report_dir / "predictions").glob("*.joblib"):
+        with open(pred_file, "rb") as f:
+            state["predictions"][tuple(pred_file.stem.split("__"))] = joblib.load(f)
+    with open(report_dir / "metrics" / "registry.pickle", "rb") as f:
+        state["metric_registry"] = pickle.load(f)
+    state["data"] = {}
+    for data_info_file in (report_dir / "data").glob("*.json"):
+        data_info = json.loads(data_info_file.read_text("UTF-8"))
+        loaded_data = {}
+        for k, v in data_info.items():
+            with open(v["file_path"], "rb") as f:
+                loaded_data[k] = -joblib.load(f)
+        state["data"][data_info_file.stem] = loaded_data
+    state["optional"] = {"cache": {}}
+    return EstimatorReport.from_state(state)
+
+
+def get_data_ref(value: Any, root_data_dir: Path) -> dict[str, str]:
+    h = joblib.hash(value)
+    file_name = f"{h}.joblib"
+    target = root_data_dir / "datasets" / file_name
+    if not target.is_file():
+        with open(target, "wb") as f:
+            joblib.dump(value, f)
+    return {"hash": h, "file_name": file_name, "file_path": str(target)}
 
 
 class Project:
-    r"""
-    API to manage a collection of key-report pairs persisted in a local storage.
+    def __init__(self, name: str, workspace: str | Path | None = None):
+        self.name = name
+        self.workspace = workspace
 
-    It communicates with a ``diskcache`` storage, based on the pickle representation.
-    Its constructor initializes a local project by creating a new project or by
-    loading an existing one from a ``workspace``.
-
-    The class main methods are :func:`~skore._plugins.local.Project.put`,
-    :func:`~skore._plugins.local.Project.summarize` and
-    :func:`~skore._plugins.local.Project.get`, respectively to insert a key-report pair
-    into the Project, to obtain the reports metadata and to get a specific report.
-
-    Attributes
-    ----------
-    name : str
-        The name of the project.
-    workspace : Path
-        The directory where the project (metadata and artifacts) are persisted.
-
-        | The workspace can be shared between all the projects.
-        | The workspace can be set using kwargs or the environment variable
-          ``SKORE_WORKSPACE``.
-        | If not, it will be by default set to a ``skore/`` directory in the user
-          cache directory:
-
-        - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-        - on Linux, usually ``${HOME}/.local/share/skore``,
-        - on macOS, usually ``${HOME}/Library/Application Support/skore``.
-    """
-
-    @staticmethod
-    def __setup_diskcache(
-        workspace: str | Path | None,
-    ) -> tuple[
-        Path,
-        DiskCacheStorage,
-        DiskCacheStorage,
-        DiskCacheStorage,
-    ]:
-        if workspace is None:
-            if "SKORE_WORKSPACE" in os.environ:
-                workspace = Path(os.environ["SKORE_WORKSPACE"])
-            else:
-                workspace = Path(platformdirs.user_data_dir()) / "skore"
-
-        if not isinstance(workspace, Path):
-            workspace = Path(workspace)
-
-        for directory in ("projects", "metadata", "artifacts"):
-            (workspace / directory).mkdir(parents=True, exist_ok=True)
-
-        return (
-            workspace,
-            DiskCacheStorage(workspace / "projects"),
-            DiskCacheStorage(workspace / "metadata"),
-            DiskCacheStorage(workspace / "artifacts"),
-        )
-
-    def __init__(self, name: str, *, workspace: str | Path | None = None):
-        r"""
-        Initialize a local project.
-
-        Initialize a local project by creating a new project or by loading an existing
-        one from the ``workspace``.
-
-        Parameters
-        ----------
-        name : str
-            The name of the project.
-        workspace : Path-like, optional
-            The directory where the project (metadata and artifacts) are persisted.
-
-            | The workspace can be shared between all the projects.
-            | The workspace can be set using kwargs or the environment variable
-              ``SKORE_WORKSPACE``.
-            | If not, it will be by default set to a ``skore/`` directory in the USER
-              cache directory:
-
-            - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-            - on Linux, usually ``${HOME}/.cache/skore``,
-            - on macOS, usually ``${HOME}/Library/Caches/skore``.
-        """
-        workspace, projects, metadata, artifacts = Project.__setup_diskcache(workspace)
-
-        self.__name = name
-        self.__workspace = workspace
-        self.__projects_storage = projects
-        self.__metadata_storage = metadata
-        self.__artifacts_storage = artifacts
-
-        # Create the project
-        self.__projects_storage[name] = None
-
-    @property
-    def name(self) -> str:
-        """The name of the project."""
-        return self.__name
-
-    @property
-    def workspace(self) -> Path:
-        """The workspace of the project."""
-        return self.__workspace
-
-    @ensure_project_is_not_deleted
-    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
-        """
-        Put a key-report pair to the local project.
-
-        If the key already exists, its last report is modified to point to this new
-        report, while keeping track of the report history.
-
-        Parameters
-        ----------
-        key : str
-            The key to associate with ``report`` in the local project.
-        report : skore.EstimatorReport | skore.CrossValidationReport
-            The report to associate with ``key`` in the local project.
-
-        Raises
-        ------
-        TypeError
-            If the combination of parameters are not valid.
-        """
-        from skore import CrossValidationReport, EstimatorReport
-
-        if not isinstance(key, str):
-            raise TypeError(f"Key must be a string (found '{type(key)}')")
-
-        Metadata: type[EstimatorReportMetadata | CrossValidationReportMetadata]
-
-        if isinstance(report, EstimatorReport):
-            Metadata = EstimatorReportMetadata
-        elif isinstance(report, CrossValidationReport):
-            Metadata = CrossValidationReportMetadata
+    def root_data_dir(self) -> Path:
+        if self.workspace is None:
+            workspace = find_data_dir()
         else:
-            raise TypeError(
-                f"Report must be a `skore.EstimatorReport` or "
-                f"`skore.CrossValidationReport` (found '{type(report)}')"
-            )
+            workspace = init_data_dir(Path(self.workspace))
+        return workspace
 
-        artifact_id = str(report.id)
+    def path(self) -> Path:
+        return init_project_dir(self.root_data_dir(), self.name)
 
-        if artifact_id not in self.__artifacts_storage:
-            with io.BytesIO() as stream:
-                joblib.dump(report, stream)
-                self.__artifacts_storage[artifact_id] = stream.getvalue()
-
-        self.__metadata_storage[uuid4().hex] = dict(
-            Metadata(
-                report=report,
-                artifact_id=artifact_id,
-                project_name=self.name,
-                key=key,
-            )
+    def put(self, key: str, report: EstimatorReport) -> Path:
+        return export(
+            report, root_data_dir=self.root_data_dir(), project_name=self.name, name=key
         )
 
-    @ensure_project_is_not_deleted
-    def get(self, id: str) -> EstimatorReport | CrossValidationReport:
-        """Get a persisted report by its id."""
-        if id in self.__artifacts_storage:
-            with io.BytesIO(self.__artifacts_storage[id]) as stream:
-                return cast(
-                    "EstimatorReport | CrossValidationReport", joblib.load(stream)
-                )
-
-        raise KeyError(id)
-
-    @ensure_project_is_not_deleted
-    def summarize(self) -> list[Metadata]:
-        """Obtain metadata/metrics for all persisted reports in insertion order."""
-        return [
-            {
-                "id": value["artifact_id"],
-                "key": value["key"],
-                "date": value["date"],
-                "learner": value["learner"],
-                "ml_task": value["ml_task"],
-                "report_type": value["report_type"],
-                "dataset": value["dataset"],
-                "rmse": value.get("rmse"),
-                "log_loss": value.get("log_loss"),
-                "roc_auc": value.get("roc_auc"),
-                "fit_time": value.get("fit_time"),
-                "predict_time": value.get("predict_time"),
-                "rmse_mean": value.get("rmse_mean"),
-                "log_loss_mean": value.get("log_loss_mean"),
-                "roc_auc_mean": value.get("roc_auc_mean"),
-                "fit_time_mean": value.get("fit_time_mean"),
-                "predict_time_mean": value.get("predict_time_mean"),
-            }
-            for value in self.__metadata_storage.values()
-            if value["project_name"] == self.name
-        ]
-
-    def __repr__(self) -> str:  # noqa: D105
-        return (
-            f"Project(mode='local', name='{self.name}', workspace='{self.workspace}')"
+    def get(self, report_id: int) -> EstimatorReport:
+        report_path = next(
+            iter((self.path() / "reports").glob(f"*{report_id:x}*")), None
         )
+        if report_path is None:
+            raise KeyError(report_id)
+        return load(report_path)
 
-    @staticmethod
-    def delete(name: str, *, workspace: str | Path | None = None) -> None:
-        r"""
-        Delete a local project.
+    def summarize(self) -> list[EstimatorReport]:
+        # TODO
+        return []
 
-        Parameters
-        ----------
-        name : str
-            The name of the project.
-        workspace : Path-like, optional
-            The directory where the project (metadata and artifacts) are persisted.
-
-            | The workspace can be shared between all the projects.
-            | The workspace can be set using kwargs or the environment variable
-              ``SKORE_WORKSPACE``.
-            | If not, it will be by default set to a ``skore/`` directory in the USER
-              cache directory:
-
-            - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-            - on Linux, usually ``${HOME}/.cache/skore``,
-            - on macOS, usually ``${HOME}/Library/Caches/skore``.
-        """
-        workspace, projects, metadata, artifacts = Project.__setup_diskcache(workspace)
-
-        if name not in projects:
-            raise LookupError(
-                f"Project(mode='local', name='{name}', workspace='{workspace}') "
-                f"does not exist."
-            )
-
-        # Delete all metadata related to the project
-        remaining_artifacts = set()
-
-        for key, value in metadata.items():
-            if value["project_name"] == name:
-                del metadata[key]
-            else:
-                remaining_artifacts.add(value["artifact_id"])
-
-        # Prune artifacts not related to a project
-        for artifact in artifacts:
-            if artifact not in remaining_artifacts:
-                del artifacts[artifact]
-
-        # Delete the project
-        del projects[name]
+    def delete(self) -> None:
+        shutil.rmtree(self.path())
