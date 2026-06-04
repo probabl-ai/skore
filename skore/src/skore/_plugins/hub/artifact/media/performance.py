@@ -6,47 +6,11 @@ from abc import ABC
 from collections.abc import Callable
 from functools import reduce
 from inspect import signature
-from io import BytesIO
 from typing import ClassVar, Literal, cast
-
-from matplotlib import pyplot as plt
 
 from skore import Display
 from skore._plugins.hub.artifact.media.media import Media, Report
 from skore._plugins.hub.json import dumps
-
-
-class PerformanceSVG(Media[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str]
-    content_type: Literal["image/svg+xml"] = "image/svg+xml"
-
-    def content_to_upload(self) -> bytes | None:  # noqa: D102
-        try:
-            function = cast(
-                "Callable[..., Display]",
-                reduce(getattr, self.accessor.split("."), self.report),
-            )
-        except AttributeError:
-            return None
-
-        display = (
-            function()
-            if self.data_source is None
-            else function(data_source=self.data_source)
-        )
-
-        with BytesIO() as stream:
-            fig = display.plot()
-            if fig is None:
-                # NOTE: backward compatibility for when `figure_` was stored as an
-                # attribute in the display object instead of being returned by `plot`.
-                fig = display.figure_
-            fig.savefig(stream, format="svg", bbox_inches="tight")
-            plt.close(fig)
-
-            figure_bytes = stream.getvalue()
-
-        return figure_bytes
 
 
 class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101

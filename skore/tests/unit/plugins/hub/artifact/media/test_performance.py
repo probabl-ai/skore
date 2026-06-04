@@ -1,6 +1,3 @@
-from io import BytesIO
-
-from matplotlib import pyplot as plt
 from pydantic import ValidationError
 from pytest import mark, param, raises
 
@@ -17,21 +14,6 @@ from skore._plugins.hub.artifact.media import (
 from skore._plugins.hub.artifact.media.performance import PerformanceDataFrame
 from skore._plugins.hub.artifact.serializer import Serializer
 from skore._plugins.hub.json import dumps
-
-
-def serialize_svg(display) -> bytes:
-    with BytesIO() as stream:
-        fig = display.plot()
-        if fig is None:
-            # NOTE: backward compatibility for when `figure_` was stored as an attribute
-            # in the display object instead of being returned by `plot`.
-            fig = display.figure_
-        fig.savefig(stream, format="svg", bbox_inches="tight")
-        plt.close(fig)
-
-        figure_bytes = stream.getvalue()
-
-    return figure_bytes
 
 
 def serialize_dataframe(display) -> bytes:
