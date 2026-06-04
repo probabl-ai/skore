@@ -74,7 +74,7 @@ executing==2.2.1
     # via stack-data
 fastapi==0.136.3
     # via mlflow-skinny
-filelock==3.29.0
+filelock==3.29.1
     # via
     #   python-discovery
     #   virtualenv
@@ -260,7 +260,7 @@ platformdirs==4.10.0
     #   skore (skore/pyproject.toml)
     #   python-discovery
     #   virtualenv
-plotly==6.7.0
+plotly==6.8.0
     # via skore (skore/pyproject.toml)
 pluggy==1.6.0
     # via
@@ -406,7 +406,7 @@ threadpoolctl==3.6.0
     # via scikit-learn
 tomli==2.4.1
     # via coverage
-traitlets==5.15.0
+traitlets==5.15.1
     # via
     #   ipython
     #   ipywidgets
@@ -441,7 +441,7 @@ urllib3==2.7.0
     # via
     #   docker
     #   requests
-uvicorn==0.48.0
+uvicorn==0.49.0
     # via mlflow-skinny
 virtualenv==21.4.2
     # via pre-commit
