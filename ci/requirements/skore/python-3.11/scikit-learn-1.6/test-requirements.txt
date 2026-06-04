@@ -362,7 +362,7 @@ respx==0.23.1
     # via skore (skore/pyproject.toml)
 rich[jupyter]==15.0.0
     # via skore (skore/pyproject.toml)
-scikit-learn==1.8.0
+scikit-learn==1.6.1
     # via
     #   --override skore/overrides.txt
     #   skore (skore/pyproject.toml)
@@ -402,6 +402,8 @@ starlette==1.2.1
     #   mlflow-skinny
 threadpoolctl==3.6.0
     # via scikit-learn
+tomli==2.4.1
+    # via coverage
 traitlets==5.15.1
     # via
     #   ipython
@@ -409,17 +411,23 @@ traitlets==5.15.1
     #   matplotlib-inline
 typing-extensions==4.15.0
     # via
+    #   aiohttp
+    #   aiosignal
     #   alembic
+    #   anyio
     #   anywidget
     #   fastapi
     #   graphene
+    #   ipython
     #   mlflow-skinny
     #   opentelemetry-api
     #   opentelemetry-sdk
     #   opentelemetry-semantic-conventions
+    #   optype
     #   pydantic
     #   pydantic-core
     #   sqlalchemy
+    #   starlette
     #   typing-inspection
 typing-inspection==0.4.2
     # via
