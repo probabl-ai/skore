@@ -13,6 +13,7 @@ def test_data_source_both(
     result = report.metrics.summarize(data_source="both").frame()
 
     assert result.index.to_list() == [
+        ("Score", ""),
         ("Accuracy", ""),
         ("Precision", "0"),
         ("Precision", "1"),
@@ -45,6 +46,7 @@ def test_flat_index(estimator_reports_binary_classification):
     result_df = result.frame(flat_index=True)
     assert isinstance(result_df.index, pd.Index)
     assert result_df.index.tolist() == [
+        "score",
         "accuracy",
         "precision_0",
         "precision_1",

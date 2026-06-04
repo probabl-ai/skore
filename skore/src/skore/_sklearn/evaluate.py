@@ -89,8 +89,19 @@ def evaluate(
     Returns
     -------
     report : :class:`~skore.EstimatorReport`, :class:`~skore.CrossValidationReport` \
-        or :class:`~skore.ComparisonReport`
+            or :class:`~skore.ComparisonReport`
         The report corresponding to the evaluation strategy.
+
+    See Also
+    --------
+    :func:`~skore.compare` :
+        Compare already evaluated reports.
+    :class:`~skore.EstimatorReport` :
+        Report for a fitted estimator on a test set.
+    :class:`~skore.CrossValidationReport` :
+        Report for cross-validation of an estimator.
+    :class:`~skore.ComparisonReport` :
+        Report comparing several evaluated models.
 
     Examples
     --------
@@ -129,6 +140,11 @@ def evaluate(
         raise TypeError(
             "X must be a single array-like (or None) when estimator is not a list"
             " or dict."
+        )
+
+    if X is None and y is None and data is None:
+        raise ValueError(
+            "Provide data through X and y or through data to evaluate your estimator."
         )
 
     if isinstance(estimator, (list, dict)):
@@ -218,7 +234,7 @@ def evaluate(
                 splitter=splitter,
                 n_jobs=n_jobs,
             )
-        return report.estimator_reports_[0]
+        return report.reports_[0]
 
     return CrossValidationReport(
         estimator,

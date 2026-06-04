@@ -1,3 +1,5 @@
+import pickle
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -12,10 +14,10 @@ from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.utils._testing import _convert_container
 from sklearn.utils.validation import check_is_fitted
 
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport, evaluate
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._cross_validation.report import _generate_estimator_report
 from skore._utils._testing import MockEstimator
 
@@ -61,13 +63,13 @@ def test_attributes(fixture_name, request, cv, n_jobs):
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=cv, n_jobs=n_jobs)
     assert isinstance(report, CrossValidationReport)
-    assert isinstance(report.estimator_reports_, list)
-    for estimator_report in report.estimator_reports_:
+    assert isinstance(report.reports_, list)
+    for estimator_report in report.reports_:
         assert isinstance(estimator_report, EstimatorReport)
     assert report.X is X
     assert report.y is y
     assert report.n_jobs == n_jobs
-    assert len(report.estimator_reports_) == cv
+    assert len(report.reports_) == cv
     if isinstance(estimator, Pipeline):
         assert report.estimator_name_ == estimator[-1].__class__.__name__
     else:
@@ -85,13 +87,13 @@ def test_attributes(fixture_name, request, cv, n_jobs):
     "fixture_name, expected_n_keys",
     [
         # expected n keys:
-        # (result + time for 'predict'
-        #  & result for 'predict_proba'/'predict_log_proba' or 'decision_function')
+        # (result for 'predict' or 'predict_proba' or 'predict_log_proba' or
+        # 'decision_function')
         # x train, test
-        ("forest_binary_classification_data", 8),
-        ("svc_binary_classification_data", 6),
-        ("forest_multiclass_classification_data", 8),
-        ("linear_regression_data", 4),
+        ("forest_binary_classification_data", 6),
+        ("svc_binary_classification_data", 4),
+        ("forest_multiclass_classification_data", 6),
+        ("linear_regression_data", 2),
     ],
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
@@ -99,16 +101,16 @@ def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
     """Check that calling cache_predictions fills the cache."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
-    for estimator_report in report.estimator_reports_:
+    for estimator_report in report.reports_:
         assert estimator_report._cache == {}
 
     report.cache_predictions()
 
-    for estimator_report in report.estimator_reports_:
+    for estimator_report in report.reports_:
         assert len(estimator_report._cache) == expected_n_keys
 
     report.clear_cache()
-    for estimator_report in report.estimator_reports_:
+    for estimator_report in report.reports_:
         assert estimator_report._cache == {}
 
 
@@ -137,10 +139,10 @@ def test_get_predictions(
     assert len(predictions) == 2
     for split_idx, split_predictions in enumerate(predictions):
         if data_source == "train":
-            expected_len = len(report.estimator_reports_[split_idx].y_train)
+            expected_len = len(report.reports_[split_idx].y_train)
         else:
             assert data_source == "test"
-            expected_len = len(report.estimator_reports_[split_idx].y_test)
+            expected_len = len(report.reports_[split_idx].y_test)
         if response_method == "predict_proba" and pos_label is None:
             assert split_predictions.shape == (expected_len, 2)
         else:
@@ -198,14 +200,12 @@ def test_clustering():
         CrossValidationReport(KMeans(), X=np.random.rand(10, 5), y=None)
 
 
-@pytest.mark.parametrize(
-    "container_types", [("dataframe", "series"), ("array", "array")]
-)
+@pytest.mark.parametrize("container_types", [("pandas", "series"), ("array", "array")])
 def test_create_estimator_report(container_types, forest_binary_classification_data):
     """Test the `create_estimator_report` method."""
     estimator, X, y = forest_binary_classification_data
-    X = _convert_container(X, container_types[0])
-    y = _convert_container(y, container_types[1])
+    X = convert_container(X, container_types[0])
+    y = convert_container(y, container_types[1])
     X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
@@ -332,8 +332,8 @@ def test_from_state_bypasses_init_and_restores_state(
     assert restored.ml_task == report.ml_task
     assert restored.pos_label == report.pos_label
     assert restored._split_indices == report._split_indices
-    assert len(restored.estimator_reports_) == len(report.estimator_reports_)
-    assert restored.estimator_reports_[0]._cache == report.estimator_reports_[0]._cache
+    assert len(restored.reports_) == len(report.reports_)
+    assert restored.reports_[0]._cache == report.reports_[0]._cache
     assert state["estimator_reports"][0]["predictions"]
     assert state["estimator_reports"][0]["optional"]["cache"]
     assert restored.metrics.accuracy().equals(expected_accuracy)
@@ -342,6 +342,9 @@ def test_from_state_bypasses_init_and_restores_state(
     restored.metrics.roc_auc()
     _ = report.get_predictions(data_source="test")
     report.cache_predictions()
+
+    # check repr doesn't crash:
+    restored._repr_html_()
 
 
 def test_get_from_state_with_complex_data_op():
@@ -384,6 +387,9 @@ def test_get_from_state_with_complex_data_op():
     for pred, expected_pred in zip(preds, expected_preds, strict=True):
         np.testing.assert_array_equal(pred, expected_pred)
 
+    # check repr doesn't crash:
+    restored._repr_html_()
+
 
 def test_from_state_rejects_unknown_version(logistic_binary_classification_data):
     estimator, X, y = logistic_binary_classification_data
@@ -392,3 +398,32 @@ def test_from_state_rejects_unknown_version(logistic_binary_classification_data)
 
     with pytest.raises(ValueError, match="Unexpected state version"):
         CrossValidationReport.from_state(state)
+
+
+@pytest.mark.parametrize(
+    "estimator",
+    [DummyClassifier(), DummyRegressor()],
+    ids=["classification", "regression"],
+)
+@pytest.mark.parametrize("splitter", [0.2, 3], ids=["estimator", "cross-validation"])
+def test_state_has_no_unexpected_data_copy(estimator, splitter):
+    """``state`` should only reference training data through ``state["data"]``."""
+
+    def state_nbytes_without_data(report):
+        state = report.get_state()
+        state.pop("data")
+        return len(pickle.dumps(state))
+
+    # Large dataset to increase our chances that X is much larger than all the other
+    # report attributes
+    # We use a classification-oriented dataset even for regression to avoid making the
+    # test more complex
+    X, y = make_classification(n_samples=50_000, n_features=30)
+    report = evaluate(estimator, X, y, splitter=splitter)
+
+    # If the state "without data" is bigger than X, then this likely means that
+    # the state somehow still contains X. This may be a sign that an attribute of the
+    # report still holds a reference to the report (e.g. the metrics registry).
+    # However, this is a heuristic; if this test fails, it may also be because the state
+    # size is no longer dominated by the size of X.
+    assert state_nbytes_without_data(report) < X.nbytes

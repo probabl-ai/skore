@@ -26,7 +26,7 @@ class Summary(DataFrame):
     automatically replaces the standard :class:`pandas.DataFrame` one and displays an
     interactive plot.
 
-    The parallel coordinates plot is interactive, such the user can select a filter path
+    The parallel coordinates plot is interactive, so the user can select a filter path
     and retrieve the corresponding reports.
 
     Outside a Jupyter Notebook, the summary object can be used as a standard
@@ -34,6 +34,13 @@ class Summary(DataFrame):
     etc., using the standard :class:`pandas.DataFrame` functions.
 
     Refer to :class:`pandas.DataFrame` for the standard methods and attributes.
+
+    See Also
+    --------
+    :func:`~skore.compare` :
+        Compare selected reports side by side.
+    :meth:`Project.summarize` :
+        Create a summary from a project.
     """
 
     _metadata = ["project"]
@@ -47,6 +54,11 @@ class Summary(DataFrame):
         ----------
         project : ``skore._plugins.local.Project`` | ``skore._plugins.hub.Project``
             The project from which the summary object is to be constructed.
+
+        Returns
+        -------
+        summary : Summary
+            Metadata and metrics for every report persisted in ``project``.
 
         Notes
         -----
@@ -89,6 +101,19 @@ class Summary(DataFrame):
             Filter the reports to return with the user query string selection.
         return_as : {"list", "comparison"}, default="list"
             In what form the reports should be returned.
+
+        Returns
+        -------
+        reports : list of reports or ComparisonReport
+            If ``return_as="list"``, a list of
+            :class:`~skore.EstimatorReport` or
+            :class:`~skore.CrossValidationReport` objects.
+            If ``return_as="comparison"``, a :class:`~skore.ComparisonReport`.
+
+        See Also
+        --------
+        :func:`~skore.compare` :
+            Compare reports side by side.
         """
         from skore import ComparisonReport
 

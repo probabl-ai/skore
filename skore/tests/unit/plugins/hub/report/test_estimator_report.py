@@ -6,20 +6,14 @@ from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTest,
     ConfusionMatrixDataFrameTrain,
-    ConfusionMatrixSVGTest,
-    ConfusionMatrixSVGTrain,
     EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
     PermutationImportanceTrain,
     PrecisionRecallDataFrameTest,
     PrecisionRecallDataFrameTrain,
-    PrecisionRecallSVGTest,
-    PrecisionRecallSVGTrain,
     RocDataFrameTest,
     RocDataFrameTrain,
-    RocSVGTest,
-    RocSVGTrain,
     TableReportTest,
     TableReportTrain,
 )
@@ -49,7 +43,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
 
     import joblib
 
-    reports = [object] + getattr(object, "estimator_reports_", [])
+    reports = [object] + getattr(object, "reports_", [])
     reports_with_cache = [
         (report, report._cache) for report in reports if hasattr(report, "_cache")
     ]
@@ -152,20 +146,14 @@ class TestEstimatorReportPayload:
         assert list(map(type, payload.medias)) == [
             ConfusionMatrixDataFrameTest,
             ConfusionMatrixDataFrameTrain,
-            ConfusionMatrixSVGTest,
-            ConfusionMatrixSVGTrain,
             EstimatorHtmlRepr,
             ImpurityDecrease,
             PermutationImportanceTest,
             PermutationImportanceTrain,
             PrecisionRecallDataFrameTest,
             PrecisionRecallDataFrameTrain,
-            PrecisionRecallSVGTest,
-            PrecisionRecallSVGTrain,
             RocDataFrameTest,
             RocDataFrameTrain,
-            RocSVGTest,
-            RocSVGTrain,
             TableReportTest,
             TableReportTrain,
         ]

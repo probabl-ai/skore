@@ -10,9 +10,7 @@ from skore._utils._testing import check_cache_changed
 
 
 def _children_cache_size(report):
-    sizes = {
-        len(estimator_report._cache) for estimator_report in report.estimator_reports_
-    }
+    sizes = {len(estimator_report._cache) for estimator_report in report.reports_}
     assert len(sizes) == 1
     (size,) = sizes
     return size
@@ -94,7 +92,7 @@ def test_cache_parameter_in_cache(regression_data):
     report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test", metric="r2"
     )
-    with check_cache_changed(report.estimator_reports_[0]._cache):
+    with check_cache_changed(report.reports_[0]._cache):
         report.inspection.permutation_importance(
             seed=42,
             n_repeats=2,

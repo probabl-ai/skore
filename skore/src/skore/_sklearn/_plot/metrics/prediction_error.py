@@ -1,6 +1,6 @@
 import numbers
 from collections import namedtuple
-from typing import Literal, cast
+from typing import Literal
 
 import numpy as np
 import seaborn as sns
@@ -25,15 +25,7 @@ MAX_N_LABELS = 6  # 5 + 1 for the perfect model line
 
 
 class PredictionErrorDisplay(DisplayMixin):
-    """Visualization of the prediction error of a regression model.
-
-    This tool can display "residuals vs predicted" or "actual vs predicted"
-    using scatter plots to qualitatively assess the behavior of a regressor,
-    preferably on held-out data points.
-
-    An instance of this class should be created by
-    `EstimatorReport.metrics.prediction_error()`.
-    You should not create an instance of this class directly.
+    """Plot the prediction error of a regression model.
 
     Parameters
     ----------
@@ -66,6 +58,26 @@ class PredictionErrorDisplay(DisplayMixin):
     report_type : {"comparison-cross-validation", "comparison-estimator", \
             "cross-validation", "estimator"}
         The type of report.
+
+    Attributes
+    ----------
+    range_y_true : RangeData
+        Global range of the true target values.
+    range_y_pred : RangeData
+        Global range of the predicted values.
+    range_residuals : RangeData
+        Global range of the residuals.
+    data_source : DataSource or "both"
+        The data source used for the display.
+    ml_task : MLTask
+        The machine learning task.
+    report_type : ReportType
+        The type of report.
+
+    See Also
+    --------
+    EstimatorReport.metrics.prediction_error : Create this display from a report.
+    MetricsSummaryDisplay : Summarize scalar regression metrics.
 
     Examples
     --------
@@ -147,16 +159,15 @@ class PredictionErrorDisplay(DisplayMixin):
     def plot(
         self,
         *,
-        subplot_by: Literal["auto", "data_source", "split", "estimator", "output"]
-        | None = "auto",
+        subplot_by: (
+            Literal["auto", "data_source", "split", "estimator", "output"] | None
+        ) = "auto",
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
         despine: bool = True,
     ) -> Figure:
-        """Plot visualization.
-
-        Extra keyword arguments will be passed to matplotlib's ``plot``.
+        """Plot the prediction error.
 
         Parameters
         ----------
@@ -210,8 +221,9 @@ class PredictionErrorDisplay(DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        subplot_by: Literal["auto", "data_source", "split", "estimator", "output"]
-        | None = "auto",
+        subplot_by: (
+            Literal["auto", "data_source", "split", "estimator", "output"] | None
+        ) = "auto",
         kind: Literal[
             "actual_vs_predicted", "residual_vs_predicted"
         ] = "residual_vs_predicted",
@@ -493,8 +505,8 @@ class PredictionErrorDisplay(DisplayMixin):
                 _safe_indexing(y_pred, indices, axis=0), ensure_2d=False
             )
         else:
-            y_true_sample = cast(np.typing.NDArray, y_true)
-            y_pred_sample = cast(np.typing.NDArray, y_pred)
+            y_true_sample = check_array(y_true, ensure_2d=False)
+            y_pred_sample = check_array(y_pred, ensure_2d=False)
 
         residuals_sample = y_true_sample - y_pred_sample
         n = len(y_true_sample)
