@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import EstimatorReport
+from skore._sklearn._plot import TableReportDisplay
 from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
 
 
@@ -169,10 +170,8 @@ def test_analyze_deprecation(forest_binary_classification_with_test):
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
 
-    with pytest.warns(FutureWarning, match="data.analyze() is deprecated"):
+    with pytest.warns(FutureWarning, match=r"data\.analyze\(\) is deprecated"):
         display = report.data.analyze(data_source="test")
-
-    from skore._sklearn._plot import TableReportDisplay
 
     assert isinstance(display, TableReportDisplay)
 
