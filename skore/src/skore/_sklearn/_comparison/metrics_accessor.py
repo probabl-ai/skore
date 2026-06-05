@@ -989,9 +989,18 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
     ####################################################################################
 
     def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name=f"skore.{self._parent.__class__.__name__}.metrics"
+        return (
+            "Metrics summary:\n"
+            f"{self.summarize().frame()!r}\n"
+            "Explore available methods with .help()."
+        )
+
+    def _html_repr(self) -> str:
+        return (
+            "<p>Metrics summary:</p>"
+            f"{self.summarize().frame()._repr_html_()}"
+            '<p role="note">Explore available methods with '
+            "<code>.help()</code>.</p>"
         )
 
     @available_if(

@@ -37,9 +37,23 @@ def test_summarize_single_list_equivalence(report):
 
 
 def test_metrics_repr(report):
-    """Test that metrics accessor __repr__ returns a string."""
+    """Test that metrics accessor __repr__ shows the summary frame and hints."""
+    frame_repr = repr(report.metrics.summarize().frame())
     result = repr(report.metrics)
-    assert "metrics" in result.lower()
+    assert result.startswith("Metrics summary:")
+    assert frame_repr in result
+    assert "Use .frame() to control the format of the output." not in result
+    assert result.endswith("Explore available methods with .help().")
+
+
+def test_metrics_repr_html(report):
+    """Test that metrics accessor _repr_html_ shows the summary frame and hints."""
+    frame_html = report.metrics.summarize().frame()._repr_html_()
+    html = report.metrics._repr_html_()
+    assert html.startswith("<p>Metrics summary:</p>")
+    assert frame_html in html
+    assert "Use .frame() to control the format of the output." not in html
+    assert "<code>.help()</code>" in html
 
 
 def test_metrics_available_returns_metric_keys(report):
