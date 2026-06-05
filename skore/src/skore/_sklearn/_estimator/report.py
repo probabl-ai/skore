@@ -956,9 +956,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "report to get a markdown summary with `report.to_markdown()`."
             )
         predict_label = "train" if data_source == "train" else "test"
-        metrics_text = (
-            self.metrics.summarize(data_source=data_source).frame().to_string()
-        )
+        metrics_text = repr(self.metrics.summarize(data_source=data_source).frame())
         timings = self.metrics.timings()
         summary = summarize_dataframe(
             self.data._prepare_dataframe_for_display(

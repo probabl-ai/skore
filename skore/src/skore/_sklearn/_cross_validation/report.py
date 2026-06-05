@@ -691,11 +691,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         str
             The markdown summary of the report.
         """
-        metrics_text = (
+        metrics_text = repr(
             self.metrics.summarize(data_source="test")
             .frame()
             .droplevel(level=0, axis="columns")
-            .to_string()
         )
         timings = self.metrics.timings(aggregate="mean")
         summary = summarize_dataframe(
