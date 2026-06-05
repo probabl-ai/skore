@@ -696,7 +696,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             .frame()
             .droplevel(level=0, axis="columns")
         )
-        timings = self.metrics.timings(aggregate="mean")
+        timings = self.metrics.timings()
         summary = summarize_dataframe(
             self.data._prepare_dataframe_for_display(
                 with_y=True,
@@ -712,8 +712,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "cross_validation_report_markdown.j2",
             {
                 **report_markdown_context(self),
-                "fit_time": float(timings.loc["Fit time (s)", "mean"]),
-                "predict_time": float(timings.loc["Predict time test (s)", "mean"]),
+                "fit_time": (
+                    f"{timings.loc['Fit time (s)', 'mean']:.3f} s"
+                    f" (± {timings.loc['Fit time (s)', 'std']:.3f})"
+                ),
+                "predict_time": (
+                    f"{timings.loc['Predict time test (s)', 'mean']:.3f} s"
+                    f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
+                ),
                 "predict_label": "test",
                 "n_folds": len(self.reports_),
                 "splitter_repr": (
@@ -722,7 +728,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     else f"{len(self.split_indices)} folds"
                 ),
                 "metrics_text": metrics_text,
-                **markdown_data_section(summary, data_label="full dataset"),
+                **markdown_data_section(summary, data_label="full"),
             },
         )
 

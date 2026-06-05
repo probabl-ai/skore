@@ -828,10 +828,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         }
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
-    def _repr_data_source(self) -> Literal["train", "test", "both"] | None:
+    def _repr_data_source(self) -> Literal["train", "test", "both"]:
         match self.X_train, self.X_test:
-            case None, None:
-                return None
             case _, None:
                 return "train"
             case None, _:
@@ -846,30 +844,26 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         one report's views in the comparison HTML repr.
         """
         data_source = self._repr_data_source()
-        if data_source is None:
-            table_report_html = "<p>No data provided</p>"
-            metrics_html = "<p>No data provided</p>"
-        else:
-            table_report = skrub.TableReport(
-                self.data._prepare_dataframe_for_display(
-                    data_source=data_source,
-                    with_y=True,
-                    subsample=None,
-                    subsample_strategy="head",
-                    seed=None,
-                ),
-                max_plot_columns=0,
-                max_association_columns=0,
-                verbose=False,
-            )
-            table_report._set_minimal_mode()
-            table_report_html = table_report.html_snippet()
-            metrics_html = (
-                self.metrics.summarize(data_source=data_source)
-                .frame()
-                .reset_index()
-                .to_html(index=False)
-            )
+        table_report = skrub.TableReport(
+            self.data._prepare_dataframe_for_display(
+                data_source=data_source,
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            max_plot_columns=0,
+            max_association_columns=0,
+            verbose=False,
+        )
+        table_report._set_minimal_mode()
+        table_report_html = table_report.html_snippet()
+        metrics_html = (
+            self.metrics.summarize(data_source=data_source)
+            .frame()
+            .reset_index()
+            .to_html(index=False)
+        )
         try:
             estimator_html = repair_estimator_html_for_slotted_host(
                 self.estimator_._repr_html_()
@@ -950,11 +944,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             The markdown summary of the report.
         """
         data_source = self._repr_data_source()
-        if data_source is None:
-            return (
-                "No data provided. Pass training and/or test data when creating the "
-                "report to get a markdown summary with `report.to_markdown()`."
-            )
         predict_label = "train" if data_source == "train" else "test"
         metrics_text = repr(self.metrics.summarize(data_source=data_source).frame())
         timings = self.metrics.timings()
@@ -980,7 +969,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "metrics_text": metrics_text,
                 **markdown_data_section(
                     summary,
-                    data_label="train+test" if data_source == "both" else data_source,
+                    data_label="full" if data_source == "both" else data_source,
                 ),
             },
         )

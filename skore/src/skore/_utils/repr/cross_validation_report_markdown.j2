@@ -7,10 +7,10 @@
 - kind: {{ estimator_kind }}
 - ml task: {{ ml_task }}
 {%- if fit_time is not none %}
-- fit time: {{ "%.3g"|format(fit_time) }} s
+- fit time: {{ fit_time }}
 {%- endif %}
 {%- if predict_time is not none %}
-- predict time (on {{ predict_label }} set): {{ "%.3g"|format(predict_time) }} s
+- predict time (on {{ predict_label }} set): {{ predict_time }}
 {%- endif %}
 {%- if pos_label_repr is not none %}
 - pos_label: {{ pos_label_repr }}
@@ -50,5 +50,5 @@ Computed on the {{ data_label }} dataset (n_rows={{ data_n_rows }}, n_columns={{
 | {{ col.name }} | {{ col.dtype }} | {{ col.null_count }} | {{ col.n_unique }} |
 {%- endfor %}
 
-Get the data analysis with: `report.data.analyze()`.
+Get the data summary with: `report.data.summarize()`.
 {%- endautoescape %}
