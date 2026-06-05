@@ -42,6 +42,12 @@ Release highlights
 Changed
 -------
 
+- :meth:`EstimatorReport.data.analyze` and :meth:`CrossValidationReport.data.analyze`
+  have been renamed to :meth:`EstimatorReport.data.summarize` and
+  :meth:`CrossValidationReport.data.summarize` for consistency with the other accessors.
+  The old name is deprecated and will be removed in a future release.
+  See :pr:`2964` by :user:`direkkakkar319-ops`.
+
 - **Breaking change:** The following methods now enforce keyword-only arguments
   (parameters must be passed by name, not by position):
   :meth:`EstimatorReport.data.analyze`,
