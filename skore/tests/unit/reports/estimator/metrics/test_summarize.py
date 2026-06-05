@@ -375,7 +375,7 @@ def test_pos_label_overwrite(metric, metric_fn):
     assert score_A == pytest.approx(metric_fn(y, classifier.predict(X), pos_label="A"))
 
 
-# Cache and data_source
+# Cache
 
 
 def test_cache(forest_binary_classification_with_test):
@@ -390,6 +390,28 @@ def test_cache(forest_binary_classification_with_test):
     with check_cache_unchanged(report._cache):
         result_from_cache = report.metrics.summarize()
     assert_frame_equal(result.data, result_from_cache.data)
+
+
+@pytest.mark.parametrize(
+    "metric, fixture",
+    [
+        ("predict_time", "forest_binary_classification_with_test"),
+        ("precision", "forest_binary_classification_with_test"),
+        ("roc_auc", "forest_binary_classification_with_test"),
+        ("r2", "linear_regression_with_test"),
+    ],
+)
+def test_cache_interaction(request, metric, fixture):
+    """Calling a metric explicitly after calling summarize() should hit the cache."""
+    estimator, X_test, y_test = request.getfixturevalue(fixture)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.summarize(metric=metric)
+
+    with check_cache_unchanged(report._cache):
+        getattr(report.metrics, metric)()
+
+
+# Data source
 
 
 def test_data_source_both(forest_binary_classification_data):
