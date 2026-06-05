@@ -118,6 +118,20 @@ def test_report_help_mixin_rich_path(monkeypatch, report_with_base_help):
     assert panel is not None
 
 
+def test_accessor_help_mixin_repr(accessor_with_base_help):
+    """AccessorHelpMixin.__repr__ renders the help panel as plain text."""
+    repr_str = repr(accessor_with_base_help)
+    assert accessor_with_base_help._parent.__class__.__name__ in repr_str
+    assert "mock_accessor" in repr_str
+
+
+def test_accessor_help_mixin_html_repr(accessor_with_base_help):
+    """AccessorHelpMixin._html_repr returns the help HTML."""
+    html = accessor_with_base_help._html_repr()
+    assert "skore-accessor-help-" in html
+    assert "mock_accessor" in html
+
+
 def test_accessor_help_mixin_sphinx_path(monkeypatch, accessor_with_base_help):
     """AccessorHelpMixin.help returns _HelpDisplay when sphinx build."""
     mock_sphinx = Mock(return_value=True)

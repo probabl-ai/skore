@@ -671,6 +671,13 @@ def test_checks_summary_repr(monkeypatch, regression_report):
     assert "user_guide/automated_checks.html#" in bundle["text/html"]
 
 
+def test_checks_accessor_repr(monkeypatch, regression_report):
+    """Check that the checks accessor repr matches ChecksSummaryDisplay."""
+    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
+    assert repr(regression_report.checks) == repr(regression_report.checks.summarize())
+    assert 'href="' in regression_report.checks._repr_html_()
+
+
 def test_global_ignore(monkeypatch, regression_report):
     """Check that checks are ignored when global ignore is set."""
     monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)

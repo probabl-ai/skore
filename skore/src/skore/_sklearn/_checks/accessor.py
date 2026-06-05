@@ -12,12 +12,6 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
     You can access this accessor using the `checks` attribute.
     """
 
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name=f"skore.{self._parent.__class__.__name__}.checks"
-        )
-
     def summarize(
         self,
         *,
@@ -142,3 +136,9 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
             self._parent._check_results_cache.pop(code, None)
         if hasattr(self._parent, "_applicable_codes"):
             self._parent._applicable_codes.discard(code)
+
+    def __repr__(self) -> str:
+        return repr(self.summarize())
+
+    def _html_repr(self) -> str:
+        return self.summarize()._repr_html_()

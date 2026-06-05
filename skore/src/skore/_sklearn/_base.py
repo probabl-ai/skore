@@ -2,12 +2,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from importlib.metadata import version
-from io import StringIO
 from typing import Generic, Literal, TypeVar
 from uuid import uuid4
-
-from rich.console import Console
-from rich.panel import Panel
 
 from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
@@ -140,17 +136,3 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 
     def __init__(self, parent: ParentT) -> None:
         self._parent = parent
-
-    def _rich_repr(self, class_name: str) -> str:
-        """Return a string representation using rich for accessors."""
-        string_buffer = StringIO()
-        console = Console(file=string_buffer, force_terminal=False)
-        console.print(
-            Panel(
-                "Get guidance using the help() method",
-                title=f"[cyan]{class_name}[/cyan]",
-                border_style="orange1",
-                expand=False,
-            )
-        )
-        return string_buffer.getvalue()
