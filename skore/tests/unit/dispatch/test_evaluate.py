@@ -175,16 +175,6 @@ def test_dict_estimators_prefit(regression_data):
     assert set(report.reports_) == {"a", "b"}
 
 
-def test_dict_estimators_prefit_X_none(regression_data):
-    """A dict of prefit estimators with X=None returns ComparisonReport."""
-    X, y = regression_data
-    fitted1 = LinearRegression().fit(X, y)
-    fitted2 = LinearRegression().fit(X, y)
-    report = evaluate({"a": fitted1, "b": fitted2}, None, y, splitter="prefit")
-    assert isinstance(report, ComparisonReport)
-    assert set(report.reports_) == {"a", "b"}
-
-
 def test_empty_dict_raises(regression_data):
     """An empty estimator dict raises ValueError."""
     X, y = regression_data

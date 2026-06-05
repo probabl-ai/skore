@@ -824,26 +824,17 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
+        data_source = self._repr_data_source()
+        summary = self.metrics.summarize(data_source=data_source).frame()
         return f"""{self.__class__.__name__}:
         {self.estimator_name_!r}
 
-        {
-            "No data provided."
-            if (data_source := self._repr_data_source()) is None
-            else self.metrics.summarize(data_source=data_source).frame()
-        }
+        {summary}
+
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
-    def _repr_data_source(self) -> Literal["train", "test", "both"] | None:
-        match self.X_train, self.X_test:
-            case None, None:
-                return None
-            case _, None:
-                return "train"
-            case None, _:
-                return "test"
-            case _:
-                return "both"
+    def _repr_data_source(self) -> Literal["test", "both"]:
+        return "test" if self.X_train is None else "both"
 
     def _html_repr_fragments(self) -> dict[str, str]:
         """HTML snippets for the report body (metrics, estimator diagram, data table).
@@ -852,30 +843,26 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         one report's views in the comparison HTML repr.
         """
         data_source = self._repr_data_source()
-        if data_source is None:
-            table_report_html = "<p>No data provided</p>"
-            metrics_html = "<p>No data provided</p>"
-        else:
-            table_report = skrub.TableReport(
-                self.data._prepare_dataframe_for_display(
-                    data_source=data_source,
-                    with_y=True,
-                    subsample=None,
-                    subsample_strategy="head",
-                    seed=None,
-                ),
-                max_plot_columns=0,
-                max_association_columns=0,
-                verbose=False,
-            )
-            table_report._set_minimal_mode()
-            table_report_html = table_report.html_snippet()
-            metrics_html = (
-                self.metrics.summarize(data_source=data_source)
-                .frame()
-                .reset_index()
-                .to_html(index=False)
-            )
+        table_report = skrub.TableReport(
+            self.data._prepare_dataframe_for_display(
+                data_source=data_source,
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            max_plot_columns=0,
+            max_association_columns=0,
+            verbose=False,
+        )
+        table_report._set_minimal_mode()
+        table_report_html = table_report.html_snippet()
+        metrics_html = (
+            self.metrics.summarize(data_source=data_source)
+            .frame()
+            .reset_index()
+            .to_html(index=False)
+        )
         try:
             estimator_html = repair_estimator_html_for_slotted_host(
                 self.estimator_._repr_html_()
@@ -972,9 +959,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "estimator_repr": repr(self.estimator_),
             "data_source": data_source,
             "metrics_text": (
-                None
-                if data_source is None
-                else self.metrics.summarize(data_source=data_source).frame().to_string()
+                self.metrics.summarize(data_source=data_source).frame().to_string()
             ),
             "checks_text": repr(self.checks.summarize(fast_mode=True)),
             "data_label": None,
@@ -983,42 +968,37 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "data_n_constant_columns": None,
             "data_columns": None,
         }
-        if data_source is not None:
-            summary = summarize_dataframe(
-                self.data._prepare_dataframe_for_display(
-                    data_source=data_source,
-                    with_y=True,
-                    subsample=None,
-                    subsample_strategy="head",
-                    seed=None,
-                ),
-                with_plots=False,
-                with_associations=False,
-                verbose=0,
-            )
-            context.update(
-                {
-                    "predict_time": self._predict_time["train"]
-                    if data_source == "train"
-                    else self._predict_time["test"],
-                    "predict_label": "train" if data_source == "train" else "test",
-                    "data_label": "train+test"
-                    if data_source == "both"
-                    else data_source,
-                    "data_n_rows": summary["n_rows"],
-                    "data_n_columns": summary["n_columns"],
-                    "data_n_constant_columns": summary["n_constant_columns"],
-                    "data_columns": [
-                        {
-                            "name": col["name"],
-                            "dtype": col["dtype"],
-                            "null_count": col.get("null_count", ""),
-                            "n_unique": col.get("n_unique", ""),
-                        }
-                        for col in summary["columns"]
-                    ],
-                }
-            )
+        summary = summarize_dataframe(
+            self.data._prepare_dataframe_for_display(
+                data_source=data_source,
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            with_plots=False,
+            with_associations=False,
+            verbose=0,
+        )
+        context.update(
+            {
+                "predict_time": self._predict_time["test"],
+                "predict_label": "test",
+                "data_label": "train+test" if data_source == "both" else "test",
+                "data_n_rows": summary["n_rows"],
+                "data_n_columns": summary["n_columns"],
+                "data_n_constant_columns": summary["n_constant_columns"],
+                "data_columns": [
+                    {
+                        "name": col["name"],
+                        "dtype": col["dtype"],
+                        "null_count": col.get("null_count", ""),
+                        "n_unique": col.get("n_unique", ""),
+                    }
+                    for col in summary["columns"]
+                ],
+            }
+        )
         return context
 
     def _markdown_estimator_kind(self) -> str:
