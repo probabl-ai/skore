@@ -257,3 +257,25 @@ def test_score_skrub_learner_with_extra_env_vars():
     )
 
     assert isinstance(report.metrics.score(), float)
+
+
+# report.metrics.get
+
+
+def test_get(binary_classification_report):
+    """``get`` works."""
+    report = binary_classification_report
+
+    assert report.metrics.get("precision") == 1
+    assert report.metrics.get("non-existing metric") is None
+
+
+def test_get_custom(binary_classification_report):
+    """``get`` works for custom metrics."""
+    report = binary_classification_report
+
+    assert report.metrics.get("hello") is None
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.get("hello") == 1
