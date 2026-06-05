@@ -720,7 +720,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     f"{timings.loc['Predict time test (s)', 'mean']:.3f} s"
                     f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
                 ),
-                "predict_label": "test",
                 "n_folds": len(self.reports_),
                 "splitter_repr": (
                     repr(self.splitter)

@@ -821,21 +821,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return f"""{self.__class__.__name__}:
         {self.estimator_name_!r}
 
-        {
-            "No data provided."
-            if (data_source := self._repr_data_source()) is None
-            else self.metrics.summarize(data_source=data_source).frame()
-        }
+        {self.metrics.summarize(data_source="test").frame()}
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
-
-    def _repr_data_source(self) -> Literal["train", "test", "both"]:
-        match self.X_train, self.X_test:
-            case _, None:
-                return "train"
-            case None, _:
-                return "test"
-            case _:
-                return "both"
 
     def _html_repr_fragments(self) -> dict[str, str]:
         """HTML snippets for the report body (metrics, estimator diagram, data table).
@@ -843,10 +830,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
         one report's views in the comparison HTML repr.
         """
-        data_source = self._repr_data_source()
         table_report = skrub.TableReport(
             self.data._prepare_dataframe_for_display(
-                data_source=data_source,
+                data_source="both" if self.X_train is not None else "test",
                 with_y=True,
                 subsample=None,
                 subsample_strategy="head",
@@ -859,7 +845,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         table_report._set_minimal_mode()
         table_report_html = table_report.html_snippet()
         metrics_html = (
-            self.metrics.summarize(data_source=data_source)
+            self.metrics.summarize(data_source="test")
             .frame()
             .reset_index()
             .to_html(index=False)
@@ -943,13 +929,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         str
             The markdown summary of the report.
         """
-        data_source = self._repr_data_source()
-        predict_label = "train" if data_source == "train" else "test"
-        metrics_text = repr(self.metrics.summarize(data_source=data_source).frame())
+        metrics_text = repr(self.metrics.summarize(data_source="test").frame())
         timings = self.metrics.timings()
         summary = summarize_dataframe(
             self.data._prepare_dataframe_for_display(
-                data_source=data_source,
+                data_source="both" if self.X_train is not None else "test",
                 with_y=True,
                 subsample=None,
                 subsample_strategy="head",
@@ -964,12 +948,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             {
                 **report_markdown_context(self),
                 "fit_time": timings.get("fit_time"),
-                "predict_time": timings.get(f"predict_time_{predict_label}"),
-                "predict_label": predict_label,
+                "predict_time": timings.get("predict_time_test"),
                 "metrics_text": metrics_text,
                 **markdown_data_section(
                     summary,
-                    data_label="full" if data_source == "both" else data_source,
+                    data_label="full" if self.X_train is not None else "test",
                 ),
             },
         )

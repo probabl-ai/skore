@@ -244,7 +244,7 @@ def _assert_cross_validation_report_repr_html(
 
 def test_repr_mentions_to_markdown(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
+    report = evaluate(estimator, X, y, splitter=2)
     repr_str = repr(report)
     assert "to_markdown()" in repr_str
     assert report.estimator_name_ in repr_str
@@ -252,7 +252,7 @@ def test_repr_mentions_to_markdown(forest_binary_classification_data):
 
 def test_to_markdown(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
+    report = evaluate(estimator, X, y, splitter=2)
     markdown = report.to_markdown()
     assert markdown.startswith(f"# CrossValidationReport: {report.estimator_name_}")
     for section in ("## Estimator", "## Metrics", "## Checks (fast mode)", "## Data"):
