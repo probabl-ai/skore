@@ -642,3 +642,18 @@ def test_learner_report_root_node_not_an_estimator():
         data_op.skb.make_learner(), train_data=split["train"], test_data=split["test"]
     )
     report.metrics.summarize(metric="accuracy")
+
+
+def test_no_data_error():
+    X, y = make_classification()
+    learner = (
+        skrub.X()
+        .skb.apply(DummyClassifier(), y=skrub.y())
+        .skb.make_learner()
+        .fit({"X": X, "y": y})
+    )
+    with pytest.raises(TypeError, match="test_data must be provided"):
+        EstimatorReport(learner)
+    estimator = DummyClassifier().fit(X, y)
+    with pytest.raises(TypeError, match="X_test must be provided"):
+        EstimatorReport(estimator)
