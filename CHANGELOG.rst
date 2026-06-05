@@ -115,6 +115,10 @@ Added
   SKD010 (model slower than baseline, issue). See :pr:`2906` by
   :user:`GaetandeCast`.
 
+- Reports now expose a :meth:`~EstimatorReport.metrics.get` method to retrieve metric
+  values by name. This is particularly useful for custom metrics, which until now could
+  only be accessed using :meth:`~EstimatorReport.metrics.summarize`. See :pr:`` by :user:`auguste-probabl`.
+
 Removed
 -------
 
