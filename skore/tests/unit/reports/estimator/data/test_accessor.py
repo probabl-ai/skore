@@ -19,8 +19,8 @@ from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_d
         ({"subsample_strategy": "invalid"}, "'subsample_strategy' options are"),
     ],
 )
-def test_analyze_error(forest_binary_classification_with_test, params, err_msg):
-    """Check that the `analyze` method raises an error when the data source is not
+def test_summarize_error(forest_binary_classification_with_test, params, err_msg):
+    """Check that the `summarize` method raises an error when the data source is not
     valid."""
     classifier, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)

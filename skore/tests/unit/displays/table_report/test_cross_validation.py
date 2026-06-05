@@ -105,10 +105,10 @@ def test_without_y(cross_validation_report):
         (10, "random", 42),
     ],
 )
-def test_analyze_with_subsample(
+def test_summarize_with_subsample(
     cross_validation_report, sumbsample, subsample_strategy, seed
 ):
-    """Check that the analyze method works with subsampling."""
+    """Check that the summarize method works with subsampling."""
     display = cross_validation_report.data.summarize(
         subsample=sumbsample,
         subsample_strategy=subsample_strategy,
@@ -118,7 +118,7 @@ def test_analyze_with_subsample(
     assert len(display.frame(kind="dataset")) == sumbsample
 
 
-def test_analyze_with_invalid_subsample_strategy(cross_validation_report):
+def test_summarize_with_invalid_subsample_strategy(cross_validation_report):
     """Check that an error is raised with an invalid subsample strategy."""
     with pytest.raises(ValueError):
         cross_validation_report.data.summarize(
