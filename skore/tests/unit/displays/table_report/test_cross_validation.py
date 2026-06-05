@@ -138,6 +138,4 @@ def test_analyze_deprecation(cross_validation_report):
     with pytest.warns(FutureWarning, match=r"data\.analyze\(\) is deprecated"):
         display = cross_validation_report.data.analyze()
 
-    from skore._sklearn._plot import TableReportDisplay
-
     assert isinstance(display, TableReportDisplay)
