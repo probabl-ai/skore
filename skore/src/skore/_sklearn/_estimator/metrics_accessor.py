@@ -321,7 +321,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         metric = self._parent._metric_registry.get(name)
         if metric is None:
-            raise KeyError()
+            raise KeyError(name)
         return metric.pretty(report=self._parent, data_source=data_source, **kwargs)
 
     def fit_time(self, *, cast: bool = True) -> float | None:
