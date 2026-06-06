@@ -90,6 +90,17 @@ def test_default_regression(comparison_cross_validation_reports_regression):
     )
 
 
+def test_aggregate_none_regression(comparison_cross_validation_reports_regression):
+    """`MetricsSummaryDisplay` works as it should with `aggregate=None` for
+    regression."""
+    report = comparison_cross_validation_reports_regression
+    result = report.metrics.summarize().frame(aggregate=None)
+
+    assert result.columns.names == ["Estimator", "Split"]
+    assert isinstance(result.columns, pd.MultiIndex)
+    assert len(result) == 7
+
+
 def test_metric(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with the `metric` parameter."""
     report = comparison_cross_validation_reports_binary_classification
