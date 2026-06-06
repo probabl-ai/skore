@@ -28,7 +28,7 @@ of all the above tools.
 building blocks and provides **structured artifacts** that store the
 information that matters for your particular use case. It minimizes unnecessary
 overhead spent mired in busy work, such as navigating through documentation, 
-by streamlining the exploration process. `skore` reduces the amount of code
+thereby streamlining the exploration process. `skore` reduces the amount of code
 required to show the information that matters, removing boilerplate code and
 making your project easier to understand and maintain. Finally, `skore` provides
 a way to store these structured artifacts in a project, allowing you to
