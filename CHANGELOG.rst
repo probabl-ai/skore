@@ -134,6 +134,10 @@ Removed
 Fixed
 -----
 
+- :meth:`ComparisonReport.metrics.summarize` with ``aggregate=None`` now returns a wide
+  DataFrame (metrics as rows, estimator × split combinations as columns) instead of a
+  long one. See :pr:`2994` by :user:`direkkakkar319-ops`.
+
 `0.17.0`_ (2026-04-30)
 ======================
 
