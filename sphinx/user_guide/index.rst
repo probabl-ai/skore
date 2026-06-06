@@ -6,18 +6,18 @@ User guide
 `skore` helps at structuring and storing what matters in your data science
 experiments.
 
-When it comes to data science, many libraries are available to help you experiment.
-`pandas` or `polars` are great tools to explore and transform your data. `skrub` is the
-one tool that brings the necessary *statefullness* to those transformations required by
-the machine learning pipeline
+When it comes to data science, many libraries are available to help you investigate
+your data. `pandas` or `polars` are great tools to explore and transform your data.
+ `skrub` is the one tool that brings the necessary *statefullness* to those
+transformations required by a machine learning pipeline
 (refer to `skrub's documentation <https://skrub-data.org/stable/documentation.html>`_).
 `scikit-learn` and other `scikit-learn` compatible libraries (e.g. `xgboost`,
-`lightgbm`) provide a set of algorithms to ingest the transformed data and create
+`lightgbm`) provide a set of algorithms to ingest transformed data and create
 predictive models, as well as tools to diagnose and evaluate them.
 
-All these libraries are broad and generic by design, in order to accommodate a wide range of
-use cases. It is your experience that is the key to success in choosing the appropriate
-building blocks from those libraries.
+All these libraries are broad and generic by design in order to accommodate a wide range 
+of use cases. It is your experience in choosing the appropriate building blocks from
+those libraries, that is the key to success.
 
 `skore` is the package that ties all these pieces together. It allows you to 
 leverage your experience via a structured and robust framework
