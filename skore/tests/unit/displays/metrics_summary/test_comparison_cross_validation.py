@@ -12,9 +12,15 @@ def test_aggregate_none(comparison_cross_validation_reports_binary_classificatio
     report = comparison_cross_validation_reports_binary_classification
     result = report.metrics.summarize().frame(aggregate=None)
 
-    assert result.columns.to_list() == ["Value"]
-    assert result.index.names == ["Metric", "Label", "Estimator", "Split"]
-    assert len(result) == 44
+    assert result.columns.to_list() == [
+        ("DummyClassifier_1", "Split #0"),
+        ("DummyClassifier_1", "Split #1"),
+        ("DummyClassifier_2", "Split #0"),
+        ("DummyClassifier_2", "Split #1"),
+    ]
+    assert result.columns.names == ["Estimator", "Split"]
+    assert len(result) == 11
+    assert isinstance(result.columns, pd.MultiIndex)
 
 
 def test_aggregate_none_flat_index(
@@ -26,8 +32,13 @@ def test_aggregate_none_flat_index(
     report = comparison_cross_validation_reports_binary_classification
     result = report.metrics.summarize().frame(aggregate=None, flat_index=True)
 
-    assert result.columns.to_list() == ["Value"]
-    assert len(result) == 44
+    assert result.columns.to_list() == [
+        "dummyclassifier_1_split_0",
+        "dummyclassifier_1_split_1",
+        "dummyclassifier_2_split_0",
+        "dummyclassifier_2_split_1",
+    ]
+    assert len(result) == 11
 
 
 def test_default(comparison_cross_validation_reports_binary_classification):
@@ -84,19 +95,19 @@ def test_metric(comparison_cross_validation_reports_binary_classification):
     report = comparison_cross_validation_reports_binary_classification
     result = report.metrics.summarize(metric=["accuracy"]).frame(aggregate=None)
 
-    assert_index_equal(result.columns, pd.Index(["Value"]))
     assert_index_equal(
-        result.index,
+        result.columns,
         pd.MultiIndex.from_tuples(
             [
-                ("Accuracy", "DummyClassifier_1", "Split #0"),
-                ("Accuracy", "DummyClassifier_1", "Split #1"),
-                ("Accuracy", "DummyClassifier_2", "Split #0"),
-                ("Accuracy", "DummyClassifier_2", "Split #1"),
+                ("DummyClassifier_1", "Split #0"),
+                ("DummyClassifier_1", "Split #1"),
+                ("DummyClassifier_2", "Split #0"),
+                ("DummyClassifier_2", "Split #1"),
             ],
-            names=("Metric", "Estimator", "Split"),
+            names=["Estimator", "Split"],
         ),
     )
+    assert len(result) == 1
 
 
 def test_favorability(comparison_cross_validation_reports_binary_classification):
@@ -135,7 +146,9 @@ def test_init_with_report_names(binary_classification_data):
     report = ComparisonReport({"model_1": report_1, "model_2": report_2})
 
     estimator_names = set(
-        report.metrics.summarize().frame(aggregate=None).reset_index()["Estimator"]
+        report.metrics.summarize()
+        .frame(aggregate=None)
+        .columns.get_level_values("Estimator")
     )
     assert estimator_names == {"model_1", "model_2"}
 
