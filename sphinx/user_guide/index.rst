@@ -21,7 +21,7 @@ those libraries that is the key to success.
 
 `skore` is the package that ties all these pieces together. It allows you to 
 leverage your experience via a structured and robust framework
-for understanding the impact of your analysis choices with seamless integration
+for understanding the impact of your analysis choices, with seamless integration
 of all the above tools.
 
 `skore` takes in the *full data science pipeline* created by assembling those
