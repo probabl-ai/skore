@@ -1,13 +1,17 @@
 [project]
 name = "skore"
-description = "the scikit-learn sidekick"
-dynamic = ["license", "readme", "version"]
-requires-python = ">=3.9"
+description = """\
+Track Your Data Science. \
+Skore's open-source Python library accelerates ML model development with automated evaluation reports, \
+smart methodological guidance, and comprehensive cross-validation analysis.\
+"""
+dynamic = ["license-files", "readme", "version"]
+requires-python = ">=3.11"
 maintainers = [{ name = "skore developers", email = "skore@signal.probabl.ai" }]
+license = "MIT"
 classifiers = [
   "Intended Audience :: Science/Research",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
   "Programming Language :: Python",
   "Topic :: Software Development",
   "Topic :: Scientific/Engineering",
@@ -17,65 +21,84 @@ classifiers = [
   "Operating System :: Unix",
   "Operating System :: MacOS",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
-  "IPython",
-  "anywidget",
-  "ipywidgets",
+  "jinja2",
   "joblib",
   "matplotlib",
   "numpy",
   "pandas",
   "plotly",
-  "rich",
+  "rich>=14.2",
   "scikit-learn",
-  "skore-local-project",
+  "seaborn",
+  "skore[local]",
+  "skrub>=0.9",
 ]
 
 [project.optional-dependencies]
+jupyter = [
+  "IPython",
+  "anywidget",
+  "ipywidgets",
+]
 test-base = [
+  "jedi",
   "pre-commit",
   "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "scikit-learn<1.7",
-  "skrub",
+  "scipy-stubs",
   "xdoctest",
+  "respx",
+  "skore[hub, jupyter, mlflow]",
 ]
-test = ["skore[test-base]", "polars"]
-test-lts-cpu = ["skore[test-base]", "polars-lts-cpu"]
+test = ["polars", "pyarrow", "skore[test-base]"]
+test-lts-cpu = ["polars-lts-cpu", "skore[test-base]"]
 sphinx-base = [
   "altair",
   "kaleido",
   "numpydoc",
-  "plotly>=5,<6",
+  "plotly>=6,<7", # plotly <6 conflicting with kaleido
   "pydata-sphinx-theme",
-  "scikit-learn<1.7",
   "seaborn",
-  "sentence-transformers<4",  # core dumped on `>=4,<4.0.2`
   "skrub",
   "sphinx-copybutton",
   "sphinx-design",
   "sphinx-gallery",
+  "sphinx-issues",
   "sphinx-tabs",
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
-  "transformers<4.51",  # core dumped on `>=4.51,<4.51.2`
+  "xgboost-cpu ; platform_system != 'Darwin'",
+  "xgboost ; platform_system == 'Darwin'",
 ]
-sphinx = ["skore[sphinx-base]", "polars"]
-sphinx-lts-cpu = ["skore[sphinx-base]", "polars-lts-cpu"]
-dev = [
-  "nbformat",
-  "ipykernel",
+sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
+sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
+dev = ["ipykernel", "nbformat"]
+local = ["diskcache", "platformdirs"]
+hub = [
+  "httpx",
+  "orjson",
+  "pydantic",
+  "rich[jupyter]>=14.2",
+  "scipy",
 ]
-hub = ["skore-hub-project"]
+mlflow = ["mlflow>=2.20.4"]
+
+[project.entry-points."skore.plugins.login"]
+hub = "skore._plugins.hub.authentication.login:login"
+
+[project.entry-points."skore.plugins.project"]
+local = "skore._plugins.local:Project"
+hub = "skore._plugins.hub.project.project:Project"
+mlflow = "skore._plugins.mlflow:Project"
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -102,11 +125,20 @@ package = ["src/skore/"]
 
 [tool.pytest.ini_options]
 addopts = [
+  "-ra",
+  "--strict-markers",
+  "--strict-config",
   "--xdoctest",
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
   "--dist=loadscope",
+  "--durations=25",
+]
+xfail_strict = true
+log_cli_level = "info"
+filterwarnings = [
+  'ignore:codecs\.open\(\) is deprecated.*:DeprecationWarning:mlflow',
 ]
 
 [tool.coverage.run]
@@ -116,7 +148,7 @@ concurrency = ["thread", "multiprocessing"]
 parallel = true
 
 [tool.coverage.report]
-omit = ["*/externals/*", "src/*", "tests/*"]
+omit = ["*/_externals/*", "src/*", "tests/*"]
 show_missing = true
 exclude_also = [
     "raise NotImplementedError",
@@ -124,40 +156,72 @@ exclude_also = [
     "if TYPE_CHECKING:",
 ]
 
-[tool.ruff]
-src = ["skore"]
-
 [tool.ruff.lint]
 select = [
-  # pycodestyle
-  "E",
-  # Pyflakes
-  "F",
-  # pyupgrade
-  "UP",
-  # flake8-bugbear
-  "B",
-  # flake8-simplify
-  "SIM",
-  # flake8-print
-  "T",
-  # isort
-  "I",
-  # pydocstyle
-  "D",
+    "B",
+    "C4",
+    "T10",
+    "T20",
+    "PYI055", "PYI059",
+    "PT003", "PT014",
+    "SIM",
+    "I",
+    "PERF",
+    "E",
+    "D",
+    "F",
+    "UP",
+    "RUF010", "RUF015",
 ]
+ignore = ["PERF203"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
 [tool.ruff.lint.per-file-ignores]
-"src/*" = ["UP007"]
 "tests/*" = ["D"]
 
 [tool.mypy]
-ignore_missing_imports = true
-exclude = ["src/skore/externals/.*", "hatch/*", "tests/*"]
+exclude = ["src/skore/_externals/", "hatch/", "tests/"]
+# strict = false
+warn_unused_configs = true
+warn_redundant_casts = true
 
 [[tool.mypy.overrides]]
-module = ["sklearn.*"]
+module = ["skore._plugins.*"]
+#
+# strict = true is incompatible with per-module configuration
+# https://github.com/python/mypy/issues/11401
+# https://mypy.readthedocs.io/en/stable/existing_code.html#introduce-stricter-options
+#
+# The following config is equivalent to `strict = true`:
+#
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+extra_checks = true
+no_implicit_reexport = true
+strict_equality = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
 ignore_missing_imports = true
+module = [
+  "diskcache.*",
+  "ipywidgets.*",
+  "jinja2.*",
+  "joblib.*",
+  "js.*",
+  "mlflow.*",
+  "pandas.*",
+  "plotly.*",
+  "pyodide.*",
+  "seaborn.*",
+  "sklearn.*",
+  "skrub.*",
+]

@@ -9,8 +9,7 @@ In this example, we tackle the California housing dataset where the goal is to p
 a regression task: predicting house prices based on features such as the number of
 bedrooms, the geolocation, etc.
 For that, we try out several families of models.
-We evaluate these methods using skore's :class:`~skore.EstimatorReport` and its
-report on metrics.
+We evaluate these methods using :func:`~skore.evaluate` and the report's metrics.
 
 .. seealso::
     As shown in :ref:`example_estimator_report`, the :class:`~skore.EstimatorReport` has
@@ -21,7 +20,7 @@ Here, we go beyond predictive performance, and inspect these models to better in
 their behavior, by using feature importance.
 Indeed, in practice, inspection can help spot some flaws in models: it is always
 recommended to look "under the hood".
-For that, we use the unified :meth:`~skore.EstimatorReport.feature_importance` accessor
+For that, we use the unified :meth:`~skore.EstimatorReport.inspection` accessor
 of the :class:`~skore.EstimatorReport`.
 For linear models, we look at their coefficients.
 For tree-based models, we inspect their mean decrease in impurity (MDI).
@@ -37,11 +36,13 @@ We can also inspect the permutation feature importance, that is model-agnostic.
 # regression task about predicting house prices:
 
 # %%
-from sklearn.datasets import fetch_california_housing
+from skrub.datasets import fetch_california_housing
 
-california_housing = fetch_california_housing(as_frame=True)
-X, y = california_housing.data, california_housing.target
-california_housing.frame.head(2)
+california_housing = fetch_california_housing()
+dataset = california_housing.california_housing
+X, y = california_housing.X, california_housing.y
+
+dataset.head(2)
 
 # %%
 # The documentation of the California housing dataset explains that the dataset
@@ -67,7 +68,7 @@ california_housing.frame.head(2)
 # %%
 from skrub import TableReport
 
-TableReport(california_housing.frame)
+TableReport(dataset)
 
 # %%
 # From the table report, we can draw some key observations:
@@ -104,10 +105,8 @@ TableReport(california_housing.frame)
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-sns.histplot(
-    data=california_housing.frame, x=california_housing.target_names[0], bins=100
-)
-plt.show()
+sns.histplot(data=dataset, x=y.name, bins=100)
+plt.show(block=True)
 
 # %%
 # There seems to be a threshold-effect for high-valued houses: all houses with a price
@@ -125,12 +124,12 @@ plt.show()
 import pandas as pd
 import plotly.express as px
 
-X_y_plot = california_housing.frame.copy()
+X_y_plot = dataset.copy()
 X_y_plot["MedInc_bins"] = pd.qcut(X_y_plot["MedInc"], q=5)
 bin_order = X_y_plot["MedInc_bins"].cat.categories.sort_values()
 fig = px.histogram(
     X_y_plot,
-    x=california_housing.target_names[0],
+    x=y.name,
     color="MedInc_bins",
     category_orders={"MedInc_bins": bin_order},
 )
@@ -165,26 +164,13 @@ def plot_map(df, color_feature):
 
 
 # %%
-fig = plot_map(california_housing.frame, california_housing.target_names[0])
+fig = plot_map(dataset, y.name)
 fig
 
 # %%
 # As could be expected, the price of the houses near the ocean is higher, especially
 # around big cities like Los Angeles, San Francisco, and San Jose.
 # Taking into account the coordinates in our modelling will be very important.
-
-# %%
-# Splitting the data
-# ------------------
-
-# %%
-# Just before diving into our first model, let us split our data into a train and a
-# test split:
-
-# %%
-from sklearn.model_selection import train_test_split
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 # %%
 # Linear models: coefficients
@@ -201,23 +187,19 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 # %%
 # Before trying any complex feature engineering, we start with a simple pipeline to
 # have a baseline of what a "good score" is (remember that all scores are relative).
-# Here, we use a Ridge regression along with some scaling and evaluate it using
-# :meth:`skore.EstimatorReport.metrics`:
+# We use a Ridge regression with feature scaling; and evaluate its performance using
+# :func:`~skore.evaluate` with ``splitter=0.2``. This will evaluate the model on 20% of
+# the data after training on the remaining 80%, and report the results in an
+# :class:`~skore.EstimatorReport`.
 
 # %%
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from skore import EstimatorReport
+from skore import evaluate
 
-ridge_report = EstimatorReport(
-    make_pipeline(StandardScaler(), Ridge()),
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-)
-ridge_report.metrics.summarize()
+ridge_report = evaluate(make_pipeline(StandardScaler(), Ridge()), X, y, splitter=0.2)
+ridge_report.metrics.summarize().frame()
 
 # %%
 # From the report metrics, let us first explain the scores we have access to:
@@ -252,7 +234,7 @@ ridge_report.metrics.summarize()
 # Let us plot the prediction error:
 
 # %%
-ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
+_ = ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 
 # %%
 # We can observe that the model has issues predicting large house prices, due to the
@@ -260,10 +242,10 @@ ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 
 # %%
 # Now, to inspect our model, let us use the
-# :meth:`skore.EstimatorReport.feature_importance` accessor:
+# :meth:`skore.EstimatorReport.inspection` accessor:
 
 # %%
-ridge_report.feature_importance.coefficients()
+ridge_report.inspection.coefficients().frame()
 
 # %%
 # .. note::
@@ -276,16 +258,11 @@ ridge_report.feature_importance.coefficients()
 # We can plot this pandas datafame:
 
 # %%
-ridge_report.feature_importance.coefficients().plot.barh(
-    title="Model weights",
-    xlabel="Coefficient",
-    ylabel="Feature",
-)
-plt.tight_layout()
+_ = ridge_report.inspection.coefficients().plot()
 
 # %%
 # .. note::
-#   More generally, :meth:`skore.EstimatorReport.feature_importance.coefficients` can
+#   More generally, :meth:`skore.EstimatorReport.inspection.coefficients` can
 #   help you inspect the coefficients of all linear models.
 #   We consider a linear model as defined in
 #   `scikit-learn's documentation
@@ -326,18 +303,21 @@ feature_std = ridge_report.estimator_[0].scale_
 
 
 def unscale_coefficients(df, feature_mean, feature_std):
+    df = df.set_index("feature")
     mask_intercept_column = df.index == "Intercept"
-    df.loc["Intercept"] = df.loc["Intercept"] - np.sum(
-        df.loc[~mask_intercept_column, "Coefficient"] * feature_mean / feature_std
+    # rescale the intercept
+    df.loc[mask_intercept_column] = df.loc[mask_intercept_column] - np.sum(
+        df.loc[~mask_intercept_column, "coefficient"] * feature_mean / feature_std
     )
-    df.loc[~mask_intercept_column, "Coefficient"] = (
-        df.loc[~mask_intercept_column, "Coefficient"] / feature_std
+    # rescale the other coefficients
+    df.loc[~mask_intercept_column, "coefficient"] = (
+        df.loc[~mask_intercept_column, "coefficient"] / feature_std
     )
-    return df
+    return df.reset_index()
 
 
 df_ridge_report_coef_unscaled = unscale_coefficients(
-    ridge_report.feature_importance.coefficients(), feature_mean, feature_std
+    ridge_report.inspection.coefficients().frame(), feature_mean, feature_std
 )
 df_ridge_report_coef_unscaled
 
@@ -404,31 +384,25 @@ engineered_ridge
 
 # %%
 # Now, let us compute the metrics and compare it to our previous model using
-# a :class:`skore.ComparisonReport`:
+# the :func:`~skore.compare` function that returns a :class:`~skore.ComparisonReport`:
 
 # %%
-from skore import ComparisonReport
+from skore import compare
 
-engineered_ridge_report = EstimatorReport(
-    engineered_ridge,
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-)
+engineered_ridge_report = evaluate(engineered_ridge, X, y, splitter=0.2)
 reports_to_compare = {
     "Vanilla Ridge": ridge_report,
     "Ridge w/ feature engineering": engineered_ridge_report,
 }
-comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.summarize()
+comparator = compare(reports_to_compare)
+comparator.metrics.summarize().frame()
 
 # %%
 # We get a much better score!
 # Let us plot the prediction error:
 
 # %%
-engineered_ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
+_ = engineered_ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicted")
 
 # %%
 # About the clipping issue, compared to the prediction error of our previous model
@@ -441,7 +415,8 @@ engineered_ridge_report.metrics.prediction_error().plot(kind="actual_vs_predicte
 # introduced a *lot* of features:
 
 # %%
-print("Initial number of features:", X_train.shape[1])
+n_features_initial = ridge_report.X_train.shape[1]
+print("Initial number of features:", n_features_initial)
 
 # We slice the scikit-learn pipeline to extract the predictor, using -1 to access
 # the last step:
@@ -452,14 +427,26 @@ print("Number of features after feature engineering:", n_features_engineered)
 # Let us display the 15 largest absolute coefficients:
 
 # %%
-engineered_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=True
-).tail(15).plot.barh(
+engineered_ridge_report_coefficients = (
+    engineered_ridge_report.inspection.coefficients()
+    .frame()
+    .set_index("feature")
+    .sort_values(by="coefficient", key=abs, ascending=True)
+    .tail(15)
+)
+
+engineered_ridge_report_coefficients.index = (
+    engineered_ridge_report_coefficients.index.str.replace("remainder__", "")
+)
+engineered_ridge_report_coefficients.index = (
+    engineered_ridge_report_coefficients.index.str.replace("kmeans__", "geospatial__")
+)
+
+engineered_ridge_report_coefficients.plot.barh(
     title="Model weights",
     xlabel="Coefficient",
     ylabel="Feature",
 )
-plt.tight_layout()
 
 # %%
 # We can observe that the most important features are interactions between features,
@@ -473,12 +460,12 @@ plt.tight_layout()
 # Let us visualize how ``AveOccup`` interacts with ``MedHouseVal``:
 
 # %%
-X_y_plot = california_housing.frame.copy()
+X_y_plot = dataset.copy()
 X_y_plot["AveOccup"] = pd.qcut(X_y_plot["AveOccup"], q=5)
 bin_order = X_y_plot["AveOccup"].cat.categories.sort_values()
 fig = px.histogram(
     X_y_plot,
-    x=california_housing.target_names[0],
+    x=y.name,
     color="AveOccup",
     category_orders={"AveOccup": bin_order},
 )
@@ -495,8 +482,8 @@ kmeans = col_transformer.named_transformers_["kmeans"]
 clustering_labels = kmeans.labels_
 
 # adding the cluster labels to our dataframe
-X_train_plot = X_train.copy()
-X_train_plot.insert(X_train.shape[1], "clustering_labels", clustering_labels)
+X_train_plot = ridge_report.X_train.copy()
+X_train_plot.insert(n_features_initial, "clustering_labels", clustering_labels)
 
 # plotting the map
 plot_map(X_train_plot, "clustering_labels")
@@ -562,9 +549,9 @@ X_y_plot.sample(10)
 # We visualize the distributions of the prediction errors on both train and test sets:
 
 # %%
-sns.histplot(data=X_y_plot, x="squared_error", hue="split", bins=30)
+sns.histplot(data=X_y_plot, x="squared_error", hue="split", multiple="dodge", bins=30)
 plt.title("Train and test sets")
-plt.show()
+plt.show(block=True)
 
 # %%
 # Now, in order to assess which features might drive the prediction error, let us look
@@ -614,7 +601,7 @@ fig.add_shape(
     y0=X_y_plot["y_pred"].min(),
     x1=X_y_plot["y_pred"].max(),
     y1=X_y_plot["y_pred"].max(),
-    line=dict(color="black", width=2),
+    line={"color": "black", "width": 2},
 )
 fig
 
@@ -658,22 +645,16 @@ selectkbest_ridge = make_pipeline(
 # Let us get the metrics for our model and compare it with our previous iterations:
 
 # %%
-selectk_ridge_report = EstimatorReport(
-    selectkbest_ridge,
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-)
+selectk_ridge_report = evaluate(selectkbest_ridge, X, y, splitter=0.2)
 reports_to_compare["Ridge w/ feature engineering and selection"] = selectk_ridge_report
-comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.summarize()
+comparator = compare(reports_to_compare)
+comparator.metrics.summarize().frame()
 
 # %%
 # We get a good score and much less features:
 
 # %%
-print("Initial number of features:", X_train.shape[1])
+print("Initial number of features:", n_features_initial)
 print("Number of features after feature engineering:", n_features_engineered)
 
 n_features_selectk = selectk_ridge_report.estimator_[-1].n_features_in_
@@ -700,14 +681,14 @@ print(selectk_features)
 # And here is the feature importance based on our model (sorted by absolute values):
 
 # %%
-selectk_ridge_report.feature_importance.coefficients().sort_values(
-    by="Coefficient", key=abs, ascending=True
-).tail(15).plot.barh(
-    title="Model weights",
-    xlabel="Coefficient",
-    ylabel="Feature",
+(
+    selectk_ridge_report.inspection.coefficients()
+    .frame()
+    .set_index("feature")
+    .sort_values(by="coefficient", key=abs, ascending=True)
+    .tail(15)
+    .plot.barh(title="Model weights", xlabel="Coefficient", ylabel="Feature")
 )
-plt.tight_layout()
 
 # %%
 # Tree-based models: mean decrease in impurity (MDI)
@@ -761,21 +742,15 @@ plt.tight_layout()
 # %%
 from sklearn.tree import DecisionTreeRegressor
 
-tree_report = EstimatorReport(
-    DecisionTreeRegressor(random_state=0),
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
-)
+tree_report = evaluate(DecisionTreeRegressor(random_state=0), X, y, splitter=0.2)
 reports_to_compare["Decision tree"] = tree_report
 
 # %%
 # We compare its performance with the models in our benchmark:
 
 # %%
-comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.summarize()
+comparator = compare(reports_to_compare)
+comparator.metrics.summarize().frame()
 
 # %%
 # We note that the performance is quite poor, so the derived feature importance is to
@@ -789,7 +764,7 @@ tree_report.help()
 
 # %%
 # We have a
-# :meth:`~skore.EstimatorReport.feature_importance.mean_decrease_impurity`
+# :meth:`~skore.EstimatorReport.inspection.impurity_decrease`
 # accessor.
 
 # %%
@@ -805,7 +780,6 @@ plot_tree(
     feature_names=tree_report.estimator_.feature_names_in_,
     max_depth=2,
 )
-plt.tight_layout()
 
 # %%
 # This tree explains how each sample is going to be predicted by our tree.
@@ -851,12 +825,7 @@ plt.tight_layout()
 # Now, let us look at the feature importance based on the MDI:
 
 # %%
-tree_report.feature_importance.mean_decrease_impurity().plot.barh(
-    title=f"Feature importance of {tree_report.estimator_name_}",
-    xlabel="MDI",
-    ylabel="Feature",
-)
-plt.tight_layout()
+_ = tree_report.inspection.impurity_decrease().plot()
 
 # %%
 # For a decision tree, for each feature, the MDI is averaged across all splits in the
@@ -882,17 +851,13 @@ plt.tight_layout()
 from sklearn.ensemble import RandomForestRegressor
 
 n_estimators = 100
-rf_report = EstimatorReport(
-    RandomForestRegressor(random_state=0, n_estimators=n_estimators),
-    X_train=X_train,
-    X_test=X_test,
-    y_train=y_train,
-    y_test=y_test,
+rf_report = evaluate(
+    RandomForestRegressor(random_state=0, n_estimators=n_estimators), X, y, splitter=0.2
 )
 reports_to_compare["Random forest"] = rf_report
 
-comparator = ComparisonReport(reports=reports_to_compare)
-comparator.metrics.summarize()
+comparator = compare(reports_to_compare)
+comparator.metrics.summarize().frame()
 
 # %%
 # Without any feature engineering and any grid search,
@@ -914,12 +879,7 @@ print(f"Number of trees in the forest: {n_estimators}")
 # Let us look into the MDI of our random forest:
 
 # %%
-rf_report.feature_importance.mean_decrease_impurity().plot.barh(
-    title=f"Feature importance of {rf_report.estimator_name_}",
-    xlabel="MDI",
-    ylabel="Feature",
-)
-plt.tight_layout()
+_ = rf_report.inspection.impurity_decrease().plot()
 
 # %%
 # In a random forest, the MDI is computed by averaging the MDI of each feature across
@@ -938,7 +898,7 @@ plt.tight_layout()
 # models and the MDI that is specific to tree-based models.
 # In this section, we look into the
 # `permutation importance <https://scikit-learn.org/stable/modules/permutation_importance.html>`_
-# which is model agnostic, meaning that it can be applied to any fitted estimator.
+# which is model-agnostic, meaning that it can be applied to any fitted estimator.
 # In particular, it works for linear models and tree-based ones.
 
 # %%
@@ -974,69 +934,54 @@ plt.tight_layout()
 ridge_report.help()
 
 # %%
-# We have a :meth:`~skore.EstimatorReport.feature_importance.permutation`
+# We have a :meth:`~skore.EstimatorReport.inspection.permutation_importance`
 # accessor:
 
 # %%
-ridge_report.feature_importance.permutation(seed=0)
+ridge_report.inspection.permutation_importance(seed=0).frame()
 
 # %%
-# The permutation importance is often calculated several times, each time
-# with different permutations of the feature.
-# Hence, we can have measure its variance (or standard deviation).
+# Since the permutation importance involves permuting values of a feature at random,
+# by default it is computed several times, each time with different permutations of
+# the feature. For this reason, if `seed` is not passed, skore does not cache the
+# permutation importance results.
+
+# %%
 # Now, we plot the permutation feature importance on the train and test sets using boxplots:
 
 
-# %%
-
-
-def plot_permutation_train_test(est_report):
+def plot_permutation_train_test(importances):
     _, ax = plt.subplots(figsize=(8, 6))
 
-    train_color = "blue"
-    test_color = "orange"
-
-    est_report.feature_importance.permutation(data_source="train", seed=0).T.boxplot(
+    sns.boxplot(
+        data=importances,
+        x="value",
+        y="feature",
+        hue="data_source",
         ax=ax,
-        vert=False,
-        widths=0.35,
-        patch_artist=True,
-        boxprops=dict(facecolor=train_color, alpha=0.7),
-        medianprops=dict(color="black"),
-        positions=[x + 0.4 for x in range(len(est_report.X_train.columns))],
+        whis=10_000,
     )
-    est_report.feature_importance.permutation(data_source="test", seed=0).T.boxplot(
-        ax=ax,
-        vert=False,
-        widths=0.35,
-        patch_artist=True,
-        boxprops=dict(facecolor=test_color, alpha=0.7),
-        medianprops=dict(color="black"),
-        positions=range(len(est_report.X_test.columns)),
-    )
-
-    ax.legend(
-        handles=[
-            plt.Line2D([0], [0], color=train_color, lw=5, label="Train"),
-            plt.Line2D([0], [0], color=test_color, lw=5, label="Test"),
-        ],
-        loc="best",
-        title="Dataset",
-    )
-
-    ax.set_title(
-        f"Permutation feature importance of {est_report.estimator_name_} (Train vs Test)"
-    )
-    ax.set_xlabel("$R^2$")
-    ax.set_yticks([x + 0.2 for x in range(len(est_report.X_train.columns))])
-    ax.set_yticklabels(est_report.X_train.columns)
-
-    plt.tight_layout()
-    plt.show()
+    ax.set_xlabel("Decrease of $R^2$ score")
+    ax.set_title("Permutation feature importance (Train vs Test)")
+    plt.show(block=True)
 
 
 # %%
-plot_permutation_train_test(ridge_report)
+
+
+def compute_permutation_importances(report, at_step=0):
+    train_importance = report.inspection.permutation_importance(
+        data_source="train", seed=0, at_step=at_step
+    ).frame(aggregate=None)
+    test_importance = report.inspection.permutation_importance(
+        data_source="test", seed=0, at_step=at_step
+    ).frame(aggregate=None)
+
+    return pd.concat([train_importance, test_importance], axis=0)
+
+
+# %%
+plot_permutation_train_test(compute_permutation_importances(ridge_report))
 
 # %%
 # The standard deviation seems quite low.
@@ -1052,19 +997,55 @@ plot_permutation_train_test(ridge_report)
 # pipeline (with regards to the original features):
 
 # %%
-plot_permutation_train_test(selectk_ridge_report)
+plot_permutation_train_test(compute_permutation_importances(selectk_ridge_report))
+
+# %%
+# Since this estimator involves complex feature engineering, it is interesting to look
+# at the impact of the *engineered* features rather than the original input features.
+# For instance, we can check whether features with a low importance rating have indeed
+# been selected out of the engineered features.
+
+# %%
+importances = compute_permutation_importances(selectk_ridge_report, at_step=-1)
+
+# Rename some features for clarity
+importances["feature"] = (
+    importances["feature"]
+    .str.replace("remainder__", "")
+    .str.replace("kmeans__", "geospatial__")
+)
+
+
+# Take only the 15 most important train features
+best_15_features = (
+    importances.set_index("data_source")
+    .loc["test", :]
+    .drop(columns=["metric", "repetition"])
+    .groupby("feature")
+    .aggregate("mean")
+    .sort_values(by="value", key=abs)
+    .tail(15)
+    .index
+)
+importances = importances.query("feature in @best_15_features")
+
+plot_permutation_train_test(importances)
 
 # %%
 # Hence, contrary to coefficients, although we have created many features in our
 # preprocessing, the interpretability is easier.
 # We notice that, due to our preprocessing using a clustering on the geospatial data,
 # these features are of great importance to our model.
+#
+# Also, Average Bedrooms and Average Rooms appear often in the plot, whereas they were
+# not considered as important when looking at the coefficients. It means that once
+# combined with other features, they become more relevant.
 
 # %%
 # For our decision tree, here is our permutation importance on the train and test sets:
 
 # %%
-plot_permutation_train_test(tree_report)
+plot_permutation_train_test(compute_permutation_importances(tree_report))
 
 # %%
 # The result of the inspection is the same as with the MDI:
@@ -1077,7 +1058,7 @@ plot_permutation_train_test(tree_report)
 #
 # In this example, we used the California housing dataset to predict house prices with
 # skore's :class:`~skore.EstimatorReport`.
-# By employing the :class:`~skore.EstimatorReport.feature_importance` accessor,
+# By employing the :class:`~skore.EstimatorReport.inspection` accessor,
 # we gained valuable insights into model behavior beyond mere predictive performance.
 # For linear models like Ridge regression, we inspected coefficients to understand
 # feature contributions, revealing the prominence of ``MedInc``, ``Latitude``,

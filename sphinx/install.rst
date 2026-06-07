@@ -10,7 +10,7 @@ Install
     .. tab-item:: Using pip
 
         We recommend using a `virtual environment (venv) <https://docs.python.org/3/tutorial/venv.html>`_.
-        You need ``python>=3.9``.
+        You need ``python>=3.10``.
 
         Then, if you just want to use Skore Lib locally, run:
 
@@ -24,6 +24,12 @@ Install
         .. code-block:: bash
 
             pip install -U skore[hub]
+
+        *Alternatively*, if you wish to persist projects in MLflow, run:
+
+        .. code-block:: bash
+
+            pip install -U skore[mlflow]
 
         You can check Skore Lib's latest version on `PyPI <https://pypi.org/project/skore/>`_.
 

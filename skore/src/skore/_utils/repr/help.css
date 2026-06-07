@@ -1,0 +1,236 @@
+.tree {
+    font-family: monospace;
+    margin-left: 0;
+}
+
+.node {
+    margin: 0;
+    padding: 0;
+}
+
+.label {
+    color: var(--color-text);
+    font-weight: bold;
+}
+
+.root-content {
+    margin-left: 16px;
+    position: relative;
+}
+
+.root-content > .node,
+.root-content > .method {
+    border-left: 2px solid var(--color-text);
+    padding-left: 16px;
+    position: relative;
+    margin-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.root-content > .node:not(:first-child),
+.root-content > .method:not(:first-child) {
+    border-top: 2px solid transparent;
+    margin-top: -2px;
+    padding-top: 2px;
+}
+
+.root-content > .node:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.root-content > .node:last-child::after,
+.root-content > .method:last-child::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    height: calc(1.5em / 2); /* Half of line-height */
+    width: 2px;
+    background-color: var(--color-text);
+}
+
+.root-content > .node:last-child,
+.root-content > .method:last-child {
+    border-left-color: transparent;
+}
+
+.root-content > .node::before,
+.root-content > .method::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: calc(1.5em / 2); /* Half of line-height */
+    width: 12px;
+    height: 2px;
+    background-color: var(--color-text);
+}
+
+.toggle {
+    display: none;
+}
+
+.branch-label {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    color: var(--color-blue);
+    font-weight: bold;
+    position: relative;
+    margin: 0;
+    padding: 0;
+    line-height: 1.5em;
+}
+
+.branch-label:has(.name):hover {
+    background-color: var(--color-orange-hover);
+}
+
+.branch-label:has(.section-name):hover {
+    background-color: var(--color-blue-hover);
+}
+
+.name {
+    color: var(--color-orange);
+}
+
+.section-name {
+    color: var(--color-blue);
+}
+
+.branch-content {
+    margin-left: 16px;
+    position: relative;
+    padding-left: 0;
+    display: none;
+}
+
+.branch-label:has(.toggle:checked) + .branch-content {
+    display: block;
+}
+
+/* Vertical lines for items inside branch content */
+.branch-content > .node,
+.branch-content > .method {
+    border-left: 2px solid var(--color-text);
+    padding-left: 16px;
+    position: relative;
+    margin-left: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* Extend border to connect with previous element */
+.branch-content > .node:not(:first-child),
+.branch-content > .method:not(:first-child) {
+    border-top: 2px solid transparent;
+    margin-top: -2px;
+    padding-top: 2px;
+}
+
+/* Hide vertical line on last item below middle */
+.branch-content > .node:last-child,
+.branch-content > .method:last-child {
+    border-left-color: transparent;
+}
+
+/* Add half-height vertical line for last items */
+.branch-content > .node:last-child::after,
+.branch-content > .method:last-child::after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: 0;
+    height: calc(1.5em / 2); /* Half of line-height */
+    width: 2px;
+    background-color: var(--color-text);
+}
+
+.branch-content > .node::before,
+.branch-content > .method::before {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: calc(1.5em / 2); /* Half of line-height */
+    width: 12px;
+    height: 2px;
+    background-color: var(--color-text);
+}
+
+.method {
+    color: var(--color-text);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5em;
+}
+
+.method-name {
+    color: var(--color-text);
+}
+
+
+.method-tooltip {
+    position: relative;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-underline-offset: 0.3em;
+    cursor: help;
+    color: inherit;
+    text-decoration-color: inherit;
+}
+
+.method-tooltip:hover {
+    color: inherit;
+}
+
+.method-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    text-align: left;
+    border-radius: 4px;
+    border: 1px solid var(--color-orange);
+    padding: 8px 10px;
+    position: absolute;
+    z-index: 1000;
+    top: 50%;
+    left: 100%;
+    transform: translateY(-50%);
+    margin-left: 8px;
+    white-space: normal;
+    width: 250px;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-text) 14%, transparent);
+    transition: opacity 0.2s, visibility 0.2s;
+}
+
+.arrow {
+    vertical-align: text-top;
+}
+
+.tooltip-text::before {
+    content: "";
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: var(--color-orange);
+}
+
+.legend {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid var(--color-text);
+    font-size: 12px;
+    color: var(--color-text);
+}

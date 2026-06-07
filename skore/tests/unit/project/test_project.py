@@ -1,18 +1,16 @@
-from sys import version_info
+from importlib.metadata import EntryPoint, EntryPoints
+from re import escape
 from unittest.mock import Mock
+from uuid import uuid4
 
 from pandas import DataFrame, MultiIndex, Series
-from pytest import fixture, raises
-from sklearn.datasets import make_regression
-from sklearn.linear_model import LinearRegression
+from pytest import fixture, mark, param, raises
+from sklearn.datasets import make_classification, make_regression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
-from skore import EstimatorReport, Project
-from skore.project.summary import Summary
 
-if version_info < (3, 10):
-    from importlib_metadata import EntryPoint, EntryPoints
-else:
-    from importlib.metadata import EntryPoint, EntryPoints
+from skore import CrossValidationReport, EstimatorReport, Project
+from skore._project._summary import Summary
 
 
 class FakeEntryPoint(EntryPoint):
@@ -22,18 +20,34 @@ class FakeEntryPoint(EntryPoint):
 
 @fixture
 def FakeLocalProject():
-    return Mock()
+    project = Mock()
+    project.summarize = Mock(return_value=[])
+    project_factory = Mock(return_value=project)
+    return project_factory
 
 
 @fixture
 def FakeHubProject():
-    return Mock()
+    project = Mock()
+    project.summarize = Mock(return_value=[])
+    project_factory = Mock(return_value=project)
+    return project_factory
+
+
+@fixture
+def FakeMlflowProject():
+    project = Mock()
+    project.summarize = Mock(return_value=[])
+    project_factory = Mock(return_value=project)
+    return project_factory
 
 
 @fixture(autouse=True)
-def monkeypatch_entrypoints(monkeypatch, request, FakeLocalProject, FakeHubProject):
+def monkeypatch_entrypoints(
+    monkeypatch, FakeLocalProject, FakeHubProject, FakeMlflowProject
+):
     monkeypatch.setattr(
-        "skore.project.project.entry_points",
+        "skore._project.plugin.entry_points",
         lambda **kwargs: EntryPoints(
             [
                 FakeEntryPoint(
@@ -46,13 +60,18 @@ def monkeypatch_entrypoints(monkeypatch, request, FakeLocalProject, FakeHubProje
                     value=FakeHubProject,
                     group="skore.plugins.project",
                 ),
+                FakeEntryPoint(
+                    name="mlflow",
+                    value=FakeMlflowProject,
+                    group="skore.plugins.project",
+                ),
             ]
         ),
     )
 
 
 @fixture(scope="module")
-def regression():
+def regression() -> EstimatorReport:
     X, y = make_regression(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=42
@@ -67,9 +86,30 @@ def regression():
     )
 
 
+@fixture(scope="module")
+def classification() -> EstimatorReport:
+    X, y = make_classification(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+
+    return EstimatorReport(
+        LogisticRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+
+@fixture(scope="module")
+def cv_regression() -> CrossValidationReport:
+    return CrossValidationReport(LinearRegression(), *make_regression(random_state=42))
+
+
 class TestProject:
     def test_init_local(self, FakeLocalProject):
-        project = Project("<name>", workspace="<workspace>")
+        project = Project(mode="local", name="<name>", workspace="<workspace>")
 
         assert isinstance(project, Project)
         assert project._Project__mode == "local"
@@ -81,93 +121,178 @@ class TestProject:
             "workspace": "<workspace>",
         }
 
-    def test_init_hub(self, FakeHubProject):
-        project = Project("hub://<tenant>/<name>")
+    def test_init_local_missing_optional_dependency(self, monkeypatch):
+        fake_library_name = uuid4().hex
+
+        def fake_requires(name):
+            assert name == "skore"
+            return [f'{fake_library_name} ; extra == "local"']
+
+        monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
+
+        with raises(
+            ImportError,
+            match=escape(
+                f"Missing library: `{fake_library_name}`. "
+                "You can fix this error by installing `skore[local]`."
+            ),
+        ):
+            Project(mode="local", name="<name>")
+
+    def test_init_local_missing_optional_dependency_without_plugin(self, monkeypatch):
+        """Non-regression test for missing extras before plugin discovery."""
+        fake_library_name = uuid4().hex
+
+        def fake_requires(name):
+            assert name == "skore"
+            return [f'{fake_library_name} ; extra == "local"']
+
+        monkeypatch.undo()
+        monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
+        monkeypatch.setattr(
+            "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
+        )
+
+        with raises(
+            ImportError,
+            match=escape(
+                f"Missing library: `{fake_library_name}`. "
+                "You can fix this error by installing `skore[local]`."
+            ),
+        ):
+            Project(mode="local", name="<name>")
+
+    def test_init_hub(self, FakeHubProject, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+
+        project = Project(mode="hub", name="<workspace>/<name>")
 
         assert isinstance(project, Project)
         assert project._Project__mode == "hub"
-        assert project._Project__name == "<name>"
+        assert project._Project__name == "<workspace>/<name>"
         assert FakeHubProject.called
         assert not FakeHubProject.call_args.args
         assert FakeHubProject.call_args.kwargs == {
-            "tenant": "<tenant>",
+            "workspace": "<workspace>",
             "name": "<name>",
         }
 
-    def test_init_exception_no_plugin(self, monkeypatch, tmp_path):
-        monkeypatch.undo()
-        monkeypatch.setattr(
-            "skore.project.project.entry_points", lambda **kwargs: EntryPoints()
+    def test_init_mlflow(self, FakeMlflowProject, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+
+        project = Project(mode="mlflow", name="<name>", tracking_uri="<uri>")
+
+        assert isinstance(project, Project)
+        assert project._Project__mode == "mlflow"
+        assert project._Project__name == "<name>"
+        assert FakeMlflowProject.called
+        assert not FakeMlflowProject.call_args.args
+        assert FakeMlflowProject.call_args.kwargs == {
+            "name": "<name>",
+            "tracking_uri": "<uri>",
+        }
+
+    def test_init_exception_wrong_ml_task(self, monkeypatch):
+        """If the underlying Project implementation contains reports with
+        different ML tasks, the top-level `skore.Project` will raise."""
+
+        project = Mock()
+        project.summarize = Mock(
+            return_value=[
+                {"ml_task": "binary-classification"},
+                {"ml_task": "regression"},
+            ]
         )
+        project_factory = Mock(return_value=project)
 
-        with raises(SystemError, match="No project plugin found"):
-            Project("<project>")
-
-    def test_init_exception_unknown_plugin(self, monkeypatch, tmp_path):
-        monkeypatch.undo()
         monkeypatch.setattr(
-            "skore.project.project.entry_points",
+            "skore._project.plugin.entry_points",
             lambda **kwargs: EntryPoints(
                 [
-                    EntryPoint(
-                        "hub",
-                        f"{__file__}.FakeHubProject",
-                        "skore.plugins.project",
-                    )
+                    FakeEntryPoint(
+                        name="local",
+                        value=project_factory,
+                        group="skore.plugins.project",
+                    ),
                 ]
             ),
         )
 
-        with raises(
-            ValueError,
-            match=(
-                "Unknown mode `local`. "
-                "Please install the `skore-local-project` python package."
-            ),
-        ):
-            Project("<name>")
+        err_msg = (
+            "Expected every report in the Project to have the same ML task. "
+            "Got ML tasks "
+        )
+        with raises(RuntimeError, match=err_msg):
+            Project(mode="local", name="<name>", workspace="<workspace>")
 
-    def test_mode(self):
-        assert Project("<name>").mode == "local"
-        assert Project("hub://<tenant>/<name>").mode == "hub"
+    def test_mode(self, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
-    def test_name(self):
-        assert Project("<name>").name == "<name>"
-        assert Project("hub://<tenant>/<name>").name == "<name>"
+        assert Project(mode="local", name="name").mode == "local"
+        assert Project(mode="hub", name="workspace/name").mode == "hub"
+        assert Project(mode="mlflow", name="name").mode == "mlflow"
 
-    def test_put(self, regression, FakeLocalProject):
-        project = Project("<name>")
+    def test_name(self, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
-        project.put("<key>", regression)
+        assert Project(mode="local", name="name").name == "name"
+        assert Project(mode="hub", name="workspace/name").name == "workspace/name"
+        assert Project(mode="mlflow", name="name").name == "name"
+
+    @mark.parametrize(
+        "report",
+        (
+            param("regression", id="EstimatorReport - regression"),
+            param("cv_regression", id="CrossValidationReport - regression"),
+        ),
+    )
+    def test_put(self, report, FakeLocalProject, request):
+        report = request.getfixturevalue(report)
+        project = Project(mode="local", name="<name>")
+
+        project.put("<key>", report)
 
         assert FakeLocalProject.called
         assert project._Project__project.put.called
         assert not project._Project__project.put.call_args.args
         assert project._Project__project.put.call_args.kwargs == {
             "key": "<key>",
-            "report": regression,
+            "report": report,
         }
 
     def test_put_exception(self):
         with raises(TypeError, match="Key must be a string"):
-            Project("<name>").put(None, "<value>")
+            Project(mode="local", name="<name>").put(None, "<value>")
 
-        with raises(TypeError, match="Report must be a `skore.EstimatorReport`"):
-            Project("<name>").put("<key>", "<value>")
+        with raises(TypeError, match="Report must be `EstimatorReport` or"):
+            Project(mode="local", name="<name>").put("<key>", "<value>")
+
+    def test_put_exception_wrong_ml_task(self, regression, classification):
+        project = Project(mode="local", name="<name>", workspace="<workspace>")
+        project.put("classification", classification)
+        assert project.ml_task == "binary-classification"
+
+        err_msg = (
+            "At this time, a Project can only contain reports associated with a single "
+            "ML task. Project '<name>' expected ML task 'binary-classification'; got a "
+            "report associated with ML task 'regression'."
+        )
+        with raises(ValueError, match=err_msg):
+            project.put("regression", regression)
 
     def test_get(self, FakeLocalProject):
-        project = Project("<name>")
+        project = Project(mode="local", name="<name>")
 
         project.get("<id>")
 
         assert FakeLocalProject.called
-        assert project._Project__project.reports.get.called
-        assert project._Project__project.reports.get.call_args.args == ("<id>",)
-        assert not project._Project__project.reports.get.call_args.kwargs
+        assert project._Project__project.get.called
+        assert project._Project__project.get.call_args.args == ("<id>",)
+        assert not project._Project__project.get.call_args.kwargs
 
     def test_summarize(self):
-        project = Project("<name>")
-        project._Project__project.reports.metadata.return_value = [
+        project = Project(mode="local", name="<name>")
+        project._Project__project.summarize.return_value = [
             {
                 "learner": "<learner>",
                 "accuracy": 1.0,
@@ -177,7 +302,7 @@ class TestProject:
 
         summary = project.summarize()
 
-        assert project._Project__project.reports.metadata.called
+        assert project._Project__project.summarize.called
         assert isinstance(summary, DataFrame)
         assert isinstance(summary, Summary)
         assert DataFrame.equals(
@@ -195,12 +320,48 @@ class TestProject:
             ),
         )
 
+    def test_summarize_with_skore_local_project(self, monkeypatch, tmpdir):
+        """Smoke test to check that ModelExplorerWidget can be shown."""
+        from IPython.core.interactiveshell import InteractiveShell
+
+        snippet = f"""
+        from pathlib import Path
+
+        from sklearn.datasets import make_regression
+        from sklearn.linear_model import LinearRegression
+        from sklearn.model_selection import train_test_split
+        from skore import EstimatorReport, Project
+
+        X, y = make_regression(random_state=42)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+
+        regression = EstimatorReport(
+            LinearRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+
+        project = Project(mode="local", name="<project>", workspace=Path(r"{tmpdir}"))
+        project.put("<report>", regression)
+        project.summarize()
+        """
+
+        monkeypatch.undo()
+
+        shell = InteractiveShell.instance()
+        execution_result = shell.run_cell(snippet, silent=True)
+        execution_result.raise_error()
+
     def test_repr(self):
-        project = Project("<name>")
+        project = Project(mode="local", name="<name>")
         assert repr(project) == repr(project._Project__project)
 
     def test_delete_local(self, FakeLocalProject):
-        Project.delete("<name>", workspace="<workspace>")
+        Project.delete(mode="local", name="<name>", workspace="<workspace>")
 
         assert not FakeLocalProject.called
         assert FakeLocalProject.delete.called
@@ -211,12 +372,40 @@ class TestProject:
         }
 
     def test_delete_hub(self, FakeHubProject):
-        Project.delete("hub://<tenant>/<name>")
+        Project.delete(mode="hub", name="<workspace>/<name>")
 
         assert not FakeHubProject.called
         assert FakeHubProject.delete.called
         assert not FakeHubProject.delete.call_args.args
         assert FakeHubProject.delete.call_args.kwargs == {
-            "tenant": "<tenant>",
+            "workspace": "<workspace>",
             "name": "<name>",
+        }
+
+    def test_delete_mlflow(self, FakeMlflowProject):
+        Project.delete(mode="mlflow", name="<name>", tracking_uri="<uri>")
+
+        assert not FakeMlflowProject.called
+        assert FakeMlflowProject.delete.called
+        assert not FakeMlflowProject.delete.call_args.args
+        assert FakeMlflowProject.delete.call_args.kwargs == {
+            "name": "<name>",
+            "tracking_uri": "<uri>",
+        }
+
+    def test_delete_mlflow_forwards_kwargs(self, FakeMlflowProject):
+        Project.delete(
+            mode="mlflow",
+            name="<name>",
+            tracking_uri="<uri>",
+            workspace="<workspace>",
+        )
+
+        assert not FakeMlflowProject.called
+        assert FakeMlflowProject.delete.called
+        assert not FakeMlflowProject.delete.call_args.args
+        assert FakeMlflowProject.delete.call_args.kwargs == {
+            "name": "<name>",
+            "tracking_uri": "<uri>",
+            "workspace": "<workspace>",
         }

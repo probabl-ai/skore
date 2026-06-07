@@ -22,6 +22,7 @@ functionalities of the report are exposed through accessors.
    CrossValidationReport.help
    CrossValidationReport.cache_predictions
    CrossValidationReport.clear_cache
+   CrossValidationReport.create_estimator_report
    CrossValidationReport.get_predictions
 
 .. rubric:: Accessors
@@ -30,7 +31,22 @@ functionalities of the report are exposed through accessors.
    :toctree: ../api/
    :template: autosummary/accessor.rst
 
+   CrossValidationReport.data
+   CrossValidationReport.checks
+   CrossValidationReport.inspection
    CrossValidationReport.metrics
+
+
+.. _cross_validation_data:
+
+Data
+----
+
+The `data` accessor helps you to get insights about the dataset used in the
+cross-validation.
+
+.. include:: ../api/CrossValidationReport.data.inc
+
 
 .. _cross_validation_metrics:
 
@@ -38,24 +54,24 @@ Metrics
 -------
 
 The `metrics` accessor helps you to evaluate the statistical performance of your
-estimator across cross-validation folds.
+estimator across cross-validation splits.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: autosummary/accessor_method.rst
+.. include:: ../api/CrossValidationReport.metrics.inc
 
-    CrossValidationReport.metrics.help
-    CrossValidationReport.metrics.summarize
-    CrossValidationReport.metrics.custom_metric
-    CrossValidationReport.metrics.accuracy
-    CrossValidationReport.metrics.brier_score
-    CrossValidationReport.metrics.log_loss
-    CrossValidationReport.metrics.precision
-    CrossValidationReport.metrics.precision_recall
-    CrossValidationReport.metrics.prediction_error
-    CrossValidationReport.metrics.r2
-    CrossValidationReport.metrics.recall
-    CrossValidationReport.metrics.rmse
-    CrossValidationReport.metrics.roc
-    CrossValidationReport.metrics.roc_auc
-    CrossValidationReport.metrics.timings
+Inspection
+----------
+
+The `inspection` accessor helps you inspect your model by e.g. evaluating the importance
+of the features in your model.
+
+.. include:: ../api/CrossValidationReport.inspection.inc
+
+.. _cross_validation_checks:
+
+Checks
+------
+
+The `checks` accessor runs automated checks that look for common modeling problems
+such as overfitting and underfitting.
+
+.. include:: ../api/CrossValidationReport.checks.inc

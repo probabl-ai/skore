@@ -30,8 +30,20 @@ report are accessible through accessors.
    :toctree: ../api/
    :template: autosummary/accessor.rst
 
-   EstimatorReport.feature_importance
+   EstimatorReport.data
+   EstimatorReport.checks
+   EstimatorReport.inspection
    EstimatorReport.metrics
+
+.. _estimator_data:
+
+Data
+----
+
+The `data` accessor helps you to get insights about the dataset used to train and test
+your estimator.
+
+.. include:: ../api/EstimatorReport.data.inc
 
 .. _estimator_metrics:
 
@@ -41,37 +53,22 @@ Metrics
 The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator.
 
-.. autosummary::
-    :toctree: ../api/
-    :template: autosummary/accessor_method.rst
+.. include:: ../api/EstimatorReport.metrics.inc
 
-    EstimatorReport.metrics.help
-    EstimatorReport.metrics.summarize
-    EstimatorReport.metrics.custom_metric
-    EstimatorReport.metrics.timings
-    EstimatorReport.metrics.accuracy
-    EstimatorReport.metrics.brier_score
-    EstimatorReport.metrics.log_loss
-    EstimatorReport.metrics.precision
-    EstimatorReport.metrics.precision_recall
-    EstimatorReport.metrics.prediction_error
-    EstimatorReport.metrics.r2
-    EstimatorReport.metrics.recall
-    EstimatorReport.metrics.rmse
-    EstimatorReport.metrics.roc
-    EstimatorReport.metrics.roc_auc
+Inspection
+----------
 
-Feature importance
-------------------
+The `inspection` accessor helps you inspect your model by e.g. evaluating the importance
+of the features in your model.
 
-The `feature_importance` accessor helps you to evaluate the importance of the features
-used to train your estimator.
+.. include:: ../api/EstimatorReport.inspection.inc
 
-.. autosummary::
-    :toctree: ../api/
-    :template: autosummary/accessor_method.rst
+.. _estimator_checks:
 
-    EstimatorReport.feature_importance.help
-    EstimatorReport.feature_importance.coefficients
-    EstimatorReport.feature_importance.mean_decrease_impurity
-    EstimatorReport.feature_importance.permutation
+Checks
+------
+
+The `checks` accessor runs automated checks that look for common modeling problems
+such as overfitting and underfitting.
+
+.. include:: ../api/EstimatorReport.checks.inc

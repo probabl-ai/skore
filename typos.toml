@@ -4,11 +4,17 @@ extend-ignore-re = [
   "(?Rm)^.*(#|//)\\s*spellchecker:disable-line$",
   # Line block with `# spellchecker:<on|off>`
   "(?s)(#|//)\\s*spellchecker:off.*?\\n\\s*(#|//)\\s*spellchecker:on",
+  "ellide_string",
+  "plt\\.setp",
+  "whis",
+  "force_writeable",
 ]
 
 [default.extend-words]
 # acronym for "False Positive Rate"
 fpr = "fpr"
+# acronym for "Mean Absolute Percentage Error"
+mape = "mape"
 
 # For "words" made up of other words
 # https://github.com/crate-ci/typos/blob/master/docs/design.md#identifiers-and-words

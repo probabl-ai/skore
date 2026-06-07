@@ -1,4 +1,4 @@
-from skore.utils._measure_time import MeasureTime
+from skore._utils._measure_time import MeasureTime
 
 
 def test():

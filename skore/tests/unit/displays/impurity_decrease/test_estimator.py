@@ -1,0 +1,52 @@
+import matplotlib as mpl
+import numpy as np
+from sklearn.base import clone
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+
+from skore import EstimatorReport, ImpurityDecreaseDisplay
+from skore._externals._sklearn_compat import convert_container
+
+
+def test_with_pipeline(pyplot, forest_binary_classification_with_train_test):
+    estimator, X_train, X_test, y_train, y_test = (
+        forest_binary_classification_with_train_test
+    )
+    estimator = clone(estimator)
+    columns_names = [f"Feature #{i}" for i in range(X_train.shape[1])]
+    X_train = convert_container(X_train, "pandas", column_names=columns_names)
+    X_test = convert_container(X_test, "pandas", column_names=columns_names)
+    model = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("predictor", estimator),
+        ]
+    )
+    report = EstimatorReport(
+        model, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.inspection.impurity_decrease()
+    assert isinstance(display, ImpurityDecreaseDisplay)
+    assert set(display.importances.columns) == {
+        "estimator",
+        "split",
+        "feature",
+        "importance",
+    }
+    fitted_predictor = report.estimator_.named_steps["predictor"]
+    np.testing.assert_allclose(
+        display.importances["importance"].to_numpy(),
+        fitted_predictor.feature_importances_,
+    )
+    frame = display.frame()
+    assert list(frame.columns) == ["feature", "importance"]
+    assert frame["feature"].tolist() == columns_names
+    fig = display.plot()
+    ax = fig.axes[0]
+    assert isinstance(fig, mpl.figure.Figure)
+    assert isinstance(ax, mpl.axes.Axes)
+    estimator_name = display.importances["estimator"][0]
+    assert fig.get_suptitle() == f"Mean decrease in impurity (MDI) of {estimator_name}"
+    assert ax.get_xlabel() == "Mean decrease in impurity"
+    yticklabels = [label.get_text() for label in ax.get_yticklabels()]
+    assert yticklabels == ["Feature #0", "Feature #1", "Feature #2", "Feature #3"]

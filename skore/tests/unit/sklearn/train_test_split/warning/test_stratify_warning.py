@@ -1,4 +1,4 @@
-from skore.sklearn.train_test_split.warning import StratifyWarning
+from skore._sklearn.train_test_split.warning import StratifyWarning
 
 
 def test_check_stratify():

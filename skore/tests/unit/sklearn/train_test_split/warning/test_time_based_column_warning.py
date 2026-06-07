@@ -3,7 +3,8 @@ from datetime import datetime
 import pandas
 import polars
 import pytest
-from skore.sklearn.train_test_split.warning import TimeBasedColumnWarning
+
+from skore._sklearn.train_test_split.warning import TimeBasedColumnWarning
 
 target = [0] * 100 + [1] * 100 + [2] * 300
 

@@ -56,15 +56,15 @@ split_data = train_test_split(X=df, y=y, random_state=42, as_dict=True)
 # for a class imbalance.
 #
 # Now, we need to define a predictive model. Hopefully, `skrub` provides a convenient
-# function (:func:`skrub.tabular_learner`) when it comes to getting strong baseline
+# function (:func:`skrub.tabular_pipeline`) when it comes to getting strong baseline
 # predictive models with a single line of code. As its feature engineering is generic,
 # it does not provide some handcrafted and tailored feature engineering but still
 # provides a good starting point.
 #
 # So let's create a classifier for our task.
-from skrub import tabular_learner
+from skrub import tabular_pipeline
 
-estimator = tabular_learner("classifier")
+estimator = tabular_pipeline("classifier")
 estimator
 
 # %%
@@ -80,6 +80,7 @@ estimator
 from skore import EstimatorReport
 
 report = EstimatorReport(estimator, **split_data, pos_label=pos_label)
+report
 
 # %%
 #
@@ -141,11 +142,8 @@ report.metrics.timings()
 #
 # Since we obtain a pandas dataframe, we can also use the plotting interface of
 # pandas.
-import matplotlib.pyplot as plt
-
 ax = metric_report.plot.barh()
-ax.set_title("Metrics report")
-plt.tight_layout()
+_ = ax.set_title("Metrics report")
 
 # %%
 #
@@ -183,44 +181,6 @@ report.metrics.log_loss(data_source="train")
 
 # %%
 #
-# In the case where we are interested in computing the metrics on a completely new set
-# of data, we can use the `data_source="X_y"` parameter. In addition, we need to provide
-# a `X` and `y` parameters.
-
-start = time.time()
-metric_report = report.metrics.summarize(
-    data_source="X_y", X=split_data["X_test"], y=split_data["y_test"]
-).frame()
-end = time.time()
-metric_report
-
-# %%
-print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
-
-# %%
-#
-# As in the other case, we rely on the cache to avoid recomputing the predictions.
-# Internally, we compute a hash of the input data to be sure that we can hit the cache
-# in a consistent way.
-
-# %%
-start = time.time()
-metric_report = report.metrics.summarize(
-    data_source="X_y", X=split_data["X_test"], y=split_data["y_test"]
-).frame()
-end = time.time()
-metric_report
-
-# %%
-print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
-
-# %%
-#
-# .. note::
-#     In this last example, we rely on computing the hash of the input data. Therefore,
-#     there is a trade-off: the computation of the hash is not free and it might be
-#     faster to compute the predictions instead.
-#
 # Be aware that we can also benefit from the caching mechanism with our own custom
 # metrics. Skore only expects that we define our own metric function to take `y_true`
 # and `y_pred` as the first two positional arguments. It can take any other arguments.
@@ -246,81 +206,34 @@ def operational_decision_cost(y_true, y_pred, amount):
 # matrix based on some amount linked to each sample in the dataset that are provided to
 # us. Here, we randomly generate some amount as an illustration.
 import numpy as np
+from sklearn.metrics import make_scorer
 
 rng = np.random.default_rng(42)
 amount = rng.integers(low=100, high=1000, size=len(split_data["y_test"]))
 
-# %%
-#
-# Let's make sure that a function called the `predict` method and cached the result.
-# We compute the accuracy metric to make sure that the `predict` method is called.
-report.metrics.accuracy()
+report.metrics.add(metric=make_scorer(operational_decision_cost, amount=amount))
+
+cost = report.metrics.summarize(metric="operational_decision_cost")
+cost.frame()
 
 # %%
 #
-# We can now compute the cost of our operational decision.
-start = time.time()
-cost = report.metrics.custom_metric(
-    metric_function=operational_decision_cost, response_method="predict", amount=amount
-)
-end = time.time()
-cost
-
-# %%
-print(f"Time taken to compute the cost: {end - start:.2f} seconds")
-
-# %%
-#
-# Let's now clean the cache and see if it is faster.
-report.clear_cache()
-
-# %%
-start = time.time()
-cost = report.metrics.custom_metric(
-    metric_function=operational_decision_cost, response_method="predict", amount=amount
-)
-end = time.time()
-cost
-
-# %%
-print(f"Time taken to compute the cost: {end - start:.2f} seconds")
-
-# %%
-#
-# We observe that caching is working as expected. It is really handy because it means
+# By the way, skore caches the model predictions. It is really handy because it means
 # that we can compute some additional metrics without having to recompute the
 # the predictions.
 report.metrics.summarize(
-    scoring=["precision", "recall", operational_decision_cost],
-    scoring_names=["Precision", "Recall", "Operational Decision Cost"],
-    scoring_kwargs={"amount": amount, "response_method": "predict"},
-)
-
-# %%
-#
-# It could happen that we are interested in providing several custom metrics which
-# does not necessarily share the same parameters. In this more complex case, skore will
-# require us to provide a scorer using the :func:`sklearn.metrics.make_scorer`
-# function.
-from sklearn.metrics import make_scorer, f1_score
-
-f1_scorer = make_scorer(f1_score, response_method="predict")
-operational_decision_cost_scorer = make_scorer(
-    operational_decision_cost, response_method="predict", amount=amount
-)
-report.metrics.summarize(
-    scoring=[f1_scorer, operational_decision_cost_scorer],
-    scoring_names=["F1 Score", "Operational Decision Cost"],
-)
+    metric=["precision", "recall", "operational_decision_cost"]
+).frame()
 
 # %%
 #
 # Effortless one-liner plotting
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
-# The :class:`skore.EstimatorReport` class also provides a plotting interface that
-# allows to plot *defacto* the most common plots. As for the metrics, we only
-# provide the meaningful set of plots for the provided estimator.
+# The :class:`skore.EstimatorReport` class also implements a number of the most common
+# data science plots.
+# As for the metrics, we only provide the meaningful set of plots for the provided
+# estimator.
 report.metrics.help()
 
 # %%
@@ -335,14 +248,12 @@ display.plot()
 # those display (slightly modified to improve the UI) in case we want to tweak some
 # of the plot properties. We can have quick look at the available attributes and
 # methods by calling the ``help`` method or simply by printing the display.
-display
-
-# %%
 display.help()
 
 # %%
-display.plot()
-_ = display.ax_.set_title("Example of a ROC curve")
+fig = display.plot()
+fig.axes[0].set_title("Example of a ROC curve")
+fig
 
 # %%
 #
@@ -353,8 +264,9 @@ _ = display.ax_.set_title("Example of a ROC curve")
 start = time.time()
 # we already trigger the computation of the predictions in a previous call
 display = report.metrics.roc()
-display.plot()
+fig = display.plot()
 end = time.time()
+fig
 
 # %%
 print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
@@ -367,8 +279,9 @@ report.clear_cache()
 # %%
 start = time.time()
 display = report.metrics.roc()
-display.plot()
+fig = display.plot()
 end = time.time()
+fig
 
 # %%
 print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
@@ -387,27 +300,34 @@ print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 # Let's first start with a basic confusion matrix:
 cm_display = report.metrics.confusion_matrix()
 cm_display.plot()
-plt.show()
+
+# %%
+# In binary classification, a confusion matrix depends on the decision threshold used
+# to convert predicted probabilities into class labels. By default, skore uses a
+# threshold of 0.5, but confusion matrices are actually computed at every threshold
+# internally.
+
+# To visualize the confusion matrix at a different threshold, use the
+# ``threshold_value`` parameter. For example, a threshold of 0.3 will classify
+# more samples as positive:
+cm_display.plot(threshold_value=0.3)
 
 # %%
 # We can normalize the confusion matrix to get percentages instead of raw counts.
 # Here we normalize by true labels (rows):
-cm_display = report.metrics.confusion_matrix(normalize="true")
-cm_display.plot()
-plt.show()
+cm_display.plot(normalize="true")
 
 # %%
-# More plotting options are available, check out the API on the confusion matrix for
-# more information. We can customize the display labels:
-cm_display = report.metrics.confusion_matrix(display_labels=["Disallowed", "Allowed"])
+# More plotting options are available via ``heatmap_kwargs``, which are passed to
+# seaborn's heatmap. For example, we can customize the colormap and number format:
+cm_display.set_style(heatmap_kwargs={"cmap": "Greens", "fmt": ".2e"})
 cm_display.plot()
-plt.show()
 
 # %%
 # Finally, the confusion matrix can also be exported as a pandas DataFrame for further
 # analysis:
-cm_frame = cm_display.frame()
-cm_frame
+cm_display.frame()
+
 
 # %%
 # .. seealso::

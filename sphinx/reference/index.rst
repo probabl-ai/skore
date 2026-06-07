@@ -9,8 +9,117 @@ This page lists all the public functions and classes of the skore package.
 
 .. currentmodule:: skore
 
+Overview
+--------
+
+The following table provides a quick reference to the public classes and functions in skore:
+
+Project Management
+^^^^^^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`Project`
+     - Main class for managing a skore project and its reports
+   * - :func:`login`
+     - Login to remote backend (e.g. Skore Hub) to later use the project management
+       features.
+
+
+ML Assistance
+^^^^^^^^^^^^^
+
+.. list-table::
+   :widths: 30 70
+
+   * - :func:`evaluate`
+     - Evaluate one or more estimators on the given data.
+   * - :func:`compare`
+     - Compare pre-existing reports with a :class:`~skore.ComparisonReport`
+   * - :func:`train_test_split`
+     - Split arrays or matrices into random train and test subsets
+   * - :class:`TrainTestSplit`
+     - Single train-test splitter compatible with the `scikit-learn CV splitter
+       API <https://scikit-learn.org/stable/glossary.html#term-CV-splitter>`_
+
+.. include:: api/accessor_tables.rst
+
+
+Display Classes
+^^^^^^^^^^^^^^^
+
+Data
+""""
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`TableReportDisplay`
+     - Display for tabular data reports
+
+
+Metrics
+"""""""
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`MetricsSummaryDisplay`
+     - Display for summarizing multiple metrics
+   * - :class:`ConfusionMatrixDisplay`
+     - Confusion matrix visualization
+   * - :class:`RocCurveDisplay`
+     - ROC (Receiver Operating Characteristic) curve visualization
+   * - :class:`PrecisionRecallCurveDisplay`
+     - Precision-Recall curve visualization
+   * - :class:`PredictionErrorDisplay`
+     - Prediction error visualization
+
+
+Inspection
+""""""""""
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`CoefficientsDisplay`
+     - Display for visualizing feature importance via model coefficients
+   * - :class:`ImpurityDecreaseDisplay`
+     - Display for visualizing feature importance via Mean Decrease in Impurity (MDI)
+   * - :class:`PermutationImportanceDisplay`
+     - Display for visualizing feature importance via permutation importance
+
+
+Checks
+^^^^^^
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`ChecksSummaryDisplay`
+     - Display for check results returned by the ``checks`` accessor
+   * - :class:`Check`
+     - Protocol for defining custom checks
+   * - :exc:`CheckNotApplicable`
+     - Exception raised when a check cannot run on the given report
+
+
+Utilities
+^^^^^^^^^
+
+.. list-table::
+   :widths: 30 70
+
+   * - :obj:`configuration`
+     - Global configuration for `skore` also usable as a context manager
+   * - :func:`show_versions`
+     - Print version information for skore and its dependencies
+
+
 .. toctree::
    :maxdepth: 2
+   :hidden:
 
    Managing a project <project>
    ML Assistance <report/index>

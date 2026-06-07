@@ -1,0 +1,656 @@
+import re
+from copy import deepcopy
+from io import BytesIO
+
+import joblib
+import numpy as np
+import pandas as pd
+import pytest
+import skrub
+from sklearn.cluster import KMeans
+from sklearn.datasets import make_classification, make_regression
+from sklearn.dummy import DummyClassifier, DummyRegressor
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.model_selection import FixedThresholdClassifier, train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.utils.validation import check_is_fitted
+
+from skore import EstimatorReport, evaluate
+
+
+@pytest.mark.parametrize("fit", [True, "auto"])
+def test_estimator_not_fitted(fit):
+    """Test that an error is raised when trying to create a report from an unfitted
+    estimator and no data are provided to fit the estimator.
+    """
+    estimator = LinearRegression()
+    err_msg = "The training data is required to fit the estimator. "
+    X, y = make_regression(n_samples=2)
+    with pytest.raises(ValueError, match=err_msg):
+        EstimatorReport(estimator, fit=fit, X_test=X, y_test=y)
+
+
+@pytest.mark.parametrize("fit", [True, "auto"])
+def test_from_unfitted_estimator(fit):
+    """Check the general behaviour of passing an unfitted estimator and training
+    data."""
+    X, y = make_regression(random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = LinearRegression()
+    report = EstimatorReport(
+        estimator,
+        fit=fit,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+
+    check_is_fitted(report.estimator_)
+    assert report.estimator_ is not estimator  # the estimator should be cloned
+
+    assert report.X_train is X_train
+    assert report.y_train is y_train
+    assert report.X_test is X_test
+    assert report.y_test is y_test
+
+    with pytest.raises(AttributeError):
+        report.estimator_ = LinearRegression()
+    with pytest.raises(AttributeError):
+        report.X_train = X_train
+    with pytest.raises(AttributeError):
+        report.y_train = y_train
+
+
+@pytest.mark.parametrize("fit", [False, "auto"])
+def test_from_fitted_estimator(forest_binary_classification_with_test, fit):
+    """Check the general behaviour of passing an already fitted estimator without
+    refitting it."""
+    estimator, X, y = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, fit=fit, X_test=X, y_test=y)
+
+    check_is_fitted(report.estimator_)
+    assert isinstance(report.estimator_, RandomForestClassifier)
+    assert report.X_train is None
+    assert report.y_train is None
+    assert report.X_test is X
+    assert report.y_test is y
+
+    with pytest.raises(AttributeError):
+        report.estimator_ = LinearRegression()
+    with pytest.raises(AttributeError):
+        report.X_train = X
+    with pytest.raises(AttributeError):
+        report.y_train = y
+
+
+def test_from_fitted_pipeline(
+    pipeline_binary_classification_with_test,
+):
+    """Check the general behaviour of passing an already fitted pipeline without
+    refitting it.
+    """
+    estimator, X, y = pipeline_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X, y_test=y)
+
+    check_is_fitted(report.estimator_)
+    assert isinstance(report.estimator_, Pipeline)
+    assert report.estimator_name_ == estimator[-1].__class__.__name__
+    assert report.X_train is None
+    assert report.y_train is None
+    assert report.X_test is X
+    assert report.y_test is y
+
+
+@pytest.mark.parametrize(
+    "Estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods",
+    [
+        (
+            RandomForestClassifier(),
+            *make_classification(random_state=42),
+            ["roc", "precision_recall"],
+            ["prediction_error"],
+        ),
+        (
+            RandomForestClassifier(),
+            *make_classification(n_classes=3, n_clusters_per_class=1, random_state=42),
+            ["roc", "precision_recall"],
+            ["prediction_error"],
+        ),
+        (
+            LinearRegression(),
+            *make_regression(random_state=42),
+            ["prediction_error"],
+            ["roc", "precision_recall"],
+        ),
+    ],
+)
+def test_check_support_plot(
+    Estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods
+):
+    """Check that the available plot methods are correctly registered."""
+    estimator = Estimator.fit(X_test, y_test)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    for supported_plot_method in supported_plot_methods:
+        assert hasattr(report.metrics, supported_plot_method)
+
+    for not_supported_plot_method in not_supported_plot_methods:
+        assert not hasattr(report.metrics, not_supported_plot_method)
+
+
+@pytest.mark.parametrize(
+    "fixture_name, pass_train_data, expected_n_keys",
+    [
+        # expected n keys:
+        # (result for 'predict' or 'predict_proba' or 'predict_log_proba' or
+        # 'decision_function')
+        # x train, test
+        ("forest_binary_classification_with_test", True, 6),
+        ("svc_binary_classification_with_test", True, 4),
+        ("forest_multiclass_classification_with_test", True, 6),
+        ("linear_regression_with_test", True, 2),
+        ("forest_binary_classification_with_test", False, 3),
+        ("svc_binary_classification_with_test", False, 2),
+        ("forest_multiclass_classification_with_test", False, 3),
+        ("linear_regression_with_test", False, 1),
+    ],
+)
+def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_keys):
+    """Check that calling cache_predictions fills the cache."""
+    estimator, X_test, y_test = request.getfixturevalue(fixture_name)
+    if pass_train_data:
+        report = EstimatorReport(
+            estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+        )
+    else:
+        report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    assert report._cache == {}
+
+    report.cache_predictions()
+    assert len(report._cache) == expected_n_keys
+    assert report._cache != {}
+
+    stored_cache = deepcopy(report._cache)
+    report.cache_predictions()
+    assert report._cache.keys() == stored_cache.keys()
+
+
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        DummyClassifier(strategy="uniform", random_state=0),
+        FixedThresholdClassifier(LogisticRegression(), threshold=0.8),
+        Pipeline(
+            [
+                ("scaler", StandardScaler()),
+                ("logisticregression", LogisticRegression()),
+            ]
+        ),
+    ],
+)
+def test_get_predictions_is_correct_for_special_classifiers(estimator):
+    X, y = make_classification(n_samples=100, random_state=42)
+    report = evaluate(estimator, X, y, splitter=0.2)
+    np.testing.assert_array_equal(
+        report.get_predictions(data_source="test"),
+        report.estimator_.predict(report.X_test),
+    )
+
+
+def test_pickle(forest_binary_classification_with_test):
+    """Check that we can pickle an estimator report.
+
+    In particular, the progress bar from rich are pickable, therefore we trigger
+    the progress bar to be able to test that the progress bar is pickable.
+    """
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.cache_predictions()
+
+    with BytesIO() as stream:
+        joblib.dump(report, stream)
+
+
+def test_flat_index(forest_binary_classification_with_test):
+    """Check that the index is flattened when `flat_index` is True.
+
+    Since `pos_label` is None, then by default a MultiIndex would be returned.
+    Here, we force to have a single-index by passing `flat_index=True`.
+    """
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    result = report.metrics.summarize().frame(flat_index=True)
+    assert result.shape == (11, 1)
+    assert isinstance(result.index, pd.Index)
+    assert result.index.tolist() == [
+        "score",
+        "accuracy",
+        "precision_0",
+        "precision_1",
+        "recall_0",
+        "recall_1",
+        "roc_auc",
+        "log_loss",
+        "brier_score",
+        "fit_time_s",
+        "predict_time_s",
+    ]
+
+    assert result.columns.tolist() == ["RandomForestClassifier"]
+
+
+def test_get_predictions():
+    """Check the behaviour of the `get_predictions` method.
+
+    We use the binary classification because it uses all the parameters of the
+    `get_predictions` method.
+    """
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = LogisticRegression()
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    # check the `predict` method
+    predictions = report.get_predictions(data_source="test")
+    np.testing.assert_allclose(predictions, report.estimator_.predict(X_test))
+    predictions = report.get_predictions(data_source="train")
+    np.testing.assert_allclose(predictions, report.estimator_.predict(X_train))
+
+    # check the validity of the `predict_proba` method
+    predictions = report.get_predictions(
+        data_source="test", response_method="predict_proba"
+    )
+    np.testing.assert_allclose(predictions, report.estimator_.predict_proba(X_test))
+
+    # check the validity of the `decision_function` method
+    predictions = report.get_predictions(
+        data_source="test", response_method="decision_function"
+    )
+    np.testing.assert_allclose(predictions, report.estimator_.decision_function(X_test))
+
+    # check the behaviour in conjunction of a report `pos_label`
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        pos_label=0,
+    )
+    predictions = report.get_predictions(
+        data_source="train", response_method="predict_proba"
+    )
+    np.testing.assert_allclose(
+        predictions, report.estimator_.predict_proba(X_train)[:, 0]
+    )
+
+
+def test_get_predictions_error():
+    """Check that we raise an error when the data source is invalid."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = LogisticRegression()
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    with pytest.raises(ValueError, match="Invalid data source"):
+        report.get_predictions(data_source="invalid")
+
+
+def test_invalid_pos_label():
+    """Check that an invalid `pos_label` raises a helpful error."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    err_msg = r"pos_label='a' is not a valid label\. It should be one of: \[0, 1\]"
+    with pytest.raises(ValueError, match=err_msg):
+        EstimatorReport(
+            LogisticRegression(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+            pos_label="a",
+        )
+
+
+def test_get_predictions_with_multiclass_ovo_decision_function():
+    """Check that multiclass one-vs-one estimators keep correct predictions."""
+    X, y = make_classification(n_classes=4, n_informative=6, random_state=42)
+    report = evaluate(SVC(decision_function_shape="ovo"), X, y, splitter=0.2)
+
+    np.testing.assert_array_equal(
+        report.get_predictions(data_source="test"),
+        report.estimator_.predict(report.X_test),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=r"Decision function output.*classes; expected 4 but got 6\.",
+    ):
+        report.get_predictions(data_source="test", response_method="decision_function")
+
+
+def test_clustering():
+    """Check that we cannot create a report with a clustering model."""
+    with pytest.raises(
+        ValueError,
+        match="Clustering models are not supported yet. Please use a "
+        "classification or regression model instead.",
+    ):
+        EstimatorReport(KMeans(), X_test=None, y_test=None)
+
+
+def test_has_no_deep_copy():
+    """Check that we raise a warning if the deep copy failed with a fitted
+    estimator."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression()
+    # Make it so deepcopy does not work
+    estimator.__reduce_ex__ = None
+    estimator.__reduce__ = None
+
+    with pytest.warns(UserWarning, match="Deepcopy failed"):
+        EstimatorReport(
+            estimator,
+            fit=False,
+            X_train=X_train,
+            X_test=X_test,
+            y_train=y_train,
+            y_test=y_test,
+        )
+
+
+class _DummyClassifierBadRepr(DummyClassifier):
+    def _repr_html_(self):
+        raise TypeError("error")
+
+
+def _assert_estimator_report_repr_html(
+    html_out: str, expected_estimator_name: str
+) -> None:
+    assert "skore-estimator-report-" in html_out
+    assert expected_estimator_name in html_out
+    assert "skoreInitEstimatorReport" in html_out
+    assert 'class="tree"' in html_out
+    assert "EstimatorReport" in html_out
+    assert "docs.skore.probabl.ai" in html_out
+    assert "report-tabset" in html_out
+    assert "Report for" in html_out
+    assert "EstimatorReport.metrics" in html_out
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+def test_report_repr_html_binary_classification(with_train):
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = DummyClassifier()
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+def test_report_repr_html_multiclass_classification(
+    with_train, multiclass_classification_train_test_split
+):
+    X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
+    estimator = DummyClassifier(strategy="uniform", random_state=0)
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+def test_report_repr_html_regression(with_train, regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    estimator = DummyRegressor()
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    _assert_estimator_report_repr_html(report._repr_html_(), "DummyRegressor")
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+def test_report_repr_html_multioutput_regression(
+    with_train, regression_multioutput_train_test_split
+):
+    X_train, X_test, y_train, y_test = regression_multioutput_train_test_split
+    estimator = DummyRegressor()
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    _assert_estimator_report_repr_html(report._repr_html_(), "DummyRegressor")
+
+
+@pytest.mark.parametrize("with_train", [False, True])
+def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
+    """HTML repr must still work when the underlying estimator rejects
+    ``_repr_html_``."""
+    X, y = make_classification(n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    estimator = _DummyClassifierBadRepr()
+    estimator.fit(X_train, y_train)
+    kwargs = {}
+    if with_train:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
+
+
+@pytest.fixture
+def prefit_regression_report_no_train_data():
+    X, y = make_regression(random_state=42)
+    estimator = LinearRegression().fit(X, y)
+    return EstimatorReport(estimator, fit=False, X_test=X, y_test=y)
+
+
+@pytest.mark.parametrize(
+    "train, test, expected",
+    [
+        (None, "test", "test"),
+        ("train", "test", "both"),
+    ],
+)
+def test_repr_data_source(train, test, expected, regression_train_test_split):
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    estimator = LinearRegression().fit(X_train, y_train)
+    kwargs = {}
+    if train is not None:
+        kwargs.update(X_train=X_train, y_train=y_train)
+    if test is not None:
+        kwargs.update(X_test=X_test, y_test=y_test)
+    report = EstimatorReport(estimator, fit=False, **kwargs)
+    assert report._repr_data_source() == expected
+
+
+def test_prefit_no_train_data_repr_methods(prefit_regression_report_no_train_data):
+    assert prefit_regression_report_no_train_data._repr_data_source() == "test"
+
+    repr_str = repr(prefit_regression_report_no_train_data)
+    assert "R²" in repr_str
+    assert "to_markdown()" in repr_str
+
+    markdown = prefit_regression_report_no_train_data.to_markdown()
+    assert markdown.startswith("# EstimatorReport: LinearRegression")
+    for section in ("## Estimator", "## Metrics", "## Checks (fast mode)", "## Data"):
+        assert section in markdown
+    assert "LinearRegression()" in markdown
+
+    fragments = prefit_regression_report_no_train_data._html_repr_fragments()
+    assert "R²" in fragments["metrics_summary"]
+
+
+def test_to_markdown(regression_data):
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y, splitter=0.2)
+    markdown = report.to_markdown()
+    assert "## Estimator" in markdown
+    assert "## Metrics" in markdown
+    assert "train+test" in markdown
+    assert "No data provided." not in markdown
+
+
+def test_report_get_data_and_y_true_error():
+    """Check that we raise the proper error in `_get_data_and_y_true`."""
+    X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression().fit(X_train, y_train)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    err_msg = re.escape(
+        "Invalid data source: unknown. Possible values are: test, train."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        report._get_data_and_y_true(data_source="unknown")
+
+    err_msg = re.escape("No train data were provided when creating the report.")
+    with pytest.raises(ValueError, match=err_msg):
+        report._get_data_and_y_true(data_source="train")
+
+
+@pytest.mark.parametrize("data_source", ("train", "test"))
+def test_report_get_data_and_y_true(data_source):
+    """Check the general behaviour of `_get_data_and_y_true`."""
+    X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+
+    estimator = LogisticRegression().fit(X_train, y_train)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    data, y_result = report._get_data_and_y_true(data_source=data_source)
+
+    if data_source == "train":
+        np.testing.assert_array_equal(data["_skrub_X"], X_train)
+        np.testing.assert_array_equal(y_result, y_train)
+    else:
+        assert data_source == "test"
+        np.testing.assert_array_equal(data["_skrub_X"], X_test)
+        np.testing.assert_array_equal(y_result, y_test)
+
+
+def test_report_with_data_op():
+    X_a, y_a = make_classification(n_samples=10)
+    data_op = skrub.X(X_a).skb.apply(LogisticRegression(), y=skrub.y(y_a))
+    learner = data_op.skb.make_learner()
+    split = data_op.skb.train_test_split()
+
+    report = EstimatorReport(
+        learner, train_data=split["train"], test_data=split["test"]
+    )
+    assert isinstance(report.metrics.accuracy(), float)
+
+    report = EstimatorReport(data_op)
+    assert isinstance(report.metrics.accuracy(), float)
+
+
+def test_get_state_after_predict_time(logistic_binary_classification_with_test):
+    """get_state should not fail after `predict_time` was called.
+
+    Non-regression test for https://github.com/probabl-ai/skore/pull/2950
+    """
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.predict_time()
+    report.get_state()
+
+
+def test_from_state_bypasses_init_and_restores_state(
+    monkeypatch, logistic_binary_classification_with_test
+):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(
+        estimator,
+        X_test=X_test,
+        y_test=y_test,
+        pos_label=1,
+    )
+    expected_accuracy = report.metrics.accuracy()
+    report.cache_predictions()
+    report.metrics.add("f1", name="F1")
+    state = report.get_state()
+    assert state["metadata"]["report_type"] == report._report_type
+
+    def _unexpected_init(self, *args, **kwargs):
+        raise AssertionError("__init__ should not be called by from_state")
+
+    monkeypatch.setattr(EstimatorReport, "__init__", _unexpected_init)
+
+    restored = EstimatorReport.from_state(state)
+
+    assert restored.id == report.id
+    assert restored.fit == report.fit
+    assert restored._fit_time == report._fit_time
+    assert restored.X_test is report.X_test
+    assert restored.ml_task == report.ml_task
+    assert restored.pos_label == report.pos_label
+    assert restored._cache == report._cache
+    assert restored.metrics.accuracy() == expected_accuracy
+
+    # check new metrics can be computed, including custom metrics:
+    restored.metrics.roc_auc()
+    df = restored.metrics.summarize().frame()
+    assert "F1" in df.index
+
+
+def test_from_state_rejects_unknown_version(logistic_binary_classification_with_test):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    state = report.get_state() | {"version": 999}
+
+    with pytest.raises(ValueError, match="Unexpected state version"):
+        EstimatorReport.from_state(state)
+
+
+def test_learner_report_root_node_not_an_estimator():
+    data_op = (
+        skrub.X().skb.apply(DummyClassifier(), y=skrub.y()).skb.apply_func(lambda x: x)
+    )
+    X, y = make_classification()
+    split = data_op.skb.train_test_split({"X": X, "y": y})
+    report = EstimatorReport(
+        data_op.skb.make_learner(), train_data=split["train"], test_data=split["test"]
+    )
+    report.metrics.summarize(metric="accuracy")
+
+
+def test_no_data_error():
+    X, y = make_classification()
+    learner = (
+        skrub.X()
+        .skb.apply(DummyClassifier(), y=skrub.y())
+        .skb.make_learner()
+        .fit({"X": X, "y": y})
+    )
+    with pytest.raises(TypeError, match="test_data must be provided"):
+        EstimatorReport(learner)
+    estimator = DummyClassifier().fit(X, y)
+    with pytest.raises(TypeError, match="X_test must be provided"):
+        EstimatorReport(estimator)

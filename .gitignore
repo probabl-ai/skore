@@ -188,6 +188,8 @@ sphinx/auto_examples/
 sphinx/reference/api/
 sphinx/sg_execution_times.rst
 examples/plot_*.png
+sphinx/_templates/generated_*
+examples/integrations/mlruns/
 
 # Include excluded directories from github-actions
 !/.github/**/build/
@@ -195,5 +197,13 @@ examples/plot_*.png
 
 # Exclude hatch artifacts
 skore/LICENSE
-skore-hub-project/LICENSE
-skore-local-project/LICENSE
+.aider*
+
+# uv
+uv.lock
+
+# mlflow
+mlflow.db
+mlruns
+
+.claude

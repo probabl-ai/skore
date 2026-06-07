@@ -1,4 +1,9 @@
-from skore.utils._show_versions import _get_deps_info, _get_sys_info, show_versions
+from skore._utils._show_versions import (
+    _get_deps_info,
+    _get_sys_info,
+    _show_extra_section,
+    show_versions,
+)
 
 
 def test_get_sys_info():
@@ -9,11 +14,20 @@ def test_get_sys_info():
     assert "machine" in sys_info
 
 
+def test_show_extra_section_filter():
+    assert _show_extra_section("-")
+    assert _show_extra_section("jupyter")
+    assert _show_extra_section("hub,sphinx")
+    assert not _show_extra_section("sphinx-base")
+    assert not _show_extra_section("sphinx")
+
+
 def test_get_deps_info():
     deps_info = _get_deps_info()
-    assert isinstance(deps_info, dict)
-    assert "pip" in deps_info
-    assert "skore" in deps_info
+    assert isinstance(deps_info, list)
+    names = {row[0] for row in deps_info}
+    assert "pip" in names
+    assert "skore" in names
 
 
 def test_show_versions(capfd):
@@ -32,6 +46,7 @@ def test_show_versions(capfd):
     assert "machine:" in captured.out
     assert "skore:" in captured.out
     assert "pip:" in captured.out
+    assert "\nskore\n" in captured.out
     assert "numpy:" in captured.out
-    assert "rich:" in captured.out
+    assert "rich" in captured.out
     assert "scikit-learn:" in captured.out

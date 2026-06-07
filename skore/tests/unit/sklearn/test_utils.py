@@ -10,7 +10,8 @@ from sklearn.datasets import (
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.multioutput import MultiOutputClassifier
-from skore.sklearn.find_ml_task import _find_ml_task
+
+from skore._sklearn.find_ml_task import _find_ml_task
 
 
 @pytest.mark.parametrize(
@@ -114,6 +115,15 @@ def test_find_ml_task_pandas():
 
     y = pandas.DataFrame([0, 1, 2])
     assert _find_ml_task(y, None) == "multiclass-classification"
+
+
+def test_find_ml_task_pandas_large_label_gap():
+    """
+    Check that `_find_ml_task` does not fail on large arrays.
+    Non-regression test for https://github.com/probabl-ai/skore/pull/2404
+    """
+    y = pandas.Series(numpy.repeat(numpy.array([0, 1, 10**12], dtype=numpy.int64), 100))
+    assert _find_ml_task(y, None) == "regression"
 
 
 def test_find_ml_task_string():

@@ -39,15 +39,15 @@ Signing commits
 You have to sign your commits before submitting a pull request.
 For a pull request to be accepted, all the commits inside of it must be signed.
 
-GitHub supports commit signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
-For setup instructions and more details, please refer to `GitHub’s guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
+If you haven't set up commit signing yet, GitHub supports signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
+For setup instructions and more details, please refer to `GitHub's guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
 
 Questions, bugs, and feature requests
 =====================================
 
 If you have any questions, feel free to reach out:
 
-* Join our community on `Discord <https://discord.gg/scBZerAGwW>`_ for general chat and Q&A.
+* Join our community on `Discord <https://discord.probabl.ai>`_ for general chat and Q&A.
 * Alternatively, you can `start a discussion on GitHub <https://github.com/probabl-ai/skore/discussions>`_.
 * Both bugs and feature requests can be filed in the `GitHub issue tracker <https://github.com/probabl-ai/skore/issues>`_:
 
@@ -63,7 +63,7 @@ Development
 Quick start
 -----------
 
-You'll need ``python >=3.9, <3.13``.
+You will need ``python >=3.11``.
 
 Setting up your development environment
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -99,12 +99,17 @@ Once your environment is set up, install the development dependencies and setup 
 
         make install-skore-lts-cpu
 
+Consider re-executing this command each time you rebase your branch with main, as dependencies can change.
+
+
 Choosing an issue
 -----------------
 
 If you are new to open-source, you can start by an `issue tagged "good first issue" <https://github.com/probabl-ai/skore/issues?q=is%3Aissue%20state%3Aopen%20label%3A%22good%20first%20issue%22>`_.
 
 The implementation of some issues are not very detailed. You can either propose a solution, or choose only the issues with a "Ready" status.
+
+The contributor has to comment existing issue to be assigned by maintainers (this is a GH limitation), to highlight that an issue is ongoing and avoid overlapping work. If someone is already assigned to the issue, unless the PR has been stalled for weeks, maintainers will not assign someone else. Then, the contributor must link the PR to the issue.
 
 Pull requests
 -------------
@@ -232,6 +237,7 @@ Contributing to the docstrings
 
 When writing documentation, whether it be online, docstrings or help messages in the CLI and in the UI, we strive to follow some conventions that are listed below. These might be updated as time goes on.
 
+#. We follow the `scikit-learn documentation conventions <https://scikit-learn.org/dev/developers/contributing.html#documentation>`_ for docstrings and narrative documentation.
 #. The docstring will be compiled using Sphinx numpydoc so use `RST (ReStructured Text) <https://docs.open-mpi.org/en/v5.0.x/developers/rst-for-markdown-expats.html>`_ for bold, URLs, etc.
 #. Argument descriptions should be written so that the following sentence makes sense: `Argument <argument> designates <argument description>`
 #. Argument descriptions start with lower case, and do not end with a period or other punctuation
@@ -257,6 +263,7 @@ The examples are stored in the `examples` folder:
 Guidelines for creating effective examples:
 
 1. **Types of examples**:
+
    - **Doctests**: Use these in API documentation for demonstrating simple usage patterns.
    - **User guide examples**: Create comprehensive examples that demonstrate functionality in real-world contexts.
 
@@ -265,6 +272,7 @@ Guidelines for creating effective examples:
 3. **Example content**: Focus on demonstrating the core concept rather than exhaustively listing all possible arguments. Show the global idea of how to use the feature effectively.
 
 4. **Dataset selection**:
+
    - Use meaningful, realistic datasets (not synthetic data with artificially high scores)
    - Ensure examples execute efficiently (under a few minutes)
    - Prefer built-in or easily downloadable datasets
@@ -276,20 +284,6 @@ Contributing to the README
 The `README.md` file can be modified and is part of the documentation (although it is not included in the online documentation).
 This file is used to be presented on `PyPI <https://pypi.org/project/skore/#description>`_.
 
-Signing Commits
----------------
-
-You must sign your commits before submitting a pull request.
-For a pull request to be accepted, all the commits inside of it must be signed.
-
-To sign your commits:
-
-.. code-block:: bash
-
-    git commit -S -m "Your commit message"
-
-If you haven't set up commit signing yet, GitHub supports signing using **GPG**, **SSH**, or **S/MIME**. Signed commits are marked as "Verified" on GitHub, providing confidence in the origin of your changes.
-For setup instructions and more details, please refer to `GitHub's guide on signing commits <https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits>`_.
 
 Pull Request Checklist
 ======================

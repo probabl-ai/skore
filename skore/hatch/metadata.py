@@ -1,6 +1,7 @@
 """Hatchling hooks used to dynamically update the metadata of the package."""
 
 from pathlib import Path
+from shutil import copy
 
 from hatchling.metadata.plugin.interface import MetadataHookInterface
 
@@ -32,13 +33,11 @@ class MetadataHook(MetadataHookInterface):
                 'readme': {'file': '../README.md'},
             }
         """
-        # Retrieve LICENCE from root files
-        license_filepath = self.config["license"]["file"]
-        license = Path(self.root, license_filepath).read_text(encoding="utf-8")
+        # Copy LICENCE file from root to `sdist`
+        license_filepath = Path(self.root, self.config["license"]["file"])
+        license_filename = license_filepath.name
 
-        # Copy LICENCE file in `sdist`
-        with open(Path(self.root, "LICENSE"), "w") as f:
-            f.write(license)
+        copy(license_filepath, self.root)
 
         # Retrieve README from root files
         readme_filepath = self.config["readme"]["file"]
@@ -51,6 +50,6 @@ class MetadataHook(MetadataHookInterface):
             version = self.config["version-default"]
 
         # Update metadata
-        metadata["license"] = {"text": license, "content-type": "text/plain"}
+        metadata["license-files"] = [license_filename]
         metadata["readme"] = {"text": readme, "content-type": "text/markdown"}
         metadata["version"] = version

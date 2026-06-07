@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
       - id: check-toml
@@ -11,27 +11,53 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.30.2
+    rev: v1.46.0
     hooks:
       - id: typos
 
-  - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
-    hooks:
-      - id: nbstripout
-        args: [--keep-id]
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.10
+    rev: v0.15.12
     hooks:
-      - id: ruff
-        files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
-        args: [--fix]
+
+      - id: ruff-check
+        files: ^(skore/(hatch|src|tests))|(examples)/
+        args: [--fix, --extend-select, I]
+
       - id: ruff-format
-        files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
+        files: ^(skore/(hatch|src|tests))|(examples)/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
+    rev: v1.20.2
     hooks:
+
       - id: mypy
-        files: ^(skore|skore-hub-project|skore-local-project)/src/
+        pass_filenames: false
+        files: ^skore/
+        args: [--config-file=skore/pyproject.toml, skore]
+        additional_dependencies:
+          # from dependencies
+          - IPython
+          - anywidget
+          - ipywidgets
+          - joblib
+          - matplotlib
+          - numpy
+          - pandas
+          - plotly
+          - rich
+          - scikit-learn
+          - seaborn
+          - skrub
+          # from test dependencies
+          - polars
+          - pyarrow
+          - scipy-stubs
+          # from local dependencies
+          - diskcache
+          - platformdirs
+          # from hub dependencies
+          - httpx
+          - orjson
+          - pydantic
+          # from mlflow dependencies
+          - mlflow
