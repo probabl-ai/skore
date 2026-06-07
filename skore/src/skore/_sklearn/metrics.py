@@ -845,6 +845,12 @@ class MetricRegistry(UserDict[str, Metric]):
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({list(self.data.keys())})"
 
+    def __missing__(self, key: str) -> Metric:
+        stripped = key.removeprefix("neg_")
+        if stripped != key and stripped in self.data:
+            return self.data[stripped]
+        raise KeyError(f"{key!r} is not there in the registered metrics")
+
     def add(
         self,
         metric: Metric,
