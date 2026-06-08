@@ -22,5 +22,5 @@ def test_report_rebuilds_after_smart_serde(report) -> None:
 
     restored_report = report.__class__.from_state(restored_state)
     # test restored_report works:
-    restored_report.data.analyze()
+    restored_report.data.summarize()
     restored_report.metrics.summarize()

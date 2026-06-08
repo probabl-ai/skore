@@ -16,12 +16,12 @@ class TableReport(Media[Report]):  # noqa: D101
 
     def content_to_upload(self) -> bytes:  # noqa: D102
         display = (
-            self.report.data.analyze()
+            self.report.data.summarize()
             if (
                 isinstance(self.report, CrossValidationReport)
                 or (self.data_source is None)
             )
-            else self.report.data.analyze(data_source=self.data_source)
+            else self.report.data.summarize(data_source=self.data_source)
         )
 
         table_report = display.summary

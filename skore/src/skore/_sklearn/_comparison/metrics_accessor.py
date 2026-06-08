@@ -255,6 +255,59 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         for report in self._parent.reports_.values():
             report.metrics.remove(name)
 
+    def get(
+        self,
+        name: str,
+        data_source: DataSource = "test",
+        aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
+        **kwargs,
+    ) -> pd.DataFrame | None:
+        """Get a metric value.
+
+        Parameters
+        ----------
+        name : str
+            Name of the metric to compute. Get all available metrics with
+            :meth:`~ComparisonReport.metrics.available()`.
+
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        Returns
+        -------
+        pd.DataFrame
+            The metric values, or None if the metric is not available.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
+        >>> comparison_report.metrics.get("precision")
+        Estimator        LogisticRegression_1  LogisticRegression_2
+        Metric    Label
+        Precision 0                  0.901961              0.901961
+                  1                  0.984127              0.984127
+        """
+        return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
+            aggregate=aggregate, flat_index=flat_index
+        )
+
     def timings(
         self,
         *,

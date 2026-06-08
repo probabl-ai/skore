@@ -1,3 +1,4 @@
+import warnings
 from typing import Literal
 
 from skrub import _dataframe as sbd
@@ -84,7 +85,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         return df
 
-    def analyze(
+    def summarize(
         self,
         *,
         with_y: bool = True,
@@ -131,7 +132,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression()
         >>> report = evaluate(classifier, X, y, splitter=2)
-        >>> report.data.analyze().frame()
+        >>> report.data.summarize().frame()
         """
         df = self._prepare_dataframe_for_display(
             with_y=with_y,
@@ -140,6 +141,15 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             seed=seed,
         )
         return TableReportDisplay._compute_data_for_display(df)
+
+    def analyze(self, **kwargs) -> TableReportDisplay:
+        """Use :meth:`summarize` instead."""
+        warnings.warn(
+            "data.analyze() is deprecated, use data.summarize() instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return self.summarize(**kwargs)
 
     ####################################################################################
     # Methods related to the help tree
