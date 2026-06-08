@@ -175,7 +175,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
 
     See Also
     --------
-    EstimatorReport.data.analyze : Create this display from a report.
+    EstimatorReport.data.summarize : Create this display from a report.
 
     Examples
     --------
@@ -185,7 +185,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
     >>> X, y = load_breast_cancer(return_X_y=True)
     >>> classifier = LogisticRegression(max_iter=10_000)
     >>> report = evaluate(classifier, X, y, splitter=0.2)
-    >>> display = report.data.analyze()
+    >>> display = report.data.summarize()
     >>> display.plot(kind="corr")
     """
 
@@ -277,7 +277,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> display = report.data.analyze()
+        >>> display = report.data.summarize()
         >>> display.plot(kind="corr")
         """
         return self._plot(

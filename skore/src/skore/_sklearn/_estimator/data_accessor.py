@@ -1,3 +1,4 @@
+import warnings
 from typing import Literal
 
 from skrub import _dataframe as sbd
@@ -64,7 +65,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         return X, y
 
-    def analyze(
+    def summarize(
         self,
         *,
         data_source: Literal["train", "test", "both"] = "both",
@@ -78,7 +79,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Parameters
         ----------
         data_source : {"train", "test", "both"}, default="both"
-            The dataset to analyze. If "train", only the training set is used.
+            The dataset to summarize. If "train", only the training set is used.
             If "test", only the test set is used. If "both", both sets are concatenated
             vertically.
 
@@ -117,7 +118,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> report.data.analyze().frame()
+        >>> report.data.summarize().frame()
         """
         df = self._prepare_dataframe_for_display(
             data_source=data_source,
@@ -127,6 +128,15 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             seed=seed,
         )
         return TableReportDisplay._compute_data_for_display(df)
+
+    def analyze(self, **kwargs) -> TableReportDisplay:
+        """Use :meth:`summarize` instead."""
+        warnings.warn(
+            "data.analyze() is deprecated, use data.summarize() instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return self.summarize(**kwargs)
 
     def _prepare_dataframe_for_display(
         self, data_source, with_y, subsample, subsample_strategy, seed

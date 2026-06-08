@@ -48,29 +48,6 @@ def detection_failure_cost(y_true, y_pred_proba, threshold=0.5):
     return business_loss(y_true, y_pred, cost_fp=10, cost_fn=5)
 
 
-@pytest.fixture
-def binary_classification_report(logistic_binary_classification_with_train_test):
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    return EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-        pos_label=1,
-    )
-
-
-@pytest.fixture
-def regression_report(linear_regression_with_train_test):
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    return EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-
 class TestBasicAdd:
     """Test basic metric add functionality."""
 
