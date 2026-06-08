@@ -378,11 +378,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             favorability_col = df.pop(("Favorability", "")).bfill(axis=1).iloc[:, 0]
 
             if aggregate is None:
-                original_index_names = list(df.index.names)
-                df = df.stack([0, 1])
-                df.index.names = original_index_names + ["Estimator", "Split"]
-                df = df.to_frame("Value")
-                df.columns.name = None
+                df.columns.names = ["Estimator", "Split"]
             else:
                 df.columns = df.columns.swaplevel(0, 1)
                 df = df.sort_index(axis=1, level=[0, 1])
@@ -395,6 +391,19 @@ class MetricsSummaryDisplay(DisplayMixin):
                 df = MetricsSummaryDisplay._flatten_index(df)
 
             return df
+
+    def _repr_html_(self) -> str:
+        return (
+            f"{self.frame()._repr_html_()}"
+            '<p role="note">Use <code>.frame()</code> to control the format'
+            " of the output.</p>"
+        )
+
+    def __repr__(self) -> str:
+        return f"{self.frame()!r}\nUse .frame() to control the format of the output."
+
+    def _repr_mimebundle_(self, **kwargs):
+        return {"text/plain": repr(self), "text/html": self._repr_html_()}
 
     @DisplayMixin.style_plot
     def plot(self) -> Figure:
