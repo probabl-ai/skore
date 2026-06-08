@@ -571,18 +571,18 @@ def test_report_with_data_op():
     assert isinstance(report.metrics.accuracy(), float)
 
 
-def test_get_state_after_predict_time(logistic_binary_classification_with_test):
-    """get_state should not fail after `predict_time` was called.
+def test_to_dict_after_predict_time(logistic_binary_classification_with_test):
+    """to_dict should not fail after `predict_time` was called.
 
     Non-regression test for https://github.com/probabl-ai/skore/pull/2950
     """
     estimator, X_test, y_test = logistic_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     report.metrics.predict_time()
-    report.get_state()
+    report.to_dict()
 
 
-def test_from_state_bypasses_init_and_restores_state(
+def test_from_dict_bypasses_init_and_restores_state(
     monkeypatch, logistic_binary_classification_with_test
 ):
     estimator, X_test, y_test = logistic_binary_classification_with_test
@@ -595,15 +595,15 @@ def test_from_state_bypasses_init_and_restores_state(
     expected_accuracy = report.metrics.accuracy()
     report.cache_predictions()
     report.metrics.add("f1", name="F1")
-    state = report.get_state()
+    state = report.to_dict()
     assert state["metadata"]["report_type"] == report._report_type
 
     def _unexpected_init(self, *args, **kwargs):
-        raise AssertionError("__init__ should not be called by from_state")
+        raise AssertionError("__init__ should not be called by from_dict")
 
     monkeypatch.setattr(EstimatorReport, "__init__", _unexpected_init)
 
-    restored = EstimatorReport.from_state(state)
+    restored = EstimatorReport.from_dict(state)
 
     assert restored.id == report.id
     assert restored.fit == report.fit
@@ -620,13 +620,13 @@ def test_from_state_bypasses_init_and_restores_state(
     assert "F1" in df.index
 
 
-def test_from_state_rejects_unknown_version(logistic_binary_classification_with_test):
+def test_from_dict_rejects_unknown_version(logistic_binary_classification_with_test):
     estimator, X_test, y_test = logistic_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    state = report.get_state() | {"version": 999}
+    state = report.to_dict() | {"version": 999}
 
     with pytest.raises(ValueError, match="Unexpected state version"):
-        EstimatorReport.from_state(state)
+        EstimatorReport.from_dict(state)
 
 
 def test_learner_report_root_node_not_an_estimator():
