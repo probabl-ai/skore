@@ -772,6 +772,20 @@ class TestStringScorerNames:
 
         assert display01.data["score"].iloc[0] == display02.data["score"].iloc[0]
 
+    def test_get_with_neg_prefix_after_add(self, regression_report):
+        """Test that `.get()` accepts prefixed name with 'neg_' even though
+        registry stores it stripped.
+        Non-regression for https://github.com/probabl-ai/skore/issues/2902
+        """
+        report = regression_report
+
+        report.metrics.add("neg_mean_absolute_percentage_error")
+
+        value_withneg = report.metrics.get("neg_mean_absolute_percentage_error")
+        value_withoutneg = report.metrics.get("mean_absolute_percentage_error")
+
+        assert value_withneg == value_withoutneg
+
     def test_unknown_metric_still_raises_key_error(self, regression_report):
         """Test that really a unknown metric name still raises KeyError after the
         'neg_' fallback."""
@@ -779,6 +793,9 @@ class TestStringScorerNames:
 
         with pytest.raises(KeyError, match="not there in the registered metrics"):
             report.metrics.summarize(metric="neg_nonexistent_metric")
+
+        with pytest.raises(KeyError, match="not there in the registered metrics"):
+            report.metrics.get("neg_nonexistent_metric")
 
     def test_invalid_string_scorer_name(self, binary_classification_report):
         """Test that invalid sklearn scorer names raise an error."""
