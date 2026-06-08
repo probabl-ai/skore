@@ -41,7 +41,7 @@ class _HelpDisplay:
 def _render_panel_to_plain_text(panel: Panel) -> str:
     """Render a Rich Panel to a plain string (e.g. for mimebundle text/plain)."""
     buf = StringIO()
-    Console(file=buf, force_terminal=False).print(panel)
+    Console(file=buf, force_terminal=False, force_jupyter=False).print(panel)
     return buf.getvalue()
 
 
