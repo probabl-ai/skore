@@ -11,17 +11,8 @@ from skore._plugins.hub.artifact.media import (
     RocDataFrameTest,
     RocDataFrameTrain,
 )
-from skore._plugins.hub.artifact.media.performance import PerformanceDataFrame
 from skore._plugins.hub.artifact.serializer import Serializer
 from skore._plugins.hub.json import dumps
-
-
-def serialize_dataframe(display) -> bytes:
-    frame = display.frame(**PerformanceDataFrame.get_frame_kwargs(display))
-
-    return dumps(
-        frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
-    )
 
 
 @mark.filterwarnings(
@@ -30,7 +21,7 @@ def serialize_dataframe(display) -> bytes:
     "ignore:The default of observed=False is deprecated.*:FutureWarning",
 )
 @mark.parametrize(
-    "Media,report,accessor,data_source,content_type,serialize",
+    "Media,report,accessor,data_source,content_type,parameters",
     (
         param(
             PrecisionRecallDataFrameTest,
@@ -38,7 +29,7 @@ def serialize_dataframe(display) -> bytes:
             "precision_recall",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_average_precision": True},
             id="PrecisionRecallDataFrameTest[estimator]",
         ),
         param(
@@ -47,7 +38,7 @@ def serialize_dataframe(display) -> bytes:
             "precision_recall",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_average_precision": True},
             id="PrecisionRecallDataFrameTrain[estimator]",
         ),
         param(
@@ -56,7 +47,7 @@ def serialize_dataframe(display) -> bytes:
             "precision_recall",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_average_precision": True},
             id="PrecisionRecallDataFrameTest[cross-validation]",
         ),
         param(
@@ -65,7 +56,7 @@ def serialize_dataframe(display) -> bytes:
             "precision_recall",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_average_precision": True},
             id="PrecisionRecallDataFrameTrain[cross-validation]",
         ),
         param(
@@ -74,7 +65,7 @@ def serialize_dataframe(display) -> bytes:
             "prediction_error",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            None,
             id="PredictionErrorDataFrameTest[estimator]",
         ),
         param(
@@ -83,7 +74,7 @@ def serialize_dataframe(display) -> bytes:
             "prediction_error",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            None,
             id="PredictionErrorDataFrameTrain[estimator]",
         ),
         param(
@@ -92,7 +83,7 @@ def serialize_dataframe(display) -> bytes:
             "prediction_error",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            None,
             id="PredictionErrorDataFrameTest[cross-validation]",
         ),
         param(
@@ -101,7 +92,7 @@ def serialize_dataframe(display) -> bytes:
             "prediction_error",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            None,
             id="PredictionErrorDataFrameTrain[cross-validation]",
         ),
         param(
@@ -110,7 +101,7 @@ def serialize_dataframe(display) -> bytes:
             "roc",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_roc_auc": True},
             id="RocDataFrameTest[estimator]",
         ),
         param(
@@ -119,7 +110,7 @@ def serialize_dataframe(display) -> bytes:
             "roc",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_roc_auc": True},
             id="RocDataFrameTrain[estimator]",
         ),
         param(
@@ -128,7 +119,7 @@ def serialize_dataframe(display) -> bytes:
             "roc",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_roc_auc": True},
             id="RocDataFrameTest[cross-validation]",
         ),
         param(
@@ -137,7 +128,7 @@ def serialize_dataframe(display) -> bytes:
             "roc",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_roc_auc": True},
             id="RocDataFrameTrain[cross-validation]",
         ),
         param(
@@ -146,7 +137,7 @@ def serialize_dataframe(display) -> bytes:
             "confusion_matrix",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"threshold_value": None},
             id="ConfusionMatrixDataFrameTest[estimator]",
         ),
         param(
@@ -155,7 +146,7 @@ def serialize_dataframe(display) -> bytes:
             "confusion_matrix",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"threshold_value": None},
             id="ConfusionMatrixDataFrameTrain[estimator]",
         ),
         param(
@@ -164,7 +155,7 @@ def serialize_dataframe(display) -> bytes:
             "confusion_matrix",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"threshold_value": None},
             id="ConfusionMatrixDataFrameTest[cross-validation]",
         ),
         param(
@@ -173,7 +164,7 @@ def serialize_dataframe(display) -> bytes:
             "confusion_matrix",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"threshold_value": None},
             id="ConfusionMatrixDataFrameTrain[cross-validation]",
         ),
     ),
@@ -186,14 +177,17 @@ def test_performance(
     accessor,
     data_source,
     content_type,
-    serialize,
+    parameters,
     upload_mock,
     request,
     project,
 ):
     report = request.getfixturevalue(report)
     display = getattr(report.metrics, accessor)(data_source=data_source)
-    content = serialize(display)
+    frame = display.frame(**(parameters or {}))
+    content = dumps(
+        frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+    )
 
     with Serializer(content) as serializer:
         checksum = serializer.checksum
@@ -204,6 +198,7 @@ def test_performance(
         "name": accessor,
         "data_source": data_source,
         "checksum": checksum,
+        "parameters": parameters,
     }
 
     # ensure `upload` is well called
@@ -224,6 +219,7 @@ def test_performance(
         "name": accessor,
         "data_source": data_source,
         "checksum": None,
+        "parameters": parameters,
     }
 
     # ensure `upload` is not called

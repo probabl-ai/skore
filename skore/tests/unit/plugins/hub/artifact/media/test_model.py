@@ -32,6 +32,7 @@ def test_estimator_html_repr(binary_classification, upload_mock, project):
         "name": "estimator_html_repr",
         "data_source": None,
         "checksum": checksum,
+        "parameters": None,
     }
 
     # wrong type
