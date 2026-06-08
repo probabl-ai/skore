@@ -203,6 +203,9 @@ skore/LICENSE
 # uv
 uv.lock
 
+# Pip requirements generated on demand via `pixi run -e export export-requirements`
+/requirements.txt
+
 # mlflow
 mlflow.db
 mlruns

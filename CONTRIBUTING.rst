@@ -85,21 +85,115 @@ You will find below some code you can use in your terminal, using HTTPS connecti
     # Create a new branch for your issue
     git checkout -b issue-NAME_OF_ISSUE
 
-We strongly recommend using a virtual environment to isolate your development dependencies.
+You can set up your development environment in two ways:
 
-Once your environment is set up, install the development dependencies and setup pre-commit with:
+- with `pixi <https://pixi.sh>`_, which is the workflow used by our CI and the
+  recommended way to reproduce it exactly (see `Using pixi`_);
+- with a plain virtual environment and ``pip`` (see `Using a virtual environment and pip`_).
 
-    .. code-block:: bash
+Using pixi
+""""""""""
 
-        make install-skore
+Our continuous integration relies on `pixi <https://pixi.sh>`_ to manage and lock the
+development environments. The full matrix of environments (Python and ``scikit-learn``
+versions, documentation, linting, ...) is declared in the ``pixi.toml`` file at the root
+of the repository, and locked in ``pixi.lock``. Using pixi is therefore the most reliable
+way to reproduce the environment used by the CI.
 
-    On `old CPU architecture <https://github.com/pola-rs/polars?tab=readme-ov-file#legacy>`_ to get the support of ``polars``:
+First, install pixi by following the `official installation instructions
+<https://pixi.sh/latest/installation/>`_. On Linux and macOS, this is usually:
 
-    .. code-block:: bash
+.. code-block:: bash
 
-        make install-skore-lts-cpu
+    curl -fsSL https://pixi.sh/install.sh | sh
+
+pixi creates an isolated environment for you (you do not need to create a virtual
+environment yourself) and downloads the dependencies on first use. The environments are
+named in the ``[environments]`` table of ``pixi.toml``. The most common commands are:
+
+.. code-block:: bash
+
+    # Run the test suite in a given environment
+    pixi run -e py311-sklearn19 tests
+
+    # Run the linters (ruff, pre-commit hooks, ...)
+    pixi run -e lint lint
+
+    # Build the documentation
+    pixi run -e sphinx docs
+
+The ``sphinx`` environment also installs ``graphviz`` (which provides the ``dot``
+command used to render some diagrams), so you do not have to install it yourself when
+building the documentation with pixi.
+
+Using a virtual environment and pip
+"""""""""""""""""""""""""""""""""""
+
+If you prefer not to use pixi, you can work in a standard virtual environment. You will
+need ``python >=3.11``.
+
+Create and activate a virtual environment, for instance with the built-in `venv
+<https://docs.python.org/3/tutorial/venv.html>`_ module:
+
+.. code-block:: bash
+
+    # Create a virtual environment in the `.venv` directory
+    python -m venv .venv
+
+    # Activate it (Linux/macOS)
+    source .venv/bin/activate
+
+    # Activate it (Windows, PowerShell)
+    .venv\Scripts\Activate.ps1
+
+Once your environment is activated, install the development dependencies and setup
+pre-commit with:
+
+.. code-block:: bash
+
+    make install-skore
+
+On `old CPU architecture <https://github.com/pola-rs/polars?tab=readme-ov-file#legacy>`_ to get the support of ``polars``:
+
+.. code-block:: bash
+
+    make install-skore-lts-cpu
 
 Consider re-executing this command each time you rebase your branch with main, as dependencies can change.
+
+To build the documentation in this setup, you also need the ``dot`` command from
+`Graphviz <https://graphviz.org/download/>`_, which is **not** installed by ``pip``.
+Install it with your system package manager, for example:
+
+.. code-block:: bash
+
+    # Debian/Ubuntu
+    sudo apt-get install graphviz
+
+    # macOS (Homebrew)
+    brew install graphviz
+
+Reproducing the CI environment with pip
+""""""""""""""""""""""""""""""""""""""""
+
+The dependency versions used by the CI are locked only in pixi's own format
+(``pixi.lock``). If you do not use pixi but still want a pinned, cross-package-manager
+``requirements.txt`` derived from ``skore/pyproject.toml``, you can generate one on
+demand with the dedicated pixi task:
+
+.. code-block:: bash
+
+    pixi run -e export export-requirements
+
+This resolves the dependencies (including the ``test`` extra) with `uv
+<https://docs.astral.sh/uv/>`_ for the Python version pinned by the ``export``
+environment and writes the result to ``requirements.txt`` at the root of the repository.
+The generated file is intentionally not committed; you can then install it with any
+pip-compatible tool:
+
+.. code-block:: bash
+
+    pip install -r requirements.txt
 
 
 Choosing an issue
@@ -202,12 +296,24 @@ Setup
 
 Our documentation uses the `PyData Sphinx Theme <https://pydata-sphinx-theme.readthedocs.io/>`_.
 
+Building the documentation requires the ``dot`` command from `Graphviz
+<https://graphviz.org/download/>`_. It is bundled with the ``sphinx`` pixi environment;
+if you build the docs in a plain virtual environment, make sure Graphviz is installed on
+your system (see `Using a virtual environment and pip`_).
+
 To build the docs:
 
 .. code-block:: bash
 
     cd sphinx
     make html
+
+Alternatively, you can build them through pixi from the repository root, which also
+provides ``dot``:
+
+.. code-block:: bash
+
+    pixi run -e sphinx docs
 
 You can access the local build at:
 

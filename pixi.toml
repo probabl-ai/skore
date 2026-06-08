@@ -51,6 +51,18 @@ pre-commit = "*"
 [feature.lint.tasks]
 lint = "pre-commit install && pre-commit run -v --all-files --show-diff-on-failure"
 
+# Generate a pip-only, cross-package-manager `requirements.txt` from
+# `skore/pyproject.toml`. The CI lockfiles only exist in pixi "language"
+# (`pixi.lock`); this task lets contributors who do not use pixi reproduce a
+# comparable environment with any pip-compatible tool (pip, uv, etc.).
+# The Python version used for the resolution is the one pinned by the
+# environment (see `export` in `[environments]`).
+[feature.export.dependencies]
+uv = "*"
+
+[feature.export.tasks]
+export-requirements = "uv pip compile skore/pyproject.toml --extra test --no-header --output-file requirements.txt"
+
 [feature.sphinx.dependencies]
 graphviz = "*"
 
@@ -77,3 +89,4 @@ py314-sklearn19-pandas2 = ["py314", "sklearn19", "pandas2", "test"]
 py314-sklearn19-mlflow3 = ["py314", "sklearn19", "mlflow3", "test"]
 sphinx = ["py314", "sklearn19", "sphinx"]
 lint = ["py312", "lint"]
+export = ["py311", "export"]
