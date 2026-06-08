@@ -84,6 +84,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         metric : str or list of str or None, default=None
             The metrics to report, from the list of registered metrics. None means show
             all registered metrics. To add a custom metric, see :meth:`add`.
+            Metrics added with a ``neg_`` prefix can also be retrieved without it
+            (e.g. ``"neg_mean_absolute_percentage_error"`` instead of
+            ``"mean_absolute_percentage_error"``).
 
         Returns
         -------
@@ -301,6 +304,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         name : str
             Name of the metric to compute. Get all available metrics with
             :meth:`~EstimatorReport.metrics.available()`.
+            Metrics added with a ``neg_`` prefix can also be retrieved
+            without it; the alias is resolved automatically.
 
         data_source : {"test", "train"}, default="test"
             The data source to use.
@@ -323,9 +328,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.get("precision")
         {0: 0.90..., 1: 0.98...}
         """
-        metric = self._parent._metric_registry.get(name)
-        if metric is None:
-            raise KeyError(name)
+        try:
+            metric = self._parent._metric_registry[name]
+        except KeyError:
+            raise KeyError(f"{name!r} is not there in the registered metrics") from None
         return metric.pretty(report=self._parent, data_source=data_source, **kwargs)
 
     def fit_time(self, *, cast: bool = True) -> float | None:
