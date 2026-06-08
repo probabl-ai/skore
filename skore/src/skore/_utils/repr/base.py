@@ -71,24 +71,6 @@ def _help_dispatch(
     return None
 
 
-class ReprHTMLMixin:
-    """Mixin to handle consistently the HTML representation.
-
-    When inheriting from this class, you need to define an attribute `_html_repr`
-    which is a callable that returns the HTML representation to be shown.
-    """
-
-    @property
-    def _repr_html_(self):
-        return self._repr_html_inner
-
-    def _repr_html_inner(self):
-        return self._html_repr()
-
-    def _repr_mimebundle_(self, **kwargs):
-        return {"text/plain": repr(self), "text/html": self._html_repr()}
-
-
 class ReportHelpMixin(_RichReportHelpMixin, _HTMLReportHelpMixin):
     """Mixin class providing help for report `help` and `__repr__`.
 
@@ -104,7 +86,7 @@ class ReportHelpMixin(_RichReportHelpMixin, _HTMLReportHelpMixin):
         )
 
 
-class AccessorHelpMixin(ReprHTMLMixin, _RichAccessorHelpMixin, _HTMLAccessorHelpMixin):
+class AccessorHelpMixin(_RichAccessorHelpMixin, _HTMLAccessorHelpMixin):
     """Mixin class providing help for accessor `help`."""
 
     def _get_help_title(self) -> str:
@@ -117,12 +99,6 @@ class AccessorHelpMixin(ReprHTMLMixin, _RichAccessorHelpMixin, _HTMLAccessorHelp
             html_help_factory=self._create_help_html,
             rich_help_factory=self._create_help_panel,
         )
-
-    def __repr__(self) -> str:
-        return _render_panel_to_plain_text(self._create_help_panel())
-
-    def _html_repr(self) -> str:
-        return self._create_help_html()
 
 
 class DisplayHelpMixin(_RichHelpDisplayMixin, _HTMLHelpDisplayMixin):
@@ -144,3 +120,34 @@ class DisplayHelpMixin(_RichHelpDisplayMixin, _HTMLHelpDisplayMixin):
             html_help_factory=self._create_help_html,
             rich_help_factory=self._create_help_panel,
         )
+
+
+class ReprHTMLMixin:
+    """Mixin to handle consistently the HTML representation.
+
+    When inheriting from this class, you need to define an attribute `_html_repr`
+    which is a callable that returns the HTML representation to be shown.
+    """
+
+    @property
+    def _repr_html_(self):
+        return self._repr_html_inner
+
+    def _repr_html_inner(self):
+        return self._html_repr()
+
+    def _repr_mimebundle_(self, **kwargs):
+        return {"text/plain": repr(self), "text/html": self._html_repr()}
+
+
+class AccessorReprMixin(ReprHTMLMixin):
+    """Default accessor repr from help panel/HTML factories on ``AccessorHelpMixin``."""
+
+    _create_help_panel: Callable[[], Panel]
+    _create_help_html: Callable[[], str]
+
+    def __repr__(self) -> str:
+        return _render_panel_to_plain_text(self._create_help_panel())
+
+    def _html_repr(self) -> str:
+        return self._create_help_html()

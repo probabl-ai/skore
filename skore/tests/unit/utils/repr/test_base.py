@@ -8,7 +8,6 @@ from sklearn.linear_model import LogisticRegression
 
 from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.base import (
-    AccessorHelpMixin,
     DisplayHelpMixin,
     ReportHelpMixin,
     ReprHTMLMixin,
@@ -18,10 +17,6 @@ from skore._utils.repr.base import (
 
 class _ReportWithBaseHelp(MockReport, ReportHelpMixin):
     """Minimal report with ReportHelpMixin for tests."""
-
-
-class _AccessorWithBaseHelp(MockAccessor, AccessorHelpMixin):
-    """Minimal accessor with AccessorHelpMixin for tests."""
 
 
 class _DisplayWithBaseHelp(DisplayHelpMixin, MockDisplay):
@@ -52,8 +47,8 @@ def report_with_base_help():
 
 @pytest.fixture
 def accessor_with_base_help(report_with_base_help):
-    """Accessor with AccessorHelpMixin."""
-    return _AccessorWithBaseHelp(parent=report_with_base_help)
+    """Accessor with help and repr via _BaseAccessor."""
+    return MockAccessor(parent=report_with_base_help)
 
 
 @pytest.fixture
@@ -118,15 +113,15 @@ def test_report_help_mixin_rich_path(monkeypatch, report_with_base_help):
     assert panel is not None
 
 
-def test_accessor_help_mixin_repr(accessor_with_base_help):
-    """AccessorHelpMixin.__repr__ renders the help panel as plain text."""
+def test_accessor_repr(accessor_with_base_help):
+    """_BaseAccessor.__repr__ renders the help panel as plain text."""
     repr_str = repr(accessor_with_base_help)
     assert accessor_with_base_help._parent.__class__.__name__ in repr_str
     assert "mock_accessor" in repr_str
 
 
-def test_accessor_help_mixin_html_repr(accessor_with_base_help):
-    """AccessorHelpMixin._html_repr returns the help HTML."""
+def test_accessor_html_repr(accessor_with_base_help):
+    """_BaseAccessor._html_repr returns the help HTML."""
     html = accessor_with_base_help._html_repr()
     assert "skore-accessor-help-" in html
     assert "mock_accessor" in html

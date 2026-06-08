@@ -9,7 +9,7 @@ from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
-from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
+from skore._utils.repr.base import AccessorHelpMixin, AccessorReprMixin, ReportHelpMixin
 
 
 class _BaseReport(ReportHelpMixin):
@@ -127,11 +127,11 @@ class _BaseReport(ReportHelpMixin):
 ParentT = TypeVar("ParentT", bound="_BaseReport")
 
 
-class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
+class _BaseAccessor(AccessorReprMixin, AccessorHelpMixin, Generic[ParentT]):
     """Base class for all accessors.
 
     Accessors expose additional views on a report (e.g. data, metrics) and inherit from
-    ``AccessorHelpMixin`` to provide a dedicated ``help()`` and rich/HTML help tree.
+    ``AccessorHelpMixin`` for ``help()`` and ``AccessorReprMixin`` for repr hooks.
     """
 
     def __init__(self, parent: ParentT) -> None:
