@@ -112,7 +112,7 @@ class _BaseReport(ReportHelpMixin):
             "skore-version": version("skore"),
             "creation-date": datetime.now(UTC).isoformat(),
             # comparison reports don't have a _report_type yet at init time
-            # but they don't have a `get_state` anyway:
+            # but they don't have a `to_dict` anyway:
             "report_type": getattr(self, "_report_type", "comparison"),
             "git_commit": git_commit(),
         }
