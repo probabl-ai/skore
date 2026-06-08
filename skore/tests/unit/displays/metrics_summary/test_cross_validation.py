@@ -1,9 +1,6 @@
-"""Tests for MetricsSummaryDisplay.frame() method with cross-validation DataFrames.
+"""Tests for MetricsSummaryDisplay with a CrossValidationReport."""
 
-These tests focus on testing the display/formatting logic of MetricsSummaryDisplay
-for cross-validation reports without depending on CrossValidationReport or summarize().
-"""
-
+import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
@@ -282,3 +279,91 @@ def test_with_mixed_favorability(forest_binary_classification_data):
     assert result.index.names == ["Metric", "Label"]
     assert result.loc[("Accuracy", ""), ("Favorability", "")] == "(↗︎)"
     assert result.loc[("Brier score", ""), ("Favorability", "")] == "(↘︎)"
+
+
+def test_plot_single_metric(pyplot, forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    display = report.metrics.summarize()
+
+    fig = display.plot(metric="accuracy")
+    assert isinstance(fig.axes[0], mpl.axes.Axes)
+    assert fig._suptitle.get_text() == "Metrics of RandomForestClassifier"
+
+
+@pytest.mark.parametrize(
+    "fixture_name, metric, subplot_by, err_msg",
+    [
+        (
+            "cross_validation_reports_binary_classification",
+            "score",
+            "label",
+            "No columns to group by.",
+        ),
+        (
+            "cross_validation_reports_regression",
+            "score",
+            "output",
+            "No columns to group by.",
+        ),
+        (
+            "cross_validation_reports_multiclass_classification",
+            "precision",
+            "incorrect",
+            "Column incorrect not found in the frame."
+            + " It should be one of label, auto, None.",
+        ),
+        (
+            "cross_validation_reports_multioutput_regression",
+            "r2",
+            "incorrect",
+            "Column incorrect not found in the frame."
+            + " It should be one of output, auto, None.",
+        ),
+    ],
+)
+def test_invalid_subplot_by(pyplot, fixture_name, metric, subplot_by, err_msg, request):
+    reports = request.getfixturevalue(fixture_name)
+    report = reports[0]
+    display = report.metrics.summarize()
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(metric=metric, subplot_by=subplot_by)
+
+
+@pytest.mark.parametrize(
+    "fixture_name, metric, subplot_by_tuples",
+    [
+        (
+            "cross_validation_reports_binary_classification",
+            "score",
+            [(None, 1)],
+        ),
+        (
+            "cross_validation_reports_multiclass_classification",
+            "precision",
+            [("label", 3), (None, 1)],
+        ),
+        (
+            "cross_validation_reports_regression",
+            "score",
+            [(None, 1)],
+        ),
+        (
+            "cross_validation_reports_multioutput_regression",
+            "r2",
+            [("output", 2), (None, 1)],
+        ),
+    ],
+)
+def test_valid_subplot_by(pyplot, fixture_name, metric, subplot_by_tuples, request):
+    reports = request.getfixturevalue(fixture_name)
+    report = reports[0]
+    display = report.metrics.summarize()
+    for subplot_by, expected_len in subplot_by_tuples:
+        fig = display.plot(metric=metric, subplot_by=subplot_by)
+        axes = fig.axes
+        if subplot_by is None:
+            assert len(axes) == 1
+            assert isinstance(axes[0], mpl.axes.Axes)
+        else:
+            assert len(axes) == expected_len

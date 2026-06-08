@@ -42,6 +42,7 @@ def check_display_structure(
 
     assert set(data.columns) == {
         "split",
+        "metric_name",
         "metric_verbose_name",
         "estimator_name",
         "data_source",
