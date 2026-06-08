@@ -11,7 +11,6 @@ from skore._sklearn.types import (
     ReportType,
 )
 from skore._utils._index import flatten_multi_index
-from skore._utils.repr import ReprHTMLMixin
 
 
 class MetricsSummaryRow(TypedDict):
@@ -50,7 +49,7 @@ class MetricsSummaryRow(TypedDict):
     split: NotRequired[int]
 
 
-class MetricsSummaryDisplay(ReprHTMLMixin, DisplayMixin):
+class MetricsSummaryDisplay(DisplayMixin):
     """Summarize evaluation metrics in a table.
 
     Parameters
@@ -397,7 +396,7 @@ class MetricsSummaryDisplay(ReprHTMLMixin, DisplayMixin):
 
             return df
 
-    def _html_repr(self) -> str:
+    def _repr_html_(self) -> str:
         return (
             f"{self.frame()._repr_html_()}"
             '<p role="note">Use <code>.frame()</code> to control the format'
@@ -406,6 +405,9 @@ class MetricsSummaryDisplay(ReprHTMLMixin, DisplayMixin):
 
     def __repr__(self) -> str:
         return f"{self.frame()!r}\nUse .frame() to control the format of the output."
+
+    def _repr_mimebundle_(self, **kwargs):
+        return {"text/plain": repr(self), "text/html": self._repr_html_()}
 
     @DisplayMixin.style_plot
     def plot(self) -> Figure:
