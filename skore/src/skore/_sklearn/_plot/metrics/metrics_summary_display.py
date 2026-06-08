@@ -378,11 +378,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             favorability_col = df.pop(("Favorability", "")).bfill(axis=1).iloc[:, 0]
 
             if aggregate is None:
-                original_index_names = list(df.index.names)
-                df = df.stack([0, 1])
-                df.index.names = original_index_names + ["Estimator", "Split"]
-                df = df.to_frame("Value")
-                df.columns.name = None
+                df.columns.names = ["Estimator", "Split"]
             else:
                 df.columns = df.columns.swaplevel(0, 1)
                 df = df.sort_index(axis=1, level=[0, 1])
