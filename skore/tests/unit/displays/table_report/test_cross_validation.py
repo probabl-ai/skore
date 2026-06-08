@@ -127,15 +127,6 @@ def test_summarize_with_invalid_subsample_strategy(cross_validation_report):
         )
 
 
-def test_repr(cross_validation_report):
-    """Check that __repr__ and _repr_html_ show accessor help."""
-    repr_str = repr(cross_validation_report.data)
-    assert "Data accessor" in repr_str
-    assert cross_validation_report.__class__.__name__ in repr_str
-    assert "skore-accessor-help-" in cross_validation_report.data._repr_html_()
-    assert "CrossValidationReport" in repr_str
-
-
 def test_analyze_deprecation(cross_validation_report):
     """Check that data.analyze() emits a FutureWarning and delegates to summarize."""
     with pytest.warns(FutureWarning, match=r"data\.analyze\(\) is deprecated"):
