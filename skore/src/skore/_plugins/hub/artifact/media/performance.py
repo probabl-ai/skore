@@ -79,12 +79,27 @@ class RocDataFrameTest(RocDataFrame[Report]):  # noqa: D101
 class ConfusionMatrixDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.confusion_matrix"
     name: Literal["confusion_matrix"] = "confusion_matrix"
+
+
+class ConfusionMatrixDataFrameTrainAll(ConfusionMatrixDataFrame[Report]):  # noqa: D101
+    data_source: Literal["train"] = "train"
+    parameters: dict[Literal["threshold_value"], Literal["all"]] = {
+        "threshold_value": "all"
+    }
+
+
+class ConfusionMatrixDataFrameTrainNone(ConfusionMatrixDataFrame[Report]):  # noqa: D101
+    data_source: Literal["train"] = "train"
     parameters: dict[Literal["threshold_value"], None] = {"threshold_value": None}
 
 
-class ConfusionMatrixDataFrameTrain(ConfusionMatrixDataFrame[Report]):  # noqa: D101
-    data_source: Literal["train"] = "train"
-
-
-class ConfusionMatrixDataFrameTest(ConfusionMatrixDataFrame[Report]):  # noqa: D101
+class ConfusionMatrixDataFrameTestAll(ConfusionMatrixDataFrame[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
+    parameters: dict[Literal["threshold_value"], Literal["all"]] = {
+        "threshold_value": "all"
+    }
+
+
+class ConfusionMatrixDataFrameTestNone(ConfusionMatrixDataFrame[Report]):  # noqa: D101
+    data_source: Literal["test"] = "test"
+    parameters: dict[Literal["threshold_value"], None] = {"threshold_value": None}
