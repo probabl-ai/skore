@@ -214,15 +214,6 @@ def test_plot_single_metric(pyplot, forest_binary_classification_with_test):
     assert fig._suptitle.get_text() == "Metrics of RandomForestClassifier"
 
 
-def test_plot_multiple_metrics(pyplot, forest_binary_classification_with_test):
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    display = report.metrics.summarize()
-
-    fig = display.plot(metric=["accuracy", "precision"])
-    assert len(fig.axes) == 1
-
-
 def test_plot_unknown_metric_raises(forest_binary_classification_with_test):
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)

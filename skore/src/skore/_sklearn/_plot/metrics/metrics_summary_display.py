@@ -430,20 +430,17 @@ class MetricsSummaryDisplay(DisplayMixin):
     def plot(
         self,
         *,
-        metric: str | list[str],
+        metric: str,
         subplot_by: Literal["auto", "estimator", "label", "output", "data_source"]
         | None = "auto",
     ) -> Figure:
-        """Plot one or more metrics.
+        """Plot a single metric.
 
         Parameters
         ----------
-        metric : str or list of str
-            The metric(s) to plot, using the same registry keys as
+        metric : str
+            The metric to plot, using the same registry key as
             :meth:`~skore.EstimatorReport.metrics.summarize` (e.g. ``"precision"``).
-            When several metrics are provided, they are shown on the same plot to
-            compare trade-offs. Metrics with very different scales may look
-            compressed on a shared x-axis.
 
         subplot_by : {"auto", "estimator", "label", "output", "data_source"} \
                 or None, default="auto"
@@ -461,13 +458,12 @@ class MetricsSummaryDisplay(DisplayMixin):
     def _plot_matplotlib(
         self,
         *,
-        metric: str | list[str],
+        metric: str,
         subplot_by: Literal["auto", "estimator", "label", "output", "data_source"]
         | None = "auto",
     ) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
-        metrics = [metric] if isinstance(metric, str) else list(metric)
-        frame = self._prepare_plot_frame(metrics)
+        frame = self._prepare_plot_frame(metric)
 
         barplot_kwargs = self._default_barplot_kwargs.copy()
         boxplot_kwargs = self._default_boxplot_kwargs.copy()
@@ -494,24 +490,16 @@ class MetricsSummaryDisplay(DisplayMixin):
             stripplot_kwargs=stripplot_kwargs,
         )
 
-    def _prepare_plot_frame(self, metrics: list[str]) -> pd.DataFrame:
+    def _prepare_plot_frame(self, metric: str) -> pd.DataFrame:
         """Filter and reshape raw rows into a long frame for plotting."""
-        if not metrics:
-            raise ValueError(
-                "At least one metric must be provided to plot. Pass a registry key "
-                "such as `metric='precision'`."
-            )
-
         frame = self.data.copy()
         available = set(frame["metric_name"])
-        unknown = set(metrics) - available
-        if unknown:
+        if metric not in available:
             raise ValueError(
-                f"Unknown metric(s): {sorted(unknown)!r}. "
-                f"Available metrics: {sorted(available)!r}."
+                f"Unknown metric: {metric!r}. Available metrics: {sorted(available)!r}."
             )
 
-        frame = frame[frame["metric_name"].isin(metrics)]
+        frame = frame[frame["metric_name"] == metric]
         frame = frame.rename(columns={"estimator_name": "estimator"})
 
         for col in ["label", "output", "average"]:
@@ -533,18 +521,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         ):
             frame = frame.drop(columns="split")
 
-        verbose_order = (
-            frame.drop_duplicates("metric_name")
-            .set_index("metric_name")
-            .loc[metrics, "metric_verbose_name"]
-            .tolist()
-        )
-        frame["metric_verbose_name"] = pd.Categorical(
-            frame["metric_verbose_name"],
-            categories=verbose_order,
-            ordered=True,
-        )
-
         return frame
 
     @staticmethod
@@ -560,19 +536,11 @@ class MetricsSummaryDisplay(DisplayMixin):
     def _decorate_matplotlib_axis(
         *,
         ax: Any,
-        n_metrics: int,
         xlabel: str,
         ylabel: str = "",
     ) -> None:
         ax.set(xlabel=xlabel, ylabel=ylabel)
-        for metric_idx in range(0, n_metrics, 2):
-            ax.axhspan(
-                metric_idx - 0.5,
-                metric_idx + 0.5,
-                color="lightgray",
-                alpha=0.4,
-                zorder=0,
-            )
+        ax.axhspan(-0.5, 0.5, color="lightgray", alpha=0.4, zorder=0)
 
     def _categorical_plot(
         self,
@@ -615,29 +583,13 @@ class MetricsSummaryDisplay(DisplayMixin):
                 **(boxplot_kwargs or {}),
             )
 
-        add_background_metrics = hue is not None
+        add_background_metric = hue is not None
         figure = facet.figure
         ax_grid = facet.axes.squeeze()
-        n_metrics = (
-            [frame["metric_verbose_name"].nunique()]
-            if col is None
-            else [
-                frame.query(f"{col} == @col_value")["metric_verbose_name"].nunique()
-                for col_value in frame[col].unique()
-            ]
-        )
-        xlabel = (
-            frame["metric_verbose_name"].cat.categories[0]
-            if frame["metric_verbose_name"].nunique() == 1
-            else "Score"
-        )
-        for ax, n_metric in zip(ax_grid.flatten(), n_metrics, strict=True):
-            self._decorate_matplotlib_axis(
-                ax=ax,
-                n_metrics=n_metric,
-                xlabel=xlabel,
-            )
-            if not add_background_metrics:
+        xlabel = frame["metric_verbose_name"].iloc[0]
+        for ax in ax_grid.flatten():
+            self._decorate_matplotlib_axis(ax=ax, xlabel=xlabel)
+            if not add_background_metric:
                 for patch in ax.patches:
                     patch.set_facecolor("lightgray")
                     patch.set_alpha(0.4)
