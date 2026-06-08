@@ -1048,7 +1048,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             "Explore available methods with .help()."
         )
 
-    def _html_repr(self) -> str:
+    def _repr_html_(self) -> str:
         return (
             "<p>Metrics summary:</p>"
             f"{self.summarize().frame()._repr_html_()}"

@@ -9,7 +9,11 @@ from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
-from skore._utils.repr.base import AccessorHelpMixin, AccessorReprMixin, ReportHelpMixin
+from skore._utils.repr.base import (
+    AccessorHelpMixin,
+    ReportHelpMixin,
+    render_panel_to_plain_text,
+)
 
 
 class _BaseReport(ReportHelpMixin):
@@ -127,12 +131,21 @@ class _BaseReport(ReportHelpMixin):
 ParentT = TypeVar("ParentT", bound="_BaseReport")
 
 
-class _BaseAccessor(AccessorReprMixin, AccessorHelpMixin, Generic[ParentT]):
+class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
     """Base class for all accessors.
 
     Accessors expose additional views on a report (e.g. data, metrics) and inherit from
-    ``AccessorHelpMixin`` for ``help()`` and ``AccessorReprMixin`` for repr hooks.
+    ``AccessorHelpMixin`` to provide a dedicated ``help()`` and rich/HTML help tree.
     """
 
     def __init__(self, parent: ParentT) -> None:
         self._parent = parent
+
+    def __repr__(self) -> str:
+        return render_panel_to_plain_text(self._create_help_panel())
+
+    def _repr_html_(self) -> str:
+        return self._create_help_html()
+
+    def _repr_mimebundle_(self, **kwargs):
+        return {"text/plain": repr(self), "text/html": self._repr_html_()}

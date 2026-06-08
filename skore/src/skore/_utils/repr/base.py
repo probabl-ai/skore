@@ -38,7 +38,7 @@ class _HelpDisplay:
         return {"text/plain": self._plain, "text/html": self._html}
 
 
-def _render_panel_to_plain_text(panel: Panel) -> str:
+def render_panel_to_plain_text(panel: Panel) -> str:
     """Render a Rich Panel to a plain string (e.g. for mimebundle text/plain)."""
     buf = StringIO()
     Console(file=buf, force_terminal=False, force_jupyter=False).print(panel)
@@ -58,7 +58,7 @@ def _help_dispatch(
     if is_environment_sphinx_build():
         return _HelpDisplay(
             html=html_help_factory(),
-            plain=_render_panel_to_plain_text(rich_help_factory()),
+            plain=render_panel_to_plain_text(rich_help_factory()),
         )
     if is_environment_notebook_like():
         from IPython.display import HTML, display
@@ -138,16 +138,3 @@ class ReprHTMLMixin:
 
     def _repr_mimebundle_(self, **kwargs):
         return {"text/plain": repr(self), "text/html": self._html_repr()}
-
-
-class AccessorReprMixin(ReprHTMLMixin):
-    """Default accessor repr from help panel/HTML factories on ``AccessorHelpMixin``."""
-
-    _create_help_panel: Callable[[], Panel]
-    _create_help_html: Callable[[], str]
-
-    def __repr__(self) -> str:
-        return _render_panel_to_plain_text(self._create_help_panel())
-
-    def _html_repr(self) -> str:
-        return self._create_help_html()

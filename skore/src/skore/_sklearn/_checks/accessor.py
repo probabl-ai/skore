@@ -140,5 +140,5 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
     def __repr__(self) -> str:
         return repr(self.summarize())
 
-    def _html_repr(self) -> str:
+    def _repr_html_(self) -> str:
         return self.summarize()._repr_html_()
