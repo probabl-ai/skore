@@ -324,7 +324,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 f"It should be one of: {labels!r}."
             )
 
-    def get_state(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a serializable representation of the report state.
 
         This state is meant to ease serialization/deserialization of
@@ -378,8 +378,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         }
 
     @classmethod
-    def from_state(cls, state: dict[str, Any]) -> EstimatorReport:
-        """Rebuild a report from :meth:`get_state` output."""
+    def from_dict(cls, state: dict[str, Any]) -> EstimatorReport:
+        """Build a report from :meth:`to_dict` output."""
         version = state.get("version")
         if version != _STATE_VERSION:
             # For now, no backward compatibility

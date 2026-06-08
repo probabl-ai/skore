@@ -175,7 +175,7 @@ class Project:
                 "is already open. Call mlflow.end_run() before calling Project.put()."
             )
 
-        state = externalize(report.get_state(), self._write_object_in_storage)
+        state = externalize(report.to_dict(), self._write_object_in_storage)
 
         with (
             disable_discrete_autologging(["sklearn"]),
@@ -239,9 +239,9 @@ class Project:
         state = internalize(joblib.load(pickle_path), self._load_object_from_storage)
         report_type = state["metadata"]["report_type"]
         if report_type == "estimator":
-            return EstimatorReport.from_state(state)
+            return EstimatorReport.from_dict(state)
         else:
-            return CrossValidationReport.from_state(state)
+            return CrossValidationReport.from_dict(state)
 
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted models in insertion order."""
