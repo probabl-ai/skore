@@ -267,6 +267,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
 
         Parameters
         ----------
+        name : str
+            Name of the metric to compute. Get all available metrics with
+            :meth:`~ComparisonReport.metrics.available()`.
+
         data_source : {"test", "train"}, default="test"
             The data source to use.
 

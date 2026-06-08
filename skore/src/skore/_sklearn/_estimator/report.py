@@ -70,9 +70,11 @@ def _check_estimator_and_data(
                 "estimator is a SkrubLearner. "
                 "Provide train_data and test_data instead."
             )
-        test_data = (
-            None if test_data is None else eval_X_y(estimator.data_op, test_data)
-        )
+        if test_data is None:
+            raise TypeError(
+                "test_data must be provided when estimator is a SkrubLearner."
+            )
+        test_data = eval_X_y(estimator.data_op, test_data)
         train_data = (
             None if train_data is None else eval_X_y(estimator.data_op, train_data)
         )
@@ -85,7 +87,12 @@ def _check_estimator_and_data(
                 "Provide X_train, y_train, X_test, y_test instead."
             )
         estimator = to_learner(estimator)
-        test_data = None if X_test is None else {"_skrub_X": X_test, "_skrub_y": y_test}
+        if X_test is None:
+            raise TypeError(
+                "X_test must be provided (unless estimator is a "
+                "SkrubLearner and test_data is provided instead)."
+            )
+        test_data = {"_skrub_X": X_test, "_skrub_y": y_test}
         train_data = (
             None if X_train is None else {"_skrub_X": X_train, "_skrub_y": y_train}
         )

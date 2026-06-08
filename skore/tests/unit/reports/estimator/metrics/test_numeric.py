@@ -267,14 +267,17 @@ def test_get(binary_classification_report):
     report = binary_classification_report
 
     assert report.metrics.get("precision") == 1
-    assert report.metrics.get("non-existing metric") is None
+
+    with pytest.raises(KeyError):
+        report.metrics.get("non-existing metric")
 
 
 def test_get_custom(binary_classification_report):
     """``get`` works for custom metrics."""
     report = binary_classification_report
 
-    assert report.metrics.get("hello") is None
+    with pytest.raises(KeyError):
+        report.metrics.get("hello")
 
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 

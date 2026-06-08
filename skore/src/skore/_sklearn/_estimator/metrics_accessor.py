@@ -298,6 +298,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Parameters
         ----------
+        name : str
+            Name of the metric to compute. Get all available metrics with
+            :meth:`~EstimatorReport.metrics.available()`.
+
         data_source : {"test", "train"}, default="test"
             The data source to use.
 
@@ -321,7 +325,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         metric = self._parent._metric_registry.get(name)
         if metric is None:
-            return None
+            raise KeyError(name)
         return metric.pretty(report=self._parent, data_source=data_source, **kwargs)
 
     def fit_time(self, *, cast: bool = True) -> float | None:

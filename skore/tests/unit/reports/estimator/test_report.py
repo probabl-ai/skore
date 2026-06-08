@@ -28,8 +28,9 @@ def test_estimator_not_fitted(fit):
     """
     estimator = LinearRegression()
     err_msg = "The training data is required to fit the estimator. "
+    X, y = make_regression(n_samples=2)
     with pytest.raises(ValueError, match=err_msg):
-        EstimatorReport(estimator, fit=fit, X_test=None, y_test=None)
+        EstimatorReport(estimator, fit=fit, X_test=X, y_test=y)
 
 
 @pytest.mark.parametrize("fit", [True, "auto"])
@@ -463,10 +464,25 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
 
 
 @pytest.fixture
-def prefit_regression_report_no_data():
+def prefit_regression_report_no_train_data():
     X, y = make_regression(random_state=42)
     estimator = LinearRegression().fit(X, y)
-    return EstimatorReport(estimator, fit=False)
+    return EstimatorReport(estimator, fit=False, X_test=X, y_test=y)
+
+
+def test_prefit_no_train_data_repr_methods(prefit_regression_report_no_train_data):
+    repr_str = repr(prefit_regression_report_no_train_data)
+    assert "R²" in repr_str
+    assert "to_markdown()" in repr_str
+
+    markdown = prefit_regression_report_no_train_data.to_markdown()
+    assert markdown.startswith("# EstimatorReport: LinearRegression")
+    for section in ("## Estimator", "## Metrics", "## Checks (fast mode)", "## Data"):
+        assert section in markdown
+    assert "LinearRegression()" in markdown
+
+    fragments = prefit_regression_report_no_train_data._html_repr_fragments()
+    assert "R²" in fragments["metrics_summary"]
 
 
 def test_to_markdown(forest_binary_classification_data):
@@ -604,3 +620,18 @@ def test_learner_report_root_node_not_an_estimator():
         data_op.skb.make_learner(), train_data=split["train"], test_data=split["test"]
     )
     report.metrics.summarize(metric="accuracy")
+
+
+def test_no_data_error():
+    X, y = make_classification()
+    learner = (
+        skrub.X()
+        .skb.apply(DummyClassifier(), y=skrub.y())
+        .skb.make_learner()
+        .fit({"X": X, "y": y})
+    )
+    with pytest.raises(TypeError, match="test_data must be provided"):
+        EstimatorReport(learner)
+    estimator = DummyClassifier().fit(X, y)
+    with pytest.raises(TypeError, match="X_test must be provided"):
+        EstimatorReport(estimator)
