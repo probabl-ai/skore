@@ -675,7 +675,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         else:
             raise ValueError(f"Invalid kind: {kind!r}")
 
-    def _repr_html_(self) -> str:
+    def _html_repr(self) -> str:
         """Show the HTML representation of the report."""
         return to_html(self.summary, standalone=False, column_filters=None)
 

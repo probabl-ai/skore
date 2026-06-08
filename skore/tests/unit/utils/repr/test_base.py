@@ -20,6 +20,10 @@ class _ReportWithBaseHelp(MockReport, ReportHelpMixin):
     """Minimal report with ReportHelpMixin for tests."""
 
 
+class _AccessorWithBaseHelp(MockAccessor, AccessorHelpMixin):
+    """Minimal accessor with AccessorHelpMixin for tests."""
+
+
 class _DisplayWithBaseHelp(DisplayHelpMixin, MockDisplay):
     """Minimal display with DisplayHelpMixin for tests.
 
@@ -28,10 +32,6 @@ class _DisplayWithBaseHelp(DisplayHelpMixin, MockDisplay):
     """
 
     estimator_name = "Mock"
-
-
-class _AccessorWithBaseHelp(MockAccessor, AccessorHelpMixin):
-    """Minimal accessor with AccessorHelpMixin for tests."""
 
 
 class _WithReprHTML(ReprHTMLMixin):
@@ -52,8 +52,8 @@ def report_with_base_help():
 
 @pytest.fixture
 def accessor_with_base_help(report_with_base_help):
-    """Accessor with help and repr via _BaseAccessor."""
-    return MockAccessor(parent=report_with_base_help)
+    """Accessor with AccessorHelpMixin."""
+    return _AccessorWithBaseHelp(parent=report_with_base_help)
 
 
 @pytest.fixture
