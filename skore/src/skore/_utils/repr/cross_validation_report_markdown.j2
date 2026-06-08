@@ -7,14 +7,16 @@
 - kind: {{ estimator_kind }}
 - ml task: {{ ml_task }}
 {%- if fit_time is not none %}
-- fit time: {{ "%.3g"|format(fit_time) }} s
+- fit time: {{ fit_time }}
 {%- endif %}
 {%- if predict_time is not none %}
-- predict time (on test set): {{ "%.3g"|format(predict_time) }} s
+- predict time (on test set): {{ predict_time }}
 {%- endif %}
 {%- if pos_label_repr is not none %}
 - pos_label: {{ pos_label_repr }}
 {%- endif %}
+- cross-validation folds: {{ n_folds }}
+- splitter: {{ splitter_repr }}
 
 ```text
 {{ estimator_repr }}

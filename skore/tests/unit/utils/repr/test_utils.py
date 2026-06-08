@@ -1,11 +1,18 @@
-"""Unit tests for ``skore._utils.repr.utils`` (HTML fragment helpers)."""
+"""Unit tests for ``skore._utils.repr`` helpers."""
 
 from __future__ import annotations
 
 import re
 
 import pytest
+import skrub
+from sklearn.base import BaseEstimator, MetaEstimatorMixin
+from sklearn.datasets import make_classification
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
 
+from skore._utils.repr.markdown import _markdown_estimator_kind
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 _SCRIPT_STRIP = re.compile(
@@ -58,3 +65,34 @@ class TestRepairEstimatorHtmlForSlottedHost:
         combined = repaired + following
         o, c = _div_open_close_counts(combined)
         assert o == c
+
+
+def _bare_meta_estimator() -> BaseEstimator:
+    class _BareMeta(BaseEstimator, MetaEstimatorMixin):
+        pass
+
+    return _BareMeta()
+
+
+def _skrub_data_op():
+    X, y = make_classification(n_samples=10, random_state=0)
+    return skrub.X(X).skb.apply(LogisticRegression(), y=skrub.y(y))
+
+
+@pytest.mark.parametrize(
+    ("estimator", "expected"),
+    [
+        (LogisticRegression(), "scikit-learn estimator"),
+        (Pipeline([("clf", LogisticRegression())]), "Pipeline"),
+        (
+            GridSearchCV(LogisticRegression(), param_grid={"C": [1.0]}),
+            "meta-estimator GridSearchCV wrapping LogisticRegression",
+        ),
+        (_bare_meta_estimator(), "meta-estimator _BareMeta"),
+        (_skrub_data_op(), "skrub DataOp"),
+        (_skrub_data_op().skb.make_learner(), "skrub SkrubLearner"),
+        (skrub.SelectCols(0), "skrub estimator"),
+    ],
+)
+def test_markdown_estimator_kind(estimator, expected):
+    assert _markdown_estimator_kind(estimator) == expected
