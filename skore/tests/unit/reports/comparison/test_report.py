@@ -11,7 +11,7 @@ import pandas as pd
 import pytest
 import skrub
 from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, RidgeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 
@@ -19,6 +19,7 @@ from skore import (
     ComparisonReport,
     CrossValidationReport,
     EstimatorReport,
+    evaluate,
 )
 from skore._externals._sklearn_compat import convert_container
 
@@ -469,11 +470,23 @@ def test_to_markdown(comparison_fixture, request):
     assert "Mute a check with .checks.summarize(ignore=['<code>'])." in markdown
     assert "| estimator |" not in markdown
     assert "estimator_" not in markdown
+    assert "- ml task:" in markdown
     if "cross_validation" in comparison_fixture:
         assert "cross-validation folds" in markdown
         assert "splitter" in markdown
     assert "fit time" in markdown
     assert "predict time" in markdown
+
+
+def test_to_markdown_pos_label():
+    X, y = make_classification(n_classes=2, random_state=0)
+    markdown = evaluate(
+        [RidgeClassifier(), LogisticRegression()],
+        X,
+        y,
+        pos_label=0,
+    ).to_markdown()
+    assert "- pos_label: 0" in markdown
 
 
 @pytest.mark.parametrize(

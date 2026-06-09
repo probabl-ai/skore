@@ -49,12 +49,8 @@ def report_markdown_context(report: Any) -> dict[str, object]:
 def _subreport_estimator_metadata(report: Any) -> dict[str, str | None]:
     timings = report.metrics.timings()
     metadata: dict[str, str | None] = {
-        "name": f"`{report.estimator_name_}`",
+        "estimator name": f"`{report.estimator_name_}`",
         "kind": _markdown_estimator_kind(report.estimator),
-        "ml task": report.ml_task,
-        "pos_label": (
-            repr(report._pos_label) if report._pos_label is not None else None
-        ),
     }
     if report._report_type == "cross-validation":
         metadata["fit time"] = (
@@ -84,18 +80,21 @@ def comparison_estimator_markdown_context(comparison_report: Any) -> dict[str, o
         for report in comparison_report.reports_.values()
     ]
     row_labels = [
-        "name",
+        "estimator name",
         "kind",
-        "ml task",
         "fit time",
         "predict time (on test set)",
     ]
-    if any(metadata.get("pos_label") is not None for metadata in metadata_list):
-        row_labels.append("pos_label")
     if comparison_report._report_type == "comparison-cross-validation":
         row_labels.extend(["cross-validation folds", "splitter"])
     return {
         "estimator_labels": labels,
+        "ml_task": comparison_report._ml_task,
+        "pos_label_repr": (
+            repr(comparison_report._pos_label)
+            if comparison_report._pos_label is not None
+            else None
+        ),
         "estimator_rows": [
             {
                 "label": row_label,

@@ -1,9 +1,14 @@
 {%- autoescape false -%}
 # ComparisonReport: {{ estimator_labels | join(', ') }}
 
-## Estimator
+## Estimators
 
-| | {% for label in estimator_labels %}{{ label }} | {% endfor %}
+- ml task: {{ ml_task }}
+{%- if pos_label_repr is not none %}
+- pos_label: {{ pos_label_repr }}
+{%- endif %}
+
+| report name | {% for label in estimator_labels %}{{ label }} | {% endfor %}
 | --- | {% for _ in estimator_labels %} --- | {% endfor %}
 {%- for row in estimator_rows %}
 | {{ row.label }} | {% for value in row.cells %}{{ value }} | {% endfor %}
