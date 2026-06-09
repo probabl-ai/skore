@@ -1,0 +1,27 @@
+{%- autoescape false -%}
+# ComparisonReport: {{ estimator_labels | join(', ') }}
+
+## Estimator
+
+| | {% for label in estimator_labels %}{{ label }} | {% endfor %}
+| --- | {% for _ in estimator_labels %} --- | {% endfor %}
+{%- for row in estimator_rows %}
+| {{ row.label }} | {% for value in row.cells %}{{ value }} | {% endfor %}
+{%- endfor %}
+
+## Metrics
+
+```text
+{{ metrics_text }}
+
+Get the metrics results and control output format with: `report.metrics.summarize().frame()`.
+```
+
+## Checks (fast mode)
+
+```text
+{{ checks_text }}
+```
+
+Get the full checks results with: `report.checks.summarize()`.
+{%- endautoescape %}

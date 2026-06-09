@@ -46,6 +46,66 @@ def report_markdown_context(report: Any) -> dict[str, object]:
     }
 
 
+def _subreport_estimator_metadata(report: Any) -> dict[str, str | None]:
+    timings = report.metrics.timings()
+    metadata: dict[str, str | None] = {
+        "name": f"`{report.estimator_name_}`",
+        "kind": _markdown_estimator_kind(report.estimator),
+        "ml task": report.ml_task,
+        "pos_label": (
+            repr(report._pos_label) if report._pos_label is not None else None
+        ),
+    }
+    if report._report_type == "cross-validation":
+        metadata["fit time"] = (
+            f"{timings.loc['Fit time (s)', 'mean']:.3f} s"
+            f" (± {timings.loc['Fit time (s)', 'std']:.3f})"
+        )
+        metadata["predict time (on test set)"] = (
+            f"{timings.loc['Predict time test (s)', 'mean']:.3f} s"
+            f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
+        )
+        metadata["cross-validation folds"] = str(len(report.reports_))
+        metadata["splitter"] = repr(report.splitter)
+    else:
+        fit_time = timings.get("fit_time")
+        predict_time = timings.get("predict_time_test")
+        metadata["fit time"] = f"{fit_time:.3g} s" if fit_time is not None else None
+        metadata["predict time (on test set)"] = (
+            f"{predict_time:.3g} s" if predict_time is not None else None
+        )
+    return metadata
+
+
+def comparison_estimator_markdown_context(comparison_report: Any) -> dict[str, object]:
+    labels = list(comparison_report.reports_.keys())
+    metadata_list = [
+        _subreport_estimator_metadata(report)
+        for report in comparison_report.reports_.values()
+    ]
+    row_labels = [
+        "name",
+        "kind",
+        "ml task",
+        "fit time",
+        "predict time (on test set)",
+    ]
+    if any(metadata.get("pos_label") is not None for metadata in metadata_list):
+        row_labels.append("pos_label")
+    if comparison_report._report_type == "comparison-cross-validation":
+        row_labels.extend(["cross-validation folds", "splitter"])
+    return {
+        "estimator_labels": labels,
+        "estimator_rows": [
+            {
+                "label": row_label,
+                "cells": [metadata.get(row_label) or "" for metadata in metadata_list],
+            }
+            for row_label in row_labels
+        ],
+    }
+
+
 def markdown_data_section(summary: dict, *, data_label: str) -> dict[str, object]:
     return {
         "data_label": data_label,

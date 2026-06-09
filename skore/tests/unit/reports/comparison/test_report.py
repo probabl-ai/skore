@@ -453,6 +453,51 @@ def test_create_estimator_report_tabular_rejects_test_data(binary_classification
     [
         "comparison_estimator_reports_binary_classification",
         "comparison_cross_validation_reports_binary_classification",
+    ],
+)
+def test_to_markdown(comparison_fixture, request):
+    report = request.getfixturevalue(comparison_fixture)
+    markdown = report.to_markdown()
+    assert markdown.startswith("# ComparisonReport:")
+    for section in ("## Estimator", "## Metrics", "## Checks (fast mode)"):
+        assert section in markdown
+    assert "## Data" not in markdown
+    for label in report.reports_:
+        assert label in markdown
+    assert "report.metrics.summarize().frame()" in markdown
+    assert "report.checks.summarize()" in markdown
+    assert "Mute a check with .checks.summarize(ignore=['<code>'])." in markdown
+    assert "| estimator |" not in markdown
+    assert "estimator_" not in markdown
+    if "cross_validation" in comparison_fixture:
+        assert "cross-validation folds" in markdown
+        assert "splitter" in markdown
+    assert "fit time" in markdown
+    assert "predict time" in markdown
+
+
+@pytest.mark.parametrize(
+    "comparison_fixture",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_cross_validation_reports_binary_classification",
+    ],
+)
+def test_text_repr(comparison_fixture, request):
+    report = request.getfixturevalue(comparison_fixture)
+    repr_str = repr(report)
+    assert repr_str.startswith("ComparisonReport:")
+    assert "to_markdown()" in repr_str
+    for label in report.reports_:
+        assert label in repr_str
+    assert "Accuracy" in repr_str
+
+
+@pytest.mark.parametrize(
+    "comparison_fixture",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_cross_validation_reports_binary_classification",
         "comparison_estimator_reports_multiclass_classification",
         "comparison_cross_validation_reports_multiclass_classification",
         "comparison_estimator_reports_regression",

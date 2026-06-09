@@ -485,6 +485,16 @@ def test_prefit_no_train_data_repr_methods(prefit_regression_report_no_train_dat
     assert "R²" in fragments["metrics_summary"]
 
 
+def test_text_repr(forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    report = evaluate(estimator, X, y, splitter=0.2)
+    repr_str = repr(report)
+    assert repr_str.startswith("EstimatorReport:")
+    assert report.estimator_name_ in repr_str
+    assert "to_markdown()" in repr_str
+    assert "Accuracy" in repr_str
+
+
 def test_to_markdown(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
     report = evaluate(estimator, X, y, splitter=0.2)
