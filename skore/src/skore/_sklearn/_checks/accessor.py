@@ -138,7 +138,11 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
             self._parent._applicable_codes.discard(code)
 
     def __repr__(self) -> str:
-        return repr(self.summarize(fast_mode=True))
+        return (
+            "Checks summary: (fast mode)\n"
+            f"{self.summarize(fast_mode=True)!r}\n"
+            "Explore available methods with .help()."
+        )
 
     def _repr_html_(self) -> str:
         return self.summarize(fast_mode=True)._repr_html_()
