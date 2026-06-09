@@ -94,3 +94,24 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
             assert isinstance(axes[0], mpl.axes.Axes)
         else:
             assert len(axes) == expected_len
+
+
+@pytest.mark.parametrize(
+    "reportName",
+    [
+        "cross_validation_reports_binary_classification",
+        "cross_validation_reports_multiclass_classification",
+    ],
+)
+def test_data_source_both(pyplot, reportName, request):
+    """Check that precision_recall(data_source='both') includes train and test data."""
+    report = request.getfixturevalue(reportName)[0]
+    display = report.metrics.precision_recall(data_source="both")
+
+    assert display.data_source == "both"
+    frame = display.frame()
+    assert "data_source" in frame.columns
+    assert set(frame["data_source"].unique()) == {"train", "test"}
+
+    fig = display.plot()
+    assert isinstance(fig.axes[0], mpl.axes.Axes)
