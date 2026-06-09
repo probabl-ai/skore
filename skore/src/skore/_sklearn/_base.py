@@ -13,6 +13,7 @@ from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
+from skore._utils._progress_bar import track
 from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
 
 
@@ -74,15 +75,19 @@ class _BaseReport(ReportHelpMixin):
         if not hasattr(self, "_applicable_codes"):
             self._applicable_codes: set[CheckCode] = set()
 
-        for check in self._checks_registry:
-            if (
-                check.report_type != self._report_type
-                or check.code in self._check_results_cache
-                or check.code in ignored_codes
-            ):
-                continue
-            if fast_mode and getattr(check, "slow", False):
-                continue
+        checks_to_run = [
+            check
+            for check in self._checks_registry
+            if check.report_type == self._report_type
+            and check.code not in self._check_results_cache
+            and check.code not in ignored_codes
+            and not (fast_mode and getattr(check, "slow", False))
+        ]
+        for check in track(
+            checks_to_run,
+            description="Running checks",
+            total=len(checks_to_run),
+        ):
             try:
                 explanation = check.check_function(self)
                 self._applicable_codes.add(check.code)
