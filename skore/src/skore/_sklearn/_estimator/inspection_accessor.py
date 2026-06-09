@@ -407,13 +407,3 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             strategy=strategy,
             report_pos_label=self._parent.pos_label,
         )
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name=f"skore.{self._parent.__class__.__name__}.inspection"
-        )
