@@ -95,7 +95,6 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         return [
             EstimatorReportMetric(
                 value=row["score"],
-                report=self.report,
                 name=row["metric_name"],
                 verbose_name=row["metric_verbose_name"],
                 data_source=row["data_source"],

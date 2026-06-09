@@ -491,7 +491,6 @@ class TestCrossValidationReportPayload:
                 data_source="test",
                 greater_is_better=True,
                 value=1.0,
-                report=report,
             ),
             CrossValidationReportMetric(
                 name="hello_std",
@@ -499,7 +498,6 @@ class TestCrossValidationReportPayload:
                 data_source="test",
                 greater_is_better=False,
                 value=0.0,
-                report=report,
             ),
             CrossValidationReportMetric(
                 name="hello_mean",
@@ -507,7 +505,6 @@ class TestCrossValidationReportPayload:
                 data_source="train",
                 greater_is_better=True,
                 value=1.0,
-                report=report,
             ),
             CrossValidationReportMetric(
                 name="hello_std",
@@ -515,7 +512,6 @@ class TestCrossValidationReportPayload:
                 data_source="train",
                 greater_is_better=False,
                 value=0.0,
-                report=report,
             ),
         ]
 

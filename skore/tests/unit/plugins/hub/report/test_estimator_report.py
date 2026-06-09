@@ -132,7 +132,6 @@ class TestEstimatorReportPayload:
                 data_source="train",
                 greater_is_better=True,
                 value=1.0,
-                report=report,
             ),
             EstimatorReportMetric(
                 name="hello",
@@ -140,7 +139,6 @@ class TestEstimatorReportPayload:
                 data_source="test",
                 greater_is_better=True,
                 value=1.0,
-                report=report,
             ),
         ]
 

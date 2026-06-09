@@ -317,7 +317,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             result.extend(
                 [
                     CrossValidationReportMetric(
-                        report=self.report,
                         name=f"{name}_mean",
                         verbose_name=f"{verbose_name} - MEAN",
                         data_source=data_source,
@@ -325,7 +324,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                         value=mean,
                     ),
                     CrossValidationReportMetric(
-                        report=self.report,
                         name=f"{name}_std",
                         verbose_name=f"{verbose_name} - STD",
                         data_source=data_source,

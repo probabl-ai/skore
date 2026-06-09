@@ -16,7 +16,6 @@ class Metric(BaseModel, Generic[Report]):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    report: Report = Field(repr=False, exclude=True)
     name: str
     verbose_name: str
     data_source: Literal["train", "test"] | None
@@ -31,8 +30,6 @@ class EstimatorReportMetric(Metric[EstimatorReport]):
 
     Attributes
     ----------
-    report: EstimatorReport
-        The report on which compute the metric.
     name : str
         Name of the metric.
     verbose_name : str
@@ -64,8 +61,6 @@ class CrossValidationReportMetric(Metric[CrossValidationReport]):
 
     Attributes
     ----------
-    report: CrossValidationReport
-        The report on which compute the metric.
     name : str
         Name of the metric, with an aggregation suffix.
     verbose_name : str
