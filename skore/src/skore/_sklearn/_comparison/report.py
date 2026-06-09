@@ -20,7 +20,10 @@ from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
-from skore._utils.repr.markdown import comparison_estimator_markdown_context
+from skore._utils.repr.markdown import (
+    comparison_data_markdown_context,
+    comparison_estimator_markdown_context,
+)
 
 if TYPE_CHECKING:
     from skore._sklearn._checks.accessor import _ChecksAccessor
@@ -589,9 +592,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     def to_markdown(self) -> str:
         """Return a markdown summary of the report.
 
-        The summary contains three sections (Estimator, Metrics, Checks) that
-        mirror the tabs of the HTML representation. Each section ends with a pointer
-        to the corresponding accessor for full details.
+        The summary contains four sections (Estimators, Metrics, Checks, Data) that
+        mirror the tabs of the HTML representation. Metrics and Checks sections end
+        with a pointer to the corresponding accessor for full details.
 
         Returns
         -------
@@ -612,6 +615,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             "comparison_report_markdown.j2",
             {
                 **comparison_estimator_markdown_context(self),
+                **comparison_data_markdown_context(self),
                 "metrics_text": repr(metrics_frame),
                 "checks_text": repr(self.checks.summarize(fast_mode=True)),
             },

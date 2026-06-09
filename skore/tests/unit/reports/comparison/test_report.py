@@ -11,7 +11,7 @@ import pandas as pd
 import pytest
 import skrub
 from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression, RidgeClassifier
+from sklearn.linear_model import LinearRegression, LogisticRegression, RidgeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 
@@ -460,9 +460,10 @@ def test_to_markdown(comparison_fixture, request):
     report = request.getfixturevalue(comparison_fixture)
     markdown = report.to_markdown()
     assert markdown.startswith("# ComparisonReport:")
-    for section in ("## Estimator", "## Metrics", "## Checks (fast mode)"):
+    for section in ("## Estimators", "## Metrics", "## Checks (fast mode)", "## Data"):
         assert section in markdown
-    assert "## Data" not in markdown
+    assert "n_rows=" in markdown
+    assert "| column | dtype |" in markdown
     for label in report.reports_:
         assert label in markdown
     assert "report.metrics.summarize().frame()" in markdown
@@ -487,6 +488,18 @@ def test_to_markdown_pos_label():
         pos_label=0,
     ).to_markdown()
     assert "- pos_label: 0" in markdown
+
+
+def test_to_markdown_different_datasets():
+    X1, y = make_classification(n_samples=100, n_features=20, random_state=0)
+    X2, _ = make_classification(n_samples=100, n_features=10, random_state=1)
+    report = evaluate([LinearRegression(), LinearRegression()], [X1, X2], y)
+    markdown = report.to_markdown()
+    assert "## Data" in markdown
+    assert "| report name | n_rows | n_columns |" in markdown
+    assert "| column | dtype |" not in markdown
+    for label in report.reports_:
+        assert label in markdown
 
 
 @pytest.mark.parametrize(
