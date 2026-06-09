@@ -365,7 +365,7 @@ class TestCrossValidationReportPayload:
             assert estimator.report == payload.report.reports_[i]
 
             # ensure `upload` is well called
-            pickle, checksum = serialize(payload.report.reports_[i])
+            pickle, _ = serialize(payload.report.reports_[i])
 
             estimator.model_dump()
 
@@ -469,7 +469,7 @@ class TestCrossValidationReportPayload:
     )
     @mark.respx(assert_all_called=False)
     def test_metrics_custom(self, project):
-        def hello(estimator, X, y):
+        def hello(_estimator, _X, _y):
             return 1
 
         X, y = make_classification(random_state=42, n_samples=10)

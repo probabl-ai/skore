@@ -110,7 +110,7 @@ class TestEstimatorReportPayload:
 
     @mark.respx(assert_all_called=False)
     def test_metrics_custom(self, project):
-        def hello(estimator, X, y):
+        def hello(_estimator, _X, _y):
             return 1
 
         X, y = make_classification(random_state=42)
