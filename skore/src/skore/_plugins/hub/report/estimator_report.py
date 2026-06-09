@@ -90,13 +90,8 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         All metrics whose value is not a scalar are currently ignored:
         - ignore ``list[float]`` for multi-output ML task,
         - ignore ``dict[str: float]`` for multi-classes ML task.
-
-        The position field is used to drive the ``hub``'s parallel coordinates plot:
-        - int [0, inf[, to be displayed at the position,
-        - None, not to be displayed.
         """
         rows = self.report.metrics.summarize(data_source="both").rows
-        positions = {name: i for i, name in enumerate(self.report._metric_registry)}
         return [
             EstimatorReportMetric(
                 value=row["score"],
@@ -105,7 +100,6 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
                 verbose_name=row["metric_verbose_name"],
                 data_source=row["data_source"],
                 greater_is_better=row["greater_is_better"],
-                position=positions[row["metric_name"]],
             )
             for row in rows
             if _is_scalar_metric(row)

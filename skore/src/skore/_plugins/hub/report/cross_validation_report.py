@@ -298,19 +298,12 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         All metrics whose value is not a scalar are currently ignored:
         - ignore ``list[float]`` for multi-output ML task,
         - ignore ``dict[str: float]`` for multi-classes ML task.
-
-        The position field is used to drive the ``hub``'s parallel coordinates plot:
-        - int [0, inf[, to be displayed at the position,
-        - None, not to be displayed.
         """
         rows = [
             row
             for row in self.report.metrics.summarize(data_source="both").rows
             if _is_scalar_metric(row)
         ]
-
-        first_report = self.report.reports_[0]
-        positions = {name: i for i, name in enumerate(first_report._metric_registry)}
 
         result = []
         key = itemgetter("metric_name", "data_source")
@@ -329,7 +322,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                         verbose_name=f"{verbose_name} - MEAN",
                         data_source=data_source,
                         greater_is_better=group[0]["greater_is_better"],
-                        position=positions[name],
                         value=mean,
                     ),
                     CrossValidationReportMetric(
@@ -338,7 +330,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                         verbose_name=f"{verbose_name} - STD",
                         data_source=data_source,
                         greater_is_better=False,
-                        position=None,
                         value=std,
                     ),
                 ]

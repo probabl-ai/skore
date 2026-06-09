@@ -21,7 +21,8 @@ class Metric(BaseModel, Generic[Report]):
     verbose_name: str
     data_source: Literal["train", "test"] | None
     greater_is_better: bool | None
-    position: int | None
+    # TODO: Remove the attribute if Hub no longer requires it
+    position: None = Field(default=None)
 
 
 class EstimatorReportMetric(Metric[EstimatorReport]):
@@ -73,9 +74,6 @@ class CrossValidationReportMetric(Metric[CrossValidationReport]):
         Data source of the metric when it can be declined in several ways, default None.
     greater_is_better : bool | None, optional
         Indicator of "greater value is better", default None.
-    position : int | None, optional
-        Indicator of the "position" of the metric in the parallel coordinates plot,
-        default None to disable its display.
     value : float
         Aggregated metric value (mean or std).
     """
