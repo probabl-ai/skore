@@ -849,7 +849,7 @@ class MetricRegistry(UserDict[str, Metric]):
         stripped = key.removeprefix("neg_")
         if stripped != key and stripped in self.data:
             return self.data[stripped]
-        raise KeyError(f"{key!r} is not there in the registered metrics")
+        raise KeyError(f"{key!r} not found in the registered metrics")
 
     def add(
         self,

@@ -791,10 +791,10 @@ class TestStringScorerNames:
         'neg_' fallback."""
         report = regression_report
 
-        with pytest.raises(KeyError, match="not there in the registered metrics"):
+        with pytest.raises(KeyError, match="not found in the registered metrics"):
             report.metrics.summarize(metric="neg_nonexistent_metric")
 
-        with pytest.raises(KeyError, match="not there in the registered metrics"):
+        with pytest.raises(KeyError, match="not found in the registered metrics"):
             report.metrics.get("neg_nonexistent_metric")
 
     def test_invalid_string_scorer_name(self, binary_classification_report):

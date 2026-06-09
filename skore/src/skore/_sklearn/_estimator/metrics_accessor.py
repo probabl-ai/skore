@@ -331,7 +331,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         try:
             metric = self._parent._metric_registry[name]
         except KeyError:
-            raise KeyError(f"{name!r} is not there in the registered metrics") from None
+            raise KeyError(f"{name!r} not found in the registered metrics") from None
         return metric.pretty(report=self._parent, data_source=data_source, **kwargs)
 
     def fit_time(self, *, cast: bool = True) -> float | None:
