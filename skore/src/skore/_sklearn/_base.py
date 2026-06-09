@@ -2,18 +2,18 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from importlib.metadata import version
-from io import StringIO
 from typing import Generic, Literal, TypeVar
 from uuid import uuid4
-
-from rich.console import Console
-from rich.panel import Panel
 
 from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
-from skore._utils.repr.base import AccessorHelpMixin, ReportHelpMixin
+from skore._utils.repr.base import (
+    AccessorHelpMixin,
+    ReportHelpMixin,
+    render_panel_to_plain_text,
+)
 
 
 class _BaseReport(ReportHelpMixin):
@@ -141,16 +141,11 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
     def __init__(self, parent: ParentT) -> None:
         self._parent = parent
 
-    def _rich_repr(self, class_name: str) -> str:
-        """Return a string representation using rich for accessors."""
-        string_buffer = StringIO()
-        console = Console(file=string_buffer, force_terminal=False)
-        console.print(
-            Panel(
-                "Get guidance using the help() method",
-                title=f"[cyan]{class_name}[/cyan]",
-                border_style="orange1",
-                expand=False,
-            )
-        )
-        return string_buffer.getvalue()
+    def __repr__(self) -> str:
+        return render_panel_to_plain_text(self._create_help_panel())
+
+    def _repr_html_(self) -> str:
+        return self._create_help_html()
+
+    def _repr_mimebundle_(self, **kwargs):
+        return {"text/plain": repr(self), "text/html": self._repr_html_()}

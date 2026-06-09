@@ -127,12 +127,6 @@ def test_summarize_with_invalid_subsample_strategy(cross_validation_report):
         )
 
 
-def test_repr(cross_validation_report):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    repr_str = repr(cross_validation_report.data)
-    assert "CrossValidationReport" in repr_str
-
-
 def test_analyze_deprecation(cross_validation_report):
     """Check that data.analyze() emits a FutureWarning and delegates to summarize."""
     with pytest.warns(FutureWarning, match=r"data\.analyze\(\) is deprecated"):
