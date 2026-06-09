@@ -31,7 +31,7 @@ from skore._plugins.hub.report.report import ReportPayload
 from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
 
 
-def _filter(row: MetricsSummaryRow) -> bool:
+def _is_scalar_metric(row: MetricsSummaryRow) -> bool:
     """Condition to keep a metric row."""
     return (
         # Ignore non-float metrics for now
@@ -108,5 +108,5 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
                 position=positions[row["metric_name"]],
             )
             for row in rows
-            if _filter(row)
+            if _is_scalar_metric(row)
         ]

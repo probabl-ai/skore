@@ -45,7 +45,7 @@ from skore._plugins.hub.metric import CrossValidationReportMetric
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
 
-from .estimator_report import _filter
+from .estimator_report import _is_scalar_metric
 
 SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
 TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT = 100
@@ -306,7 +306,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         rows = [
             row
             for row in self.report.metrics.summarize(data_source="both").rows
-            if _filter(row)
+            if _is_scalar_metric(row)
         ]
 
         first_report = self.report.reports_[0]
