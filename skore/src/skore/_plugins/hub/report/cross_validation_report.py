@@ -1,12 +1,9 @@
 """Class definition of the payload used to send a cross-validation report to ``hub``."""
 
-import statistics
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Sized
 from functools import cached_property
 from inspect import signature
-from itertools import groupby
-from operator import itemgetter
 from typing import Any, ClassVar, cast
 
 import numpy as np
@@ -44,8 +41,6 @@ from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.metric import CrossValidationReportMetric
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
-
-from .estimator_report import _is_scalar_metric
 
 SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
 TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT = 100
@@ -299,38 +294,37 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         - ignore ``list[float]`` for multi-output ML task,
         - ignore ``dict[str: float]`` for multi-classes ML task.
         """
-        rows = [
-            row
-            for row in self.report.metrics.summarize(data_source="both").rows
-            if _is_scalar_metric(row)
+        data = self.report.metrics.summarize(data_source="both").data
+        scalar = data[
+            data["label"].isna() & data["output"].isna() & data["average"].isna()
         ]
 
-        result = []
-        key = itemgetter("metric_name", "data_source")
-        for (name, data_source), group_ in groupby(sorted(rows, key=key), key=key):
-            group = list(group_)
-            scores = [row["score"] for row in group]
-            mean = statistics.mean(scores)
-            std = statistics.stdev(scores, xbar=mean) if len(scores) > 1 else 0.0
-            verbose_name = group[0]["metric_verbose_name"]
-
-            result.extend(
+        aggregated = (
+            scalar.groupby(
                 [
-                    CrossValidationReportMetric(
-                        name=f"{name}_mean",
-                        verbose_name=f"{verbose_name} - MEAN",
-                        data_source=data_source,
-                        greater_is_better=group[0]["greater_is_better"],
-                        value=mean,
-                    ),
-                    CrossValidationReportMetric(
-                        name=f"{name}_std",
-                        verbose_name=f"{verbose_name} - STD",
-                        data_source=data_source,
-                        greater_is_better=False,
-                        value=std,
-                    ),
+                    "metric_name",
+                    "metric_verbose_name",
+                    "data_source",
+                    "greater_is_better",
                 ]
             )
+            .agg(
+                mean=("score", "mean"),
+                std=("score", lambda s: s.std() if len(s) > 1 else 0.0),
+            )
+            .reset_index()
+        )
 
-        return result
+        return [
+            CrossValidationReportMetric(
+                name=f"{row['metric_name']}_{suffix}",
+                verbose_name=f"{row['metric_verbose_name']} - {suffix.upper()}",
+                data_source=row["data_source"],
+                greater_is_better=row["greater_is_better"]
+                if suffix == "mean"
+                else False,
+                value=row[suffix],
+            )
+            for row in aggregated.to_dict("records")
+            for suffix in ("mean", "std")
+        ]
