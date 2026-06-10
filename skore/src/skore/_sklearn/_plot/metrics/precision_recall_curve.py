@@ -18,6 +18,7 @@ from skore._sklearn._plot.utils import (
     _downsample_thresholds_indices,
     _get_curve_plot_columns,
     _one_hot_encode,
+    _reorder_categoricals_by_appearance,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import (
@@ -247,6 +248,8 @@ class PrecisionRecallCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             data_source=self.data_source,
             subplot_by=subplot_by,
         )
+
+        plot_data = _reorder_categoricals_by_appearance(plot_data, [col, hue, style])
 
         relplot_kwargs: dict[str, Any] = {
             "col": col,
