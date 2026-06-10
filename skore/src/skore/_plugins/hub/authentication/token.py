@@ -13,7 +13,6 @@ from rich.align import Align
 from rich.live import Live
 from rich.panel import Panel
 
-from skore import console
 from skore._plugins.hub.authentication.uri import URI
 
 
@@ -200,6 +199,8 @@ class Token:
     """
 
     def __init__(self, *, timeout: int = 600, live: Live | None = None) -> None:
+        from skore import console
+
         url, device_code, user_code = get_oauth_device_login()
         panel = Panel(
             Align.center(
