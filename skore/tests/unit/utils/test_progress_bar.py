@@ -158,6 +158,15 @@ def test_track(monkeypatch):
     assert progress._progress.tasks[0].finished
 
 
+def test_track_disable(monkeypatch):
+    def RegisteredProgressBar(*args, **kwargs):
+        raise AssertionError("ProgressBar should not be used when disable=True")
+
+    monkeypatch.setattr("skore._utils._progress_bar.ProgressBar", RegisteredProgressBar)
+    results = list(track(range(5), description="track", disable=True))
+    assert results == list(range(5))
+
+
 def test_disable_progress_bar():
     with ProgressBar(description="progress1", total=0) as progress1:
         assert configuration.show_progress is True
