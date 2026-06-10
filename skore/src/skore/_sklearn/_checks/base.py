@@ -69,6 +69,7 @@ class ChecksSummaryDisplay(DisplayHelpMixin):
         self,
         check_results: dict[CheckCode, dict],
         n_ignored_codes: int,
+        fast_mode: bool,
     ) -> None:
         self._check_results = pd.DataFrame(
             [
@@ -84,11 +85,13 @@ class ChecksSummaryDisplay(DisplayHelpMixin):
             columns=["code", "title", "severity", "explanation", "documentation_url"],
         )
         self._n_ignored_codes = n_ignored_codes
+        self._fast_mode = fast_mode
 
     @property
     def _header(self) -> str:
         return (
-            f"Checks summary: {len(self.frame(severity='issue'))} issue(s), "
+            f"Checks summary {'(fast mode)' if self._fast_mode else ''}: "
+            f"{len(self.frame(severity='issue'))} issue(s), "
             f"{len(self.frame(severity='tip'))} tip(s), "
             f"{len(self.frame(severity='passed'))} passed, "
             f"{self._n_ignored_codes} ignored."
