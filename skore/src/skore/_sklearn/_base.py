@@ -87,6 +87,7 @@ class _BaseReport(ReportHelpMixin):
             checks_to_run,
             description="Running checks",
             total=len(checks_to_run),
+            disable=fast_mode,
         ):
             try:
                 explanation = check.check_function(self)

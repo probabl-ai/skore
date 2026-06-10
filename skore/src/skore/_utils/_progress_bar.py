@@ -70,11 +70,19 @@ class ProgressBar:
 
 
 def track(
-    sequence: Iterable[Any], description: str, total: float | None = None
+    sequence: Iterable[Any],
+    description: str,
+    total: float | None = None,
+    disable: bool = False,
 ) -> Iterable[Any]:
     """Track progress by iterating over a sequence."""
     if total is None:
         total = float(length_hint(sequence)) or None
+
+    if disable:
+        for value in sequence:
+            yield value
+        return
 
     with ProgressBar(description=description, total=total) as progress:
         for value in sequence:
