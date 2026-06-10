@@ -30,15 +30,15 @@ INFRASTRUCTURE_PARAMS: set[ParameterName] = {
 
 
 # Hyperparameters worth tuning for sklearn estimators.
-# Focuses on hyperparameters that have no obvious default value and that are always
-# worth tuning, for estimators that are commonly used in practice.
+# Includes hyperparameters that have no obvious default value and that are always
+# worth tuning.
 HYPERPARAMETERS_TO_TUNE: dict[ClassName, set[ParameterName]] = {
     # ===== LINEAR MODELS =====
     "Ridge": {"alpha"},
     "RidgeClassifier": {"alpha"},
     "Lasso": {"alpha"},
     "ElasticNet": {"alpha", "l1_ratio"},
-    "LogisticRegression": {"C"},  # Add l1_ratio with condition on solver choice
+    "LogisticRegression": {"C"},
     # ===== TREES =====
     "DecisionTreeClassifier": {
         "max_depth",
@@ -117,7 +117,7 @@ HYPERPARAMETERS_TO_TUNE: dict[ClassName, set[ParameterName]] = {
     "KernelPCA": {"n_components"},
     "SparsePCA": {"n_components"},
     # ===== KERNEL APPROXIMATION =====
-    "Nystroem": {"n_components"},  # Add gamma with condition on kernel choice
+    "Nystroem": {"n_components"},
     "RBFSampler": {"n_components", "gamma"},
     "SkewedChi2Sampler": {"n_components", "skewedness"},
     "AdditiveChi2Sampler": {"sample_steps"},

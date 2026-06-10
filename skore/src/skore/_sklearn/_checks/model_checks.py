@@ -784,10 +784,10 @@ class CheckHyperparamsAtSearchEdge(Check):
             return None
         details = ", ".join(f"{name} ({bound})" for name, bound in edge_params)
         return (
-            f"{len(edge_params)} hyperparameter(s) are on the edge of the explored"
-            f" search space: {details}. Consider extending the search range."
+            f"{len(edge_params)} hyperparameter(s) are on the edge of the explored "
+            f"search space: {details}. Consider extending the search range or "
+            "increasing the number of iterations for randomized search."
         )
-        # or increase n_iter for randomized search
 
 
 def _collapse_equivalents(
