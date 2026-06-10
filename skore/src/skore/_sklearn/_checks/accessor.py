@@ -75,6 +75,7 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 if code in applicable_codes and code not in ignored_codes
             },
             n_ignored_codes=len(ignored_codes),
+            fast_mode=fast_mode,
         )
 
     def add(
@@ -139,7 +140,6 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
 
     def __repr__(self) -> str:
         return (
-            "Checks summary: (fast mode)\n"
             f"{self.summarize(fast_mode=True)!r}\n"
             "Explore available methods with .help()."
         )
