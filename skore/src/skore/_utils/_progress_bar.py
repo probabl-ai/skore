@@ -10,7 +10,7 @@ T = TypeVar("T")
 class ProgressBar:
     """Simplified progress bar based on ``rich.Progress``."""
 
-    def __init__(self, description: str, total: float | None):
+    def __init__(self, description: str, total: float | None, disable: bool = False):
         from skore import THREADABLE, console
         from skore._config import configuration
 
@@ -27,7 +27,7 @@ class ProgressBar:
             expand=False,
             transient=True,
             auto_refresh=THREADABLE,
-            disable=(not configuration.show_progress),
+            disable=(not configuration.show_progress or disable),
         )
 
         self._description = description
@@ -79,12 +79,7 @@ def track(
     if total is None:
         total = float(length_hint(sequence)) or None
 
-    if disable:
-        for value in sequence:
-            yield value
-        return
-
-    with ProgressBar(description=description, total=total) as progress:
+    with ProgressBar(description=description, total=total, disable=disable) as progress:
         for value in sequence:
             yield value
             progress.advance()
