@@ -90,7 +90,7 @@ class ChecksSummaryDisplay(DisplayHelpMixin):
     @property
     def _header(self) -> str:
         return (
-            f"Checks summary {'(fast mode)' if self._fast_mode else ''}: "
+            f"Checks summary{' (fast mode)' if self._fast_mode else ''}: "
             f"{len(self.frame(severity='issue'))} issue(s), "
             f"{len(self.frame(severity='tip'))} tip(s), "
             f"{len(self.frame(severity='passed'))} passed, "

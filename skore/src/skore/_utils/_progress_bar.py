@@ -27,7 +27,7 @@ class ProgressBar:
             expand=False,
             transient=True,
             auto_refresh=THREADABLE,
-            disable=(not configuration.show_progress or disable),
+            disable=((not configuration.show_progress) or disable),
         )
 
         self._description = description
