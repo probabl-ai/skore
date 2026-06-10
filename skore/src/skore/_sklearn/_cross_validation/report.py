@@ -12,6 +12,7 @@ from numpy.typing import ArrayLike
 from sklearn.base import clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
+from skrub._reporting._summarize import summarize_dataframe
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
@@ -26,6 +27,7 @@ from skore._utils._progress_bar import track
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
@@ -301,7 +303,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 )
             )
 
-    def get_state(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a serializable representation of the report state.
 
         This state is meant to ease serialization/deserialization of
@@ -309,7 +311,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         versions. In particular, this is more stable than pickling a report
         object directly, which can break when internal implementations change.
         """
-        sub_states = [report.get_state() for report in self.reports_]
+        sub_states = [report.to_dict() for report in self.reports_]
         for state in sub_states:
             # data can be reconstructed from X, y and split_indices
             state.pop("data")
@@ -328,8 +330,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         }
 
     @classmethod
-    def from_state(cls, state: dict[str, Any]) -> CrossValidationReport:
-        """Rebuild a report from :meth:`get_state` output."""
+    def from_dict(cls, state: dict[str, Any]) -> CrossValidationReport:
+        """Rebuild a report from :meth:`to_dict` output."""
         version = state.get("version", 0)
         if version != _STATE_VERSION:
             # in the future, we could support some BW compatibility instead of crashing
@@ -393,7 +395,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "test_data": split_data["test"],
                 },
             }
-            sub_report = EstimatorReport.from_state(sub_state_with_data)
+            sub_report = EstimatorReport.from_dict(sub_state_with_data)
             report.reports_.append(sub_report)
 
         return report
@@ -667,7 +669,67 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+        return f"""{self.__class__.__name__}:
+        {self.estimator_name_!r}
+
+        {
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .droplevel(level=0, axis="columns")
+        }
+        Call `report.to_markdown()` for a markdown summary of the report's contents."""
+
+    def to_markdown(self) -> str:
+        """Return a markdown summary of the report.
+
+        The summary contains four sections (Results, Checks, Estimator, Data) that
+        mirror the tabs of the HTML representation. Each section ends with a pointer
+        to the corresponding accessor for full details.
+
+        Returns
+        -------
+        str
+            The markdown summary of the report.
+        """
+        metrics_text = repr(
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .droplevel(level=0, axis="columns")
+        )
+        timings = self.metrics.timings()
+        summary = summarize_dataframe(
+            self.data._prepare_dataframe_for_display(
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            with_plots=False,
+            with_associations=False,
+            verbose=0,
+        )
+        return render_template(
+            "cross_validation_report_markdown.j2",
+            {
+                **report_markdown_context(self),
+                "fit_time": (
+                    f"{timings.loc['Fit time (s)', 'mean']:.3f} s"
+                    f" (± {timings.loc['Fit time (s)', 'std']:.3f})"
+                ),
+                "predict_time": (
+                    f"{timings.loc['Predict time test (s)', 'mean']:.3f} s"
+                    f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
+                ),
+                "n_folds": len(self.reports_),
+                "splitter_repr": (
+                    repr(self.splitter)
+                    if self.splitter is not None
+                    else f"{len(self.split_indices)} folds"
+                ),
+                "metrics_text": metrics_text,
+                **markdown_data_section(summary, data_label="full"),
+            },
+        )
 
     def _html_repr_fragments(self) -> dict[str, str]:
         """HTML snippets for the report body (metrics, estimator diagram, data table).

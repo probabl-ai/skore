@@ -14,10 +14,10 @@ from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.utils._testing import _convert_container
 from sklearn.utils.validation import check_is_fitted
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._cross_validation.report import _generate_estimator_report
 from skore._utils._testing import MockEstimator
 
@@ -200,14 +200,12 @@ def test_clustering():
         CrossValidationReport(KMeans(), X=np.random.rand(10, 5), y=None)
 
 
-@pytest.mark.parametrize(
-    "container_types", [("dataframe", "series"), ("array", "array")]
-)
+@pytest.mark.parametrize("container_types", [("pandas", "series"), ("array", "array")])
 def test_create_estimator_report(container_types, forest_binary_classification_data):
     """Test the `create_estimator_report` method."""
     estimator, X, y = forest_binary_classification_data
-    X = _convert_container(X, container_types[0])
-    y = _convert_container(y, container_types[1])
+    X = convert_container(X, container_types[0])
+    y = convert_container(y, container_types[1])
     X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
@@ -242,6 +240,27 @@ def _assert_cross_validation_report_repr_html(
     assert "report-tabset" in html_out
     assert "Report for" in html_out
     assert "CrossValidationReport.metrics" in html_out
+
+
+def test_repr_mentions_to_markdown(forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    report = evaluate(estimator, X, y, splitter=2)
+    repr_str = repr(report)
+    assert "to_markdown()" in repr_str
+    assert report.estimator_name_ in repr_str
+
+
+def test_to_markdown(forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    report = evaluate(estimator, X, y, splitter=2)
+    markdown = report.to_markdown()
+    assert markdown.startswith(f"# CrossValidationReport: {report.estimator_name_}")
+    for section in ("## Estimator", "## Metrics", "## Checks (fast mode)", "## Data"):
+        assert section in markdown
+    assert "cross-validation folds: 2" in markdown
+    assert "splitter:" in markdown
+    assert "full dataset" in markdown
+    assert "fit time:" in markdown
 
 
 def test_report_repr_html_binary_classification():
@@ -312,21 +331,21 @@ def test_create_estimator_report_with_data_op():
     assert 0.0 <= float(accuracy) <= 1.0
 
 
-def test_from_state_bypasses_init_and_restores_state(
+def test_from_dict_bypasses_init_and_restores_state(
     monkeypatch, logistic_binary_classification_data
 ):
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_accuracy = report.metrics.accuracy()
     report.cache_predictions()
-    state = report.get_state()
+    state = report.to_dict()
 
     def _unexpected_init(self, *args, **kwargs):
-        raise AssertionError("__init__ should not be called by from_state")
+        raise AssertionError("__init__ should not be called by from_dict")
 
     monkeypatch.setattr(CrossValidationReport, "__init__", _unexpected_init)
 
-    restored = CrossValidationReport.from_state(state)
+    restored = CrossValidationReport.from_dict(state)
 
     assert restored.id == report.id
     assert restored.X is report.X
@@ -349,7 +368,7 @@ def test_from_state_bypasses_init_and_restores_state(
     restored._repr_html_()
 
 
-def test_get_from_state_with_complex_data_op():
+def test_get_from_dict_with_complex_data_op():
     X, y = make_classification(random_state=0)
     left = pd.DataFrame(
         {
@@ -378,9 +397,9 @@ def test_get_from_state_with_complex_data_op():
     report = CrossValidationReport(data_op, splitter=2)
     expected_accuracy = report.metrics.accuracy()
     expected_preds = report.get_predictions(data_source="test")
-    state = report.get_state()
+    state = report.to_dict()
 
-    restored = CrossValidationReport.from_state(state)
+    restored = CrossValidationReport.from_dict(state)
 
     # check fresh computations still work after restoring from state:
     restored.clear_cache()
@@ -393,13 +412,13 @@ def test_get_from_state_with_complex_data_op():
     restored._repr_html_()
 
 
-def test_from_state_rejects_unknown_version(logistic_binary_classification_data):
+def test_from_dict_rejects_unknown_version(logistic_binary_classification_data):
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    state = report.get_state() | {"version": 999}
+    state = report.to_dict() | {"version": 999}
 
     with pytest.raises(ValueError, match="Unexpected state version"):
-        CrossValidationReport.from_state(state)
+        CrossValidationReport.from_dict(state)
 
 
 @pytest.mark.parametrize(
@@ -412,7 +431,7 @@ def test_state_has_no_unexpected_data_copy(estimator, splitter):
     """``state`` should only reference training data through ``state["data"]``."""
 
     def state_nbytes_without_data(report):
-        state = report.get_state()
+        state = report.to_dict()
         state.pop("data")
         return len(pickle.dumps(state))
 

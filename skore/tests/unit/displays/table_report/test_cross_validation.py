@@ -18,7 +18,7 @@ def cross_validation_report():
 
 @pytest.fixture(scope="module")
 def display(cross_validation_report):
-    return cross_validation_report.data.analyze()
+    return cross_validation_report.data.summarize()
 
 
 def test_table_report_display_constructor(display):
@@ -84,13 +84,13 @@ def test_table_report_display_frame(cross_validation_report, display):
 def test_display_creation(X, y):
     """Check that the display can be created with different types of X and y."""
     report = CrossValidationReport(tabular_pipeline(DummyRegressor()), X=X, y=y)
-    display = report.data.analyze()
+    display = report.data.summarize()
     assert isinstance(display, TableReportDisplay)
 
 
 def test_without_y(cross_validation_report):
     """Check that the data accessor works without y."""
-    display = cross_validation_report.data.analyze(with_y=False)
+    display = cross_validation_report.data.summarize(with_y=False)
     assert isinstance(display, TableReportDisplay)
 
     df = display.frame(kind="dataset")
@@ -105,11 +105,11 @@ def test_without_y(cross_validation_report):
         (10, "random", 42),
     ],
 )
-def test_analyze_with_subsample(
+def test_summarize_with_subsample(
     cross_validation_report, sumbsample, subsample_strategy, seed
 ):
-    """Check that the analyze method works with subsampling."""
-    display = cross_validation_report.data.analyze(
+    """Check that the summarize method works with subsampling."""
+    display = cross_validation_report.data.summarize(
         subsample=sumbsample,
         subsample_strategy=subsample_strategy,
         seed=seed,
@@ -118,16 +118,18 @@ def test_analyze_with_subsample(
     assert len(display.frame(kind="dataset")) == sumbsample
 
 
-def test_analyze_with_invalid_subsample_strategy(cross_validation_report):
+def test_summarize_with_invalid_subsample_strategy(cross_validation_report):
     """Check that an error is raised with an invalid subsample strategy."""
     with pytest.raises(ValueError):
-        cross_validation_report.data.analyze(
+        cross_validation_report.data.summarize(
             subsample=10,
             subsample_strategy="invalid_strategy",
         )
 
 
-def test_repr(cross_validation_report):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    repr_str = repr(cross_validation_report.data)
-    assert "CrossValidationReport" in repr_str
+def test_analyze_deprecation(cross_validation_report):
+    """Check that data.analyze() emits a FutureWarning and delegates to summarize."""
+    with pytest.warns(FutureWarning, match=r"data\.analyze\(\) is deprecated"):
+        display = cross_validation_report.data.analyze()
+
+    assert isinstance(display, TableReportDisplay)

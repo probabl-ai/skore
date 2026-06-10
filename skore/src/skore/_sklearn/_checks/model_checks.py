@@ -462,6 +462,7 @@ class CheckWorseThanBaseline(Check):
     report_type = "estimator"
     docs_url = "skd009-worse-than-baseline"
     severity = "issue"
+    slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
@@ -507,6 +508,7 @@ class CheckSlowerThanBaseline(Check):
     report_type = "estimator"
     docs_url = "skd010-slower-than-baseline"
     severity = "issue"
+    slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)

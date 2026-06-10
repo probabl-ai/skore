@@ -167,7 +167,7 @@ class TestProject:
         )
         assert (report_dir / "report.pkl").exists()
         assert (report_dir / "metrics.csv").exists()
-        assert (report_dir / "data.analyze.html").exists()
+        assert (report_dir / "data.summarize.html").exists()
         for artifact in expected_artifacts:
             assert (report_dir / artifact).exists()
 
@@ -225,7 +225,7 @@ class TestProject:
         )
         assert (report_dir / "report.pkl").exists()
         assert (report_dir / "metrics.csv").exists()
-        assert (report_dir / "data.analyze.html").exists()
+        assert (report_dir / "data.summarize.html").exists()
         for artifact in self.CLF_ARTIFACTS:
             assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
