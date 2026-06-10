@@ -152,8 +152,8 @@ def test_skd007_mdi_bias_with_high_cardinality(regression_data):
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD007" in tips.index
     assert (
-        "High-cardinality features detected: 0, 1, 2 (and 1 more)"
-        in tips.loc["SKD007", "explanation"]
+        "High-cardinality features detected: Feature 0, Feature 1, Feature 2 "
+        "(and 1 more)" in tips.loc["SKD007", "explanation"]
     )
 
 
