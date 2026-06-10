@@ -1,4 +1,5 @@
 import pytest
+import skrub
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import KFold, StratifiedKFold
 
@@ -233,3 +234,21 @@ def test_no_data_raises():
         match="Provide data through X and y or through data to evaluate your estimator",
     ):
         evaluate(LinearRegression())
+
+
+def test_evaluate_learner(binary_classification_data):
+    class Splitter:
+        """A splitter with get_n_splits that requires X and y"""
+
+        def split(self, X, y, groups=None):
+            return KFold().split(X, y)
+
+        def get_n_splits(self, X, y, groups=None):
+            if X is None or y is None:
+                raise TypeError("X and y cannot be None")
+            return KFold().get_n_splits(X, y)
+
+    X, y = binary_classification_data
+    learner = skrub.X().skb.apply(LogisticRegression(), y=skrub.y()).skb.make_learner()
+    report = evaluate(learner, data={"X": X, "y": y}, splitter=Splitter())
+    assert len(report.reports_) == 5
