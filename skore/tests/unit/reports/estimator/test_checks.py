@@ -402,7 +402,7 @@ def test_skd014_skips_non_numeric_hyperparameters(regression_data, param_grid):
     [
         GridSearchCV(Ridge(), param_grid={"alpha": [0.1, 1.0, 10.0]}, cv=2),
         RandomizedSearchCV(
-            Ridge(), param_distributions={"alpha": [0.1, 1.0, 10.0]}, cv=2
+            Ridge(), param_distributions={"alpha": [0.1, 1.0, 10.0]}, cv=2, n_iter=2
         ),
     ],
 )
@@ -489,7 +489,7 @@ def test_skd015_pipeline_multi_step(binary_classification_data):
         [
             ("scaler", StandardScaler()),
             ("pca", PCA()),
-            ("q_transformer", QuantileTransformer()),
+            ("q_transformer", QuantileTransformer(n_quantiles=10)),
             ("clf", RandomForestClassifier(random_state=0)),
         ]
     )
@@ -594,6 +594,7 @@ def test_skd016_not_applicable_search(regression_data):
 def test_skd016_pipeline_walks_steps(regression_data):
     """SKD016 reports only the pipeline steps that are still at defaults."""
     X, y = regression_data
+    X, y = pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]), pd.Series(y)
     pipe = Pipeline([("pca", PCA()), ("ridge", Ridge(alpha=2.0))])
     report = evaluate(pipe, X, y)
     tips = report.checks.summarize().frame(severity="tip").set_index("code")

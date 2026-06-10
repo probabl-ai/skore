@@ -63,10 +63,14 @@ def _baseline_estimator_report(
     from skore._sklearn._estimator.report import EstimatorReport
 
     try:
-        X_train, y_train = report.data._retrieve_data_as_frame("train", True, "train")
-        X_test, y_test = report.data._retrieve_data_as_frame("test", True, "test")
+        X_train, _ = report.data._retrieve_data_as_frame("train", False, "train")
+        X_test, _ = report.data._retrieve_data_as_frame("test", False, "test")
     except ValueError:
         raise CheckNotApplicable() from None
+    y_train = get_report_y(report, data_source="train")
+    y_test = get_report_y(report, data_source="test")
+    if y_train is None or y_test is None:
+        raise CheckNotApplicable()
 
     is_classification = report.ml_task in (
         "binary-classification",
@@ -267,7 +271,7 @@ class CheckHighClassImbalance(Check):
         if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
-        counts = y.iloc[:, 0].value_counts()
+        counts = y.value_counts()
         overrepresented_class = counts[counts >= 0.8 * counts.sum()].index
 
         if len(overrepresented_class) > 0:
@@ -299,7 +303,7 @@ class CheckUnderrepresentedClasses(Check):
         if report.ml_task != "multiclass-classification" or y is None:
             raise CheckNotApplicable()
 
-        counts = y.iloc[:, 0].value_counts()
+        counts = y.value_counts()
         underrepresented_classes = counts[counts <= 0.1 * counts.sum()].index
         if len(underrepresented_classes) > 0:
             return (

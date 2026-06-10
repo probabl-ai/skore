@@ -162,24 +162,26 @@ def get_report_y(
     report: EstimatorReport,
     *,
     data_source: Literal["train", "test", "both"],
-) -> pd.DataFrame | None:
-    """Return the target as a DataFrame."""
+) -> pd.Series | pd.DataFrame | None:
+    """Return the target as a 1d Series or multi-output DataFrame."""
     try:
         if data_source == "both":
             if report.y_train is None or report.y_test is None:
                 return None
-            return sbd.concat(
+            y = sbd.concat(
                 _normalize_y_as_dataframe(report.y_train),
                 _normalize_y_as_dataframe(report.y_test),
                 axis=0,
             )
-        if data_source == "train":
+        elif data_source == "train":
             if report.y_train is None:
                 return None
-            return _normalize_y_as_dataframe(report.y_train)
-        if report.y_test is None:
-            return None
-        return _normalize_y_as_dataframe(report.y_test)
+            y = _normalize_y_as_dataframe(report.y_train)
+        else:
+            if report.y_test is None:
+                return None
+            y = _normalize_y_as_dataframe(report.y_test)
+        return y.iloc[:, 0] if y.shape[1] == 1 else y
     except NotImplementedError:
         return None
 
