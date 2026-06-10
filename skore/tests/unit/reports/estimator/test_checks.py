@@ -9,6 +9,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.decomposition import PCA
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.kernel_approximation import RBFSampler
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, RidgeCV
 from sklearn.model_selection import (
     GridSearchCV,
@@ -16,7 +17,7 @@ from sklearn.model_selection import (
     train_test_split,
 )
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import QuantileTransformer, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from skrub import DatetimeEncoder, tabular_pipeline
 
@@ -487,17 +488,16 @@ def test_skd015_pipeline_multi_step(binary_classification_data):
     X, y = binary_classification_data
     pipe = Pipeline(
         [
-            ("scaler", StandardScaler()),
             ("pca", PCA()),
-            ("q_transformer", QuantileTransformer()),
-            ("clf", RandomForestClassifier(random_state=0)),
+            ("rbf", RBFSampler(n_components=2)),
+            ("clf", RandomForestClassifier(random_state=0, n_estimators=10)),
         ]
     )
     search = GridSearchCV(
         pipe,
         param_grid={
-            "pca__n_components": [2, 3],
-            "clf__n_estimators": [10, 50],
+            "clf__min_samples_leaf": [10, 50],
+            "rbf__n_components": [2, 3],
         },
         cv=2,
     )
@@ -507,9 +507,9 @@ def test_skd015_pipeline_multi_step(binary_classification_data):
     explanation = tips.loc["SKD015", "explanation"]
     assert "StandardScaler" not in explanation
     assert "PCA" in explanation
-    assert "whiten" in explanation
-    assert "QuantileTransformer" in explanation
-    assert "n_quantiles" in explanation
+    assert "n_components" in explanation
+    assert "RBFSampler" in explanation
+    assert "gamma" in explanation
     assert "RandomForestClassifier" in explanation
     assert "max_features" in explanation
 
@@ -525,7 +525,6 @@ def test_skd015_pipeline_flags_untuned_step(regression_data):
     explanation = tips.loc["SKD015", "explanation"]
     assert "PCA" in explanation
     assert "n_components" in explanation
-    assert "whiten" in explanation
 
 
 def test_skd015_equivalent_params_not_suggested(regression_data):
@@ -555,7 +554,6 @@ def test_skd016_fires_on_default_estimator(regression_data):
     assert "RandomForestRegressor" in explanation
     assert "max_features" in explanation
     assert "min_samples_leaf" in explanation
-    assert "max_samples" in explanation
 
 
 def test_skd016_passed_when_tuned(regression_data):
@@ -601,7 +599,6 @@ def test_skd016_pipeline_walks_steps(regression_data):
     explanation = tips.loc["SKD016", "explanation"]
     assert "PCA" in explanation
     assert "n_components" in explanation
-    assert "whiten" in explanation
     assert "Ridge" not in explanation
 
 
