@@ -53,6 +53,19 @@ def test_data_source_both_legend_matches_curves(pyplot):
     )
     assert hgbc_legend_color[:3] == strong_curve_color[:3]
 
+    # Legend order follows the order estimators were passed
+    entries = [
+        (text.get_text(), handle)
+        for text, handle in zip(legend.get_texts(), legend.legend_handles, strict=True)
+        if "Chance level" not in text.get_text()
+    ]
+    names = [text.split(" - ")[0] for text, _ in entries]
+    assert names[0] == "HistGradientBoostingClassifier"
+
+    # Train entries are dashed, test entries are solid
+    for text, handle in entries:
+        assert handle.get_linestyle() == ("--" if "Train" in text else "-")
+
 
 def test_legend_binary_classification(
     pyplot,
