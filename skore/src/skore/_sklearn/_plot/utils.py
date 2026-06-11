@@ -273,6 +273,10 @@ def _reorder_categoricals_by_appearance(
             continue
         series = plot_data[column]
         if isinstance(series.dtype, CategoricalDtype):
+            # ``order`` is every value present, in order of appearance:
+            # ``set_categories`` only drops categories that have no rows (none here, so
+            # no row is altered), and these columns are built internally without NaN, so
+            # ``pd.unique`` cannot surface a NaN that ``set_categories`` would reject.
             order = list(pd.unique(series))
             plot_data[column] = series.cat.set_categories(order, ordered=True)
     return plot_data

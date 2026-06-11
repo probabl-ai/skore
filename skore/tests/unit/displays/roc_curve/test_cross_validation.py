@@ -99,15 +99,15 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
 
 
 @pytest.mark.parametrize(
-    "reportName",
+    "report_name",
     [
         "cross_validation_reports_binary_classification",
         "cross_validation_reports_multiclass_classification",
     ],
 )
-def test_data_source_both(pyplot, reportName, request):
+def test_data_source_both(pyplot, report_name, request):
     """Check that `roc(data_source='both')` includes train and test data."""
-    report = request.getfixturevalue(reportName)[0]
+    report = request.getfixturevalue(report_name)[0]
     display = report.metrics.roc(data_source="both")
 
     assert display.data_source == "both"
