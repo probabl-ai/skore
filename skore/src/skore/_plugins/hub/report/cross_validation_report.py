@@ -95,6 +95,20 @@ SPLITTERS = {
 }
 
 
+def _regression_target_distribution(y: Any, linspace: np.ndarray) -> list[float]:
+    if len(y) > 1:
+        distribution = gaussian_kde(y)(linspace)
+    else:
+        # Fallback when `y` is not compatible with `gaussian_kde`
+        distances = np.abs(linspace - next(iter(y)))
+        nearest = distances.argmin()
+
+        distribution = np.zeros_like(linspace, dtype=float)
+        distribution[nearest] = 1.0
+
+    return list(map(float, distribution))
+
+
 class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     """
     Payload used to send a cross-validation report to ``hub``.
@@ -313,10 +327,12 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                     float(train_y.max()),
                     num=TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT,
                 )
-                train_kernel = gaussian_kde(train_y)
-                train_target_distribution = [float(x) for x in train_kernel(linspace)]
-                test_kernel = gaussian_kde(test_y)
-                test_target_distribution = [float(x) for x in test_kernel(linspace)]
+                train_target_distribution = _regression_target_distribution(
+                    train_y, linspace
+                )
+                test_target_distribution = _regression_target_distribution(
+                    test_y, linspace
+                )
 
             train_target_distributions.append(train_target_distribution)
             train_target_distributions_sample_count.append(len(train_y))
