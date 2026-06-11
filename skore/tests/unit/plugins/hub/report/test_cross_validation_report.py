@@ -355,9 +355,6 @@ class TestCrossValidationReportPayload:
             def split(self, X, y=None, groups=None):
                 yield array([0, 1]), array([2, 3, 4])
 
-            def get_n_splits(self, X, y=None, groups=None):
-                raise Exception
-
         report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
         payload = CrossValidationReportPayload(
             project=project, report=report, key="<key>"
@@ -384,9 +381,6 @@ class TestCrossValidationReportPayload:
 
             def split(self, X, y=None, groups=None):
                 yield array([0, 1]), array([2, 3, 4])
-
-            def get_n_splits(self, X, y=None, groups=None):
-                raise Exception
 
         report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter(0))
         payload = CrossValidationReportPayload(
