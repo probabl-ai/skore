@@ -230,19 +230,18 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
     )
 
 
-def test_default_non_standard_score(forest_binary_classification_with_test):
+def test_default_non_standard_score(binary_classification_data):
+    """
+    If the estimator has a non-standard `.score` method, `summarize` will include it.
+    """
 
     class CustomScoreEstimator(RandomForestClassifier):
         def score(self, X, y):
             return 1
 
-    _, X_test, y_test = forest_binary_classification_with_test
+    X, y = binary_classification_data
     report = EstimatorReport(
-        CustomScoreEstimator(),
-        X_train=X_test,
-        y_train=y_test,
-        X_test=X_test,
-        y_test=y_test,
+        CustomScoreEstimator(), X_train=X, y_train=y, X_test=X, y_test=y
     )
     display = report.metrics.summarize()
 
