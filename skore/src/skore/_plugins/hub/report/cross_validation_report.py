@@ -229,54 +229,60 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             "random_state": getattr(splitter, "random_state", None),
         }
 
-        rng = np.random.default_rng(0)
-        rng_size = min(len(target), SPLITTING_STRATEGY_REPR_SAMPLE_COUNT)
+        # create a simplified splitter without shuffling and repetitions when possible
+        if simplified_cls := SPLITTERS.get(splitter.__class__.__name__):
+            rng = np.random.default_rng(0)
+            rng_size = min(len(target), SPLITTING_STRATEGY_REPR_SAMPLE_COUNT)
 
-        if len(target) < SPLITTING_STRATEGY_REPR_SAMPLE_COUNT:
-            target_repr = target
-        elif is_classifier:
-            # create an undersampled target to create a simplify representation
-            if not isinstance(target, pd.Series):
-                target = pd.Series(target)
+            if len(target) < SPLITTING_STRATEGY_REPR_SAMPLE_COUNT:
+                target_repr = target
+            elif is_classifier:
+                # create an undersampled target to create a simplify representation
+                if not isinstance(target, pd.Series):
+                    target = pd.Series(target)
 
-            probs = target.value_counts(normalize=True)
-            target_repr = rng.choice(
-                probs.index.to_numpy(),  # classes
-                size=rng_size,
-                p=probs.to_numpy(),  # probabilities
-                replace=True,
+                probs = target.value_counts(normalize=True)
+                target_repr = rng.choice(
+                    probs.index.to_numpy(),  # classes
+                    size=rng_size,
+                    p=probs.to_numpy(),  # probabilities
+                    replace=True,
+                )
+                target_repr.sort()
+            else:  # regression
+                # uniformly sample the target because it will have no impact on the
+                # representation
+                target_repr = rng.choice(
+                    cast(np.ndarray, target), size=rng_size, replace=False
+                )
+
+            simplified_cls_parameters = {}
+
+            for key in signature(simplified_cls.__init__).parameters:
+                if key in splitter_metadata:
+                    simplified_cls_parameters[key] = splitter_metadata[key]
+                elif hasattr(splitter, key):
+                    simplified_cls_parameters[key] = getattr(splitter, key)
+
+            if "shuffle" in simplified_cls_parameters:
+                simplified_cls_parameters["shuffle"] = False
+                simplified_cls_parameters["random_state"] = None
+
+            target = target_repr
+            simplified_splitter = simplified_cls(**simplified_cls_parameters)
+            split_generator = simplified_splitter.split(
+                rng.normal(size=(rng_size, 1)),
+                target_repr,
             )
-            target_repr.sort()
-        else:  # regression
-            # uniformly sample the target because it will have no impact on the
-            # representation
-            target_repr = rng.choice(
-                cast(np.ndarray, target), size=rng_size, replace=False
-            )
-
-        # create a simplified splitter without shuffling and repetitions
-        simplified_cls = SPLITTERS.get(splitter.__class__.__name__, splitter.__class__)
-        simplified_cls_parameters = {}
-
-        for key in signature(simplified_cls.__init__).parameters:
-            if key in splitter_metadata:
-                simplified_cls_parameters[key] = splitter_metadata[key]
-            elif hasattr(splitter, key):
-                simplified_cls_parameters[key] = getattr(splitter, key)
-
-        if "shuffle" in simplified_cls_parameters:
-            simplified_cls_parameters["shuffle"] = False
-            simplified_cls_parameters["random_state"] = None
-
-        simplified_splitter = simplified_cls(**simplified_cls_parameters)
+        else:
+            split_generator = self.report.split_indices
 
         # Per split: one list of length N_SAMPLES_REPR, ordered by sample index,
         # with 0 = train fold and 1 = test fold for that split.
         splits: list[list[int]] = []
-        X = rng.normal(size=(rng_size, 1))
 
-        for train_idx, test_idx in simplified_splitter.split(X, target_repr):
-            split_flags = np.full(rng_size, -1, dtype=int)
+        for train_idx, test_idx in split_generator:
+            split_flags = np.full(len(target), -1, dtype=int)
             split_flags[train_idx] = 0
             split_flags[test_idx] = 1
 

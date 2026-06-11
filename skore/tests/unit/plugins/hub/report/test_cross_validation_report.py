@@ -330,7 +330,8 @@ class TestCrossValidationReportPayload:
             "splits": expected_splits,
         }
 
-    def test_regression_splitting_do_not_call_get_n_splits(self, project):
+    def test_splitting_do_not_call_get_n_splits(self, project):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3011
         X = array([0, 1, 2, 3, 4])
         y = array([5, 6, 7, 8, 9])
 
@@ -342,6 +343,36 @@ class TestCrossValidationReportPayload:
                 raise Exception
 
         report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
+        payload = CrossValidationReportPayload(
+            project=project, report=report, key="<key>"
+        )
+
+        assert payload.splitting_strategy["splits"] == [[0, 0, 1, 1, 1]]
+        assert payload.splitting_strategy["splitter"] == {
+            "type": "Splitter",
+            "n_splits": 1,
+            "n_repeats": None,
+            "shuffle": False,
+            "random_state": None,
+        }
+
+    def test_splitting_strategy_do_not_call_custom_splitter_constructor(self, project):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3018
+        X = array([0, 1, 2, 3, 4])
+        y = array([5, 6, 7, 8, 9])
+
+        class Splitter:
+            def __init__(self, arg):
+                # raise TypeError: missing 1 required positional argument: 'arg'
+                pass
+
+            def split(self, X, y=None, groups=None):
+                yield array([0, 1]), array([2, 3, 4])
+
+            def get_n_splits(self, X, y=None, groups=None):
+                raise Exception
+
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter(0))
         payload = CrossValidationReportPayload(
             project=project, report=report, key="<key>"
         )
