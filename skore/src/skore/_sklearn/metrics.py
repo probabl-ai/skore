@@ -58,6 +58,9 @@ class MetricRow(TypedDict):
 
     Parameters
     ----------
+    metric_name : str
+        Technical name used for lookup (e.g. ``"accuracy"``).
+
     metric_verbose_name : str
         Human-readable metric name.
 
@@ -77,6 +80,7 @@ class MetricRow(TypedDict):
         Output index for multioutput regression metrics.
     """
 
+    metric_name: str
     metric_verbose_name: str
     greater_is_better: bool | None
     score: float
@@ -434,6 +438,7 @@ class Metric:
     ) -> MetricRow:
         """Build a single :class:`MetricRow`."""
         return MetricRow(
+            metric_name=self.name,
             metric_verbose_name=self.verbose_name,
             greater_is_better=self.greater_is_better,
             score=score.item() if hasattr(score, "item") else score,

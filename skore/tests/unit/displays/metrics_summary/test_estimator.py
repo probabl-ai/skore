@@ -1,6 +1,8 @@
-"""Tests for MetricsSummaryDisplay.frame() method."""
+"""Tests for MetricsSummaryDisplay with an EstimatorReport."""
 
+import matplotlib as mpl
 import pandas as pd
+import pytest
 from sklearn.metrics import make_scorer, mean_absolute_error, precision_score
 from sklearn.model_selection import train_test_split
 
@@ -200,3 +202,112 @@ def test_data_source_both_flat_index(forest_binary_classification_data):
         "fit_time_s",
         "predict_time_s",
     ]
+
+
+def test_plot_single_metric(pyplot, forest_binary_classification_with_test):
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize()
+
+    fig = display.plot(metric="accuracy")
+    assert isinstance(fig.axes[0], mpl.axes.Axes)
+    assert fig._suptitle.get_text() == "Metrics of RandomForestClassifier"
+
+
+def test_plot_unknown_metric_raises(forest_binary_classification_with_test):
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize()
+
+    with pytest.raises(ValueError, match="Unknown metric"):
+        display.plot(metric="not_a_metric")
+
+
+def test_plot_data_source_both(pyplot, forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+    display = report.metrics.summarize(data_source="both")
+
+    fig = display.plot(metric="accuracy")
+    assert len(fig.axes) == 1
+
+
+@pytest.mark.parametrize(
+    "fixture_name, metric, subplot_by, err_msg",
+    [
+        (
+            "estimator_reports_binary_classification",
+            "score",
+            "label",
+            "No columns to group by.",
+        ),
+        (
+            "estimator_reports_regression",
+            "score",
+            "output",
+            "No columns to group by.",
+        ),
+        (
+            "estimator_reports_multiclass_classification",
+            "precision",
+            "incorrect",
+            "Column incorrect not found in the frame. "
+            + "It should be one of label, auto, None.",
+        ),
+        (
+            "estimator_reports_multioutput_regression",
+            "r2",
+            "incorrect",
+            "Column incorrect not found in the frame. "
+            + "It should be one of output, auto, None.",
+        ),
+    ],
+)
+def test_invalid_subplot_by(pyplot, fixture_name, metric, subplot_by, err_msg, request):
+    reports = request.getfixturevalue(fixture_name)
+    report = reports[0]
+    display = report.metrics.summarize()
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(metric=metric, subplot_by=subplot_by)
+
+
+@pytest.mark.parametrize(
+    "fixture_name, metric, subplot_by_tuples",
+    [
+        (
+            "estimator_reports_binary_classification",
+            "score",
+            [(None, 1)],
+        ),
+        (
+            "estimator_reports_multiclass_classification",
+            "precision",
+            [("label", 3), (None, 1)],
+        ),
+        (
+            "estimator_reports_regression",
+            "score",
+            [(None, 1)],
+        ),
+        (
+            "estimator_reports_multioutput_regression",
+            "r2",
+            [("output", 2), (None, 1)],
+        ),
+    ],
+)
+def test_valid_subplot_by(pyplot, fixture_name, metric, subplot_by_tuples, request):
+    reports = request.getfixturevalue(fixture_name)
+    report = reports[0]
+    display = report.metrics.summarize()
+    for subplot_by, expected_len in subplot_by_tuples:
+        fig = display.plot(metric=metric, subplot_by=subplot_by)
+        axes = fig.axes
+        if subplot_by is None:
+            assert len(axes) == 1
+            assert isinstance(axes[0], mpl.axes.Axes)
+        else:
+            assert len(axes) == expected_len
