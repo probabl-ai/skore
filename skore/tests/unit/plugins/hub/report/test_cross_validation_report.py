@@ -340,9 +340,7 @@ class TestCrossValidationReportPayload:
                 yield array([0, 1]), array([2, 3, 4])
 
         report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
-        payload = CrossValidationReportPayload(
-            project=project, report=report, key="<key>"
-        )
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
 
         assert payload.splitting_strategy["splits"] == [[0, 0, 1, 1, 1]]
         assert payload.splitting_strategy["splitter"] == {
@@ -364,13 +362,17 @@ class TestCrossValidationReportPayload:
                 pass
 
             def split(self, X, y=None, groups=None):
+                nonlocal calls
+                calls += 1
                 yield array([0, 1]), array([2, 3, 4])
 
+        calls = 0
         report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter(0))
-        payload = CrossValidationReportPayload(
-            project=project, report=report, key="<key>"
-        )
+        calls_before_put = calls
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
 
+        assert calls_before_put > 0
+        assert calls_before_put == calls
         assert payload.splitting_strategy["splits"] == [[0, 0, 1, 1, 1]]
         assert payload.splitting_strategy["splitter"] == {
             "type": "Splitter",
