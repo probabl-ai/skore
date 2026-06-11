@@ -216,7 +216,8 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         is_classifier = "classification" in self.ml_task
 
         n_repeats = getattr(splitter, "n_repeats", None)
-        n_splits = splitter.get_n_splits() // (n_repeats or 1)
+        n_splits = len(self.report.split_indices) // (n_repeats or 1)
+
         splitter_metadata = {
             "type": splitter.__class__.__name__,
             "n_splits": n_splits,
