@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Literal, NotRequired, TypedDict, cast
+from collections import defaultdict
+from typing import Any, Literal, NotRequired, TypeAlias, TypedDict, cast
 
 import pandas as pd
 from matplotlib.figure import Figure
@@ -13,6 +14,8 @@ from skore._sklearn.types import (
     ReportType,
 )
 from skore._utils._index import flatten_multi_index
+
+Index: TypeAlias = int
 
 
 class MetricsSummaryRow(TypedDict):
@@ -31,6 +34,9 @@ class MetricsSummaryRow(TypedDict):
         Dataset split used to compute the metric.
     greater_is_better : bool or None
         Whether higher or lower values are better.
+    fingerprint : str or None
+        Identifier disambiguating distinct custom metrics that share
+        ``metric_verbose_name``. ``None`` for built-in metrics.
     score : Any
         Scalar metric value stored in the row.
     label : label, default=None
@@ -48,6 +54,7 @@ class MetricsSummaryRow(TypedDict):
     estimator_name: str
     data_source: DataSource
     greater_is_better: bool | None
+    fingerprint: str | None
     score: Any
     label: PositiveLabel | None
     average: str | None
@@ -110,6 +117,36 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         if any(isinstance(r["output"], int) for r in self.rows):
             data["output"] = data["output"].astype(pd.Int64Dtype())
+
+        data = MetricsSummaryDisplay._resolve_fingerprints(data)
+        return data.drop(columns="fingerprint")
+
+    @staticmethod
+    def _resolve_fingerprints(data: pd.DataFrame) -> pd.DataFrame:
+        """Rename ``metric_verbose_name`` per unique fingerprint by appending ``_i``."""
+        data = data.copy()
+
+        # {"Score": [[0, 3], [4]], ...}
+        metric_appearances: dict[str, list[list[Index]]] = defaultdict(list)
+        # NOTE: Ignore metrics for which fingerprint is None
+        for (metric_name, _), group in data.groupby(
+            ["metric_verbose_name", "fingerprint"], sort=False
+        ):
+            metric_appearances[metric_name].append(list(group.index))
+
+        # Map each row index to its new name (skip metrics with only one variant).
+        new_names: dict[Index, str] = {
+            index: f"{metric_name}_{suffix}"
+            #   "Score"      [[0, 3], [4]]
+            for metric_name, fingerprint_groups in metric_appearances.items()
+            if len(fingerprint_groups) > 1
+            #   1       [0, 3]
+            for suffix, indices in enumerate(fingerprint_groups, start=1)
+            for index in indices
+        }
+
+        for row_index, new_name in new_names.items():
+            data.loc[row_index, "metric_verbose_name"] = new_name
 
         return data
 
