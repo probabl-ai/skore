@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from typing import Any, Literal, cast
 
 from numpy.typing import ArrayLike
+from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -106,7 +107,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ... )
                     LogisticRegression Favorability
         Metric
-        Score                  0.94...         (↗︎)
         Accuracy               0.94...         (↗︎)
         Precision              0.98...         (↗︎)
         Recall                 0.92...         (↗︎)
@@ -123,7 +123,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
         Metric
-        Score                           0.96...                     0.94...          (↗︎)
         Accuracy                        0.96...                     0.94...          (↗︎)
         Precision                       0.96...                     0.98...          (↗︎)
         Recall                          0.97...                     0.92...          (↗︎)
@@ -144,7 +143,13 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         elif isinstance(metric, Iterable) and metric:
             parsed_metrics = [registry[m] for m in metric]
         else:
-            parsed_metrics = list(registry.values())
+            has_default_score = getattr(
+                type(self._parent.estimator_), "score", None
+            ) in (ClassifierMixin.score, RegressorMixin.score)
+            if has_default_score:
+                parsed_metrics = [s for s in registry.values() if s.name != "score"]
+            else:
+                parsed_metrics = list(registry.values())
 
         rows: list[MetricsSummaryRow] = []
         for parsed_metric in parsed_metrics:
