@@ -1,13 +1,14 @@
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
 
 import matplotlib.pyplot as plt
 
-try:
-    from matplotlib.typing import RcKeyType as MatplotlibRcKeyType
-except ImportError:
-    MatplotlibRcKeyType = str  # type: ignore[misc]
+if TYPE_CHECKING:
+    try:
+        from matplotlib.typing import RcKeyType as MatplotlibRcKeyType
+    except ImportError:
+        MatplotlibRcKeyType = str  # type: ignore[misc]
 import pandas as pd
 from matplotlib.figure import Figure
 
@@ -77,7 +78,7 @@ class PlotBackendMixin:
         )
 
 
-DEFAULT_STYLE: dict[MatplotlibRcKeyType, Any] = {
+DEFAULT_STYLE: dict["MatplotlibRcKeyType", Any] = {
     "font.size": 14,
     "axes.labelsize": 14,
     "axes.titlesize": 14,
