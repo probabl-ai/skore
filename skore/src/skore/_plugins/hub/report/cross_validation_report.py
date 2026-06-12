@@ -38,47 +38,7 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.media.media import Media
-from skore._plugins.hub.metric import (
-    AccuracyTestMean,
-    AccuracyTestStd,
-    AccuracyTrainMean,
-    AccuracyTrainStd,
-    BrierScoreTestMean,
-    BrierScoreTestStd,
-    BrierScoreTrainMean,
-    BrierScoreTrainStd,
-    FitTimeMean,
-    FitTimeStd,
-    LogLossTestMean,
-    LogLossTestStd,
-    LogLossTrainMean,
-    LogLossTrainStd,
-    PrecisionTestMean,
-    PrecisionTestStd,
-    PrecisionTrainMean,
-    PrecisionTrainStd,
-    PredictTimeTestMean,
-    PredictTimeTestStd,
-    PredictTimeTrainMean,
-    PredictTimeTrainStd,
-    R2TestMean,
-    R2TestStd,
-    R2TrainMean,
-    R2TrainStd,
-    RecallTestMean,
-    RecallTestStd,
-    RecallTrainMean,
-    RecallTrainStd,
-    RmseTestMean,
-    RmseTestStd,
-    RmseTrainMean,
-    RmseTrainStd,
-    RocAucTestMean,
-    RocAucTestStd,
-    RocAucTrainMean,
-    RocAucTrainStd,
-)
-from skore._plugins.hub.metric.metric import Metric
+from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
 
@@ -101,8 +61,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
     Attributes
     ----------
-    METRICS : ClassVar[tuple[Metric, ...]]
-        The metric classes that have to be computed from the report.
     MEDIAS : ClassVar[tuple[Media, ...]]
         The media classes that have to be computed from the report.
     project : Project
@@ -113,47 +71,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         The key to associate to the report.
     """
 
-    METRICS: ClassVar[tuple[type[Metric[CrossValidationReport]], ...]] = (
-        AccuracyTestMean,
-        AccuracyTestStd,
-        AccuracyTrainMean,
-        AccuracyTrainStd,
-        BrierScoreTestMean,
-        BrierScoreTestStd,
-        BrierScoreTrainMean,
-        BrierScoreTrainStd,
-        LogLossTestMean,
-        LogLossTestStd,
-        LogLossTrainMean,
-        LogLossTrainStd,
-        PrecisionTestMean,
-        PrecisionTestStd,
-        PrecisionTrainMean,
-        PrecisionTrainStd,
-        R2TestMean,
-        R2TestStd,
-        R2TrainMean,
-        R2TrainStd,
-        RecallTestMean,
-        RecallTestStd,
-        RecallTrainMean,
-        RecallTrainStd,
-        RmseTestMean,
-        RmseTestStd,
-        RmseTrainMean,
-        RmseTrainStd,
-        RocAucTestMean,
-        RocAucTestStd,
-        RocAucTrainMean,
-        RocAucTrainStd,
-        # timings must be calculated last, or predictions must be cached before
-        FitTimeMean,
-        FitTimeStd,
-        PredictTimeTestMean,
-        PredictTimeTestStd,
-        PredictTimeTrainMean,
-        PredictTimeTrainStd,
-    )
     MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
         Coefficients,
         ConfusionMatrixDataFrameTestAll,
@@ -361,4 +278,51 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 key=f"{self.key}:estimator-report",
             )
             for report in self.report.reports_
+        ]
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def metrics(self) -> list[Metric[CrossValidationReport]]:
+        """
+        The list of scalar metrics that have been computed from the report.
+
+        Notes
+        -----
+        All metrics whose value is not a scalar are currently ignored:
+        - ignore ``list[float]`` for multi-output ML task,
+        - ignore ``dict[str: float]`` for multi-classes ML task.
+        """
+        data = self.report.metrics.summarize(data_source="both").data
+        scalar = data[
+            data["label"].isna() & data["output"].isna() & data["average"].isna()
+        ]
+
+        aggregated = (
+            scalar.groupby(
+                [
+                    "metric_name",
+                    "metric_verbose_name",
+                    "data_source",
+                    "greater_is_better",
+                ]
+            )
+            .agg(
+                mean=("score", "mean"),
+                std=("score", lambda s: s.std() if len(s) > 1 else 0.0),
+            )
+            .reset_index()
+        )
+
+        return [
+            Metric(
+                name=f"{row['metric_name']}_{suffix}",
+                verbose_name=f"{row['metric_verbose_name']} - {suffix.upper()}",
+                data_source=row["data_source"],
+                greater_is_better=row["greater_is_better"]
+                if suffix == "mean"
+                else False,
+                value=row[suffix],
+            )
+            for row in aggregated.to_dict("records")
+            for suffix in ("mean", "std")
         ]
