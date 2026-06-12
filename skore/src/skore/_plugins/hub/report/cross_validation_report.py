@@ -302,9 +302,10 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                     train_target_distribution.append(train.get(label, 0))
                     test_target_distribution.append(test.get(label, 0))
             else:
+                y = np.asarray(self.report.y)
                 linspace = np.linspace(
-                    float(train_y.min()),
-                    float(train_y.max()),
+                    float(y.min()),
+                    float(y.max()),
                     num=TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT,
                 )
                 train_kernel = gaussian_kde(train_y)
