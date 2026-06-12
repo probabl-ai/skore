@@ -181,7 +181,7 @@ markupsafe==3.0.3
     #   jinja2
     #   mako
     #   werkzeug
-matplotlib==3.10.9
+matplotlib==3.11.0
     # via
     #   skore (skore/pyproject.toml)
     #   mlflow
