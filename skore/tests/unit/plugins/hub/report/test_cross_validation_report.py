@@ -35,7 +35,7 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.serializer import Serializer
-from skore._plugins.hub.metric import CrossValidationReportMetric
+from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
@@ -403,65 +403,173 @@ class TestCrossValidationReportPayload:
     )
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
-        assert all(isinstance(m, CrossValidationReportMetric) for m in payload.metrics)
-        assert [(m.name, m.data_source) for m in payload.metrics] == [
-            ("accuracy_mean", "test"),
-            ("accuracy_std", "test"),
-            ("accuracy_mean", "train"),
-            ("accuracy_std", "train"),
-            ("brier_score_mean", "test"),
-            ("brier_score_std", "test"),
-            ("brier_score_mean", "train"),
-            ("brier_score_std", "train"),
-            ("fit_time_mean", "test"),
-            ("fit_time_std", "test"),
-            ("fit_time_mean", "train"),
-            ("fit_time_std", "train"),
-            ("log_loss_mean", "test"),
-            ("log_loss_std", "test"),
-            ("log_loss_mean", "train"),
-            ("log_loss_std", "train"),
-            ("predict_time_mean", "test"),
-            ("predict_time_std", "test"),
-            ("predict_time_mean", "train"),
-            ("predict_time_std", "train"),
-            ("roc_auc_mean", "test"),
-            ("roc_auc_std", "test"),
-            ("roc_auc_mean", "train"),
-            ("roc_auc_std", "train"),
-            ("score_mean", "test"),
-            ("score_std", "test"),
-            ("score_mean", "train"),
-            ("score_std", "train"),
+        assert [
+            m
+            for m in payload.metrics
+            # Non-deterministic
+            if "fit_time" not in m.name and "predict_time" not in m.name
+        ] == [
+            Metric(
+                name="accuracy_mean",
+                verbose_name="Accuracy - MEAN",
+                data_source="test",
+                greater_is_better=True,
+                value=0.4,
+                position=None,
+            ),
+            Metric(
+                name="accuracy_std",
+                verbose_name="Accuracy - STD",
+                data_source="test",
+                greater_is_better=False,
+                value=0.0,
+                position=None,
+            ),
+            Metric(
+                name="accuracy_mean",
+                verbose_name="Accuracy - MEAN",
+                data_source="train",
+                greater_is_better=True,
+                value=1.0,
+                position=None,
+            ),
+            Metric(
+                name="accuracy_std",
+                verbose_name="Accuracy - STD",
+                data_source="train",
+                greater_is_better=False,
+                value=0.0,
+                position=None,
+            ),
+            Metric(
+                name="brier_score_mean",
+                verbose_name="Brier score - MEAN",
+                data_source="test",
+                greater_is_better=False,
+                value=0.32946,
+                position=None,
+            ),
+            Metric(
+                name="brier_score_std",
+                verbose_name="Brier score - STD",
+                data_source="test",
+                greater_is_better=False,
+                value=0.033205734444520234,
+                position=None,
+            ),
+            Metric(
+                name="brier_score_mean",
+                verbose_name="Brier score - MEAN",
+                data_source="train",
+                greater_is_better=False,
+                value=0.028949999999999997,
+                position=None,
+            ),
+            Metric(
+                name="brier_score_std",
+                verbose_name="Brier score - STD",
+                data_source="train",
+                greater_is_better=False,
+                value=0.0012869343417595156,
+                position=None,
+            ),
+            Metric(
+                name="log_loss_mean",
+                verbose_name="Log loss - MEAN",
+                data_source="test",
+                greater_is_better=False,
+                value=0.9000329690645851,
+                position=None,
+            ),
+            Metric(
+                name="log_loss_std",
+                verbose_name="Log loss - STD",
+                data_source="test",
+                greater_is_better=False,
+                value=0.0449741307192756,
+                position=None,
+            ),
+            Metric(
+                name="log_loss_mean",
+                verbose_name="Log loss - MEAN",
+                data_source="train",
+                greater_is_better=False,
+                value=0.1777517839442836,
+                position=None,
+            ),
+            Metric(
+                name="log_loss_std",
+                verbose_name="Log loss - STD",
+                data_source="train",
+                greater_is_better=False,
+                value=0.0023212748748649243,
+                position=None,
+            ),
+            Metric(
+                name="roc_auc_mean",
+                verbose_name="ROC AUC - MEAN",
+                data_source="test",
+                greater_is_better=True,
+                value=0.4583333333333333,
+                position=None,
+            ),
+            Metric(
+                name="roc_auc_std",
+                verbose_name="ROC AUC - STD",
+                data_source="test",
+                greater_is_better=False,
+                value=0.29462782549439476,
+                position=None,
+            ),
+            Metric(
+                name="roc_auc_mean",
+                verbose_name="ROC AUC - MEAN",
+                data_source="train",
+                greater_is_better=True,
+                value=1.0,
+                position=None,
+            ),
+            Metric(
+                name="roc_auc_std",
+                verbose_name="ROC AUC - STD",
+                data_source="train",
+                greater_is_better=False,
+                value=0.0,
+                position=None,
+            ),
+            Metric(
+                name="score_mean",
+                verbose_name="Score - MEAN",
+                data_source="test",
+                greater_is_better=True,
+                value=0.4,
+                position=None,
+            ),
+            Metric(
+                name="score_std",
+                verbose_name="Score - STD",
+                data_source="test",
+                greater_is_better=False,
+                value=0.0,
+                position=None,
+            ),
+            Metric(
+                name="score_mean",
+                verbose_name="Score - MEAN",
+                data_source="train",
+                greater_is_better=True,
+                value=1.0,
+                position=None,
+            ),
+            Metric(
+                name="score_std",
+                verbose_name="Score - STD",
+                data_source="train",
+                greater_is_better=False,
+                value=0.0,
+                position=None,
+            ),
         ]
-
-        test_accuracy_mean = next(
-            m.model_dump()
-            for m in payload.metrics
-            if m.name == "accuracy_mean" and m.data_source == "test"
-        )
-        assert test_accuracy_mean == {
-            "name": "accuracy_mean",
-            "verbose_name": "Accuracy - MEAN",
-            "data_source": "test",
-            "greater_is_better": True,
-            "position": None,
-            "value": 0.4,
-        }
-
-        test_accuracy_std = next(
-            m.model_dump()
-            for m in payload.metrics
-            if m.name == "accuracy_std" and m.data_source == "test"
-        )
-        assert test_accuracy_std == {
-            "name": "accuracy_std",
-            "verbose_name": "Accuracy - STD",
-            "data_source": "test",
-            "greater_is_better": False,
-            "position": None,
-            "value": 0.0,
-        }
 
     @mark.filterwarnings(
         # `small_cv_binary_classification` has too few labels
@@ -483,30 +591,30 @@ class TestCrossValidationReportPayload:
             key="<key>",
         )
 
-        assert all(isinstance(m, CrossValidationReportMetric) for m in payload.metrics)
+        assert all(isinstance(m, Metric) for m in payload.metrics)
         assert [m for m in payload.metrics if "hello" in m.name] == [
-            CrossValidationReportMetric(
+            Metric(
                 name="hello_mean",
                 verbose_name="Hello - MEAN",
                 data_source="test",
                 greater_is_better=True,
                 value=1.0,
             ),
-            CrossValidationReportMetric(
+            Metric(
                 name="hello_std",
                 verbose_name="Hello - STD",
                 data_source="test",
                 greater_is_better=False,
                 value=0.0,
             ),
-            CrossValidationReportMetric(
+            Metric(
                 name="hello_mean",
                 verbose_name="Hello - MEAN",
                 data_source="train",
                 greater_is_better=True,
                 value=1.0,
             ),
-            CrossValidationReportMetric(
+            Metric(
                 name="hello_std",
                 verbose_name="Hello - STD",
                 data_source="train",

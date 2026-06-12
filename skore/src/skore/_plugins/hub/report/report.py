@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from functools import cached_property, partial
 from typing import ClassVar, Generic, TypeVar
 
@@ -13,6 +13,7 @@ from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 from skore import THREADABLE, CrossValidationReport, EstimatorReport, console
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.artifact.pickle import Pickle
+from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.project.project import Project
 
 SkinnedProgress = partial(
@@ -79,6 +80,12 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
     def ml_task(self) -> str:
         """The type of ML task covered by the report."""
         return self.report.ml_task
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    @abstractmethod
+    def metrics(self) -> list[Metric[Report]]:
+        """The metrics computed from the report."""
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

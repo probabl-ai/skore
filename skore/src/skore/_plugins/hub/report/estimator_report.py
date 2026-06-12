@@ -26,7 +26,7 @@ from skore._plugins.hub.artifact.media import (
     TableReportTrain,
 )
 from skore._plugins.hub.artifact.media.media import Media
-from skore._plugins.hub.metric import EstimatorReportMetric
+from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report.report import ReportPayload
 
 
@@ -36,8 +36,6 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
 
     Attributes
     ----------
-    metrics : list[EstimatorReportMetric]
-        The metrics that have to be computed from the report.
     MEDIAS : ClassVar[tuple[Media, ...]]
         The media classes that have to be computed from the report.
     project : Project
@@ -70,7 +68,7 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def metrics(self) -> list[EstimatorReportMetric]:
+    def metrics(self) -> list[Metric[EstimatorReport]]:
         """
         The list of scalar metrics that have been computed from the report.
 
@@ -88,12 +86,12 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         ]
 
         return [
-            EstimatorReportMetric(
-                value=row["score"],
+            Metric(
                 name=row["metric_name"],
                 verbose_name=row["metric_verbose_name"],
                 data_source=row["data_source"],
                 greater_is_better=row["greater_is_better"],
+                value=row["score"],
             )
             for row in scalar.to_dict("records")
         ]

@@ -38,7 +38,7 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.media.media import Media
-from skore._plugins.hub.metric import CrossValidationReportMetric
+from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
 
@@ -61,8 +61,6 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
     Attributes
     ----------
-    metrics : list[CrossValidationMetric]
-        The metric classes that have to be computed from the report.
     MEDIAS : ClassVar[tuple[Media, ...]]
         The media classes that have to be computed from the report.
     project : Project
@@ -284,7 +282,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def metrics(self) -> list[CrossValidationReportMetric]:
+    def metrics(self) -> list[Metric[CrossValidationReport]]:
         """
         The list of scalar metrics that have been computed from the report.
 
@@ -316,7 +314,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         )
 
         return [
-            CrossValidationReportMetric(
+            Metric(
                 name=f"{row['metric_name']}_{suffix}",
                 verbose_name=f"{row['metric_verbose_name']} - {suffix.upper()}",
                 data_source=row["data_source"],

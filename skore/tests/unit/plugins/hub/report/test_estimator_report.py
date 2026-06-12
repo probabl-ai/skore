@@ -22,7 +22,7 @@ from skore._plugins.hub.artifact.media import (
     TableReportTrain,
 )
 from skore._plugins.hub.artifact.serializer import Serializer
-from skore._plugins.hub.metric import EstimatorReportMetric
+from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report import EstimatorReportPayload
 
 
@@ -90,22 +90,92 @@ class TestEstimatorReportPayload:
 
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
-        assert all(isinstance(m, EstimatorReportMetric) for m in payload.metrics)
-        assert [(m.name, m.data_source) for m in payload.metrics] == [
-            ("score", "train"),
-            ("accuracy", "train"),
-            ("roc_auc", "train"),
-            ("log_loss", "train"),
-            ("brier_score", "train"),
-            ("fit_time", "train"),
-            ("predict_time", "train"),
-            ("score", "test"),
-            ("accuracy", "test"),
-            ("roc_auc", "test"),
-            ("log_loss", "test"),
-            ("brier_score", "test"),
-            ("fit_time", "test"),
-            ("predict_time", "test"),
+        assert [
+            m
+            for m in payload.metrics
+            # Non-deterministic
+            if m.name not in ("fit_time", "predict_time")
+        ] == [
+            Metric(
+                name="score",
+                verbose_name="Score",
+                data_source="train",
+                greater_is_better=True,
+                value=1.0,
+                position=None,
+            ),
+            Metric(
+                name="accuracy",
+                verbose_name="Accuracy",
+                data_source="train",
+                greater_is_better=True,
+                value=1.0,
+                position=None,
+            ),
+            Metric(
+                name="roc_auc",
+                verbose_name="ROC AUC",
+                data_source="train",
+                greater_is_better=True,
+                value=1.0,
+                position=None,
+            ),
+            Metric(
+                name="log_loss",
+                verbose_name="Log loss",
+                data_source="train",
+                greater_is_better=False,
+                value=0.06911280690412243,
+                position=None,
+            ),
+            Metric(
+                name="brier_score",
+                verbose_name="Brier score",
+                data_source="train",
+                greater_is_better=False,
+                value=0.007277500000000001,
+                position=None,
+            ),
+            Metric(
+                name="score",
+                verbose_name="Score",
+                data_source="test",
+                greater_is_better=True,
+                value=0.9,
+                position=None,
+            ),
+            Metric(
+                name="accuracy",
+                verbose_name="Accuracy",
+                data_source="test",
+                greater_is_better=True,
+                value=0.9,
+                position=None,
+            ),
+            Metric(
+                name="roc_auc",
+                verbose_name="ROC AUC",
+                data_source="test",
+                greater_is_better=True,
+                value=0.989010989010989,
+                position=None,
+            ),
+            Metric(
+                name="log_loss",
+                verbose_name="Log loss",
+                data_source="test",
+                greater_is_better=False,
+                value=0.3168690248138036,
+                position=None,
+            ),
+            Metric(
+                name="brier_score",
+                verbose_name="Brier score",
+                data_source="test",
+                greater_is_better=False,
+                value=0.09025999999999999,
+                position=None,
+            ),
         ]
 
     @mark.respx(assert_all_called=False)
@@ -124,16 +194,16 @@ class TestEstimatorReportPayload:
             key="<key>",
         )
 
-        assert all(isinstance(m, EstimatorReportMetric) for m in payload.metrics)
+        assert all(isinstance(m, Metric) for m in payload.metrics)
         assert [m for m in payload.metrics if "hello" in m.name] == [
-            EstimatorReportMetric(
+            Metric(
                 name="hello",
                 verbose_name="Hello",
                 data_source="train",
                 greater_is_better=True,
                 value=1.0,
             ),
-            EstimatorReportMetric(
+            Metric(
                 name="hello",
                 verbose_name="Hello",
                 data_source="test",
