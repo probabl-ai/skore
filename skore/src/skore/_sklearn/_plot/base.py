@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
@@ -78,7 +80,7 @@ class PlotBackendMixin:
         )
 
 
-DEFAULT_STYLE: dict["MatplotlibRcKeyType", Any] = {
+DEFAULT_STYLE: dict[MatplotlibRcKeyType, Any] = {
     "font.size": 14,
     "axes.labelsize": 14,
     "axes.titlesize": 14,
