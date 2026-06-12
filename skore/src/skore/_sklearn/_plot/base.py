@@ -3,6 +3,7 @@ from functools import wraps
 from typing import Any, Literal, Protocol, runtime_checkable
 
 import matplotlib.pyplot as plt
+import matplotlib.typing
 import pandas as pd
 from matplotlib.figure import Figure
 
@@ -72,7 +73,7 @@ class PlotBackendMixin:
         )
 
 
-DEFAULT_STYLE = {
+DEFAULT_STYLE: dict[matplotlib.typing.RcKeyType, Any] = {
     "font.size": 14,
     "axes.labelsize": 14,
     "axes.titlesize": 14,
