@@ -156,7 +156,7 @@ class ChecksSummaryDisplay(DisplayHelpMixin):
                 }
             )
         return render_template(
-            "checks_summary_display.html.j2",
+            "display/checks_summary_display.html.j2",
             {
                 "container_id": f"skore-checks-summary-{uuid4().hex[:8]}",
                 "header": self._header,

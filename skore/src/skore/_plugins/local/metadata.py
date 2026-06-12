@@ -117,40 +117,54 @@ class CrossValidationReportMetadata(ReportMetadata):  # noqa: D101
     roc_auc_mean: float | None = field(init=False)
     fit_time_mean: float | None = field(init=False)
     predict_time_mean: float | None = field(init=False)
+    rmse_std: float | None = field(init=False)
+    log_loss_std: float | None = field(init=False)
+    roc_auc_std: float | None = field(init=False)
+    fit_time_std: float | None = field(init=False)
+    predict_time_std: float | None = field(init=False)
 
     @staticmethod
-    def metric(report: CrossValidationReport, name: str) -> float | None:
-        """Compute metric."""
+    def metric(
+        report: CrossValidationReport, name: str
+    ) -> tuple[float | None, float | None]:
+        """Compute metric mean and std across cross-validation splits."""
         if not hasattr(report.metrics, name):
-            return None
+            return None, None
 
         dataframe = getattr(report.metrics, name)(
             data_source="test",
-            aggregate="mean",
+            aggregate=("mean", "std"),
         )
 
-        return cast_to_float(dataframe.iloc[0, 0])
+        return (
+            cast_to_float(dataframe.iloc[0, 0]),
+            cast_to_float(dataframe.iloc[0, 1]),
+        )
 
     @staticmethod
-    def timing(report: CrossValidationReport, label: str) -> float | None:
-        """Compute timing."""
-        dataframe = report.metrics.timings(aggregate="mean")
+    def timing(
+        report: CrossValidationReport, label: str
+    ) -> tuple[float | None, float | None]:
+        """Compute timing mean and std across cross-validation splits."""
+        dataframe = report.metrics.timings(aggregate=("mean", "std"))
 
         try:
             series = dataframe.loc[label]
         except KeyError:
-            return None
+            return None, None
 
-        return cast_to_float(series.iloc[0])
+        return cast_to_float(series["mean"]), cast_to_float(series["std"])
 
     def __post_init__(self, report: CrossValidationReport) -> None:  # type: ignore[override]
         """Initialize dynamic fields."""
         super().__post_init__(report)
 
-        self.rmse_mean = self.metric(report, "rmse")
-        self.log_loss_mean = self.metric(report, "log_loss")
-        self.roc_auc_mean = self.metric(report, "roc_auc")
+        self.rmse_mean, self.rmse_std = self.metric(report, "rmse")
+        self.log_loss_mean, self.log_loss_std = self.metric(report, "log_loss")
+        self.roc_auc_mean, self.roc_auc_std = self.metric(report, "roc_auc")
 
         # timings must be calculated last
-        self.fit_time_mean = self.timing(report, "Fit time (s)")
-        self.predict_time_mean = self.timing(report, "Predict time test (s)")
+        self.fit_time_mean, self.fit_time_std = self.timing(report, "Fit time (s)")
+        self.predict_time_mean, self.predict_time_std = self.timing(
+            report, "Predict time test (s)"
+        )

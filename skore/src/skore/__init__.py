@@ -15,6 +15,7 @@ from rich.theme import Theme
 
 from skore._config import configuration
 from skore._externals._sklearn_compat import parse_version
+from skore._project._summary import Summary
 from skore._project.login import login
 from skore._project.project import Project
 from skore._sklearn import (
@@ -81,6 +82,7 @@ __all__ = [
     "Project",
     "RocCurveDisplay",
     "CalibrationDisplay",
+    "Summary",
     "TableReportDisplay",
     "TrainTestSplit",
     "compare",

@@ -1,8 +1,8 @@
 from copy import deepcopy
 
-import pytest
 from joblib import hash as joblib_hash
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
+from pandas.api.types import is_datetime64_any_dtype
 from pandas.testing import assert_index_equal
 from pytest import fixture, raises
 from sklearn.datasets import make_classification, make_regression
@@ -60,37 +60,56 @@ class FakeProject:
         self.__reports = reports
 
     def make_report_metadata(self, index, report):
+        is_estimator = isinstance(report, EstimatorReport)
         return {
             "id": index,
             "key": None,
             "date": None,
-            "learner": None,
+            "learner": report.estimator_name_,
             "dataset": (
-                joblib_hash(report.y_test)
-                if isinstance(report, EstimatorReport)
-                else joblib_hash(report.y)
+                joblib_hash(report.y_test) if is_estimator else joblib_hash(report.y)
             ),
             "ml_task": report._ml_task,
-            "report_type": (
-                "estimator"
-                if isinstance(report, EstimatorReport)
-                else "cross-validation"
+            "report_type": "estimator" if is_estimator else "cross-validation",
+            "rmse": 1.0 if (is_estimator and "regression" in report._ml_task) else None,
+            "log_loss": (
+                0.3 if (is_estimator and "classification" in report._ml_task) else None
             ),
-            "rmse": None,
-            "log_loss": None,
-            "roc_auc": None,
-            "fit_time": None,
-            "predict_time": None,
-            "rmse_mean": None,
-            "log_loss_mean": None,
-            "roc_auc_mean": None,
-            "fit_time_mean": None,
-            "predict_time_mean": None,
-            "rmse_std": None,
-            "log_loss_std": None,
-            "roc_auc_std": None,
-            "fit_time_std": None,
-            "predict_time_std": None,
+            "roc_auc": (
+                0.9 if (is_estimator and "classification" in report._ml_task) else None
+            ),
+            "fit_time": 0.1 if is_estimator else None,
+            "predict_time": 0.01 if is_estimator else None,
+            "rmse_mean": (
+                1.0 if (not is_estimator and "regression" in report._ml_task) else None
+            ),
+            "log_loss_mean": (
+                0.3
+                if (not is_estimator and "classification" in report._ml_task)
+                else None
+            ),
+            "roc_auc_mean": (
+                0.9
+                if (not is_estimator and "classification" in report._ml_task)
+                else None
+            ),
+            "fit_time_mean": 0.5 if not is_estimator else None,
+            "predict_time_mean": 0.05 if not is_estimator else None,
+            "rmse_std": (
+                0.1 if (not is_estimator and "regression" in report._ml_task) else None
+            ),
+            "log_loss_std": (
+                0.05
+                if (not is_estimator and "classification" in report._ml_task)
+                else None
+            ),
+            "roc_auc_std": (
+                0.02
+                if (not is_estimator and "classification" in report._ml_task)
+                else None
+            ),
+            "fit_time_std": 0.02 if not is_estimator else None,
+            "predict_time_std": 0.01 if not is_estimator else None,
         }
 
     def get(self, id: str):
@@ -103,167 +122,285 @@ class FakeProject:
         ]
 
 
+def _summary_from_project(project) -> Summary:
+    """Mirror :meth:`Project.summarize` for unit tests using ``FakeProject``."""
+    frame = DataFrame(project.summarize(), copy=False)
+    if not frame.empty:
+        frame.index = MultiIndex.from_arrays(
+            [
+                RangeIndex(len(frame)),
+                Index(frame.pop("id"), name="id", dtype=str),
+            ]
+        )
+    return Summary(frame, project)
+
+
 class TestSummary:
-    def test_factory(
+    def test_summarize(
         self,
         estimator_report_regression,
-        estimator_report_binary_classification,
         cross_validation_report_regression,
-        cross_validation_report_binary_classification,
     ):
         project = FakeProject(
             estimator_report_regression,
-            estimator_report_binary_classification,
             cross_validation_report_regression,
-            cross_validation_report_binary_classification,
         )
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
-        assert isinstance(summary, DataFrame)
         assert isinstance(summary, Summary)
-        assert summary.project == project
+        assert summary.project is project
         assert_index_equal(
-            summary.index,
+            summary.frame().index,
             MultiIndex.from_arrays(
                 [
-                    RangeIndex(4),
-                    Index(["0", "1", "2", "3"], name="id", dtype=str),
+                    RangeIndex(2),
+                    Index(["0", "1"], name="id", dtype=str),
                 ]
             ),
         )
-        assert list(summary.columns) == [
-            "key",
-            "date",
-            "learner",
-            "dataset",
-            "ml_task",
-            "report_type",
-            "rmse",
-            "log_loss",
-            "roc_auc",
-            "fit_time",
-            "predict_time",
-            "rmse_mean",
-            "log_loss_mean",
-            "roc_auc_mean",
-            "fit_time_mean",
-            "predict_time_mean",
-            "rmse_std",
-            "log_loss_std",
-            "roc_auc_std",
-            "fit_time_std",
-            "predict_time_std",
-        ]
 
-    def test_factory_empty(self):
-        project = FakeProject()
-        summary = Summary.factory(project)
-
-        assert isinstance(summary, DataFrame)
-        assert isinstance(summary, Summary)
-        assert summary.project == project
-        assert len(summary) == 0
-
-    def test_constructor(self, estimator_report_regression):
+    def test_summarize_date_dtype(self, estimator_report_regression):
         project = FakeProject(estimator_report_regression)
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
-        # Test with a bad query, with empty result
-        summary2 = summary.query("ml_task=='<ml_task>'")
+        assert is_datetime64_any_dtype(summary.frame()["date"])
 
-        assert isinstance(summary2, DataFrame)
-        assert isinstance(summary2, Summary)
-        assert len(summary2) == 0
-        assert summary2.project == project
+    def test_summarize_empty(self):
+        project = FakeProject()
+        summary = _summary_from_project(project)
 
-        # Test with a valid query, with identical result
-        summary3 = summary.query("ml_task=='regression'")
+        assert isinstance(summary, Summary)
+        assert summary.project is project
+        assert len(summary.frame()) == 0
 
-        assert isinstance(summary3, DataFrame)
-        assert isinstance(summary3, Summary)
-        assert DataFrame.equals(summary3, summary)
-        assert summary3.project == project
+    def test_frame_drops_empty_object_metric_columns(self):
+        frame = DataFrame(
+            {
+                "key": ["k0"],
+                "date": ["2024-01-01"],
+                "learner": ["LogisticRegression"],
+                "dataset": ["d0"],
+                "ml_task": ["binary-classification"],
+                "report_type": ["cross-validation"],
+                "rmse": [None],
+                "rmse_mean": [None],
+                "rmse_std": [None],
+                "log_loss_mean": [0.3],
+            }
+        )
+        frame.index = MultiIndex.from_arrays(
+            [RangeIndex(1), Index(["cv0"], name="id", dtype=str)]
+        )
+        out = Summary(frame).frame()
 
-    def test_reports_filter_true(
+        assert "rmse" not in out.columns
+        assert "rmse_std" not in out.columns
+        assert "log_loss" in out.columns
+
+    def test_frame_keeps_std_when_populated(self):
+        frame = DataFrame(
+            {
+                "key": ["k0"],
+                "date": ["2024-01-01"],
+                "learner": ["LogisticRegression"],
+                "dataset": ["d0"],
+                "ml_task": ["regression"],
+                "report_type": ["cross-validation"],
+                "rmse_mean": [1.0],
+                "rmse_std": [0.1],
+            }
+        )
+        frame.index = MultiIndex.from_arrays(
+            [RangeIndex(1), Index(["cv0"], name="id", dtype=str)]
+        )
+        out = Summary(frame).frame()
+
+        assert "rmse" in out.columns
+        assert "rmse_std" in out.columns
+
+    def test_html_repr_marks_std_columns_hidden(self):
+        frame = DataFrame(
+            {
+                "key": ["k0"],
+                "date": ["2024-01-01"],
+                "learner": ["LogisticRegression"],
+                "dataset": ["d0"],
+                "ml_task": ["regression"],
+                "report_type": ["cross-validation"],
+                "rmse_mean": [1.0],
+                "rmse_std": [0.1],
+            }
+        )
+        frame.index = MultiIndex.from_arrays(
+            [RangeIndex(1), Index(["cv0"], name="id", dtype=str)]
+        )
+        html = Summary(frame)._html_repr()
+
+        assert 'data-column-role="std"' in html
+        assert 'data-column-key="rmse_std"' in html
+        rmse_std_toggle = html.split('data-column-key="rmse_std"')[1].split(">")[0]
+        assert 'data-column-role="std"' in rmse_std_toggle
+        assert "checked" not in rmse_std_toggle
+
+    def test_frame_report_type(
         self,
-        monkeypatch,
         estimator_report_regression,
-        estimator_report_binary_classification,
         cross_validation_report_regression,
-        cross_validation_report_binary_classification,
     ):
         project = FakeProject(
             estimator_report_regression,
-            estimator_report_binary_classification,
             cross_validation_report_regression,
-            cross_validation_report_binary_classification,
         )
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
-        assert summary.reports() == [
-            estimator_report_regression,
-            estimator_report_binary_classification,
-            cross_validation_report_regression,
-            cross_validation_report_binary_classification,
-        ]
+        # Without filtering, both rows are present.
+        assert len(summary.frame()) == 2
 
-        monkeypatch.setattr(
-            "skore._project._summary.Summary._query_string_selection",
-            lambda self: "ml_task == 'regression'",
-        )
+        # ``ml_task`` is constant within a project, so it is dropped from ``frame``.
+        assert "ml_task" not in summary.frame().columns
 
-        assert summary.reports() == [
-            estimator_report_regression,
-            cross_validation_report_regression,
-        ]
+        # Estimator view keeps the raw metric columns and drops the empty ``_mean``.
+        estimator_frame = summary.frame(report_type="estimator")
+        assert len(estimator_frame) == 1
+        assert "rmse" in estimator_frame.columns
+        assert not any(col.endswith("_mean") for col in estimator_frame.columns)
 
-    def test_reports_filter_false(
+        # Cross-validation view exposes the merged metric column.
+        cv_frame = summary.frame(report_type="cross-validation")
+        assert len(cv_frame) == 1
+        assert "rmse" in cv_frame.columns
+        assert "rmse_mean" not in cv_frame.columns
+
+    def test_summarize_merges_mean_metrics(
         self,
-        monkeypatch,
         estimator_report_regression,
-        estimator_report_binary_classification,
         cross_validation_report_regression,
-        cross_validation_report_binary_classification,
     ):
         project = FakeProject(
             estimator_report_regression,
-            estimator_report_binary_classification,
             cross_validation_report_regression,
-            cross_validation_report_binary_classification,
         )
-        summary = Summary.factory(project)
+        frame = _summary_from_project(project).frame()
 
-        assert summary.reports(filter=False) == [
+        assert "rmse" in frame.columns
+        assert "rmse_mean" not in frame.columns
+        assert frame["rmse"].notna().all()
+
+    def test_html_repr_emits_data_std(self):
+        frame = DataFrame(
+            {
+                "key": [None],
+                "date": ["2024-01-01"],
+                "learner": ["LinearRegression"],
+                "dataset": ["d1"],
+                "ml_task": ["regression"],
+                "report_type": ["cross-validation"],
+                "rmse": [1.0],
+                "rmse_std": [0.1],
+            }
+        )
+        frame.index = MultiIndex.from_arrays(
+            [RangeIndex(1), Index(["cv0"], name="id", dtype=str)]
+        )
+        html = Summary(frame)._html_repr()
+
+        assert 'data-std="0.1"' in html
+
+    def test_html_repr_no_data_std_for_estimator(self, estimator_report_regression):
+        html = _summary_from_project(
+            FakeProject(estimator_report_regression)
+        )._html_repr()
+
+        assert 'data-std="' not in html
+
+    def test_html_repr_sends_raw_numbers(self):
+        frame = DataFrame(
+            {
+                "key": ["k0", "k1"],
+                "date": ["2024-01-01", "2024-01-02"],
+                "learner": ["LinearRegression", "LinearRegression"],
+                "dataset": ["d0", "d0"],
+                "ml_task": ["regression", "regression"],
+                "report_type": ["cross-validation", "cross-validation"],
+                "rmse_mean": [1.0, 2.0],
+                "rmse_std": [0.1, None],
+            }
+        )
+        frame.index = MultiIndex.from_arrays(
+            [RangeIndex(2), Index(["cv0", "cv1"], name="id", dtype=str)]
+        )
+        html = Summary(frame)._html_repr()
+
+        # Numbers are emitted raw in ``data-sort`` with an empty cell body; the
+        # client renders the visible value and the NA fallback.
+        assert 'data-sort="1.0" data-std="0.1"></td>' in html
+        # ``data-std`` is always present for a metric paired with ``*_std`` and
+        # carries the raw value (``nan`` for NA), leaving the rendering to the
+        # client.
+        assert 'data-sort="2.0" data-std="nan"></td>' in html
+
+    def test_query(self, estimator_report_regression):
+        project = FakeProject(estimator_report_regression)
+        summary = _summary_from_project(project)
+
+        # Query with no match.
+        empty = summary.query("ml_task == '<ml_task>'")
+        assert isinstance(empty, Summary)
+        assert len(empty.frame()) == 0
+        assert empty.project is project
+
+        # Query matching everything.
+        same = summary.query("ml_task == 'regression'")
+        assert isinstance(same, Summary)
+        assert DataFrame.equals(same.frame(), summary.frame())
+        assert same.project is project
+
+    def test_query_by_id(
+        self,
+        estimator_report_regression,
+        cross_validation_report_regression,
+    ):
+        project = FakeProject(
             estimator_report_regression,
-            estimator_report_binary_classification,
             cross_validation_report_regression,
-            cross_validation_report_binary_classification,
+        )
+        summary = _summary_from_project(project)
+
+        selected = summary.query("id in ['0']")
+        assert list(selected.frame().index.get_level_values("id")) == ["0"]
+        assert selected.compare() == [estimator_report_regression]
+
+    def test_compare(
+        self,
+        estimator_report_regression,
+        cross_validation_report_regression,
+    ):
+        project = FakeProject(
+            estimator_report_regression,
+            cross_validation_report_regression,
+        )
+        summary = _summary_from_project(project)
+
+        assert summary.compare() == [
+            estimator_report_regression,
+            cross_validation_report_regression,
         ]
 
-        monkeypatch.setattr(
-            "skore._project._summary.Summary._query_string_selection",
-            lambda self: "ml_task == 'regression'",
-        )
-
-        assert summary.reports(filter=False) == [
-            estimator_report_regression,
-            estimator_report_binary_classification,
-            cross_validation_report_regression,
-            cross_validation_report_binary_classification,
+        assert summary.query("report_type == 'estimator'").compare() == [
+            estimator_report_regression
         ]
 
-    def test_reports_empty(self):
-        summary = Summary.factory(FakeProject())
+    def test_compare_empty(self):
+        summary = _summary_from_project(FakeProject())
 
-        assert len(summary) == 0
-        assert summary.reports() == []
-        assert summary.reports(filter=False) == []
+        assert len(summary.frame()) == 0
+        assert summary.compare() == []
 
-    def test_reports_return_as_comparison(self, estimator_report_regression):
+    def test_compare_return_as_report(self, estimator_report_regression):
         regression1 = estimator_report_regression
         regression2 = deepcopy(estimator_report_regression)
-        summary = Summary.factory(FakeProject(regression1, regression2))
-        comparison = summary.reports(return_as="comparison")
+        summary = _summary_from_project(FakeProject(regression1, regression2))
+        comparison = summary.compare(return_as="report")
 
         assert isinstance(comparison, ComparisonReport)
         assert comparison.reports_ == {
@@ -271,187 +408,172 @@ class TestSummary:
             "LinearRegression_2": regression2,
         }
 
-    def test_reports_exception_invalid_object(self):
-        with raises(
-            RuntimeError,
-            match="Bad condition: it is not a valid `Summary` object.",
-        ):
-            Summary([{"<column>": "<value>"}]).reports()
-
-    def test_reports_exception_different_datasets(
+    def test_compare_exception_different_datasets(
         self, estimator_report_regression, estimator_report_binary_classification
     ):
         project = FakeProject(
             estimator_report_regression, estimator_report_binary_classification
         )
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
         with raises(
             RuntimeError,
             match=(
-                "Bad condition: the comparison mode is only applicable when reports "
+                "Bad condition: the report mode is only applicable when reports "
                 "have the same dataset."
             ),
         ):
-            summary.reports(return_as="comparison")
+            summary.compare(return_as="report")
 
-    def test__query_string_selection(self, monkeypatch):
-        summary = DataFrame(
-            data={
-                "ml_task": [
-                    "classification",
-                    "classification",
-                    "classification",
-                    "classification",
-                    "regression",
-                    "regression",
-                    "regression",
-                    "regression",
-                ],
-                "dataset": [
-                    "dataset1",
-                    "dataset1",
-                    "dataset1",
-                    "dataset2",
-                    "dataset3",
-                    "dataset3",
-                    "dataset3",
-                    "dataset4",
-                ],
-                "report_type": ["estimator"] * 8,
-                "learner": [
-                    "learner1",
-                    "learner2",
-                    "learner3",
-                    "learner1",
-                    "learner4",
-                    "learner5",
-                    "learner5",
-                    "learner6",
-                ],
-                "fit_time": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
-                "predict_time": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
-                "rmse": [None, None, None, None, 0.1, 0.2, 0.3, 0.4],
-                "log_loss": [0.3, 0.4, 0.5, 0.6, None, None, None, None],
-                "roc_auc": [0.5, 0.6, 0.7, 0.8, None, None, None, None],
-                "fit_time_mean": [None] * 8,
-                "predict_time_mean": [None] * 8,
-                "rmse_mean": [None] * 8,
-                "log_loss_mean": [None] * 8,
-                "roc_auc_mean": [None] * 8,
-            },
-            index=MultiIndex.from_tuples(
-                [
-                    (0, "id1"),
-                    (0, "id2"),
-                    (0, "id3"),
-                    (0, "id4"),
-                    (0, "id5"),
-                    (0, "id6"),
-                    (0, "id7"),
-                    (0, "id8"),
-                ],
-                names=[None, "id"],
-            ),
-        )
-        summary["learner"] = summary["learner"].astype("category")
-        summary = Summary(summary)
-        summary._repr_mimebundle_()  # trigger the creation of the widget
+    def test_plot_not_implemented(self):
+        with raises(NotImplementedError):
+            Summary(DataFrame()).plot()
 
-        expected_query = (
-            "ml_task.str.contains('classification') and dataset == 'dataset1'"
-        )
-        assert summary._query_string_selection() == expected_query
-
-        # simulate a selection on the log loss dimension
-        select_range_log_loss = {
-            "ml_task": "classification",
-            "dataset": "dataset1",
-            "log_loss": (0.35, 0.55),
-        }
-
-        def mock_update_selection(*args, **kwargs):
-            summary._plot_widget.current_selection = select_range_log_loss
-            return summary._plot_widget
-
-        monkeypatch.setattr(
-            summary._plot_widget, "update_selection", mock_update_selection
-        )
-
-        assert summary._query_string_selection() == (
-            "ml_task.str.contains('classification') and dataset == 'dataset1' "
-            "and ((log_loss >= 0.350000 and log_loss <= 0.550000))"
-        )
-
-        # simulate a double selection on the log loss dimension
-        select_range_log_loss = {
-            "ml_task": "classification",
-            "dataset": "dataset1",
-            "log_loss": ((0.35, 0.45), (0.55, 0.55)),
-        }
-
-        def mock_update_selection(*args, **kwargs):
-            summary._plot_widget.current_selection = select_range_log_loss
-            return summary._plot_widget
-
-        monkeypatch.setattr(
-            summary._plot_widget, "update_selection", mock_update_selection
-        )
-
-        assert summary._query_string_selection() == (
-            "ml_task.str.contains('classification') and dataset == 'dataset1' "
-            "and ((log_loss >= 0.350000 and log_loss <= 0.450000) "
-            "or (log_loss >= 0.550000 and log_loss <= 0.550000))"
-        )
-
-        # simulate a double selection on the log loss dimension and a selection of
-        # learners
-        select_range_log_loss = {
-            "ml_task": "classification",
-            "dataset": "dataset1",
-            "log_loss": ((0.35, 0.45), (0.55, 0.55)),
-            "learner": ((1e-18, 0.25), (1.5, 2.5)),
-        }
-
-        def mock_update_selection(*args, **kwargs):
-            summary._plot_widget.current_selection = select_range_log_loss
-            return summary._plot_widget
-
-        monkeypatch.setattr(
-            summary._plot_widget, "update_selection", mock_update_selection
-        )
-
-        assert summary._query_string_selection() == (
-            "ml_task.str.contains('classification') and dataset == 'dataset1' "
-            "and ((log_loss >= 0.350000 and log_loss <= 0.450000) "
-            "or (log_loss >= 0.550000 and log_loss <= 0.550000)) "
-            "and learner.isin(['learner1', 'learner3'])"
-        )
-
-    def test_repr_mimebundle_fallback_without_jupyter_deps(
+    def test_html_repr(
         self,
-        monkeypatch,
         estimator_report_regression,
-        estimator_report_binary_classification,
+        cross_validation_report_regression,
     ):
-        """Without Jupyter deps, Summary shows table and warns instead of widget."""
-        monkeypatch.setattr(
-            "skore._project._summary._jupyter_dependencies_available",
-            lambda: False,
-        )
         project = FakeProject(
             estimator_report_regression,
-            estimator_report_binary_classification,
+            cross_validation_report_regression,
         )
-        summary = Summary.factory(project)
+        summary = _summary_from_project(project)
 
-        with pytest.warns(UserWarning, match="Jupyter dependencies") as record:
-            result = summary._repr_mimebundle_()
+        html = summary._html_repr()
 
-        assert len(record) == 1
-        assert "Jupyter dependencies" in record[0].message.args[0]
-        # Fallback is normal pandas DataFrame HTML table
-        assert "text/html" in result
-        assert "<table" in result["text/html"]
-        # Widget was not created
-        assert not hasattr(summary, "_plot_widget")
+        # The single full-width table with per-row selection checkboxes.
+        assert '<table class="summary-table">' in html
+        assert 'class="skore-summary-row"' in html
+        # Sortable headers with verbose labels (incl. the synthetic ``ID`` column).
+        assert 'class="summary-sortable"' in html
+        assert "data-sort-kind=" in html
+        # The column key is exposed so the plot can build a pandas query.
+        assert "data-column-key=" in html
+        assert ">ID<" in html
+        # The Filter button with a two-level menu: one entry per column, each
+        # opening a scrollable submenu of values.
+        assert 'class="skore-summary-filter-toggle"' in html
+        assert 'class="skore-summary-filter-field-toggle"' in html
+        assert 'class="skore-summary-filter-submenu"' in html
+        assert 'class="skore-summary-filter-value"' in html
+        assert 'data-field="report_type"' in html
+        assert 'data-field="learner"' in html
+        assert 'data-field="dataset"' in html
+        assert 'data-filter-field="report_type"' in html
+        assert 'data-filter-field="learner"' in html
+        assert 'data-filter-field="dataset"' in html
+        assert 'data-filter-value="estimator"' in html
+        assert 'data-filter-value="cross-validation"' in html
+        assert 'data-report-type="estimator"' in html
+        assert 'data-report-type="cross-validation"' in html
+        # The search bar and the Filter button share the toolbar row.
+        assert 'class="skore-summary-toolbar"' in html
+        assert 'class="skore-summary-search-input"' in html
+        # The date-range filter (native start/end pickers).
+        assert 'class="skore-summary-date-start"' in html
+        assert 'class="skore-summary-date-end"' in html
+        # The Group by menu: date (day/hour/custom), learner and estimator type.
+        assert 'class="skore-summary-groupby-toggle"' in html
+        assert 'data-group="date"' in html
+        assert 'data-unit="day"' in html
+        assert 'data-unit="hour"' in html
+        assert 'data-unit="custom"' in html
+        assert 'data-group="learner"' in html
+        assert 'data-group="report_type"' in html
+        assert 'data-group="none"' in html
+        # Each row carries its full date for client-side filtering/grouping.
+        assert "data-date=" in html
+        # Date and ellipsis formatting is applied on the client (see summary.js).
+        assert "SKORE_SUMMARY_ELLIPSIS_COLUMNS" in html
+        assert 'class="skore-summary-filter-option-label"' in html
+        assert "function middleEllipsis" in html
+        assert "function formatDate" in html
+        # Dataset filter options expose the full hash in the label (not pre-truncated).
+        dataset_hash = html.split('data-dataset="')[1].split('"')[0]
+        assert (
+            f'<span class="skore-summary-filter-option-label">{dataset_hash}</span>'
+            in html
+        )
+        # The query-string box, the inline SVG copy icon button and the help tooltip.
+        assert 'class="skore-summary-query"' in html
+        assert 'class="skore-summary-copy"' in html
+        # The clear-selection button (icon + tooltip).
+        assert 'class="skore-summary-clear"' in html
+        assert 'aria-label="Clear selection"' in html
+        assert "<svg" in html
+        assert 'class="report-tab-help skore-summary-help"' in html
+        assert "tooltip-text" in html
+        assert "skoreInitSummary" in html
+        # The Table/Plot view toggle and the parallel-coordinates plot container
+        # (matched on the markup rather than the bundled CSS class definitions).
+        assert '<div class="summary-view-toggle"' in html
+        assert 'data-view="plot" aria-pressed="false" aria-label="Plot view"' in html
+        assert '<div class="summary-plot-wrap">' in html
+        assert '<div class="summary-plot">' in html
+        assert '<select class="skore-summary-color-metric"' in html
+        # The third view toggle and the trend-plot container (metric over time),
+        # with its Metric selector in the controls row and per-row key for tooltips.
+        assert 'data-view="trend" aria-pressed="false" aria-label="Trend view"' in html
+        assert '<div class="summary-trend-wrap">' in html
+        assert '<div class="summary-trend">' in html
+        assert 'class="skore-summary-trend-metric-field"' in html
+        assert 'aria-label="Metric"' in html
+        assert html.index('class="skore-summary-trend-metric-field"') < html.index(
+            '<div class="summary-table-wrap">'
+        )
+        assert '<select class="skore-summary-trend-metric"' in html
+        assert 'class="summary-trend-undated-empty"' in html
+        assert "No dated reports to plot." in html
+        assert "data-key=" in html
+        # Inline SVG icons replace the text labels / Font Awesome (no external dep).
+        assert 'class="summary-select-eye"' in html
+        assert 'class="summary-sort-icon summary-sort-icon--asc"' in html
+        # The columns menu lets the user toggle which columns are shown.
+        assert 'class="skore-summary-columns-toggle"' in html
+        assert 'aria-label="Show columns"' in html
+        assert 'class="skore-summary-column-toggle"' in html
+        # Default-hidden columns are configured in Python (hidden_by_default).
+        panel_start = html.index('class="skore-summary-columns-panel"')
+        panel_end = html.index("</div>", panel_start)
+        panel = html[panel_start:panel_end]
+        inputs = [
+            chunk
+            for chunk in panel.split("<input")
+            if "skore-summary-column-toggle" in chunk
+        ]
+        assert inputs, "expected at least one column toggle"
+
+        def toggle_attrs(key: str) -> str:
+            return html.split(f'data-column-key="{key}"')[1].split(">")[0]
+
+        for key in ("learner", "dataset", "report_type"):
+            assert "checked" not in toggle_attrs(key)
+        for key in ("rmse_std", "fit_time_std", "predict_time_std"):
+            assert "checked" not in toggle_attrs(key)
+        for key in ("id", "key", "date", "rmse", "fit_time", "predict_time"):
+            assert "checked" in toggle_attrs(key)
+        # ``date`` is rendered after metrics; default-hidden columns follow ``date``.
+        assert html.index('data-column-key="date"') > html.index(
+            'data-column-key="fit_time"'
+        )
+        assert (
+            html.index('data-column-key="fit_time"')
+            < html.index('data-column-key="date"')
+            < html.index('data-column-key="learner"')
+        )
+        # ``ml_task`` is never displayed.
+        assert "ml_task" not in html
+        assert "Ml task" not in html
+
+        mimebundle = summary._repr_mimebundle_()
+        assert "text/html" in mimebundle
+        assert "text/plain" in mimebundle
+
+    def test_html_repr_empty(self):
+        summary = _summary_from_project(FakeProject())
+
+        html = summary._html_repr()
+
+        assert "No report found in the project" in html
+        assert '<table class="summary-table">' not in html

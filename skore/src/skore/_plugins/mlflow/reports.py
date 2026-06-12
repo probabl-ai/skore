@@ -135,11 +135,15 @@ def iter_cv_metrics(
 
     timings = report_any.metrics.timings()
     fit_time = timings.loc["Fit time (s)"].loc["mean"]
+    fit_time_std = timings.loc["Fit time (s)"].loc["std"]
     predict_time = timings.loc["Predict time test (s)"].loc["mean"]
+    predict_time_std = timings.loc["Predict time test (s)"].loc["std"]
     summary = report_any.metrics.summarize()
 
     yield Metric("fit_time", fit_time)
+    yield Metric("fit_time_std", fit_time_std)
     yield Metric("predict_time", predict_time)
+    yield Metric("predict_time_std", predict_time_std)
     # NOTE: we could use flat_index=True in summarize, but we have to flatten
     # other frames anyway, so we don't do it here.
     yield Artifact("metrics_details/per_split", summary.frame(aggregate=None))

@@ -112,6 +112,11 @@ project.put("logistic-regression", report)
 #
 # Like for the other modes (local and Skore Hub), you can access what is stored in the
 # project via the :meth:`~skore.Project.summarize` method.
+#
+# In MLflow mode, :meth:`~skore.Project.summarize` exposes the same
+# :class:`~skore.Summary` API as in local and hub mode: use
+# :meth:`~skore.Summary.frame` to get the underlying :class:`pandas.DataFrame`.
+
 
 # sphinx_gallery_start_ignore
 if tmp_dir is not None:
@@ -119,11 +124,9 @@ if tmp_dir is not None:
 
 # sphinx_gallery_end_ignore
 
-import pandas as pd
-
 summary = project.summarize()
-pandas_summary = pd.DataFrame(summary).reset_index()
-pandas_summary[["id", "key", "report_type", "learner", "ml_task", "dataset"]]
+pandas_summary = summary.frame().reset_index()
+pandas_summary[["id", "key", "report_type", "learner", "dataset"]]
 
 # %%
 # Then, you can retrieve a Skore report using the `"id"` column:

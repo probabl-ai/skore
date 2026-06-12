@@ -1,0 +1,1204 @@
+.report-hint-note {
+    margin: 0.85em 0 0;
+    padding: 0.65em 0.5em 0;
+    border-top: 1px solid color-mix(in srgb, var(--color-orange) 45%, transparent);
+    color: var(--color-text);
+    font-size: 11px;
+    font-style: italic;
+    font-weight: 400;
+    line-height: 1.45;
+    opacity: 0.88;
+}
+
+.report-hint-note::before {
+    content: "Note";
+    display: block;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-orange);
+    opacity: 0.9;
+    margin-bottom: 0.35em;
+}
+
+.report-hint-note-link {
+    color: var(--color-blue);
+    font-style: normal;
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    text-underline-offset: 0.2em;
+    cursor: help;
+}
+
+.report-hint-note-link:hover {
+    background-color: var(--color-blue-hover);
+    border-radius: 2px;
+}
+
+.report-tabset {
+    position: relative;
+    color: var(--color-text);
+}
+
+.report-tab-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.report-tablist-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    width: 100%;
+    box-sizing: border-box;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-text) 25%, transparent);
+}
+
+.report-tablist {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.15em;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    margin: 0;
+    padding: 0;
+    border-bottom: none;
+}
+
+.report-tablist-help {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    align-self: center;
+    padding: 0 0.15em 0 0.65em;
+    margin: 0.15em 0;
+    border-left: 1px solid color-mix(in srgb, var(--color-text) 22%, transparent);
+}
+
+.report-tab-item {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.report-tab-help {
+    position: relative;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    margin: 0;
+    padding: 0;
+    width: 1.35em;
+    height: 1.35em;
+    min-width: 1.35em;
+    min-height: 1.35em;
+    border: 1px solid color-mix(in srgb, var(--color-blue) 50%, transparent);
+    border-radius: 50%;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--color-blue);
+    background-color: var(--color-background);
+    cursor: help;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.report-tab-help:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.report-tab-help:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+}
+
+/* Single global "?": show only the tooltip for the checked tab */
+.report-tab-help-global:hover .report-tab-help-tip,
+.report-tab-help-global:focus-within .report-tab-help-tip {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.report-tabset:has(> .report-tab-input:nth-child(1):checked) .report-tab-help-global:hover .report-tab-help-tip-0,
+.report-tabset:has(> .report-tab-input:nth-child(1):checked) .report-tab-help-global:focus-within .report-tab-help-tip-0,
+.report-tabset:has(> .report-tab-input:nth-child(2):checked) .report-tab-help-global:hover .report-tab-help-tip-1,
+.report-tabset:has(> .report-tab-input:nth-child(2):checked) .report-tab-help-global:focus-within .report-tab-help-tip-1,
+.report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tab-help-global:hover .report-tab-help-tip-2,
+.report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tab-help-global:focus-within .report-tab-help-tip-2,
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-help-global:hover .report-tab-help-tip-3,
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-help-global:focus-within .report-tab-help-tip-3,
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) .report-tab-help-global:hover .report-tab-help-tip-4,
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) .report-tab-help-global:focus-within .report-tab-help-tip-4 {
+    visibility: visible;
+    opacity: 1;
+}
+
+.report-tab-help-global .report-tab-help-tip {
+    font-style: italic;
+    font-weight: 400;
+    opacity: 0.95;
+    max-width: min(280px, 90vw);
+    width: max-content;
+    top: 50%;
+    left: auto;
+    right: 100%;
+    margin-left: 0;
+    margin-right: 8px;
+    transform: translateY(-50%);
+}
+
+.report-tab-help-global .report-tab-help-tip::before {
+    right: auto;
+    left: 100%;
+    border-right-color: transparent;
+    border-left-color: var(--color-orange);
+}
+
+.report-tab-label {
+    cursor: pointer;
+    user-select: none;
+    color: var(--color-blue);
+    font-weight: bold;
+    line-height: 1.5em;
+    padding: 0.35em 0.65em;
+    margin: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    flex-shrink: 0;
+    border-radius: 4px 4px 0 0;
+}
+
+.report-tab-label:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.report-tabset:has(> .report-tab-input:nth-child(1):checked) .report-tablist .report-tab-item:nth-child(1) .report-tab-label,
+.report-tabset:has(> .report-tab-input:nth-child(2):checked) .report-tablist .report-tab-item:nth-child(2) .report-tab-label,
+.report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tablist .report-tab-item:nth-child(3) .report-tab-label,
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tablist .report-tab-item:nth-child(4) .report-tab-label,
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) .report-tablist .report-tab-item:nth-child(5) .report-tab-label {
+    border-bottom-color: var(--color-blue);
+}
+
+.report-tab-panels {
+    margin-top: 0.35em;
+}
+
+.report-tab-panels .report-tab-panel {
+    display: none;
+}
+
+.report-tabset:has(> .report-tab-input:nth-child(1):checked) .report-tab-panels .report-tab-panel:nth-child(1),
+.report-tabset:has(> .report-tab-input:nth-child(2):checked) .report-tab-panels .report-tab-panel:nth-child(2),
+.report-tabset:has(> .report-tab-input:nth-child(3):checked) .report-tab-panels .report-tab-panel:nth-child(3),
+.report-tabset:has(> .report-tab-input:nth-child(4):checked) .report-tab-panels .report-tab-panel:nth-child(4),
+.report-tabset:has(> .report-tab-input:nth-child(5):checked) .report-tab-panels .report-tab-panel:nth-child(5) {
+    display: block;
+}
+
+.report-tab-panel .report-section {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.report-disclosure-title {
+    position: relative;
+    font-weight: inherit;
+    color: inherit;
+}
+
+.report-disclosure-title.method-tooltip {
+    cursor: pointer;
+}
+
+.report-disclosure-title.method-tooltip:hover {
+    background-color: var(--color-blue-hover);
+    border-radius: 2px;
+}
+
+.report-disclosure-title:focus-visible {
+    outline: 2px solid var(--color-blue);
+    outline-offset: 2px;
+    border-radius: 3px;
+}
+
+.report-disclosure-title.method-tooltip:focus-within .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.report-disclosure-title .tooltip-text {
+    width: max-content;
+    max-width: calc(100vw - 2rem);
+    white-space: nowrap;
+    overflow-x: auto;
+    box-sizing: border-box;
+    font-weight: 400;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    border: 1px solid var(--color-orange);
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.report-disclosure-title .tooltip-text::before {
+    border-right-color: var(--color-orange);
+}
+
+.report-tooltip-accessor-link {
+    color: var(--color-orange);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+}
+
+.report-tooltip-accessor-link:hover {
+    text-decoration-thickness: 2px;
+}
+
+.report-metrics table.dataframe {
+    border: none;
+    border-collapse: collapse;
+    border-spacing: 0;
+    color: var(--color-text);
+    font-size: 12px;
+    font-family: sans-serif;
+    margin: 0.5em 0;
+    min-width: min(100%, 640px);
+}
+
+.report-metrics table.dataframe thead {
+    border-bottom: 1px solid var(--color-text);
+}
+
+.report-metrics table.dataframe th,
+.report-metrics table.dataframe td {
+    text-align: right;
+    padding: 0.35em 0.75em;
+    border: none;
+    vertical-align: middle;
+}
+
+.report-metrics table.dataframe th {
+    font-weight: 600;
+    text-align: right;
+}
+
+.report-metrics table.dataframe tbody tr:nth-child(even) {
+    background-color: var(--color-row-stripe);
+}
+
+.report-metrics table.dataframe tbody tr:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.report-estimator {
+    padding-top: 0.5em;
+}
+
+.report-data {
+    padding-top: 0.5em;
+}
+
+.comparison-report-select-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5em 0.75em;
+    margin: 0 0 0.65em;
+    color: var(--color-text);
+}
+
+.comparison-report-select-row label {
+    font-weight: bold;
+    color: var(--color-blue);
+}
+
+.comparison-report-select-row select {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    padding: 0.2em 0.45em;
+    max-width: min(100%, 28rem);
+}
+
+.summary-container {
+    max-width: 100%;
+}
+
+/* Toolbar row holding the search bar, Filter and Group by buttons */
+.skore-summary-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5em 0.6em;
+    margin-bottom: 0.5em;
+}
+
+/* Free-text search bar */
+.skore-summary-search {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    flex: 1 1 14em;
+    min-width: 0;
+    padding: 0.25em 0.6em;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+}
+
+.skore-summary-search-icon {
+    flex: 0 0 auto;
+    color: var(--color-text);
+    opacity: 0.6;
+}
+
+.skore-summary-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background-color: transparent;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.skore-summary-search-input::placeholder {
+    color: var(--color-text);
+    opacity: 0.5;
+}
+
+.summary-controls {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5em 0.75em;
+    margin-bottom: 0.65em;
+    color: var(--color-text);
+}
+
+/* Filter / Group by buttons and popovers */
+.skore-summary-filter,
+.skore-summary-groupby,
+.skore-summary-columns {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.skore-summary-filter-toggle,
+.skore-summary-groupby-toggle,
+.skore-summary-columns-toggle {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: var(--color-blue);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-blue);
+    border-radius: 4px;
+    padding: 0.25em 0.7em;
+    cursor: pointer;
+}
+
+.skore-summary-filter-toggle:hover,
+.skore-summary-groupby-toggle:hover,
+.skore-summary-columns-toggle:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.skore-summary-columns-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 10;
+    min-width: 11em;
+    max-height: 260px;
+    overflow-y: auto;
+    padding: 0.25em;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+.skore-summary-columns-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.3em 0.5em;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.skore-summary-columns-option:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.summary-col-hidden {
+    display: none;
+}
+
+.skore-summary-filter-panel,
+.skore-summary-groupby-panel {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 10;
+    min-width: 11em;
+    padding: 0.25em;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-text) 14%, transparent);
+}
+
+/* First level: one entry per filterable column */
+.skore-summary-filter-field {
+    position: relative;
+}
+
+.skore-summary-filter-field-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75em;
+    width: 100%;
+    padding: 0.3em 0.5em;
+    border: none;
+    border-radius: 4px;
+    background-color: transparent;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.skore-summary-filter-field:hover .skore-summary-filter-field-toggle,
+.skore-summary-filter-field:focus-within .skore-summary-filter-field-toggle {
+    background-color: var(--color-blue-hover);
+}
+
+.skore-summary-filter-arrow::after {
+    content: "\25B8";
+    opacity: 0.7;
+}
+
+/* Second level: scrollable list of values, opening to the right on hover.
+   Anchored past the panel's right padding/border with a 4px gap (matching the
+   button-to-panel gap); a transparent bridge keeps hover continuous. */
+.skore-summary-filter-submenu {
+    visibility: hidden;
+    opacity: 0;
+    position: absolute;
+    top: -0.25em;
+    left: calc(100% + 0.25em + 5px);
+    z-index: 11;
+    min-width: 11em;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 0.25em 0.5em;
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    box-shadow: 0 2px 10px color-mix(in srgb, var(--color-text) 14%, transparent);
+    /* Keep the submenu open briefly after the pointer leaves so it does not
+       close while crossing the gap to reach it (hover-intent pattern). */
+    transition: visibility 0s linear 0.25s, opacity 0.12s linear;
+}
+
+/* Transparent bridge spanning the gap; it overlaps a few px into the parent
+   button to absorb sub-pixel gaps that would otherwise drop the hover. */
+.skore-summary-filter-submenu::before {
+    content: "";
+    position: absolute;
+    top: -4px;
+    right: 100%;
+    width: calc(0.25em + 11px);
+    height: calc(100% + 8px);
+}
+
+.skore-summary-filter-field:hover .skore-summary-filter-submenu,
+.skore-summary-filter-field:focus-within .skore-summary-filter-submenu {
+    visibility: visible;
+    opacity: 1;
+    transition-delay: 0s;
+}
+
+.skore-summary-filter-option {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    padding: 0.15em 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* Date range submenu (start/end native datetime pickers) */
+.skore-summary-date-submenu {
+    min-width: 13em;
+}
+
+.skore-summary-date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2em;
+    padding: 0.2em 0;
+    color: var(--color-text);
+}
+
+.skore-summary-date-field input {
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    padding: 0.15em 0.3em;
+}
+
+.skore-summary-date-clear {
+    margin-top: 0.35em;
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--color-blue);
+    background-color: transparent;
+    border: 1px solid var(--color-blue);
+    border-radius: 4px;
+    padding: 0.1em 0.5em;
+    cursor: pointer;
+}
+
+.skore-summary-date-clear:hover {
+    background-color: var(--color-blue-hover);
+}
+
+/* Group-by options (direct entries in the Group by panel) */
+.skore-summary-group-option {
+    display: block;
+    width: 100%;
+    padding: 0.3em 0.5em;
+    border: none;
+    border-radius: 4px;
+    background-color: transparent;
+    color: var(--color-text);
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.skore-summary-group-option:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.skore-summary-group-option--active {
+    color: var(--color-blue);
+    font-weight: 600;
+}
+
+.skore-summary-group-none {
+    margin-top: 0.15em;
+    border-top: 1px solid var(--color-orange);
+}
+
+.skore-summary-group-custom {
+    padding: 0.25em 0;
+    border-top: 1px solid var(--color-orange);
+    margin-top: 0.15em;
+}
+
+.skore-summary-group-custom-title {
+    display: block;
+    color: var(--color-text);
+    margin-bottom: 0.25em;
+}
+
+.skore-summary-group-custom-row {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    margin-bottom: 0.3em;
+}
+
+.skore-summary-group-n {
+    width: 3.5em;
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    padding: 0.1em 0.25em;
+}
+
+.skore-summary-group-unit {
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+    padding: 0.1em 0.25em;
+}
+
+.skore-summary-group-custom-apply {
+    color: var(--color-blue);
+    border: 1px solid var(--color-blue);
+    text-align: center;
+}
+
+/* Group header rows that separate grouped sets of rows */
+.summary-table tbody tr.summary-group-header td {
+    position: sticky;
+    left: 0;
+    padding: 0.4em 0.75em;
+    font-weight: 700;
+    color: var(--color-blue);
+    background-color: var(--color-row-stripe);
+    border-top: 2px solid var(--color-orange);
+}
+
+.summary-table tbody tr.summary-group-header:hover td {
+    background-color: var(--color-row-stripe);
+}
+
+/* Query string bar with embedded copy icon */
+.skore-summary-query-bar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 18em;
+    min-width: 0;
+    background-color: var(--color-row-stripe);
+    border: 1px solid var(--color-orange);
+    border-radius: 4px;
+}
+
+.skore-summary-query {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding: 0.3em 0.5em;
+    color: var(--color-text);
+    font-family: monospace;
+}
+
+.skore-summary-copy {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25em 0.4em;
+    margin-right: 0.15em;
+    border: none;
+    border-radius: 4px;
+    background-color: transparent;
+    color: var(--color-blue);
+    cursor: pointer;
+}
+
+.skore-summary-copy:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.skore-summary-clear {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25em 0.4em;
+    margin-right: 0.15em;
+    border: none;
+    border-radius: 4px;
+    background-color: transparent;
+    color: var(--color-blue);
+    cursor: pointer;
+}
+
+.skore-summary-clear:hover {
+    background-color: var(--color-blue-hover);
+}
+
+/* "?" help button, reusing .report-tab-help, with a left-opening tooltip */
+.skore-summary-help {
+    flex: 0 0 auto;
+}
+
+.skore-summary-help:hover .tooltip-text,
+.skore-summary-help:focus-within .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.skore-summary-help .skore-summary-help-tip {
+    top: 50%;
+    left: auto;
+    right: 100%;
+    margin-left: 0;
+    margin-right: 8px;
+    transform: translateY(-50%);
+}
+
+.skore-summary-help .skore-summary-help-tip::before {
+    right: auto;
+    left: 100%;
+    border-right-color: transparent;
+    border-left-color: var(--color-orange);
+}
+
+/* Scrollable table */
+.summary-table-wrap {
+    max-height: 450px;
+    overflow: auto;
+    max-width: 100%;
+}
+
+.summary-table {
+    width: 100%;
+    border: none;
+    border-collapse: collapse;
+    border-spacing: 0;
+    color: var(--color-text);
+    font-size: 12px;
+    font-family: sans-serif;
+}
+
+.summary-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background-color: var(--color-background);
+    border-bottom: 1px solid var(--color-text);
+}
+
+.summary-table th,
+.summary-table td {
+    text-align: left;
+    white-space: nowrap;
+    padding: 0.35em 0.75em;
+    border: none;
+    vertical-align: middle;
+}
+
+.summary-table th {
+    font-weight: 600;
+}
+
+.summary-sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.summary-sortable:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.summary-sort-ind {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.3em;
+    vertical-align: middle;
+}
+
+.summary-sort-icon {
+    display: none;
+    line-height: 0;
+}
+
+.summary-sort-icon svg {
+    display: block;
+    width: 13px;
+    height: 13px;
+}
+
+/* Show the matching sort icon for the current header state. */
+.summary-sortable[aria-sort="none"] .summary-sort-icon--none {
+    display: inline-flex;
+    opacity: 0.4;
+}
+
+.summary-sortable[aria-sort="ascending"] .summary-sort-icon--asc,
+.summary-sortable[aria-sort="descending"] .summary-sort-icon--desc {
+    display: inline-flex;
+}
+
+.summary-table tbody tr:nth-child(even) {
+    background-color: var(--color-row-stripe);
+}
+
+.summary-table tbody tr:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.summary-table .summary-select-col {
+    text-align: center;
+    width: 1.5em;
+}
+
+/* Keep the selection column always visible while scrolling horizontally.
+   The stripe/hover theme colors are translucent, so we keep a solid
+   background underneath and layer the tint on top to stay fully opaque. */
+.summary-table td.summary-select-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background-color: var(--color-background);
+}
+
+.summary-table tbody tr:nth-child(even) td.summary-select-col {
+    background-image: linear-gradient(
+        var(--color-row-stripe),
+        var(--color-row-stripe)
+    );
+}
+
+.summary-table tbody tr:hover td.summary-select-col {
+    background-image: linear-gradient(
+        var(--color-blue-hover),
+        var(--color-blue-hover)
+    );
+}
+
+.summary-table thead th.summary-select-col {
+    left: 0;
+    z-index: 4;
+}
+
+/* Table / Plot view toggle (segmented control) */
+.summary-view-toggle {
+    flex: 0 0 auto;
+    display: inline-flex;
+    border: 1px solid var(--color-blue);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.summary-view-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: var(--color-blue);
+    background-color: var(--color-background);
+    border: none;
+    padding: 0.3em 0.6em;
+    cursor: pointer;
+}
+
+/* Inline icons replacing the former text labels / Font Awesome glyphs. */
+.summary-view-btn svg,
+.skore-summary-filter-toggle svg,
+.skore-summary-groupby-toggle svg,
+.skore-summary-columns-toggle svg,
+.skore-summary-copy svg,
+.skore-summary-clear svg {
+    display: block;
+    width: 15px;
+    height: 15px;
+}
+
+.skore-summary-filter-toggle,
+.skore-summary-groupby-toggle,
+.skore-summary-columns-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.summary-select-eye {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+}
+
+.summary-select-eye svg {
+    display: block;
+    width: 14px;
+    height: 14px;
+}
+
+.summary-view-btn:hover {
+    background-color: var(--color-blue-hover);
+}
+
+.summary-view-btn--active {
+    color: var(--color-background);
+    background-color: var(--color-blue);
+}
+
+.summary-view-btn--active:hover {
+    background-color: var(--color-blue);
+}
+
+/* View visibility, driven by the container's data-view attribute. The first
+   toolbar row (view toggle, Filter, query string, help) is shared by all
+   views. The table and the parallel-coordinates plot hide the second control
+   row entirely; the trend plot keeps it but only to expose Group by (which
+   drives its polylines), hiding the table-only Columns and Search controls. */
+.summary-container[data-view="plot"] .summary-controls,
+.summary-container[data-view="plot"] .summary-table-wrap,
+.summary-container[data-view="trend"] .summary-table-wrap {
+    display: none;
+}
+
+.summary-container[data-view="trend"] .skore-summary-columns,
+.summary-container[data-view="trend"] .skore-summary-search {
+    display: none;
+}
+
+/* Show each plot only in its own view. */
+.summary-plot-wrap {
+    display: none;
+}
+
+.summary-container[data-view="plot"] .summary-plot-wrap {
+    display: block;
+}
+
+.summary-trend-wrap {
+    display: none;
+}
+
+.summary-container[data-view="trend"] .summary-trend-wrap {
+    display: block;
+}
+
+/* Parallel-coordinates plot view */
+.summary-plot-wrap {
+    max-width: 100%;
+}
+
+.skore-summary-color-metric-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+    margin-bottom: 0.6em;
+    color: var(--color-text);
+}
+
+.skore-summary-color-metric,
+.skore-summary-trend-metric {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-blue);
+    border-radius: 4px;
+    padding: 0.2em 0.4em;
+    cursor: pointer;
+}
+
+/* The trend Y-metric selector lives next to Group by and only shows in the
+   trend view (Group by drives its polylines). */
+.skore-summary-trend-metric-field {
+    display: none;
+    align-items: center;
+    gap: 0.4em;
+    color: var(--color-text);
+}
+
+.summary-container[data-view="trend"] .skore-summary-trend-metric-field {
+    display: inline-flex;
+}
+
+.summary-plot {
+    width: 100%;
+}
+
+.summary-plot svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.summary-plot-axis-line {
+    stroke: var(--color-text);
+    stroke-opacity: 0.4;
+}
+
+.summary-plot-axis-label {
+    fill: var(--color-text);
+    font-family: sans-serif;
+    font-size: 11px;
+}
+
+.summary-plot-tick {
+    fill: var(--color-text);
+    fill-opacity: 0.6;
+    font-family: sans-serif;
+    font-size: 10px;
+}
+
+.summary-plot-line {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-opacity: 0.55;
+}
+
+.summary-plot-line:hover {
+    stroke-width: 2.5;
+    stroke-opacity: 1;
+}
+
+.summary-plot-line--dim {
+    stroke-opacity: 0.08;
+}
+
+/* Invisible drag target sitting on each axis to capture range brushing */
+.summary-plot-brush-track {
+    fill: transparent;
+    cursor: ns-resize;
+    pointer-events: all;
+}
+
+/* The selected range rectangle drawn over an axis */
+.summary-plot-brush {
+    fill: var(--color-blue);
+    fill-opacity: 0.2;
+    stroke: var(--color-blue);
+    stroke-opacity: 0.6;
+    pointer-events: none;
+}
+
+.summary-plot-empty {
+    color: var(--color-text);
+    opacity: 0.7;
+}
+
+/* Trend plot view (metric over an ordinal, date-ordered x-axis) */
+.summary-trend-wrap {
+    max-width: 100%;
+}
+
+.summary-trend {
+    position: relative;
+    width: 100%;
+}
+
+.summary-trend svg {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+/* Immediate hover box for a marker (ID and key) */
+.summary-trend-tooltip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 10;
+    padding: 0.25em 0.4em;
+    font-family: inherit;
+    font-size: 11px;
+    white-space: nowrap;
+    color: var(--color-text);
+    background-color: var(--color-background);
+    border: 1px solid var(--color-blue);
+    border-radius: 0;
+}
+
+.summary-trend-line {
+    fill: none;
+    stroke-width: 1.5;
+    stroke-opacity: 0.8;
+}
+
+.summary-trend-line--dim {
+    stroke-opacity: 0.08;
+}
+
+.summary-trend-point {
+    stroke: var(--color-background);
+    stroke-width: 1;
+    cursor: pointer;
+}
+
+.summary-trend-point--dim {
+    opacity: 0.12;
+}
+
+/* Emphasize the hovered marker (also lifts a dimmed one back to full opacity) */
+.summary-trend-point--hover {
+    opacity: 1;
+    stroke: var(--color-text);
+    stroke-width: 2;
+}
+
+.summary-trend-errorbar {
+    fill: none;
+    stroke-width: 1;
+    stroke-opacity: 0.55;
+    pointer-events: none;
+}
+
+/* Dotted guide line marking a range cursor's position */
+.summary-trend-cursor {
+    stroke: var(--color-blue);
+    stroke-width: 1;
+    stroke-dasharray: 2 3;
+    stroke-opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Short grip handle (the drag target) carrying a direction arrow */
+.summary-trend-grip {
+    touch-action: none;
+}
+
+.summary-trend-grip--x {
+    cursor: ew-resize;
+}
+
+.summary-trend-grip--y {
+    cursor: ns-resize;
+}
+
+.summary-trend-grip-box {
+    fill: var(--color-background);
+    stroke: var(--color-blue);
+    stroke-width: 1;
+}
+
+.summary-trend-grip-arrow {
+    fill: var(--color-blue);
+    font-family: sans-serif;
+    font-size: 11px;
+    pointer-events: none;
+    user-select: none;
+}
+
+.summary-trend-empty {
+    color: var(--color-text);
+    opacity: 0.7;
+}
+
+.summary-trend-undated-empty {
+    color: var(--color-text);
+    opacity: 0.7;
+}
