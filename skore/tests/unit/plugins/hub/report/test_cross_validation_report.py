@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyRegressor
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import (
     KFold,
@@ -17,7 +18,7 @@ from sklearn.model_selection import (
     TimeSeriesSplit,
 )
 
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
@@ -34,38 +35,7 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.serializer import Serializer
-from skore._plugins.hub.metric import (
-    AccuracyTestMean,
-    AccuracyTestStd,
-    AccuracyTrainMean,
-    AccuracyTrainStd,
-    BrierScoreTestMean,
-    BrierScoreTestStd,
-    BrierScoreTrainMean,
-    BrierScoreTrainStd,
-    FitTimeMean,
-    FitTimeStd,
-    LogLossTestMean,
-    LogLossTestStd,
-    LogLossTrainMean,
-    LogLossTrainStd,
-    PrecisionTestMean,
-    PrecisionTestStd,
-    PrecisionTrainMean,
-    PrecisionTrainStd,
-    PredictTimeTestMean,
-    PredictTimeTestStd,
-    PredictTimeTrainMean,
-    PredictTimeTrainStd,
-    RecallTestMean,
-    RecallTestStd,
-    RecallTrainMean,
-    RecallTrainStd,
-    RocAucTestMean,
-    RocAucTestStd,
-    RocAucTrainMean,
-    RocAucTrainStd,
-)
+from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
@@ -395,7 +365,7 @@ class TestCrossValidationReportPayload:
             assert estimator.report == payload.report.reports_[i]
 
             # ensure `upload` is well called
-            pickle, checksum = serialize(payload.report.reports_[i])
+            pickle, _ = serialize(payload.report.reports_[i])
 
             estimator.model_dump()
 
@@ -428,70 +398,201 @@ class TestCrossValidationReportPayload:
         }
 
     @mark.filterwarnings(
-        # ignore precision warning due to the low number of labels in
-        # `small_cv_binary_classification`, raised by `scikit-learn`
+        # `small_cv_binary_classification` has too few labels
         "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
     )
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
-        assert list(map(type, payload.metrics)) == [
-            AccuracyTestMean,
-            AccuracyTestStd,
-            AccuracyTrainMean,
-            AccuracyTrainStd,
-            BrierScoreTestMean,
-            BrierScoreTestStd,
-            BrierScoreTrainMean,
-            BrierScoreTrainStd,
-            LogLossTestMean,
-            LogLossTestStd,
-            LogLossTrainMean,
-            LogLossTrainStd,
-            PrecisionTestMean,
-            PrecisionTestStd,
-            PrecisionTrainMean,
-            PrecisionTrainStd,
-            RecallTestMean,
-            RecallTestStd,
-            RecallTrainMean,
-            RecallTrainStd,
-            RocAucTestMean,
-            RocAucTestStd,
-            RocAucTrainMean,
-            RocAucTrainStd,
-            FitTimeMean,
-            FitTimeStd,
-            PredictTimeTestMean,
-            PredictTimeTestStd,
-            PredictTimeTrainMean,
-            PredictTimeTrainStd,
+        assert [
+            m
+            for m in payload.metrics
+            # Non-deterministic
+            if "fit_time" not in m.name and "predict_time" not in m.name
+        ] == [
+            Metric(
+                name="accuracy_mean",
+                verbose_name="Accuracy - MEAN",
+                data_source="test",
+                greater_is_better=True,
+                value=0.4,
+                position=None,
+            ),
+            Metric(
+                name="accuracy_std",
+                verbose_name="Accuracy - STD",
+                data_source="test",
+                greater_is_better=False,
+                value=0.0,
+                position=None,
+            ),
+            Metric(
+                name="accuracy_mean",
+                verbose_name="Accuracy - MEAN",
+                data_source="train",
+                greater_is_better=True,
+                value=1.0,
+                position=None,
+            ),
+            Metric(
+                name="accuracy_std",
+                verbose_name="Accuracy - STD",
+                data_source="train",
+                greater_is_better=False,
+                value=0.0,
+                position=None,
+            ),
+            Metric(
+                name="brier_score_mean",
+                verbose_name="Brier score - MEAN",
+                data_source="test",
+                greater_is_better=False,
+                value=0.32946,
+                position=None,
+            ),
+            Metric(
+                name="brier_score_std",
+                verbose_name="Brier score - STD",
+                data_source="test",
+                greater_is_better=False,
+                value=0.033205734444520234,
+                position=None,
+            ),
+            Metric(
+                name="brier_score_mean",
+                verbose_name="Brier score - MEAN",
+                data_source="train",
+                greater_is_better=False,
+                value=0.028949999999999997,
+                position=None,
+            ),
+            Metric(
+                name="brier_score_std",
+                verbose_name="Brier score - STD",
+                data_source="train",
+                greater_is_better=False,
+                value=0.0012869343417595156,
+                position=None,
+            ),
+            Metric(
+                name="log_loss_mean",
+                verbose_name="Log loss - MEAN",
+                data_source="test",
+                greater_is_better=False,
+                value=0.9000329690645851,
+                position=None,
+            ),
+            Metric(
+                name="log_loss_std",
+                verbose_name="Log loss - STD",
+                data_source="test",
+                greater_is_better=False,
+                value=0.0449741307192756,
+                position=None,
+            ),
+            Metric(
+                name="log_loss_mean",
+                verbose_name="Log loss - MEAN",
+                data_source="train",
+                greater_is_better=False,
+                value=0.1777517839442836,
+                position=None,
+            ),
+            Metric(
+                name="log_loss_std",
+                verbose_name="Log loss - STD",
+                data_source="train",
+                greater_is_better=False,
+                value=0.0023212748748649243,
+                position=None,
+            ),
+            Metric(
+                name="roc_auc_mean",
+                verbose_name="ROC AUC - MEAN",
+                data_source="test",
+                greater_is_better=True,
+                value=0.4583333333333333,
+                position=None,
+            ),
+            Metric(
+                name="roc_auc_std",
+                verbose_name="ROC AUC - STD",
+                data_source="test",
+                greater_is_better=False,
+                value=0.29462782549439476,
+                position=None,
+            ),
+            Metric(
+                name="roc_auc_mean",
+                verbose_name="ROC AUC - MEAN",
+                data_source="train",
+                greater_is_better=True,
+                value=1.0,
+                position=None,
+            ),
+            Metric(
+                name="roc_auc_std",
+                verbose_name="ROC AUC - STD",
+                data_source="train",
+                greater_is_better=False,
+                value=0.0,
+                position=None,
+            ),
         ]
 
+    @mark.filterwarnings(
+        # `small_cv_binary_classification` has too few labels
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
     @mark.respx(assert_all_called=False)
-    def test_metrics_raises_exception(self, monkeypatch, payload):
-        """
-        Since metrics compute is multi-threaded, ensure that any exceptions thrown in a
-        sub-thread are also thrown in the main thread.
-        """
+    def test_metrics_custom(self, project):
+        def hello(_estimator, _X, _y):
+            return 1
 
-        def raise_exception(_):
-            raise Exception("test_metrics_raises_exception")
+        X, y = make_classification(random_state=42, n_samples=10)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y, splitter=2)
 
-        monkeypatch.setattr(
-            "skore._plugins.hub.report.cross_validation_report.CrossValidationReportPayload.METRICS",
-            [AccuracyTestMean],
-        )
-        monkeypatch.setattr(
-            "skore._plugins.hub.metric.AccuracyTestMean.compute",
-            raise_exception,
+        report.metrics.add(hello)
+
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
         )
 
-        with raises(Exception, match="test_metrics_raises_exception"):
-            list(map(type, payload.metrics))
+        assert all(isinstance(m, Metric) for m in payload.metrics)
+        assert [m for m in payload.metrics if "hello" in m.name] == [
+            Metric(
+                name="hello_mean",
+                verbose_name="Hello - MEAN",
+                data_source="test",
+                greater_is_better=True,
+                value=1.0,
+            ),
+            Metric(
+                name="hello_std",
+                verbose_name="Hello - STD",
+                data_source="test",
+                greater_is_better=False,
+                value=0.0,
+            ),
+            Metric(
+                name="hello_mean",
+                verbose_name="Hello - MEAN",
+                data_source="train",
+                greater_is_better=True,
+                value=1.0,
+            ),
+            Metric(
+                name="hello_std",
+                verbose_name="Hello - STD",
+                data_source="train",
+                greater_is_better=False,
+                value=0.0,
+            ),
+        ]
 
     @mark.filterwarnings(
-        # ignore deprecation warnings generated by the way `pandas` is used by
-        # `searborn` and `skore`
+        # seaborn's use of pandas
         "ignore:The default of observed=False is deprecated.*:FutureWarning",
     )
     @mark.respx()
