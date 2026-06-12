@@ -721,11 +721,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
                 ),
                 "n_folds": len(self.reports_),
-                "splitter_repr": (
-                    repr(self.splitter)
-                    if self.splitter is not None
-                    else f"{len(self.split_indices)} folds"
-                ),
+                "splitter_repr": repr(self.splitter),
                 "metrics_text": metrics_text,
                 **markdown_data_section(summary, data_label="full"),
             },
