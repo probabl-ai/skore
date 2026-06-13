@@ -255,6 +255,33 @@ def sample_mpl_colormap(
     return [cmap(i) for i in indices]
 
 
+def _reorder_categoricals_by_appearance(
+    plot_data: DataFrame, columns: Sequence[str | None]
+) -> DataFrame:
+    """Reorder categorical levels of ``columns`` to their order of appearance.
+
+    Seaborn draws and colors categorical levels by the categorical's *category*
+    order, which (e.g. on pandas >= 3) can differ from the order of appearance used
+    to build the manually constructed legend. That mismatch pairs labels with the
+    wrong color/linestyle and lists estimators out of the order they were passed.
+    Reordering the categories to the order of appearance makes seaborn draw in that
+    same order, keeping curves and legend in sync.
+    """
+    plot_data = plot_data.copy()
+    for column in columns:
+        if column is None:
+            continue
+        series = plot_data[column]
+        if isinstance(series.dtype, CategoricalDtype):
+            # ``order`` is every value present, in order of appearance:
+            # ``set_categories`` only drops categories that have no rows (none here, so
+            # no row is altered), and these columns are built internally without NaN, so
+            # ``pd.unique`` cannot surface a NaN that ``set_categories`` would reject.
+            order = list(pd.unique(series))
+            plot_data[column] = series.cat.set_categories(order, ordered=True)
+    return plot_data
+
+
 def _get_curve_plot_columns(
     plot_data: DataFrame,
     report_type: ReportType,

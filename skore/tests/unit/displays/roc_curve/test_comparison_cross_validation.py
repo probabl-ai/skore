@@ -2,10 +2,70 @@
 
 import matplotlib as mpl
 import pytest
-from sklearn.datasets import load_iris
+from sklearn.datasets import load_breast_cancer, load_iris
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 
-from skore import ComparisonReport, CrossValidationReport
+from skore import ComparisonReport, CrossValidationReport, compare, evaluate
+
+
+def test_data_source_both_legend_matches_curves(pyplot):
+    """Legend colors must match the drawn curves with ``data_source="both"``.
+
+    Non-regression test for https://github.com/probabl-ai/skore/issues/2925: with
+    categorical estimator/data_source columns (e.g. on pandas >= 3), seaborn draws in
+    category order while the legend was built in order of appearance, so the legend
+    color for an estimator disagreed with that estimator's actual curves. The
+    estimators are chosen so the order they are passed
+    (``HistGradientBoostingClassifier`` then ``DecisionTreeClassifier``) differs from
+    alphabetical order, and so that one clearly outperforms the other (distinct AUC).
+    """
+    import numpy as np
+    from sklearn.ensemble import HistGradientBoostingClassifier
+
+    X, y = load_breast_cancer(return_X_y=True)
+    report = compare(
+        [
+            evaluate(HistGradientBoostingClassifier(), X, y, splitter=2),
+            evaluate(DecisionTreeClassifier(max_depth=1), X, y, splitter=2),
+        ]
+    )
+    display = report.metrics.roc(data_source="both")
+    fig = display.plot(subplot_by=None, label=0)
+    ax = fig.axes[0]
+
+    tpr_by_color: dict = {}
+    for line in ax.get_lines():
+        if not line.get_label().startswith("_child"):
+            continue
+        color = tuple(line.get_color())
+        x, y_vals = np.asarray(line.get_xdata()), np.asarray(line.get_ydata())
+        low_fpr = x <= 0.1
+        if low_fpr.any():
+            tpr_by_color.setdefault(color, []).append(y_vals[low_fpr].max())
+    curve_colors = {
+        c: np.mean(v) for c, v in tpr_by_color.items() if c[:3] != (0, 0, 0)
+    }
+    strong_curve_color = max(curve_colors, key=curve_colors.get)
+
+    legend = ax.get_legend()
+    hgbc_legend_color = next(
+        tuple(handle.get_color())
+        for text, handle in zip(legend.get_texts(), legend.legend_handles, strict=True)
+        if text.get_text().startswith("HistGradientBoostingClassifier")
+    )
+    assert hgbc_legend_color[:3] == strong_curve_color[:3]
+
+    entries = [
+        (text.get_text(), handle)
+        for text, handle in zip(legend.get_texts(), legend.legend_handles, strict=True)
+        if "Chance level" not in text.get_text()
+    ]
+    names = [text.split(" - ")[0] for text, _ in entries]
+    assert names[0] == "HistGradientBoostingClassifier"
+
+    for text, handle in entries:
+        assert handle.get_linestyle() == ("--" if "Train" in text else "-")
 
 
 def test_legend_binary_classification(
