@@ -1,28 +1,26 @@
 import contextlib
 import json
 import pickle
-import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 import joblib
 
-from ... import EstimatorReport
+from . import EstimatorReport
 
 
-def init_data_dir(parent_dir: str | Path = ".", project_name: str = "default") -> Path:
+def init_data_dir(parent_dir="."):
     data_dir = Path(parent_dir) / "skore_data"
     if data_dir.is_dir():
         return data_dir
     data_dir.mkdir()
     (data_dir / ".SKORE_DATA_DIRECTORY").touch()
-    (data_dir / "projects").mkdir()
     (data_dir / "datasets").mkdir()
+    (data_dir / "reports").mkdir()
     return data_dir
 
 
-def find_data_dir() -> Path:
+def find_data_dir():
     start = Path(".").resolve()
     for candidate in [start, *start.parents[::-1]]:
         data_dir = candidate / "skore_data"
@@ -31,27 +29,11 @@ def find_data_dir() -> Path:
     return init_data_dir(Path.home())
 
 
-def init_project_dir(data_dir: Path, project_name: str) -> Path:
-    project_dir = data_dir / "projects" / project_name
-    if project_dir.is_dir():
-        return project_dir
-    project_dir.mkdir()
-    (project_dir / "reports").mkdir()
-    return project_dir
-
-
-def export(
-    report: EstimatorReport,
-    *,
-    root_data_dir: Path | None = None,
-    project_name: str = "default",
-    name: str | None = None,
-) -> Path:
+def export(report, *, root_data_dir=None, name=None):
     root_data_dir = find_data_dir() if root_data_dir is None else Path(root_data_dir)
-    project_dir = init_project_dir(root_data_dir, project_name)
-    reports_dir = project_dir / "reports"
+    reports_dir = root_data_dir / "reports"
     date_str = (
-        datetime.fromisoformat(str(report._metadata["creation-date"]))
+        datetime.fromisoformat(report._metadata["creation-date"])
         .replace(tzinfo=None)
         .isoformat()
         .replace(":", "-")
@@ -78,8 +60,8 @@ def export(
                 for k, v in state.items()
                 if k
                 not in (
+                    "raw_estimator",
                     "estimator",
-                    "learner",
                     "data",
                     "predictions",
                     "metric_registry",
@@ -91,11 +73,13 @@ def export(
         "UTF-8",
     )
     with open(output_dir / "estimator.pickle", "wb") as f:
-        pickle.dump(report.estimator, f)
-    with open(output_dir / "estimator_.pickle", "wb") as f:
         pickle.dump(report.estimator_, f)
-    with open(output_dir / "learner_.pickle", "wb") as f:
-        pickle.dump(report.learner_, f)
+
+    # for from_state, but we can probably get rid of _raw_estimator
+    with open(output_dir / "_estimator.pickle", "wb") as f:
+        pickle.dump(report._estimator, f)
+    with open(output_dir / "_raw_estimator.pickle", "wb") as f:
+        pickle.dump(report._raw_estimator, f)
 
     user_dir = output_dir / "user"
     user_dir.mkdir(exist_ok=True)
@@ -149,13 +133,13 @@ def export(
     return output_dir
 
 
-def load(report_dir: Path) -> EstimatorReport:
+def load(report_dir):
     report_dir = Path(report_dir)
     state = json.loads((report_dir / "state.json").read_text("UTF-8"))
-    with open(report_dir / "estimator.pickle", "rb") as f:
+    with open(report_dir / "_estimator.pickle", "rb") as f:
         state["estimator"] = pickle.load(f)
-    with open(report_dir / "learner_.pickle", "rb") as f:
-        state["learner"] = pickle.load(f)
+    with open(report_dir / "_raw_estimator.pickle", "rb") as f:
+        state["raw_estimator"] = pickle.load(f)
     state["predictions"] = {}
     for pred_file in (report_dir / "predictions").glob("*.joblib"):
         with open(pred_file, "rb") as f:
@@ -174,7 +158,7 @@ def load(report_dir: Path) -> EstimatorReport:
     return EstimatorReport.from_state(state)
 
 
-def get_data_ref(value: Any, root_data_dir: Path) -> dict[str, str]:
+def get_data_ref(value, root_data_dir):
     h = joblib.hash(value)
     file_name = f"{h}.joblib"
     target = root_data_dir / "datasets" / file_name
@@ -182,39 +166,3 @@ def get_data_ref(value: Any, root_data_dir: Path) -> dict[str, str]:
         with open(target, "wb") as f:
             joblib.dump(value, f)
     return {"hash": h, "file_name": file_name, "file_path": str(target)}
-
-
-class Project:
-    def __init__(self, name: str, workspace: str | Path | None = None):
-        self.name = name
-        self.workspace = workspace
-
-    def root_data_dir(self) -> Path:
-        if self.workspace is None:
-            workspace = find_data_dir()
-        else:
-            workspace = init_data_dir(Path(self.workspace))
-        return workspace
-
-    def path(self) -> Path:
-        return init_project_dir(self.root_data_dir(), self.name)
-
-    def put(self, key: str, report: EstimatorReport) -> Path:
-        return export(
-            report, root_data_dir=self.root_data_dir(), project_name=self.name, name=key
-        )
-
-    def get(self, report_id: int) -> EstimatorReport:
-        report_path = next(
-            iter((self.path() / "reports").glob(f"*{report_id:x}*")), None
-        )
-        if report_path is None:
-            raise KeyError(report_id)
-        return load(report_path)
-
-    def summarize(self) -> list[EstimatorReport]:
-        # TODO
-        return []
-
-    def delete(self) -> None:
-        shutil.rmtree(self.path())
