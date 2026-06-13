@@ -27,9 +27,9 @@ from skore._sklearn._checks._utils import (
     check_score_gap_to_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
-    get_preprocessed_data,
+    get_preprocessed_X,
+    get_report_y,
     majority_vote,
-    select_feature,
     split_preprocessor_estimator,
 )
 from skore._sklearn._checks.base import Check
@@ -62,12 +62,14 @@ def _baseline_estimator_report(
     """
     from skore._sklearn._estimator.report import EstimatorReport
 
-    if (
-        report.X_train is None
-        or report.y_train is None
-        or report.X_test is None
-        or report.y_test is None
-    ):
+    try:
+        X_train, _ = report.data._retrieve_data_as_frame("train", False, "train")
+        X_test, _ = report.data._retrieve_data_as_frame("test", False, "test")
+    except ValueError:
+        raise CheckNotApplicable() from None
+    y_train = get_report_y(report, data_source="train")
+    y_test = get_report_y(report, data_source="test")
+    if y_train is None or y_test is None:
         raise CheckNotApplicable()
 
     is_classification = report.ml_task in (
@@ -96,10 +98,10 @@ def _baseline_estimator_report(
     try:
         baseline_report = EstimatorReport(
             estimator,
-            X_train=report.X_train,
-            y_train=report.y_train,
-            X_test=report.X_test,
-            y_test=report.y_test,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
             pos_label=report.pos_label,
         )
     except Exception as exc:
@@ -265,14 +267,14 @@ class CheckHighClassImbalance(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect when the majority class exceeds 80% of samples."""
         report = cast("EstimatorReport", report)
-        y = get_preprocessed_data(report, target="y", concatenate=True)
+        y = get_report_y(report, data_source="both")
         if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
-        values, counts = np.unique_counts(y)
-        overrepresented_class = values[counts >= 0.8 * counts.sum()]
+        counts = y.value_counts()
+        overrepresented_class = counts[counts >= 0.8 * counts.sum()].index
 
-        if overrepresented_class.size > 0:
+        if len(overrepresented_class) > 0:
             return (
                 f"Class {overrepresented_class} represents more than 80% of the "
                 "dataset samples. Accuracy should not be used alone to assess model "
@@ -297,14 +299,13 @@ class CheckUnderrepresentedClasses(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect classes that each represent less than 10% of samples."""
         report = cast("EstimatorReport", report)
-
-        y = get_preprocessed_data(report, target="y", concatenate=True)
+        y = get_report_y(report, data_source="both")
         if report.ml_task != "multiclass-classification" or y is None:
             raise CheckNotApplicable()
 
-        values, counts = np.unique_counts(y)
-        underrepresented_classes = values[counts <= 0.1 * counts.sum()]
-        if underrepresented_classes.size > 0:
+        counts = y.value_counts()
+        underrepresented_classes = counts[counts <= 0.1 * counts.sum()].index
+        if len(underrepresented_classes) > 0:
             return (
                 f"Classes {underrepresented_classes} each represent less than 10% of "
                 "the dataset samples. Accuracy should not be used alone to assess "
@@ -331,13 +332,13 @@ class CheckCoefficientsInterpretation(Check):
         """Assess whether linear-model coefficients are comparable and interpretable."""
         report = cast("EstimatorReport", report)
         _, predictor = split_preprocessor_estimator(report.learner_)
-        X = get_preprocessed_data(report, target="X", concatenate=True)
+        X = get_preprocessed_X(report, data_source="both")
 
         if X is None or not hasattr(predictor, "coef_"):
             raise CheckNotApplicable()
 
-        stds = np.asarray(X.std(axis=0))
-        if not np.all(np.isclose(stds, stds[0])):
+        stds = X.std(axis=0)
+        if not np.allclose(stds, stds.iloc[0]):
             return (
                 "Features are not on the same scale: coefficient magnitudes "
                 "are not directly comparable as feature importance."
@@ -368,21 +369,14 @@ class CheckMDIHighCardinalityBias(Check):
         """Detect high-cardinality features that may bias MDI importances."""
         report = cast("EstimatorReport", report)
         _, predictor = split_preprocessor_estimator(report.learner_)
-        X = get_preprocessed_data(report, target="X")
+        X = get_preprocessed_X(report, data_source="train")
 
         if X is None or not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable()
 
-        if isinstance(X, pd.DataFrame):
-            high_cardinality_features = [
-                c for c in X.columns if X[c].nunique() > 0.5 * len(X)
-            ]
-        elif isinstance(X, np.ndarray):
-            high_cardinality_features = [
-                i for i in range(X.shape[1]) if np.unique(X[:, i]).size > 0.5 * len(X)
-            ]
-        else:
-            raise CheckNotApplicable()
+        high_cardinality_features = [
+            c for c in X.columns if X[c].nunique() > 0.5 * len(X)
+        ]
 
         if high_cardinality_features:
             names = ", ".join(str(s) for s in high_cardinality_features[:3])
@@ -425,12 +419,11 @@ class CheckCorrelatedFeatures(Check):
             fewer than two numeric features are present.
         """
         report = cast("EstimatorReport", report)
-        X = get_preprocessed_data(report, target="X")
+        X = get_preprocessed_X(report, data_source="train")
 
         if X is None:
             raise CheckNotApplicable()
-        if isinstance(X, pd.DataFrame):
-            X = X.select_dtypes(include="number")
+        X = X.select_dtypes(include="number")
         if X.shape[1] < 2 or X.shape[1] > 1000:
             raise CheckNotApplicable()
 
@@ -563,27 +556,26 @@ class CheckGoldenFeature(Check):
         from skore._sklearn._estimator.report import EstimatorReport
 
         report = cast("EstimatorReport", report)
+        X_train = get_preprocessed_X(report, data_source="train")
+        X_test = get_preprocessed_X(report, data_source="test")
+        y_train = get_report_y(report, data_source="train")
+        y_test = get_report_y(report, data_source="test")
         if (
-            report.X_train is None
-            or report.X_test is None
-            or report.y_train is None
-            or report.y_test is None
+            X_train is None
+            or X_test is None
+            or y_train is None
+            or y_test is None
+            or X_train.shape[1] < 2
         ):
             raise CheckNotApplicable()
 
         preprocessor_, predictor_ = split_preprocessor_estimator(report.estimator_)
-        X_train = get_preprocessed_data(report, target="X", data_source="train")
-        X_test = get_preprocessed_data(report, target="X", data_source="test")
-        if X_train is None or X_test is None or X_train.shape[1] < 2:
-            raise CheckNotApplicable()
-
         feature_names = _get_feature_names(
             predictor_,
             transformer=preprocessor_,
             X=X_train,
             n_features=X_train.shape[1],
         )
-
         full_test = collect_scores(report, data_source="test")
 
         golden_features: list[str] = []
@@ -591,10 +583,10 @@ class CheckGoldenFeature(Check):
             try:
                 single_report = EstimatorReport(
                     clone(predictor_),
-                    X_train=select_feature(X_train, i),
-                    y_train=report.y_train,
-                    X_test=select_feature(X_test, i),
-                    y_test=report.y_test,
+                    X_train=X_train.iloc[:, [i]],
+                    y_train=y_train,
+                    X_test=X_test.iloc[:, [i]],
+                    y_test=y_test,
                     pos_label=report.pos_label,
                 )
             except Exception as exc:

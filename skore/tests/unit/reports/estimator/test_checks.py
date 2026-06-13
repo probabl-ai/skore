@@ -153,8 +153,8 @@ def test_skd007_mdi_bias_with_high_cardinality(regression_data):
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD007" in tips.index
     assert (
-        "High-cardinality features detected: 0, 1, 2 (and 1 more)"
-        in tips.loc["SKD007", "explanation"]
+        "High-cardinality features detected: Feature 0, Feature 1, Feature 2 "
+        "(and 1 more)" in tips.loc["SKD007", "explanation"]
     )
 
 
@@ -403,7 +403,7 @@ def test_skd014_skips_non_numeric_hyperparameters(regression_data, param_grid):
     [
         GridSearchCV(Ridge(), param_grid={"alpha": [0.1, 1.0, 10.0]}, cv=2),
         RandomizedSearchCV(
-            Ridge(), param_distributions={"alpha": [0.1, 1.0, 10.0]}, cv=2
+            Ridge(), param_distributions={"alpha": [0.1, 1.0, 10.0]}, cv=2, n_iter=2
         ),
     ],
 )
@@ -592,6 +592,7 @@ def test_skd016_not_applicable_search(regression_data):
 def test_skd016_pipeline_walks_steps(regression_data):
     """SKD016 reports only the pipeline steps that are still at defaults."""
     X, y = regression_data
+    X, y = pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]), pd.Series(y)
     pipe = Pipeline([("pca", PCA()), ("ridge", Ridge(alpha=2.0))])
     report = evaluate(pipe, X, y)
     tips = report.checks.summarize().frame(severity="tip").set_index("code")
