@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, cast, runtime_checkable
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -209,8 +209,9 @@ class StyleDisplayMixin:
             # We need to manually handle setting the style of the parameters because
             # `plt.style.context` has a side effect with the interactive mode.
             # See https://github.com/matplotlib/matplotlib/issues/25041
-            original_params = {key: plt.rcParams[key] for key in DEFAULT_STYLE}
-            plt.rcParams.update(DEFAULT_STYLE)
+            rc_params = cast("dict[str, Any]", plt.rcParams)
+            original_params = {key: rc_params[key] for key in DEFAULT_STYLE}
+            rc_params.update(DEFAULT_STYLE)
             result: Any = None
             try:
                 with plt.ioff():
@@ -218,7 +219,7 @@ class StyleDisplayMixin:
             finally:
                 if isinstance(result, Figure):
                     result.tight_layout()
-                plt.rcParams.update(original_params)
+                rc_params.update(original_params)
             return result
 
         return wrapper

@@ -2,19 +2,23 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from threading import RLock
 from time import sleep
+from typing import TYPE_CHECKING
 from urllib.parse import urljoin
 from webbrowser import open as open_webbrowser
 
-from httpx import HTTPStatusError, TimeoutException
+from httpx import HTTPError, HTTPStatusError, TimeoutException
 from rich.align import Align
 from rich.live import Live
 from rich.panel import Panel
 
 from skore import console
 from skore._plugins.hub.authentication.uri import URI
+
+if TYPE_CHECKING:
+    from skore._plugins.hub.authentication import store
 
 
 def get_oauth_device_login(success_uri: str | None = None) -> tuple[str, str, str]:
@@ -188,6 +192,104 @@ def post_oauth_refresh_token(refresh_token: str) -> tuple[str, str, str]:
             response["refresh_token"],
             response["expires_at"],
         )
+
+
+def interactive_device_login(
+    *, timeout: int = 600, open_browser: bool = True
+) -> tuple[str, str, str]:
+    """Run the interactive OAuth device flow and return the resulting token.
+
+    Performs the full device flow (login -> browser -> probe -> callback ->
+    token) and returns ``(access_token, refresh_token, expires_at)``. Shared
+    building block behind ``skore hub login`` and the re-login fallback in
+    :func:`fresh_token`.
+    """
+    url, device_code, user_code = get_oauth_device_login()
+    console.print(
+        f"Opening your browser to authenticate. If it does not open, visit:\n  {url}"
+    )
+    if open_browser:
+        open_webbrowser(url)
+
+    get_oauth_device_code_probe(device_code, timeout=timeout)
+    post_oauth_device_callback(device_code, user_code)
+    return get_oauth_device_token(device_code)
+
+
+def post_oauth_logout(access_token: str, refresh_token: str | None = None) -> None:
+    """Revoke the access (and refresh) token on the hub.
+
+    Mirrors ``POST identity/oauth/logout``: the tokens are presented as cookies so
+    the hub revokes both the access and refresh tokens server-side.
+    """
+    from skore._plugins.hub.client.client import Client
+
+    cookies = {"access_token": access_token}
+    if refresh_token:
+        cookies["refresh_token"] = refresh_token
+
+    with Client() as client:
+        client.post(urljoin(URI(), "identity/oauth/logout"), cookies=cookies)
+
+
+def _token_expired(expires_at: str | None, *, margin_seconds: int = 60) -> bool:
+    """Return whether ``expires_at`` (ISO 8601) is past, within a safety margin."""
+    if not expires_at:
+        return True
+    try:
+        expiration = datetime.fromisoformat(expires_at)
+    except ValueError:
+        return True
+    if expiration.tzinfo is None:
+        expiration = expiration.replace(tzinfo=UTC)
+    return expiration <= datetime.now(UTC) + timedelta(seconds=margin_seconds)
+
+
+def fresh_token(*, relogin: bool = True, timeout: int = 600) -> store.Token | None:
+    """Return a non-expired stored token, refreshing or re-logging in as needed.
+
+    Mirrors the SDK :class:`Token` lifecycle for the persisted CLI token: reuse it
+    while valid, refresh it on the fly when expired, and only relaunch the device
+    login when the refresh token is no longer usable. Returns ``None`` when no
+    token is stored, so callers do not trigger a surprise browser login.
+    """
+    from skore._plugins.hub.authentication import store
+
+    token = store.load()
+    if not token or not token.get("access_token"):
+        return None
+
+    if not _token_expired(token.get("expires_at")):
+        return token
+
+    refresh = token.get("refresh_token")
+    if refresh:
+        try:
+            access, refresh, expires_at = post_oauth_refresh_token(refresh)
+        except HTTPError:
+            pass  # refresh failed (expired/revoked); fall back to interactive login
+        else:
+            token = {
+                "uri": token.get("uri") or URI(),
+                "access_token": access,
+                "refresh_token": refresh,
+                "expires_at": expires_at,
+            }
+            store.save(token)
+            return token
+
+    if relogin:
+        access, refresh, expires_at = interactive_device_login(timeout=timeout)
+        token = {
+            "uri": URI(),
+            "access_token": access,
+            "refresh_token": refresh,
+            "expires_at": expires_at,
+        }
+        store.save(token)
+        return token
+
+    return None
 
 
 class Token:
