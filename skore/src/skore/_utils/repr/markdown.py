@@ -63,7 +63,11 @@ def _subreport_estimator_metadata(report: Any) -> dict[str, str | None]:
             f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
         )
         metadata["cross-validation folds"] = str(len(report.reports_))
-        metadata["splitter"] = repr(report.splitter)
+        metadata["splitter"] = (
+            repr(report.splitter)
+            if report.splitter is not None
+            else f"{len(report.split_indices)} folds"
+        )
     else:
         fit_time = timings.get("fit_time")
         predict_time = timings.get("predict_time_test")
