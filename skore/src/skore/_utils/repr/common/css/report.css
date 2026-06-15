@@ -930,19 +930,6 @@
     justify-content: center;
 }
 
-.summary-select-eye {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.6;
-}
-
-.summary-select-eye svg {
-    display: block;
-    width: 14px;
-    height: 14px;
-}
-
 .summary-view-btn:hover {
     background-color: var(--color-blue-hover);
 }

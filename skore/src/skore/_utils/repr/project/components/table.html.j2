@@ -2,9 +2,7 @@
     <table class="summary-table">
         <thead>
             <tr>
-                <th class="summary-select-col">
-                    <span class="summary-select-eye" title="Row selection" aria-label="Row selection">{% include "project/icons/eye.svg" %}</span>
-                </th>
+                <th class="summary-select-col"></th>
                 {% for column in columns %}
                 <th class="summary-sortable" data-column-index="{{ loop.index }}" data-column-key="{{ column.key | e }}" data-sort-kind="{{ column.kind }}" data-column-role="{{ column.role | e }}" tabindex="0" role="button" aria-sort="none">
                     <span class="summary-th-label">{{ column.label | e }}</span>
