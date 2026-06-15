@@ -144,6 +144,7 @@ def comparison_data_markdown_context(comparison_report: Any) -> dict[str, object
 
     if all(
         report_data["dataframe"].equals(first_report_data["dataframe"])
+        and report_data["data_label"] == first_report_data["data_label"]
         for report_data in all_report_data[1:]
     ):
         summary = summarize_dataframe(
