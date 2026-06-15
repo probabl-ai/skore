@@ -59,13 +59,13 @@ def test_split_column(comparison_cv_report_ridge):
 
 def test_cache_behavior(comparison_cv_report_ridge):
     report = comparison_cv_report_ridge
-    assert _children_cache_size(report) == 0
+    before = _children_cache_size(report)
 
     child_report = next(iter(report.reports_.values())).reports_[0]
     with check_cache_changed(child_report._cache):
         report.inspection.permutation_importance(seed=42, n_repeats=2)
 
-    assert _children_cache_size(report) == 1
+    assert _children_cache_size(report) == before + 1
 
 
 def test_at_step(regression_data):
@@ -89,29 +89,29 @@ def test_at_step(regression_data):
 
 def test_cache_seed_int(comparison_cv_report_ridge):
     report = comparison_cv_report_ridge
-    assert _children_cache_size(report) == 0
+    before = _children_cache_size(report)
 
     display_1 = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test"
     )
-    assert _children_cache_size(report) == 1
+    assert _children_cache_size(report) == before + 1
 
     display_2 = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test"
     )
     assert display_1.importances.equals(display_2.importances)
-    assert _children_cache_size(report) == 1
+    assert _children_cache_size(report) == before + 1
 
 
 def test_cache_seed_none(comparison_cv_report_ridge):
     report = comparison_cv_report_ridge
-    assert _children_cache_size(report) == 0
+    before = _children_cache_size(report)
 
     report.inspection.permutation_importance(n_repeats=2, data_source="test")
-    assert _children_cache_size(report) == 1
+    assert _children_cache_size(report) == before + 1
 
     report.inspection.permutation_importance(n_repeats=2, data_source="test")
-    assert _children_cache_size(report) == 1
+    assert _children_cache_size(report) == before + 1
 
 
 def test_cache_parameter_in_cache(comparison_cv_report_ridge):

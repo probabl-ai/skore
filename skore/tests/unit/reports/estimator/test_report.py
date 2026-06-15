@@ -168,11 +168,22 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
     else:
         report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    assert report._cache == {}
+    before = len(report._cache)
 
-    report.cache_predictions()
+    # Default is "test"
+    report.cache_predictions(data_source="both")
     assert len(report._cache) == expected_n_keys
-    assert report._cache != {}
+    if pass_train_data:
+        assert len(report._cache) > before
+    else:
+        assert len(report._cache) == before
+
+
+def test_cache_predictions_idempotent(forest_binary_classification_with_test):
+    """Calling cache_predictions with its default arguments on an existing report does
+    not change the report (the predictions are cached at init)."""
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     stored_cache = deepcopy(report._cache)
     report.cache_predictions()

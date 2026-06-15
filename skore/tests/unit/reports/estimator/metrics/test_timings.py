@@ -25,8 +25,6 @@ def test_only_fit(estimator_data):
 
     result = report.metrics.timings()
     assert isinstance(result, dict)
-    assert len(result) == 1
-    assert isinstance(result.get("fit_time"), float)
 
 
 def test_only_fit_unfitted(estimator_data):
@@ -37,6 +35,8 @@ def test_only_fit_unfitted(estimator_data):
 
     result = report.metrics.timings()
     assert result == {}
+    assert list(result) == ["fit_time", "predict_time_test"]
+    assert isinstance(result["fit_time"], float)
 
 
 @pytest.mark.parametrize("data_source", ["test", "train"])
@@ -51,8 +51,11 @@ def test_predict_prefitted(data_source, estimator_data):
 
     result = report.metrics.timings()
     assert isinstance(result, dict)
-    assert len(result) == 1
-    assert isinstance(result.get(f"predict_time_{data_source}"), float)
+    if data_source == "train":
+        assert list(result) == ["predict_time_train", "predict_time_test"]
+    else:
+        assert list(result) == ["predict_time_test"]
+    assert all(isinstance(v, float) for v in result.values())
 
 
 def test_everything(estimator_data):

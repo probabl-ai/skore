@@ -107,13 +107,15 @@ def test_cache_display_stored(regression_train_test_split):
         X_test=X_test,
         y_test=y_test,
     )
-    assert report._cache == {}
+    before = len(report._cache)
 
     with check_cache_changed(report._cache):
         display = report.inspection.permutation_importance(data_source="train", seed=42)
 
-    assert len(report._cache) == 1
-    cached_display = next(iter(report._cache.values()))
+    assert len(report._cache) == before + 1
+    cached_display = next(
+        v for k, v in report._cache.items() if "permutation_importance" in k
+    )
     assert isinstance(cached_display, PermutationImportanceDisplay)
     assert cached_display is display
 
@@ -159,14 +161,16 @@ def test_cache_seed_none(regression_train_test_split):
         X_test=X_test,
         y_test=y_test,
     )
-    assert report._cache == {}
+    before = len(report._cache)
 
     report.inspection.permutation_importance(data_source="train")
-    assert len(report._cache) == 1
+    assert len(report._cache) == before + 1
 
     display2 = report.inspection.permutation_importance(data_source="train")
-    assert len(report._cache) == 1
-    cached_display = next(iter(report._cache.values()))
+    assert len(report._cache) == before + 1
+    cached_display = next(
+        v for k, v in report._cache.items() if "permutation_importance" in k
+    )
     assert cached_display is display2
 
 
@@ -179,14 +183,14 @@ def test_cache_seed_int(regression_train_test_split):
         X_test=X_test,
         y_test=y_test,
     )
-    assert report._cache == {}
+    before = len(report._cache)
 
     display1 = report.inspection.permutation_importance(data_source="train", seed=42)
-    assert len(report._cache) == 1
+    assert len(report._cache) == before + 1
 
     display2 = report.inspection.permutation_importance(data_source="train", seed=42)
     assert display1.importances.equals(display2.importances)
-    assert len(report._cache) == 1
+    assert len(report._cache) == before + 1
 
 
 def test_sparse_array(regression_train_test_split):

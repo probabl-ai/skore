@@ -432,7 +432,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
-        >>> report.cache_predictions()
+        >>> report._cache
+        {...}
         >>> report.clear_cache()
         >>> report._cache
         {}
@@ -465,6 +466,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = EstimatorReport(classifier, **split_data)
+        >>> report.clear_cache()
+        >>> report._cache
+        {}
         >>> report.cache_predictions()
         >>> report._cache
         {...}
