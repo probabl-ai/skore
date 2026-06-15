@@ -1,6 +1,6 @@
 from joblib import hash
 from pydantic import ValidationError
-from pytest import fixture, mark, raises
+from pytest import approx, fixture, mark, raises
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 
@@ -90,76 +90,103 @@ class TestEstimatorReportPayload:
 
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
-        assert [
-            m
-            for m in payload.metrics
-            # Non-deterministic
-            if m.name not in ("fit_time", "predict_time")
-        ] == [
-            Metric(
-                name="accuracy",
-                verbose_name="Accuracy",
-                data_source="train",
-                greater_is_better=True,
-                value=1.0,
-                position=None,
-            ),
-            Metric(
-                name="roc_auc",
-                verbose_name="ROC AUC",
-                data_source="train",
-                greater_is_better=True,
-                value=1.0,
-                position=None,
-            ),
-            Metric(
-                name="log_loss",
-                verbose_name="Log loss",
-                data_source="train",
-                greater_is_better=False,
-                value=0.06911280690412243,
-                position=None,
-            ),
-            Metric(
-                name="brier_score",
-                verbose_name="Brier score",
-                data_source="train",
-                greater_is_better=False,
-                value=0.007277500000000001,
-                position=None,
-            ),
-            Metric(
-                name="accuracy",
-                verbose_name="Accuracy",
-                data_source="test",
-                greater_is_better=True,
-                value=0.9,
-                position=None,
-            ),
-            Metric(
-                name="roc_auc",
-                verbose_name="ROC AUC",
-                data_source="test",
-                greater_is_better=True,
-                value=0.989010989010989,
-                position=None,
-            ),
-            Metric(
-                name="log_loss",
-                verbose_name="Log loss",
-                data_source="test",
-                greater_is_better=False,
-                value=0.3168690248138036,
-                position=None,
-            ),
-            Metric(
-                name="brier_score",
-                verbose_name="Brier score",
-                data_source="test",
-                greater_is_better=False,
-                value=0.09025999999999999,
-                position=None,
-            ),
+        assert [m.model_dump() for m in payload.metrics] == [
+            {
+                "name": "accuracy",
+                "verbose_name": "Accuracy",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "position": None,
+            },
+            {
+                "name": "roc_auc",
+                "verbose_name": "ROC AUC",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "position": None,
+            },
+            {
+                "name": "log_loss",
+                "verbose_name": "Log loss",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.06911, abs=1e-4),
+                "position": None,
+            },
+            {
+                "name": "brier_score",
+                "verbose_name": "Brier score",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.00727, abs=1e-4),
+                "position": None,
+            },
+            {
+                "name": "fit_time",
+                "verbose_name": "Fit time (s)",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=float("inf")),
+                "position": None,
+            },
+            {
+                "name": "predict_time",
+                "verbose_name": "Predict time (s)",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=float("inf")),
+                "position": None,
+            },
+            {
+                "name": "accuracy",
+                "verbose_name": "Accuracy",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.9, abs=1e-4),
+                "position": None,
+            },
+            {
+                "name": "roc_auc",
+                "verbose_name": "ROC AUC",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.98901, abs=1e-4),
+                "position": None,
+            },
+            {
+                "name": "log_loss",
+                "verbose_name": "Log loss",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.31686, abs=1e-4),
+                "position": None,
+            },
+            {
+                "name": "brier_score",
+                "verbose_name": "Brier score",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.09025, abs=1e-4),
+                "position": None,
+            },
+            {
+                "name": "fit_time",
+                "verbose_name": "Fit time (s)",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=float("inf")),
+                "position": None,
+            },
+            {
+                "name": "predict_time",
+                "verbose_name": "Predict time (s)",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=float("inf")),
+                "position": None,
+            },
         ]
 
     @mark.respx(assert_all_called=False)
