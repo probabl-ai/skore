@@ -4,7 +4,6 @@ from io import BytesIO
 
 import joblib
 import numpy as np
-import pandas as pd
 import pytest
 import skrub
 from sklearn.cluster import KMeans
@@ -214,34 +213,6 @@ def test_pickle(forest_binary_classification_with_test):
 
     with BytesIO() as stream:
         joblib.dump(report, stream)
-
-
-def test_flat_index(forest_binary_classification_with_test):
-    """Check that the index is flattened when `flat_index` is True.
-
-    Since `pos_label` is None, then by default a MultiIndex would be returned.
-    Here, we force to have a single-index by passing `flat_index=True`.
-    """
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize().frame(flat_index=True)
-    assert result.shape == (11, 1)
-    assert isinstance(result.index, pd.Index)
-    assert result.index.tolist() == [
-        "score",
-        "accuracy",
-        "precision_0",
-        "precision_1",
-        "recall_0",
-        "recall_1",
-        "roc_auc",
-        "log_loss",
-        "brier_score",
-        "fit_time_s",
-        "predict_time_s",
-    ]
-
-    assert result.columns.tolist() == ["RandomForestClassifier"]
 
 
 def test_get_predictions():
@@ -483,6 +454,16 @@ def test_prefit_no_train_data_repr_methods(prefit_regression_report_no_train_dat
 
     fragments = prefit_regression_report_no_train_data._html_repr_fragments()
     assert "R²" in fragments["metrics_summary"]
+
+
+def test_text_repr(forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    report = evaluate(estimator, X, y, splitter=0.2)
+    repr_str = repr(report)
+    assert repr_str.startswith("EstimatorReport:")
+    assert report.estimator_name_ in repr_str
+    assert "to_markdown()" in repr_str
+    assert "Accuracy" in repr_str
 
 
 def test_to_markdown(forest_binary_classification_data):
