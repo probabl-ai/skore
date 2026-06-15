@@ -586,7 +586,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         return f"""{self.__class__.__name__}:
         {list(self.reports_.keys())!r}
 
-        {self.metrics.summarize(data_source="test").frame()}
+        {self.metrics._formatted_summary_frame(data_source="test")}
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
     def to_markdown(self) -> str:
@@ -601,16 +601,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         str
             The markdown summary of the report.
         """
-        metrics_frame = (
-            self.metrics.summarize(data_source="test")
-            .frame()
-            .rename_axis(
-                None if self._report_type == "comparison-estimator" else [None, None],
-                axis="columns",
-            )
-        )
-        if self._report_type == "comparison-cross-validation":
-            metrics_frame = metrics_frame.swaplevel(axis="columns")
+        metrics_frame = self.metrics._formatted_summary_frame(data_source="test")
         return render_template(
             "comparison_report_markdown.j2",
             {
@@ -623,16 +614,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def _repr_html_(self) -> str:
         """HTML representation with a selector to inspect one compared report."""
-        metrics_frame = (
-            self.metrics.summarize(data_source="test")
-            .frame()
-            .rename_axis(
-                None if self._report_type == "comparison-estimator" else [None, None],
-                axis="columns",
-            )
-        )
-        if self._report_type == "comparison-cross-validation":
-            metrics_frame = metrics_frame.swaplevel(axis="columns")
+        metrics_frame = self.metrics._formatted_summary_frame(data_source="test")
         metrics_html = metrics_frame.reset_index().to_html(index=False)
 
         comparison_reports = []

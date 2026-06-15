@@ -113,6 +113,23 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             ],
         )
 
+    def _formatted_summary_frame(
+        self,
+        *,
+        data_source: DataSource = "test",
+        metric: str | list[str] | None = None,
+    ) -> pd.DataFrame:
+        frame = self.summarize(data_source=data_source, metric=metric).frame()
+        frame = frame.rename_axis(
+            None
+            if self._parent._report_type == "comparison-estimator"
+            else [None, None],
+            axis="columns",
+        )
+        if self._parent._report_type == "comparison-cross-validation":
+            frame = frame.swaplevel(axis="columns")
+        return frame
+
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
     ) -> MetricsSummaryDisplay:
@@ -1044,14 +1061,14 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
     def __repr__(self) -> str:
         return (
             "Metrics summary:\n"
-            f"{self.summarize().frame()!r}\n"
+            f"{self._formatted_summary_frame()!r}\n"
             "Explore available methods with .help()."
         )
 
     def _repr_html_(self) -> str:
         return (
             "<p>Metrics summary:</p>"
-            f"{self.summarize().frame()._repr_html_()}"
+            f"{self._formatted_summary_frame()._repr_html_()}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

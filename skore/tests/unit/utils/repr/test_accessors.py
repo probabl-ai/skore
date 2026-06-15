@@ -63,9 +63,15 @@ def test_data_accessor_repr(report_with_data):
         assert method.name in html
 
 
+def _metrics_summary_frame(metrics_accessor):
+    if hasattr(metrics_accessor, "_formatted_summary_frame"):
+        return metrics_accessor._formatted_summary_frame()
+    return metrics_accessor.summarize().frame()
+
+
 def test_metrics_accessor_repr(report):
     """Metrics accessor __repr__ shows the summary frame and hints."""
-    frame_repr = repr(report.metrics.summarize().frame())
+    frame_repr = repr(_metrics_summary_frame(report.metrics))
     result = repr(report.metrics)
 
     assert result.startswith("Metrics summary:")
@@ -76,7 +82,7 @@ def test_metrics_accessor_repr(report):
 
 def test_metrics_accessor_repr_html(report):
     """Metrics accessor _repr_html_ shows the summary frame and hints."""
-    frame_html = report.metrics.summarize().frame()._repr_html_()
+    frame_html = _metrics_summary_frame(report.metrics)._repr_html_()
     html = report.metrics._repr_html_()
 
     assert html.startswith("<p>Metrics summary:</p>")
