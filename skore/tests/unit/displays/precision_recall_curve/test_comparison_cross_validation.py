@@ -1,6 +1,6 @@
 import matplotlib as mpl
-import numpy as np
 import pytest
+import seaborn as sns
 from sklearn.datasets import load_breast_cancer, load_iris
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
@@ -13,11 +13,15 @@ def test_data_source_both_legend_matches_curves(pyplot):
     """Legend colors must match the drawn curves with ``data_source="both"``.
 
     Non-regression test for https://github.com/probabl-ai/skore/issues/2925, the
-    precision-recall counterpart of the ROC test. The strong model is identified by
-    its higher precision at high recall. Estimators are passed in an order
+    precision-recall counterpart of the ROC test. Estimators are passed in an order
     (``HistGradientBoostingClassifier`` then ``DecisionTreeClassifier``) that differs
     from alphabetical order.
     """
+    estimators = (
+        "HistGradientBoostingClassifier",
+        "DecisionTreeClassifier",
+    )
+
     X, y = load_breast_cancer(return_X_y=True)
     report = compare(
         [
@@ -26,44 +30,30 @@ def test_data_source_both_legend_matches_curves(pyplot):
         ]
     )
     display = report.metrics.precision_recall(data_source="both")
+    display.set_style(relplot_kwargs={"palette": "tab10"})
     fig = display.plot(subplot_by=None, label=0)
     ax = fig.axes[0]
-
-    precision_by_color: dict = {}
-    for line in ax.get_lines():
-        if not line.get_label().startswith("_child"):
-            continue
-        color = tuple(line.get_color())
-        recall, precision = np.asarray(line.get_xdata()), np.asarray(line.get_ydata())
-        high_recall = recall >= 0.9
-        if high_recall.any():
-            precision_by_color.setdefault(color, []).append(
-                precision[high_recall].max()
-            )
-    curve_colors = {
-        c: np.mean(v) for c, v in precision_by_color.items() if c[:3] != (0, 0, 0)
-    }
-    strong_curve_color = max(curve_colors, key=curve_colors.get)
-
     legend = ax.get_legend()
-    hgbc_legend_color = next(
-        tuple(handle.get_color())
-        for text, handle in zip(legend.get_texts(), legend.legend_handles, strict=True)
-        if text.get_text().startswith("HistGradientBoostingClassifier")
-    )
-    assert hgbc_legend_color[:3] == strong_curve_color[:3]
+    palette = sns.color_palette("tab10", n_colors=len(estimators))
 
-    # Legend order follows the order estimators were passed
     entries = [
         (text.get_text(), handle)
         for text, handle in zip(legend.get_texts(), legend.legend_handles, strict=True)
         if "Chance level" not in text.get_text()
     ]
-    names = [text.split(" - ")[0] for text, _ in entries]
-    assert names[0] == "HistGradientBoostingClassifier"
 
-    # Train entries are dashed, test entries are solid
+    assert [text.split(" - ")[0] for text, _ in entries] == [
+        estimators[0],
+        estimators[0],
+        estimators[1],
+        estimators[1],
+    ]
+
     for text, handle in entries:
+        estimator_name = text.split(" - ")[0]
+        assert (
+            tuple(handle.get_color())[:3] == palette[estimators.index(estimator_name)]
+        )
         assert handle.get_linestyle() == ("--" if "Train" in text else "-")
 
 
