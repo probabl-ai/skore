@@ -746,8 +746,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
         table_report = skrub.TableReport(
             df,
-            max_plot_columns=0,
-            max_association_columns=0,
+            plot_distributions=False,
             verbose=False,
         )
         table_report._set_minimal_mode()

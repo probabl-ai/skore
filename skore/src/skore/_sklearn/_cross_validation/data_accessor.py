@@ -150,13 +150,3 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             stacklevel=2,
         )
         return self.summarize(**kwargs)
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name=f"skore.{self._parent.__class__.__name__}.data"
-        )

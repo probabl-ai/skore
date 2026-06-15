@@ -845,8 +845,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 subsample_strategy="head",
                 seed=None,
             ),
-            max_plot_columns=0,
-            max_association_columns=0,
+            plot_distributions=False,
             verbose=False,
         )
         table_report._set_minimal_mode()
