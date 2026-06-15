@@ -1,9 +1,60 @@
 import matplotlib as mpl
 import pytest
-from sklearn.datasets import load_iris
+import seaborn as sns
+from sklearn.datasets import load_breast_cancer, load_iris
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 
-from skore import ComparisonReport, CrossValidationReport
+from skore import ComparisonReport, CrossValidationReport, compare, evaluate
+
+
+def test_data_source_both_legend_matches_curves(pyplot):
+    """Legend colors must match the drawn curves with ``data_source="both"``.
+
+    Non-regression test for https://github.com/probabl-ai/skore/issues/2925, the
+    precision-recall counterpart of the ROC test. Estimators are passed in an order
+    (``HistGradientBoostingClassifier`` then ``DecisionTreeClassifier``) that differs
+    from alphabetical order.
+    """
+    estimators = (
+        "HistGradientBoostingClassifier",
+        "DecisionTreeClassifier",
+    )
+
+    X, y = load_breast_cancer(return_X_y=True)
+    report = compare(
+        [
+            evaluate(HistGradientBoostingClassifier(), X, y, splitter=2),
+            evaluate(DecisionTreeClassifier(max_depth=1), X, y, splitter=2),
+        ]
+    )
+    display = report.metrics.precision_recall(data_source="both")
+    display.set_style(relplot_kwargs={"palette": "tab10"})
+    fig = display.plot(subplot_by=None, label=0)
+    ax = fig.axes[0]
+    legend = ax.get_legend()
+    palette = sns.color_palette("tab10", n_colors=len(estimators))
+
+    entries = [
+        (text.get_text(), handle)
+        for text, handle in zip(legend.get_texts(), legend.legend_handles, strict=True)
+        if "Chance level" not in text.get_text()
+    ]
+
+    assert [text.split(" - ")[0] for text, _ in entries] == [
+        estimators[0],
+        estimators[0],
+        estimators[1],
+        estimators[1],
+    ]
+
+    for text, handle in entries:
+        estimator_name = text.split(" - ")[0]
+        assert (
+            tuple(handle.get_color())[:3] == palette[estimators.index(estimator_name)]
+        )
+        assert handle.get_linestyle() == ("--" if "Train" in text else "-")
 
 
 def test_legend_binary_classification(

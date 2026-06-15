@@ -1046,17 +1046,18 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     def roc(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
     ) -> RocCurveDisplay:
         """Plot the ROC curve.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "both" : use both the train and test and show them side-by-side.
 
         Returns
         -------
@@ -1102,17 +1103,18 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     def precision_recall(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
     ) -> PrecisionRecallCurveDisplay:
         """Plot the precision-recall curve.
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "both" : use both the train and test and show them side-by-side.
 
         Returns
         -------
