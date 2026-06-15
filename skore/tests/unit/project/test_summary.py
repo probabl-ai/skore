@@ -527,7 +527,7 @@ class TestSummary:
         assert "No dated reports to plot." in html
         assert "data-key=" in html
         # Inline SVG icons replace the text labels / Font Awesome (no external dep).
-        assert 'class="summary-select-eye"' in html
+        assert 'class="summary-select-col"' in html
         assert 'class="summary-sort-icon summary-sort-icon--asc"' in html
         # The columns menu lets the user toggle which columns are shown.
         assert 'class="skore-summary-columns-toggle"' in html
