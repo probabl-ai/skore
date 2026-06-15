@@ -403,7 +403,7 @@ def test_skd014_skips_non_numeric_hyperparameters(regression_data, param_grid):
     [
         GridSearchCV(Ridge(), param_grid={"alpha": [0.1, 1.0, 10.0]}, cv=2),
         RandomizedSearchCV(
-            Ridge(), param_distributions={"alpha": [0.1, 1.0, 10.0]}, cv=2, n_iter=2
+            Ridge(), param_distributions={"alpha": [0.1, 1.0, 10.0]}, cv=2
         ),
     ],
 )
