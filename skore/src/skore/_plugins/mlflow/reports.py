@@ -192,7 +192,7 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
     yield Params(estimator.get_params())
     yield Model(estimator, _sample_input_example(report.X))
 
-    yield Artifact("data.analyze", _data_analyze_html(report))
+    yield Artifact("data.summarize", _data_analyze_html(report))
 
     yield _dataset_from_Xy(report.X, report.y)
 
@@ -222,7 +222,7 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
     yield Params(estimator.get_params())
     yield Model(estimator, _sample_input_example(report.X_test))
 
-    yield Artifact("data.analyze", _data_analyze_html(report))
+    yield Artifact("data.summarize", _data_analyze_html(report))
 
     yield _dataset_from_Xy(report.X_train, report.y_train, context="training")
     yield _dataset_from_Xy(report.X_test, report.y_test, context="evaluation")
@@ -231,7 +231,7 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
 def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
     with switch_plt_backend(), plt.ioff():
         try:
-            return report.data.analyze()._repr_html_()
+            return report.data.summarize()._repr_html_()
         finally:
             plt.close("all")
 

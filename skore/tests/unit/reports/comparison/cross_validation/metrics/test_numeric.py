@@ -296,3 +296,32 @@ def test_precision_recall_pos_label_default(metric):
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result_both_labels = getattr(report.metrics, metric)().reset_index()
     assert result_both_labels["Label"].to_list() == ["A", "B"]
+
+
+# report.metrics.get
+
+
+def test_get(comparison_cross_validation_reports_binary_classification):
+    """``get`` works."""
+    report = comparison_cross_validation_reports_binary_classification
+
+    assert isinstance(report.metrics.get("precision"), pd.DataFrame)
+    with pytest.raises(KeyError):
+        report.metrics.get("non-existing metric")
+
+
+def test_get_custom(comparison_cross_validation_reports_binary_classification):
+    """``get`` works for custom metrics."""
+    report = comparison_cross_validation_reports_binary_classification
+
+    with pytest.raises(KeyError):
+        report.metrics.get("hello")
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.get("hello").to_dict() == {
+        ("mean", "DummyClassifier_1"): {"Hello": 1.0},
+        ("mean", "DummyClassifier_2"): {"Hello": 1.0},
+        ("std", "DummyClassifier_1"): {"Hello": 0.0},
+        ("std", "DummyClassifier_2"): {"Hello": 0.0},
+    }

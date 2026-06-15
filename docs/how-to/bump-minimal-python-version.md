@@ -9,3 +9,6 @@
   - "You need Python>=3.x"
 - Update `CONTRIBUTING.rst`
   - "You will need ``python >=3.x``"
+- Update `python-version` in github workflows
+  - `.github/workflows/release.yml`
+  - `.github/workflows/sphinx.yml`

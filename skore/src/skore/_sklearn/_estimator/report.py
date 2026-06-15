@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 import numpy as np
 import skrub
 from numpy.typing import ArrayLike
-from sklearn.base import MetaEstimatorMixin, clone
+from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import (
@@ -33,6 +33,7 @@ from skore._utils._measure_time import MeasureTime
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
@@ -69,9 +70,11 @@ def _check_estimator_and_data(
                 "estimator is a SkrubLearner. "
                 "Provide train_data and test_data instead."
             )
-        test_data = (
-            None if test_data is None else eval_X_y(estimator.data_op, test_data)
-        )
+        if test_data is None:
+            raise TypeError(
+                "test_data must be provided when estimator is a SkrubLearner."
+            )
+        test_data = eval_X_y(estimator.data_op, test_data)
         train_data = (
             None if train_data is None else eval_X_y(estimator.data_op, train_data)
         )
@@ -84,7 +87,12 @@ def _check_estimator_and_data(
                 "Provide X_train, y_train, X_test, y_test instead."
             )
         estimator = to_learner(estimator)
-        test_data = None if X_test is None else {"_skrub_X": X_test, "_skrub_y": y_test}
+        if X_test is None:
+            raise TypeError(
+                "X_test must be provided (unless estimator is a "
+                "SkrubLearner and test_data is provided instead)."
+            )
+        test_data = {"_skrub_X": X_test, "_skrub_y": y_test}
         train_data = (
             None if X_train is None else {"_skrub_X": X_train, "_skrub_y": y_train}
         )
@@ -317,7 +325,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 f"It should be one of: {labels!r}."
             )
 
-    def get_state(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a serializable representation of the report state.
 
         This state is meant to ease serialization/deserialization of
@@ -371,8 +379,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         }
 
     @classmethod
-    def from_state(cls, state: dict[str, Any]) -> EstimatorReport:
-        """Rebuild a report from :meth:`get_state` output."""
+    def from_dict(cls, state: dict[str, Any]) -> EstimatorReport:
+        """Build a report from :meth:`to_dict` output."""
         version = state.get("version")
         if version != _STATE_VERSION:
             # For now, no backward compatibility
@@ -820,23 +828,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return f"""{self.__class__.__name__}:
         {self.estimator_name_!r}
 
-        {
-            "No data provided."
-            if (data_source := self._repr_data_source()) is None
-            else self.metrics.summarize(data_source=data_source).frame()
-        }
+        {self.metrics.summarize(data_source="test").frame()}
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
-
-    def _repr_data_source(self) -> Literal["train", "test", "both"] | None:
-        match self.X_train, self.X_test:
-            case None, None:
-                return None
-            case _, None:
-                return "train"
-            case None, _:
-                return "test"
-            case _:
-                return "both"
 
     def _html_repr_fragments(self) -> dict[str, str]:
         """HTML snippets for the report body (metrics, estimator diagram, data table).
@@ -844,31 +837,25 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
         one report's views in the comparison HTML repr.
         """
-        data_source = self._repr_data_source()
-        if data_source is None:
-            table_report_html = "<p>No data provided</p>"
-            metrics_html = "<p>No data provided</p>"
-        else:
-            table_report = skrub.TableReport(
-                self.data._prepare_dataframe_for_display(
-                    data_source=data_source,
-                    with_y=True,
-                    subsample=None,
-                    subsample_strategy="head",
-                    seed=None,
-                ),
-                max_plot_columns=0,
-                max_association_columns=0,
-                verbose=False,
-            )
-            table_report._set_minimal_mode()
-            table_report_html = table_report.html_snippet()
-            metrics_html = (
-                self.metrics.summarize(data_source=data_source)
-                .frame()
-                .reset_index()
-                .to_html(index=False)
-            )
+        table_report = skrub.TableReport(
+            self.data._prepare_dataframe_for_display(
+                data_source="both" if self.X_train is not None else "test",
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            plot_distributions=False,
+            verbose=False,
+        )
+        table_report._set_minimal_mode()
+        table_report_html = table_report.html_snippet()
+        metrics_html = (
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .reset_index()
+            .to_html(index=False)
+        )
         try:
             estimator_html = repair_estimator_html_for_slotted_host(
                 self.estimator_._repr_html_()
@@ -948,89 +935,30 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         str
             The markdown summary of the report.
         """
-        return render_template("estimator_report_markdown.j2", self._markdown_context())
-
-    def _markdown_context(self) -> dict[str, object]:
-        data_source = self._repr_data_source()
-        context: dict[str, object] = {
-            "report_class_name": self.__class__.__name__,
-            "estimator_name": self.estimator_name_,
-            "estimator_kind": self._markdown_estimator_kind(),
-            "ml_task": self._ml_task,
-            "fit_time": self._fit_time,
-            "predict_time": None,
-            "pos_label_repr": (
-                repr(self._pos_label) if self._pos_label is not None else None
+        metrics_text = repr(self.metrics.summarize(data_source="test").frame())
+        timings = self.metrics.timings()
+        summary = summarize_dataframe(
+            self.data._prepare_dataframe_for_display(
+                data_source="both" if self.X_train is not None else "test",
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
             ),
-            "estimator_repr": repr(self.estimator_),
-            "data_source": data_source,
-            "metrics_text": (
-                None
-                if data_source is None
-                else self.metrics.summarize(data_source=data_source).frame().to_string()
-            ),
-            "checks_text": repr(self.checks.summarize(fast_mode=True)),
-            "data_label": None,
-            "data_n_rows": None,
-            "data_n_columns": None,
-            "data_n_constant_columns": None,
-            "data_columns": None,
-        }
-        if data_source is not None:
-            summary = summarize_dataframe(
-                self.data._prepare_dataframe_for_display(
-                    data_source=data_source,
-                    with_y=True,
-                    subsample=None,
-                    subsample_strategy="head",
-                    seed=None,
+            with_plots=False,
+            with_associations=False,
+            verbose=0,
+        )
+        return render_template(
+            "estimator_report_markdown.j2",
+            {
+                **report_markdown_context(self),
+                "fit_time": timings.get("fit_time"),
+                "predict_time": timings.get("predict_time_test"),
+                "metrics_text": metrics_text,
+                **markdown_data_section(
+                    summary,
+                    data_label="full" if self.X_train is not None else "test",
                 ),
-                with_plots=False,
-                with_associations=False,
-                verbose=0,
-            )
-            context.update(
-                {
-                    "predict_time": self._predict_time["train"]
-                    if data_source == "train"
-                    else self._predict_time["test"],
-                    "predict_label": "train" if data_source == "train" else "test",
-                    "data_label": "train+test"
-                    if data_source == "both"
-                    else data_source,
-                    "data_n_rows": summary["n_rows"],
-                    "data_n_columns": summary["n_columns"],
-                    "data_n_constant_columns": summary["n_constant_columns"],
-                    "data_columns": [
-                        {
-                            "name": col["name"],
-                            "dtype": col["dtype"],
-                            "null_count": col.get("null_count", ""),
-                            "n_unique": col.get("n_unique", ""),
-                        }
-                        for col in summary["columns"]
-                    ],
-                }
-            )
-        return context
-
-    def _markdown_estimator_kind(self) -> str:
-        if isinstance(self.estimator, skrub.DataOp):
-            return "skrub DataOp"
-        if is_skrub_learner(self.estimator):
-            return "skrub SkrubLearner"
-        if isinstance(self.estimator, Pipeline):
-            return "Pipeline"
-        if isinstance(self.estimator, MetaEstimatorMixin):
-            inner = getattr(self.estimator, "best_estimator_", None) or getattr(
-                self.estimator, "estimator", None
-            )
-            if inner is not None:
-                return (
-                    f"meta-estimator {type(self.estimator).__name__} "
-                    f"wrapping {type(inner).__name__}"
-                )
-            return f"meta-estimator {type(self.estimator).__name__}"
-        if type(self.estimator).__module__.startswith("sklearn."):
-            return "scikit-learn estimator"
-        return f"{type(self.estimator).__module__.split('.')[0]} estimator"
+            },
+        )

@@ -37,7 +37,7 @@ def cross_validation_report(X_y):
 @pytest.fixture(params=["estimator_report", "cross_validation_report"], scope="module")
 def display(request):
     report = request.getfixturevalue(request.param)
-    return report.data.analyze()
+    return report.data.summarize()
 
 
 @pytest.mark.parametrize("dtype", ["category", "str"])
@@ -101,7 +101,7 @@ def test_truncate_top_k_categories_return_as_is(col):
 
 
 def test_corr_plot(pyplot, estimator_report):
-    display = estimator_report.data.analyze(data_source="train")
+    display = estimator_report.data.summarize(data_source="train")
     fig = display.plot(kind="corr")
     ax = fig.axes[0]
     assert isinstance(ax.collections[0], QuadMesh)
