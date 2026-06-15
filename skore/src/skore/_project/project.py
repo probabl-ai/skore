@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, Any
 
+from pandas import DataFrame, Index, MultiIndex, RangeIndex
+
 from skore._project import plugin
 from skore._project._summary import Summary
 from skore._project.dependencies import assert_optional_dependencies_installed
@@ -115,7 +117,7 @@ class Project:
 
     >>> summary = local_project.summarize()
     >>> summary = summary.query("rmse < 67")
-    >>> reports = summary.reports()
+    >>> reports = summary.compare()
 
     See Also
     --------
@@ -307,7 +309,7 @@ class Project:
         >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
         >>> project.put("my-regression", report)
         >>> summary = project.summarize()
-        >>> report_id = summary.index.get_level_values("id")[0]
+        >>> report_id = summary.frame().index.get_level_values("id")[0]
         >>> retrieved = project.get(report_id)
         >>> type(retrieved).__name__
         'EstimatorReport'
@@ -330,7 +332,15 @@ class Project:
         :func:`~skore.compare` :
             Compare selected reports side by side.
         """
-        return Summary.factory(self.__project)
+        frame = DataFrame(self.__project.summarize(), copy=False)
+        if not frame.empty:
+            frame.index = MultiIndex.from_arrays(
+                [
+                    RangeIndex(len(frame)),
+                    Index(frame.pop("id"), name="id", dtype=str),
+                ]
+            )
+        return Summary(frame, self.__project)
 
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()

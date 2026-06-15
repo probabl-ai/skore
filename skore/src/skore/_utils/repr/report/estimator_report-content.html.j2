@@ -8,7 +8,7 @@
 <div class="container">
     <header class="title">{{ report_title | e }}</header>
     <div class="report-tabset">
-        {% include "_report_tabset_chrome.html.j2" %}
+        {% include "common/_report_tabset_chrome.html.j2" %}
         <div class="report-tab-panels">
             <div class="report-tab-panel">
                 <div class="report-section report-metrics">{{ metrics_summary | safe }}</div>
@@ -24,7 +24,7 @@
             </div>
             <div class="report-tab-panel">
                 <div class="report-section report-help">
-                    {% include "_report_help_tree.html.j2" %}
+                    {% include "common/_report_help_tree.html.j2" %}
                 </div>
             </div>
         </div>
