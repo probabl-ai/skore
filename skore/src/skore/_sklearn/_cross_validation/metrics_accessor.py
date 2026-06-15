@@ -1114,7 +1114,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test and show themside-by-side.
+            - "both" : use both the train and test and show them side-by-side.
 
         Returns
         -------

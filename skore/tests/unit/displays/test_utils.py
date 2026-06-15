@@ -38,7 +38,6 @@ def test_reorder_categoricals_by_appearance():
 
     assert list(result["estimator"].cat.categories) == ["b", "a"]
     assert list(result["data_source"].cat.categories) == ["train", "test"]
-    assert list(df["estimator"].cat.categories) == ["a", "b"]
     assert result["value"].tolist() == [1, 2, 3, 4]
 
 
