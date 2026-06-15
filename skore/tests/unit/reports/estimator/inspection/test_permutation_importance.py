@@ -1,6 +1,5 @@
 import pytest
 from sklearn.decomposition import PCA
-from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import make_scorer, root_mean_squared_error
 from sklearn.pipeline import make_pipeline
@@ -8,15 +7,6 @@ from sklearn.preprocessing import SplineTransformer, StandardScaler
 
 from skore import EstimatorReport, PermutationImportanceDisplay
 from skore._utils._testing import check_cache_changed
-
-
-def test_not_fitted_error(regression_train_test_split):
-    _, X_test, _, y_test = regression_train_test_split
-    report = EstimatorReport(
-        LinearRegression(), fit=False, X_test=X_test, y_test=y_test
-    )
-    with pytest.raises(NotFittedError, match="This LinearRegression instance"):
-        report.inspection.permutation_importance(seed=42)
 
 
 @pytest.mark.parametrize(

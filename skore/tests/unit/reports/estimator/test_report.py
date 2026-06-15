@@ -20,8 +20,7 @@ from sklearn.utils.validation import check_is_fitted
 from skore import EstimatorReport, evaluate
 
 
-@pytest.mark.parametrize("fit", [True, "auto"])
-def test_estimator_not_fitted(fit):
+def test_estimator_not_fitted():
     """Test that an error is raised when trying to create a report from an unfitted
     estimator and no data are provided to fit the estimator.
     """
@@ -29,23 +28,17 @@ def test_estimator_not_fitted(fit):
     err_msg = "The training data is required to fit the estimator. "
     X, y = make_regression(n_samples=2)
     with pytest.raises(ValueError, match=err_msg):
-        EstimatorReport(estimator, fit=fit, X_test=X, y_test=y)
+        EstimatorReport(estimator, X_test=X, y_test=y)
 
 
-@pytest.mark.parametrize("fit", [True, "auto"])
-def test_from_unfitted_estimator(fit):
+def test_from_unfitted_estimator():
     """Check the general behaviour of passing an unfitted estimator and training
     data."""
     X, y = make_regression(random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     estimator = LinearRegression()
     report = EstimatorReport(
-        estimator,
-        fit=fit,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
 
     check_is_fitted(report.estimator_)
@@ -64,15 +57,14 @@ def test_from_unfitted_estimator(fit):
         report.y_train = y_train
 
 
-@pytest.mark.parametrize("fit", [False, "auto"])
-def test_from_fitted_estimator(forest_binary_classification_with_test, fit):
-    """Check the general behaviour of passing an already fitted estimator without
-    refitting it."""
+def test_from_fitted_estimator(forest_binary_classification_with_test):
+    """Check the general behaviour of passing a pre-fitted estimator."""
     estimator, X, y = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, fit=fit, X_test=X, y_test=y)
+    report = EstimatorReport(estimator, X_test=X, y_test=y)
 
     check_is_fitted(report.estimator_)
     assert isinstance(report.estimator_, RandomForestClassifier)
+
     assert report.X_train is None
     assert report.y_train is None
     assert report.X_test is X
@@ -86,12 +78,8 @@ def test_from_fitted_estimator(forest_binary_classification_with_test, fit):
         report.y_train = y
 
 
-def test_from_fitted_pipeline(
-    pipeline_binary_classification_with_test,
-):
-    """Check the general behaviour of passing an already fitted pipeline without
-    refitting it.
-    """
+def test_from_fitted_pipeline(pipeline_binary_classification_with_test):
+    """Check the general behaviour of passing a pre-fitted pipeline."""
     estimator, X, y = pipeline_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X, y_test=y)
 
@@ -105,7 +93,7 @@ def test_from_fitted_pipeline(
 
 
 @pytest.mark.parametrize(
-    "Estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods",
+    "estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods",
     [
         (
             RandomForestClassifier(),
@@ -128,11 +116,12 @@ def test_from_fitted_pipeline(
     ],
 )
 def test_check_support_plot(
-    Estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods
+    estimator, X_test, y_test, supported_plot_methods, not_supported_plot_methods
 ):
     """Check that the available plot methods are correctly registered."""
-    estimator = Estimator.fit(X_test, y_test)
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report = EstimatorReport(
+        estimator.fit(X_test, y_test), X_test=X_test, y_test=y_test
+    )
 
     for supported_plot_method in supported_plot_methods:
         assert hasattr(report.metrics, supported_plot_method)
@@ -332,25 +321,17 @@ def test_clustering():
 
 
 def test_has_no_deep_copy():
-    """Check that we raise a warning if the deep copy failed with a fitted
-    estimator."""
+    """Check that we raise a warning if the deep copy failed."""
     X, y = make_classification(n_classes=2, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
 
     estimator = LogisticRegression()
+
     # Make it so deepcopy does not work
     estimator.__reduce_ex__ = None
     estimator.__reduce__ = None
 
     with pytest.warns(UserWarning, match="Deepcopy failed"):
-        EstimatorReport(
-            estimator,
-            fit=False,
-            X_train=X_train,
-            X_test=X_test,
-            y_train=y_train,
-            y_test=y_test,
-        )
+        EstimatorReport(estimator, X_train=X, y_train=y, X_test=X, y_test=y)
 
 
 class _DummyClassifierBadRepr(DummyClassifier):
@@ -449,7 +430,7 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
 def prefit_regression_report_no_train_data():
     X, y = make_regression(random_state=42)
     estimator = LinearRegression().fit(X, y)
-    return EstimatorReport(estimator, fit=False, X_test=X, y_test=y)
+    return EstimatorReport(estimator, X_test=X, y_test=y)
 
 
 def test_prefit_no_train_data_repr_methods(prefit_regression_report_no_train_data):
@@ -579,7 +560,6 @@ def test_from_dict_bypasses_init_and_restores_state(
     restored = EstimatorReport.from_dict(state)
 
     assert restored.id == report.id
-    assert restored.fit == report.fit
     assert restored._fit_time == report._fit_time
     assert restored.X_test is report.X_test
     assert restored.ml_task == report.ml_task
