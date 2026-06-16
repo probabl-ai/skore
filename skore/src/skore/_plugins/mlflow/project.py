@@ -69,6 +69,11 @@ class Metadata(TypedDict):  # noqa: D101
     roc_auc_mean: float | None
     fit_time_mean: float | None
     predict_time_mean: float | None
+    rmse_std: float | None
+    log_loss_std: float | None
+    roc_auc_std: float | None
+    fit_time_std: float | None
+    predict_time_std: float | None
 
 
 def report_type(report: EstimatorReport | CrossValidationReport) -> str:
@@ -175,7 +180,7 @@ class Project:
                 "is already open. Call mlflow.end_run() before calling Project.put()."
             )
 
-        state = externalize(report.get_state(), self._write_object_in_storage)
+        state = externalize(report.to_dict(), self._write_object_in_storage)
 
         with (
             disable_discrete_autologging(["sklearn"]),
@@ -239,9 +244,9 @@ class Project:
         state = internalize(joblib.load(pickle_path), self._load_object_from_storage)
         report_type = state["metadata"]["report_type"]
         if report_type == "estimator":
-            return EstimatorReport.from_state(state)
+            return EstimatorReport.from_dict(state)
         else:
-            return CrossValidationReport.from_state(state)
+            return CrossValidationReport.from_dict(state)
 
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted models in insertion order."""
@@ -288,6 +293,11 @@ class Project:
                 "roc_auc_mean": run.data.metrics.get("roc_auc"),
                 "fit_time_mean": metrics["fit_time"],
                 "predict_time_mean": metrics["predict_time"],
+                "rmse_std": run.data.metrics.get("rmse_std"),
+                "log_loss_std": run.data.metrics.get("log_loss_std"),
+                "roc_auc_std": run.data.metrics.get("roc_auc_std"),
+                "fit_time_std": run.data.metrics.get("fit_time_std"),
+                "predict_time_std": run.data.metrics.get("predict_time_std"),
             }
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
@@ -310,6 +320,11 @@ class Project:
             "roc_auc_mean": None,
             "fit_time_mean": None,
             "predict_time_mean": None,
+            "rmse_std": None,
+            "log_loss_std": None,
+            "roc_auc_std": None,
+            "fit_time_std": None,
+            "predict_time_std": None,
         }
         return cast(Metadata, {**metadata, **metrics})
 

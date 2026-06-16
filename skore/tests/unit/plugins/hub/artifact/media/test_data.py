@@ -52,6 +52,7 @@ def test_table_report(binary_classification, Media, data_source, upload_mock, pr
         "name": "table_report",
         "data_source": data_source,
         "checksum": checksum,
+        "parameters": None,
     }
 
     # wrong type

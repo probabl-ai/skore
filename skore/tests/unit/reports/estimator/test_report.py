@@ -4,7 +4,6 @@ from io import BytesIO
 
 import joblib
 import numpy as np
-import pandas as pd
 import pytest
 import skrub
 from sklearn.cluster import KMeans
@@ -28,8 +27,9 @@ def test_estimator_not_fitted(fit):
     """
     estimator = LinearRegression()
     err_msg = "The training data is required to fit the estimator. "
+    X, y = make_regression(n_samples=2)
     with pytest.raises(ValueError, match=err_msg):
-        EstimatorReport(estimator, fit=fit, X_test=None, y_test=None)
+        EstimatorReport(estimator, fit=fit, X_test=X, y_test=y)
 
 
 @pytest.mark.parametrize("fit", [True, "auto"])
@@ -213,34 +213,6 @@ def test_pickle(forest_binary_classification_with_test):
 
     with BytesIO() as stream:
         joblib.dump(report, stream)
-
-
-def test_flat_index(forest_binary_classification_with_test):
-    """Check that the index is flattened when `flat_index` is True.
-
-    Since `pos_label` is None, then by default a MultiIndex would be returned.
-    Here, we force to have a single-index by passing `flat_index=True`.
-    """
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    result = report.metrics.summarize().frame(flat_index=True)
-    assert result.shape == (11, 1)
-    assert isinstance(result.index, pd.Index)
-    assert result.index.tolist() == [
-        "score",
-        "accuracy",
-        "precision_0",
-        "precision_1",
-        "recall_0",
-        "recall_1",
-        "roc_auc",
-        "log_loss",
-        "brier_score",
-        "fit_time_s",
-        "predict_time_s",
-    ]
-
-    assert result.columns.tolist() == ["RandomForestClassifier"]
 
 
 def test_get_predictions():
@@ -462,6 +434,50 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
     _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
 
 
+@pytest.fixture
+def prefit_regression_report_no_train_data():
+    X, y = make_regression(random_state=42)
+    estimator = LinearRegression().fit(X, y)
+    return EstimatorReport(estimator, fit=False, X_test=X, y_test=y)
+
+
+def test_prefit_no_train_data_repr_methods(prefit_regression_report_no_train_data):
+    repr_str = repr(prefit_regression_report_no_train_data)
+    assert "R²" in repr_str
+    assert "to_markdown()" in repr_str
+
+    markdown = prefit_regression_report_no_train_data.to_markdown()
+    assert markdown.startswith("# EstimatorReport: LinearRegression")
+    for section in ("## Estimator", "## Metrics", "## Checks (fast mode)", "## Data"):
+        assert section in markdown
+    assert "LinearRegression()" in markdown
+
+    fragments = prefit_regression_report_no_train_data._html_repr_fragments()
+    assert "R²" in fragments["metrics_summary"]
+
+
+def test_text_repr(forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    report = evaluate(estimator, X, y, splitter=0.2)
+    repr_str = repr(report)
+    assert repr_str.startswith("EstimatorReport:")
+    assert report.estimator_name_ in repr_str
+    assert "to_markdown()" in repr_str
+    assert "Accuracy" in repr_str
+
+
+def test_to_markdown(forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    report = evaluate(estimator, X, y, splitter=0.2)
+    markdown = report.to_markdown()
+    assert markdown.startswith(f"# EstimatorReport: {report.estimator_name_}")
+    for section in ("## Estimator", "## Metrics", "## Checks (fast mode)", "## Data"):
+        assert section in markdown
+    assert "test set" in markdown
+    assert "fit time:" in markdown
+    assert "predict time (on test set):" in markdown
+
+
 def test_report_get_data_and_y_true_error():
     """Check that we raise the proper error in `_get_data_and_y_true`."""
     X, y = make_classification(n_samples=10, n_classes=2, random_state=42)
@@ -517,18 +533,18 @@ def test_report_with_data_op():
     assert isinstance(report.metrics.accuracy(), float)
 
 
-def test_get_state_after_predict_time(logistic_binary_classification_with_test):
-    """get_state should not fail after `predict_time` was called.
+def test_to_dict_after_predict_time(logistic_binary_classification_with_test):
+    """to_dict should not fail after `predict_time` was called.
 
     Non-regression test for https://github.com/probabl-ai/skore/pull/2950
     """
     estimator, X_test, y_test = logistic_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     report.metrics.predict_time()
-    report.get_state()
+    report.to_dict()
 
 
-def test_from_state_bypasses_init_and_restores_state(
+def test_from_dict_bypasses_init_and_restores_state(
     monkeypatch, logistic_binary_classification_with_test
 ):
     estimator, X_test, y_test = logistic_binary_classification_with_test
@@ -541,15 +557,15 @@ def test_from_state_bypasses_init_and_restores_state(
     expected_accuracy = report.metrics.accuracy()
     report.cache_predictions()
     report.metrics.add("f1", name="F1")
-    state = report.get_state()
+    state = report.to_dict()
     assert state["metadata"]["report_type"] == report._report_type
 
     def _unexpected_init(self, *args, **kwargs):
-        raise AssertionError("__init__ should not be called by from_state")
+        raise AssertionError("__init__ should not be called by from_dict")
 
     monkeypatch.setattr(EstimatorReport, "__init__", _unexpected_init)
 
-    restored = EstimatorReport.from_state(state)
+    restored = EstimatorReport.from_dict(state)
 
     assert restored.id == report.id
     assert restored.fit == report.fit
@@ -566,13 +582,13 @@ def test_from_state_bypasses_init_and_restores_state(
     assert "F1" in df.index
 
 
-def test_from_state_rejects_unknown_version(logistic_binary_classification_with_test):
+def test_from_dict_rejects_unknown_version(logistic_binary_classification_with_test):
     estimator, X_test, y_test = logistic_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    state = report.get_state() | {"version": 999}
+    state = report.to_dict() | {"version": 999}
 
     with pytest.raises(ValueError, match="Unexpected state version"):
-        EstimatorReport.from_state(state)
+        EstimatorReport.from_dict(state)
 
 
 def test_learner_report_root_node_not_an_estimator():
@@ -585,3 +601,18 @@ def test_learner_report_root_node_not_an_estimator():
         data_op.skb.make_learner(), train_data=split["train"], test_data=split["test"]
     )
     report.metrics.summarize(metric="accuracy")
+
+
+def test_no_data_error():
+    X, y = make_classification()
+    learner = (
+        skrub.X()
+        .skb.apply(DummyClassifier(), y=skrub.y())
+        .skb.make_learner()
+        .fit({"X": X, "y": y})
+    )
+    with pytest.raises(TypeError, match="test_data must be provided"):
+        EstimatorReport(learner)
+    estimator = DummyClassifier().fit(X, y)
+    with pytest.raises(TypeError, match="X_test must be provided"):
+        EstimatorReport(estimator)

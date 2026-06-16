@@ -1,12 +1,11 @@
-from io import BytesIO
-
-from matplotlib import pyplot as plt
 from pydantic import ValidationError
 from pytest import mark, param, raises
 
 from skore._plugins.hub.artifact.media import (
-    ConfusionMatrixDataFrameTest,
-    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixDataFrameTestAll,
+    ConfusionMatrixDataFrameTestNone,
+    ConfusionMatrixDataFrameTrainAll,
+    ConfusionMatrixDataFrameTrainNone,
     PrecisionRecallDataFrameTest,
     PrecisionRecallDataFrameTrain,
     PredictionErrorDataFrameTest,
@@ -14,32 +13,8 @@ from skore._plugins.hub.artifact.media import (
     RocDataFrameTest,
     RocDataFrameTrain,
 )
-from skore._plugins.hub.artifact.media.performance import PerformanceDataFrame
 from skore._plugins.hub.artifact.serializer import Serializer
 from skore._plugins.hub.json import dumps
-
-
-def serialize_svg(display) -> bytes:
-    with BytesIO() as stream:
-        fig = display.plot()
-        if fig is None:
-            # NOTE: backward compatibility for when `figure_` was stored as an attribute
-            # in the display object instead of being returned by `plot`.
-            fig = display.figure_
-        fig.savefig(stream, format="svg", bbox_inches="tight")
-        plt.close(fig)
-
-        figure_bytes = stream.getvalue()
-
-    return figure_bytes
-
-
-def serialize_dataframe(display) -> bytes:
-    frame = display.frame(**PerformanceDataFrame.get_frame_kwargs(display))
-
-    return dumps(
-        frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
-    )
 
 
 @mark.filterwarnings(
@@ -48,7 +23,7 @@ def serialize_dataframe(display) -> bytes:
     "ignore:The default of observed=False is deprecated.*:FutureWarning",
 )
 @mark.parametrize(
-    "Media,report,accessor,data_source,content_type,serialize",
+    "Media,report,accessor,data_source,content_type,parameters",
     (
         param(
             PrecisionRecallDataFrameTest,
@@ -56,7 +31,7 @@ def serialize_dataframe(display) -> bytes:
             "precision_recall",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_average_precision": True},
             id="PrecisionRecallDataFrameTest[estimator]",
         ),
         param(
@@ -65,7 +40,7 @@ def serialize_dataframe(display) -> bytes:
             "precision_recall",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_average_precision": True},
             id="PrecisionRecallDataFrameTrain[estimator]",
         ),
         param(
@@ -74,7 +49,7 @@ def serialize_dataframe(display) -> bytes:
             "precision_recall",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_average_precision": True},
             id="PrecisionRecallDataFrameTest[cross-validation]",
         ),
         param(
@@ -83,7 +58,7 @@ def serialize_dataframe(display) -> bytes:
             "precision_recall",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_average_precision": True},
             id="PrecisionRecallDataFrameTrain[cross-validation]",
         ),
         param(
@@ -92,7 +67,7 @@ def serialize_dataframe(display) -> bytes:
             "prediction_error",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            None,
             id="PredictionErrorDataFrameTest[estimator]",
         ),
         param(
@@ -101,7 +76,7 @@ def serialize_dataframe(display) -> bytes:
             "prediction_error",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            None,
             id="PredictionErrorDataFrameTrain[estimator]",
         ),
         param(
@@ -110,7 +85,7 @@ def serialize_dataframe(display) -> bytes:
             "prediction_error",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            None,
             id="PredictionErrorDataFrameTest[cross-validation]",
         ),
         param(
@@ -119,7 +94,7 @@ def serialize_dataframe(display) -> bytes:
             "prediction_error",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            None,
             id="PredictionErrorDataFrameTrain[cross-validation]",
         ),
         param(
@@ -128,7 +103,7 @@ def serialize_dataframe(display) -> bytes:
             "roc",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_roc_auc": True},
             id="RocDataFrameTest[estimator]",
         ),
         param(
@@ -137,7 +112,7 @@ def serialize_dataframe(display) -> bytes:
             "roc",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_roc_auc": True},
             id="RocDataFrameTrain[estimator]",
         ),
         param(
@@ -146,7 +121,7 @@ def serialize_dataframe(display) -> bytes:
             "roc",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_roc_auc": True},
             id="RocDataFrameTest[cross-validation]",
         ),
         param(
@@ -155,44 +130,80 @@ def serialize_dataframe(display) -> bytes:
             "roc",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
+            {"with_roc_auc": True},
             id="RocDataFrameTrain[cross-validation]",
         ),
         param(
-            ConfusionMatrixDataFrameTest,
+            ConfusionMatrixDataFrameTestAll,
             "binary_classification",
             "confusion_matrix",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
-            id="ConfusionMatrixDataFrameTest[estimator]",
+            {"threshold_value": "all"},
+            id="ConfusionMatrixDataFrameTestAll[estimator]",
         ),
         param(
-            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixDataFrameTestNone,
+            "binary_classification",
+            "confusion_matrix",
+            "test",
+            "application/vnd.dataframe",
+            {"threshold_value": None},
+            id="ConfusionMatrixDataFrameTestNone[estimator]",
+        ),
+        param(
+            ConfusionMatrixDataFrameTrainAll,
             "binary_classification",
             "confusion_matrix",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
-            id="ConfusionMatrixDataFrameTrain[estimator]",
+            {"threshold_value": "all"},
+            id="ConfusionMatrixDataFrameTrainAll[estimator]",
         ),
         param(
-            ConfusionMatrixDataFrameTest,
+            ConfusionMatrixDataFrameTrainNone,
+            "binary_classification",
+            "confusion_matrix",
+            "train",
+            "application/vnd.dataframe",
+            {"threshold_value": None},
+            id="ConfusionMatrixDataFrameTrainNone[estimator]",
+        ),
+        param(
+            ConfusionMatrixDataFrameTestAll,
             "cv_binary_classification",
             "confusion_matrix",
             "test",
             "application/vnd.dataframe",
-            serialize_dataframe,
-            id="ConfusionMatrixDataFrameTest[cross-validation]",
+            {"threshold_value": "all"},
+            id="ConfusionMatrixDataFrameTestAll[cross-validation]",
         ),
         param(
-            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixDataFrameTestNone,
+            "cv_binary_classification",
+            "confusion_matrix",
+            "test",
+            "application/vnd.dataframe",
+            {"threshold_value": None},
+            id="ConfusionMatrixDataFrameTestNone[cross-validation]",
+        ),
+        param(
+            ConfusionMatrixDataFrameTrainAll,
             "cv_binary_classification",
             "confusion_matrix",
             "train",
             "application/vnd.dataframe",
-            serialize_dataframe,
-            id="ConfusionMatrixDataFrameTrain[cross-validation]",
+            {"threshold_value": "all"},
+            id="ConfusionMatrixDataFrameTrainAll[cross-validation]",
+        ),
+        param(
+            ConfusionMatrixDataFrameTrainNone,
+            "cv_binary_classification",
+            "confusion_matrix",
+            "train",
+            "application/vnd.dataframe",
+            {"threshold_value": None},
+            id="ConfusionMatrixDataFrameTrainNone[cross-validation]",
         ),
     ),
 )
@@ -204,14 +215,17 @@ def test_performance(
     accessor,
     data_source,
     content_type,
-    serialize,
+    parameters,
     upload_mock,
     request,
     project,
 ):
     report = request.getfixturevalue(report)
     display = getattr(report.metrics, accessor)(data_source=data_source)
-    content = serialize(display)
+    frame = display.frame(**(parameters or {}))
+    content = dumps(
+        frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
+    )
 
     with Serializer(content) as serializer:
         checksum = serializer.checksum
@@ -222,6 +236,7 @@ def test_performance(
         "name": accessor,
         "data_source": data_source,
         "checksum": checksum,
+        "parameters": parameters,
     }
 
     # ensure `upload` is well called
@@ -242,6 +257,7 @@ def test_performance(
         "name": accessor,
         "data_source": data_source,
         "checksum": None,
+        "parameters": parameters,
     }
 
     # ensure `upload` is not called

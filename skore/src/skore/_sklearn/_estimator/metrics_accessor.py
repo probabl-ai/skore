@@ -4,6 +4,7 @@ from collections.abc import Iterable
 from typing import Any, Literal, cast
 
 from numpy.typing import ArrayLike
+from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -84,6 +85,9 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         metric : str or list of str or None, default=None
             The metrics to report, from the list of registered metrics. None means show
             all registered metrics. To add a custom metric, see :meth:`add`.
+            Metrics added with a ``neg_`` prefix can also be retrieved without it
+            (e.g. ``"neg_mean_absolute_percentage_error"`` instead of
+            ``"mean_absolute_percentage_error"``).
 
         Returns
         -------
@@ -103,7 +107,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ... )
                     LogisticRegression Favorability
         Metric
-        Score                  0.94...         (↗︎)
         Accuracy               0.94...         (↗︎)
         Precision              0.98...         (↗︎)
         Recall                 0.92...         (↗︎)
@@ -120,7 +123,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
                      LogisticRegression (train)  LogisticRegression (test)  Favorability
         Metric
-        Score                           0.96...                     0.94...          (↗︎)
         Accuracy                        0.96...                     0.94...          (↗︎)
         Precision                       0.96...                     0.98...          (↗︎)
         Recall                          0.97...                     0.92...          (↗︎)
@@ -141,7 +143,13 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         elif isinstance(metric, Iterable) and metric:
             parsed_metrics = [registry[m] for m in metric]
         else:
-            parsed_metrics = list(registry.values())
+            has_default_score = getattr(
+                type(self._parent.estimator_), "score", None
+            ) in (ClassifierMixin.score, RegressorMixin.score)
+            if has_default_score:
+                parsed_metrics = [s for s in registry.values() if s.name != "score"]
+            else:
+                parsed_metrics = list(registry.values())
 
         rows: list[MetricsSummaryRow] = []
         for parsed_metric in parsed_metrics:
@@ -287,6 +295,49 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # `remove` takes the report as input so that the MetricRegistry does not
         # need to have the report as an attribute, which would be a circular reference
         self._parent._metric_registry.remove(report=self._parent, name=name)
+
+    def get(
+        self,
+        name: str,
+        data_source: DataSource = "test",
+        **kwargs,
+    ) -> float | None:
+        """Get a metric value.
+
+        Parameters
+        ----------
+        name : str
+            Name of the metric to compute. Get all available metrics with
+            :meth:`~EstimatorReport.metrics.available()`.
+            Metrics added with a ``neg_`` prefix can also be retrieved
+            without it; the alias is resolved automatically.
+
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        Returns
+        -------
+        The metric value, or None if the metric is not available.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
+        >>> report.metrics.get("precision")
+        {0: 0.90..., 1: 0.98...}
+        """
+        try:
+            metric = self._parent._metric_registry[name]
+        except KeyError:
+            raise KeyError(f"{name!r} not found in the registered metrics") from None
+        return metric.pretty(report=self._parent, data_source=data_source, **kwargs)
 
     def fit_time(self, *, cast: bool = True) -> float | None:
         """Get time to fit the estimator.
@@ -898,9 +949,18 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     ####################################################################################
 
     def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name=f"skore.{self._parent.__class__.__name__}.metrics"
+        return (
+            "Metrics summary:\n"
+            f"{self.summarize().frame()!r}\n"
+            "Explore available methods with .help()."
+        )
+
+    def _repr_html_(self) -> str:
+        return (
+            "<p>Metrics summary:</p>"
+            f"{self.summarize().frame()._repr_html_()}"
+            '<p role="note">Explore available methods with '
+            "<code>.help()</code>.</p>"
         )
 
     ####################################################################################

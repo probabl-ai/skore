@@ -290,7 +290,7 @@ def setup(app: Sphinx) -> dict[str, Any]:
     app.add_config_value("accessor_summary_classes", [], "html")
     app.add_config_value(
         "accessor_summary_exclude_methods",
-        ["get_state", "from_state"],
+        ["to_dict", "from_dict"],
         "html",
     )
     app.connect("config-inited", generate_accessor_tables)

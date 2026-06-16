@@ -68,8 +68,8 @@ defaults:
 
 env:
   PYTHON: '3.14'
-  SCIKIT_LEARN: '1.8'
-  LOCKFILE: 'ci/requirements/skore/python-3.14/scikit-learn-1.8/sphinx-requirements.txt'
+  SCIKIT_LEARN: '1.9'
+  LOCKFILE: 'ci/requirements/skore/python-3.14/scikit-learn-1.9/sphinx-requirements.txt'
 
 jobs:
   sphinx-changes:

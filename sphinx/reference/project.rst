@@ -33,9 +33,27 @@ These functions and classes are meant for managing a `Project` and its reports.
 Skore project's summary
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-When calling :meth:`Project.summarize`, returns a summary table as a
-:class:`pandas.DataFrame` with a specific HTML representation to allow
-you to filter and retrieve the reports.
+When calling :meth:`Project.summarize`, returns a :class:`Summary` object that
+holds the metadata and metrics of the stored reports as a
+:class:`pandas.DataFrame` (accessible via its :meth:`~Summary.frame` method) and
+renders an interactive table in Jupyter-like environments to filter and retrieve
+the reports.
 
-The returned object is not intended to be instantiated or imported directly.
-Always use :meth:`Project.summarize`.
+The returned object is not intended to be instantiated directly. Always use
+:meth:`Project.summarize`.
+
+.. autosummary::
+   :toctree: api/
+   :template: class_with_accessors.rst
+
+   Summary
+
+.. rubric:: Methods
+
+.. autosummary::
+   :toctree: api/
+   :template: class_methods_no_index.rst
+
+   Summary.frame
+   Summary.query
+   Summary.compare

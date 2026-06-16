@@ -1,9 +1,11 @@
 from io import BytesIO
 
 from joblib import dump, hash
+from numpy import array
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
+from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import (
     KFold,
@@ -17,8 +19,10 @@ from sklearn.model_selection import (
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.hub.artifact.media import (
-    ConfusionMatrixDataFrameTest,
-    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixDataFrameTestAll,
+    ConfusionMatrixDataFrameTestNone,
+    ConfusionMatrixDataFrameTrainAll,
+    ConfusionMatrixDataFrameTrainNone,
     EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
@@ -287,7 +291,6 @@ class TestCrossValidationReportPayload:
         splitter,
         metadata,
         expected_splits,
-        monkeypatch,
     ):
         X, y = make_classification(random_state=42, n_samples=8, n_classes=2)
         estimator = LogisticRegression(random_state=42)
@@ -325,6 +328,31 @@ class TestCrossValidationReportPayload:
         assert payload.splitting_strategy == {
             "splitter": metadata,
             "splits": expected_splits,
+        }
+
+    def test_regression_splitting_do_not_call_get_n_splits(self, project):
+        X = array([0, 1, 2, 3, 4])
+        y = array([5, 6, 7, 8, 9])
+
+        class Splitter:
+            def split(self, X, y=None, groups=None):
+                yield array([0, 1]), array([2, 3, 4])
+
+            def get_n_splits(self, X, y=None, groups=None):
+                raise Exception
+
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
+        payload = CrossValidationReportPayload(
+            project=project, report=report, key="<key>"
+        )
+
+        assert payload.splitting_strategy["splits"] == [[0, 0, 1, 1, 1]]
+        assert payload.splitting_strategy["splitter"] == {
+            "type": "Splitter",
+            "n_splits": 1,
+            "n_repeats": None,
+            "shuffle": False,
+            "random_state": None,
         }
 
     @mark.respx(assert_all_called=False)
@@ -469,8 +497,10 @@ class TestCrossValidationReportPayload:
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [
-            ConfusionMatrixDataFrameTest,
-            ConfusionMatrixDataFrameTrain,
+            ConfusionMatrixDataFrameTestAll,
+            ConfusionMatrixDataFrameTestNone,
+            ConfusionMatrixDataFrameTrainAll,
+            ConfusionMatrixDataFrameTrainNone,
             EstimatorHtmlRepr,
             ImpurityDecrease,
             PermutationImportanceTest,

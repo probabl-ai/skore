@@ -53,7 +53,6 @@ def test_flat_index_multiclass(forest_multiclass_classification_with_test):
     result_flat = display.frame(favorability=False, flat_index=True)
     assert isinstance(result_flat.index, pd.Index)
     assert result_flat.index.to_list() == [
-        "score",
         "accuracy",
         "precision_0",
         "precision_1",
@@ -79,7 +78,7 @@ def test_flat_index_multioutput(linear_regression_multioutput_with_test):
     result_multi = display.frame(favorability=False, flat_index=False)
     assert isinstance(result_multi.index, pd.MultiIndex)
     assert result_multi.index.names == ["Metric", "Output"]
-    assert result_multi.shape == (11, 1)
+    assert result_multi.shape == (10, 1)
     assert result_multi.loc[("R²", "0"), "LinearRegression"] == 1
     assert result_multi.loc[("R²", "1"), "LinearRegression"] == 1
 
@@ -87,7 +86,6 @@ def test_flat_index_multioutput(linear_regression_multioutput_with_test):
     assert isinstance(result_flat.index, pd.Index)
     # Note: "R²" is lowercased
     assert result_flat.index.to_list() == [
-        "score",
         "r²_0",
         "r²_1",
         "rmse_0",
@@ -136,7 +134,6 @@ def test_flat_index_with_favorability(forest_binary_classification_with_test):
 
     assert isinstance(result.index, pd.Index)
     assert result.index.to_list() == [
-        "score",
         "accuracy",
         "precision_0",
         "precision_1",
@@ -188,7 +185,6 @@ def test_data_source_both_flat_index(forest_binary_classification_data):
         "RandomForestClassifier (test)",
     ]
     assert result.index.to_list() == [
-        "score",
         "accuracy",
         "precision_0",
         "precision_1",

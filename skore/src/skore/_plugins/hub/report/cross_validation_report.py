@@ -21,8 +21,10 @@ from sklearn.model_selection import (
 from skore import CrossValidationReport
 from skore._plugins.hub.artifact.media import (
     Coefficients,
-    ConfusionMatrixDataFrameTest,
-    ConfusionMatrixDataFrameTrain,
+    ConfusionMatrixDataFrameTestAll,
+    ConfusionMatrixDataFrameTestNone,
+    ConfusionMatrixDataFrameTrainAll,
+    ConfusionMatrixDataFrameTrainNone,
     EstimatorHtmlRepr,
     ImpurityDecrease,
     PermutationImportanceTest,
@@ -154,8 +156,10 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     )
     MEDIAS: ClassVar[tuple[type[Media[CrossValidationReport]], ...]] = (
         Coefficients,
-        ConfusionMatrixDataFrameTest,
-        ConfusionMatrixDataFrameTrain,
+        ConfusionMatrixDataFrameTestAll,
+        ConfusionMatrixDataFrameTestNone,
+        ConfusionMatrixDataFrameTrainAll,
+        ConfusionMatrixDataFrameTrainNone,
         EstimatorHtmlRepr,
         ImpurityDecrease,
         PermutationImportanceTest,
@@ -212,7 +216,8 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         is_classifier = "classification" in self.ml_task
 
         n_repeats = getattr(splitter, "n_repeats", None)
-        n_splits = splitter.get_n_splits() // (n_repeats or 1)
+        n_splits = len(self.report.split_indices) // (n_repeats or 1)
+
         splitter_metadata = {
             "type": splitter.__class__.__name__,
             "n_splits": n_splits,
@@ -297,9 +302,10 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                     train_target_distribution.append(train.get(label, 0))
                     test_target_distribution.append(test.get(label, 0))
             else:
+                y = np.asarray(self.report.y)
                 linspace = np.linspace(
-                    float(train_y.min()),
-                    float(train_y.max()),
+                    float(y.min()),
+                    float(y.max()),
                     num=TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT,
                 )
                 train_kernel = gaussian_kde(train_y)

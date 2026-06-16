@@ -27,7 +27,7 @@ def estimator_report():
 
 @pytest.fixture(scope="module")
 def display(estimator_report):
-    return estimator_report.data.analyze()
+    return estimator_report.data.summarize()
 
 
 @pytest.mark.parametrize(
@@ -89,14 +89,14 @@ def test_constructor(display):
 def test_X_y(X, y):
     split_data = train_test_split(X, y, random_state=0, as_dict=True)
     report = EstimatorReport(tabular_pipeline(DummyRegressor()), **split_data)
-    display = report.data.analyze()
+    display = report.data.summarize()
     assert isinstance(display, TableReportDisplay)
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
 def test_frame(estimator_report, data_source):
     """Check the behaviour of the `.frame` method."""
-    display = estimator_report.data.analyze(data_source=data_source)
+    display = estimator_report.data.summarize(data_source=data_source)
     dataset = display.frame(kind="dataset")
 
     if data_source == "train":
@@ -146,7 +146,7 @@ def test_categorical_plots_1d(pyplot, display):
 
 def test_numeric_plots_1d(pyplot, estimator_report):
     """Check the plot output with numeric data in 1-d."""
-    display = estimator_report.data.analyze(data_source="train")
+    display = estimator_report.data.summarize(data_source="train")
     ## for integers numeric values
     display.set_style(histplot_kwargs={"color": "red"})
     fig = display.plot(x="year_first_hired")

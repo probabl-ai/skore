@@ -70,7 +70,7 @@ def export(
     (output_dir / "metadata.json").write_text(
         json.dumps(report._metadata, indent=2), "UTF-8"
     )
-    state = report.get_state()
+    state = report.to_dict()
     (output_dir / "state.json").write_text(
         json.dumps(
             {
@@ -129,7 +129,7 @@ def export(
 
     predictions_dir = output_dir / "predictions"
     predictions_dir.mkdir(exist_ok=True)
-    for (subset_name, meth_name), val in report.get_state()["predictions"].items():
+    for (subset_name, meth_name), val in report.to_dict()["predictions"].items():
         with open(predictions_dir / f"{subset_name}__{meth_name}.joblib", "wb") as f:
             joblib.dump(val, f)
 
@@ -171,7 +171,7 @@ def load(report_dir: Path) -> EstimatorReport:
                 loaded_data[k] = -joblib.load(f)
         state["data"][data_info_file.stem] = loaded_data
     state["optional"] = {"cache": {}}
-    return EstimatorReport.from_state(state)
+    return EstimatorReport.from_dict(state)
 
 
 def get_data_ref(value: Any, root_data_dir: Path) -> dict[str, str]:

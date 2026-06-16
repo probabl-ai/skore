@@ -131,7 +131,7 @@ hgbt_model_report.metrics.summarize().frame()
 # used.
 
 # %%
-data_display = hgbt_model_report.data.analyze()
+data_display = hgbt_model_report.data.summarize()
 data_display
 
 # %%
