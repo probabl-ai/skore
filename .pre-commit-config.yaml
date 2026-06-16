@@ -26,38 +26,12 @@ repos:
       - id: ruff-format
         files: ^(skore/(hatch|src|tests))|(examples)/
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.20.2
+  - repo: local
     hooks:
 
       - id: mypy
+        name: mypy
+        entry: mypy --config-file=skore/pyproject.toml skore/
+        language: unsupported
         pass_filenames: false
         files: ^skore/
-        args: [--config-file=skore/pyproject.toml, skore]
-        additional_dependencies:
-          # from dependencies
-          - IPython
-          - anywidget
-          - ipywidgets
-          - joblib
-          - matplotlib
-          - numpy
-          - pandas
-          - plotly
-          - rich
-          - scikit-learn
-          - seaborn
-          - skrub
-          # from test dependencies
-          - polars
-          - pyarrow
-          - scipy-stubs
-          # from local dependencies
-          - diskcache
-          - platformdirs
-          # from hub dependencies
-          - httpx
-          - orjson
-          - pydantic
-          # from mlflow dependencies
-          - mlflow

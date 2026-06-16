@@ -45,17 +45,19 @@ jupyter = [
   "IPython",
 ]
 test-base = [
+  "build",
   "jedi",
+  "mypy",
   "pre-commit",
   "pytest",
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
   "pytest-xdist",
-  "scipy-stubs",
-  "xdoctest",
   "respx",
+  "scipy-stubs",
   "skore[hub, jupyter, mlflow]",
+  "xdoctest",
 ]
 test = ["polars", "pyarrow", "skore[test-base]"]
 test-lts-cpu = ["polars-lts-cpu", "skore[test-base]"]
@@ -74,8 +76,8 @@ sphinx-base = [
   "sphinx-tabs",
   "sphinx<8.2.0",
   "sphinx_autosummary_accessors",
-  "xgboost-cpu ; platform_system != 'Darwin'",
   "xgboost ; platform_system == 'Darwin'",
+  "xgboost-cpu ; platform_system != 'Darwin'",
 ]
 sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
 sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
