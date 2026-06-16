@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import joblib
+import pandas as pd
 
 from ... import EstimatorReport
 
@@ -68,7 +69,16 @@ def export(
     with contextlib.suppress(OSError):
         symlink.symlink_to(output_dir)
     (output_dir / "metadata.json").write_text(
-        json.dumps(report._metadata, indent=2), "UTF-8"
+        json.dumps(
+            report._metadata
+            | {
+                "ml_task": report._ml_task,
+                "learner": repr(report.estimator_),
+                "name": name,
+            },
+            indent=2,
+        ),
+        "UTF-8",
     )
     state = report.to_dict()
     (output_dir / "state.json").write_text(
@@ -149,8 +159,21 @@ def export(
     return output_dir
 
 
+def load_metadata(report_dir: Path) -> dict[str, Any]:
+    metadata: dict[str, Any] = json.loads(
+        (report_dir / "metadata.json").read_text("UTF-8")
+    )
+    metadata["date"] = metadata["creation-date"]
+    metadata["key"] = metadata["name"]
+    metadata["dataset"] = json.loads(
+        (report_dir / "data" / "test_data.json").read_text("UTF-8")
+    )["_skrub_y"]["hash"]
+    metrics = pd.read_csv(report_dir / "metrics" / "summarize.csv")
+    metadata |= metrics.set_index("Metric").iloc[:, 0].to_dict()
+    return metadata
+
+
 def load(report_dir: Path) -> EstimatorReport:
-    report_dir = Path(report_dir)
     state = json.loads((report_dir / "state.json").read_text("UTF-8"))
     with open(report_dir / "estimator.pickle", "rb") as f:
         state["estimator"] = pickle.load(f)
@@ -212,9 +235,9 @@ class Project:
             raise KeyError(report_id)
         return load(report_path)
 
-    def summarize(self) -> list[EstimatorReport]:
-        # TODO
-        return []
+    def summarize(self) -> list[dict[str, Any]]:
+        reports_path = self.path() / "reports"
+        return [load_metadata(p) for p in reports_path.iterdir()]
 
     def delete(self) -> None:
         shutil.rmtree(self.path())
