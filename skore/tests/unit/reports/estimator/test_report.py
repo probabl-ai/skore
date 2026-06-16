@@ -353,61 +353,30 @@ def _assert_estimator_report_repr_html(
     assert "EstimatorReport.metrics" in html_out
 
 
+@pytest.mark.parametrize(
+    "fixture",
+    [
+        "binary_classification_train_test_split",
+        "multiclass_classification_train_test_split",
+        "regression_train_test_split",
+        "regression_multioutput_train_test_split",
+    ],
+)
 @pytest.mark.parametrize("with_train", [False, True])
-def test_report_repr_html_binary_classification(with_train):
-    X, y = make_classification(n_classes=2, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    estimator = DummyClassifier()
-    estimator.fit(X_train, y_train)
-    kwargs = {}
-    if with_train:
-        kwargs.update(X_train=X_train, y_train=y_train)
-    kwargs.update(X_test=X_test, y_test=y_test)
-    report = EstimatorReport(estimator, fit=False, **kwargs)
-    _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
+def test_report_repr_html(request, fixture, with_train):
+    X_train, X_test, y_train, y_test = request.getfixturevalue(fixture)
+    kwargs = {"X_test": X_test, "y_test": y_test} | (
+        {"X_train": X_train, "y_train": y_train} if with_train else {}
+    )
 
+    if "classification" in fixture:
+        estimator = DummyClassifier(strategy="uniform", random_state=0)
+    else:
+        estimator = DummyRegressor()
 
-@pytest.mark.parametrize("with_train", [False, True])
-def test_report_repr_html_multiclass_classification(
-    with_train, multiclass_classification_train_test_split
-):
-    X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
-    estimator = DummyClassifier(strategy="uniform", random_state=0)
-    estimator.fit(X_train, y_train)
-    kwargs = {}
-    if with_train:
-        kwargs.update(X_train=X_train, y_train=y_train)
-    kwargs.update(X_test=X_test, y_test=y_test)
-    report = EstimatorReport(estimator, fit=False, **kwargs)
-    _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
-
-
-@pytest.mark.parametrize("with_train", [False, True])
-def test_report_repr_html_regression(with_train, regression_train_test_split):
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    estimator = DummyRegressor()
-    estimator.fit(X_train, y_train)
-    kwargs = {}
-    if with_train:
-        kwargs.update(X_train=X_train, y_train=y_train)
-    kwargs.update(X_test=X_test, y_test=y_test)
-    report = EstimatorReport(estimator, fit=False, **kwargs)
-    _assert_estimator_report_repr_html(report._repr_html_(), "DummyRegressor")
-
-
-@pytest.mark.parametrize("with_train", [False, True])
-def test_report_repr_html_multioutput_regression(
-    with_train, regression_multioutput_train_test_split
-):
-    X_train, X_test, y_train, y_test = regression_multioutput_train_test_split
-    estimator = DummyRegressor()
-    estimator.fit(X_train, y_train)
-    kwargs = {}
-    if with_train:
-        kwargs.update(X_train=X_train, y_train=y_train)
-    kwargs.update(X_test=X_test, y_test=y_test)
-    report = EstimatorReport(estimator, fit=False, **kwargs)
-    _assert_estimator_report_repr_html(report._repr_html_(), "DummyRegressor")
+    report = EstimatorReport(estimator.fit(X_train, y_train), **kwargs)
+    estimator_name = estimator.__class__.__name__
+    _assert_estimator_report_repr_html(report._repr_html_(), estimator_name)
 
 
 @pytest.mark.parametrize("with_train", [False, True])
@@ -416,13 +385,11 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
     ``_repr_html_``."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    estimator = _DummyClassifierBadRepr()
-    estimator.fit(X_train, y_train)
-    kwargs = {}
-    if with_train:
-        kwargs.update(X_train=X_train, y_train=y_train)
-    kwargs.update(X_test=X_test, y_test=y_test)
-    report = EstimatorReport(estimator, fit=False, **kwargs)
+    estimator = _DummyClassifierBadRepr().fit(X_train, y_train)
+    kwargs = {"X_test": X_test, "y_test": y_test} | (
+        {"X_test": X_test, "y_test": y_test} if with_train else {}
+    )
+    report = EstimatorReport(estimator, **kwargs)
     _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
 
 
