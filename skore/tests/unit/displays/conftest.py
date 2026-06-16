@@ -264,3 +264,11 @@ def comparison_cross_validation_reports_multioutput_regression(
 ):
     report_1, report_2 = cross_validation_reports_multioutput_regression
     return ComparisonReport([report_1, report_2])
+
+
+@pytest.fixture
+def repr_coefficients_display(logistic_binary_classification_with_test):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    return EstimatorReport(
+        estimator, X_test=X_test, y_test=y_test
+    ).inspection.coefficients()

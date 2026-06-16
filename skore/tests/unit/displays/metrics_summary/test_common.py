@@ -13,6 +13,9 @@ def test_repr_includes_frame_and_hint(forest_binary_classification_with_test):
     repr_str = repr(display)
     assert repr_str.startswith(repr(display.frame()))
     assert repr_str.endswith("Use .frame() to control the format of the output.")
+    assert (
+        "Use .plot() to plot the data" not in display._repr_mimebundle_()["text/plain"]
+    )
 
 
 def test_repr_html_includes_frame_and_hint(forest_binary_classification_with_test):
@@ -25,3 +28,6 @@ def test_repr_html_includes_frame_and_hint(forest_binary_classification_with_tes
     html = display._repr_html_()
     assert html.startswith(display.frame()._repr_html_())
     assert "Use <code>.frame()</code> to control the format of the output." in html
+    mime_html = display._repr_mimebundle_()["text/html"]
+    assert "data:image/png;base64," not in mime_html
+    assert "Use <code>.plot()</code> to control the view" not in mime_html

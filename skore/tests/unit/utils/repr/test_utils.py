@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import base64
 import re
 
 import pytest
 import skrub
+from matplotlib.figure import Figure
 from sklearn.base import BaseEstimator, MetaEstimatorMixin
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
@@ -13,7 +15,10 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 
 from skore._utils.repr.markdown import _markdown_estimator_kind
-from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
+from skore._utils.repr.utils import (
+    figure_to_html,
+    repair_estimator_html_for_slotted_host,
+)
 
 _SCRIPT_STRIP = re.compile(
     r"<script\b[^>]*>.*?</script\s*[^>]*>", re.DOTALL | re.IGNORECASE
@@ -65,6 +70,18 @@ class TestRepairEstimatorHtmlForSlottedHost:
         combined = repaired + following
         o, c = _div_open_close_counts(combined)
         assert o == c
+
+
+def test_figure_to_html_returns_base64_img(pyplot):
+
+    fig = Figure()
+    ax = fig.subplots()
+    ax.plot([0, 1], [0, 1])
+    html = figure_to_html(fig)
+    prefix = '<img src="data:image/png;base64,'
+    assert html.startswith(prefix)
+    png_bytes = base64.b64decode(html[len(prefix) : -2])
+    assert png_bytes.startswith(b"\x89PNG")
 
 
 def _bare_meta_estimator() -> BaseEstimator:

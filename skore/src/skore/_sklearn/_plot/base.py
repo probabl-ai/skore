@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from functools import wraps
-from typing import TYPE_CHECKING, Any, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast, runtime_checkable
 
 import matplotlib.pyplot as plt
 
@@ -11,7 +11,6 @@ if TYPE_CHECKING:
         from matplotlib.typing import RcKeyType as MatplotlibRcKeyType
     except ImportError:
         MatplotlibRcKeyType = str  # type: ignore[misc]
-    from typing import cast
 import pandas as pd
 from matplotlib.figure import Figure
 
