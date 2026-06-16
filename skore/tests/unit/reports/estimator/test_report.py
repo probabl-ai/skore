@@ -385,7 +385,9 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
     ``_repr_html_``."""
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-    estimator = _DummyClassifierBadRepr().fit(X_train, y_train)
+    estimator = _DummyClassifierBadRepr(strategy="uniform", random_state=0).fit(
+        X_train, y_train
+    )
     kwargs = {"X_test": X_test, "y_test": y_test} | (
         {"X_test": X_test, "y_test": y_test} if with_train else {}
     )
