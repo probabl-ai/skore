@@ -903,7 +903,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         help_ctx = asdict(self._build_help_data())
         help_ctx["is_report"] = True
         return render_template(
-            "estimator_report.html.j2",
+            "report/estimator_report.html.j2",
             {
                 "container_id": container_id,
                 "report_class_name": report_class_name,

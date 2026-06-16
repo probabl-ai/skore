@@ -1,0 +1,45 @@
+<div class="container summary-container" data-view="table">
+    <header class="title">{{ report_title | e }}</header>
+    {% if not has_rows %}
+    <p class="summary-empty">No report found in the project. Use the <code>put</code> method to add reports.</p>
+    {% else %}
+    <div class="skore-summary-toolbar">
+        <div class="summary-view-toggle" role="group" aria-label="View">
+            <button type="button" class="summary-view-btn summary-view-btn--active" data-view="table" aria-pressed="true" aria-label="Table view" title="Table view">{% include "project/icons/table.svg" %}</button>
+            <button type="button" class="summary-view-btn" data-view="plot" aria-pressed="false" aria-label="Plot view" title="Plot view">{% include "project/icons/chart-3.svg" %}</button>
+            <button type="button" class="summary-view-btn" data-view="trend" aria-pressed="false" aria-label="Trend view" title="Metric over time">{% include "project/icons/chart.svg" %}</button>
+        </div>
+        {% include "project/components/filter.html.j2" %}
+        <div class="skore-summary-query-bar">
+            <code class="skore-summary-query" data-empty="Tick rows to build a query string.">Tick rows to build a query string.</code>
+            <button type="button" class="skore-summary-copy" aria-label="Copy query string" title="Copy query string">{% include "project/icons/copy.svg" %}</button>
+            <button type="button" class="skore-summary-clear" aria-label="Clear selection" title="Clear selection">{% include "project/icons/circle-cross.svg" %}</button>
+        </div>
+        <button type="button" class="report-tab-help skore-summary-help" aria-label="How to use the query string">
+            ?
+            <span class="tooltip-text skore-summary-help-tip">
+                Select reports by ticking rows in Table view, brushing axes in Plot
+                view, or dragging the range cursors in Trend view; the selection is
+                shared across all three. Copy the query string and pass it to
+                <code>Summary.query(...)</code> to recover the selected reports.
+            </span>
+        </button>
+    </div>
+    <div class="summary-controls">
+        {% include "project/components/group-by.html.j2" %}
+        <label class="skore-summary-trend-metric-field">Metric
+            <select class="skore-summary-trend-metric" aria-label="Metric"></select>
+        </label>
+        {% include "project/components/columns.html.j2" %}
+        <div class="skore-summary-search">
+            <svg class="skore-summary-search-icon" viewBox="0 0 512 512" width="14" height="14" aria-hidden="true" focusable="false">
+                <path fill="currentColor" d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z"/>
+            </svg>
+            <input type="search" class="skore-summary-search-input" placeholder="Search reports..." aria-label="Search reports">
+        </div>
+    </div>
+    {% include "project/components/table.html.j2" %}
+    {% include "project/components/plot.html.j2" %}
+    {% include "project/components/trend.html.j2" %}
+    {% endif %}
+</div>

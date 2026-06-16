@@ -1,0 +1,25 @@
+<div id="{{ container_id }}-wrapper">
+    <template id="{{ container_id }}-template">
+        <style>
+{% include "common/css/theme.css" %}
+{% include "common/css/help.css" %}
+{% include "common/css/report.css" %}
+        </style>
+        {% include "project/summary-content.html.j2" %}
+    </template>
+
+    <div id="{{ container_id }}"></div>
+
+    <script>
+{% include "common/js/report_theme.js" %}
+{% include "project/js/helpers.js" %}
+{% include "project/js/summary-table.js" %}
+{% include "project/js/summary-plot.js" %}
+{% include "project/js/summary-trend.js" %}
+{% include "project/js/summary.js" %}
+    </script>
+</div>
+
+<script>
+skoreInitSummary("{{ container_id }}");
+</script>

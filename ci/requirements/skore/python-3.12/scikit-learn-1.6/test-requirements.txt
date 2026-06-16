@@ -14,8 +14,6 @@ anyio==4.13.0
     # via
     #   httpx
     #   starlette
-anywidget==0.11.0
-    # via skore (skore/pyproject.toml)
 ast-serialize==0.5.0
     # via mypy
 asttokens==3.0.1
@@ -143,10 +141,7 @@ ipython==9.14.0
 ipython-pygments-lexers==1.1.1
     # via ipython
 ipywidgets==8.1.8
-    # via
-    #   skore (skore/pyproject.toml)
-    #   anywidget
-    #   rich
+    # via rich
 itsdangerous==2.2.0
     # via flask
 jedi==0.20.0
@@ -299,8 +294,6 @@ protobuf==6.33.6
     #   opentelemetry-proto
 psutil==7.2.2
     # via ipython
-psygnal==0.15.1
-    # via anywidget
 ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.3
@@ -428,7 +421,6 @@ typing-extensions==4.15.0
     #   aiosignal
     #   alembic
     #   anyio
-    #   anywidget
     #   fastapi
     #   graphene
     #   mlflow-skinny

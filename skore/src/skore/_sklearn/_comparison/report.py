@@ -20,6 +20,10 @@ from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.markdown import (
+    comparison_data_markdown_context,
+    comparison_estimator_markdown_context,
+)
 
 if TYPE_CHECKING:
     from skore._sklearn._checks.accessor import _ChecksAccessor
@@ -579,20 +583,38 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        return f"{self.__class__.__name__}(...)"
+        return f"""{self.__class__.__name__}:
+        {list(self.reports_.keys())!r}
+
+        {self.metrics._formatted_summary_frame(data_source="test")}
+        Call `report.to_markdown()` for a markdown summary of the report's contents."""
+
+    def to_markdown(self) -> str:
+        """Return a markdown summary of the report.
+
+        The summary contains four sections (Estimators, Metrics, Checks, Data) that
+        mirror the tabs of the HTML representation. Metrics and Checks sections end
+        with a pointer to the corresponding accessor for full details.
+
+        Returns
+        -------
+        str
+            The markdown summary of the report.
+        """
+        metrics_frame = self.metrics._formatted_summary_frame(data_source="test")
+        return render_template(
+            "comparison_report_markdown.j2",
+            {
+                **comparison_estimator_markdown_context(self),
+                **comparison_data_markdown_context(self),
+                "metrics_text": repr(metrics_frame),
+                "checks_text": repr(self.checks.summarize(fast_mode=True)),
+            },
+        )
 
     def _repr_html_(self) -> str:
         """HTML representation with a selector to inspect one compared report."""
-        metrics_frame = (
-            self.metrics.summarize(data_source="test")
-            .frame()
-            .rename_axis(
-                None if self._report_type == "comparison-estimator" else [None, None],
-                axis="columns",
-            )
-        )
-        if self._report_type == "comparison-cross-validation":
-            metrics_frame = metrics_frame.swaplevel(axis="columns")
+        metrics_frame = self.metrics._formatted_summary_frame(data_source="test")
         metrics_html = metrics_frame.reset_index().to_html(index=False)
 
         comparison_reports = []
@@ -621,7 +643,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         help_ctx = asdict(self._build_help_data())
         help_ctx["is_report"] = True
         return render_template(
-            "comparison_report.html.j2",
+            "report/comparison_report.html.j2",
             {
                 "container_id": container_id,
                 "metrics_summary": metrics_html,

@@ -43,8 +43,6 @@ dependencies = [
 [project.optional-dependencies]
 jupyter = [
   "IPython",
-  "anywidget",
-  "ipywidgets",
 ]
 test-base = [
   "build",
@@ -215,7 +213,6 @@ warn_unused_ignores = true
 ignore_missing_imports = true
 module = [
   "diskcache.*",
-  "ipywidgets.*",
   "jinja2.*",
   "joblib.*",
   "js.*",

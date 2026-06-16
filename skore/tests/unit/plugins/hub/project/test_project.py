@@ -568,6 +568,11 @@ class TestProject:
                                     "value": 3,
                                     "data_source": "test",
                                 },
+                                {
+                                    "name": "rmse_std",
+                                    "value": 0.5,
+                                    "data_source": "test",
+                                },
                             ],
                         },
                     ],
@@ -600,6 +605,11 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "rmse_std": None,
+                "log_loss_std": None,
+                "roc_auc_std": None,
+                "fit_time_std": None,
+                "predict_time_std": None,
             },
             {
                 "id": "skore:report:estimator:<report_id_1>",
@@ -619,6 +629,11 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "rmse_std": None,
+                "log_loss_std": None,
+                "roc_auc_std": None,
+                "fit_time_std": None,
+                "predict_time_std": None,
             },
             {
                 "id": "skore:report:cross-validation:<report_id_2>",
@@ -638,6 +653,11 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "rmse_std": 0.5,
+                "log_loss_std": None,
+                "roc_auc_std": None,
+                "fit_time_std": None,
+                "predict_time_std": None,
             },
         ]
 
