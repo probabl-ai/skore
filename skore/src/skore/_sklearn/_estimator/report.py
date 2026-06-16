@@ -304,11 +304,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:  # fit is False
             self.learner_ = estimator
 
-        self._predict_time: PredictTime = {}
         self._pos_label = pos_label
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
         self._cache = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
+
+        self._predict_time: PredictTime = {}
+        self.cache_predictions(data_source="test")
 
         self._metric_registry = MetricRegistry(self)
 
