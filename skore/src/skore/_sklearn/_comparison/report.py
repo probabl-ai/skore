@@ -603,7 +603,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         """
         metrics_frame = self.metrics._formatted_summary_frame(data_source="test")
         return render_template(
-            "comparison_report_markdown.j2",
+            "report/comparison_report_markdown.j2",
             {
                 **comparison_estimator_markdown_context(self),
                 **comparison_data_markdown_context(self),
