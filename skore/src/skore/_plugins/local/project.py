@@ -16,7 +16,7 @@ def init_data_dir(parent_dir: str | Path = ".", project_name: str = "default") -
     data_dir = Path(parent_dir) / "skore_data"
     if data_dir.is_dir():
         return data_dir
-    data_dir.mkdir()
+    data_dir.mkdir(parents=True)
     (data_dir / ".SKORE_DATA_DIRECTORY").touch()
     (data_dir / "projects").mkdir()
     (data_dir / "datasets").mkdir()
@@ -36,7 +36,7 @@ def init_project_dir(data_dir: Path, project_name: str) -> Path:
     project_dir = data_dir / "projects" / project_name
     if project_dir.is_dir():
         return project_dir
-    project_dir.mkdir()
+    project_dir.mkdir(parents=True)
     (project_dir / "reports").mkdir()
     return project_dir
 
