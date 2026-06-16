@@ -11,12 +11,15 @@ if TYPE_CHECKING:
         from matplotlib.typing import RcKeyType as MatplotlibRcKeyType
     except ImportError:
         MatplotlibRcKeyType = str  # type: ignore[misc]
+    from typing import cast
 import pandas as pd
 from matplotlib.figure import Figure
 
 from skore import configuration
+from skore._plugins import switch_plt_backend
 from skore._sklearn.types import PlotBackend
 from skore._utils.repr.base import DisplayHelpMixin
+from skore._utils.repr.utils import figure_to_html
 
 ########################################################################################
 # Display protocol
@@ -239,3 +242,21 @@ class StyleDisplayMixin:
 
 class DisplayMixin(DisplayHelpMixin, PlotBackendMixin, StyleDisplayMixin):
     """Mixin inheriting help, plotting, and style functionality."""
+
+    def _repr_html_(self) -> str:
+        with switch_plt_backend(), plt.ioff():
+            plot_html = figure_to_html(cast(Display, self).plot())
+        return (
+            f"{plot_html}"
+            '<p role="note">Use <code>.plot()</code> to control the view and '
+            "<code>.frame()</code> to access the plotted data.</p>"
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"{cast(Display, self).frame()!r}\n"
+            f"Use .plot() to plot the data and .frame() to access the full data."
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        return {"text/plain": repr(self), "text/html": self._repr_html_()}

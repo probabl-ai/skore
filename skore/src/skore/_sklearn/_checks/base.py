@@ -8,8 +8,8 @@ from uuid import uuid4
 import pandas as pd
 
 from skore._externals._sklearn_compat import parse_version
+from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn.types import ReportType
-from skore._utils.repr.base import DisplayHelpMixin
 from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ _TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str, str]] = [
 ]
 
 
-class ChecksSummaryDisplay(DisplayHelpMixin):
+class ChecksSummaryDisplay(DisplayMixin):
     """Display for the checks summary.
 
     An instance of this class will be created by
@@ -163,9 +163,6 @@ class ChecksSummaryDisplay(DisplayHelpMixin):
                 "tabs": tabs,
             },
         )
-
-    def _repr_mimebundle_(self, **kwargs: object) -> dict[str, str]:
-        return {"text/plain": self.__repr__(), "text/html": self._repr_html_()}
 
     def __repr__(self) -> str:
         """Return a plain-text summary of check results."""

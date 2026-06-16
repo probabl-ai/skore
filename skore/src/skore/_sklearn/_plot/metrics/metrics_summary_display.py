@@ -402,9 +402,6 @@ class MetricsSummaryDisplay(DisplayMixin):
     def __repr__(self) -> str:
         return f"{self.frame()!r}\nUse .frame() to control the format of the output."
 
-    def _repr_mimebundle_(self, **kwargs):
-        return {"text/plain": repr(self), "text/html": self._repr_html_()}
-
     @DisplayMixin.style_plot
     def plot(self) -> Figure:
         """Plot the metrics summary (not implemented)."""
