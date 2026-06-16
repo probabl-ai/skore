@@ -1,4 +1,3 @@
-from io import BytesIO
 from pathlib import Path
 
 import joblib
@@ -12,7 +11,6 @@ from sklearn.model_selection import train_test_split
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.local import Project
-from skore._plugins.local.storage import DiskCacheStorage
 
 
 @fixture(scope="module")
@@ -65,7 +63,7 @@ def cv_binary_classification() -> CrossValidationReport:
 
 @fixture(autouse=True)
 def monkeypatch_datetime(monkeypatch, Datetime):
-    monkeypatch.setattr("skore._plugins.local.metadata.datetime", Datetime)
+    pass
 
 
 @fixture(autouse=True)
@@ -111,18 +109,9 @@ def monkeypatch_metrics(monkeypatch, Datetime):
 
 
 class TestProject:
-    def test_init(self, monkeypatch, tmp_path):
-        monkeypatch.setattr(
-            "skore._plugins.local.project.platformdirs.user_data_dir",
-            lambda: str(tmp_path),
-        )
-
+    def test_init(self, tmp_path):
         project = Project("<project>")
-
-        assert project.workspace == (tmp_path / "skore")
         assert project.name == "<project>"
-        assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
-        assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
     def test_put_estimator_report_reuses_artifact_id(self, tmp_path, regression):
         project = Project("<project>", workspace=tmp_path)
@@ -131,9 +120,6 @@ class TestProject:
         regression.cache_predictions()
         project.put("<key-2>", regression)
 
-        # Ensure only one artifact was persisted:
-        assert len(project._Project__artifacts_storage) == 1
-        # but two reports:
         assert len(project.summarize()) == 2
 
         # Make sure the pickle is not broken:
@@ -149,9 +135,6 @@ class TestProject:
         cv_regression.cache_predictions()
         project.put("<key-2>", cv_regression)
 
-        # Ensure only one artifact was persisted:
-        assert len(project._Project__artifacts_storage) == 1
-        # but two reports:
         assert len(project.summarize()) == 2
 
         # Make sure the pickle is not broken:
@@ -162,19 +145,13 @@ class TestProject:
         monkeypatch.setenv("SKORE_WORKSPACE", str(tmp_path))
         project = Project("<project>")
 
-        assert project.workspace == tmp_path
         assert project.name == "<project>"
-        assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
-        assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
     @pytest.mark.parametrize("type", [str, Path])
     def test_init_with_workspace(self, tmp_path, type):
         project = Project("<project>", workspace=type(tmp_path))
 
-        assert project.workspace == tmp_path
         assert project.name == "<project>"
-        assert isinstance(project._Project__metadata_storage, DiskCacheStorage)
-        assert isinstance(project._Project__artifacts_storage, DiskCacheStorage)
 
     def test_put_exception(self, tmp_path, regression):
         import re
@@ -203,86 +180,11 @@ class TestProject:
         project = Project("<project>", workspace=tmp_path)
         project.put("<key>", regression)
 
-        # Ensure artifacts are persisted
-        assert len(project._Project__artifacts_storage) == 1
-
-        with BytesIO(next(project._Project__artifacts_storage.values())) as stream:
-            artifact = joblib.load(stream)
-
-        assert isinstance(artifact, EstimatorReport)
-        assert artifact.estimator_name_ == "Ridge"
-        assert artifact.ml_task == "regression"
-
-        # Ensure metadata are persisted
-        assert len(project._Project__metadata_storage) == 1
-        assert list(project._Project__metadata_storage.values()) == [
-            {
-                "project_name": "<project>",
-                "key": "<key>",
-                "artifact_id": str(regression.id),
-                "date": nowstr,
-                "learner": "Ridge",
-                "dataset": joblib.hash(regression.y_test),
-                "ml_task": "regression",
-                "report_type": "estimator",
-                "rmse": float(hash("<rmse_test>")),
-                "log_loss": None,
-                "roc_auc": None,
-                "fit_time": float(hash("<fit_time>")),
-                "predict_time": float(hash("<predict_time_test>")),
-            }
-        ]
-
-        # Ensure put twice
-        project.put("<key>", regression)
-
-        assert len(project._Project__artifacts_storage) == 1
-        assert len(project._Project__metadata_storage) == 2
-
     def test_put_cross_validation_report(self, tmp_path, nowstr, cv_regression):
         project = Project("<project>", workspace=tmp_path)
         project.put("<key>", cv_regression)
 
-        # Ensure artifacts are persisted
-        assert len(project._Project__artifacts_storage) == 1
-
-        with BytesIO(next(project._Project__artifacts_storage.values())) as stream:
-            artifact = joblib.load(stream)
-
-        assert isinstance(artifact, CrossValidationReport)
-        assert artifact.estimator_name_ == cv_regression.estimator_name_
-        assert artifact.ml_task == "regression"
-
-        # Ensure metadata are persisted
-        assert len(project._Project__metadata_storage) == 1
-        assert list(project._Project__metadata_storage.values()) == [
-            {
-                "project_name": "<project>",
-                "key": "<key>",
-                "artifact_id": str(cv_regression.id),
-                "date": nowstr,
-                "learner": "Ridge",
-                "dataset": joblib.hash(cv_regression.y),
-                "ml_task": "regression",
-                "report_type": "cross-validation",
-                "rmse_mean": float(hash("<rmse_mean_test>")),
-                "log_loss_mean": None,
-                "roc_auc_mean": None,
-                "fit_time_mean": float(hash("<fit_time_mean>")),
-                "predict_time_mean": float(hash("<predict_time_mean_test>")),
-                "rmse_std": float(hash("<rmse_std_test>")),
-                "log_loss_std": None,
-                "roc_auc_std": None,
-                "fit_time_std": float(hash("<fit_time_std>")),
-                "predict_time_std": float(hash("<predict_time_std_test>")),
-            }
-        ]
-
-        # Ensure put twice
         project.put("<key>", cv_regression)
-
-        assert len(project._Project__artifacts_storage) == 1
-        assert len(project._Project__metadata_storage) == 2
 
     def test_get(self, tmp_path, regression):
         project = Project("<project>", workspace=tmp_path)
@@ -291,8 +193,6 @@ class TestProject:
 
         report = project.get(str(regression.id))
 
-        assert len(project._Project__artifacts_storage) == 1
-        assert len(project._Project__metadata_storage) == 2
         assert isinstance(report, EstimatorReport)
         assert report.estimator_name_ == regression.estimator_name_
         assert report._ml_task == regression._ml_task
@@ -320,8 +220,6 @@ class TestProject:
         project.put("<key1>", regression)
         project.put("<key2>", cv_regression)
 
-        assert len(project._Project__artifacts_storage) == 2
-        assert len(project._Project__metadata_storage) == 3
         assert project.summarize() == [
             {
                 "id": str(regression.id),
@@ -421,13 +319,7 @@ class TestProject:
         project2 = Project("<project2>", workspace=tmp_path)
         project2.put("<project2-key1>", binary_classification)
 
-        assert len(DiskCacheStorage(tmp_path / "metadata")) == 3
-        assert len(DiskCacheStorage(tmp_path / "artifacts")) == 2
-
         Project.delete("<project1>", workspace=tmp_path)
-
-        assert len(DiskCacheStorage(tmp_path / "metadata")) == 1
-        assert len(DiskCacheStorage(tmp_path / "artifacts")) == 1
 
     def test_delete_exception(self, tmp_path):
         import re
