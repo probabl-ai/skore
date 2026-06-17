@@ -40,14 +40,11 @@ class CalibrationDisplay(DisplayMixin):
     --------
     >>> from sklearn.datasets import make_classification
     >>> from sklearn.linear_model import LogisticRegression
-    >>> from skore import EstimatorReport, train_test_split
+    >>> from skore import evaluate
     >>> X, y = make_classification(
     ...     n_samples=100_000, n_features=20, n_informative=2, n_redundant=10,
     ...     random_state=42)
-    >>> split_data = train_test_split(
-    ...     X=X, y=y, random_state=0, as_dict=True, shuffle=False
-    ... )
-    >>> report = EstimatorReport(LogisticRegression(), **split_data)
+    >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
     >>> display = report.inspection.calibration_curve(n_bins=5, strategy="uniform")
     >>> display.frame()
         predicted_probability  fraction_of_positives data_source  label
@@ -198,14 +195,11 @@ class CalibrationDisplay(DisplayMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import EstimatorReport, train_test_split
+        >>> from skore import evaluate
         >>> X, y = make_classification(
         ...     n_samples=100_000, n_features=20, n_informative=2, n_redundant=10,
         ...     random_state=42)
-        >>> split_data = train_test_split(
-        ...     X=X, y=y, random_state=0, as_dict=True, shuffle=True
-        ... )
-        >>> report = EstimatorReport(LogisticRegression(), **split_data)
+        >>> report = evaluate(LogisticRegression(), X, y, splitter=0.2)
         >>> display = report.inspection.calibration_curve()
         >>> display.plot()
         """

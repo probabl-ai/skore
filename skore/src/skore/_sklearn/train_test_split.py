@@ -1,4 +1,4 @@
-"""Implement train_test_split and TrainTestSplit."""
+"""Implement TrainTestSplit."""
 
 from __future__ import annotations
 
