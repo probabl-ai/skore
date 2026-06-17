@@ -45,8 +45,6 @@ class TrainTestSplit:
     --------
     :func:`sklearn.model_selection.train_test_split` :
         Underlying scikit-learn helper used to generate the split.
-    :func:`~skore.train_test_split` :
-        Wrapper with additional data-quality warnings.
     :func:`~skore.evaluate` :
         Evaluate an estimator using this splitter via the ``splitter`` parameter.
 
