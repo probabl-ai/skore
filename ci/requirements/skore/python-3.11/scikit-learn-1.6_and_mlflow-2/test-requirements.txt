@@ -50,8 +50,6 @@ databricks-sdk==0.114.0
     # via mlflow-skinny
 decorator==5.3.1
     # via ipython
-diskcache==5.6.3
-    # via skore (skore/pyproject.toml)
 distlib==0.4.1
     # via virtualenv
 docker==7.1.0
@@ -227,7 +225,6 @@ pillow==12.2.0
     # via matplotlib
 platformdirs==4.10.0
     # via
-    #   skore (skore/pyproject.toml)
     #   python-discovery
     #   virtualenv
 plotly==6.8.0
