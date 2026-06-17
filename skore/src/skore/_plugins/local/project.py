@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Any
 
 import joblib
+import numpy as np
 import pandas as pd
 
-from ... import EstimatorReport
+from ... import CrossValidationReport, EstimatorReport
 
 
 def init_workspace(parent_dir: str | Path = ".", project_name: str = "default") -> Path:
@@ -68,18 +69,47 @@ def export(
         symlink.unlink()
     with contextlib.suppress(OSError):
         symlink.symlink_to(output_dir)
-    (output_dir / "metadata.json").write_text(
-        json.dumps(
-            report._metadata
-            | {
-                "ml_task": report._ml_task,
-                "learner": repr(report.estimator_),
-                "name": name,
-            },
-            indent=2,
-        ),
-        "UTF-8",
-    )
+    if isinstance(report, EstimatorReport):
+        return _export_estimator_report(report, workspace, output_dir)
+    with open(output_dir / "estimator.pickle", "wb") as f:
+        pickle.dump(report.estimator, f)
+    _write_metadata(report, output_dir, name=name)
+    _write_metrics(report, output_dir)
+    _write_datasets(report, output_dir, workspace)
+    _write_report_state(report, output_dir)
+    _write_estimators(report, output_dir)
+
+    split_reports_dir = output_dir / "reports"
+    split_reports_dir.mkdir()
+    n_digits = int(np.ceil(np.log10(len(report.reports_))))
+    for split, (sub_report, (train_idx, test_idx)) in enumerate(
+        zip(report.reports_, report._split_indices, strict=True)
+    ):
+        split_dir = split_reports_dir / f"split_{{:0>{n_digits}}}".format(split)
+        split_dir.mkdir()
+        _export_estimator_report(sub_report, workspace, split_dir)
+        np.savetxt(split_dir / "train_indices.txt", train_idx, fmt="%d")
+        np.savetxt(split_dir / "test_indices.txt", test_idx, fmt="%d")
+    return output_dir
+
+
+def _write_metadata(
+    report: EstimatorReport | CrossValidationReport,
+    output_dir: Path,
+    name: str | None = None,
+) -> None:
+    metadata = report._metadata | {
+        "ml_task": report._ml_task,
+        "learner": repr(report.estimator_),
+    }
+    if name is not None:
+        metadata["name"] = name
+    (output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2), "UTF-8")
+
+
+def _write_report_state(
+    report: EstimatorReport | CrossValidationReport, output_dir: Path
+) -> None:
     state = report.to_dict()
     (output_dir / "state.json").write_text(
         json.dumps(
@@ -94,12 +124,48 @@ def export(
                     "predictions",
                     "metric_registry",
                     "optional",
+                    "split_indices",
+                    "estimator_reports",
                 )
             }
             | {"export-format-version": 1}
         ),
         "UTF-8",
     )
+
+
+def _write_metrics(
+    report: EstimatorReport | CrossValidationReport, output_dir: Path
+) -> None:
+    metrics_dir = output_dir / "metrics"
+    metrics_dir.mkdir(exist_ok=True)
+    report.metrics.summarize().frame(flat_index=True).to_csv(
+        metrics_dir / "summarize.csv"
+    )
+    if hasattr(report, "_metric_registry"):
+        with open(metrics_dir / "registry.pickle", "wb") as f:
+            pickle.dump(report._metric_registry, f)
+
+
+def _write_datasets(
+    report: EstimatorReport | CrossValidationReport, output_dir: Path, workspace: Path
+) -> None:
+    dataset_refs_dir = output_dir / "data"
+    dataset_refs_dir.mkdir(exist_ok=True)
+
+    for subset_name in ["_data", "_train_data", "_test_data"]:
+        if (subset := getattr(report, subset_name, None)) is not None:
+            subset_refs = {}
+            if subset is not None:
+                for key, val in subset.items():
+                    subset_refs[key] = get_data_ref(val, workspace)
+                refs_file = dataset_refs_dir / f"{subset_name.removeprefix('_')}.json"
+                refs_file.write_text(json.dumps(subset_refs), "UTF-8")
+
+
+def _write_estimators(
+    report: EstimatorReport | CrossValidationReport, output_dir: Path
+) -> None:
     with open(output_dir / "estimator.pickle", "wb") as f:
         pickle.dump(report.estimator, f)
     with open(output_dir / "estimator_.pickle", "wb") as f:
@@ -107,36 +173,28 @@ def export(
     with open(output_dir / "learner_.pickle", "wb") as f:
         pickle.dump(report.learner_, f)
 
+
+def _export_estimator_report(
+    report: EstimatorReport,
+    workspace: Path,
+    output_dir: Path,
+    name: str | None = None,
+) -> Path:
+    _write_metadata(report, output_dir, name=name)
+    _write_report_state(report, output_dir)
+    _write_estimators(report, output_dir)
     user_dir = output_dir / "user"
     user_dir.mkdir(exist_ok=True)
     (user_dir / "README").write_text(
         "This directory is not used by skore, use it to store arbitrary "
         "additional data or notes attached to this report.\n"
     )
-
-    metrics_dir = output_dir / "metrics"
-    metrics_dir.mkdir(exist_ok=True)
-    report.metrics.summarize().frame(flat_index=True).to_csv(
-        metrics_dir / "summarize.csv"
-    )
-    with open(metrics_dir / "registry.pickle", "wb") as f:
-        pickle.dump(report._metric_registry, f)
-
+    _write_metrics(report, output_dir)
     checks_dir = output_dir / "checks"
     checks_dir.mkdir(exist_ok=True)
     report.checks.summarize().frame().to_csv(checks_dir / "summarize.csv", index=False)
 
-    dataset_refs_dir = output_dir / "data"
-    dataset_refs_dir.mkdir(exist_ok=True)
-
-    for subset_name, subset in state["data"].items():
-        subset_refs = {}
-        if subset is not None:
-            for key, val in subset.items():
-                subset_refs[key] = get_data_ref(val, workspace)
-            refs_file = dataset_refs_dir / f"{subset_name.removeprefix('_')}.json"
-            refs_file.write_text(json.dumps(subset_refs), "UTF-8")
-
+    _write_datasets(report, output_dir, workspace)
     predictions_dir = output_dir / "predictions"
     predictions_dir.mkdir(exist_ok=True)
     for (subset_name, meth_name), val in report.to_dict()["predictions"].items():
@@ -165,34 +223,58 @@ def load_metadata(report_dir: Path) -> dict[str, Any]:
     )
     metadata["date"] = metadata["creation-date"]
     metadata["key"] = metadata["name"]
+    if metadata["report_type"] == "cross-validation":
+        subset_name = "data"
+    else:
+        subset_name = "test_data"
     metadata["dataset"] = json.loads(
-        (report_dir / "data" / "test_data.json").read_text("UTF-8")
+        (report_dir / "data" / f"{subset_name}.json").read_text("UTF-8")
     )["_skrub_y"]["hash"]
     metrics = pd.read_csv(report_dir / "metrics" / "summarize.csv")
     metadata |= metrics.set_index("Metric").iloc[:, 0].to_dict()
     return metadata
 
 
-def load(report_dir: Path) -> EstimatorReport:
+def load(report_dir: Path) -> EstimatorReport | CrossValidationReport:
+    metadata = json.loads((report_dir / "metadata.json").read_text("UTF-8"))
     state = json.loads((report_dir / "state.json").read_text("UTF-8"))
     with open(report_dir / "estimator.pickle", "rb") as f:
         state["estimator"] = pickle.load(f)
     with open(report_dir / "learner_.pickle", "rb") as f:
         state["learner"] = pickle.load(f)
-    state["predictions"] = {}
-    for pred_file in (report_dir / "predictions").glob("*.joblib"):
-        with open(pred_file, "rb") as f:
-            state["predictions"][tuple(pred_file.stem.split("__"))] = joblib.load(f)
-    with open(report_dir / "metrics" / "registry.pickle", "rb") as f:
-        state["metric_registry"] = pickle.load(f)
-    state["data"] = {}
+    data_dict = (
+        state
+        if metadata["report_type"] == "cross-validation"
+        else state.setdefault("data", {})
+    )
     for data_info_file in (report_dir / "data").glob("*.json"):
         data_info = json.loads(data_info_file.read_text("UTF-8"))
         loaded_data = {}
         for k, v in data_info.items():
             with open(v["file_path"], "rb") as f:
                 loaded_data[k] = -joblib.load(f)
-        state["data"][data_info_file.stem] = loaded_data
+        data_dict[data_info_file.stem] = loaded_data
+
+    if metadata["report_type"] == "cross-validation":
+        sub_reports = []
+        split_indices = []
+        for p in sorted((report_dir / "reports").glob("split_*")):
+            sub_reports.append(load(p).to_dict())
+            split_indices.append(
+                (
+                    np.loadtxt(p / "train_indices.txt", dtype=int),
+                    np.loadtxt(p / "test_indices.txt", dtype=int),
+                )
+            )
+        state["estimator_reports"] = sub_reports
+        state["split_indices"] = split_indices
+        return CrossValidationReport.from_dict(state)
+    state["predictions"] = {}
+    for pred_file in (report_dir / "predictions").glob("*.joblib"):
+        with open(pred_file, "rb") as f:
+            state["predictions"][tuple(pred_file.stem.split("__"))] = joblib.load(f)
+    with open(report_dir / "metrics" / "registry.pickle", "rb") as f:
+        state["metric_registry"] = pickle.load(f)
     state["optional"] = {"cache": {}}
     return EstimatorReport.from_dict(state)
 
@@ -224,7 +306,7 @@ class Project:
             report, workspace=self.workspace, project_name=self.name, name=key
         )
 
-    def get(self, report_id: int) -> EstimatorReport:
+    def get(self, report_id: int) -> EstimatorReport | CrossValidationReport:
         report_path = next(iter((self.path / "reports").glob(f"*{report_id:x}*")), None)
         if report_path is None:
             raise KeyError(report_id)
