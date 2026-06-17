@@ -12,28 +12,28 @@ import pandas as pd
 from ... import EstimatorReport
 
 
-def init_data_dir(parent_dir: str | Path = ".", project_name: str = "default") -> Path:
-    data_dir = Path(parent_dir) / "skore_data"
-    if data_dir.is_dir():
-        return data_dir
-    data_dir.mkdir(parents=True)
-    (data_dir / ".SKORE_DATA_DIRECTORY").touch()
-    (data_dir / "projects").mkdir()
-    (data_dir / "datasets").mkdir()
-    return data_dir
+def init_workspace(parent_dir: str | Path = ".", project_name: str = "default") -> Path:
+    workspace = Path(parent_dir) / "skore_data"
+    if workspace.is_dir():
+        return workspace
+    workspace.mkdir(parents=True)
+    (workspace / ".SKORE_DATA_DIRECTORY").touch()
+    (workspace / "projects").mkdir()
+    (workspace / "datasets").mkdir()
+    return workspace
 
 
-def find_data_dir() -> Path:
+def find_workspace() -> Path:
     start = Path(".").resolve()
     for candidate in [start, *start.parents[::-1]]:
-        data_dir = candidate / "skore_data"
-        if data_dir.is_dir() and (data_dir / ".SKORE_DATA_DIRECTORY").exists():
-            return data_dir
-    return init_data_dir(Path.home())
+        workspace = candidate / "skore_data"
+        if workspace.is_dir() and (workspace / ".SKORE_DATA_DIRECTORY").exists():
+            return workspace
+    return init_workspace(Path.home())
 
 
-def init_project_dir(data_dir: Path, project_name: str) -> Path:
-    project_dir = data_dir / "projects" / project_name
+def init_project_dir(workspace: Path, project_name: str) -> Path:
+    project_dir = workspace / "projects" / project_name
     if project_dir.is_dir():
         return project_dir
     project_dir.mkdir(parents=True)
@@ -44,12 +44,12 @@ def init_project_dir(data_dir: Path, project_name: str) -> Path:
 def export(
     report: EstimatorReport,
     *,
-    data_dir: Path | None = None,
+    workspace: Path | None = None,
     project_name: str = "default",
     name: str | None = None,
 ) -> Path:
-    data_dir = find_data_dir() if data_dir is None else Path(data_dir)
-    project_dir = init_project_dir(data_dir, project_name)
+    workspace = find_workspace() if workspace is None else Path(workspace)
+    project_dir = init_project_dir(workspace, project_name)
     reports_dir = project_dir / "reports"
     date_str = (
         datetime.fromisoformat(str(report._metadata["creation-date"]))
@@ -133,7 +133,7 @@ def export(
         subset_refs = {}
         if subset is not None:
             for key, val in subset.items():
-                subset_refs[key] = get_data_ref(val, data_dir)
+                subset_refs[key] = get_data_ref(val, workspace)
             refs_file = dataset_refs_dir / f"{subset_name.removeprefix('_')}.json"
             refs_file.write_text(json.dumps(subset_refs), "UTF-8")
 
@@ -197,10 +197,10 @@ def load(report_dir: Path) -> EstimatorReport:
     return EstimatorReport.from_dict(state)
 
 
-def get_data_ref(value: Any, data_dir: Path) -> dict[str, str]:
+def get_data_ref(value: Any, workspace: Path) -> dict[str, str]:
     h = joblib.hash(value)
     file_name = f"{h}.joblib"
-    target = data_dir / "datasets" / file_name
+    target = workspace / "datasets" / file_name
     if not target.is_file():
         with open(target, "wb") as f:
             joblib.dump(value, f)
@@ -210,34 +210,29 @@ def get_data_ref(value: Any, data_dir: Path) -> dict[str, str]:
 class Project:
     def __init__(self, name: str, workspace: str | Path | None = None):
         self.name = name
-        self.workspace = workspace
-
-    def data_dir(self) -> Path:
-        return (
-            find_data_dir()
-            if self.workspace is None
-            else init_data_dir(Path(self.workspace))
+        if workspace is not None:
+            workspace = Path(workspace)
+            if workspace.name != "skore_data":
+                raise ValueError("workspace directory name must be 'skore_data'")
+        self.workspace = (
+            find_workspace() if workspace is None else init_workspace(workspace.parent)
         )
-
-    def path(self) -> Path:
-        return init_project_dir(self.data_dir(), self.name)
+        self.path = init_project_dir(self.workspace, self.name)
 
     def put(self, key: str, report: EstimatorReport) -> Path:
         return export(
-            report, data_dir=self.data_dir(), project_name=self.name, name=key
+            report, workspace=self.workspace, project_name=self.name, name=key
         )
 
     def get(self, report_id: int) -> EstimatorReport:
-        report_path = next(
-            iter((self.path() / "reports").glob(f"*{report_id:x}*")), None
-        )
+        report_path = next(iter((self.path / "reports").glob(f"*{report_id:x}*")), None)
         if report_path is None:
             raise KeyError(report_id)
         return load(report_path)
 
     def summarize(self) -> list[dict[str, Any]]:
-        reports_path = self.path() / "reports"
+        reports_path = self.path / "reports"
         return [load_metadata(p) for p in reports_path.iterdir()]
 
     def delete(self) -> None:
-        shutil.rmtree(self.path())
+        shutil.rmtree(self.path)
