@@ -13,10 +13,7 @@ from skore._sklearn._plot import (
 )
 from skore._sklearn.compare import compare
 from skore._sklearn.evaluate import evaluate
-from skore._sklearn.train_test_split.train_test_split import (
-    TrainTestSplit,
-    train_test_split,
-)
+from skore._sklearn.train_test_split import TrainTestSplit
 
 __all__ = [
     "ComparisonReport",
@@ -31,5 +28,4 @@ __all__ = [
     "RocCurveDisplay",
     "MetricsSummaryDisplay",
     "TrainTestSplit",
-    "train_test_split",
 ]
