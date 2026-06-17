@@ -127,8 +127,8 @@ class CheckNotApplicable(Exception):
     Notes
     -----
     Check implementations raise this exception when required data, task type,
-    or model capabilities are missing. The check is skipped and does not appear
-    in :meth:`~skore.EstimatorReport.checks.summarize` results.
+    or model capabilities are missing. The check appears under the
+    "Not Applicable" section of the checks summary.
 
     Examples
     --------

@@ -55,6 +55,7 @@ def mock_issue(report, ignored_codes, *, fast_mode=False):
             }
         },
         {"SKD001"},
+        set(),
     )
 
 
@@ -79,7 +80,7 @@ def test_skd001_detects_overfitting(regression_data):
     """Check that the overfitting issue is detected."""
     X, y = regression_data
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
     assert "SKD001" in issues.index
     assert (
@@ -92,7 +93,7 @@ def test_skd002_detects_underfitting(regression_data):
     """Check that the underfitting issue is detected."""
     X, y = regression_data
     report = evaluate(DummyRegressor(), X, y)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
     assert "SKD002" in issues.index
     assert (
@@ -115,7 +116,7 @@ def test_skd004_skd005_detects_high_class_imbalance(weights, code):
     )
     report = evaluate(LogisticRegression(), X, y, splitter=0.2)
     result = report.checks.summarize()
-    assert code not in set(result.frame(severity="issue")["code"])
+    assert code not in set(result.frame(section="issue")["code"])
 
     X, y = make_classification(
         n_samples=400,
@@ -126,7 +127,7 @@ def test_skd004_skd005_detects_high_class_imbalance(weights, code):
         random_state=0,
     )
     report = evaluate(LogisticRegression(), X, y, splitter=0.2)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert code in issues.index
     assert "Accuracy should not be used alone" in issues.loc[code, "explanation"]
 
@@ -135,13 +136,13 @@ def test_skd006_detects_coefficient_interpretation(regression_data):
     """Check that the coefficient interpretation tip is emitted."""
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD006" in tips.index
     assert "Features are not on the same scale" in tips.loc["SKD006", "explanation"]
 
     X /= X.std(axis=0)
     report = evaluate(LinearRegression(), X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD006" in tips.index
     assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
 
@@ -150,7 +151,7 @@ def test_skd007_mdi_bias_with_high_cardinality(regression_data):
     """SKD007 tip is emitted with continuous features and tree importances."""
     X, y = regression_data
     report = evaluate(RandomForestRegressor(n_estimators=5, random_state=0), X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD007" in tips.index
     assert (
         "High-cardinality features detected: Feature 0, Feature 1, Feature 2 "
@@ -164,7 +165,7 @@ def test_skd007_not_emitted_for_binary_features():
     X = rng.randint(0, 2, size=(20, 4)).astype(float)
     y = rng.standard_normal(20)
     report = evaluate(RandomForestRegressor(n_estimators=5, random_state=0), X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD007" not in tips.index
 
 
@@ -182,7 +183,7 @@ def test_skd008_correlated_features(estimator):
         pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
         pd.Series(y),
     )
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD008" in issues.index
     assert "1 pair(s) of features" in issues.loc["SKD008", "explanation"]
 
@@ -191,7 +192,7 @@ def test_skd008_not_emitted_for_independent_features(regression_data):
     """SKD008 issue is absent when features are independent."""
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD008" not in issues.index
 
 
@@ -199,7 +200,7 @@ def test_skd009_detects_worse_than_baseline(regression_data):
     """Check that the worse-than-baseline issue is detected on a dummy estimator."""
     X, y = regression_data
     report = evaluate(DummyRegressor(), X, y)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD009" in issues.index
     assert (
         "not significantly better than a HistGradientBoosting baseline"
@@ -211,7 +212,7 @@ def test_skd009_not_detected_on_strong_model(regression_data):
     """Check that SKD009 is not detected when the model beats HistGradientBoosting."""
     X, y = make_regression(n_features=4, noise=0.1, random_state=0)
     report = evaluate(RidgeCV(), X, y)
-    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    codes = set(report.checks.summarize().frame(section="issue")["code"])
     assert "SKD009" not in codes
 
 
@@ -219,7 +220,7 @@ def test_skd010_detects_slower_than_baseline(regression_data):
     """Check that SKD010 is detected when the model is slower with similar scores."""
     X, y = regression_data
     report = evaluate(RandomForestRegressor(n_estimators=200, random_state=0), X, y)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD010" in issues.index
     assert "slower than a fast linear baseline" in issues.loc["SKD010", "explanation"]
 
@@ -240,7 +241,7 @@ def test_skd011_detects_golden_feature(estimator):
         pd.Series(y),
         splitter=0.2,
     )
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD011" in tips.index
     explanation = tips.loc["SKD011", "explanation"]
     assert "Feature 0" in explanation
@@ -260,7 +261,7 @@ def test_skd012_detects_useless_features():
         random_state=0,
     )
     report = evaluate(Ridge(), X, y, splitter=0.2)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD012" in tips.index
     explanation = tips.loc["SKD012", "explanation"]
     assert "permutation importance" in explanation
@@ -301,7 +302,7 @@ def test_skd013_train_test_time_overlap():
     report = EstimatorReport(
         pipe, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD013" in issues.index
     assert "date" in issues.loc["SKD013", "explanation"]
 
@@ -314,15 +315,15 @@ def test_skd013_train_test_time_overlap():
         y_test=y[split:],
     )
     summary = report.checks.summarize()
-    assert "SKD013" not in set(summary.frame(severity="issue")["code"])
-    assert "SKD013" in set(summary.frame(severity="passed")["code"])
+    assert "SKD013" not in set(summary.frame(section="issue")["code"])
+    assert "SKD013" in set(summary.frame(section="passed")["code"])
 
 
 def test_skd010_not_detected_for_fast_model(regression_data):
     """Check that SKD010 does not fire when the model is not slower than baseline."""
     X, y = regression_data
     report = evaluate(RidgeCV(), X, y)
-    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    codes = set(report.checks.summarize().frame(section="issue")["code"])
     assert "SKD010" not in codes
 
 
@@ -341,7 +342,7 @@ def test_skd014_raises_at_numeric_edge(regression_data, monkeypatch, param_grid)
         X, y, GridSearchCV(Ridge(), param_grid=param_grid, cv=2)
     )
     monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 0.1})
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD014" in issues.index
     explanation = issues.loc["SKD014", "explanation"]
     assert "alpha" in explanation
@@ -358,7 +359,7 @@ def test_skd014_not_raised_for_interior_best(regression_data, monkeypatch, param
         X, y, GridSearchCV(Ridge(), param_grid=param_grid, cv=2)
     )
     monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 2.0})
-    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    codes = set(report.checks.summarize().frame(section="issue")["code"])
     assert "SKD014" not in codes
 
 
@@ -372,7 +373,7 @@ def test_skd014_prefit_and_evaluate_fit(regression_data, monkeypatch, prefit):
     else:
         report = evaluate(search, X, y)
     monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 0.1})
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD014" in issues.index
     assert "minimum" in issues.loc["SKD014", "explanation"]
 
@@ -394,7 +395,7 @@ def test_skd014_skips_non_numeric_hyperparameters(regression_data, param_grid):
     report = _prefit_grid_search_report(
         X, y, GridSearchCV(Ridge(), param_grid=param_grid, cv=2)
     )
-    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    codes = set(report.checks.summarize().frame(section="issue")["code"])
     assert "SKD014" not in codes
 
 
@@ -412,7 +413,7 @@ def test_skd014_search_classes(regression_data, monkeypatch, search):
     X, y = regression_data
     report = _prefit_grid_search_report(X, y, search)
     monkeypatch.setattr(report.estimator_, "best_params_", {"alpha": 0.1})
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD014" in issues.index
     assert "minimum" in issues.loc["SKD014", "explanation"]
 
@@ -426,7 +427,7 @@ def test_skd015_suggests_missing_params(regression_data):
         cv=2,
     )
     report = evaluate(search, X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
     assert "max_features" in explanation
@@ -445,7 +446,7 @@ def test_skd015_passes_when_all_recommended_covered(regression_data):
     )
     report = evaluate(search, X, y)
     summary = report.checks.summarize()
-    assert "SKD015" in set(summary.frame(severity="passed")["code"])
+    assert "SKD015" in set(summary.frame(section="passed")["code"])
 
 
 def test_skd015_not_applicable_plain_estimator(regression_data):
@@ -475,7 +476,7 @@ def test_skd015_pipeline_single_step(regression_data):
     pipe = Pipeline([("scaler", StandardScaler()), ("rf", RandomForestRegressor())])
     search = GridSearchCV(pipe, param_grid={"rf__n_estimators": [10, 50]}, cv=2)
     report = evaluate(search, X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
     assert "RandomForestRegressor" in explanation
@@ -502,7 +503,7 @@ def test_skd015_pipeline_multi_step(binary_classification_data):
         cv=2,
     )
     report = evaluate(search, X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
     assert "StandardScaler" not in explanation
@@ -520,7 +521,7 @@ def test_skd015_pipeline_flags_untuned_step(regression_data):
     pipe = Pipeline([("pca", PCA()), ("ridge", Ridge())])
     search = GridSearchCV(pipe, param_grid={"ridge__alpha": [0.1, 1.0]}, cv=2)
     report = evaluate(search, X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
     assert "PCA" in explanation
@@ -536,7 +537,7 @@ def test_skd015_equivalent_params_not_suggested(regression_data):
         cv=2,
     )
     report = evaluate(search, X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
     assert "min_samples_leaf" not in explanation
@@ -548,7 +549,7 @@ def test_skd016_fires_on_default_estimator(regression_data):
     """SKD016 fires when the estimator is left at sklearn defaults."""
     X, y = regression_data
     report = evaluate(RandomForestRegressor(), X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD016" in tips.index
     explanation = tips.loc["SKD016", "explanation"]
     assert "RandomForestRegressor" in explanation
@@ -560,14 +561,14 @@ def test_skd016_passed_when_tuned(regression_data):
     """SKD016 passes once any recommended-or-other model param is set."""
     X, y = regression_data
     report = evaluate(RandomForestRegressor(max_depth=5), X, y)
-    assert "SKD016" in set(report.checks.summarize().frame(severity="passed")["code"])
+    assert "SKD016" in set(report.checks.summarize().frame(section="passed")["code"])
 
 
 def test_skd016_ignores_infrastructure(regression_data):
     """Setting only infrastructure params (random_state) still triggers SKD016."""
     X, y = regression_data
     report = evaluate(Ridge(random_state=42), X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD016" in tips.index
     assert "alpha" in tips.loc["SKD016", "explanation"]
 
@@ -595,7 +596,7 @@ def test_skd016_pipeline_walks_steps(regression_data):
     X, y = pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]), pd.Series(y)
     pipe = Pipeline([("pca", PCA()), ("ridge", Ridge(alpha=2.0))])
     report = evaluate(pipe, X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD016" in tips.index
     explanation = tips.loc["SKD016", "explanation"]
     assert "PCA" in explanation
@@ -608,7 +609,7 @@ def test_ignore_checks(monkeypatch, regression_report):
     monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
     assert (
         regression_report.checks.summarize(ignore=["SKD001"])
-        .frame(severity="issue")
+        .frame(section="issue")
         .empty
     )
 
@@ -644,9 +645,13 @@ def test_no_issues(monkeypatch, regression_report):
     monkeypatch.setattr(
         EstimatorReport,
         "_get_results",
-        lambda report, ignored_codes, *, fast_mode=False: ({}, {"SKD001", "SKD002"}),
+        lambda report, ignored_codes, *, fast_mode=False: (
+            {},
+            {"SKD001", "SKD002"},
+            set(),
+        ),
     )
-    assert regression_report.checks.summarize().frame(severity="issue").empty
+    assert regression_report.checks.summarize().frame(section="issue").empty
 
 
 def test_checks_summary_repr(monkeypatch, regression_report):
@@ -673,11 +678,11 @@ def test_global_ignore(monkeypatch, regression_report):
     """Check that checks are ignored when global ignore is set."""
     monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
     assert "SKD001" in set(
-        regression_report.checks.summarize().frame(severity="issue")["code"]
+        regression_report.checks.summarize().frame(section="issue")["code"]
     )
     with configuration(ignore_checks=["SKD001"]):
         assert "SKD001" not in set(
-            regression_report.checks.summarize().frame(severity="issue")["code"]
+            regression_report.checks.summarize().frame(section="issue")["code"]
         )
 
 
@@ -712,7 +717,7 @@ def test_add_checks_runs_custom_check(regression_report):
     """Check that add_checks runs the custom check and includes its issue."""
     regression_report.checks.add([MockCheck(has_issue=True)])
     issues = (
-        regression_report.checks.summarize().frame(severity="issue").set_index("code")
+        regression_report.checks.summarize().frame(section="issue").set_index("code")
     )
     assert "TST001" in issues.index
     assert issues.loc["TST001", "title"] == "Test issue"
@@ -781,6 +786,7 @@ def test_remove_clears_cache(regression_report):
     regression_report.checks.remove("TST001")
     assert "TST001" not in regression_report._check_results_cache
     assert "TST001" not in regression_report._applicable_codes
+    assert "TST001" not in regression_report._not_applicable_codes
 
 
 def test_remove_is_case_insensitive(regression_report):
@@ -816,7 +822,7 @@ def test_custom_metric(binary_classification_data):
     X, y = binary_classification_data
     report = evaluate(DummyClassifier(), X, y, pos_label=1)
     report.metrics.add("f1")
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
     assert "SKD002" in issues.index
     assert (
@@ -840,43 +846,43 @@ def test_tip_goes_to_tips_not_issues(regression_report):
     """A check with severity='tip' is routed to tips, not issues."""
     regression_report.checks.add([TipCheck()])
     result = regression_report.checks.summarize()
-    tips = result.frame(severity="tip").set_index("code")
+    tips = result.frame(section="tip").set_index("code")
     assert "TST002" in tips.index
-    assert "TST002" not in set(result.frame(severity="issue")["code"])
-    assert tips.loc["TST002", "severity"] == "tip"
+    assert "TST002" not in set(result.frame(section="issue")["code"])
+    assert tips.loc["TST002", "section"] == "tip"
 
 
 def test_passed_contains_applicable_checks_with_no_finding(regression_report):
     """Checks that ran without reporting anything show up as passed."""
     regression_report.checks.add([MockCheck(has_issue=False)])
     result = regression_report.checks.summarize()
-    assert "TST001" in set(result.frame(severity="passed")["code"])
-    assert "TST001" not in set(result.frame(severity="issue")["code"])
-    assert "TST001" not in set(result.frame(severity="tip")["code"])
+    assert "TST001" in set(result.frame(section="passed")["code"])
+    assert "TST001" not in set(result.frame(section="issue")["code"])
+    assert "TST001" not in set(result.frame(section="tip")["code"])
 
 
 def test_passed_excludes_ignored(regression_report):
     """Ignored codes are not listed as passed."""
     regression_report.checks.add([MockCheck(has_issue=False)])
     result = regression_report.checks.summarize(ignore=["TST001"])
-    assert "TST001" not in set(result.frame(severity="passed")["code"])
-    assert "TST001" not in set(result.frame(severity="issue")["code"])
+    assert "TST001" not in set(result.frame(section="passed")["code"])
+    assert "TST001" not in set(result.frame(section="issue")["code"])
 
 
-def test_frame_severity_filter(regression_report):
-    """`frame(severity=...)` returns only rows of the requested bucket."""
+def test_frame_section_filter(regression_report):
+    """`frame(section=...)` returns only rows of the requested bucket."""
     regression_report.checks.add([MockCheck(has_issue=True), TipCheck()])
     result = regression_report.checks.summarize()
 
-    issues_frame = result.frame(severity="issue")
+    issues_frame = result.frame(section="issue")
     assert set(issues_frame["code"]) >= {"TST001"}
-    assert all(issues_frame["severity"] == "issue")
+    assert all(issues_frame["section"] == "issue")
 
-    tips_frame = result.frame(severity="tip")
+    tips_frame = result.frame(section="tip")
     assert set(tips_frame["code"]) >= {"TST002"}
-    assert all(tips_frame["severity"] == "tip")
+    assert all(tips_frame["section"] == "tip")
 
-    passed_codes = set(result.frame(severity="passed")["code"])
+    passed_codes = set(result.frame(section="passed")["code"])
     assert "TST001" not in passed_codes
     assert "TST002" not in passed_codes
 
@@ -884,22 +890,45 @@ def test_frame_severity_filter(regression_report):
 
 
 def test_header_reports_all_counts(regression_report):
-    """The header string reports issue, tip, passed and ignored counts."""
+    """The header reports issue, tip, passed, not applicable and ignored counts."""
     regression_report.checks.add([MockCheck(has_issue=True), TipCheck()])
     result = regression_report.checks.summarize(ignore=["SKD001"])
     assert "issue(s)" in result._header
     assert "tip(s)" in result._header
     assert "passed" in result._header
+    assert "not applicable" in result._header
     assert "1 ignored" in result._header
 
 
-def test_html_has_three_tabs(regression_report):
+def test_html_has_four_tabs(regression_report):
     """The HTML repr contains one label per bucket with its count."""
     regression_report.checks.add([MockCheck(has_issue=True), TipCheck()])
     html = regression_report.checks.summarize()._repr_html_()
     assert "Issues (" in html
     assert "Tips (" in html
     assert "Passed (" in html
+    assert "Not Applicable (" in html
+
+
+class NotApplicableMockCheck(Check):
+    code = "TSTNA"
+    title = "Not applicable check"
+    report_type = "estimator"
+    docs_url = "tstna"
+
+    def check_function(self, report):
+        raise CheckNotApplicable()
+
+
+def test_not_applicable_goes_to_not_applicable_section(regression_report):
+    """A check raising CheckNotApplicable appears under not applicable."""
+    regression_report.checks.add([NotApplicableMockCheck()])
+    result = regression_report.checks.summarize()
+    na_codes = set(result.frame(section="not_applicable")["code"])
+    assert "TSTNA" in na_codes
+    assert "TSTNA" not in set(result.frame(section="passed")["code"])
+    assert "TSTNA" not in set(result.frame(section="issue")["code"])
+    assert "TSTNA" not in set(result.frame(section="tip")["code"])
 
 
 class SlowMockCheck(Check):
@@ -937,7 +966,7 @@ def test_summarize_fast_mode_uses_cached_slow_results(regression_report):
     assert slow_check.calls == 1
     issues = (
         regression_report.checks.summarize(fast_mode=True)
-        .frame(severity="issue")
+        .frame(section="issue")
         .set_index("code")
     )
     assert "TSTSLOW" in issues.index

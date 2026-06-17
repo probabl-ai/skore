@@ -543,16 +543,18 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
         comparison_results: dict[CheckCode, dict] = {}
         reports_by_code: dict[CheckCode, list[str]] = {}
         all_applicable_codes: set[CheckCode] = set()
+        all_not_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
             report.checks.add(self._checks_registry)
-            report_results, applicable_codes = report._get_results(
-                ignored_codes, fast_mode=fast_mode
+            report_results, applicable_codes, not_applicable_codes = (
+                report._get_results(ignored_codes, fast_mode=fast_mode)
             )
             all_applicable_codes |= applicable_codes
+            all_not_applicable_codes |= not_applicable_codes
 
             for code, result in report_results.items():
                 comparison_results.setdefault(
@@ -567,11 +569,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 if result["explanation"] is not None:
                     reports_by_code.setdefault(code, []).append(report_name)
 
+        all_not_applicable_codes -= all_applicable_codes
+
         for code, reports in reports_by_code.items():
             comparison_results[code]["explanation"] = (
                 f"Detected in: {', '.join(f'[{r}]' for r in reports)}."
             )
-        return comparison_results, all_applicable_codes
+        return comparison_results, all_applicable_codes, all_not_applicable_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"
