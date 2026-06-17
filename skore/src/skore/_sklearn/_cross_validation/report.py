@@ -539,17 +539,17 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.ensemble import RandomForestClassifier
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, CrossValidationReport
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import compare, evaluate
         >>> X, y = make_classification(random_state=42)
         >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        >>> linear_report = CrossValidationReport(
-        ...     LogisticRegression(random_state=42), X_train, y_train
+        >>> linear_report = evaluate(
+        ...     LogisticRegression(random_state=42), X_train, y_train, splitter=5
         ... )
-        >>> forest_report = CrossValidationReport(
-        ...     RandomForestClassifier(random_state=42), X_train, y_train
+        >>> forest_report = evaluate(
+        ...     RandomForestClassifier(random_state=42), X_train, y_train, splitter=5
         ... )
-        >>> comparison_report = ComparisonReport([linear_report, forest_report])
+        >>> comparison_report = compare([linear_report, forest_report])
         >>> summary = comparison_report.metrics.summarize().frame()
 
         >>> # Notice that e.g. the RandomForestClassifier performs best

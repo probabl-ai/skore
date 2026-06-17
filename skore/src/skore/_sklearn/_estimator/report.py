@@ -198,13 +198,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from skore import train_test_split
+    >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> X, y = make_classification(random_state=42)
-    >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> estimator = LogisticRegression()
     >>> from skore import EstimatorReport
-    >>> report = EstimatorReport(estimator, **split_data)
+    >>> report = EstimatorReport(
+    ...     estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    ... )
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
@@ -424,12 +426,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.cache_predictions()
         >>> report.clear_cache()
         >>> report._cache
@@ -457,12 +457,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.cache_predictions()
         >>> report._cache
         {...}
@@ -681,17 +679,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Examples
         --------
-        >>> from sklearn.datasets import make_classification
-        >>> from skore import train_test_split
+        >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
-        >>> estimator = LogisticRegression()
-        >>> from skore import EstimatorReport
-        >>> report = EstimatorReport(estimator, **split_data)
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> predictions = report.get_predictions(data_source="test")
         >>> predictions.shape
-        (25,)
+        (114,)
         """
         pos_label = self.pos_label
         if (
