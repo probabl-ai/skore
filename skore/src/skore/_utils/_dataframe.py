@@ -1,57 +1,63 @@
-from typing import cast
+from typing import Any, cast
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import scipy.sparse as sp
 from numpy.typing import ArrayLike
-from skrub import _dataframe as sbd
 
 from skore._externals._sklearn_compat import check_array
 
+UserDataFrame = Any
 
-def _normalize_X_as_dataframe(X: ArrayLike) -> pd.DataFrame:
-    """Normalize feature data as a pandas DataFrame with string column names."""
+
+def _ensure_string_column_names(df: nw.DataFrame[Any]) -> nw.DataFrame[Any]:
+    if all(isinstance(col, str) for col in df.columns):
+        return df
+    return df.rename({col: str(col) for col in df.columns})
+
+
+def _normalize_X_as_dataframe(X: ArrayLike) -> UserDataFrame:
+    """Normalize feature data as a DataFrame with string column names."""
     if sp.issparse(X):
         raise NotImplementedError(
             "Data analysis via skrub is currently not supported for sparse matrices. "
             "Please use dense data."
         )
 
-    if not sbd.is_dataframe(X):
+    if not nw.dependencies.is_into_dataframe(X):
         X = check_array(X, accept_sparse=False, ensure_2d=True, ensure_all_finite=False)
         X = cast(np.ndarray, X)
         columns = [f"Feature {i}" for i in range(X.shape[1])]
         return pd.DataFrame(X, columns=columns)
 
-    if sbd.is_polars(X):
-        return X
-    X_df = cast(pd.DataFrame, X)
-    if all(isinstance(col, str) for col in X_df.columns):
-        return X_df
-
-    X_df = X_df.copy(deep=False)
-    X_df.columns = [str(col) for col in X_df.columns]
-    return X_df
+    return _ensure_string_column_names(nw.from_native(X)).to_native()
 
 
-def _normalize_y_as_dataframe(y: ArrayLike) -> pd.DataFrame:
-    """Normalize target data as a pandas DataFrame with predictable column names."""
+def _normalize_y_as_dataframe(y: ArrayLike) -> UserDataFrame:
+    """Normalize target data as a DataFrame with predictable column names."""
     if sp.issparse(y):
         raise NotImplementedError(
             "Data analysis via skrub is currently not supported for sparse matrices. "
             "Please use dense data."
         )
 
-    if sbd.is_column(y) and sbd.is_polars(y):
-        return sbd.make_dataframe_like(y, [y])
-    elif sbd.is_dataframe(y) and sbd.is_polars(y):
-        return y
+    if nw.dependencies.is_into_series(y):
+        if nw.dependencies.is_polars_series(y):
+            series = nw.from_native(y, series_only=True)
+            name = series.name if series.name else "Target"
+            if not series.name:
+                series = series.rename(name)
+            return series.to_frame().to_native()
 
-    if isinstance(y, pd.Series):
-        name = y.name if y.name is not None else "Target"
-        return y.to_frame(name=name)
+        y_series = cast(pd.Series, y)
+        name = y_series.name if y_series.name is not None else "Target"
+        return y_series.to_frame(name=name)
 
-    if sbd.is_dataframe(y):
+    if nw.dependencies.is_into_dataframe(y):
+        if nw.dependencies.is_polars_dataframe(y):
+            return y
+
         y_df = cast(pd.DataFrame, y)
         if all(isinstance(col, str) for col in y_df.columns):
             return y_df

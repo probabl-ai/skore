@@ -3,9 +3,9 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
+from skrub import tabular_pipeline
 
 from skore import CrossValidationReport, Display, TableReportDisplay
-from skore._externals._skrub_compat import tabular_pipeline
 
 
 @pytest.fixture(scope="module")

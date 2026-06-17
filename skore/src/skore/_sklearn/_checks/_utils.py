@@ -3,11 +3,11 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING, Literal
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
-from skrub import _dataframe as sbd
 
 from skore._sklearn.types import PositiveLabel
 from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
@@ -168,20 +168,28 @@ def get_report_y(
         if data_source == "both":
             if report.y_train is None or report.y_test is None:
                 return None
-            y = sbd.concat(
-                _normalize_y_as_dataframe(report.y_train),
-                _normalize_y_as_dataframe(report.y_test),
-                axis=0,
-            )
+            y = nw.from_native(
+                nw.concat(
+                    [
+                        nw.from_native(_normalize_y_as_dataframe(report.y_train)),
+                        nw.from_native(_normalize_y_as_dataframe(report.y_test)),
+                    ],
+                    how="vertical",
+                )
+                .to_pandas()
+                .reset_index(drop=True)
+            ).to_pandas()
         elif data_source == "train":
             if report.y_train is None:
                 return None
-            y = _normalize_y_as_dataframe(report.y_train)
+            y = nw.from_native(_normalize_y_as_dataframe(report.y_train)).to_pandas()
         else:
             if report.y_test is None:
                 return None
-            y = _normalize_y_as_dataframe(report.y_test)
-        return y.iloc[:, 0] if y.shape[1] == 1 else y
+            y = nw.from_native(_normalize_y_as_dataframe(report.y_test)).to_pandas()
+        if y.shape[1] == 1:
+            return y.iloc[:, 0]
+        return y
     except NotImplementedError:
         return None
 
@@ -204,11 +212,17 @@ def get_preprocessed_X(
         if data_source == "both":
             if report.X_train is None or report.X_test is None:
                 return None
-            data = sbd.concat(
-                _normalize_X_as_dataframe(report.X_train),
-                _normalize_X_as_dataframe(report.X_test),
-                axis=0,
-            )
+            data = nw.from_native(
+                nw.concat(
+                    [
+                        nw.from_native(_normalize_X_as_dataframe(report.X_train)),
+                        nw.from_native(_normalize_X_as_dataframe(report.X_test)),
+                    ],
+                    how="vertical",
+                )
+                .to_pandas()
+                .reset_index(drop=True)
+            ).to_native()
         elif data_source == "train":
             if report.X_train is None:
                 return None
@@ -222,9 +236,9 @@ def get_preprocessed_X(
 
     preprocessor, _ = split_preprocessor_estimator(report.estimator_)
     if preprocessor is not None and len(preprocessor.steps) > 0:
-        data = preprocessor.transform(data)
+        data = preprocessor.transform(nw.from_native(data).to_pandas())
 
     try:
-        return _normalize_X_as_dataframe(data)
+        return nw.from_native(_normalize_X_as_dataframe(data)).to_pandas()
     except NotImplementedError:
         return None

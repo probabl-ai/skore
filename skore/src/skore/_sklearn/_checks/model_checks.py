@@ -4,8 +4,8 @@ import numbers
 from collections import defaultdict
 from typing import TYPE_CHECKING, Literal, cast
 
+import narwhals as nw
 import numpy as np
-import pandas as pd
 from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -17,8 +17,8 @@ from sklearn.linear_model import LogisticRegression, RidgeCV
 from sklearn.model_selection._search import BaseSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.utils._pprint import _changed_params
+from skrub import tabular_pipeline
 
-from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._checks._utils import (
     CheckNotApplicable,
     ClassName,
@@ -686,25 +686,23 @@ class CheckTrainTestTimeOverlap(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        if not isinstance(report.X_train, pd.DataFrame) or not isinstance(
-            report.X_test, pd.DataFrame
-        ):
+        if report.X_train is None or report.X_test is None:
+            raise CheckNotApplicable()
+        if not nw.dependencies.is_into_dataframe(
+            report.X_train
+        ) or not nw.dependencies.is_into_dataframe(report.X_test):
             raise CheckNotApplicable()
 
-        datetime_columns = [
-            col
-            for col in report.X_train.columns
-            if col in report.X_test.columns
-            and pd.api.types.is_datetime64_any_dtype(report.X_train[col])
-            and pd.api.types.is_datetime64_any_dtype(report.X_test[col])
-        ]
+        X_train = nw.from_native(report.X_train)
+        X_test = nw.from_native(report.X_test)
+        train_datetime_columns = set(X_train.select(nw.selectors.datetime()).columns)
+        test_datetime_columns = set(X_test.select(nw.selectors.datetime()).columns)
+        datetime_columns = sorted(train_datetime_columns & test_datetime_columns)
         if not datetime_columns:
             raise CheckNotApplicable()
 
         overlapping = [
-            col
-            for col in datetime_columns
-            if report.X_train[col].max() >= report.X_test[col].min()
+            col for col in datetime_columns if X_train[col].max() >= X_test[col].min()
         ]
         if overlapping:
             return (

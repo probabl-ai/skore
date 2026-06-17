@@ -2,6 +2,8 @@
 
 from typing import Literal
 
+import narwhals as nw
+
 from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.hub.artifact.media.media import Media, Report
 from skore._plugins.hub.json import dumps
@@ -27,7 +29,7 @@ class TableReport(Media[Report]):  # noqa: D101
         table_report = display.summary
 
         # Replace full dataset by its head/tail
-        dataframe = table_report.pop("dataframe")
+        dataframe = nw.from_native(table_report.pop("dataframe")).to_pandas()
         table_report["extract_head"] = dataframe.head(3).to_dict(orient="split")
         table_report["extract_tail"] = dataframe.tail(3).to_dict(orient="split")
 

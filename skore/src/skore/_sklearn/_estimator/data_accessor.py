@@ -1,7 +1,7 @@
 import warnings
 from typing import Literal
 
-from skrub import _dataframe as sbd
+import narwhals as nw
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
@@ -165,16 +165,37 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             X_test, y_test = self._retrieve_data_as_frame(
                 "test", with_y_task_aware, data_source
             )
-            X = sbd.concat(X_train, X_test, axis=0)
+            X = nw.from_native(
+                nw.concat(
+                    [nw.from_native(X_train), nw.from_native(X_test)],
+                    how="vertical",
+                )
+                .to_pandas()
+                .reset_index(drop=True)
+            ).to_native()
             if with_y_task_aware:
-                y = sbd.concat(y_train, y_test, axis=0)
+                y = nw.from_native(
+                    nw.concat(
+                        [nw.from_native(y_train), nw.from_native(y_test)],
+                        how="vertical",
+                    )
+                    .to_pandas()
+                    .reset_index(drop=True)
+                ).to_native()
 
-        df = sbd.concat(X, y, axis=1) if with_y_task_aware else X
+        df = (
+            nw.concat(
+                [nw.from_native(X), nw.from_native(y)],
+                how="horizontal",
+            ).to_native()
+            if with_y_task_aware
+            else X
+        )
 
         if subsample:
             if subsample_strategy == "head":
-                df = sbd.head(df, subsample)
+                df = nw.from_native(df).head(subsample).to_native()
             else:  # subsample_strategy == "random":
-                df = sbd.sample(df, subsample, seed=seed)
+                df = nw.from_native(df).sample(subsample, seed=seed).to_native()
 
-        return df
+        return nw.from_native(df).to_pandas()

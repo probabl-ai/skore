@@ -1,5 +1,6 @@
 from typing import Any, Literal
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -15,7 +16,6 @@ from skrub._reporting._utils import (
     top_k_value_counts,
 )
 
-from skore._externals._skrub_compat import sbd
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _adjust_fig_size,
@@ -49,14 +49,14 @@ def _truncate_top_k_categories(
     pd.Series
         The truncated column.
     """
-    if col is None or sbd.is_numeric(col):
+    if col is None or pd.api.types.is_numeric_dtype(col):
         return col
 
     col = col.copy()
     _, counter = top_k_value_counts(col, k=k)
     values, _ = zip(*counter, strict=False)
     # we don't want to replace NaN with 'other'
-    keep = sbd.is_in(col, values) | sbd.is_null(col)
+    keep = col.isin(values) | col.isna()
     if isinstance(col.dtype, pd.CategoricalDtype):
         col = col.cat.add_categories(other_label)
         col[~keep] = other_label
@@ -100,7 +100,7 @@ def _compute_contingency_table(
     pd.DataFrame
         The contingency table.
     """
-    if sbd.name(x) is None or sbd.name(y) is None:
+    if x.name is None or y.name is None:
         raise ValueError("The series x and y must have a name.")
 
     if hue is None:
@@ -108,7 +108,7 @@ def _compute_contingency_table(
     else:
         contingency_table = pd.crosstab(index=y, columns=x, values=hue, aggfunc="mean")
 
-    cols = sbd.concat(sbd.to_frame(x), sbd.to_frame(y), axis=1)
+    cols = pd.concat([x.to_frame(), y.to_frame()], axis=1)
     top_pairs = cols.value_counts().nlargest(k).index
 
     top_x_values = sorted({pair[0] for pair in top_pairs})
@@ -215,7 +215,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         with plt.ioff():
             return cls(
                 summarize_dataframe(
-                    dataset,
+                    nw.from_native(dataset).to_pandas(),
                     with_plots=True,
                     title=None,
                     verbose=0,
@@ -376,23 +376,26 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         """
         default_histplot_kwargs: dict[str, Any] = {}
 
-        column = sbd.col(self.summary["dataframe"], x or y)
+        dataframe = self.summary["dataframe"]
+        column = dataframe[x or y]
 
         duration_unit = None
-        if sbd.is_duration(column):
+        if pd.api.types.is_timedelta64_dtype(column):
             column, duration_unit = duration_to_numeric(column)
 
-        if is_categorical := not (sbd.is_numeric(column) or sbd.is_any_date(column)):
-            top_k = sbd.col(sbd.head(sbd.value_counts(column), k), "value")
+        if is_categorical := not (
+            pd.api.types.is_numeric_dtype(column)
+            or pd.api.types.is_datetime64_any_dtype(column)
+        ):
+            top_k = column.value_counts().head(k).index
 
-            column = sbd.filter(column, sbd.is_in(column, top_k))
-            column = sbd.to_pandas(column)
+            column = column[column.isin(top_k)]
             column = column.astype(
-                pd.CategoricalDtype(categories=sbd.to_list(top_k), ordered=True)
+                pd.CategoricalDtype(categories=top_k.tolist(), ordered=True)
             )
             default_histplot_kwargs["color"] = "tab:orange"
 
-        if sbd.is_integer(column) or is_categorical:
+        if pd.api.types.is_integer_dtype(column) or is_categorical:
             default_histplot_kwargs["discrete"] = True
 
         histplot_kwargs_validated = _validate_style_kwargs(
@@ -424,7 +427,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             _resize_categorical_axis(
                 figure=figure,
                 ax=ax,
-                n_categories=sbd.n_unique(column),
+                n_categories=column.nunique(),
                 is_x_axis=x is not None,
             )
 
@@ -479,23 +482,28 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         k : int, default=20
             The number of most frequent categories to plot.
         """
-        x = sbd.col(self.summary["dataframe"], x) if x is not None else None
-        y = sbd.col(self.summary["dataframe"], y) if y is not None else None
-        hue = sbd.col(self.summary["dataframe"], hue) if hue is not None else None
-        x, y = hue if x is None else x, y if y is not None else hue
+        dataframe = self.summary["dataframe"]
+        x_series: pd.Series | None = dataframe[x] if x is not None else None
+        y_series: pd.Series | None = dataframe[y] if y is not None else None
+        hue_series: pd.Series | None = dataframe[hue] if hue is not None else None
+        x_series, y_series = (
+            hue_series if x_series is None else x_series,
+            y_series if y_series is not None else hue_series,
+        )
 
         despine_params = {"top": True, "right": True, "trim": True, "offset": 10}
-        is_x_num, is_y_num = sbd.is_numeric(x), sbd.is_numeric(y)
-        hue = _truncate_top_k_categories(hue, k)
+        is_x_num = x_series is not None and pd.api.types.is_numeric_dtype(x_series)
+        is_y_num = y_series is not None and pd.api.types.is_numeric_dtype(y_series)
+        hue_series = _truncate_top_k_categories(hue_series, k)
 
         if is_x_num and is_y_num:
             scatterplot_kwargs_validated = _validate_style_kwargs(
                 {"alpha": 0.1}, scatterplot_kwargs
             )
             sns.scatterplot(
-                x=x,
-                y=y,
-                hue=hue,
+                x=x_series,
+                y=y_series,
+                hue=hue_series,
                 ax=ax,
                 **scatterplot_kwargs_validated,
             )
@@ -526,17 +534,26 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             )
 
             if is_x_num:
-                y = _truncate_top_k_categories(y, k)
+                y_series = _truncate_top_k_categories(y_series, k)
             else:
-                x = _truncate_top_k_categories(x, k)
+                x_series = _truncate_top_k_categories(x_series, k)
 
-            sns.boxplot(x=x, y=y, ax=ax, **boxplot_kwargs_validated)
-            sns.stripplot(x=x, y=y, hue=hue, ax=ax, **stripplot_kwargs_validated)
+            sns.boxplot(x=x_series, y=y_series, ax=ax, **boxplot_kwargs_validated)
+            sns.stripplot(
+                x=x_series,
+                y=y_series,
+                hue=hue_series,
+                ax=ax,
+                **stripplot_kwargs_validated,
+            )
+
+            categorical_series = y_series if is_x_num else x_series
+            assert categorical_series is not None
 
             _resize_categorical_axis(
                 figure=figure,
                 ax=ax,
-                n_categories=sbd.n_unique(y) if is_x_num else sbd.n_unique(x),
+                n_categories=categorical_series.nunique(),
                 is_x_axis=not is_x_num,
             )
             if is_x_num:
@@ -546,12 +563,16 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 if any(len(label.get_text()) > 1 for label in ax.get_xticklabels()):
                     _rotate_ticklabels(ax, rotation=45)
         else:
-            if (hue is not None) and (not sbd.is_numeric(hue)):
+            if (hue_series is not None) and (
+                not pd.api.types.is_numeric_dtype(hue_series)
+            ):
                 raise ValueError(
                     "If 'x' and 'y' are categories, 'hue' must be continuous."
                 )
 
-            contingency_table = _compute_contingency_table(x, y, hue, k)
+            contingency_table = _compute_contingency_table(
+                x_series, y_series, hue_series, k
+            )
             contingency_table.index = [
                 ellide_string(s) for s in contingency_table.index
             ]
@@ -576,8 +597,8 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 size_per_category = 0.6
 
             cbar_kwargs = (
-                {"label": f"Mean {sbd.name(hue)}"}
-                if hue is not None
+                {"label": f"Mean {hue_series.name}"}
+                if hue_series is not None
                 else {"label": "Count"}
             )
 
@@ -607,14 +628,17 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 _resize_categorical_axis(
                     figure=figure,
                     ax=ax,
-                    n_categories=sbd.n_unique(x_or_y),
+                    n_categories=x_or_y.nunique(),
                     is_x_axis=is_x_axis,
                     size_per_category=size_per_category,
                 )
 
         sns.despine(figure, **despine_params)
 
-        ax.set(xlabel=sbd.name(x), ylabel=sbd.name(y))
+        ax.set(
+            xlabel=x_series.name if x_series is not None else None,
+            ylabel=y_series.name if y_series is not None else None,
+        )
         if ax.legend_ is not None:
             sns.move_legend(ax, (1.05, 0.0))
 
