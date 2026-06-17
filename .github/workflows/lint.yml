@@ -1,5 +1,6 @@
 name: lint
 
+
 env:
   PYTHON: '3.14'
   LOCKFILE: 'ci/requirements/skore/python-3.14/scikit-learn-1.9/test-requirements.txt'
