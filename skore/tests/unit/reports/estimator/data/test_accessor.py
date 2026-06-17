@@ -28,7 +28,7 @@ def test_summarize_error(forest_binary_classification_with_test, params, err_msg
         report.data.summarize(**params)
 
 
-def test_analyze_data_source_not_available(
+def test_summarize_data_source_not_available(
     forest_binary_classification_with_test,
 ):
     """Check that we raise a proper error message when the data source requested is
@@ -45,7 +45,7 @@ def test_analyze_data_source_not_available(
         report.data.summarize(data_source="both")
 
 
-def test_analyze_data_source_without_y():
+def test_summarize_data_source_without_y():
     """Check the behaviour of `data_source` parameter without including `y`."""
     X, y = make_classification(n_classes=2, random_state=42)
     X = pd.DataFrame(X, columns=[f"Column {i}" for i in range(X.shape[1])])
@@ -68,7 +68,7 @@ def test_analyze_data_source_without_y():
     pd.testing.assert_frame_equal(display.summary["dataframe"], X)
 
 
-def test_analyze_data_source_with_y():
+def test_summarize_data_source_with_y():
     """Check the behaviour of `data_source` parameter with `y`."""
     X, y = make_classification(n_classes=2, random_state=42)
     X = pd.DataFrame(X, columns=[f"Column {i}" for i in range(X.shape[1])])
@@ -102,7 +102,7 @@ def test_analyze_data_source_with_y():
     "X", [[[0, 1], [2, 3]], ((0, 1), (2, 3)), [[0, np.nan], [np.nan, 1]]]
 )
 @pytest.mark.parametrize("y", [[0, 1], (0, 1)])
-def test_analyze_sequence(X, y):
+def test_summarize_sequence(X, y):
     """Check that lists/tuples are supported for X and y (like in scikit-learn)"""
 
     report = EstimatorReport(
@@ -115,7 +115,7 @@ def test_analyze_sequence(X, y):
 @pytest.mark.parametrize(
     "n_targets, target_column_names", [(1, ["Target"]), (2, ["Target 0", "Target 1"])]
 )
-def test_analyze_numpy_array(data_source, n_targets, target_column_names):
+def test_summarize_numpy_array(data_source, n_targets, target_column_names):
     """Check that NumPy arrays are converted to pandas DataFrames when data are
     retrieved."""
     X, y = make_regression(
@@ -143,7 +143,7 @@ def test_analyze_numpy_array(data_source, n_targets, target_column_names):
 
 
 @pytest.mark.parametrize("subsample_strategy", ["head", "random"])
-def test_analyze_subsampling(
+def test_summarize_subsampling(
     forest_binary_classification_with_test, subsample_strategy
 ):
     """Check that the `subsample` parameter is handled correctly."""
