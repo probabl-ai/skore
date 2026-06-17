@@ -111,7 +111,11 @@ def test_corr_plot(pyplot, estimator_report):
 
 
 def test_repr(display):
-    assert repr(display) == "<TableReportDisplay(...)>"
+    repr_str = repr(display)
+    assert repr(display.frame()) in repr_str
+    assert repr_str.endswith(
+        "Use .plot() to plot the data and .frame() to access the full data."
+    )
 
 
 def test_compute_contingency_table_error():

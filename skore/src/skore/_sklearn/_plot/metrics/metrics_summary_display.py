@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import pandas as pd
@@ -18,6 +20,9 @@ class MetricsSummaryRow(TypedDict):
 
     Parameters
     ----------
+    metric_name : str
+        Technical metric name (e.g. ``"accuracy"``); matches the key under which
+        the metric is registered in :attr:`EstimatorReport._metric_registry`.
     metric_verbose_name : str
         Human-readable metric name shown in the display.
     estimator_name : str
@@ -38,6 +43,7 @@ class MetricsSummaryRow(TypedDict):
         Cross-validation split index.
     """
 
+    metric_name: str
     metric_verbose_name: str
     estimator_name: str
     data_source: DataSource
@@ -109,11 +115,11 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     @staticmethod
     def _concatenate(
-        child_displays: list["MetricsSummaryDisplay"],
+        child_displays: list[MetricsSummaryDisplay],
         *,
         report_type: ReportType,
         extra_rows_data: list[dict[str, Any]],
-    ) -> "MetricsSummaryDisplay":
+    ) -> MetricsSummaryDisplay:
         rows = []
         for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
             rows.extend(
@@ -145,6 +151,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         """Process estimator report data into a formatted dataframe."""
         df = data.copy()
         df = df.dropna(axis="columns", how="all")
+        df = df.drop(columns="metric_name", errors="ignore")
 
         for col in df.columns.intersection(["label", "output", "average"]):
             df[col] = df[col].astype("string").fillna("")
@@ -401,9 +408,6 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     def __repr__(self) -> str:
         return f"{self.frame()!r}\nUse .frame() to control the format of the output."
-
-    def _repr_mimebundle_(self, **kwargs):
-        return {"text/plain": repr(self), "text/html": self._repr_html_()}
 
     @DisplayMixin.style_plot
     def plot(self) -> Figure:

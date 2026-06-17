@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import base64
 import re
+from io import BytesIO
+
+from matplotlib.figure import Figure
 
 # Strip script bodies when counting <div> so strings like "</div>" in JS do not skew.
 _HTML_SCRIPT_RE = re.compile(
@@ -31,3 +35,12 @@ def repair_estimator_html_for_slotted_host(html: str) -> str:
     if deficit > 0:
         return f"{html}{'</div>' * deficit}"
     return html
+
+
+def figure_to_html(figure: Figure) -> str:
+    """Return an HTML ``<img>`` tag embedding a matplotlib figure as base64 PNG."""
+    buffer = BytesIO()
+    figure.savefig(buffer, format="png", bbox_inches="tight")
+    buffer.seek(0)
+    encoded = base64.b64encode(buffer.read()).decode("ascii")
+    return f'<img src="data:image/png;base64,{encoded}">'

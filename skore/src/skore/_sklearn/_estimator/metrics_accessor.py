@@ -161,6 +161,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             rows.extend(
                 row
                 | {
+                    "metric_name": parsed_metric.name,
                     "estimator_name": self._parent.estimator_name_,
                     "data_source": data_source,
                 }
@@ -179,6 +180,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 MetricsSummaryRow,
                 row
                 | {
+                    "metric_name": metric.name,
                     "estimator_name": self._parent.estimator_name_,
                     "data_source": data_source,
                 },

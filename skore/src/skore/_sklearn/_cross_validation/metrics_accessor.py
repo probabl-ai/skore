@@ -338,6 +338,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     MetricsSummaryRow,
                     row
                     | {
+                        "metric_name": metric.name,
                         "estimator_name": report.estimator_name_,
                         "data_source": data_source,
                         "split": split_idx,

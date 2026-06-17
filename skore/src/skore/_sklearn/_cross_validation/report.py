@@ -709,7 +709,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             verbose=0,
         )
         return render_template(
-            "cross_validation_report_markdown.j2",
+            "report/cross_validation_report_markdown.j2",
             {
                 **report_markdown_context(self),
                 "fit_time": (

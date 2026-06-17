@@ -950,7 +950,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             verbose=0,
         )
         return render_template(
-            "estimator_report_markdown.j2",
+            "report/estimator_report_markdown.j2",
             {
                 **report_markdown_context(self),
                 "fit_time": timings.get("fit_time"),
