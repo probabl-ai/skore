@@ -10,7 +10,11 @@ from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn.types import PositiveLabel
-from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
+from skore._utils._dataframe import (
+    _concat_vertical_frames,
+    _normalize_X_as_dataframe,
+    _normalize_y_as_dataframe,
+)
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
@@ -168,28 +172,22 @@ def get_report_y(
         if data_source == "both":
             if report.y_train is None or report.y_test is None:
                 return None
-            y = nw.from_native(
-                nw.concat(
-                    [
-                        nw.from_native(_normalize_y_as_dataframe(report.y_train)),
-                        nw.from_native(_normalize_y_as_dataframe(report.y_test)),
-                    ],
-                    how="vertical",
-                )
-                .to_pandas()
-                .reset_index(drop=True)
-            ).to_pandas()
+            y = _concat_vertical_frames(
+                _normalize_y_as_dataframe(report.y_train),
+                _normalize_y_as_dataframe(report.y_test),
+            )
         elif data_source == "train":
             if report.y_train is None:
                 return None
-            y = nw.from_native(_normalize_y_as_dataframe(report.y_train)).to_pandas()
+            y = _normalize_y_as_dataframe(report.y_train)
         else:
             if report.y_test is None:
                 return None
-            y = nw.from_native(_normalize_y_as_dataframe(report.y_test)).to_pandas()
-        if y.shape[1] == 1:
-            return y.iloc[:, 0]
-        return y
+            y = _normalize_y_as_dataframe(report.y_test)
+        y_pd = nw.from_native(y).to_pandas()
+        if y_pd.shape[1] == 1:
+            return y_pd.iloc[:, 0]
+        return y_pd
     except NotImplementedError:
         return None
 
@@ -212,17 +210,10 @@ def get_preprocessed_X(
         if data_source == "both":
             if report.X_train is None or report.X_test is None:
                 return None
-            data = nw.from_native(
-                nw.concat(
-                    [
-                        nw.from_native(_normalize_X_as_dataframe(report.X_train)),
-                        nw.from_native(_normalize_X_as_dataframe(report.X_test)),
-                    ],
-                    how="vertical",
-                )
-                .to_pandas()
-                .reset_index(drop=True)
-            ).to_native()
+            data = _concat_vertical_frames(
+                _normalize_X_as_dataframe(report.X_train),
+                _normalize_X_as_dataframe(report.X_test),
+            )
         elif data_source == "train":
             if report.X_train is None:
                 return None

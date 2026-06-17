@@ -7,7 +7,11 @@ from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import TableReportDisplay
-from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
+from skore._utils._dataframe import (
+    _concat_vertical_frames,
+    _normalize_X_as_dataframe,
+    _normalize_y_as_dataframe,
+)
 
 
 class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -165,23 +169,9 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             X_test, y_test = self._retrieve_data_as_frame(
                 "test", with_y_task_aware, data_source
             )
-            X = nw.from_native(
-                nw.concat(
-                    [nw.from_native(X_train), nw.from_native(X_test)],
-                    how="vertical",
-                )
-                .to_pandas()
-                .reset_index(drop=True)
-            ).to_native()
+            X = _concat_vertical_frames(X_train, X_test)
             if with_y_task_aware:
-                y = nw.from_native(
-                    nw.concat(
-                        [nw.from_native(y_train), nw.from_native(y_test)],
-                        how="vertical",
-                    )
-                    .to_pandas()
-                    .reset_index(drop=True)
-                ).to_native()
+                y = _concat_vertical_frames(y_train, y_test)
 
         df = (
             nw.concat(
@@ -198,4 +188,4 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             else:  # subsample_strategy == "random":
                 df = nw.from_native(df).sample(subsample, seed=seed).to_native()
 
-        return nw.from_native(df).to_pandas()
+        return df

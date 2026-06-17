@@ -22,9 +22,10 @@ Chosen option: **Use [narwhals](https://narwhals-dev.github.io/narwhals/) (>=2.0
 
 1. **User input only**: use `nw.from_native()` / `.to_native()` when manipulating user-provided `X` / `y`.
 2. **Skore outputs stay pandas**: metrics frames, check helpers, and hub serialization use pandas.
-3. **Skrub reporting boundary**: convert to pandas with `nw.from_native(df).to_pandas()` before calling skrub reporting private APIs (`summarize_dataframe`, `to_html`).
+3. **Skrub reporting boundary**: convert to pandas with `nw.from_native(df).to_pandas()` only in `TableReportDisplay._compute_data_for_display` before calling `summarize_dataframe`.
 4. **Sklearn boundary**: convert to pandas/numpy before `Pipeline.transform` when needed.
-5. **No skore wrapper module**: call narwhals directly; normalization helpers live in `_utils/_dataframe.py` only.
+5. **Skore outputs stay pandas**: checks helpers (`get_report_y`, `get_preprocessed_X`) and hub JSON serialization call `to_pandas()` once at the return/boundary.
+6. **Internal skore ops use `to_native()`**: concat, subsample, and data accessor preparation preserve the user's backend until a boundary above.
 
 ### Consequences
 

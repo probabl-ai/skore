@@ -90,7 +90,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             else:  # subsample_strategy == "random":
                 df = nw.from_native(df).sample(subsample, seed=seed).to_native()
 
-        return nw.from_native(df).to_pandas()
+        return df
 
     def summarize(
         self,

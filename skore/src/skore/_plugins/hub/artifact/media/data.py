@@ -29,9 +29,13 @@ class TableReport(Media[Report]):  # noqa: D101
         table_report = display.summary
 
         # Replace full dataset by its head/tail
-        dataframe = nw.from_native(table_report.pop("dataframe")).to_pandas()
-        table_report["extract_head"] = dataframe.head(3).to_dict(orient="split")
-        table_report["extract_tail"] = dataframe.tail(3).to_dict(orient="split")
+        dataframe_nw = nw.from_native(table_report.pop("dataframe"))
+        table_report["extract_head"] = (
+            dataframe_nw.head(3).to_pandas().to_dict(orient="split")
+        )
+        table_report["extract_tail"] = (
+            dataframe_nw.tail(3).to_pandas().to_dict(orient="split")
+        )
 
         # Remove irrelevant information
         del table_report["sample_table"]

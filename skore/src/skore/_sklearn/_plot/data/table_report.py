@@ -199,7 +199,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         self.summary = summary
 
     @classmethod
-    def _compute_data_for_display(cls, dataset: pd.DataFrame) -> "TableReportDisplay":
+    def _compute_data_for_display(cls, dataset: Any) -> "TableReportDisplay":
         """Private method to create a TableReportDisplay from a dataset.
 
         Parameters

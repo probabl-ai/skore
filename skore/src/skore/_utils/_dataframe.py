@@ -11,6 +11,19 @@ from skore._externals._sklearn_compat import check_array
 UserDataFrame = Any
 
 
+def _reset_pandas_index(native: UserDataFrame) -> UserDataFrame:
+    """Reset the index after vertical concat when the backend is pandas."""
+    if isinstance(native, pd.DataFrame):
+        return native.reset_index(drop=True)
+    return native
+
+
+def _concat_vertical_frames(*frames: UserDataFrame) -> UserDataFrame:
+    """Vertically concatenate user dataframes, preserving the native backend."""
+    merged = nw.concat([nw.from_native(frame) for frame in frames], how="vertical")
+    return _reset_pandas_index(merged.to_native())
+
+
 def _ensure_string_column_names(df: nw.DataFrame[Any]) -> nw.DataFrame[Any]:
     if all(isinstance(col, str) for col in df.columns):
         return df
