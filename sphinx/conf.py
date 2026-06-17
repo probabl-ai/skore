@@ -207,7 +207,7 @@ html_theme_options = {
         },
     ],
     "switcher": {
-        "json_url": f"{os.environ["SPHINX_URL"]}/versions.json",
+        "json_url": f"{os.environ["SPHINX_URL"]}/versions.json?={release}",
         "version_match": release,
     },
     "check_switcher": True,
