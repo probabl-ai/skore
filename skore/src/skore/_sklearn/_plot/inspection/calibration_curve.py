@@ -48,16 +48,16 @@ class CalibrationDisplay(DisplayMixin):
     >>> display = report.inspection.calibration_curve(n_bins=5, strategy="uniform")
     >>> display.frame()
         predicted_probability  fraction_of_positives data_source  label
-    0               0.058363               0.059952        test      0
-    1               0.292843               0.293697        test      0
-    2               0.499930               0.473191        test      0
-    3               0.709112               0.712788        test      0
-    4               0.941642               0.945545        test      0
-    5               0.058358               0.054455        test      1
-    6               0.290888               0.287212        test      1
-    7               0.500070               0.526809        test      1
-    8               0.707157               0.706303        test      1
-    9               0.941637               0.940048        test      1
+    0               0.058169               0.058186        test      0
+    1               0.291218               0.279537        test      0
+    2               0.501687               0.507645        test      0
+    3               0.709106               0.705734        test      0
+    4               0.942051               0.940309        test      0
+    5               0.057949               0.059691        test      1
+    6               0.290894               0.294266        test      1
+    7               0.498313               0.492355        test      1
+    8               0.708782               0.720463        test      1
+    9               0.941831               0.941814        test      1
     """
 
     _default_line_kwargs = {
