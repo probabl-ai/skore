@@ -263,26 +263,40 @@ class _InspectionAccessor(_BaseAccessor["ComparisonReport"], DirNamesMixin):
         ...    n_repeats=2,
         ...    seed=0,
         ... ).frame(aggregate=None)
-             estimator data_source metric     feature  repetition     value
-        0  small alpha        test     r2  Feature #0           1  0.77...
-        1  small alpha        test     r2  Feature #1           1  1.41...
-        2  small alpha        test     r2  Feature #2           1  0.01...
-        ...
+            estimator data_source metric     feature  repetition     value
+        0   small alpha        test     r2  Feature #0           1  0.772111
+        1   small alpha        test     r2  Feature #1           1  1.414346
+        2   small alpha        test     r2  Feature #2           1  0.019945
+        3   small alpha        test     r2  Feature #0           2  0.813312
+        4   small alpha        test     r2  Feature #1           2  1.751332
+        5   small alpha        test     r2  Feature #2           2  0.027508
+        6     big alpha        test     r2  Feature #0           1  0.053502
+        7     big alpha        test     r2  Feature #1           1  0.089826
+        8     big alpha        test     r2  Feature #2           1  0.000743
+        9     big alpha        test     r2  Feature #0           2  0.050890
+        10    big alpha        test     r2  Feature #1           2  0.115473
+        11    big alpha        test     r2  Feature #2           2  0.006292
         >>> report.inspection.permutation_importance(
         ...    metric={
         ...        "r2": make_scorer(r2_score),
-        ...        "mse": make_scorer(mean_squared_error),
+        ...        "mse": "neg_mean_squared_error",
         ...    },
         ...    n_repeats=2,
         ...    seed=0,
         ... ).frame()
-              estimator data_source  metric  ...   value_mean    value_std
-        0   small alpha        test      r2  ...     0.792711     0.029133
-        1   small alpha        test      r2  ...     1.582839     0.238285
-        2   small alpha        test      r2  ...     0.023727     0.005348
-        3   small alpha        test     mse  ...  -2663.409431   97.882726
-        4   small alpha        test     mse  ...  -5318.136563  800.606376
-        5   small alpha        test     mse  ...   -79.718389    17.967898
+            estimator data_source metric     feature   value_mean   value_std
+        0   small alpha        test     r2  Feature #0     0.792711    0.029133
+        1   small alpha        test     r2  Feature #1     1.582839    0.238285
+        2   small alpha        test     r2  Feature #2     0.023727    0.005348
+        3   small alpha        test    mse  Feature #0  2663.409431   97.882726
+        4   small alpha        test    mse  Feature #1  5318.136563  800.606376
+        5   small alpha        test    mse  Feature #2    79.718389   17.967898
+        6     big alpha        test     r2  Feature #0     0.052196    0.001847
+        7     big alpha        test     r2  Feature #1     0.102649    0.018135
+        8     big alpha        test     r2  Feature #2     0.003517    0.003923
+        9     big alpha        test    mse  Feature #0   175.372208    6.206125
+        10    big alpha        test    mse  Feature #1   344.888719   60.931895
+        11    big alpha        test    mse  Feature #2    11.818311   13.181543
         ...
 
         Notes
