@@ -44,12 +44,12 @@ def init_project_dir(data_dir: Path, project_name: str) -> Path:
 def export(
     report: EstimatorReport,
     *,
-    root_data_dir: Path | None = None,
+    data_dir: Path | None = None,
     project_name: str = "default",
     name: str | None = None,
 ) -> Path:
-    root_data_dir = find_data_dir() if root_data_dir is None else Path(root_data_dir)
-    project_dir = init_project_dir(root_data_dir, project_name)
+    data_dir = find_data_dir() if data_dir is None else Path(data_dir)
+    project_dir = init_project_dir(data_dir, project_name)
     reports_dir = project_dir / "reports"
     date_str = (
         datetime.fromisoformat(str(report._metadata["creation-date"]))
@@ -126,15 +126,15 @@ def export(
     checks_dir.mkdir(exist_ok=True)
     report.checks.summarize().frame().to_csv(checks_dir / "summarize.csv", index=False)
 
-    data_dir = output_dir / "data"
-    data_dir.mkdir(exist_ok=True)
+    dataset_refs_dir = output_dir / "data"
+    dataset_refs_dir.mkdir(exist_ok=True)
 
     for subset_name, subset in state["data"].items():
         subset_refs = {}
         if subset is not None:
             for key, val in subset.items():
-                subset_refs[key] = get_data_ref(val, root_data_dir)
-            refs_file = data_dir / f"{subset_name.removeprefix('_')}.json"
+                subset_refs[key] = get_data_ref(val, data_dir)
+            refs_file = dataset_refs_dir / f"{subset_name.removeprefix('_')}.json"
             refs_file.write_text(json.dumps(subset_refs), "UTF-8")
 
     predictions_dir = output_dir / "predictions"
@@ -197,10 +197,10 @@ def load(report_dir: Path) -> EstimatorReport:
     return EstimatorReport.from_dict(state)
 
 
-def get_data_ref(value: Any, root_data_dir: Path) -> dict[str, str]:
+def get_data_ref(value: Any, data_dir: Path) -> dict[str, str]:
     h = joblib.hash(value)
     file_name = f"{h}.joblib"
-    target = root_data_dir / "datasets" / file_name
+    target = data_dir / "datasets" / file_name
     if not target.is_file():
         with open(target, "wb") as f:
             joblib.dump(value, f)
@@ -212,19 +212,19 @@ class Project:
         self.name = name
         self.workspace = workspace
 
-    def root_data_dir(self) -> Path:
-        if self.workspace is None:
-            workspace = find_data_dir()
-        else:
-            workspace = init_data_dir(Path(self.workspace))
-        return workspace
+    def data_dir(self) -> Path:
+        return (
+            find_data_dir()
+            if self.workspace is None
+            else init_data_dir(Path(self.workspace))
+        )
 
     def path(self) -> Path:
-        return init_project_dir(self.root_data_dir(), self.name)
+        return init_project_dir(self.data_dir(), self.name)
 
     def put(self, key: str, report: EstimatorReport) -> Path:
         return export(
-            report, root_data_dir=self.root_data_dir(), project_name=self.name, name=key
+            report, data_dir=self.data_dir(), project_name=self.name, name=key
         )
 
     def get(self, report_id: int) -> EstimatorReport:
