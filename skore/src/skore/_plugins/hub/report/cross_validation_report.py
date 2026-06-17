@@ -289,12 +289,14 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         Notes
         -----
         All metrics whose value is not a scalar are currently ignored:
+        - ignore ``NaN``,
         - ignore ``list[float]`` for multi-output ML task,
         - ignore ``dict[str: float]`` for multi-classes ML task.
         """
         data = self.report.metrics.summarize(data_source="both").data
         scalar = data[
-            data["label"].isna() & data["output"].isna() & data["average"].isna()
+            (data["label"].isna() & data["output"].isna() & data["average"].isna())
+            & data["score"].notna()
         ]
 
         aggregated = (
