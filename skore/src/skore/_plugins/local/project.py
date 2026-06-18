@@ -15,26 +15,24 @@ from ... import CrossValidationReport, EstimatorReport
 from ..._utils._cache_key import deep_key_sanitize
 
 
-def init_workspace(parent_dir: str | Path = ".", project_name: str = "default") -> Path:
-    workspace = Path(parent_dir) / "skore_data"
-    if workspace.is_dir():
-        return workspace
-    workspace.mkdir(parents=True)
-    (workspace / ".SKORE_DATA_DIRECTORY").touch()
-    (workspace / "projects").mkdir()
-    (workspace / "datasets").mkdir()
-    return workspace
+def init_workspace(workspace_dir: str | Path, project_name: str = "default") -> Path:
+    workspace_dir = Path(workspace_dir)
+    workspace_dir.mkdir(parents=True, exist_ok=True)
+    (workspace_dir / ".SKORE_WORKSPACE").touch()
+    (workspace_dir / "projects").mkdir(exist_ok=True)
+    (workspace_dir / "datasets").mkdir(exist_ok=True)
+    return workspace_dir
 
 
 def find_workspace() -> Path:
     start = Path(".").resolve()
     for candidate in [start, *start.parents[::-1]]:
         workspace = candidate / "skore_data"
-        if workspace.is_dir() and (workspace / ".SKORE_DATA_DIRECTORY").exists():
+        if workspace.is_dir() and (workspace / ".SKORE_WORKSPACE").exists():
             return workspace
-    if data_dir := os.environ.get("SKORE_DATA_DIR"):
-        return init_workspace(Path(data_dir))
-    return init_workspace(Path.home())
+    if env_workspace := os.environ.get("SKORE_WORKSPACE"):
+        return init_workspace(Path(env_workspace))
+    return init_workspace(Path.home() / "skore_data")
 
 
 def _init_project_dir(workspace: Path, project_name: str) -> Path:
@@ -70,7 +68,7 @@ def _dump_report(
         symlink.symlink_to(output_dir)
 
     if isinstance(report, EstimatorReport):
-        _dump_estimator_report(report, workspace, output_dir)
+        _dump_estimator_report(report, workspace, output_dir, name=name)
     else:
         _write_report_contents(report, output_dir, workspace, name)
         _write_cv_split_reports(report, output_dir, workspace)
@@ -342,12 +340,8 @@ def _get_data_ref(value: Any, workspace: Path) -> dict[str, str]:
 class Project:
     def __init__(self, name: str, workspace: str | Path | None = None):
         self.name = name
-        if workspace is not None:
-            workspace = Path(workspace)
-            if workspace.name != "skore_data":
-                raise ValueError("workspace directory name must be 'skore_data'")
         self.workspace = (
-            find_workspace() if workspace is None else init_workspace(workspace.parent)
+            find_workspace() if workspace is None else init_workspace(workspace)
         )
         self.path = _init_project_dir(self.workspace, self.name)
 
@@ -368,8 +362,9 @@ class Project:
         for p in sorted(reports_path.iterdir()):
             try:
                 result.append(load_report_metadata(p))
-            except Exception:
-                warnings.warn(f"Failed to load report at {p}", stacklevel=2)
+            except Exception as e:
+                warnings.warn(f"Failed to load report at {p}: {e!r}", stacklevel=2)
+                raise
         return result
 
     def delete(self) -> None:
