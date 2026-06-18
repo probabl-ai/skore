@@ -272,9 +272,13 @@ class CheckHighClassImbalance(Check):
         if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
-        y = nw.from_native(cast(UserSeries, y), series_only=True).to_pandas()
+        y = nw.from_native(cast(UserSeries, y), series_only=True)
         counts = y.value_counts()
-        overrepresented_class = counts[counts >= 0.8 * counts.sum()].index
+        value_col = counts.columns[0]
+        total = counts["count"].sum()
+        overrepresented_class = counts.filter(nw.col("count") >= 0.8 * total)[
+            value_col
+        ].to_list()
 
         if len(overrepresented_class) > 0:
             return (
@@ -305,9 +309,13 @@ class CheckUnderrepresentedClasses(Check):
         if report.ml_task != "multiclass-classification" or y is None:
             raise CheckNotApplicable()
 
-        y = nw.from_native(cast(UserSeries, y), series_only=True).to_pandas()
+        y = nw.from_native(cast(UserSeries, y), series_only=True)
         counts = y.value_counts()
-        underrepresented_classes = counts[counts <= 0.1 * counts.sum()].index
+        value_col = counts.columns[0]
+        total = counts["count"].sum()
+        underrepresented_classes = counts.filter(nw.col("count") <= 0.1 * total)[
+            value_col
+        ].to_list()
         if len(underrepresented_classes) > 0:
             return (
                 f"Classes {underrepresented_classes} each represent less than 10% of "
