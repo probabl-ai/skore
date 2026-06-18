@@ -572,6 +572,15 @@ def test_skd016_ignores_infrastructure(regression_data):
     assert "alpha" in tips.loc["SKD016", "explanation"]
 
 
+def test_skd016_ignores_budget_params(regression_data):
+    """Raising max_iter alone still triggers SKD016."""
+    X, y = regression_data
+    report = evaluate(Ridge(max_iter=200), X, y)
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    assert "SKD016" in tips.index
+    assert "alpha" in tips.loc["SKD016", "explanation"]
+
+
 def test_skd016_not_applicable_unknown_estimator(regression_data):
     """SKD016 raises CheckNotApplicable for estimators not in the table."""
     X, y = regression_data
