@@ -179,19 +179,18 @@ def get_report_y(
                     nw.from_native(_normalize_y_as_dataframe(report.y_test)),
                 ],
                 how="vertical",
-            ).to_native()
+            )
         elif data_source == "train":
             if report.y_train is None:
                 return None
-            y = _normalize_y_as_dataframe(report.y_train)
+            y = nw.from_native(_normalize_y_as_dataframe(report.y_train))
         else:
             if report.y_test is None:
                 return None
-            y = _normalize_y_as_dataframe(report.y_test)
-        y_nw = nw.from_native(y)
-        if y_nw.shape[1] == 1:
-            return y_nw.get_column(y_nw.columns[0]).to_native()
-        return y_nw.to_native()
+            y = nw.from_native(_normalize_y_as_dataframe(report.y_test))
+        if y.shape[1] == 1:
+            return y.get_column(y.columns[0]).to_native()
+        return y.to_native()
     except NotImplementedError:
         return None
 
@@ -234,7 +233,7 @@ def get_preprocessed_X(
 
     preprocessor, _ = split_preprocessor_estimator(report.estimator_)
     if preprocessor is not None and len(preprocessor.steps) > 0:
-        data = preprocessor.transform(nw.from_native(data).to_pandas())
+        data = preprocessor.transform(data)
 
     try:
         return _normalize_X_as_dataframe(data)

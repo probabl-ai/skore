@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, TypeAlias, cast
 
 import narwhals as nw
 import numpy as np
@@ -8,9 +8,16 @@ from numpy.typing import ArrayLike
 
 from skore._externals._sklearn_compat import check_array
 
-UserDataFrame = Any
-UserSeries = Any
-UserTarget = UserSeries | UserDataFrame
+if TYPE_CHECKING:
+    import polars as pl
+
+    UserDataFrame: TypeAlias = pd.DataFrame | pl.DataFrame
+    UserSeries: TypeAlias = pd.Series | pl.Series
+else:
+    UserDataFrame: TypeAlias = pd.DataFrame
+    UserSeries: TypeAlias = pd.Series
+
+UserTarget: TypeAlias = UserSeries | UserDataFrame
 
 
 def _ensure_string_column_names(df: nw.DataFrame[Any]) -> nw.DataFrame[Any]:

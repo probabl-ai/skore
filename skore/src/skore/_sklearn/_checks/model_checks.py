@@ -39,6 +39,7 @@ from skore._sklearn._checks.tunable_hyperparameters import (
     INFRASTRUCTURE_PARAMS,
 )
 from skore._sklearn.feature_names import _get_feature_names
+from skore._utils._dataframe import UserSeries
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -271,7 +272,7 @@ class CheckHighClassImbalance(Check):
         if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
-        y = nw.from_native(y, series_only=True).to_pandas()
+        y = nw.from_native(cast(UserSeries, y), series_only=True).to_pandas()
         counts = y.value_counts()
         overrepresented_class = counts[counts >= 0.8 * counts.sum()].index
 
@@ -304,7 +305,7 @@ class CheckUnderrepresentedClasses(Check):
         if report.ml_task != "multiclass-classification" or y is None:
             raise CheckNotApplicable()
 
-        y = nw.from_native(y, series_only=True).to_pandas()
+        y = nw.from_native(cast(UserSeries, y), series_only=True).to_pandas()
         counts = y.value_counts()
         underrepresented_classes = counts[counts <= 0.1 * counts.sum()].index
         if len(underrepresented_classes) > 0:
