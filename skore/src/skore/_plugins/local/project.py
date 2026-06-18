@@ -37,6 +37,12 @@ def find_workspace() -> Path:
 
 def _init_project_dir(workspace: Path, project_name: str) -> Path:
     project_dir = workspace / "projects" / project_name
+    if (
+        not project_dir.expanduser()
+        .resolve()
+        .is_relative_to(workspace.expanduser().resolve() / "projects")
+    ):
+        raise ValueError(project_name)
     if project_dir.is_dir():
         return project_dir
     project_dir.mkdir(parents=True)
@@ -137,9 +143,7 @@ def _write_metrics(
 ) -> None:
     metrics_dir = output_dir / "metrics"
     metrics_dir.mkdir(exist_ok=True)
-    report.metrics.summarize().frame(flat_index=True).to_csv(
-        metrics_dir / "summarize.csv"
-    )
+    report.metrics.summarize().data.to_csv(metrics_dir / "summarize.csv", index=False)
     if hasattr(report, "_metric_registry"):
         with open(metrics_dir / "registry.pickle", "wb") as f:
             pickle.dump(report._metric_registry, f)
@@ -264,7 +268,7 @@ def load_report_metadata(report_dir: Path) -> dict[str, Any]:
         (report_dir / "data" / f"{subset_name}.json").read_text("UTF-8")
     )["_skrub_y"]["hash"]
     metrics = pd.read_csv(report_dir / "metrics" / "summarize.csv")
-    metadata |= metrics.set_index("Metric").iloc[:, 0].to_dict()
+    metadata |= metrics.groupby("metric_name")["score"].mean().to_dict()
     return metadata
 
 
@@ -285,7 +289,7 @@ def load_report(report_dir: Path) -> EstimatorReport | CrossValidationReport:
         loaded_data = {}
         for k, v in data_info.items():
             with open(v["file_path"], "rb") as f:
-                loaded_data[k] = -joblib.load(f)
+                loaded_data[k] = joblib.load(f)
         data_dict[data_info_file.stem] = loaded_data
 
     check_results_cache = json.loads(
@@ -350,8 +354,10 @@ class Project:
             report, workspace=self.workspace, project_name=self.name, name=key
         )
 
-    def get(self, report_id: int) -> EstimatorReport | CrossValidationReport:
-        report_path = next(iter((self.path / "reports").glob(f"*{report_id:x}*")), None)
+    def get(self, report_id: str) -> EstimatorReport | CrossValidationReport:
+        report_path = next(
+            iter((self.path / "reports").glob(f"*{int(report_id):x}*")), None
+        )
         if report_path is None:
             raise KeyError(report_id)
         return load_report(report_path)
@@ -367,5 +373,10 @@ class Project:
                 raise
         return result
 
-    def delete(self) -> None:
-        shutil.rmtree(self.path)
+    @staticmethod
+    def delete(*, name: str, workspace: str | Path) -> None:
+        workspace = Path(workspace)
+        if not (workspace / ".SKORE_WORKSPACE").exists():
+            raise ValueError(f"Not a skore workspace: {workspace}")
+        path = Project(name, workspace).path
+        shutil.rmtree(path)
