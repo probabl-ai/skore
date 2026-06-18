@@ -2,7 +2,6 @@ import warnings
 from typing import Literal
 
 import narwhals as nw
-import pandas as pd
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
@@ -160,8 +159,14 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         if data_source == "train":
             X, y = self._retrieve_data_as_frame("train", with_y_task_aware, data_source)
+            X = nw.from_native(X)
+            if with_y_task_aware:
+                y = nw.from_native(y)
         elif data_source == "test":
             X, y = self._retrieve_data_as_frame("test", with_y_task_aware, data_source)
+            X = nw.from_native(X)
+            if with_y_task_aware:
+                y = nw.from_native(y)
         else:
             X_train, y_train = self._retrieve_data_as_frame(
                 "train", with_y_task_aware, data_source
@@ -172,30 +177,30 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             X = nw.concat(
                 [nw.from_native(X_train), nw.from_native(X_test)],
                 how="vertical",
-            ).to_native()
-            if isinstance(X, pd.DataFrame):
-                X = X.reset_index(drop=True)
+            )
             if with_y_task_aware:
                 y = nw.concat(
                     [nw.from_native(y_train), nw.from_native(y_test)],
                     how="vertical",
-                ).to_native()
-                if isinstance(y, pd.DataFrame):
-                    y = y.reset_index(drop=True)
+                )
 
-        df = (
-            nw.concat(
-                [nw.from_native(X), nw.from_native(y)],
-                how="horizontal",
-            ).to_native()
-            if with_y_task_aware
-            else X
-        )
+        if with_y_task_aware:
+            if data_source == "both":
+                row_index = "__row_index__"
+                df = (
+                    X.with_row_index(row_index)
+                    .join(y.with_row_index(row_index), on=row_index, how="inner")
+                    .drop(row_index)
+                )
+            else:
+                df = nw.concat([X, y], how="horizontal")
+        else:
+            df = X
 
         if subsample:
             if subsample_strategy == "head":
-                df = nw.from_native(df).head(subsample).to_native()
+                df = df.head(subsample)
             else:  # subsample_strategy == "random":
-                df = nw.from_native(df).sample(subsample, seed=seed).to_native()
+                df = df.sample(subsample, seed=seed)
 
-        return df
+        return df.to_native()

@@ -75,22 +75,21 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             with_y = self._parent.ml_task != "clustering"
 
         X, y = self._retrieve_data_as_frame(with_y)
-        df = (
-            nw.concat(
+        if with_y:
+            df = nw.concat(
                 [nw.from_native(X), nw.from_native(y)],
                 how="horizontal",
-            ).to_native()
-            if with_y
-            else X
-        )
+            )
+        else:
+            df = nw.from_native(X)
 
         if subsample:
             if subsample_strategy == "head":
-                df = nw.from_native(df).head(subsample).to_native()
+                df = df.head(subsample)
             else:  # subsample_strategy == "random":
-                df = nw.from_native(df).sample(subsample, seed=seed).to_native()
+                df = df.sample(subsample, seed=seed)
 
-        return df
+        return df.to_native()
 
     def summarize(
         self,

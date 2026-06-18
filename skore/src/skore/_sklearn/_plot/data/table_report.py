@@ -24,6 +24,36 @@ from skore._sklearn._plot.utils import (
 )
 from skore._utils.repr import ReprHTMLMixin
 
+_DATETIME_DTYPES = (nw.dtypes.Datetime, nw.dtypes.Date, nw.dtypes.Time)
+
+
+def _series_dtype(series: pd.Series) -> nw.dtypes.DType:
+    return nw.from_native(series, series_only=True).dtype
+
+
+def _is_numeric_column(series: pd.Series) -> bool:
+    return _series_dtype(series).is_numeric()
+
+
+def _is_integer_column(series: pd.Series) -> bool:
+    return _series_dtype(series).is_integer()
+
+
+def _is_duration_column(series: pd.Series) -> bool:
+    return isinstance(_series_dtype(series), nw.dtypes.Duration)
+
+
+def _is_plot_categorical_column(series: pd.Series) -> bool:
+    """Return whether a column should be treated as categorical for plots."""
+    dtype = _series_dtype(series)
+    if dtype.is_numeric() or isinstance(dtype, nw.dtypes.Duration):
+        return False
+    return not isinstance(dtype, _DATETIME_DTYPES)
+
+
+def _is_narwhals_categorical(series: pd.Series) -> bool:
+    return isinstance(_series_dtype(series), nw.dtypes.Categorical)
+
 
 def _truncate_top_k_categories(
     col: pd.Series | None, k: int, other_label: str = "other"
@@ -49,7 +79,7 @@ def _truncate_top_k_categories(
     pd.Series
         The truncated column.
     """
-    if col is None or pd.api.types.is_numeric_dtype(col):
+    if col is None or _is_numeric_column(col):
         return col
 
     col = col.copy()
@@ -57,7 +87,7 @@ def _truncate_top_k_categories(
     values, _ = zip(*counter, strict=False)
     # we don't want to replace NaN with 'other'
     keep = col.isin(values) | col.isna()
-    if isinstance(col.dtype, pd.CategoricalDtype):
+    if _is_narwhals_categorical(col):
         col = col.cat.add_categories(other_label)
         col[~keep] = other_label
         col = col.cat.remove_unused_categories()
@@ -380,13 +410,10 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         column = dataframe[x or y]
 
         duration_unit = None
-        if pd.api.types.is_timedelta64_dtype(column):
+        if _is_duration_column(column):
             column, duration_unit = duration_to_numeric(column)
 
-        if is_categorical := not (
-            pd.api.types.is_numeric_dtype(column)
-            or pd.api.types.is_datetime64_any_dtype(column)
-        ):
+        if is_categorical := _is_plot_categorical_column(column):
             top_k = column.value_counts().head(k).index
 
             column = column[column.isin(top_k)]
@@ -395,7 +422,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
             )
             default_histplot_kwargs["color"] = "tab:orange"
 
-        if pd.api.types.is_integer_dtype(column) or is_categorical:
+        if _is_integer_column(column) or is_categorical:
             default_histplot_kwargs["discrete"] = True
 
         histplot_kwargs_validated = _validate_style_kwargs(
@@ -492,8 +519,8 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         )
 
         despine_params = {"top": True, "right": True, "trim": True, "offset": 10}
-        is_x_num = x_series is not None and pd.api.types.is_numeric_dtype(x_series)
-        is_y_num = y_series is not None and pd.api.types.is_numeric_dtype(y_series)
+        is_x_num = x_series is not None and _is_numeric_column(x_series)
+        is_y_num = y_series is not None and _is_numeric_column(y_series)
         hue_series = _truncate_top_k_categories(hue_series, k)
 
         if is_x_num and is_y_num:
@@ -563,9 +590,7 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 if any(len(label.get_text()) > 1 for label in ax.get_xticklabels()):
                     _rotate_ticklabels(ax, rotation=45)
         else:
-            if (hue_series is not None) and (
-                not pd.api.types.is_numeric_dtype(hue_series)
-            ):
+            if (hue_series is not None) and (not _is_numeric_column(hue_series)):
                 raise ValueError(
                     "If 'x' and 'y' are categories, 'hue' must be continuous."
                 )
@@ -585,8 +610,8 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
                 annotation_format = (
                     ".0f"
                     if all(
-                        pd.api.types.is_integer_dtype(dtype)
-                        for dtype in contingency_table.dtypes
+                        dt.is_integer()
+                        for dt in nw.from_native(contingency_table).schema.values()
                     )
                     else ".2f"
                 )
