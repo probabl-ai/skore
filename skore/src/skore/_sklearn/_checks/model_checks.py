@@ -385,12 +385,12 @@ class CheckMDIHighCardinalityBias(Check):
         if X is None or not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable()
 
-        X_nw = nw.from_native(X)
-        n_samples = X_nw.shape[0]
+        X = nw.from_native(X)
+        n_samples = X.shape[0]
         high_cardinality_features = [
-            c
-            for c in X_nw.columns
-            if X_nw.select(nw.col(c).n_unique()).item(0, 0) > 0.5 * n_samples
+            column
+            for column in X.columns
+            if X.select(nw.col(column).n_unique()).item(0, 0) > 0.5 * n_samples
         ]
 
         if high_cardinality_features:
@@ -593,17 +593,16 @@ class CheckGoldenFeature(Check):
         )
         full_test = collect_scores(report, data_source="test")
 
-        X_train_nw = nw.from_native(X_train)
-        X_test_nw = nw.from_native(X_test)
+        X_train, X_test = nw.from_native(X_train), nw.from_native(X_test)
         golden_features: list[str] = []
-        for i in range(X_train_nw.shape[1]):
-            column = X_train_nw.columns[i]
+        for i in range(X_train.shape[1]):
+            column = X_train.columns[i]
             try:
                 single_report = EstimatorReport(
                     clone(predictor_),
-                    X_train=X_train_nw.select(nw.col(column)).to_native(),
+                    X_train=X_train.select(nw.col(column)).to_native(),
                     y_train=y_train,
-                    X_test=X_test_nw.select(nw.col(column)).to_native(),
+                    X_test=X_test.select(nw.col(column)).to_native(),
                     y_test=y_test,
                     pos_label=report.pos_label,
                 )
@@ -711,8 +710,7 @@ class CheckTrainTestTimeOverlap(Check):
         ) or not nw.dependencies.is_into_dataframe(report.X_test):
             raise CheckNotApplicable()
 
-        X_train = nw.from_native(report.X_train)
-        X_test = nw.from_native(report.X_test)
+        X_train, X_test = nw.from_native(report.X_train), nw.from_native(report.X_test)
         train_datetime_columns = set(X_train.select(nw.selectors.datetime()).columns)
         test_datetime_columns = set(X_test.select(nw.selectors.datetime()).columns)
         datetime_columns = sorted(train_datetime_columns & test_datetime_columns)
