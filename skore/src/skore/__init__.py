@@ -31,7 +31,6 @@ from skore._sklearn import (
     TrainTestSplit,
     compare,
     evaluate,
-    train_test_split,
 )
 from skore._sklearn._checks import Check, CheckNotApplicable, ChecksSummaryDisplay
 from skore._sklearn._plot.base import Display
@@ -90,7 +89,6 @@ __all__ = [
     "evaluate",
     "login",
     "show_versions",
-    "train_test_split",
 ]
 
 
