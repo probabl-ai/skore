@@ -183,6 +183,18 @@ def _make_user_dir(output_dir: Path) -> None:
     )
 
 
+def _write_checks(
+    report: EstimatorReport | CrossValidationReport, output_dir: Path
+) -> None:
+    checks_dir = output_dir / "checks"
+    checks_dir.mkdir(exist_ok=True)
+    report.checks.summarize(fast_mode=True).frame().to_csv(
+        checks_dir / "summarize.csv", index=False
+    )
+    with open(checks_dir / "_check_results_cache.json", "w", encoding="UTF-8") as f:
+        json.dump(getattr(report, "_check_results_cache", {}), f)
+
+
 def _write_report_contents(
     report: EstimatorReport | CrossValidationReport,
     output_dir: Path,
@@ -195,6 +207,7 @@ def _write_report_contents(
     _make_user_dir(output_dir)
     _write_metrics(report, output_dir)
     _write_datasets(report, output_dir, workspace)
+    _write_checks(report, output_dir)
 
 
 def _write_permutation_importances(report: EstimatorReport, output_dir: Path) -> None:
@@ -230,9 +243,6 @@ def _dump_estimator_report(
 ) -> Path:
     _write_report_contents(report, output_dir, workspace, name)
     _write_permutation_importances(report, output_dir)
-    checks_dir = output_dir / "checks"
-    checks_dir.mkdir(exist_ok=True)
-    report.checks.summarize().frame().to_csv(checks_dir / "summarize.csv", index=False)
     predictions_dir = output_dir / "predictions"
     predictions_dir.mkdir(exist_ok=True)
     for (subset_name, meth_name), val in report.to_dict()["predictions"].items():
@@ -280,6 +290,9 @@ def load_report(report_dir: Path) -> EstimatorReport | CrossValidationReport:
                 loaded_data[k] = -joblib.load(f)
         data_dict[data_info_file.stem] = loaded_data
 
+    check_results_cache = json.loads(
+        (report_dir / "checks" / "_check_results_cache.json").read_text("UTF-8")
+    )
     if metadata["report_type"] == "cross-validation":
         sub_reports = []
         split_indices = []
@@ -293,7 +306,9 @@ def load_report(report_dir: Path) -> EstimatorReport | CrossValidationReport:
             )
         state["estimator_reports"] = sub_reports
         state["split_indices"] = split_indices
-        return CrossValidationReport.from_dict(state)
+        loaded_cv_report = CrossValidationReport.from_dict(state)
+        loaded_cv_report._check_results_cache = check_results_cache
+        return loaded_cv_report
     state["predictions"] = {}
     for pred_file in (report_dir / "predictions").glob("*.joblib"):
         with open(pred_file, "rb") as f:
@@ -309,7 +324,9 @@ def load_report(report_dir: Path) -> EstimatorReport | CrossValidationReport:
         )
         value = pd.read_csv(importances_dir / "importances.csv")
         state["optional"]["cache"][key] = value
-    return EstimatorReport.from_dict(state)
+    loaded_report = EstimatorReport.from_dict(state)
+    loaded_report._check_results_cache = check_results_cache
+    return loaded_report
 
 
 def _get_data_ref(value: Any, workspace: Path) -> dict[str, str]:
