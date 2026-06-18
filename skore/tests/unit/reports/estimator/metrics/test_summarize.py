@@ -38,6 +38,7 @@ def check_display_structure(
     data = display.data
 
     assert set(data.columns) == {
+        "metric_name",
         "metric_verbose_name",
         "estimator_name",
         "data_source",

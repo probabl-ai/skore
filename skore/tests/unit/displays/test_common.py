@@ -3,8 +3,20 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 
+import skore
 from skore import EstimatorReport
-from skore._sklearn._plot.base import Display
+from skore._sklearn._plot.base import Display, DisplayMixin
+
+DISPLAY_CLASSES = [
+    getattr(skore, name)
+    for name in skore.__all__
+    if name.endswith("Display") and name != "Display"
+]
+
+
+@pytest.mark.parametrize("display_cls", DISPLAY_CLASSES)
+def test_display_inherits_display_mixin(display_cls):
+    assert issubclass(display_cls, DisplayMixin)
 
 
 @pytest.mark.parametrize(

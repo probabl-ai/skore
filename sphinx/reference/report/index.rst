@@ -17,7 +17,6 @@ These functions and classes build upon scikit-learn's functionality.
 
     evaluate
     compare
-    train_test_split
     TrainTestSplit
 
 Single Estimator Report

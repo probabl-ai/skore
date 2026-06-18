@@ -43,19 +43,7 @@ TableReport(y.to_frame())
 pos_label, neg_label = "allowed", "disallowed"
 
 # %%
-# Before training a predictive model, we need to split our dataset into a training
-# and a validation set.
-from skore import train_test_split
-
-# If you have many dataframes to split on, you can always ask train_test_split to return
-# a dictionary. Remember, it needs to be passed as a keyword argument!
-split_data = train_test_split(X=df, y=y, random_state=42, as_dict=True)
-
-# %%
-# By the way, notice how skore's :func:`~skore.train_test_split` automatically warns us
-# for a class imbalance.
-#
-# Now, we need to define a predictive model. Hopefully, `skrub` provides a convenient
+# Now, we need to define a predictive model. Thankfully, `skrub` provides a convenient
 # function (:func:`skrub.tabular_pipeline`) when it comes to getting strong baseline
 # predictive models with a single line of code. As its feature engineering is generic,
 # it does not provide some handcrafted and tailored feature engineering but still
@@ -75,11 +63,16 @@ estimator
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 #
 # Now, we would be interested in getting some insights from our predictive model.
-# One way is to use the :class:`skore.EstimatorReport` class. This constructor will
-# detect that our estimator is unfitted and will fit it for us on the training data.
-from skore import EstimatorReport
+# One way is to use the :class:`skore.EstimatorReport` class which we will
+# construct using the `evaluate` function. This function will detect that our
+# estimator is unfitted and will fit it for us on the training data and return an
+# :class:`~skore.EstimatorReport` object.
+#
+# Specifying a `splitter` of 0.2 will perform a 80/20 train-test split.
 
-report = EstimatorReport(estimator, **split_data, pos_label=pos_label)
+from skore import evaluate
+
+report = evaluate(estimator, X=df, y=y, pos_label=pos_label, splitter=0.2)
 report
 
 # %%
@@ -209,7 +202,7 @@ import numpy as np
 from sklearn.metrics import make_scorer
 
 rng = np.random.default_rng(42)
-amount = rng.integers(low=100, high=1000, size=len(split_data["y_test"]))
+amount = rng.integers(low=100, high=1000, size=len(report.y_test))
 
 report.metrics.add(metric=make_scorer(operational_decision_cost, amount=amount))
 

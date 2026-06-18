@@ -3,9 +3,10 @@ import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
 from sklearn.datasets import make_regression
+from sklearn.model_selection import train_test_split
 from skrub import tabular_pipeline
 
-from skore import CrossValidationReport, EstimatorReport, train_test_split
+from skore import CrossValidationReport, EstimatorReport
 from skore._sklearn._plot.data.table_report import (
     _compute_contingency_table,
     _resize_categorical_axis,
@@ -24,8 +25,14 @@ def X_y():
 @pytest.fixture(scope="module")
 def estimator_report(X_y):
     X, y = X_y
-    split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    return EstimatorReport(tabular_pipeline("regressor"), **split_data)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    return EstimatorReport(
+        tabular_pipeline("regressor"),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -111,7 +118,11 @@ def test_corr_plot(pyplot, estimator_report):
 
 
 def test_repr(display):
-    assert repr(display) == "<TableReportDisplay(...)>"
+    repr_str = repr(display)
+    assert repr(display.frame()) in repr_str
+    assert repr_str.endswith(
+        "Use .plot() to plot the data and .frame() to access the full data."
+    )
 
 
 def test_compute_contingency_table_error():

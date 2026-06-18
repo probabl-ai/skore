@@ -4,10 +4,11 @@ import pytest
 from matplotlib.collections import QuadMesh
 from matplotlib.figure import Figure
 from sklearn.dummy import DummyRegressor
+from sklearn.model_selection import train_test_split
 from skrub import tabular_pipeline
 from skrub.datasets import fetch_employee_salaries
 
-from skore import Display, EstimatorReport, train_test_split
+from skore import Display, EstimatorReport
 from skore._sklearn._plot.data.table_report import TableReportDisplay
 
 
@@ -21,8 +22,14 @@ def estimator_report():
         pd.Timestamp.now() - X["date_first_hired"]
     ).dt.to_pytimedelta()
     X["cents"] = 100 * y
-    split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    return EstimatorReport(tabular_pipeline(DummyRegressor()), **split_data)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    return EstimatorReport(
+        tabular_pipeline(DummyRegressor()),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -87,8 +94,14 @@ def test_constructor(display):
     ],
 )
 def test_X_y(X, y):
-    split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    report = EstimatorReport(tabular_pipeline(DummyRegressor()), **split_data)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    report = EstimatorReport(
+        tabular_pipeline(DummyRegressor()),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
     display = report.data.summarize()
     assert isinstance(display, TableReportDisplay)
 

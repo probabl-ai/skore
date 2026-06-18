@@ -2,19 +2,18 @@
 
 from __future__ import annotations
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from functools import cached_property, partial
-from operator import methodcaller
-from typing import ClassVar, Generic, TypeVar, cast
+from typing import ClassVar, Generic, TypeVar
 
-from joblib import Parallel, delayed
+import joblib
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
 from skore import THREADABLE, CrossValidationReport, EstimatorReport, console
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.artifact.pickle import Pickle
-from skore._plugins.hub.metric.metric import Metric
+from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.project.project import Project
 
 SkinnedProgress = partial(
@@ -41,8 +40,6 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
     Attributes
     ----------
-    METRICS : ClassVar[tuple[Metric, ...]]
-        The metric classes that have to be computed from the report.
     MEDIAS : ClassVar[tuple[Media, ...]]
         The media classes that have to be computed from the report.
     project : Project
@@ -55,7 +52,6 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    METRICS: ClassVar[tuple[type[Metric[Report]], ...]]
     MEDIAS: ClassVar[tuple[type[Media[Report]], ...]]
 
     project: Project = Field(repr=False, exclude=True)
@@ -72,16 +68,12 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
     @cached_property
     def dataset_fingerprint(self) -> str:
         """The hash of the targets in the test-set."""
-        import joblib
-
-        return cast(
-            str,
-            joblib.hash(
-                self.report.y_test
-                if isinstance(self.report, EstimatorReport)
-                else self.report.y
-            ),
+        fingerprint: str = joblib.hash(
+            self.report.y_test
+            if isinstance(self.report, EstimatorReport)
+            else self.report.y
         )
+        return fingerprint
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -90,40 +82,10 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         return self.report.ml_task
 
     @computed_field  # type: ignore[prop-decorator]
-    @cached_property
+    @property
+    @abstractmethod
     def metrics(self) -> list[Metric[Report]]:
-        """
-        The list of scalar metrics that have been computed from the report.
-
-        Notes
-        -----
-        Unavailable metrics have been filtered out.
-
-        All metrics whose value is not a scalar are currently ignored:
-        - ignore ``list[float]`` for multi-output ML task,
-        - ignore ``dict[str: float]`` for multi-classes ML task.
-
-        The position field is used to drive the ``hub``'s parallel coordinates plot:
-        - int [0, inf[, to be displayed at the position,
-        - None, not to be displayed.
-        """
-        self.report.cache_predictions()
-
-        metrics = [metric_cls(report=self.report) for metric_cls in self.METRICS]
-        tasks = list(map(delayed(methodcaller("compute")), metrics))
-
-        with SkinnedProgress() as progress:
-            for _ in progress.track(
-                Parallel(backend="threading")(tasks),
-                description=(
-                    f"Computing {self.report.__class__.__name__} "
-                    f"#{self.report._hash} metrics"
-                ),
-                total=len(tasks),
-            ):
-                progress.refresh()
-
-        return [metric for metric in metrics if metric.value is not None]
+        """The metrics computed from the report."""
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

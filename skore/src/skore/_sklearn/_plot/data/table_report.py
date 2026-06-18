@@ -23,7 +23,6 @@ from skore._sklearn._plot.utils import (
     _validate_style_kwargs,
 )
 from skore._utils._dataframe import UserDataFrame
-from skore._utils.repr import ReprHTMLMixin
 
 
 def _truncate_top_k_categories(
@@ -161,7 +160,7 @@ def _resize_categorical_axis(
     _adjust_fig_size(figure, ax, target_width, target_height)
 
 
-class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
+class TableReportDisplay(DisplayMixin):
     """Summarize and plot dataset columns.
 
     Parameters
@@ -716,12 +715,8 @@ class TableReportDisplay(ReprHTMLMixin, DisplayMixin):
         else:
             raise ValueError(f"Invalid kind: {kind!r}")
 
-    def _html_repr(self) -> str:
-        """Show the HTML representation of the report."""
-        return to_html(self.summary, standalone=False, column_filters=None)
-
-    def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}(...)>"
+    def _repr_html_(self) -> str:
+        return f"{to_html(self.summary, standalone=False, column_filters=None)}"
 
     # ignore the type signature because we override kwargs by specifying the name of
     # the parameters for the user.
