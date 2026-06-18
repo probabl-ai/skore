@@ -9,6 +9,8 @@ from numpy.typing import ArrayLike
 from skore._externals._sklearn_compat import check_array
 
 UserDataFrame = Any
+UserSeries = Any
+UserTarget = UserSeries | UserDataFrame
 
 
 def _reset_pandas_index(native: UserDataFrame) -> UserDataFrame:

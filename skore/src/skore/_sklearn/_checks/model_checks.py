@@ -271,6 +271,7 @@ class CheckHighClassImbalance(Check):
         if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
+        y = nw.from_native(y, series_only=True).to_pandas()
         counts = y.value_counts()
         overrepresented_class = counts[counts >= 0.8 * counts.sum()].index
 
@@ -303,6 +304,7 @@ class CheckUnderrepresentedClasses(Check):
         if report.ml_task != "multiclass-classification" or y is None:
             raise CheckNotApplicable()
 
+        y = nw.from_native(y, series_only=True).to_pandas()
         counts = y.value_counts()
         underrepresented_classes = counts[counts <= 0.1 * counts.sum()].index
         if len(underrepresented_classes) > 0:
@@ -337,8 +339,8 @@ class CheckCoefficientsInterpretation(Check):
         if X is None or not hasattr(predictor, "coef_"):
             raise CheckNotApplicable()
 
-        stds = X.std(axis=0)
-        if not np.allclose(stds, stds.iloc[0]):
+        std_values = nw.from_native(X).select(nw.all().std()).to_numpy().ravel()
+        if not np.allclose(std_values, std_values[0]):
             return (
                 "Features are not on the same scale: coefficient magnitudes "
                 "are not directly comparable as feature importance."
@@ -374,8 +376,12 @@ class CheckMDIHighCardinalityBias(Check):
         if X is None or not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable()
 
+        X_nw = nw.from_native(X)
+        n_samples = X_nw.shape[0]
         high_cardinality_features = [
-            c for c in X.columns if X[c].nunique() > 0.5 * len(X)
+            c
+            for c in X_nw.columns
+            if X_nw.select(nw.col(c).n_unique()).item(0, 0) > 0.5 * n_samples
         ]
 
         if high_cardinality_features:
@@ -423,11 +429,11 @@ class CheckCorrelatedFeatures(Check):
 
         if X is None:
             raise CheckNotApplicable()
-        X = X.select_dtypes(include="number")
+        X = nw.from_native(X).select(nw.selectors.numeric())
         if X.shape[1] < 2 or X.shape[1] > 1000:
             raise CheckNotApplicable()
 
-        corr = np.abs(spearmanr(X).statistic)
+        corr = np.abs(spearmanr(X.to_numpy()).statistic)
         if corr.ndim < 2:
             return None
         np.fill_diagonal(corr, 0)
@@ -578,14 +584,17 @@ class CheckGoldenFeature(Check):
         )
         full_test = collect_scores(report, data_source="test")
 
+        X_train_nw = nw.from_native(X_train)
+        X_test_nw = nw.from_native(X_test)
         golden_features: list[str] = []
-        for i in range(X_train.shape[1]):
+        for i in range(X_train_nw.shape[1]):
+            column = X_train_nw.columns[i]
             try:
                 single_report = EstimatorReport(
                     clone(predictor_),
-                    X_train=X_train.iloc[:, [i]],
+                    X_train=X_train_nw.select(nw.col(column)).to_native(),
                     y_train=y_train,
-                    X_test=X_test.iloc[:, [i]],
+                    X_test=X_test_nw.select(nw.col(column)).to_native(),
                     y_test=y_test,
                     pos_label=report.pos_label,
                 )

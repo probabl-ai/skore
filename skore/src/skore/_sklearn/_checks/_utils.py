@@ -11,6 +11,8 @@ from sklearn.pipeline import Pipeline
 
 from skore._sklearn.types import PositiveLabel
 from skore._utils._dataframe import (
+    UserDataFrame,
+    UserTarget,
     _concat_vertical_frames,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
@@ -166,7 +168,7 @@ def get_report_y(
     report: EstimatorReport,
     *,
     data_source: Literal["train", "test", "both"],
-) -> pd.Series | pd.DataFrame | None:
+) -> UserTarget | None:
     """Return the target as a 1d Series or multi-output DataFrame."""
     try:
         if data_source == "both":
@@ -184,10 +186,10 @@ def get_report_y(
             if report.y_test is None:
                 return None
             y = _normalize_y_as_dataframe(report.y_test)
-        y_pd = nw.from_native(y).to_pandas()
-        if y_pd.shape[1] == 1:
-            return y_pd.iloc[:, 0]
-        return y_pd
+        y_nw = nw.from_native(y)
+        if y_nw.shape[1] == 1:
+            return y_nw.get_column(y_nw.columns[0]).to_native()
+        return y_nw.to_native()
     except NotImplementedError:
         return None
 
@@ -196,7 +198,7 @@ def get_preprocessed_X(
     report: EstimatorReport,
     *,
     data_source: Literal["train", "test", "both"],
-) -> pd.DataFrame | None:
+) -> UserDataFrame | None:
     """Return the feature matrix seen by the predictor.
 
     When the report's estimator is a :class:`~sklearn.pipeline.Pipeline`, the
@@ -230,6 +232,6 @@ def get_preprocessed_X(
         data = preprocessor.transform(nw.from_native(data).to_pandas())
 
     try:
-        return nw.from_native(_normalize_X_as_dataframe(data)).to_pandas()
+        return _normalize_X_as_dataframe(data)
     except NotImplementedError:
         return None
