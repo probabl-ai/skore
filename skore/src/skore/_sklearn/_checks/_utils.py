@@ -13,7 +13,6 @@ from skore._sklearn.types import PositiveLabel
 from skore._utils._dataframe import (
     UserDataFrame,
     UserTarget,
-    _concat_vertical_frames,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
@@ -174,10 +173,13 @@ def get_report_y(
         if data_source == "both":
             if report.y_train is None or report.y_test is None:
                 return None
-            y = _concat_vertical_frames(
-                _normalize_y_as_dataframe(report.y_train),
-                _normalize_y_as_dataframe(report.y_test),
-            )
+            y = nw.concat(
+                [
+                    nw.from_native(_normalize_y_as_dataframe(report.y_train)),
+                    nw.from_native(_normalize_y_as_dataframe(report.y_test)),
+                ],
+                how="vertical",
+            ).to_native()
         elif data_source == "train":
             if report.y_train is None:
                 return None
@@ -212,10 +214,13 @@ def get_preprocessed_X(
         if data_source == "both":
             if report.X_train is None or report.X_test is None:
                 return None
-            data = _concat_vertical_frames(
-                _normalize_X_as_dataframe(report.X_train),
-                _normalize_X_as_dataframe(report.X_test),
-            )
+            data = nw.concat(
+                [
+                    nw.from_native(_normalize_X_as_dataframe(report.X_train)),
+                    nw.from_native(_normalize_X_as_dataframe(report.X_test)),
+                ],
+                how="vertical",
+            ).to_native()
         elif data_source == "train":
             if report.X_train is None:
                 return None

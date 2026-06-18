@@ -33,7 +33,6 @@ Chosen option: **Use [narwhals](https://narwhals-dev.github.io/narwhals/) (>=2.0
 * Good: pandas and polars supported uniformly; easier to extend later.
 * Good: no skrub compatibility shim required (`tabular_pipeline` imported from public skrub API).
 * Neutral: skrub reporting private APIs remain for TableReport HTML/summary generation.
-* Bad: vertical concat must reset pandas index after `nw.concat(how="vertical")` to match prior `ignore_index=True` behaviour.
 
 ## Supersedes
 

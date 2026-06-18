@@ -2,13 +2,13 @@ import warnings
 from typing import Literal
 
 import narwhals as nw
+import pandas as pd
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import TableReportDisplay
 from skore._utils._dataframe import (
-    _concat_vertical_frames,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
@@ -169,9 +169,19 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             X_test, y_test = self._retrieve_data_as_frame(
                 "test", with_y_task_aware, data_source
             )
-            X = _concat_vertical_frames(X_train, X_test)
+            X = nw.concat(
+                [nw.from_native(X_train), nw.from_native(X_test)],
+                how="vertical",
+            ).to_native()
+            if isinstance(X, pd.DataFrame):
+                X = X.reset_index(drop=True)
             if with_y_task_aware:
-                y = _concat_vertical_frames(y_train, y_test)
+                y = nw.concat(
+                    [nw.from_native(y_train), nw.from_native(y_test)],
+                    how="vertical",
+                ).to_native()
+                if isinstance(y, pd.DataFrame):
+                    y = y.reset_index(drop=True)
 
         df = (
             nw.concat(
