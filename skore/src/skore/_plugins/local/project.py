@@ -1,8 +1,9 @@
 import contextlib
 import json
+import os
 import pickle
 import shutil
-from datetime import datetime
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from ... import CrossValidationReport, EstimatorReport
+from ..._utils._cache_key import deep_key_sanitize
 
 
 def init_workspace(parent_dir: str | Path = ".", project_name: str = "default") -> Path:
@@ -30,10 +32,12 @@ def find_workspace() -> Path:
         workspace = candidate / "skore_data"
         if workspace.is_dir() and (workspace / ".SKORE_DATA_DIRECTORY").exists():
             return workspace
+    if data_dir := os.environ.get("SKORE_DATA_DIR"):
+        return init_workspace(Path(data_dir))
     return init_workspace(Path.home())
 
 
-def init_project_dir(workspace: Path, project_name: str) -> Path:
+def _init_project_dir(workspace: Path, project_name: str) -> Path:
     project_dir = workspace / "projects" / project_name
     if project_dir.is_dir():
         return project_dir
@@ -42,7 +46,7 @@ def init_project_dir(workspace: Path, project_name: str) -> Path:
     return project_dir
 
 
-def export(
+def _dump_report(
     report: EstimatorReport,
     *,
     workspace: Path | None = None,
@@ -50,14 +54,9 @@ def export(
     name: str | None = None,
 ) -> Path:
     workspace = find_workspace() if workspace is None else Path(workspace)
-    project_dir = init_project_dir(workspace, project_name)
+    project_dir = _init_project_dir(workspace, project_name)
     reports_dir = project_dir / "reports"
-    date_str = (
-        datetime.fromisoformat(str(report._metadata["creation-date"]))
-        .replace(tzinfo=None)
-        .isoformat()
-        .replace(":", "-")
-    )
+    date_str = str(report._metadata["creation-date"]).replace(":", "-")
     name_str = "" if name is None else f"__{name}"
     output_dir = (
         reports_dir / f"{date_str}__{report._metadata['id']:x}__"
@@ -69,16 +68,18 @@ def export(
         symlink.unlink()
     with contextlib.suppress(OSError):
         symlink.symlink_to(output_dir)
-    if isinstance(report, EstimatorReport):
-        return _export_estimator_report(report, workspace, output_dir)
-    with open(output_dir / "estimator.pickle", "wb") as f:
-        pickle.dump(report.estimator, f)
-    _write_metadata(report, output_dir, name=name)
-    _write_metrics(report, output_dir)
-    _write_datasets(report, output_dir, workspace)
-    _write_report_state(report, output_dir)
-    _write_estimators(report, output_dir)
 
+    if isinstance(report, EstimatorReport):
+        _dump_estimator_report(report, workspace, output_dir)
+    else:
+        _write_report_contents(report, output_dir, workspace, name)
+        _write_cv_split_reports(report, output_dir, workspace)
+    return output_dir
+
+
+def _write_cv_split_reports(
+    report: CrossValidationReport, output_dir: Path, workspace: Path
+) -> None:
     split_reports_dir = output_dir / "reports"
     split_reports_dir.mkdir()
     n_digits = int(np.ceil(np.log10(len(report.reports_))))
@@ -87,10 +88,9 @@ def export(
     ):
         split_dir = split_reports_dir / f"split_{{:0>{n_digits}}}".format(split)
         split_dir.mkdir()
-        _export_estimator_report(sub_report, workspace, split_dir)
+        _dump_estimator_report(sub_report, workspace, split_dir)
         np.savetxt(split_dir / "train_indices.txt", train_idx, fmt="%d")
         np.savetxt(split_dir / "test_indices.txt", test_idx, fmt="%d")
-    return output_dir
 
 
 def _write_metadata(
@@ -158,7 +158,7 @@ def _write_datasets(
             subset_refs = {}
             if subset is not None:
                 for key, val in subset.items():
-                    subset_refs[key] = get_data_ref(val, workspace)
+                    subset_refs[key] = _get_data_ref(val, workspace)
                 refs_file = dataset_refs_dir / f"{subset_name.removeprefix('_')}.json"
                 refs_file.write_text(json.dumps(subset_refs), "UTF-8")
 
@@ -174,50 +174,75 @@ def _write_estimators(
         pickle.dump(report.learner_, f)
 
 
-def _export_estimator_report(
-    report: EstimatorReport,
-    workspace: Path,
-    output_dir: Path,
-    name: str | None = None,
-) -> Path:
-    _write_metadata(report, output_dir, name=name)
-    _write_report_state(report, output_dir)
-    _write_estimators(report, output_dir)
+def _make_user_dir(output_dir: Path) -> None:
     user_dir = output_dir / "user"
     user_dir.mkdir(exist_ok=True)
     (user_dir / "README").write_text(
         "This directory is not used by skore, use it to store arbitrary "
         "additional data or notes attached to this report.\n"
     )
+
+
+def _write_report_contents(
+    report: EstimatorReport | CrossValidationReport,
+    output_dir: Path,
+    workspace: Path,
+    name: str | None,
+) -> None:
+    _write_metadata(report, output_dir, name=name)
+    _write_report_state(report, output_dir)
+    _write_estimators(report, output_dir)
+    _make_user_dir(output_dir)
     _write_metrics(report, output_dir)
+    _write_datasets(report, output_dir, workspace)
+
+
+def _write_permutation_importances(report: EstimatorReport, output_dir: Path) -> None:
+    importances_dir = output_dir / "inspection" / "permutation_importance"
+    importances_dir.mkdir(exist_ok=True, parents=True)
+    for cache_item in report._cache.items():
+        match cache_item:
+            case (
+                data_source,
+                "permutation_importance",
+                ("mapping", kwarg_items),
+            ), display:
+                kwargs = dict(kwarg_items)
+                display_dir = (
+                    importances_dir / "permutation_importance__"
+                    f"{data_source}__{kwargs['at_step']}__{kwargs['metric']}"
+                )
+                display_dir.mkdir(exist_ok=True)
+                display.importances.to_csv(display_dir / "importances.csv", index=False)
+                (display_dir / "kwargs.json").write_text(json.dumps(kwargs), "UTF-8")
+                (display_dir / "cache_key.json").write_text(
+                    json.dumps((data_source, "permutation_importance", kwargs))
+                )
+            case _:
+                pass
+
+
+def _dump_estimator_report(
+    report: EstimatorReport,
+    workspace: Path,
+    output_dir: Path,
+    name: str | None = None,
+) -> Path:
+    _write_report_contents(report, output_dir, workspace, name)
+    _write_permutation_importances(report, output_dir)
     checks_dir = output_dir / "checks"
     checks_dir.mkdir(exist_ok=True)
     report.checks.summarize().frame().to_csv(checks_dir / "summarize.csv", index=False)
-
-    _write_datasets(report, output_dir, workspace)
     predictions_dir = output_dir / "predictions"
     predictions_dir.mkdir(exist_ok=True)
     for (subset_name, meth_name), val in report.to_dict()["predictions"].items():
         with open(predictions_dir / f"{subset_name}__{meth_name}.joblib", "wb") as f:
             joblib.dump(val, f)
 
-    inspection_dir = output_dir / "inspection"
-    inspection_dir.mkdir(exist_ok=True)
-    permutation_displays = [
-        (k, v) for k, v in report._cache.items() if k[1] == "permutation_importance"
-    ]
-    for k, display in permutation_displays:
-        display_dir = inspection_dir / f"{k[0]}__{k[2][1][0][1]}"
-        # TODO handle multiple permutations for the same thing: keep the one
-        # with most repeats, add suffix to dir, ...
-        #
-        # Store creation params in cache and in display object
-        display_dir.mkdir(exist_ok=True)
-        display.importances.to_csv(display_dir / "importances.csv", index=False)
     return output_dir
 
 
-def load_metadata(report_dir: Path) -> dict[str, Any]:
+def load_report_metadata(report_dir: Path) -> dict[str, Any]:
     metadata: dict[str, Any] = json.loads(
         (report_dir / "metadata.json").read_text("UTF-8")
     )
@@ -235,7 +260,7 @@ def load_metadata(report_dir: Path) -> dict[str, Any]:
     return metadata
 
 
-def load(report_dir: Path) -> EstimatorReport | CrossValidationReport:
+def load_report(report_dir: Path) -> EstimatorReport | CrossValidationReport:
     metadata = json.loads((report_dir / "metadata.json").read_text("UTF-8"))
     state = json.loads((report_dir / "state.json").read_text("UTF-8"))
     with open(report_dir / "estimator.pickle", "rb") as f:
@@ -259,7 +284,7 @@ def load(report_dir: Path) -> EstimatorReport | CrossValidationReport:
         sub_reports = []
         split_indices = []
         for p in sorted((report_dir / "reports").glob("split_*")):
-            sub_reports.append(load(p).to_dict())
+            sub_reports.append(load_report(p).to_dict())
             split_indices.append(
                 (
                     np.loadtxt(p / "train_indices.txt", dtype=int),
@@ -276,10 +301,18 @@ def load(report_dir: Path) -> EstimatorReport | CrossValidationReport:
     with open(report_dir / "metrics" / "registry.pickle", "rb") as f:
         state["metric_registry"] = pickle.load(f)
     state["optional"] = {"cache": {}}
+    for importances_dir in (report_dir / "inspection" / "permutation_importance").glob(
+        "permutation_importance__*"
+    ):
+        key = deep_key_sanitize(
+            json.loads((importances_dir / "cache_key.json").read_text("UTF-8"))
+        )
+        value = pd.read_csv(importances_dir / "importances.csv")
+        state["optional"]["cache"][key] = value
     return EstimatorReport.from_dict(state)
 
 
-def get_data_ref(value: Any, workspace: Path) -> dict[str, str]:
+def _get_data_ref(value: Any, workspace: Path) -> dict[str, str]:
     h = joblib.hash(value)
     file_name = f"{h}.joblib"
     target = workspace / "datasets" / file_name
@@ -299,10 +332,10 @@ class Project:
         self.workspace = (
             find_workspace() if workspace is None else init_workspace(workspace.parent)
         )
-        self.path = init_project_dir(self.workspace, self.name)
+        self.path = _init_project_dir(self.workspace, self.name)
 
     def put(self, key: str, report: EstimatorReport) -> Path:
-        return export(
+        return _dump_report(
             report, workspace=self.workspace, project_name=self.name, name=key
         )
 
@@ -310,11 +343,17 @@ class Project:
         report_path = next(iter((self.path / "reports").glob(f"*{report_id:x}*")), None)
         if report_path is None:
             raise KeyError(report_id)
-        return load(report_path)
+        return load_report(report_path)
 
     def summarize(self) -> list[dict[str, Any]]:
         reports_path = self.path / "reports"
-        return [load_metadata(p) for p in reports_path.iterdir()]
+        result = []
+        for p in sorted(reports_path.iterdir()):
+            try:
+                result.append(load_report_metadata(p))
+            except Exception:
+                warnings.warn(f"Failed to load report at {p}", stacklevel=2)
+        return result
 
     def delete(self) -> None:
         shutil.rmtree(self.path)
