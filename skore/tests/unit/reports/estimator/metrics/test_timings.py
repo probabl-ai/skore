@@ -31,9 +31,8 @@ def test_only_fit(estimator_data):
 
 @pytest.mark.parametrize("data_source", ["test", "train"])
 def test_predict_prefitted(data_source, estimator_data):
-    """If the wrapped estimator is prefitted, and some predictions are computed,
-"""If the estimator is prefitted, and some predictions are computed,
-   then `timings` is filled up accordingly."""
+    """If the estimator is prefitted, and some predictions are computed,
+    then `timings` is filled up accordingly."""
     estimator, data = estimator_data
     report = EstimatorReport(estimator.fit(data["X_train"], data["y_train"]), **data)
 
