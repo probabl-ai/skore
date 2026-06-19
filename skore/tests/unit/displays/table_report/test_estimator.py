@@ -3,8 +3,10 @@ import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
 from matplotlib.figure import Figure
+from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
 from sklearn.model_selection import train_test_split
+from sklearn.utils._testing import _convert_container
 from skrub import tabular_pipeline
 from skrub.datasets import fetch_employee_salaries
 
@@ -70,6 +72,34 @@ def test_constructor(display):
 
     assert hasattr(display, "summary")
     assert isinstance(display.summary, dict)
+
+
+@pytest.mark.parametrize(
+    "x_container,y_container",
+    [
+        ("array", "array"),
+        ("pandas", "series"),
+        ("polars", "polars_series"),
+    ],
+)
+def test_display_creation_with_containers(x_container, y_container):
+    """Check that summarize returns a display for paired container types."""
+    X, y = make_regression(n_samples=100, n_features=5, random_state=42)
+    feature_columns = [f"Feature {i}" for i in range(X.shape[1])]
+    X = _convert_container(
+        X, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y = _convert_container(y, y_container, minversion="0.20.23")
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    report = EstimatorReport(
+        tabular_pipeline(DummyRegressor()),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.data.summarize(data_source="train")
+    assert isinstance(display, TableReportDisplay)
 
 
 @pytest.mark.parametrize(

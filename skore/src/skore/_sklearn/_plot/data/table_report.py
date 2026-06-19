@@ -136,7 +136,7 @@ def _resize_categorical_axis(
 
     Parameters
     ----------
-    fig : Figure
+    figure : Figure
         The figure to resize.
 
     ax : Axes
@@ -199,13 +199,13 @@ class TableReportDisplay(DisplayMixin):
         self.summary = summary
 
     @classmethod
-    def _compute_data_for_display(cls, dataset: Any) -> "TableReportDisplay":
+    def _compute_data_for_display(cls, dataset: UserDataFrame) -> "TableReportDisplay":
         """Private method to create a TableReportDisplay from a dataset.
 
         Parameters
         ----------
-        dataset : DataFrame
-            The dataset to summarize.
+        dataset : UserDataFrame
+            The dataset to summarize, as a pandas or polars DataFrame.
 
         Returns
         -------
@@ -388,15 +388,18 @@ class TableReportDisplay(DisplayMixin):
             top_k = (
                 column.drop_nulls().value_counts(sort=True).head(k)[column.name]
             ).to_list()
-            # the ordered categorical encoding required by seaborn is pandas-only.
-            plot_column = (
-                column.filter(column.is_in(top_k))
-                .to_pandas()
-                .astype(pd.CategoricalDtype(categories=top_k, ordered=True))
+            plot_column = pd.Series(
+                pd.Categorical(
+                    column.filter(column.is_in(top_k)).to_numpy(),
+                    categories=top_k,
+                    ordered=True,
+                ),
+                name=column.name,
             )
             default_histplot_kwargs["color"] = "tab:orange"
             default_histplot_kwargs["discrete"] = True
         else:
+            # Numeric/temporal columns are passed to seaborn as native series.
             plot_column = column.to_native()
             if dtype.is_integer():
                 default_histplot_kwargs["discrete"] = True
@@ -499,9 +502,8 @@ class TableReportDisplay(DisplayMixin):
         is_y_num = y_col is not None and y_col.dtype.is_numeric()
         is_hue_num = hue_col is not None and hue_col.dtype.is_numeric()
 
-        # `_truncate_top_k_categories`, `pd.crosstab` and the categorical encoding
-        # below are pandas-only, and seaborn requires a single backend per call, so
-        # materialize the vectors to pandas here.
+        # `_truncate_top_k_categories`, `pd.crosstab`, and seaborn require a single
+        # backend per call, so materialize 2D distribution columns to pandas here.
         x_series: pd.Series | None = x_col.to_pandas() if x_col is not None else None
         y_series: pd.Series | None = y_col.to_pandas() if y_col is not None else None
         hue_series: pd.Series | None = (
@@ -703,10 +705,10 @@ class TableReportDisplay(DisplayMixin):
 
         Returns
         -------
-        DataFrame
-            The dataset used to create the table report. When ``kind="dataset"``,
-            the dataframe is returned in the user's native backend (pandas or
-            polars).
+        UserDataFrame or pd.DataFrame
+            When ``kind="dataset"``, the dataframe is returned in the user's native
+            backend (pandas or polars). When ``kind="top-associations"``, a pandas
+            DataFrame of column associations is returned.
         """
         if kind == "dataset":
             return self.summary["dataframe"]

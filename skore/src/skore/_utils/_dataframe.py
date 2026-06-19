@@ -88,3 +88,26 @@ def _normalize_y_as_dataframe(y: ArrayLike) -> UserDataFrame:
 
     columns = ["Target"] if y.ndim == 1 else [f"Target {i}" for i in range(y.shape[1])]
     return pd.DataFrame(y, columns=columns)
+
+
+def _concat_vertical(
+    a: ArrayLike, b: ArrayLike
+) -> UserDataFrame | UserSeries | np.ndarray:
+    """Concatenate two tabular objects vertically, preserving the native backend."""
+    if nw.dependencies.is_into_series(a):
+        combined = nw.concat(
+            [
+                nw.from_native(a, allow_series=True, series_only=True).to_frame(),
+                nw.from_native(b, allow_series=True, series_only=True).to_frame(),
+            ],
+            how="vertical",
+        )
+        return combined.get_column(combined.columns[0]).to_native()
+
+    if nw.dependencies.is_into_dataframe(a):
+        return nw.concat(
+            [nw.from_native(a), nw.from_native(b)],
+            how="vertical",
+        ).to_native()
+
+    return np.concatenate([np.asarray(a), np.asarray(b)])

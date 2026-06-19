@@ -5,6 +5,7 @@ import pytest
 import scipy.sparse as sp
 
 from skore._utils._dataframe import (
+    _concat_vertical,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
@@ -74,3 +75,30 @@ def test_normalize_y_pandas_series():
     result = _normalize_y_as_dataframe(y)
     assert isinstance(result, pd.DataFrame)
     assert list(result.columns) == ["label"]
+
+
+def test_concat_vertical_preserves_backend():
+    X_pandas = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
+    X_pandas_concat = _concat_vertical(X_pandas, X_pandas)
+    assert isinstance(X_pandas_concat, pd.DataFrame)
+    assert X_pandas_concat.shape == (4, 2)
+
+    y_pandas = pd.Series([1, 2], name="Target")
+    y_pandas_concat = _concat_vertical(y_pandas, y_pandas)
+    assert isinstance(y_pandas_concat, pd.Series)
+    assert len(y_pandas_concat) == 4
+
+    X_polars = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
+    X_polars_concat = _concat_vertical(X_polars, X_polars)
+    assert isinstance(X_polars_concat, pl.DataFrame)
+    assert X_polars_concat.shape == (4, 2)
+
+    y_polars = pl.Series([1, 2])
+    y_polars_concat = _concat_vertical(y_polars, y_polars)
+    assert isinstance(y_polars_concat, pl.Series)
+    assert len(y_polars_concat) == 4
+
+    X_array = np.array([[1.0, 2.0], [3.0, 4.0]])
+    X_array_concat = _concat_vertical(X_array, X_array)
+    assert isinstance(X_array_concat, np.ndarray)
+    assert X_array_concat.shape == (4, 2)
