@@ -342,14 +342,14 @@ class CheckCoefficientsInterpretation(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         """Assess whether linear-model coefficients are comparable and interpretable."""
         report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.learner_)
+        _, predictor = split_preprocessor_estimator(report.estimator_)
         X = get_preprocessed_X(report, data_source="both")
 
         if X is None or not hasattr(predictor, "coef_"):
             raise CheckNotApplicable()
 
         std_values = nw.from_native(X).select(nw.all().std()).to_numpy().ravel()
-        if not np.allclose(std_values, std_values[0]):
+        if not np.allclose(std_values, std_values[0], atol=0.05):
             return (
                 "Features are not on the same scale: coefficient magnitudes "
                 "are not directly comparable as feature importance."
@@ -379,7 +379,7 @@ class CheckMDIHighCardinalityBias(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect high-cardinality features that may bias MDI importances."""
         report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.learner_)
+        _, predictor = split_preprocessor_estimator(report.estimator_)
         X = get_preprocessed_X(report, data_source="train")
 
         if X is None or not hasattr(predictor, "feature_importances_"):
@@ -454,6 +454,7 @@ class CheckCorrelatedFeatures(Check):
                 "above 0.9. Highly correlated features can destabilize "
                 "linear model coefficients and feature-importance estimates, "
                 "and may cause collinearity-induced numerical issues."
+                "Dropping redundant features may also improve model performance."
             )
         return None
 
@@ -679,6 +680,7 @@ class CheckUselessFeatures(Check):
             return (
                 f"Feature(s) {useless} have permutation importance overlapping "
                 "with zero and could likely be dropped without degrading "
+                "performance. Dropping redundant features may also improve model "
                 "performance."
             )
         return None

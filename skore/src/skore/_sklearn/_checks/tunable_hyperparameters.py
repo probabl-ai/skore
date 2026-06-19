@@ -15,17 +15,31 @@ EQUIVALENT_PARAM_GROUPS: list[tuple[ParameterName, ...]] = [
 
 
 # Init params that don't change the learned model in a hyperparameter-tuning
-# sense: reproducibility, parallelism, logging, memory, class re-weighting.
-# Setting any of these should NOT count as "the estimator has been tuned".
+# sense. Limited to params that exist on estimators in HYPERPARAMETERS_TO_TUNE
+# (the only classes SKD016 evaluates). Setting any of these should NOT count as
+# "the estimator has been tuned".
 INFRASTRUCTURE_PARAMS: set[ParameterName] = {
-    "random_state",
-    "n_jobs",
-    "verbose",
-    "warm_start",
+    "algorithm",
+    "cache_size",
     "class_weight",
     "copy",
     "copy_X",
-    "cache_size",
+    "dtype",
+    "early_stopping",
+    "keep_empty_features",
+    "leaf_size",
+    "max_iter",
+    "missing_values",
+    "n_iter_no_change",
+    "n_jobs",
+    "oob_score",
+    "precompute",
+    "random_state",
+    "sparse_output",
+    "tol",
+    "validation_fraction",
+    "verbose",
+    "warm_start",
 }
 
 

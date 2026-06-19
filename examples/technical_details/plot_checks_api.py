@@ -80,7 +80,8 @@ tree_report.metrics.summarize(data_source="both").frame()
 # %%
 # The deep tree is flagged for overfitting: it achieves a perfect score on
 # train but degrades on test.
-# For this model, the tip about coefficients is not applicable so it is not reported.
+# For this model, the tip about coefficients is not applicable and appears
+# under the Not Applicable section of the checks summary.
 
 # %%
 # Ignoring specific checks

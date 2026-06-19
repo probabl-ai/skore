@@ -132,8 +132,8 @@ class CheckNotApplicable(Exception):
     Notes
     -----
     Check implementations raise this exception when required data, task type,
-    or model capabilities are missing. The check is skipped and does not appear
-    in :meth:`~skore.EstimatorReport.checks.summarize` results.
+    or model capabilities are missing. The check appears under the
+    "Not Applicable" section of the checks summary.
 
     Examples
     --------
@@ -159,7 +159,10 @@ def split_preprocessor_estimator(estimator):
     steps and final predictor.
     """
     if isinstance(estimator, Pipeline):
-        return estimator[:-1], estimator[-1]
+        if len(estimator.steps) > 1:
+            return estimator[:-1], estimator[-1]
+        else:
+            return None, estimator[0]
     return None, estimator
 
 
