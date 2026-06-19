@@ -10,7 +10,13 @@ from sklearn.decomposition import PCA
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.kernel_approximation import RBFSampler
-from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, RidgeCV
+from sklearn.linear_model import (
+    BayesianRidge,
+    LinearRegression,
+    LogisticRegression,
+    Ridge,
+    RidgeCV,
+)
 from sklearn.model_selection import (
     GridSearchCV,
     RandomizedSearchCV,
@@ -22,7 +28,7 @@ from sklearn.tree import DecisionTreeRegressor
 from skrub import DatetimeEncoder, tabular_pipeline
 
 from skore import Check, EstimatorReport, configuration, evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
+from skore._sklearn._checks._utils import CheckNotApplicable, get_space_bound
 from skore._sklearn._checks.base import (
     ChecksSummaryDisplay,
     _get_issue_documentation_url,
@@ -357,6 +363,37 @@ def test_skd010_not_detected_for_fast_model(regression_data):
     assert "SKD010" not in codes
 
 
+@pytest.mark.parametrize(
+    "estimator, param_name, side, expected",
+    [
+        # Ridge.alpha: Interval(Real, 0, None, closed='left') -> left bound is 0.0
+        (Ridge(), "alpha", "left", 0.0),
+        # Ridge.alpha has no finite right bound
+        (Ridge(), "alpha", "right", None),
+        # BayesianRidge.tol: Interval(Real, 0, None, closed='neither') -> open, no bound
+        (BayesianRidge(), "tol", "left", None),
+        # unknown parameter
+        (Ridge(), "nonexistent", "left", None),
+        # Pipeline: navigate 'ridge__alpha' to Ridge.alpha left bound
+        (
+            Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]),
+            "ridge__alpha",
+            "left",
+            0.0,
+        ),
+        # Pipeline: unknown step name
+        (
+            Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]),
+            "unknown__alpha",
+            "left",
+            None,
+        ),
+    ],
+)
+def test_get_space_bound(estimator, param_name, side, expected):
+    assert get_space_bound(estimator, param_name, side) == expected
+
+
 def _prefit_grid_search_report(X, y, search):
     search.fit(X, y)
     return evaluate(search, X, y, splitter="prefit")
@@ -446,6 +483,34 @@ def test_skd014_search_classes(regression_data, monkeypatch, search):
     issues = report.checks.summarize().frame(severity="issue").set_index("code")
     assert "SKD014" in issues.index
     assert "minimum" in issues.loc["SKD014", "explanation"]
+
+
+@pytest.mark.parametrize(
+    "search, best_params",
+    [
+        (
+            GridSearchCV(Ridge(), param_grid={"alpha": [0.0, 1.0, 10.0]}, cv=2),
+            {"alpha": 0.0},
+        ),
+        (
+            GridSearchCV(
+                Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]),
+                param_grid={"ridge__alpha": [0.0, 1.0, 10.0]},
+                cv=2,
+            ),
+            {"ridge__alpha": 0.0},
+        ),
+    ],
+)
+def test_skd014_not_raised_when_search_edge_matches_space_edge(
+    regression_data, monkeypatch, search, best_params
+):
+    """SKD014 is absent when the search minimum equals the parameter-space minimum."""
+    X, y = regression_data
+    report = _prefit_grid_search_report(X, y, search)
+    monkeypatch.setattr(report.estimator_, "best_params_", best_params)
+    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    assert "SKD014" not in codes
 
 
 def test_skd015_suggests_missing_params(regression_data):

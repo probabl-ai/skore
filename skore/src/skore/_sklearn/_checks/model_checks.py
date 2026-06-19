@@ -29,6 +29,7 @@ from skore._sklearn._checks._utils import (
     detect_outliers_modified_zscore,
     get_preprocessed_X,
     get_report_y,
+    get_space_bound,
     majority_vote,
     split_preprocessor_estimator,
 )
@@ -764,6 +765,11 @@ class CheckHyperparamsAtSearchEdge(Check):
             if np.isclose(
                 float(best_value), float(search_low), rtol=0.0, atol=0.0, equal_nan=True
             ):
+                space_low = get_space_bound(estimator.estimator, param_name, "left")
+                if space_low is not None and np.isclose(
+                    float(search_low), space_low, rtol=0.0, atol=0.0, equal_nan=True
+                ):
+                    continue
                 edge_params.append((param_name, "minimum"))
             elif np.isclose(
                 float(best_value),
@@ -772,6 +778,11 @@ class CheckHyperparamsAtSearchEdge(Check):
                 atol=0.0,
                 equal_nan=True,
             ):
+                space_high = get_space_bound(estimator.estimator, param_name, "right")
+                if space_high is not None and np.isclose(
+                    float(search_high), space_high, rtol=0.0, atol=0.0, equal_nan=True
+                ):
+                    continue
                 edge_params.append((param_name, "maximum"))
 
         if not edge_params:
