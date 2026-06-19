@@ -165,9 +165,7 @@ def test_skd006_pipeline_coefficient_interpretation(
     """SKD006 tip reflects preprocessed feature scale in a pipeline."""
     X, y = regression_data
     report = evaluate(pipeline, X, y)
-    tips = (
-        report.checks.summarize(fast_mode=True).frame(severity="tip").set_index("code")
-    )
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD006" in tips.index
     assert expected_message in tips.loc["SKD006", "explanation"]
 
