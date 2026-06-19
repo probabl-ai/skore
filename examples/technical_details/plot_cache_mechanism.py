@@ -53,7 +53,7 @@ model
 #
 # This model handles all types of data: numbers, categories, dates, and missing values.
 # Let's train it on part of our dataset.
-from skore import train_test_split
+from sklearn.model_selection import train_test_split
 
 X_train, X_test, y_train, y_test = train_test_split(df, y, random_state=42)
 # Let's keep a completely separate dataset

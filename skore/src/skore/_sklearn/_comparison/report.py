@@ -91,15 +91,19 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from skore import train_test_split
+    >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> from skore import ComparisonReport, EstimatorReport
     >>> X, y = make_classification(random_state=42)
-    >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> estimator_1 = LogisticRegression()
-    >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
+    >>> estimator_report_1 = EstimatorReport(
+    ...     estimator_1, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    ... )
     >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-    >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
+    >>> estimator_report_2 = EstimatorReport(
+    ...     estimator_2, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    ... )
     >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
     >>> report.reports_
     {'LogisticRegression_1': ..., 'LogisticRegression_2': ...}
@@ -270,15 +274,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import compare, evaluate
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
+        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
+        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
+        >>> report = compare([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> report.clear_cache()
         """
@@ -294,15 +296,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import compare, evaluate
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
+        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
+        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
+        >>> report = compare([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         """
         for report in track(
@@ -352,20 +352,18 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import compare, evaluate
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
+        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
+        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
+        >>> report = compare([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
-        [(25,), (25,)]
+        [(20,), (20,)]
         """
         return [  # type: ignore
             report.get_predictions(
@@ -434,17 +432,17 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.ensemble import RandomForestClassifier
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, CrossValidationReport
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import compare, evaluate
         >>> X, y = make_classification(random_state=42)
         >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        >>> linear_report = CrossValidationReport(
-        ...     LogisticRegression(random_state=42), X_train, y_train
+        >>> linear_report = evaluate(
+        ...     LogisticRegression(random_state=42), X_train, y_train, splitter=5
         ... )
-        >>> forest_report = CrossValidationReport(
-        ...     RandomForestClassifier(random_state=42), X_train, y_train
+        >>> forest_report = evaluate(
+        ...     RandomForestClassifier(random_state=42), X_train, y_train, splitter=5
         ... )
-        >>> comparison_report = ComparisonReport([linear_report, forest_report])
+        >>> comparison_report = compare([linear_report, forest_report])
         >>> summary = comparison_report.metrics.summarize().frame()
         >>> final_report = comparison_report.create_estimator_report(
         ...     report_key="RandomForestClassifier", X_test=X_test, y_test=y_test

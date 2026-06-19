@@ -10,7 +10,7 @@ from skore import configuration
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.train_test_split.train_test_split import TrainTestSplit
+from skore._sklearn.train_test_split import TrainTestSplit
 
 if TYPE_CHECKING:
     from collections.abc import Generator

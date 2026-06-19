@@ -147,10 +147,41 @@ def test_skd006_detects_coefficient_interpretation(regression_data):
     assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
 
 
-def test_skd007_mdi_bias_with_high_cardinality(regression_data):
+@pytest.mark.parametrize(
+    "pipeline, expected_message",
+    [
+        (
+            Pipeline([("model", LinearRegression())]),
+            "Features are not on the same scale",
+        ),
+        (
+            Pipeline([("scaler", StandardScaler()), ("model", LinearRegression())]),
+            "Features appear to be standardized",
+        ),
+    ],
+)
+def test_skd006_pipeline_coefficient_interpretation(
+    regression_data, pipeline, expected_message
+):
+    """SKD006 tip reflects preprocessed feature scale in a pipeline."""
+    X, y = regression_data
+    report = evaluate(pipeline, X, y)
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD006" in tips.index
+    assert expected_message in tips.loc["SKD006", "explanation"]
+
+
+@pytest.mark.parametrize(
+    "estimator",
+    [
+        RandomForestRegressor(n_estimators=5, random_state=0),
+        Pipeline([("rf", RandomForestRegressor(n_estimators=5, random_state=0))]),
+    ],
+)
+def test_skd007_mdi_bias_with_high_cardinality(regression_data, estimator):
     """SKD007 tip is emitted with continuous features and tree importances."""
     X, y = regression_data
-    report = evaluate(RandomForestRegressor(n_estimators=5, random_state=0), X, y)
+    report = evaluate(estimator, X, y)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD007" in tips.index
     assert (
@@ -569,6 +600,15 @@ def test_skd016_ignores_infrastructure(regression_data):
     X, y = regression_data
     report = evaluate(Ridge(random_state=42), X, y)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD016" in tips.index
+    assert "alpha" in tips.loc["SKD016", "explanation"]
+
+
+def test_skd016_ignores_budget_params(regression_data):
+    """Raising max_iter alone still triggers SKD016."""
+    X, y = regression_data
+    report = evaluate(Ridge(max_iter=200), X, y)
+    tips = report.checks.summarize().frame(severity="tip").set_index("code")
     assert "SKD016" in tips.index
     assert "alpha" in tips.loc["SKD016", "explanation"]
 
