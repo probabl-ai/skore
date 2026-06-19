@@ -34,18 +34,33 @@ class EstimatorCheck(Check):
         return "Detected on a single split."
 
 
+def test_cv_not_applicable_checks_appear_in_summarize(regression_data):
+    """Not-applicable split checks are surfaced on the CV report summary."""
+    X, y = regression_data
+    report = evaluate(DecisionTreeRegressor(random_state=0), X, y, splitter=3)
+    na_codes = set(report.checks.summarize().frame(section="not_applicable")["code"])
+    assert "SKD014" in na_codes
+    assert "SKD015" in na_codes
+
+
+def test_cv_passed_checks_appear_in_summarize(regression_data):
+    """Passed split checks without findings appear on the CV report summary."""
+    X, y = regression_data
+    report = evaluate(DecisionTreeRegressor(random_state=0), X, y, splitter=3)
+    passed_codes = set(report.checks.summarize().frame(section="passed")["code"])
+    assert "SKD002" in passed_codes
+
+
 def test_skd003_detects_inconsistent_splits():
     """Check that the inconsistent performance across splits issue is detected."""
     X, y = make_classification(n_samples=400, n_features=5, random_state=0)
     report = evaluate(LogisticRegression(random_state=0), X, y, splitter=5)
-    assert "SKD003" not in set(
-        report.checks.summarize().frame(severity="issue")["code"]
-    )
+    assert "SKD003" not in set(report.checks.summarize().frame(section="issue")["code"])
 
     # Corrupt the first split
     y[0 : len(y) // 5] = np.random.RandomState(0).randint(0, 2, len(y) // 5)
     report = evaluate(LogisticRegression(random_state=0), X, y, splitter=5)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD003" in issues.index
     assert "split #0" in issues.loc["SKD003", "explanation"]
     n_metrics = (
@@ -63,7 +78,7 @@ def test_skd001_aggregates_overfitting_across_splits(regression_data):
     """Check that the overfitting issue is aggregated across splits."""
     X, y = regression_data
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y, splitter=3)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD001" in issues.index
     assert "3/3 evaluated splits" in issues.loc["SKD001", "explanation"]
 
@@ -72,7 +87,7 @@ def test_skd002_aggregates_underfitting_across_splits(regression_data):
     """Check that the underfitting issue is aggregated across splits."""
     X, y = regression_data
     report = evaluate(DummyRegressor(), X, y, splitter=3)
-    issues = report.checks.summarize().frame(severity="issue").set_index("code")
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD002" in issues.index
     assert "3/3 evaluated splits" in issues.loc["SKD002", "explanation"]
 
@@ -96,7 +111,7 @@ def test_add_checks_cv_level(regression_report):
     """Check that add_checks registers a CV-level check."""
     regression_report.checks.add([CVCheck()])
     issues = (
-        regression_report.checks.summarize().frame(severity="issue").set_index("code")
+        regression_report.checks.summarize().frame(section="issue").set_index("code")
     )
     assert "CVCUSTOM" in issues.index
     assert issues.loc["CVCUSTOM", "title"] == "CV-level check"
@@ -108,7 +123,7 @@ def test_add_checks_estimator_level(regression_report):
     """Check that add_checks with estimator report_type propagates and aggregates."""
     regression_report.checks.add([EstimatorCheck()])
     issues = (
-        regression_report.checks.summarize().frame(severity="issue").set_index("code")
+        regression_report.checks.summarize().frame(section="issue").set_index("code")
     )
     assert "ESTCUSTOM" in issues.index
     assert "3/3 evaluated splits" in issues.loc["ESTCUSTOM", "explanation"]
