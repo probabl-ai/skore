@@ -35,7 +35,13 @@ def _normalize_X_as_dataframe(X: ArrayLike) -> UserDataFrame:
         )
 
     if not nw.dependencies.is_into_dataframe(X):
-        X = check_array(X, accept_sparse=False, ensure_2d=True, ensure_all_finite=False)
+        X = check_array(
+            X,
+            accept_sparse=False,
+            ensure_2d=True,
+            ensure_all_finite=False,
+            dtype=None,
+        )
         X = cast(np.ndarray, X)
         columns = [f"Feature {i}" for i in range(X.shape[1])]
         return pd.DataFrame(X, columns=columns)

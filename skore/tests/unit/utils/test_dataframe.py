@@ -24,6 +24,25 @@ def test_normalize_X_pandas_renames_non_string_columns():
     assert list(result.columns) == ["0", "1"]
 
 
+def test_normalize_X_preserves_object_dtype():
+    X = np.array([[1, 0, 1], [0, 1, 0]], dtype=object)
+    result = _normalize_X_as_dataframe(X)
+    assert all(dtype == np.dtype("O") for dtype in result.dtypes)
+    assert result.iloc[0, 0] == 1
+
+
+def test_normalize_X_preserves_int32_dtype():
+    X = np.array([[1, 2], [3, 4]], dtype=np.int32)
+    result = _normalize_X_as_dataframe(X)
+    assert all(dtype == np.dtype("int32") for dtype in result.dtypes)
+
+
+def test_normalize_X_preserves_bool_dtype():
+    X = np.array([[True, False], [False, True]])
+    result = _normalize_X_as_dataframe(X)
+    assert all(dtype == np.dtype("bool") for dtype in result.dtypes)
+
+
 def test_normalize_y_polars_unnamed_series():
     y = pl.Series([1.0, 2.0, 3.0])
     result = _normalize_y_as_dataframe(y)
