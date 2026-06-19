@@ -608,7 +608,7 @@ def test_skd016_ignores_budget_params(regression_data):
     """Raising max_iter alone still triggers SKD016."""
     X, y = regression_data
     report = evaluate(Ridge(max_iter=200), X, y)
-    tips = report.checks.summarize().frame(severity="tip").set_index("code")
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD016" in tips.index
     assert "alpha" in tips.loc["SKD016", "explanation"]
 
@@ -940,7 +940,7 @@ def test_header_reports_all_counts(regression_report):
     assert "1 ignored" in result._header
 
 
-def test_html_has_four_tabs(regression_report):
+def test_html_tabs(regression_report):
     """The HTML repr contains one label per bucket with its count."""
     regression_report.checks.add([MockCheck(has_issue=True), TipCheck()])
     html = regression_report.checks.summarize()._repr_html_()
@@ -964,8 +964,7 @@ def test_not_applicable_goes_to_not_applicable_section(regression_report):
     """A check raising CheckNotApplicable appears under not applicable."""
     regression_report.checks.add([NotApplicableMockCheck()])
     result = regression_report.checks.summarize()
-    na_codes = set(result.frame(section="not_applicable")["code"])
-    assert "TSTNA" in na_codes
+    assert "TSTNA" in set(result.frame(section="not_applicable")["code"])
     assert "TSTNA" not in set(result.frame(section="passed")["code"])
     assert "TSTNA" not in set(result.frame(section="issue")["code"])
     assert "TSTNA" not in set(result.frame(section="tip")["code"])

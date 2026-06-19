@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import uuid
+from collections import defaultdict
 from collections.abc import Generator
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
@@ -577,7 +578,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         total_splits = len(self.reports_)
         all_applicable_codes: set[CheckCode] = set()
         all_not_applicable_codes: set[CheckCode] = set()
-        positives_by_code: dict[CheckCode, list[dict]] = {}
+        positives_by_code: defaultdict[CheckCode, list[dict]] = defaultdict(list)
         ref_by_code: dict[CheckCode, dict] = {}
 
         for estimator_report in self.reports_:
@@ -590,13 +591,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             for code, check_result in results.items():
                 ref_by_code.setdefault(code, check_result)
                 if check_result["explanation"] is not None:
-                    positives_by_code.setdefault(code, []).append(check_result)
+                    positives_by_code[code].append(check_result)
 
         all_not_applicable_codes -= all_applicable_codes
 
         aggregated: dict[CheckCode, dict] = {}
         for code in all_applicable_codes:
-            positives = positives_by_code.get(code, [])
+            positives = positives_by_code[code]
             if len(positives) > total_splits / 2:
                 ref = positives[0]
                 aggregated[code] = {

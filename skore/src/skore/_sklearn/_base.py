@@ -45,7 +45,7 @@ class _BaseReport(ReportHelpMixin):
 
         Returns ``(check_results, applicable_codes, not_applicable_codes)``.
         """
-        return ({}, set(), set())
+        return {}, set(), set()
 
     def _get_results(
         self,
