@@ -1,9 +1,9 @@
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
-from sklearn.utils._testing import _convert_container
 
 from skore import CrossValidationReport
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._plot import TableReportDisplay
 
 
@@ -33,10 +33,10 @@ def test_summarize_without_y(x_container, y_container):
     """Check summarize without target columns for several container types."""
     X, y = make_regression(n_samples=100, n_features=2, random_state=42)
     feature_columns = [f"Feature {i}" for i in range(X.shape[1])]
-    X = _convert_container(
+    X = convert_container(
         X, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    y = _convert_container(y, y_container, minversion="0.20.23")
+    y = convert_container(y, y_container, minversion="0.20.23")
     report = CrossValidationReport(LinearRegression(), X, y, splitter=2)
 
     display = report.data.summarize(with_y=False)
@@ -60,10 +60,10 @@ def test_summarize_with_y(n_targets, target_column_names, x_container, y_contain
         n_samples=100, n_features=2, n_targets=n_targets, random_state=42
     )
     feature_columns = [f"Feature {i}" for i in range(X.shape[1])]
-    X = _convert_container(
+    X = convert_container(
         X, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    y = _convert_container(
+    y = convert_container(
         y,
         y_container,
         column_names=target_column_names if n_targets > 1 else None,
@@ -93,10 +93,10 @@ def test_summarize_subsampling(x_container, y_container, subsample_strategy):
     """Check that subsample is handled correctly for several container types."""
     X, y = make_regression(n_samples=100, n_features=2, random_state=42)
     feature_columns = [f"Feature {i}" for i in range(X.shape[1])]
-    X = _convert_container(
+    X = convert_container(
         X, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    y = _convert_container(y, y_container, minversion="0.20.23")
+    y = convert_container(y, y_container, minversion="0.20.23")
     report = CrossValidationReport(LinearRegression(), X, y, splitter=2)
 
     display = report.data.summarize(

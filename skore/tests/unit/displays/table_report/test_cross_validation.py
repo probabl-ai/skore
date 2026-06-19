@@ -3,10 +3,10 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
-from sklearn.utils._testing import _convert_container
 from skrub import tabular_pipeline
 
 from skore import CrossValidationReport, Display, TableReportDisplay
+from skore._externals._sklearn_compat import convert_container
 
 
 @pytest.fixture(scope="module")
@@ -72,10 +72,10 @@ def test_display_creation_with_containers(x_container, y_container):
     """Check that the display can be created with paired container types."""
     X, y = make_regression(n_samples=100, n_features=5, random_state=42)
     feature_columns = [f"Feature_{i}" for i in range(X.shape[1])]
-    X = _convert_container(
+    X = convert_container(
         X, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    y = _convert_container(y, y_container, minversion="0.20.23")
+    y = convert_container(y, y_container, minversion="0.20.23")
     report = CrossValidationReport(tabular_pipeline(DummyRegressor()), X=X, y=y)
     display = report.data.summarize()
     assert isinstance(display, TableReportDisplay)

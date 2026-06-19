@@ -4,9 +4,9 @@ from sklearn.datasets import make_classification
 from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.utils._testing import _convert_container
 
 from skore import Check, evaluate
+from skore._externals._sklearn_compat import convert_container
 
 
 @pytest.fixture
@@ -98,10 +98,10 @@ def test_skd002_aggregates_underfitting_across_splits(
     """Check that the underfitting issue is aggregated across splits."""
     X, y = regression_data
     feature_columns = [str(i) for i in range(X.shape[1])]
-    X = _convert_container(
+    X = convert_container(
         X, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    y = _convert_container(y, y_container, minversion="0.20.23")
+    y = convert_container(y, y_container, minversion="0.20.23")
     report = evaluate(DummyRegressor(), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD002" in issues.index
@@ -128,10 +128,10 @@ def test_skd004_detects_high_class_imbalance(x_container, y_container):
         random_state=0,
     )
     feature_columns = [str(i) for i in range(X.shape[1])]
-    X = _convert_container(
+    X = convert_container(
         X, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    y = _convert_container(y, y_container, minversion="0.20.23")
+    y = convert_container(y, y_container, minversion="0.20.23")
     report = evaluate(LogisticRegression(), X, y, splitter=0.2)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD004" in issues.index

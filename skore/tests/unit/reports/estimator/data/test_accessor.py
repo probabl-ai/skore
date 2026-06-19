@@ -6,9 +6,9 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
-from sklearn.utils._testing import _convert_container
 
 from skore import EstimatorReport
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._plot import TableReportDisplay
 from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
 
@@ -136,19 +136,19 @@ def test_summarize_numpy_array(
         X, y, shuffle=False, train_size=50
     )
     feature_columns = [f"Feature {i}" for i in range(X_train.shape[1])]
-    X_train = _convert_container(
+    X_train = convert_container(
         X_train, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    X_test = _convert_container(
+    X_test = convert_container(
         X_test, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    y_train = _convert_container(
+    y_train = convert_container(
         y_train,
         y_container,
         column_names=target_column_names if n_targets > 1 else None,
         minversion="0.20.23",
     )
-    y_test = _convert_container(
+    y_test = convert_container(
         y_test,
         y_container,
         column_names=target_column_names if n_targets > 1 else None,

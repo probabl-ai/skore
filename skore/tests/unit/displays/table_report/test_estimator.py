@@ -6,11 +6,11 @@ from matplotlib.figure import Figure
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
 from sklearn.model_selection import train_test_split
-from sklearn.utils._testing import _convert_container
 from skrub import tabular_pipeline
 from skrub.datasets import fetch_employee_salaries
 
 from skore import Display, EstimatorReport
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._plot.data.table_report import TableReportDisplay
 
 
@@ -86,10 +86,10 @@ def test_display_creation_with_containers(x_container, y_container):
     """Check that summarize returns a display for paired container types."""
     X, y = make_regression(n_samples=100, n_features=5, random_state=42)
     feature_columns = [f"Feature {i}" for i in range(X.shape[1])]
-    X = _convert_container(
+    X = convert_container(
         X, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    y = _convert_container(y, y_container, minversion="0.20.23")
+    y = convert_container(y, y_container, minversion="0.20.23")
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     report = EstimatorReport(
         tabular_pipeline(DummyRegressor()),

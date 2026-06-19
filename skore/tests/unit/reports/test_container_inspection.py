@@ -1,10 +1,10 @@
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.utils._testing import _convert_container
 from skrub import tabular_pipeline
 
 from skore import CrossValidationReport, EstimatorReport, PermutationImportanceDisplay
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._plot import TableReportDisplay
 
 
@@ -24,10 +24,10 @@ def test_permutation_importance_with_containers(report_cls, x_container, y_conta
     """Permutation importance accepts array, pandas, and polars X/y inputs."""
     X, y = make_regression(n_samples=100, n_features=5, random_state=42)
     feature_columns = [f"Feature {i}" for i in range(X.shape[1])]
-    X = _convert_container(
+    X = convert_container(
         X, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    y = _convert_container(y, y_container, minversion="0.20.23")
+    y = convert_container(y, y_container, minversion="0.20.23")
     estimator = Ridge()
 
     if report_cls is EstimatorReport:
@@ -57,10 +57,10 @@ def test_data_summarize_plot_with_containers(
     """Table report plots work with array, pandas, and polars-backed summaries."""
     X, y = make_regression(n_samples=100, n_features=3, random_state=42)
     feature_columns = [f"Feature {i}" for i in range(X.shape[1])]
-    X = _convert_container(
+    X = convert_container(
         X, x_container, column_names=feature_columns, minversion="0.20.23"
     )
-    y = _convert_container(y, y_container, minversion="0.20.23")
+    y = convert_container(y, y_container, minversion="0.20.23")
     estimator = tabular_pipeline(LinearRegression())
 
     if report_cls is EstimatorReport:
