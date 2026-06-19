@@ -389,7 +389,7 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
         X_train, y_train
     )
     kwargs = {"X_test": X_test, "y_test": y_test} | (
-        {"X_test": X_test, "y_test": y_test} if with_train else {}
+        {"X_train": X_train, "y_train": y_train} if with_train else {}
     )
     report = EstimatorReport(estimator, **kwargs)
     _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")

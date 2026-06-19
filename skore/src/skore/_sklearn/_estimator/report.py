@@ -114,10 +114,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
           by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
-        The estimator passed will not be modified in-place:
-
-        - If it is fitted, it will be cloned;
-        - If it is not fitted, it will be deep-copied, then fitted on the training data.
+        The estimator passed will not be modified in-place: it is deep-copied, and if
+        it is not already fitted, the copy is cloned before being fitted on the
+        training data.
 
     X_train : {array-like, sparse matrix} of shape (n_samples, n_features) or \
             None
@@ -227,7 +226,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         estimator: EstimatorLike,
         data: dict | None,
     ) -> tuple[EstimatorLike, float]:
-        """Fit the estimator on the training data."""
+        """Clone then fit the estimator on the training data."""
         if data is None:
             raise ValueError(
                 "The training data is required to fit the estimator. "
