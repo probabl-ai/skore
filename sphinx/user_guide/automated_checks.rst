@@ -626,10 +626,10 @@ The check runs on plain estimators and :class:`~sklearn.pipeline.Pipeline`
 object.
 
 For every step whose class is in the recommendation table, `skore` lists the
-init params that differ from their scikit-learn default. Infrastructure params
-that do not affect the learned model (``random_state``, ``n_jobs``, ``verbose``,
-``warm_start``, ``class_weight``, ``copy`` / ``copy_X``, ``cache_size``) are
-ignored. When every remaining param of a step is still at its default, the
+initialization parameters that differ from their scikit-learn default.
+Infrastructure parameters that do not affect the learned model
+(e.g. ``random_state``, ``n_jobs``, ``verbose``, ...) are ignored. When every
+remaining parameter of a step is still at its default value, the
 check reports a tip suggesting the recommended tuning axes for that class.
 
 Why it matters
