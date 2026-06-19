@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Any, Literal, NotRequired, TypeAlias, TypedDict, cast
+from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import pandas as pd
 from matplotlib.figure import Figure
@@ -14,8 +14,6 @@ from skore._sklearn.types import (
     ReportType,
 )
 from skore._utils._index import flatten_multi_index
-
-Index: TypeAlias = int
 
 
 class MetricsSummaryRow(TypedDict):
@@ -123,30 +121,59 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     @staticmethod
     def _resolve_fingerprints(data: pd.DataFrame) -> pd.DataFrame:
-        """Rename ``metric_verbose_name`` per unique fingerprint by appending ``_i``."""
+        """Disambiguate ``metric_verbose_name`` across distinct fingerprints.
+
+        When several rows share a ``metric_verbose_name`` but come from metrics
+        with different fingerprints, they are renamed ``{name}_1``, ``{name}_2``,
+        ... in the order they first appear. ``None`` counts as a regular
+        fingerprint value, so a custom metric reusing a built-in's display name
+        will still get disambiguated against the built-in.
+
+        Suffixes skip over any name already present in the column, so we don't
+        produce a collision if a metric happens to already be called e.g.
+        ``"Metric_1"``.
+        """
         data = data.copy()
 
-        # {"Score": [[0, 3], [4]], ...}
-        metric_appearances: dict[str, list[list[Index]]] = defaultdict(list)
-        # NOTE: Ignore metrics for which fingerprint is None
-        for (metric_name, _), group in data.groupby(
-            ["metric_verbose_name", "fingerprint"], sort=False
+        # Fingerprint = str | np.nan
+        # fingerprints_per_name: dict[MetricName, list[Fingerprint]]
+        fingerprints_per_name = defaultdict(list)
+        for name, fingerprint in (
+            data[["metric_verbose_name", "fingerprint"]]
+            .drop_duplicates()
+            .itertuples(index=False, name=None)
         ):
-            metric_appearances[metric_name].append(list(group.index))
+            fingerprints_per_name[name].append(fingerprint)
 
-        # Map each row index to its new name (skip metrics with only one variant).
-        new_names: dict[Index, str] = {
-            index: f"{metric_name}_{suffix}"
-            #   "Score"      [[0, 3], [4]]
-            for metric_name, fingerprint_groups in metric_appearances.items()
-            if len(fingerprint_groups) > 1
-            #   1       [0, 3]
-            for suffix, indices in enumerate(fingerprint_groups, start=1)
-            for index in indices
-        }
+        # Decide the new name for each (name, fingerprint) pair
+        #
+        # Suffixes skip over names already in the column
 
-        for row_index, new_name in new_names.items():
-            data.loc[row_index, "metric_verbose_name"] = new_name
+        # renaming: dict[(MetricName, Fingerprint), NewMetricName]
+        renaming = {}
+        metric_names = set(data["metric_verbose_name"])
+        for name, fingerprints in fingerprints_per_name.items():
+            if len(fingerprints) < 2:
+                continue
+            i = 0
+            for fingerprint in fingerprints:
+                while True:
+                    i += 1
+                    candidate = f"{name}_{i}"
+                    if candidate not in metric_names:
+                        break
+                metric_names.add(candidate)
+                renaming[(name, fingerprint)] = candidate
+
+        for (name, fingerprint), new_name in renaming.items():
+            fp_match = (
+                data["fingerprint"].isna()
+                if pd.isna(fingerprint)
+                else data["fingerprint"] == fingerprint
+            )
+            data.loc[
+                (data["metric_verbose_name"] == name) & fp_match, "metric_verbose_name"
+            ] = new_name
 
         return data
 

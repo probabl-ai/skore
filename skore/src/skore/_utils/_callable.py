@@ -24,6 +24,14 @@ def _callable_name(func: Callable) -> str:
     return type(func).__name__
 
 
+def _hash_source(func: Callable) -> str:
+    """Fingerprint a callable based on its source code.
+
+    Non-recursive base case.
+    """
+    return joblib.hash(inspect.getsource(func))
+
+
 def _callable_hash(func: Callable) -> str:
     """Fingerprint a callable based on its source code."""
     if isinstance(func, functools.partial):
@@ -31,6 +39,6 @@ def _callable_hash(func: Callable) -> str:
 
     if hasattr(func, "__call__") and inspect.ismethod(func.__call__):  # noqa: B004
         # func is an object with a __call__ method
-        return _callable_hash(func.__call__)
+        return _hash_source(func.__call__)
 
-    return joblib.hash(inspect.getsource(func))
+    return _hash_source(func)

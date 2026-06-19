@@ -264,6 +264,7 @@ class Metric:
                 response_method=metric._response_method,
                 kwargs=metric._kwargs.copy(),
                 function_kind=FunctionKind.METRIC,
+                fingerprint=_callable_hash(metric._score_func),
             )
         elif isinstance(metric, str):
             metric_with_neg = _METRIC_ALIASES.get(metric, metric)
