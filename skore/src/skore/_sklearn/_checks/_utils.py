@@ -124,6 +124,11 @@ def detect_outliers_modified_zscore(scores, threshold=3):
 class CheckNotApplicable(Exception):
     """Raised when a check cannot run on the given report.
 
+    Parameters
+    ----------
+    message : str or None, default=None
+        Optional reason shown in the checks summary explanation.
+
     Notes
     -----
     Check implementations raise this exception when required data, task type,
@@ -142,7 +147,7 @@ class CheckNotApplicable(Exception):
     ...     severity = "issue"
     ...     def check_function(self, report):
     ...         if report.X_test is None:
-    ...             raise CheckNotApplicable()
+    ...             raise CheckNotApplicable("Test data is unavailable.")
     ...         return None
     """
 

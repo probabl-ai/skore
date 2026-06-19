@@ -133,7 +133,7 @@ class CheckOverfitting(Check):
             or report.X_test is None
             or report.y_test is None
         ):
-            raise CheckNotApplicable()
+            raise CheckNotApplicable("Train and test data are unavailable.")
 
         report_train = collect_scores(report, data_source="train")
         report_test = collect_scores(report, data_source="test")
