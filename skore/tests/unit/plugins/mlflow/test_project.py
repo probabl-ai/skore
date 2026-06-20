@@ -244,7 +244,12 @@ class TestProject:
         with pytest.raises(KeyError):
             project.get("missing-run-id")
 
-    def test_delete(self):
-        project = Project("project")
-        with pytest.raises(NotImplementedError):
-            Project.delete(name=project.name)
+    def test_delete(self, tmp_path, reg_report):
+        tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
+        project = Project("project", tracking_uri=tracking_uri)
+        project.put("<key>", reg_report)
+
+        Project.delete(name=project.name, tracking_uri=tracking_uri)
+
+        with pytest.raises(LookupError):
+            Project.delete(name=project.name, tracking_uri=tracking_uri)

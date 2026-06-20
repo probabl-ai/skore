@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import re
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
@@ -35,8 +35,8 @@ class Project:
 
     The project is configured to communicate with ``skore hub``.
 
-    In this mode, ``name`` is expected to be of the form ``<workspace>/<name>``, where
-    the workspace is a ``skore hub`` concept that must be configured on the
+    In this mode, ``workspace`` must be passed as a separate keyword argument. The
+    workspace is a ``skore hub`` concept that must be configured on the
     ``skore hub`` interface. It represents an isolated entity managing users, projects,
     and resources. It can be a company, organization, or team that operates
     independently within the system.
@@ -76,8 +76,12 @@ class Project:
     **kwargs : dict
         Extra keyword arguments passed to the project, depending on its mode.
 
-        workspace : Path, mode:local only.
-            The directory where the local project is persisted.
+        workspace : str or Path-like, optional
+            Hub workspace name when ``mode="hub"`` (required). Local persistence
+            directory when ``mode="local"`` (optional). Ignored when ``mode="mlflow"``.
+
+        tracking_uri : str, mode:mlflow only.
+            The URI of the MLflow tracking server.
 
     Attributes
     ----------
@@ -85,6 +89,11 @@ class Project:
         The name of the project.
     mode : {"hub", "local", "mlflow"}
         The mode of the project.
+    workspace : Path or str or None
+        The workspace for ``local`` (``Path``) and ``hub`` (``str``) modes; ``None``
+        otherwise.
+    tracking_uri : str or None
+        The MLflow tracking URI for ``mlflow`` mode; ``None`` otherwise.
     ml_task : MLTask
         The ML task of the project; unset until a first report is put.
 
@@ -129,20 +138,34 @@ class Project:
         Create a summary view to investigate persisted reports' metadata/metrics.
     """
 
-    __HUB_NAME_PATTERN = re.compile(r"(?P<workspace>[^/]+)/(?P<name>.+)")
-
     @staticmethod
-    def __setup_plugin(mode: ProjectMode, name: str) -> tuple[Any, dict]:
+    def __setup_plugin(
+        mode: ProjectMode, name: str, **kwargs: Any
+    ) -> tuple[Any, dict[str, Any]]:
         if mode == "hub":
-            if not (match := re.match(Project.__HUB_NAME_PATTERN, name)):
+            if "/" in name:
                 raise ValueError(
-                    f'In hub mode, the name must be formatted as "<workspace>/<name>" '
-                    f"(found {name})"
+                    f"In hub mode, `name` must not contain '/' (found {name!r}). "
+                    "Pass `workspace` separately instead, e.g. "
+                    'Project(name="my-xp", mode="hub", workspace="acme").'
                 )
 
-            parameters = {"workspace": match["workspace"], "name": match["name"]}
-        elif mode == "local" or mode == "mlflow":
+            workspace = kwargs.get("workspace")
+            if workspace is None:
+                raise TypeError(
+                    "In hub mode, `workspace` is required. "
+                    'Use Project(name="...", mode="hub", workspace="...").'
+                )
+
+            parameters = {"workspace": workspace, "name": name}
+        elif mode == "local":
             parameters = {"name": name}
+            if "workspace" in kwargs:
+                parameters["workspace"] = kwargs["workspace"]
+        elif mode == "mlflow":
+            parameters = {"name": name}
+            if "tracking_uri" in kwargs:
+                parameters["tracking_uri"] = kwargs["tracking_uri"]
         else:
             raise ValueError(
                 f'`mode` must be "hub", "local" or "mlflow" (found {mode})'
@@ -166,18 +189,22 @@ class Project:
         **kwargs : dict
             Extra keyword arguments passed to the project, depending on its mode.
 
-            workspace : Path, mode:local only.
-                The directory where the local project is persisted.
+            workspace : str or Path-like, optional
+                Hub workspace name when ``mode="hub"`` (required). Local persistence
+                directory when ``mode="local"`` (optional). Ignored when
+                ``mode="mlflow"``.
+
+                For ``mode="local"``:
 
                 | The workspace can be shared between all the projects.
                 | The workspace can be set using kwargs or the environment variable
                   ``SKORE_WORKSPACE``.
                 | If not, it will be by default set to a ``skore/`` directory in the
-                  USER cache directory:
+                  USER data directory:
 
                 - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-                - on Linux, usually ``${HOME}/.cache/skore``,
-                - on macOS, usually ``${HOME}/Library/Caches/skore``.
+                - on Linux, usually ``${HOME}/.local/share/skore``,
+                - on macOS, usually ``${HOME}/Library/Application Support/skore``.
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
@@ -195,10 +222,9 @@ class Project:
         'local'
         >>> tmpdir.cleanup()
         """
-        plugin, parameters = Project.__setup_plugin(mode, name)
+        plugin, parameters = Project.__setup_plugin(mode, name, **kwargs)
 
         self.__mode = mode
-        self.__name = name
         self.__project = plugin(**(kwargs | parameters))
 
         ml_tasks = {report["ml_task"] for report in self.__project.summarize()}
@@ -212,14 +238,28 @@ class Project:
         self.ml_task = ml_tasks.pop() if ml_tasks else None
 
     @property
-    def mode(self):
+    def mode(self) -> ProjectMode:
         """The mode of the project."""
         return self.__mode
 
     @property
-    def name(self):
+    def name(self) -> str:
         """The name of the project."""
-        return self.__name
+        return self.__project.name
+
+    @property
+    def workspace(self) -> Path | str | None:
+        """The workspace for local and hub modes; ``None`` otherwise."""
+        if self.__mode in ("local", "hub"):
+            return self.__project.workspace
+        return None
+
+    @property
+    def tracking_uri(self) -> str | None:
+        """The MLflow tracking URI for mlflow mode; ``None`` otherwise."""
+        if self.__mode == "mlflow":
+            return self.__project.tracking_uri
+        return None
 
     def put(self, key: str, report: EstimatorReport | CrossValidationReport):
         """
@@ -284,7 +324,8 @@ class Project:
         Get a persisted report by its id.
 
         Report IDs can be found via :meth:`skore.Project.summarize`, which is also the
-        preferred method of interacting with a ``skore.Project``.
+        preferred method of interacting with a ``skore.Project``. The ``id`` passed here
+        must match the ``id`` column returned by :meth:`Project.summarize`.
 
         Parameters
         ----------
@@ -320,6 +361,8 @@ class Project:
     def summarize(self) -> Summary:
         """Obtain metadata/metrics for all persisted reports.
 
+        Reports are returned in ascending order of their ``date`` field.
+
         Returns
         -------
         summary : Summary
@@ -332,7 +375,10 @@ class Project:
         :func:`~skore.compare` :
             Compare selected reports side by side.
         """
-        frame = DataFrame(self.__project.summarize(), copy=False)
+        records = self.__project.summarize()
+        if records:
+            records = sorted(records, key=lambda record: record["date"])
+        frame = DataFrame(records, copy=False)
         if not frame.empty:
             frame.index = MultiIndex.from_arrays(
                 [
@@ -348,7 +394,7 @@ class Project:
     @staticmethod
     def delete(name: str, *, mode: ProjectMode = "local", **kwargs):
         r"""
-        Delete a project. Not implemented for MLFlow projects.
+        Delete a project.
 
         Parameters
         ----------
@@ -359,22 +405,26 @@ class Project:
         **kwargs : dict
             Extra keyword arguments passed to the project, depending on its mode.
 
-            workspace : Path, mode:local only.
-                The directory where the local project is persisted.
+            workspace : str or Path-like, optional
+                Hub workspace name when ``mode="hub"`` (required). Local persistence
+                directory when ``mode="local"`` (optional). Ignored when
+                ``mode="mlflow"``.
+
+                For ``mode="local"``:
 
                 | The workspace can be shared between all the projects.
                 | The workspace can be set using kwargs or the environment variable
                   ``SKORE_WORKSPACE``.
                 | If not, it will be by default set to a ``skore/`` directory in the
-                  USER cache directory:
+                  USER data directory:
 
                 - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-                - on Linux, usually ``${HOME}/.cache/skore``,
-                - on macOS, usually ``${HOME}/Library/Caches/skore``.
+                - on Linux, usually ``${HOME}/.local/share/skore``,
+                - on macOS, usually ``${HOME}/Library/Application Support/skore``.
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.
         """
-        plugin, parameters = Project.__setup_plugin(mode, name)
+        plugin, parameters = Project.__setup_plugin(mode, name, **kwargs)
 
         return plugin.delete(**(kwargs | parameters))
