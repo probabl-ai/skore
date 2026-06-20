@@ -204,14 +204,15 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
             ),
         )
 
-    yield Params({"cv_splitter.class": report.splitter.__class__.__name__})
+    if report.splitter is not None:
+        yield Params({"cv_splitter.class": report.splitter.__class__.__name__})
 
-    try:
-        n_splits = report.splitter.get_n_splits()
-    except AttributeError:
-        pass
-    else:
-        yield Params({"cv_splitter.n_splits": n_splits})
+        try:
+            n_splits = report.splitter.get_n_splits()
+        except AttributeError:
+            pass
+        else:
+            yield Params({"cv_splitter.n_splits": n_splits})
 
 
 def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:

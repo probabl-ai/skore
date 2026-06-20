@@ -12,7 +12,7 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import LeaveOneGroupOut, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
@@ -317,6 +317,56 @@ def test_report_with_data_op():
     assert list(report.metrics.accuracy(aggregate="mean").columns) == [
         ("SkrubLearner", "mean")
     ]
+
+
+def test_cross_validation_report_split_indices_from_data_op_cv():
+    """CrossValidationReport derives split indices from skrub iter_cv_splits."""
+    df = skrub.datasets.toy_products()
+    data = skrub.var("df", df)
+    groups = data["seller"]
+    X = data[["description", "price"]].skb.mark_as_X(
+        cv=LeaveOneGroupOut(), split_kwargs={"groups": groups}
+    )
+    y = data["category"].skb.mark_as_y()
+    pred = X.skb.apply(DummyClassifier(), y=y)
+    environment = {"df": df}
+
+    expected_indices = tuple(
+        (split["row_indices_train"], split["row_indices_test"])
+        for split in pred.skb.iter_cv_splits(environment=environment, cv=None)
+    )
+    report = CrossValidationReport(pred.skb.make_learner(), data=environment)
+
+    assert len(report.split_indices) == len(expected_indices)
+    for (train_a, test_a), (train_b, test_b) in zip(
+        report.split_indices, expected_indices, strict=True
+    ):
+        np.testing.assert_array_equal(train_a, train_b)
+        np.testing.assert_array_equal(test_a, test_b)
+
+
+def test_get_from_dict_with_grouped_data_op_cv():
+    """Serialization roundtrip preserves grouped CV folds from a DataOp."""
+    df = skrub.datasets.toy_products()
+    data = skrub.var("df", df)
+    groups = data["seller"]
+    X = data[["description", "price"]].skb.mark_as_X(
+        cv=LeaveOneGroupOut(), split_kwargs={"groups": groups}
+    )
+    y = data["category"].skb.mark_as_y()
+    pred = X.skb.apply(DummyClassifier(), y=y)
+
+    report = CrossValidationReport(pred, data={"df": df})
+    expected_accuracy = report.metrics.accuracy()
+    expected_preds = report.get_predictions(data_source="test")
+    state = report.to_dict()
+
+    restored = CrossValidationReport.from_dict(state)
+    restored.clear_cache()
+    assert restored.metrics.accuracy().equals(expected_accuracy)
+    preds = restored.get_predictions(data_source="test")
+    for pred_fold, expected_pred in zip(preds, expected_preds, strict=True):
+        np.testing.assert_array_equal(pred_fold, expected_pred)
 
 
 def test_create_estimator_report_with_data_op():

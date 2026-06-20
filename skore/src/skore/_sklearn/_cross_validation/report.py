@@ -21,19 +21,28 @@ from skore._sklearn._base import _BaseReport
 from skore._sklearn._checks.base import CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
+from skore._sklearn.types import (
+    _DEFAULT,
+    PositiveLabel,
+    SKLearnCrossValidator,
+    _DefaultType,
+)
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
-from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
+from skore._utils._skrub import (
+    eval_X_y,
+    is_skrub_learner,
+    resolve_data_op_split_indices,
+    to_estimator,
+    to_learner,
+)
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from skore._sklearn._checks.accessor import _ChecksAccessor
     from skore._sklearn._cross_validation.data_accessor import _DataAccessor
     from skore._sklearn._cross_validation.inspection_accessor import (
@@ -225,7 +234,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         y: ArrayLike | None = None,
         data: dict | None = None,
         pos_label: PositiveLabel | None = None,
-        splitter: int | SKLearnCrossValidator | Generator | None = None,
+        splitter: int | SKLearnCrossValidator | Generator | _DefaultType | None = None,
         n_jobs: int | None = None,
     ) -> None:
         super().__init__()
@@ -243,8 +252,26 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             _check_estimator_and_data(clone(estimator), X, y, data)
         )
         self._pos_label = pos_label
-        self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
-        self._split_indices = tuple(self._splitter.split(self.X, self.y))
+        if self._initialized_with_data_op:
+            cv_for_indices = splitter if splitter is not None else _DEFAULT
+            self._split_indices = resolve_data_op_split_indices(
+                self.learner_.data_op,
+                self._data,
+                cv=cv_for_indices,
+            )
+            self._splitter = (
+                None
+                if splitter in (None, _DEFAULT)
+                else check_cv(
+                    splitter, self.y, classifier=is_classifier(self.estimator_)
+                )
+            )
+        else:
+            resolved_splitter = None if splitter is _DEFAULT else splitter
+            self._splitter = check_cv(
+                resolved_splitter, y, classifier=is_classifier(estimator)
+            )
+            self._split_indices = tuple(self._splitter.split(self.X, self.y))
         self.n_jobs = n_jobs
 
         self.reports_: list[EstimatorReport] = self._fit_estimator_reports()
@@ -659,11 +686,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._data.copy()
 
     @property
-    def splitter(self) -> SKLearnCrossValidator:
+    def splitter(self) -> SKLearnCrossValidator | None:
         return self._splitter
 
     @property
-    def split_indices(self) -> tuple[tuple[Iterable[int], Iterable[int]]]:
+    def split_indices(self) -> tuple[tuple[ArrayLike, ArrayLike], ...]:
         return self._split_indices
 
     @property
@@ -739,7 +766,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "splitter_repr": (
                     repr(self.splitter)
                     if self.splitter is not None
-                    else f"{len(self.split_indices)} folds"
+                    else (
+                        "from DataOp"
+                        if self._initialized_with_data_op
+                        else f"{len(self.split_indices)} folds"
+                    )
                 ),
                 "metrics_text": metrics_text,
                 **markdown_data_section(summary, data_label="full"),
