@@ -147,8 +147,18 @@ source = ["skore"]
 concurrency = ["thread", "multiprocessing"]
 parallel = true
 
+# The CI matrix installs `skore` as a built wheel (see `pixi.toml`), so coverage is
+# collected against `site-packages`. Map those paths back to the repository sources
+# so the combined report (and Codecov) reference `src/skore` instead.
+[tool.coverage.paths]
+skore = [
+    "src/skore",
+    "*/site-packages/skore",
+    "*\\site-packages\\skore",
+]
+
 [tool.coverage.report]
-omit = ["*/_externals/*", "src/*", "tests/*"]
+omit = ["*/_externals/*"]
 show_missing = true
 exclude_also = [
     "raise NotImplementedError",

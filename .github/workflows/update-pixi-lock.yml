@@ -1,0 +1,59 @@
+name: update-pixi-lock
+
+# Dependabot has no native pixi ecosystem, so it cannot keep `pixi.lock` fresh (see
+# `.github/dependabot.yml`). This workflow regenerates the lockfile on a weekly schedule
+# (or on demand) and opens a pull request with the result.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every Monday at 05:00 UTC
+    - cron: '0 5 * * 1'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  PIXI_VERSION: v0.69.0
+
+jobs:
+  update-pixi-lock:
+    if: ${{ github.repository == 'probabl-ai/skore' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
+        with:
+          pixi-version: ${{ env.PIXI_VERSION }}
+          run-install: false
+
+      - name: Update the pixi lock file
+        run: |
+          set -eu
+          rm -f pixi.lock
+          pixi lock
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: chore/update-pixi-lock
+          delete-branch: true
+          commit-message: "chore(dependencies): Update pixi lock file"
+          title: "chore(dependencies): Update pixi lock file"
+          body: |
+            Automated weekly refresh of `pixi.lock` (`pixi lock` after removing the
+            existing lock file).
+
+            Dependabot cannot manage the pixi ecosystem, so this replaces it for the
+            locked Python dependencies.

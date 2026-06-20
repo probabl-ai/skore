@@ -8,19 +8,8 @@ updates:
       default-days: 14
     commit-message:
       prefix: "chore(dependencies): GITHUB-ACTIONS"
-  - package-ecosystem: "pip"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 14
-      semver-patch-days: 7
-    commit-message:
-      prefix: "chore(dependencies): PIP"
-    groups:
-      test-dependencies:
-        patterns:
-          - "*"
 
-    # It uses `ci/requirements/**/.python-version` to specify the python version used to
-    # update `ci/requirements/**/test-requirements.txt`
+# Python deps are now resolved by pixi (see `pixi.toml` / `pixi.lock`).
+# Dependabot has no native pixi ecosystem; the lockfile is refreshed by the
+# `.github/workflows/update-pixi-lock.yml` scheduled workflow (or manually with
+# `pixi lock`).

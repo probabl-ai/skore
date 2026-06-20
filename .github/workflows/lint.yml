@@ -1,9 +1,5 @@
 name: lint
 
-env:
-  PYTHON: '3.14'
-  LOCKFILE: 'ci/requirements/skore/python-3.14/scikit-learn-1.9/test-requirements.txt'
-
 on:
   pull_request:
   push:
@@ -23,6 +19,10 @@ defaults:
   run:
     shell: "bash"
 
+env:
+  PIXI_VERSION: v0.69.0
+  PIXI_ENV: lint
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -30,47 +30,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Setup Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        id: setup-python
+      - name: Setup pixi
+        uses: prefix-dev/setup-pixi@5185adfbffb4bd703da3010310260805d89ebb11 # v0.9.6
         with:
-          python-version: ${{ env.PYTHON }}
-          check-latest: True
-          cache: pip
-
-      - name: Restore python-venv
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        id: cache-python-venv
-        with:
-          path: skore/venv
-          key: >-
-            python-venv
-            -ubuntu-latest
-            -${{ steps.setup-python.outputs.python-version }}
-            -${{ hashFiles(env.LOCKFILE) }}
-
-      - name: Setup python-venv
-        working-directory: skore
-        run: |
-          set -eu
-
-          # Ensure venv is created
-          python -m venv venv
-
-          # Activate venv for each step
-          echo "${GITHUB_WORKSPACE}/skore/venv/bin" >> ${GITHUB_PATH}
-          echo "VIRTUAL_ENV=${GITHUB_WORKSPACE}/skore/venv" >> ${GITHUB_ENV}
-
-      - name: Install dependencies in python-venv
-        if: steps.cache-python-venv.outputs.cache-hit != 'true'
-        run: python -m pip install --requirement "${LOCKFILE}"
-
-      - name: Save python-venv
-        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        if: steps.cache-python-venv.outputs.cache-hit != 'true'
-        with:
-          path: skore/venv
-          key: ${{ steps.cache-python-venv.outputs.cache-primary-key }}
+          pixi-version: ${{ env.PIXI_VERSION }}
+          environments: ${{ env.PIXI_ENV }}
+          cache: true
+          locked: true
 
       - name: Lint
-        run: pre-commit run --all-files
+        run: pixi run -e ${{ env.PIXI_ENV }} lint
