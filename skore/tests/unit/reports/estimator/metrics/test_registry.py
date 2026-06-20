@@ -48,29 +48,6 @@ def detection_failure_cost(y_true, y_pred_proba, threshold=0.5):
     return business_loss(y_true, y_pred, cost_fp=10, cost_fn=5)
 
 
-@pytest.fixture
-def binary_classification_report(logistic_binary_classification_with_train_test):
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    return EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-        pos_label=1,
-    )
-
-
-@pytest.fixture
-def regression_report(linear_regression_with_train_test):
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    return EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-
 class TestBasicAdd:
     """Test basic metric add functionality."""
 
@@ -698,9 +675,12 @@ class TestMultiMetric:
         assert list(display.data["label"]) == [pd.NA, np.int64(0), np.int64(1)]
 
     def test_preexisting_metric_name(self, binary_classification_report):
-        """If a multimetric scorer is added and it contains a submetric that has the
-        same name as a metric in the registry, then the metric name will appear more
-        than once."""
+        """A multimetric scorer's submetric clashing with a built-in is renamed.
+
+        The submetric and the built-in have distinct fingerprints (the multimetric
+        scorer's parent fingerprint vs. ``None`` for the built-in), so the display
+        disambiguates them as ``Accuracy_1`` (custom) and ``Accuracy_2`` (built-in).
+        """
         report = binary_classification_report
 
         def multimetric_scorer(y_true, y_pred):
@@ -711,9 +691,16 @@ class TestMultiMetric:
 
         display = report.metrics.summarize()
 
-        results = display.data[display.data["metric_verbose_name"] == "Accuracy"]
-        # Our metric, then the default one
-        assert list(results["score"]) == [1000, 1.0]
+        verbose_names = list(display.data["metric_verbose_name"])
+        assert "Accuracy" not in verbose_names
+        assert "Accuracy_1" in verbose_names
+        assert "Accuracy_2" in verbose_names
+
+        # Our submetric is added first by default, so it gets the _1 suffix.
+        accuracy_1 = display.data[display.data["metric_verbose_name"] == "Accuracy_1"]
+        accuracy_2 = display.data[display.data["metric_verbose_name"] == "Accuracy_2"]
+        assert list(accuracy_1["score"]) == [1000]
+        assert list(accuracy_2["score"]) == [1.0]
 
 
 class TestStringScorerNames:
@@ -777,6 +764,48 @@ class TestStringScorerNames:
         )
         with pytest.raises(ValueError, match=err_msg):
             report.metrics.add("neg_mean_squared_error")
+
+    def test_summarize_with_neg_prefix_after_add(self, regression_report):
+        """Test that `.summarize()` accepts prefixed name with 'neg_' even though
+        registry stores it stripped.
+        Non-regression for https://github.com/probabl-ai/skore/issues/2902
+        """
+        report = regression_report
+
+        report.metrics.add("neg_mean_absolute_percentage_error")
+        assert "mean_absolute_percentage_error" in report._metric_registry
+
+        display01 = report.metrics.summarize(
+            metric="neg_mean_absolute_percentage_error"
+        )
+        display02 = report.metrics.summarize(metric="mean_absolute_percentage_error")
+
+        assert display01.data["score"].iloc[0] == display02.data["score"].iloc[0]
+
+    def test_get_with_neg_prefix_after_add(self, regression_report):
+        """Test that `.get()` accepts prefixed name with 'neg_' even though
+        registry stores it stripped.
+        Non-regression for https://github.com/probabl-ai/skore/issues/2902
+        """
+        report = regression_report
+
+        report.metrics.add("neg_mean_absolute_percentage_error")
+
+        value_withneg = report.metrics.get("neg_mean_absolute_percentage_error")
+        value_withoutneg = report.metrics.get("mean_absolute_percentage_error")
+
+        assert value_withneg == value_withoutneg
+
+    def test_unknown_metric_still_raises_key_error(self, regression_report):
+        """Test that really a unknown metric name still raises KeyError after the
+        'neg_' fallback."""
+        report = regression_report
+
+        with pytest.raises(KeyError, match="not found in the registered metrics"):
+            report.metrics.summarize(metric="neg_nonexistent_metric")
+
+        with pytest.raises(KeyError, match="not found in the registered metrics"):
+            report.metrics.get("neg_nonexistent_metric")
 
     def test_invalid_string_scorer_name(self, binary_classification_report):
         """Test that invalid sklearn scorer names raise an error."""

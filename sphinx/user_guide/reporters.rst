@@ -37,7 +37,7 @@ Data insights
 ^^^^^^^^^^^^^
 
 :obj:`EstimatorReport.data` is the entry point to get insights on the dataset used to
-train and test the predictive model. It provides a :meth:`EstimatorReport.data.analyze`
+train and test the predictive model. It provides a :meth:`EstimatorReport.data.summarize`
 method that returns a :class:`~skore.TableReportDisplay` display. This display makes
 essential analysis of the dataset. The parameter `data_source` specifies which portion
 of the dataset to analyze, whether the train or test data or both. This display is

@@ -42,6 +42,7 @@ def check_display_structure(
 
     assert set(data.columns) == {
         "split",
+        "metric_name",
         "metric_verbose_name",
         "estimator_name",
         "data_source",
@@ -86,7 +87,6 @@ def test_binary_classification_forest(forest_binary_classification_data):
             "Brier score",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
         expected_estimator_name="RandomForestClassifier",
     )
@@ -120,7 +120,6 @@ def test_binary_classification_svc(svc_binary_classification_data):
             "ROC AUC",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
         expected_estimator_name="SVC",
     )
@@ -145,7 +144,6 @@ def test_multiclass_classification_forest(forest_multiclass_classification_data)
             "ROC AUC",
             "Predict time (s)",
             "Fit time (s)",
-            "Score",
         },
         expected_estimator_name="RandomForestClassifier",
     )
@@ -176,7 +174,6 @@ def test_multiclass_classification_svc(svc_multiclass_classification_data):
             "Recall",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
         expected_estimator_name="SVC",
     )
@@ -203,7 +200,6 @@ def test_regression(linear_regression_data):
             "MAPE",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
         expected_estimator_name="LinearRegression",
     )
@@ -227,7 +223,6 @@ def test_multioutput_regression(linear_regression_multioutput_data):
             "MAPE",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
         expected_estimator_name="LinearRegression",
     )
@@ -253,7 +248,6 @@ def test_without_predict_proba(custom_classifier_no_predict_proba_data):
             "Recall",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
         expected_estimator_name="CustomClassifierPredictOnly",
     )

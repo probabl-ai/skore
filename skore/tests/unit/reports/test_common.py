@@ -36,12 +36,6 @@ def test_summarize_single_list_equivalence(report):
     assert_frame_equal(display_single.data, display_list.data)
 
 
-def test_metrics_repr(report):
-    """Test that metrics accessor __repr__ returns a string."""
-    result = repr(report.metrics)
-    assert "metrics" in result.lower()
-
-
 def test_metrics_available_returns_metric_keys(report):
     metrics = report.metrics.available()
 

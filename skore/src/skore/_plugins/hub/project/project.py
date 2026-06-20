@@ -45,6 +45,11 @@ if TYPE_CHECKING:
         roc_auc_mean: float | None
         fit_time_mean: float | None
         predict_time_mean: float | None
+        rmse_std: float | None
+        log_loss_std: float | None
+        roc_auc_std: float | None
+        fit_time_std: float | None
+        predict_time_std: float | None
 
 
 def slugify(string: str) -> str:
@@ -379,6 +384,11 @@ class Project:
                 "roc_auc_mean": metrics.get("roc_auc_mean"),
                 "fit_time_mean": metrics.get("fit_time_mean"),
                 "predict_time_mean": metrics.get("predict_time_mean"),
+                "rmse_std": metrics.get("rmse_std"),
+                "log_loss_std": metrics.get("log_loss_std"),
+                "roc_auc_std": metrics.get("roc_auc_std"),
+                "fit_time_std": metrics.get("fit_time_std"),
+                "predict_time_std": metrics.get("predict_time_std"),
             }
 
         with HUBClient() as hub_client:

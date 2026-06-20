@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from collections import defaultdict
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import pandas as pd
@@ -18,6 +21,9 @@ class MetricsSummaryRow(TypedDict):
 
     Parameters
     ----------
+    metric_name : str
+        Technical metric name (e.g. ``"accuracy"``); matches the key under which
+        the metric is registered in :attr:`EstimatorReport._metric_registry`.
     metric_verbose_name : str
         Human-readable metric name shown in the display.
     estimator_name : str
@@ -26,6 +32,9 @@ class MetricsSummaryRow(TypedDict):
         Dataset split used to compute the metric.
     greater_is_better : bool or None
         Whether higher or lower values are better.
+    fingerprint : str or None
+        Identifier disambiguating distinct custom metrics that share
+        ``metric_verbose_name``. ``None`` for built-in metrics.
     score : Any
         Scalar metric value stored in the row.
     label : label, default=None
@@ -38,10 +47,12 @@ class MetricsSummaryRow(TypedDict):
         Cross-validation split index.
     """
 
+    metric_name: str
     metric_verbose_name: str
     estimator_name: str
     data_source: DataSource
     greater_is_better: bool | None
+    fingerprint: str | None
     score: Any
     label: PositiveLabel | None
     average: str | None
@@ -105,15 +116,74 @@ class MetricsSummaryDisplay(DisplayMixin):
         if any(isinstance(r["output"], int) for r in self.rows):
             data["output"] = data["output"].astype(pd.Int64Dtype())
 
+        data = MetricsSummaryDisplay._resolve_fingerprints(data)
+        return data.drop(columns="fingerprint")
+
+    @staticmethod
+    def _resolve_fingerprints(data: pd.DataFrame) -> pd.DataFrame:
+        """Disambiguate ``metric_verbose_name`` across distinct fingerprints.
+
+        When several rows share a ``metric_verbose_name`` but come from metrics
+        with different fingerprints, they are renamed ``{name}_1``, ``{name}_2``,
+        ... in the order they first appear. ``None`` counts as a regular
+        fingerprint value, so a custom metric reusing a built-in's display name
+        will still get disambiguated against the built-in.
+
+        Suffixes skip over any name already present in the column, so we don't
+        produce a collision if a metric happens to already be called e.g.
+        ``"Metric_1"``.
+        """
+        data = data.copy()
+
+        # Fingerprint = str | np.nan
+        # fingerprints_per_name: dict[MetricName, list[Fingerprint]]
+        fingerprints_per_name = defaultdict(list)
+        for name, fingerprint in (
+            data[["metric_verbose_name", "fingerprint"]]
+            .drop_duplicates()
+            .itertuples(index=False, name=None)
+        ):
+            fingerprints_per_name[name].append(fingerprint)
+
+        # Decide the new name for each (name, fingerprint) pair
+        #
+        # Suffixes skip over names already in the column
+
+        # renaming: dict[(MetricName, Fingerprint), NewMetricName]
+        renaming = {}
+        metric_names = set(data["metric_verbose_name"])
+        for name, fingerprints in fingerprints_per_name.items():
+            if len(fingerprints) < 2:
+                continue
+            i = 0
+            for fingerprint in fingerprints:
+                while True:
+                    i += 1
+                    candidate = f"{name}_{i}"
+                    if candidate not in metric_names:
+                        break
+                metric_names.add(candidate)
+                renaming[(name, fingerprint)] = candidate
+
+        for (name, fingerprint), new_name in renaming.items():
+            fp_match = (
+                data["fingerprint"].isna()
+                if pd.isna(fingerprint)
+                else data["fingerprint"] == fingerprint
+            )
+            data.loc[
+                (data["metric_verbose_name"] == name) & fp_match, "metric_verbose_name"
+            ] = new_name
+
         return data
 
     @staticmethod
     def _concatenate(
-        child_displays: list["MetricsSummaryDisplay"],
+        child_displays: list[MetricsSummaryDisplay],
         *,
         report_type: ReportType,
         extra_rows_data: list[dict[str, Any]],
-    ) -> "MetricsSummaryDisplay":
+    ) -> MetricsSummaryDisplay:
         rows = []
         for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
             rows.extend(
@@ -145,6 +215,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         """Process estimator report data into a formatted dataframe."""
         df = data.copy()
         df = df.dropna(axis="columns", how="all")
+        df = df.drop(columns="metric_name", errors="ignore")
 
         for col in df.columns.intersection(["label", "output", "average"]):
             df[col] = df[col].astype("string").fillna("")
@@ -378,11 +449,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             favorability_col = df.pop(("Favorability", "")).bfill(axis=1).iloc[:, 0]
 
             if aggregate is None:
-                original_index_names = list(df.index.names)
-                df = df.stack([0, 1])
-                df.index.names = original_index_names + ["Estimator", "Split"]
-                df = df.to_frame("Value")
-                df.columns.name = None
+                df.columns.names = ["Estimator", "Split"]
             else:
                 df.columns = df.columns.swaplevel(0, 1)
                 df = df.sort_index(axis=1, level=[0, 1])
@@ -395,6 +462,16 @@ class MetricsSummaryDisplay(DisplayMixin):
                 df = MetricsSummaryDisplay._flatten_index(df)
 
             return df
+
+    def _repr_html_(self) -> str:
+        return (
+            f"{self.frame()._repr_html_()}"
+            '<p role="note">Use <code>.frame()</code> to control the format'
+            " of the output.</p>"
+        )
+
+    def __repr__(self) -> str:
+        return f"{self.frame()!r}\nUse .frame() to control the format of the output."
 
     @DisplayMixin.style_plot
     def plot(self) -> Figure:

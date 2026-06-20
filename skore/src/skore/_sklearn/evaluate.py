@@ -10,7 +10,7 @@ from skore import configuration
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.train_test_split.train_test_split import TrainTestSplit
+from skore._sklearn.train_test_split import TrainTestSplit
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -220,7 +220,7 @@ def evaluate(
     if isinstance(splitter, float):
         splitter = TrainTestSplit(test_size=splitter)
 
-    if hasattr(splitter, "get_n_splits") and splitter.get_n_splits(X, y) == 1:
+    if isinstance(splitter, TrainTestSplit):
         # It's easier to make a 1-split CrossValidationReport
         # and extract an EstimatorReport from it,
         # than to make an EstimatorReport from scratch

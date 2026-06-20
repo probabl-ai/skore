@@ -7,8 +7,10 @@ import numpy as np
 import pandas as pd
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
+from skrub import _dataframe as sbd
 
 from skore._sklearn.types import PositiveLabel
+from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
@@ -125,8 +127,8 @@ class CheckNotApplicable(Exception):
     Notes
     -----
     Check implementations raise this exception when required data, task type,
-    or model capabilities are missing. The check is skipped and does not appear
-    in :meth:`~skore.EstimatorReport.checks.summarize` results.
+    or model capabilities are missing. The check appears under the
+    "Not Applicable" section of the checks summary.
 
     Examples
     --------
@@ -152,82 +154,80 @@ def split_preprocessor_estimator(estimator):
     steps and final predictor.
     """
     if isinstance(estimator, Pipeline):
-        return estimator[:-1], estimator[-1]
+        if len(estimator.steps) > 1:
+            return estimator[:-1], estimator[-1]
+        else:
+            return None, estimator[0]
     return None, estimator
 
 
-def get_preprocessed_data(
+def get_report_y(
     report: EstimatorReport,
     *,
-    target: Literal["X", "y"] = "X",
-    concatenate: bool = False,
-    data_source: Literal["train", "test"] | None = None,
-) -> np.ndarray | pd.DataFrame | pd.Series | None:
-    """Return feature matrix or target vector from a report.
+    data_source: Literal["train", "test", "both"],
+) -> pd.Series | pd.DataFrame | None:
+    """Return the target as a 1d Series or multi-output DataFrame."""
+    try:
+        if data_source == "both":
+            if report.y_train is None or report.y_test is None:
+                return None
+            y = sbd.concat(
+                _normalize_y_as_dataframe(report.y_train),
+                _normalize_y_as_dataframe(report.y_test),
+                axis=0,
+            )
+        elif data_source == "train":
+            if report.y_train is None:
+                return None
+            y = _normalize_y_as_dataframe(report.y_train)
+        else:
+            if report.y_test is None:
+                return None
+            y = _normalize_y_as_dataframe(report.y_test)
+        return y.iloc[:, 0] if y.shape[1] == 1 else y
+    except NotImplementedError:
+        return None
 
-    When ``target == "X"`` and the report's estimator is a
-    :class:`~sklearn.pipeline.Pipeline`, the raw feature matrix is passed
-    through the fitted preprocessor (all steps except the last) before being
-    returned, so the result reflects what the predictor actually sees.
+
+def get_preprocessed_X(
+    report: EstimatorReport,
+    *,
+    data_source: Literal["train", "test", "both"],
+) -> pd.DataFrame | None:
+    """Return the feature matrix seen by the predictor.
+
+    When the report's estimator is a :class:`~sklearn.pipeline.Pipeline`, the
+    raw feature matrix is passed through the fitted preprocessor (all steps
+    except the last) before being returned.
 
     Returns ``None`` when no data is available or when the preprocessor
     produces an unsupported type (e.g. sparse matrices).
-
-    Parameters
-    ----------
-    report : _BaseReport
-        the report to extract data from.
-
-    target : {"X", "y"}
-        whether to return the feature matrix or the target vector.
-
-    concatenate : bool
-        when true and both train and test are available, return their
-        concatenation. Otherwise return train if available, else test.
-
-    data_source : {"train", "test"}, default=None
-        when set, return only the train or test split. Ignored when
-        ``concatenate`` is true.
-
-    Returns
-    -------
-    np.ndarray, pd.DataFrame, or None
     """
-    train = report.X_train if target == "X" else report.y_train
-    test = report.X_test if target == "X" else report.y_test
-
-    if concatenate and train is not None and test is not None:
-        data = (
-            pd.concat([train, test], axis=0, ignore_index=True)
-            if isinstance(train, pd.DataFrame)
-            else np.concatenate([train, test])
-        )
-    elif data_source == "train":
-        data = train
-    elif data_source == "test":
-        data = test
-    elif train is not None:
-        data = train
-    elif test is not None:
-        data = test
-    else:
+    try:
+        if data_source == "both":
+            if report.X_train is None or report.X_test is None:
+                return None
+            data = sbd.concat(
+                _normalize_X_as_dataframe(report.X_train),
+                _normalize_X_as_dataframe(report.X_test),
+                axis=0,
+            )
+        elif data_source == "train":
+            if report.X_train is None:
+                return None
+            data = _normalize_X_as_dataframe(report.X_train)
+        else:
+            if report.X_test is None:
+                return None
+            data = _normalize_X_as_dataframe(report.X_test)
+    except NotImplementedError:
         return None
 
-    if data is None:
+    preprocessor, _ = split_preprocessor_estimator(report.estimator_)
+    if preprocessor is not None and len(preprocessor.steps) > 0:
+        data = preprocessor.transform(data)
+
+    try:
+        return _normalize_X_as_dataframe(data)
+    except NotImplementedError:
         return None
-
-    if target == "X":
-        preprocessor, _ = split_preprocessor_estimator(report.estimator_)
-        if preprocessor is not None and len(preprocessor.steps) > 0:
-            data = preprocessor.transform(data)
-
-    if not isinstance(data, (np.ndarray, pd.DataFrame, pd.Series)):
-        return None
-    return data
-
-
-def select_feature(X, i: int):
-    """Return X reduced to a single feature index, preserving DataFrame/array kind."""
-    if hasattr(X, "iloc"):
-        return X.iloc[:, [i]]
-    return X[:, [i]]

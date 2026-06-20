@@ -3,8 +3,9 @@ import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
 from sklearn.datasets import make_regression
+from sklearn.model_selection import train_test_split
 
-from skore import CrossValidationReport, EstimatorReport, train_test_split
+from skore import CrossValidationReport, EstimatorReport
 from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._plot.data.table_report import (
     _compute_contingency_table,
@@ -24,8 +25,14 @@ def X_y():
 @pytest.fixture(scope="module")
 def estimator_report(X_y):
     X, y = X_y
-    split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    return EstimatorReport(tabular_pipeline("regressor"), **split_data)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    return EstimatorReport(
+        tabular_pipeline("regressor"),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -37,7 +44,7 @@ def cross_validation_report(X_y):
 @pytest.fixture(params=["estimator_report", "cross_validation_report"], scope="module")
 def display(request):
     report = request.getfixturevalue(request.param)
-    return report.data.analyze()
+    return report.data.summarize()
 
 
 @pytest.mark.parametrize("dtype", ["category", "str"])
@@ -101,7 +108,7 @@ def test_truncate_top_k_categories_return_as_is(col):
 
 
 def test_corr_plot(pyplot, estimator_report):
-    display = estimator_report.data.analyze(data_source="train")
+    display = estimator_report.data.summarize(data_source="train")
     fig = display.plot(kind="corr")
     ax = fig.axes[0]
     assert isinstance(ax.collections[0], QuadMesh)
@@ -111,7 +118,11 @@ def test_corr_plot(pyplot, estimator_report):
 
 
 def test_repr(display):
-    assert repr(display) == "<TableReportDisplay(...)>"
+    repr_str = repr(display)
+    assert repr(display.frame()) in repr_str
+    assert repr_str.endswith(
+        "Use .plot() to plot the data and .frame() to access the full data."
+    )
 
 
 def test_compute_contingency_table_error():

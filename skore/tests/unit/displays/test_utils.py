@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.linear_model import LogisticRegression
 
@@ -7,9 +8,37 @@ from skore._sklearn._plot.utils import (
     _adjust_fig_size,
     _downsample_thresholds_indices,
     _get_adjusted_fig_size,
+    _reorder_categoricals_by_appearance,
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
+
+
+def test_reorder_categoricals_by_appearance():
+    """Categorical levels are reordered to their order of appearance.
+
+    Guards the fix for https://github.com/probabl-ai/skore/issues/2925: seaborn draws
+    categorical levels in category order, so the category order must match the order of
+    appearance used to build the legend. This is version-independent, unlike the
+    end-to-end rendering which only desyncs on pandas >= 3.
+    """
+    df = pd.DataFrame(
+        {
+            "estimator": pd.Categorical(["b", "b", "a", "a"], categories=["a", "b"]),
+            "data_source": pd.Categorical(
+                ["train", "test", "train", "test"], categories=["test", "train"]
+            ),
+            "value": [1, 2, 3, 4],
+        }
+    )
+    assert list(df["estimator"].cat.categories) == ["a", "b"]
+    assert list(df["data_source"].cat.categories) == ["test", "train"]
+
+    result = _reorder_categoricals_by_appearance(df, ["estimator", "data_source", None])
+
+    assert list(result["estimator"].cat.categories) == ["b", "a"]
+    assert list(result["data_source"].cat.categories) == ["train", "test"]
+    assert result["value"].tolist() == [1, 2, 3, 4]
 
 
 @pytest.mark.parametrize(

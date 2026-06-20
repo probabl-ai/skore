@@ -20,6 +20,7 @@ permissions: {}
 jobs:
   tag-decomposition:
     name: Decompose tag to retrieve package and version
+    if: ${{ github.repository == 'probabl-ai/skore' }}
     runs-on: ubuntu-latest
     outputs:
       package: ${{ steps.tag-decomposition.outputs.package }}
@@ -42,6 +43,7 @@ jobs:
 
   build:
     name: Build package distributions
+    if: ${{ github.repository == 'probabl-ai/skore' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -56,10 +58,10 @@ jobs:
         env:
           VERSION: ${{ needs.tag-decomposition.outputs.version }}
 
-      - name: Set up Python 3.12
+      - name: Set up Python 3.14
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Build package distributions
         working-directory: ${{ needs.tag-decomposition.outputs.package }}
@@ -80,6 +82,7 @@ jobs:
 
   publish:
     name: Publish package distributions to PyPI using trusted publisher
+    if: ${{ github.repository == 'probabl-ai/skore' }}
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -99,6 +102,7 @@ jobs:
 
   communicate:
     name: Communicate on slack about the new release
+    if: ${{ github.repository == 'probabl-ai/skore' }}
     runs-on: ubuntu-latest
     needs: [tag-decomposition, publish]
     continue-on-error: true
@@ -124,7 +128,7 @@ jobs:
   clean:
     name: Delete package distributions artifacts
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ (github.repository == 'probabl-ai/skore') && always() }}
     needs: [tag-decomposition, publish]
     steps:
       - uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0

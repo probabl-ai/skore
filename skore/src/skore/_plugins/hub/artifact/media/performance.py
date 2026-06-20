@@ -5,48 +5,11 @@ from __future__ import annotations
 from abc import ABC
 from collections.abc import Callable
 from functools import reduce
-from inspect import signature
-from io import BytesIO
 from typing import ClassVar, Literal, cast
-
-from matplotlib import pyplot as plt
 
 from skore import Display
 from skore._plugins.hub.artifact.media.media import Media, Report
 from skore._plugins.hub.json import dumps
-
-
-class PerformanceSVG(Media[Report], ABC):  # noqa: D101
-    accessor: ClassVar[str]
-    content_type: Literal["image/svg+xml"] = "image/svg+xml"
-
-    def content_to_upload(self) -> bytes | None:  # noqa: D102
-        try:
-            function = cast(
-                "Callable[..., Display]",
-                reduce(getattr, self.accessor.split("."), self.report),
-            )
-        except AttributeError:
-            return None
-
-        display = (
-            function()
-            if self.data_source is None
-            else function(data_source=self.data_source)
-        )
-
-        with BytesIO() as stream:
-            fig = display.plot()
-            if fig is None:
-                # NOTE: backward compatibility for when `figure_` was stored as an
-                # attribute in the display object instead of being returned by `plot`.
-                fig = display.figure_
-            fig.savefig(stream, format="svg", bbox_inches="tight")
-            plt.close(fig)
-
-            figure_bytes = stream.getvalue()
-
-        return figure_bytes
 
 
 class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
@@ -62,36 +25,20 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
         except AttributeError:
             return None
 
-        display = (
-            function()
-            if self.data_source is None
-            else function(data_source=self.data_source)
-        )
-
-        frame = display.frame(**self.get_frame_kwargs(display))
+        display = function(data_source=self.data_source)
+        frame = display.frame(**(self.parameters or {}))  # type: ignore[arg-type]
 
         return dumps(
             frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")
         )
 
-    @staticmethod
-    def get_frame_kwargs(display: Display) -> dict[str, str | bool]:
-        """Get the kwargs to pass to the frame method."""
-        params = signature(display.frame).parameters
-        kwargs: dict[str, str | bool] = {}
-        if "threshold_value" in params:
-            kwargs["threshold_value"] = "all"
-        if "with_average_precision" in params:
-            kwargs["with_average_precision"] = True
-        if "with_roc_auc" in params:
-            kwargs["with_roc_auc"] = True
-
-        return kwargs
-
 
 class PrecisionRecallDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.precision_recall"
     name: Literal["precision_recall"] = "precision_recall"
+    parameters: dict[Literal["with_average_precision"], Literal[True]] = {
+        "with_average_precision": True
+    }
 
 
 class PrecisionRecallDataFrameTrain(PrecisionRecallDataFrame[Report]):  # noqa: D101
@@ -118,6 +65,7 @@ class PredictionErrorDataFrameTest(PredictionErrorDataFrame[Report]):  # noqa: D
 class RocDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     accessor: ClassVar[str] = "metrics.roc"
     name: Literal["roc"] = "roc"
+    parameters: dict[Literal["with_roc_auc"], Literal[True]] = {"with_roc_auc": True}
 
 
 class RocDataFrameTrain(RocDataFrame[Report]):  # noqa: D101
@@ -133,9 +81,25 @@ class ConfusionMatrixDataFrame(PerformanceDataFrame[Report], ABC):  # noqa: D101
     name: Literal["confusion_matrix"] = "confusion_matrix"
 
 
-class ConfusionMatrixDataFrameTrain(ConfusionMatrixDataFrame[Report]):  # noqa: D101
+class ConfusionMatrixDataFrameTrainAll(ConfusionMatrixDataFrame[Report]):  # noqa: D101
     data_source: Literal["train"] = "train"
+    parameters: dict[Literal["threshold_value"], Literal["all"]] = {
+        "threshold_value": "all"
+    }
 
 
-class ConfusionMatrixDataFrameTest(ConfusionMatrixDataFrame[Report]):  # noqa: D101
+class ConfusionMatrixDataFrameTrainNone(ConfusionMatrixDataFrame[Report]):  # noqa: D101
+    data_source: Literal["train"] = "train"
+    parameters: dict[Literal["threshold_value"], None] = {"threshold_value": None}
+
+
+class ConfusionMatrixDataFrameTestAll(ConfusionMatrixDataFrame[Report]):  # noqa: D101
     data_source: Literal["test"] = "test"
+    parameters: dict[Literal["threshold_value"], Literal["all"]] = {
+        "threshold_value": "all"
+    }
+
+
+class ConfusionMatrixDataFrameTestNone(ConfusionMatrixDataFrame[Report]):  # noqa: D101
+    data_source: Literal["test"] = "test"
+    parameters: dict[Literal["threshold_value"], None] = {"threshold_value": None}

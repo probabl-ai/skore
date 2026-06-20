@@ -55,12 +55,12 @@ estimator = tabular_pipeline(LogisticRegression())
 report = evaluate(estimator, X, y, splitter=0.2)
 
 # %%
-# Data accessor: ``report.data.analyze()`` returns a display
-# ----------------------------------------------------------
+# Data accessor: ``report.data.summarize()`` returns a display
+# ------------------------------------------------------------
 #
-# The **data** accessor provides dataset summaries. Its ``analyze()`` method
+# The **data** accessor provides dataset summaries. Its ``summarize()`` method
 # returns a :class:`~skore._sklearn._plot.data.table_report.TableReportDisplay`.
-data_display = report.data.analyze()
+data_display = report.data.summarize()
 data_display.help()
 
 # %%
@@ -119,7 +119,7 @@ cv_report = evaluate(estimator, X, y, splitter=3)
 # %%
 # Again: ``data``, ``metrics``, and ``inspection`` return displays with
 # ``plot()``, ``frame()``, and ``set_style()``.
-cv_report.data.analyze().plot(kind="dist", x="mean radius", y="mean texture")
+cv_report.data.summarize().plot(kind="dist", x="mean radius", y="mean texture")
 
 # %%
 _ = cv_report.metrics.confusion_matrix().plot()

@@ -31,8 +31,6 @@ with `pre-commit run --all-files`)
 - [ ] All the tests pass (please test locally before pushing)
 - [ ] The documentation builds and renders properly (if it does, our bot will add a comment linking
 to a preview of the documentation to review it visually)
-- [ ] A new changelog entry was added to CHANGELOG.rst (if necessary; typically, if your change
-requires updating tests)
 - [ ] All the commits in the PR are signed (more information
 [here](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits))
 - [ ] The pull request title respects the Conventional Commits convention (more information

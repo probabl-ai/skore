@@ -135,11 +135,15 @@ def iter_cv_metrics(
 
     timings = report_any.metrics.timings()
     fit_time = timings.loc["Fit time (s)"].loc["mean"]
+    fit_time_std = timings.loc["Fit time (s)"].loc["std"]
     predict_time = timings.loc["Predict time test (s)"].loc["mean"]
+    predict_time_std = timings.loc["Predict time test (s)"].loc["std"]
     summary = report_any.metrics.summarize()
 
     yield Metric("fit_time", fit_time)
+    yield Metric("fit_time_std", fit_time_std)
     yield Metric("predict_time", predict_time)
+    yield Metric("predict_time_std", predict_time_std)
     # NOTE: we could use flat_index=True in summarize, but we have to flatten
     # other frames anyway, so we don't do it here.
     yield Artifact("metrics_details/per_split", summary.frame(aggregate=None))
@@ -188,7 +192,7 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
     yield Params(estimator.get_params())
     yield Model(estimator, _sample_input_example(report.X))
 
-    yield Artifact("data.analyze", _data_analyze_html(report))
+    yield Artifact("data.summarize", _data_analyze_html(report))
 
     yield _dataset_from_Xy(report.X, report.y)
 
@@ -218,7 +222,7 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
     yield Params(estimator.get_params())
     yield Model(estimator, _sample_input_example(report.X_test))
 
-    yield Artifact("data.analyze", _data_analyze_html(report))
+    yield Artifact("data.summarize", _data_analyze_html(report))
 
     yield _dataset_from_Xy(report.X_train, report.y_train, context="training")
     yield _dataset_from_Xy(report.X_test, report.y_test, context="evaluation")
@@ -227,7 +231,7 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
 def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
     with switch_plt_backend(), plt.ioff():
         try:
-            return report.data.analyze()._repr_html_()
+            return report.data.summarize()._repr_html_()
         finally:
             plt.close("all")
 

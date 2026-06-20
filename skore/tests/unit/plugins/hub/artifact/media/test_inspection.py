@@ -144,6 +144,7 @@ def test_inspection(
         "name": accessor,
         "data_source": data_source,
         "checksum": checksum,
+        "parameters": None,
     }
 
     # ensure `upload` is well called
@@ -165,6 +166,7 @@ def test_inspection(
         "name": accessor,
         "data_source": data_source,
         "checksum": None,
+        "parameters": None,
     }
 
     # ensure `upload` is not called

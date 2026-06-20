@@ -7,9 +7,11 @@ Local skore Project
 
 This example shows how to use :class:`~skore.Project` in **local** mode: store
 reports on your machine and inspect them. A key point is that
-:meth:`~skore.Project.summarize` returns a :class:`~skore.project._summary.Summary`,
-which is a :class:`pandas.DataFrame`. In Jupyter you get an interactive widget, but
-you can always inspect and filter the summary as a DataFrame if you prefer.
+:meth:`~skore.Project.summarize` returns a ``Summary`` object that holds the
+metadata and metrics of every report. In Jupyter it renders as an interactive
+table with three views (Table, parallel-coordinates Plot, and Trend) where you
+can filter and pick reports to build a query string; the underlying
+:class:`pandas.DataFrame` is accessible through its ``frame`` method.
 """
 
 # %%
@@ -52,42 +54,27 @@ for regularization in np.logspace(-7, 7, 31):
     project.put(f"lr-regularization-{regularization:.1e}", report)
 
 # %%
-# Summarize: you get a DataFrame
-# ==============================
+# Summarize: you get a Summary
+# ============================
 #
-# :meth:`~skore.Project.summarize` returns a :class:`~skore.project._summary.Summary`,
-# which subclasses :class:`pandas.DataFrame`. In a Jupyter environment it renders
-# an interactive parallel-coordinates widget by default.
+# :meth:`~skore.Project.summarize` returns a :class:`~skore.Summary` object. In a
+# Jupyter environment it renders as an interactive table where you can filter rows and
+# pick reports across the different views; the selection produces a query string ready
+# to pass to :meth:`~skore.Summary.query`.
 summary = project.summarize()
-
-# %%
-# To see the normal DataFrame table instead of the widget (e.g. in scripts or
-# when you prefer the table), wrap the summary in :class:`pandas.DataFrame`:
-import pandas as pd
-
-pandas_summary = pd.DataFrame(summary)
-pandas_summary
-
-# %%
-# Basically, our summary contains metadata related to various information that we need
-# to quickly help filtering the reports.
-summary.info()
+summary
 
 # %%
 # Filter reports by metric (e.g. keep only those above a given accuracy) and
 # work with the result as a table.
-summary.query("log_loss < 0.1")["key"].tolist()
+summary.query("log_loss < 0.1")
 
 # %%
-# Use :meth:`~skore.project._summary.Summary.reports` to load the corresponding
-# reports from the project (optionally after filtering the summary).
-reports = summary.query("log_loss < 0.1").reports(return_as="comparison")
-len(reports.reports_)
-
-# %%
-# Since we got a :class:`~skore.ComparisonReport`, we can use the metrics accessor
-# to summarize the metrics across the reports.
-reports.metrics.summarize().frame()
+# Use :meth:`~skore.Summary.compare` to load the corresponding reports from the
+# project (optionally after filtering the summary). Passing ``return_as="report"``
+# returns a :class:`~skore.ComparisonReport` built from those reports.
+reports = summary.query("log_loss < 0.1").compare(return_as="report")
+reports
 
 # %%
 _ = reports.metrics.roc().plot(subplot_by=None)

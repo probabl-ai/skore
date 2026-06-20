@@ -41,7 +41,7 @@ class _HTMLReportHelpMixin(_ReportHelpDataMixin, _BaseHTMLHelpMixin):
         template_data["is_report"] = True
 
         env = get_jinja_env()
-        template = env.get_template("report_help.html.j2")
+        template = env.get_template("common/report_help.html.j2")
 
         container_id = f"skore-help-{uuid.uuid4().hex[:8]}"
 
@@ -62,7 +62,7 @@ class _HTMLAccessorHelpMixin(_AccessorHelpDataMixin, _BaseHTMLHelpMixin):
         template_data["is_report"] = False
 
         env = get_jinja_env()
-        template = env.get_template("report_help.html.j2")
+        template = env.get_template("common/report_help.html.j2")
 
         container_id = f"skore-accessor-help-{uuid.uuid4().hex[:8]}"
 
@@ -82,7 +82,7 @@ class _HTMLHelpDisplayMixin(_DisplayHelpDataMixin, _BaseHTMLHelpMixin):
         template_data = asdict(self._build_help_data())
 
         env = get_jinja_env()
-        template = env.get_template("display_help.html.j2")
+        template = env.get_template("common/display_help.html.j2")
 
         container_id = f"skore-display-help-{uuid.uuid4().hex[:8]}"
 
