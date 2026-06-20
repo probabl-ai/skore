@@ -1,13 +1,13 @@
 """
 .. _example_custom_checks:
 
-===============================
-Adding custom diagnostic checks
-===============================
+====================
+Adding custom checks
+====================
 
-`skore` lets you extend the built-in diagnostic checks with your own.
+`skore` lets you extend the built-in automated checks with your own.
 This example shows how to write a custom check function and register it
-with a report via :meth:`~skore.EstimatorReport.add_checks`.
+with a report via :meth:`~skore.EstimatorReport.checks.add`.
 """
 
 # %%
@@ -19,11 +19,11 @@ with a report via :meth:`~skore.EstimatorReport.add_checks`.
 # report. We throw an exception when the test data is not available to avoid
 # running the check when it is not applicable. The check function is wrapped in a
 # :class:`~skore.Check` instance and registered with the report via
-# :meth:`~skore.EstimatorReport.add_checks`.
+# :meth:`~skore.EstimatorReport.checks.add`.
 #
 # The `docs_url` argument is optional. When provided as a full URL (starting
 # with ``"http"``), it is used as-is. When it is a plain anchor string
-# it points to the skore diagnostic user guide. When omitted entirely,
+# it points to the skore automated checks user guide. When omitted entirely,
 # no documentation link is shown.
 #
 # We set the severity to "tip" to indicate that this is not an issue to fix,
@@ -45,7 +45,7 @@ class CustomCheck1(Check):
         if report.X_test is None:
             raise CheckNotApplicable()
 
-        n_features = X.shape[1]
+        n_features = report.X_test.shape[1]
         if n_features > 50:
             return (
                 f"The dataset has {n_features} features which may hurt model performance. "
@@ -58,22 +58,25 @@ class CustomCheck1(Check):
 # Registering the check
 # =====================
 #
-# :meth:`~skore.EstimatorReport.add_checks` accepts a list of ``Check`` instances,
-# and registers them. The next call to :meth:`~skore.EstimatorReport.diagnose` runs
-# any newly added checks on top of the built-in checks.
+# :meth:`~skore.EstimatorReport.checks.add` accepts a list of :class:`~skore.Check` instances,
+# and registers them. The next call to :meth:`~skore.EstimatorReport.checks.summarize`
+# runs any newly added checks on top of the built-in checks.
 #
-# We can then find the new check in the Tips tab of the diagnostic, along another tip
+# We can then find the new check in the Tips tab of the checks summary, along another tip
 # informing us that the dataset is not standardized.
+import pandas as pd
 from sklearn.linear_model import LinearRegression
 from skore import evaluate
 
 rng = np.random.default_rng(42)
-X = rng.normal(size=(200, 80))
-y = X[:, 0] + rng.normal(size=200)
+X = pd.DataFrame(
+    rng.normal(size=(200, 80)), columns=[f"feature_{i}" for i in range(80)]
+)
+y = pd.Series(X.iloc[:, 0] + rng.normal(scale=0.1, size=200))
 
 report = evaluate(LinearRegression(), X, y)
-report.add_checks([CustomCheck1()])
-report.diagnose()
+report.checks.add([CustomCheck1()])
+report.checks.summarize()
 
 # %%
 # Cross-validation level checks
@@ -89,6 +92,9 @@ report.diagnose()
 # this is an issue to fix.
 #
 # We will corrupt the first fold of the target to illustrate the check.
+#
+# We see that our new check appears along another similar issue that detects folds that
+# are outliers in terms of performance metrics.
 import pandas as pd
 
 y_noisy = y.copy()
@@ -107,7 +113,7 @@ class CustomCheck2(Check):
         """Flag high score variance across CV splits."""
         frames = [
             sub_report.metrics.summarize(data_source="test").data
-            for sub_report in report.estimator_reports_
+            for sub_report in report.reports_
         ]
         scores = pd.concat(frames, ignore_index=True)
 
@@ -122,8 +128,8 @@ class CustomCheck2(Check):
         return None
 
 
-cv_report.add_checks([CustomCheck2()])
-cv_report.diagnose()
+cv_report.checks.add([CustomCheck2()])
+cv_report.checks.summarize()
 
 # %%
 # Aggregating checks across estimator reports
@@ -132,8 +138,8 @@ cv_report.diagnose()
 # We can also reuse our first check to run it on the component estimator reports
 # and aggregate the results across splits.
 
-cv_report.add_checks([CustomCheck1()])
-cv_report.diagnose()
+cv_report.checks.add([CustomCheck1()])
+cv_report.checks.summarize()
 
 # %%
 # Similarly, :class:`~skore.ComparisonReport` aggregates checks across its
@@ -143,5 +149,5 @@ from sklearn.ensemble import RandomForestRegressor
 comparison_report = evaluate(
     [LinearRegression(), RandomForestRegressor()], X, y, splitter=5
 )
-comparison_report.add_checks([CustomCheck1(), CustomCheck2()])
-comparison_report.diagnose()
+comparison_report.checks.add([CustomCheck1(), CustomCheck2()])
+comparison_report.checks.summarize()

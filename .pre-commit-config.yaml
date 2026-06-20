@@ -11,70 +11,27 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.42.3
+    rev: v1.46.0
     hooks:
       - id: typos
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.14
+    rev: v0.15.12
     hooks:
 
       - id: ruff-check
-        files: ^((skore|skore-hub-project|skore-local-project|skore-mlflow-project)/(hatch|src|tests))|(examples)/
+        files: ^(skore/(hatch|src|tests))|(examples)/
         args: [--fix, --extend-select, I]
 
       - id: ruff-format
-        files: ^((skore|skore-hub-project|skore-local-project|skore-mlflow-project)/(hatch|src|tests))|(examples)/
+        files: ^(skore/(hatch|src|tests))|(examples)/
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+  - repo: local
     hooks:
 
       - id: mypy
+        name: mypy
+        entry: mypy --config-file=skore/pyproject.toml skore/
+        language: unsupported
         pass_filenames: false
-        alias: mypy-skore
-        name: mypy skore/
         files: ^skore/
-        args: [--config-file=skore/pyproject.toml, skore]
-        additional_dependencies:
-          # from dependencies
-          - IPython
-          - anywidget
-          - ipywidgets
-          - joblib
-          - matplotlib
-          - numpy
-          - pandas
-          - plotly
-          - rich
-          - scikit-learn
-          - skrub
-          - seaborn
-          # from test dependencies
-          - polars
-          - pyarrow
-          - scipy-stubs
-
-      - id: mypy
-        pass_filenames: false
-        alias: mypy-skore-hub-project
-        name: mypy skore-hub-project/
-        files: ^skore-hub-project/
-        args: [--config-file=skore-hub-project/pyproject.toml, skore-hub-project]
-        additional_dependencies: [skore, blake3, httpx, orjson, pandas-stubs, pydantic]
-
-      - id: mypy
-        pass_filenames: false
-        alias: mypy-skore-local-project
-        name: mypy skore-local-project/
-        files: ^skore-local-project/
-        args: [--config-file=skore-local-project/pyproject.toml, skore-local-project]
-        additional_dependencies: [skore]
-
-      - id: mypy
-        pass_filenames: false
-        alias: mypy-skore-mlflow-project
-        name: mypy skore-mlflow-project/
-        files: ^skore-mlflow-project/
-        args: [--config-file=skore-mlflow-project/pyproject.toml, skore-mlflow-project]
-        additional_dependencies: [skore, mlflow]

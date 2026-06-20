@@ -1,0 +1,42 @@
+"""Class definition of the payload used to associate a media with the report."""
+
+from abc import ABC
+from typing import Generic, Literal, TypeVar
+
+from pydantic import Field
+
+from skore import CrossValidationReport, EstimatorReport
+from skore._plugins.hub.artifact.artifact import Artifact
+
+Report = TypeVar("Report", bound=(EstimatorReport | CrossValidationReport))
+Parameters = (
+    dict[Literal["with_average_precision"], Literal[True]]
+    | dict[Literal["with_roc_auc"], Literal[True]]
+    | dict[Literal["threshold_value"], Literal["all"]]
+    | dict[Literal["threshold_value"], None]
+    | None
+)
+
+
+class Media(Artifact, ABC, Generic[Report]):
+    """
+    Payload used to associate a media with the report.
+
+    Attributes
+    ----------
+    project : Project
+        The project to which the artifact's payload must be associated.
+    content_type : str
+        The content-type of the artifact content.
+    report : EstimatorReport | CrossValidationReport
+        The report on which compute the media.
+    name : str
+        The name of the media.
+    data_source : str | None
+        The source of the data used to generate the media.
+    """
+
+    report: Report = Field(repr=False, exclude=True)
+    name: str = Field(init=False)
+    data_source: str | None = Field(init=False)
+    parameters: Parameters | None = Field(init=False, default=None)

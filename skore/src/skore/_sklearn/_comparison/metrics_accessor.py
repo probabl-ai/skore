@@ -113,6 +113,23 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             ],
         )
 
+    def _formatted_summary_frame(
+        self,
+        *,
+        data_source: DataSource = "test",
+        metric: str | list[str] | None = None,
+    ) -> pd.DataFrame:
+        frame = self.summarize(data_source=data_source, metric=metric).frame()
+        frame = frame.rename_axis(
+            None
+            if self._parent._report_type == "comparison-estimator"
+            else [None, None],
+            axis="columns",
+        )
+        if self._parent._report_type == "comparison-cross-validation":
+            frame = frame.swaplevel(axis="columns")
+        return frame
+
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
     ) -> MetricsSummaryDisplay:
@@ -131,7 +148,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             ],
         )
 
-    def available(self, report_name: str | None = None) -> list[str]:
+    def available(self, *, report_name: str | None = None) -> list[str]:
         """List available metric names in the registry.
 
         Parameters
@@ -167,11 +184,13 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         metric: MetricLike,
         *,
         name: str | None = None,
+        verbose_name: str | None = None,
         greater_is_better: bool = True,
         position: Literal["first", "last"] = "first",
         **kwargs: Any,
     ) -> None:
-        """Add a custom metric to be included in :meth:`summarize` by default.
+        """
+        Add a custom metric to :meth:`~skore.ComparisonReport.metrics.summarize`.
 
         Parameters
         ----------
@@ -189,9 +208,14 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
               If your metric has the form ``(y_true, y_pred, **kw) -> float``, see
               :func:`sklearn.metrics.make_scorer` to convert it to a scorer.
 
-        name : str, optional
-            Custom name for the metric. If not provided, the name is inferred
+        name : str or None, default=None
+            Custom name for the metric. If ``None``, the name is inferred
             from the metric (e.g. the function's ``__name__``).
+
+        verbose_name : str or None, default=None
+            Custom verbose name for the metric which will be used for display
+            purposes. If ``None``, the verbose name is inferred from the metric
+            name.
 
         greater_is_better : bool, default=True
             Whether higher values are better (only for callables).
@@ -227,6 +251,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             report.metrics.add(
                 metric,
                 name=name,
+                verbose_name=verbose_name,
                 greater_is_better=greater_is_better,
                 position=position,
                 **kwargs,
@@ -240,11 +265,6 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         name : str
             The technical name of the metric to remove.
 
-        Raises
-        ------
-        KeyError
-            If *name* is not registered on an underlying report.
-
         See Also
         --------
         add : Add a custom metric.
@@ -252,8 +272,62 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         for report in self._parent.reports_.values():
             report.metrics.remove(name)
 
+    def get(
+        self,
+        name: str,
+        data_source: DataSource = "test",
+        aggregate: Aggregate | None = ("mean", "std"),
+        flat_index: bool = False,
+        **kwargs,
+    ) -> pd.DataFrame | None:
+        """Get a metric value.
+
+        Parameters
+        ----------
+        name : str
+            Name of the metric to compute. Get all available metrics with
+            :meth:`~ComparisonReport.metrics.available()`.
+
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
+        flat_index : bool, default=True
+            Whether to return a flat index or a multi-index.
+
+        Returns
+        -------
+        pd.DataFrame
+            The metric values, or None if the metric is not available.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
+        >>> comparison_report.metrics.get("precision")
+        Estimator        LogisticRegression_1  LogisticRegression_2
+        Metric    Label
+        Precision 0                  0.901961              0.901961
+                  1                  0.984127              0.984127
+        """
+        return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
+            aggregate=aggregate, flat_index=flat_index
+        )
+
     def timings(
         self,
+        *,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Get all measured processing times related to the different estimators.
@@ -290,8 +364,8 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> report.metrics.timings()
                                 LogisticRegression_1    LogisticRegression_2
         Fit time (s)                             ...                     ...
-        Predict time test (s)                    ...                     ...
         Predict time train (s)                   ...                     ...
+        Predict time test (s)                    ...                     ...
         """
         if self._parent._report_type == "comparison-estimator":
             timings = pd.concat(
@@ -325,6 +399,55 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
                 timings.columns.names = [None, "Estimator"]
 
             return timings
+
+    @available_if(_check_any_sub_report_has_metric("score"))
+    def score(
+        self,
+        *,
+        data_source: DataSource = "test",
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> pd.DataFrame:
+        """Compute the estimator's default score.
+
+        This calls the underlying estimator's ``score`` method on the chosen data
+        source. For :class:`skrub.DataOp` estimators, scorings registered via
+        :meth:`~skrub.DataOp.skb.with_scoring` are used.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Function to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+            Ignored when comparison is between :class:`~skore.EstimatorReport` instances
+
+        Returns
+        -------
+        pd.DataFrame
+            The estimator's default score.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> estimator_1 = LogisticRegression(max_iter=10000, random_state=42)
+        >>> estimator_2 = LogisticRegression(max_iter=10000, random_state=43)
+        >>> comparison_report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
+        >>> comparison_report.metrics.score()
+        Estimator      LogisticRegression_1  LogisticRegression_2
+        Metric
+        Score                       0.94...               0.94...
+        """
+        return self._metric("score", data_source=data_source).frame(
+            aggregate=aggregate,
+        )
 
     @available_if(_check_any_sub_report_has_metric("accuracy"))
     def accuracy(
@@ -936,8 +1059,19 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
     ####################################################################################
 
     def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.ComparisonReport.metrics")
+        return (
+            "Metrics summary:\n"
+            f"{self._formatted_summary_frame()!r}\n"
+            "Explore available methods with .help()."
+        )
+
+    def _repr_html_(self) -> str:
+        return (
+            "<p>Metrics summary:</p>"
+            f"{self._formatted_summary_frame()._repr_html_()}"
+            '<p role="note">Explore available methods with '
+            "<code>.help()</code>.</p>"
+        )
 
     @available_if(
         _check_supported_ml_task(
@@ -964,6 +1098,16 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         -------
         :class:`RocCurveDisplay`
             The ROC curve display.
+
+        See Also
+        --------
+        :class:`RocCurveDisplay` : Display class for ROC curve plots.
+
+        Notes
+        -----
+        To keep the stored display lightweight, the ROC curve is downsampled to at most
+        500 points per class and per child report. Sampling is performed by picking
+        evenly-spaced indices on the sorted thresholds.
 
         Examples
         --------
@@ -1019,6 +1163,17 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         :class:`PrecisionRecallCurveDisplay`
             The precision-recall curve display.
 
+        See Also
+        --------
+        :class:`PrecisionRecallCurveDisplay`
+            Display class for precision-recall curve plots.
+
+        Notes
+        -----
+        To keep the stored display lightweight, the precision-recall curve is
+        downsampled to at most 500 points per class and per child report. Sampling is
+        performed by picking evenly-spaced indices on the sorted thresholds.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -1061,8 +1216,6 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
     ) -> PredictionErrorDisplay:
         """Plot the prediction error of a regression model.
 
-        Extra keyword arguments will be passed to matplotlib's `plot`.
-
         Parameters
         ----------
         data_source : {"test", "train", "both"}, default="test"
@@ -1072,12 +1225,8 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             - "train" : use the train set provided when creating the report.
             - "both" : use both the train and test sets to compute the metrics.
 
-        subsample : float, int or None, default=1_000
-            Sampling the samples to be shown on the scatter plot. If `float`,
-            it should be between 0 and 1 and represents the proportion of the
-            original dataset. If `int`, it represents the number of samples
-            display on the scatter plot. If `None`, no subsampling will be
-            applied. by default, 1,000 samples or less will be displayed.
+        subsample : int, default=1_000
+            Maximum number of samples to show on the scatter plot.
 
         seed : int, default=None
             The seed used to initialize the random number generator used for the
@@ -1087,6 +1236,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         -------
         :class:`PredictionErrorDisplay`
             The prediction error display.
+
+        See Also
+        --------
+        :class:`PredictionErrorDisplay` : Display class for prediction error plots.
 
         Examples
         --------
@@ -1156,28 +1309,39 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         :class:`ConfusionMatrixDisplay`
             The confusion matrix display.
 
+        See Also
+        --------
+        :class:`ConfusionMatrixDisplay` : Display class for confusion matrix plots.
+
+        Notes
+        -----
+        To keep the stored display lightweight, the thresholded confusion matrices are
+        downsampled to at most 500 points per class and per child report. Sampling is
+        performed by picking evenly-spaced indices on the sorted thresholds.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.svm import SVC
         >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=2)
-        >>> display = report.metrics.confusion_matrix()
+        >>> comparison = evaluate(
+        ...     [LogisticRegression(max_iter=10_000), SVC()],
+        ...     X,
+        ...     y,
+        ...     splitter=2,
+        ...     pos_label=1,
+        ... )
+        >>> display = comparison.metrics.confusion_matrix()
         >>> display.plot()
-
-        With specific threshold for binary classification:
-
-        >>> display = report.metrics.confusion_matrix()
-        >>> display.plot(threshold_value=0.7, label=1)
         """
         do_thresholds = True
         if not all(
-            hasattr(report._estimator, "predict_proba")
+            hasattr(report.learner_, "predict_proba")
             for report in self._parent.reports_.values()
         ) and not all(
-            hasattr(report._estimator, "decision_function")
+            hasattr(report.learner_, "decision_function")
             for report in self._parent.reports_.values()
         ):
             warnings.warn(

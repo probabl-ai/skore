@@ -38,6 +38,10 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             The feature importance display containing model coefficients and
             intercept.
 
+        See Also
+        --------
+        :class:`CoefficientsDisplay` : Display class for coefficient plots.
+
         Examples
         --------
         >>> from sklearn.datasets import make_regression
@@ -60,7 +64,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     report.inspection.coefficients()
                     .coefficients.copy()
                     .assign(split=split_idx)
-                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                    for split_idx, report in enumerate(self._parent.reports_)
                 ],
                 ignore_index=True,
             ),
@@ -116,7 +120,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
 
         metric : str, callable, scorer, or list of such instances or dict of such \
-            instances, default=None
+                instances, default=None
             The metric to pass to :func:`sklearn.inspection.permutation_importance`.
 
             - if ``None``, a suitable default will be used.
@@ -155,6 +159,11 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -------
         :class:`PermutationImportanceDisplay`
             The permutation importance display.
+
+        See Also
+        --------
+        :class:`PermutationImportanceDisplay`
+            Display class for permutation importance plots.
 
         Examples
         --------
@@ -255,7 +264,7 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                         n_jobs=n_jobs,
                         seed=seed,
                     ).importances.assign(split=split_idx)
-                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                    for split_idx, report in enumerate(self._parent.reports_)
                 ],
                 ignore_index=True,
             ),
@@ -277,6 +286,10 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         -------
         :class:`ImpurityDecreaseDisplay`
             The impurity decrease display containing the feature importances.
+
+        See Also
+        --------
+        :class:`ImpurityDecreaseDisplay` : Display class for impurity decrease plots.
 
         Examples
         --------
@@ -303,17 +316,9 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     report.inspection.impurity_decrease()
                     .importances.copy()
                     .assign(split=split_idx)
-                    for split_idx, report in enumerate(self._parent.estimator_reports_)
+                    for split_idx, report in enumerate(self._parent.reports_)
                 ],
                 ignore_index=True,
             ),
             report_type=self._parent._report_type,
         )
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.CrossValidationReport.inspection")

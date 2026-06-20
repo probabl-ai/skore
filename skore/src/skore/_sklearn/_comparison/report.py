@@ -13,15 +13,20 @@ from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._checks.base import CheckCode
 from skore._sklearn._cross_validation.report import CrossValidationReport
-from skore._sklearn._diagnostic.base import CheckCode
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._progress_bar import track
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.markdown import (
+    comparison_data_markdown_context,
+    comparison_estimator_markdown_context,
+)
 
 if TYPE_CHECKING:
+    from skore._sklearn._checks.accessor import _ChecksAccessor
     from skore._sklearn._comparison.inspection_accessor import (
         _InspectionAccessor,
     )
@@ -34,19 +39,9 @@ if TYPE_CHECKING:
 
 
 class ComparisonReport(_BaseReport, DirNamesMixin):
-    """Report for comparing reports.
-
-    This object can be used to compare several :class:`skore.EstimatorReport` instances,
-    or several :class:`~skore.CrossValidationReport` instances.
+    """Compare several estimator or cross-validation reports.
 
     Refer to the :ref:`comparison_report` section of the user guide for more details.
-
-    .. caution::
-       Reports passed to `ComparisonReport` are not copied. If you pass
-       a report to `ComparisonReport`, and then modify the report outside later, it
-       will affect the report stored inside the `ComparisonReport` as well, which
-       can lead to inconsistent results. For this reason, modifying reports after
-       creation is strongly discouraged.
 
     Parameters
     ----------
@@ -68,6 +63,15 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     reports_ : dict mapping names to reports
         The compared reports.
 
+    metrics : MetricsAccessor
+        Accessor for computing and plotting metrics across compared reports.
+
+    inspection : InspectionAccessor
+        Accessor for model inspection across compared reports.
+
+    checks : ChecksAccessor
+        Accessor for running diagnostic checks.
+
     See Also
     --------
     skore.EstimatorReport
@@ -76,18 +80,30 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     skore.CrossValidationReport
         Report for the cross-validation of an estimator.
 
+    Notes
+    -----
+    Reports passed to :class:`~skore.ComparisonReport` are not copied. If you pass
+    a report to :class:`~skore.ComparisonReport`, and then modify the report outside
+    later, it will affect the report stored inside the :class:`~skore.ComparisonReport`
+    as well, which can lead to inconsistent results. For this reason, modifying
+    reports after creation is strongly discouraged.
+
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from skore import train_test_split
+    >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> from skore import ComparisonReport, EstimatorReport
     >>> X, y = make_classification(random_state=42)
-    >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> estimator_1 = LogisticRegression()
-    >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
+    >>> estimator_report_1 = EstimatorReport(
+    ...     estimator_1, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    ... )
     >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-    >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
+    >>> estimator_report_2 = EstimatorReport(
+    ...     estimator_2, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    ... )
     >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
     >>> report.reports_
     {'LogisticRegression_1': ..., 'LogisticRegression_2': ...}
@@ -112,9 +128,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "checks": {"name": "checks"},
     }
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
+    checks: _ChecksAccessor
 
     _report_type: ComparisonReportType
 
@@ -241,17 +259,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         *,
         n_jobs: int | None = None,
     ) -> None:
-        """
-        ComparisonReport instance initializer.
-
-        Notes
-        -----
-        We check that the estimator reports can be compared:
-        - all reports are estimator reports,
-        - all estimators are in the same ML use case,
-        - all estimators have non-empty X_test and y_test,
-        - all estimators have the same X_test and y_test.
-        """
         super().__init__()
         self.reports_, self._report_type, self._pos_label = (
             ComparisonReport._validate_reports(reports)
@@ -267,15 +274,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import compare, evaluate
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
+        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
+        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
+        >>> report = compare([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> report.clear_cache()
         """
@@ -291,15 +296,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import compare, evaluate
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
+        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
+        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
+        >>> report = compare([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         """
         for report in track(
@@ -324,7 +327,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train"}
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
@@ -349,20 +352,18 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         Examples
         --------
         >>> from sklearn.datasets import make_classification
-        >>> from skore import train_test_split
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import ComparisonReport, EstimatorReport
+        >>> from skore import compare, evaluate
         >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
         >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = EstimatorReport(estimator_1, **split_data)
+        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = EstimatorReport(estimator_2, **split_data)
-        >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
+        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
+        >>> report = compare([estimator_report_1, estimator_report_2])
         >>> report.cache_predictions()
         >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
-        [(25,), (25,)]
+        [(20,), (20,)]
         """
         return [  # type: ignore
             report.get_predictions(
@@ -421,34 +422,32 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             - the estimator is a skrub :class:`~skrub.SkrubLearner` or
             - the estimator was built from a skrub :class:`~skrub.DataOp`.
 
+        Returns
+        -------
+        :class:`~skore.EstimatorReport`
+            The estimator report.
+
         Examples
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.ensemble import RandomForestClassifier
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, CrossValidationReport
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import compare, evaluate
         >>> X, y = make_classification(random_state=42)
         >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        >>> linear_report = CrossValidationReport(
-        ...     LogisticRegression(random_state=42), X_train, y_train
+        >>> linear_report = evaluate(
+        ...     LogisticRegression(random_state=42), X_train, y_train, splitter=5
         ... )
-        >>> forest_report = CrossValidationReport(
-        ...     RandomForestClassifier(random_state=42), X_train, y_train
+        >>> forest_report = evaluate(
+        ...     RandomForestClassifier(random_state=42), X_train, y_train, splitter=5
         ... )
-        >>> comparison_report = ComparisonReport([linear_report, forest_report])
+        >>> comparison_report = compare([linear_report, forest_report])
         >>> summary = comparison_report.metrics.summarize().frame()
-
-        >>> # Notice that e.g. the RandomForestClassifier performs best
         >>> final_report = comparison_report.create_estimator_report(
         ...     report_key="RandomForestClassifier", X_test=X_test, y_test=y_test
         ... )
         >>> final_report.metrics.summarize().frame()
-
-        Returns
-        -------
-        report : :class:`~skore.EstimatorReport`
-            The estimator report.
         """
         if report_key not in self.reports_:
             raise ValueError(
@@ -520,7 +519,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             X_train, y_train = estimator_report.X_train, estimator_report.y_train
 
         return EstimatorReport(
-            estimator_report._raw_estimator,
+            estimator_report.estimator,
             fit=True,
             X_train=X_train,
             y_train=y_train,
@@ -538,15 +537,22 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
     ####################################################################################
 
     def _aggregate_checks(
-        self, ignored_codes: set[CheckCode]
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
         comparison_results: dict[CheckCode, dict] = {}
         reports_by_code: dict[CheckCode, list[str]] = {}
         all_applicable_codes: set[CheckCode] = set()
+        all_not_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
-            report.add_checks(self._checks_registry)
-            report_results, applicable_codes = report._get_results(ignored_codes)
+            report.checks.add(self._checks_registry)
+            report_results, applicable_codes, not_applicable_codes = (
+                report._get_results(ignored_codes, fast_mode=fast_mode)
+            )
             all_applicable_codes |= applicable_codes
+            all_not_applicable_codes |= not_applicable_codes
 
             for code, result in report_results.items():
                 comparison_results.setdefault(
@@ -561,11 +567,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 if result["explanation"] is not None:
                     reports_by_code.setdefault(code, []).append(report_name)
 
+        all_not_applicable_codes -= all_applicable_codes
+
         for code, reports in reports_by_code.items():
             comparison_results[code]["explanation"] = (
                 f"Detected in: {', '.join(f'[{r}]' for r in reports)}."
             )
-        return comparison_results, all_applicable_codes
+        return comparison_results, all_applicable_codes, all_not_applicable_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"
@@ -577,20 +585,38 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        return f"{self.__class__.__name__}(...)"
+        return f"""{self.__class__.__name__}:
+        {list(self.reports_.keys())!r}
+
+        {self.metrics._formatted_summary_frame(data_source="test")}
+        Call `report.to_markdown()` for a markdown summary of the report's contents."""
+
+    def to_markdown(self) -> str:
+        """Return a markdown summary of the report.
+
+        The summary contains four sections (Estimators, Metrics, Checks, Data) that
+        mirror the tabs of the HTML representation. Metrics and Checks sections end
+        with a pointer to the corresponding accessor for full details.
+
+        Returns
+        -------
+        str
+            The markdown summary of the report.
+        """
+        metrics_frame = self.metrics._formatted_summary_frame(data_source="test")
+        return render_template(
+            "report/comparison_report_markdown.j2",
+            {
+                **comparison_estimator_markdown_context(self),
+                **comparison_data_markdown_context(self),
+                "metrics_text": repr(metrics_frame),
+                "checks_text": repr(self.checks.summarize(fast_mode=True)),
+            },
+        )
 
     def _repr_html_(self) -> str:
         """HTML representation with a selector to inspect one compared report."""
-        metrics_frame = (
-            self.metrics.summarize(data_source="test")
-            .frame()
-            .rename_axis(
-                None if self._report_type == "comparison-estimator" else [None, None],
-                axis="columns",
-            )
-        )
-        if self._report_type == "comparison-cross-validation":
-            metrics_frame = metrics_frame.swaplevel(axis="columns")
+        metrics_frame = self.metrics._formatted_summary_frame(data_source="test")
         metrics_html = metrics_frame.reset_index().to_html(index=False)
 
         comparison_reports = []
@@ -601,7 +627,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "label": label,
                     "estimator_display": fragments["estimator_display"],
                     "table_report": fragments["table_report"],
-                    "diagnostic": fragments["diagnostic"],
+                    "checks_summary": fragments["checks_summary"],
                 }
             )
 
@@ -613,13 +639,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         inspection_accessor_doc_url = get_documentation_url(
             obj=self, accessor_name="inspection"
         )
-        diagnose_documentation_url = get_documentation_url(
-            obj=self, method_name="diagnose"
+        checks_documentation_url = get_documentation_url(
+            obj=self, accessor_name="checks"
         )
         help_ctx = asdict(self._build_help_data())
         help_ctx["is_report"] = True
         return render_template(
-            "comparison_report.html.j2",
+            "report/comparison_report.html.j2",
             {
                 "container_id": container_id,
                 "metrics_summary": metrics_html,
@@ -628,7 +654,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 "report_title": "Model comparison",
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
-                "diagnose_documentation_url": diagnose_documentation_url,
+                "checks_documentation_url": checks_documentation_url,
                 **help_ctx,
             },
         )

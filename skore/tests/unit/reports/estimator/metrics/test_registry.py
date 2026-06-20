@@ -5,7 +5,9 @@ import pickle
 import re
 
 import numpy as np
+import pandas as pd
 import pytest
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     get_scorer,
@@ -44,29 +46,6 @@ def detection_failure_cost(y_true, y_pred_proba, threshold=0.5):
     """Custom metric based on probability threshold."""
     y_pred = (y_pred_proba[:, 1] > threshold).astype(int)
     return business_loss(y_true, y_pred, cost_fp=10, cost_fn=5)
-
-
-@pytest.fixture
-def binary_classification_report(logistic_binary_classification_with_train_test):
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
-    return EstimatorReport(
-        estimator,
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-        pos_label=1,
-    )
-
-
-@pytest.fixture
-def regression_report(linear_regression_with_train_test):
-    estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    return EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
 
 
 class TestBasicAdd:
@@ -109,6 +88,17 @@ class TestBasicAdd:
         assert "custom_metric" in report._metric_registry
         assert report._metric_registry["custom_metric"].verbose_name == "Custom Metric"
 
+    def test_callable_with_verbose_name(self, binary_classification_report):
+        """Test adding a callable with a custom name."""
+        report = binary_classification_report
+
+        report.metrics.add(
+            business_loss_scorer, verbose_name="hello", cost_fp=10, cost_fn=5
+        )
+
+        assert "business_loss_scorer" in report._metric_registry
+        assert report._metric_registry["business_loss_scorer"].verbose_name == "hello"
+
     def test_callable_with_kwargs(self, binary_classification_report):
         """Test adding a callable with default kwargs via **kwargs."""
         report = binary_classification_report
@@ -136,12 +126,23 @@ class TestBasicAdd:
         """Test adding a Metric instance directly."""
         report = binary_classification_report
 
-        metric = Metric.new(get_scorer("accuracy"), name="custom_acc")
-        report.metrics.add(metric)
+        metric = Metric.new(get_scorer("accuracy"))
+        report.metrics.add(metric, name="custom_acc")
 
         assert "custom_acc" in report._metric_registry
         display = report.metrics.summarize(metric="custom_acc")
         assert display.data["score"].iloc[0] > 0
+
+    def test_metric_instance_with_verbose_name(self, binary_classification_report):
+        """Test adding a Metric instance directly."""
+        report = binary_classification_report
+
+        metric = Metric.new(get_scorer("accuracy"))
+        report.metrics.add(metric, verbose_name="custom_acc")
+
+        assert "accuracy_score" in report._metric_registry
+        display = report.metrics.summarize(metric="accuracy_score")
+        assert set(display.data["metric_verbose_name"]) == {"custom_acc"}
 
     def test_multiple_metrics(self, binary_classification_report):
         """Test adding multiple custom metrics."""
@@ -283,7 +284,7 @@ class TestAddPosition:
         keys = list(report._metric_registry.keys())
         assert keys[0] == "metric_b"
         assert keys[1] == "metric_a"
-        assert keys[2] == "accuracy"
+        assert keys[2] == "score"
 
         display = report.metrics.summarize()
         assert display.data.iloc[0]["metric_verbose_name"] == "Metric B"
@@ -334,7 +335,7 @@ class TestAddPosition:
 
         keys = list(report._metric_registry.keys())
         assert keys[0] == "m_first"
-        assert keys[1] == "accuracy"
+        assert keys[1] == "score"
         assert keys[-1] == "m_last"
 
     def test_readd_raises_without_remove(self, binary_classification_report):
@@ -510,31 +511,31 @@ class TestEdgeCases:
         """Adding with duplicate name raises and keeps the original metric."""
         report = binary_classification_report
 
-        def score(y_true, y_pred):
+        def my_metric(y_true, y_pred):
             return 0
 
-        report.metrics.add(make_scorer(score, response_method="predict"))
+        report.metrics.add(make_scorer(my_metric, response_method="predict"))
 
         nb_metrics_before_overwriting = len(report._metric_registry)
 
-        result = report.metrics.summarize(metric="score")
+        result = report.metrics.summarize(metric="my_metric")
         assert result.data["score"].iloc[0] == 0
 
         # add a new metric with the same name
-        def score(y_true, y_pred):
+        def my_metric(y_true, y_pred):
             return 1
 
         err_msg = re.escape(
-            "Cannot add 'score': it already exists. "
+            "Cannot add 'my_metric': it already exists. "
             "Remove it first using the `remove` method."
         )
         with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add(make_scorer(score, response_method="predict"))
+            report.metrics.add(make_scorer(my_metric, response_method="predict"))
 
         assert len(report._metric_registry) == nb_metrics_before_overwriting
 
         # summarize still reflects the original metric
-        result = report.metrics.summarize(metric="score")
+        result = report.metrics.summarize(metric="my_metric")
         assert result.data["score"].iloc[0] == 0
 
 
@@ -614,62 +615,92 @@ class TestDifferentMLTasks:
         report.metrics.add(scorer)
 
 
-class TestDictReturnValues:
-    """Test that metrics returning dicts work correctly (per-label scores).
+class TestMultiMetric:
+    """Test that metrics returning dicts work correctly (multimetric scorers)."""
 
-    Note: Multimetric scorers (single scorer returning multiple different metrics)
-    are NOT supported - users should add metrics separately.
-    """
-
-    def test_per_class_accuracy_dict(self, binary_classification_report):
-        """Test metric that returns per-class scores as dict."""
-        report = binary_classification_report
-
-        def per_class_accuracy(y_true, y_pred) -> dict[int, float]:
-            """Return accuracy for each class."""
-            accuracies = {}
-            for label in np.unique(y_true):
-                mask = y_true == label
-                accuracies[int(label)] = float((y_pred[mask] == label).mean())
-            return accuracies
-
-        def scorer(est, X, y_true):
-            y_pred = est.predict(X)
-            return per_class_accuracy(y_true, y_pred)
-
-        report.metrics.add(scorer, name="per_class_accuracy")
-
-        display = report.metrics.summarize(metric="per_class_accuracy")
-
-        metric_rows = display.data[
-            display.data["metric_verbose_name"] == "Per Class Accuracy"
-        ]
-        assert len(metric_rows) == 2
-        assert set(metric_rows["label"].values) == {0, 1}
-
-        # Cached correctly
-        with check_cache_unchanged(report._cache):
-            report.metrics.summarize(metric="per_class_accuracy")
-
-    def test_multimetric_scorer_not_recommended(self, binary_classification_report):
-        """Multimetric scorers are treated as per-label scores (not supported)."""
+    def test(self, binary_classification_report):
+        """Multimetric scorers are unpacked properly."""
         report = binary_classification_report
 
         def multimetric_scorer(y_true, y_pred):
             return {
                 "accuracy": accuracy_score(y_true, y_pred),
-                "precision": precision_score(y_true, y_pred, average="binary"),
+                "precision": precision_score(y_true, y_pred, average=None),
             }
 
         report.metrics.add(make_scorer(multimetric_scorer, response_method="predict"))
 
         display = report.metrics.summarize(metric="multimetric_scorer")
 
-        metric_rows = display.data[
-            display.data["metric_verbose_name"] == "Multimetric Scorer"
+        assert list(display.data["metric_verbose_name"]) == [
+            "accuracy",
+            "precision",  # Label 0
+            "precision",  # Label 1
         ]
-        # Not quite right...
-        assert set(metric_rows["label"]) == {"accuracy", "precision"}
+        assert list(display.data["label"]) == [pd.NA, np.int64(0), np.int64(1)]
+
+    def test_score(self, logistic_binary_classification_with_train_test):
+        """Setting an estimator's `score` method to a multimetric scorer works."""
+
+        def multimetric_scorer(y_true, y_pred):
+            return {
+                "accuracy": accuracy_score(y_true, y_pred),
+                "precision": precision_score(y_true, y_pred, average=None),
+            }
+
+        class MyEstimator(LogisticRegression):
+            def score(self, X, y, sample_weight=None):
+                y_pred = self.predict(X)
+                return multimetric_scorer(y, y_pred)
+
+        _, X_train, X_test, y_train, y_test = (
+            logistic_binary_classification_with_train_test
+        )
+
+        report = EstimatorReport(
+            MyEstimator(),
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+
+        display = report.metrics.summarize(metric="score")
+
+        assert list(display.data["metric_verbose_name"]) == [
+            "accuracy",
+            "precision",  # Label 0
+            "precision",  # Label 1
+        ]
+        assert list(display.data["label"]) == [pd.NA, np.int64(0), np.int64(1)]
+
+    def test_preexisting_metric_name(self, binary_classification_report):
+        """A multimetric scorer's submetric clashing with a built-in is renamed.
+
+        The submetric and the built-in have distinct fingerprints (the multimetric
+        scorer's parent fingerprint vs. ``None`` for the built-in), so the display
+        disambiguates them as ``Accuracy_1`` (custom) and ``Accuracy_2`` (built-in).
+        """
+        report = binary_classification_report
+
+        def multimetric_scorer(y_true, y_pred):
+            # NOTE: "Accuracy" is the name of a default metric
+            return {"Accuracy": 1000}
+
+        report.metrics.add(make_scorer(multimetric_scorer, response_method="predict"))
+
+        display = report.metrics.summarize()
+
+        verbose_names = list(display.data["metric_verbose_name"])
+        assert "Accuracy" not in verbose_names
+        assert "Accuracy_1" in verbose_names
+        assert "Accuracy_2" in verbose_names
+
+        # Our submetric is added first by default, so it gets the _1 suffix.
+        accuracy_1 = display.data[display.data["metric_verbose_name"] == "Accuracy_1"]
+        accuracy_2 = display.data[display.data["metric_verbose_name"] == "Accuracy_2"]
+        assert list(accuracy_1["score"]) == [1000]
+        assert list(accuracy_2["score"]) == [1.0]
 
 
 class TestStringScorerNames:
@@ -733,6 +764,48 @@ class TestStringScorerNames:
         )
         with pytest.raises(ValueError, match=err_msg):
             report.metrics.add("neg_mean_squared_error")
+
+    def test_summarize_with_neg_prefix_after_add(self, regression_report):
+        """Test that `.summarize()` accepts prefixed name with 'neg_' even though
+        registry stores it stripped.
+        Non-regression for https://github.com/probabl-ai/skore/issues/2902
+        """
+        report = regression_report
+
+        report.metrics.add("neg_mean_absolute_percentage_error")
+        assert "mean_absolute_percentage_error" in report._metric_registry
+
+        display01 = report.metrics.summarize(
+            metric="neg_mean_absolute_percentage_error"
+        )
+        display02 = report.metrics.summarize(metric="mean_absolute_percentage_error")
+
+        assert display01.data["score"].iloc[0] == display02.data["score"].iloc[0]
+
+    def test_get_with_neg_prefix_after_add(self, regression_report):
+        """Test that `.get()` accepts prefixed name with 'neg_' even though
+        registry stores it stripped.
+        Non-regression for https://github.com/probabl-ai/skore/issues/2902
+        """
+        report = regression_report
+
+        report.metrics.add("neg_mean_absolute_percentage_error")
+
+        value_withneg = report.metrics.get("neg_mean_absolute_percentage_error")
+        value_withoutneg = report.metrics.get("mean_absolute_percentage_error")
+
+        assert value_withneg == value_withoutneg
+
+    def test_unknown_metric_still_raises_key_error(self, regression_report):
+        """Test that really a unknown metric name still raises KeyError after the
+        'neg_' fallback."""
+        report = regression_report
+
+        with pytest.raises(KeyError, match="not found in the registered metrics"):
+            report.metrics.summarize(metric="neg_nonexistent_metric")
+
+        with pytest.raises(KeyError, match="not found in the registered metrics"):
+            report.metrics.get("neg_nonexistent_metric")
 
     def test_invalid_string_scorer_name(self, binary_classification_report):
         """Test that invalid sklearn scorer names raise an error."""
@@ -957,12 +1030,12 @@ def test_available_default(binary_classification_report):
     assert m.available(binary_classification_report) is True
 
 
-def test_call_no_function(binary_classification_report):
-    """Test that calling a Metric with no function raises."""
+def test_no_function(binary_classification_report):
+    """Test that calling `Metric.rows` with no function raises."""
     m = Metric(name="abstract_metric", function=None)
     err_msg = "Metric 'abstract_metric' has no scoring function."
     with pytest.raises(ValueError, match=err_msg):
-        m(report=binary_classification_report)
+        m.rows(report=binary_classification_report, data_source="test")
 
 
 def test_metric_registry_repr(binary_classification_report):

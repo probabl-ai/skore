@@ -6,13 +6,13 @@
 #
 # You can pass any `uv pip compile` parameter:
 #
-#     $ bash pip-compile.sh --test-requirements <skore|skore-hub-project|skore-local-project|skore-mlflow-project> --upgrade
+#     $ bash pip-compile.sh --test-requirements --upgrade
 #     $ bash pip-compile.sh --sphinx-requirements --upgrade
 #
 
 usage () {
     >&2 echo "Usage:"
-    >&2 echo "    $ bash pip-compile.sh --test-requirements <all|skore|skore-hub-project|skore-local-project|skore-mlflow-project> [option...]"
+    >&2 echo "    $ bash pip-compile.sh --test-requirements [option...]"
     >&2 echo "    $ bash pip-compile.sh --sphinx-requirements [option...]"
 }
 
@@ -26,45 +26,22 @@ trap 'rm -rf ${TMPDIR}' 0
 # Construct `COMBINATIONS` based on arguments
 case $1 in
     "--test-requirements")
-        PACKAGES=()
+        while IFS= read -r combination; do
+            python=$(jq -rc '.python' <<< "${combination}")
+            dependencies=$(jq -rc '.dependencies' <<< "${combination}")
 
-        case $2 in
-            "all")
-                PACKAGES+=("skore")
-                PACKAGES+=("skore-hub-project")
-                PACKAGES+=("skore-local-project")
-                PACKAGES+=("skore-mlflow-project")
-                ;;
-            "skore"|"skore-hub-project"|"skore-local-project"|"skore-mlflow-project")
-                PACKAGES+=($2)
-                ;;
-            *)
-                >&2 echo -e "Error: Unknown PACKAGE \033[0;41m$2\033[0m"
-                usage
-                exit 1
-                ;;
-        esac
-
-        for PACKAGE in "${PACKAGES[@]}"; do
-            while IFS= read -r combination; do
-                python=$(jq -rc '.python' <<< "${combination}")
-                dependencies=$(jq -rc '.dependencies' <<< "${combination}")
-
-                COMBINATIONS+=("${PACKAGE}|test|${python}|${dependencies}")
-            done < <(
-                jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../${PACKAGE}/supported-versions.json" -c
-            )
-        done
+            COMBINATIONS+=("skore|test|${python}|${dependencies}")
+        done < <(
+            jq 'unique_by([.python, .dependencies]) | .[]' "${CWD}/../skore/supported-versions.json" -c
+        )
 
         unset combination
         unset python
         unset dependencies
-        unset PACKAGES
-        unset PACKAGE
-        shift 2
+        shift
         ;;
     "--sphinx-requirements")
-        COMBINATIONS+=('skore|sphinx|3.14|["scikit-learn==1.8.*"]')
+        COMBINATIONS+=('skore|sphinx|3.14|["scikit-learn==1.9.*"]')
         shift
         ;;
     *)

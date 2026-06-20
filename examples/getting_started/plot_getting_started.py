@@ -39,49 +39,29 @@ workspace.
 """
 
 # %%
-# Setting up our binary classification problem
-# ============================================
+# Setting up our classification problem
+# =====================================
 #
-# Let's start by loading the German credit dataset, a classic binary classification
-# problem where we predict the customer's credit risk ("good" or "bad").
-#
-# This dataset contains various features about credit applicants, including
-# personal information, credit history, and loan details.
+# Let's start by loading the "toxicity" dataset, a classification
+# problem where we classify tweets as "toxic" or "not toxic".
 
 # %%
-import pandas as pd
-import skore
-from sklearn.datasets import fetch_openml
-from skrub import TableReport
+from skrub import TableReport, datasets
 
-german_credit = fetch_openml(data_id=31, as_frame=True, parser="pandas")
-X, y = german_credit.data, german_credit.target
-TableReport(german_credit.frame)
+toxicity = datasets.fetch_toxicity()
+X, y = toxicity.X, toxicity.y
+TableReport(toxicity.toxicity)
 
 # %%
-# Creating our experiment and held-out sets
-# -----------------------------------------
-#
-# We will use skore's enhanced :func:`~skore.train_test_split` function to create our
-# experiment set and a left-out test set. The experiment set will be used for model
-# development and cross-validation, while the left-out set will only be used at the end
-# to validate our final model.
-#
-# Unlike scikit-learn's :func:`~skore.train_test_split`, skore's version provides
-# helpful diagnostics about potential issues with your data split, such as class
-# imbalance.
+# We create a held-out test set to evaluate our final model once we are done
+# experimenting.
 
 # %%
-X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
-    X, y, random_state=42
+from sklearn.model_selection import train_test_split
+
+X_experiment, X_holdout, y_experiment, y_holdout = train_test_split(
+    X, y, random_state=0
 )
-
-# %%
-# Skore tells us we have class-imbalance issues with our data, which we confirm with the
-# :class:`~skore.TableReport` above by clicking on the "class" column and looking at the
-# class distribution: there are only 300 examples where the target is "bad". The second
-# warning concerns time-ordered data, but our data does not contain time-ordered columns
-# so we can safely ignore it.
 
 # %%
 # Model development with cross-validation
@@ -90,8 +70,8 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 # We will investigate two different families of models using cross-validation.
 #
 # 1. A :class:`~sklearn.linear_model.LogisticRegression` which is a linear model
-# 2. A :class:`~sklearn.ensemble.RandomForestClassifier` which is an ensemble of
-#    decision trees.
+# 2. A :class:`~sklearn.ensemble.RandomForestClassifier` which is a more
+#    powerful model.
 #
 # In both cases, we rely on :func:`skrub.tabular_pipeline` to choose the proper
 # preprocessing depending on the kind of model.
@@ -100,19 +80,19 @@ X_experiment, X_holdout, y_experiment, y_holdout = skore.train_test_split(
 # skore makes it easy through :class:`skore.CrossValidationReport`.
 
 # %%
-# Model no. 1: Linear regression with preprocessing
-# -------------------------------------------------
+# Model no. 1: logistic regression with preprocessing
+# ---------------------------------------------------
 #
-# Our first model will be a linear model, with automatic preprocessing of non-numeric
-# data. Under the hood, skrub's :class:`~skrub.TableVectorizer` will adapt the
+# Our first model will be a linear model, with automatic preprocessing of the text feature.
+# Under the hood, skrub's :class:`~skrub.TableVectorizer` will adapt the
 # preprocessing based on our choice to use a linear model.
 
 # %%
 from sklearn.linear_model import LogisticRegression
 from skrub import tabular_pipeline
 
-simple_model = tabular_pipeline(LogisticRegression())
-simple_model
+logistic_regression = tabular_pipeline(LogisticRegression())
+logistic_regression
 
 # %%
 # We now evaluate our model with cross-validation, using :func:`~skore.evaluate`
@@ -123,10 +103,10 @@ simple_model
 # %%
 from skore import evaluate
 
-simple_cv_report = evaluate(
-    simple_model, X_experiment, y_experiment, pos_label="good", splitter=5
+logreg_cv_report = evaluate(
+    logistic_regression, X_experiment, y_experiment, pos_label="Toxic", splitter=5
 )
-simple_cv_report
+logreg_cv_report
 
 # %%
 # A report will quickly show important information regarding the performance of the
@@ -139,21 +119,27 @@ simple_cv_report
 # and attributes, with the knowledge that our model was trained for classification:
 
 # %%
-simple_cv_report.help()
+logreg_cv_report.help()
 
 # %%
 # For example, we can examine the training data, which excludes the held-out data:
 
 # %%
-simple_cv_report.data.analyze()
+logreg_cv_report.data.summarize()
+
+# %%
+# Additionally we can run automatic checks on the model and get a summary of the findings:
+
+# %%
+logreg_cv_report.checks.summarize()
 
 # %%
 # But we can also quickly get an overview of the performance of our model,
 # using :meth:`~skore.CrossValidationReport.metrics.summarize`:
 
 # %%
-simple_metrics = simple_cv_report.metrics.summarize()
-simple_metrics.frame(favorability=True)
+logreg_metrics = logreg_cv_report.metrics.summarize()
+logreg_metrics.frame(favorability=True)
 
 # %%
 # .. note::
@@ -166,7 +152,7 @@ simple_metrics.frame(favorability=True)
 # information such as the precision-recall curve:
 
 # %%
-precision_recall = simple_cv_report.metrics.precision_recall()
+precision_recall = logreg_cv_report.metrics.precision_recall()
 precision_recall.help()
 
 # %%
@@ -192,7 +178,7 @@ precision_recall.frame()
 # As another example, we can plot the confusion matrix with the same consistent API:
 
 # %%
-confusion_matrix = simple_cv_report.metrics.confusion_matrix()
+confusion_matrix = logreg_cv_report.metrics.confusion_matrix()
 _ = confusion_matrix.plot()
 
 # %%
@@ -200,7 +186,7 @@ _ = confusion_matrix.plot()
 # model, we can study the importance that it gives to each feature:
 
 # %%
-coefficients = simple_cv_report.inspection.coefficients()
+coefficients = logreg_cv_report.inspection.coefficients()
 coefficients.frame()
 
 # %%
@@ -210,7 +196,7 @@ _ = coefficients.plot(select_k=15)
 # Model no. 2: Random forest
 # --------------------------
 #
-# Now, we cross-validate a more advanced model using
+# Now, we cross-validate a more powerful model using
 # :class:`~sklearn.ensemble.RandomForestClassifier`. Again, we rely on
 # :func:`~skrub.tabular_pipeline` to perform the appropriate preprocessing to use with
 # this model.
@@ -218,14 +204,17 @@ _ = coefficients.plot(select_k=15)
 # %%
 from sklearn.ensemble import RandomForestClassifier
 
-advanced_model = tabular_pipeline(RandomForestClassifier(random_state=0))
-advanced_model
+random_forest = tabular_pipeline(RandomForestClassifier(random_state=0))
+random_forest
 
 # %%
-advanced_cv_report = evaluate(
-    advanced_model, X_experiment, y_experiment, pos_label="good", splitter=5
+rf_cv_report = evaluate(
+    random_forest, X_experiment, y_experiment, pos_label="Toxic", splitter=5
 )
-advanced_cv_report
+rf_cv_report
+
+# %%
+rf_cv_report.checks.summarize()
 
 # %%
 # We will now compare this new model with the previous one.
@@ -243,8 +232,8 @@ from skore import compare
 
 comparison = compare(
     {
-        "Simple Linear Model": simple_cv_report,
-        "Advanced Pipeline": advanced_cv_report,
+        "logistic regression": logreg_cv_report,
+        "random forest": rf_cv_report,
     },
 )
 comparison
@@ -264,8 +253,8 @@ _ = comparison.metrics.precision_recall().plot()
 
 # %%
 # Based on the previous tables and plots, it seems that the
-# :class:`~sklearn.ensemble.RandomForestClassifier` model has slightly better
-# performance. For the purposes of this guide however, we make the arbitrary choice
+# :class:`~sklearn.ensemble.RandomForestClassifier` model has slightly worse
+# performance due to overfitting on this small dataset. We make the choice
 # to deploy the linear model to make a comparison with the coefficients study shown
 # earlier.
 
@@ -281,7 +270,7 @@ _ = comparison.metrics.precision_recall().plot()
 # %%
 
 final_report = comparison.create_estimator_report(
-    report_key="Simple Linear Model", X_test=X_holdout, y_test=y_holdout
+    report_key="logistic regression", X_test=X_holdout, y_test=y_holdout
 )
 final_report
 
@@ -303,8 +292,10 @@ _ = final_report.metrics.confusion_matrix().plot()
 # experiment phase.
 
 # %%
+import pandas as pd
+
 pd.concat(
-    [final_metrics.frame(), simple_cv_report.metrics.summarize().frame()],
+    [final_metrics.frame(), logreg_cv_report.metrics.summarize().frame()],
     axis="columns",
 )
 
@@ -318,7 +309,7 @@ pd.concat(
 
 # %%
 final_coefficients = final_report.inspection.coefficients()
-cv_coefficients = simple_cv_report.inspection.coefficients()
+cv_coefficients = logreg_cv_report.inspection.coefficients()
 
 features_final_coefficients = final_coefficients.frame(select_k=15)["feature"]
 features_cv_coefficients = cv_coefficients.frame(select_k=15)["feature"]
@@ -414,10 +405,10 @@ project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
 # %%
 # We store our reports with descriptive keys:
 
-project.put("simple_linear_model_cv", simple_cv_report)
+project.put("logreg_cv", logreg_cv_report)
 
 # %%
-project.put("advanced_pipeline_cv", advanced_cv_report)
+project.put("rf_cv", rf_cv_report)
 
 # %%
 # In this example, we created a read-only Skore Hub project that you can visit by
@@ -428,38 +419,27 @@ project.put("advanced_pipeline_cv", advanced_cv_report)
 
 # %%
 summary = project.summarize()
-# Uncomment the next line to display the widget in an interactive environment:
-# summary
+summary
 
 # %%
 # .. note::
-#     Calling `summary` in a Jupyter notebook cell will show the following parallel
-#     coordinate plot to help you select models that you want to retrieve:
-#
-#     .. image:: /_static/images/screenshot_getting_started.png
-#       :alt: Screenshot of the widget in a Jupyter notebook
-#
-#     Each line represents a model, and we can select models by clicking on lines
-#     or dragging on metric axes to filter by performance.
-#
-#     In the screenshot, we selected only the cross-validation reports;
-#     this allows us to retrieve exactly those reports programmatically.
+#     :meth:`~skore.Project.summarize` returns a :class:`~skore.Summary` object. In a
+#     Jupyter environment it renders as an interactive table where you can filter rows
+#     and pick reports across the different views; the selection produces a query string
+#     ready to pass to :meth:`~skore.Summary.query` so you can recover exactly those
+#     reports.
 
 # %%
-# Supposing you selected "Cross-validation" in the "Report type" tab, if you now call
-# :meth:`~skore.project._summary.Summary.reports`, you get only the
+# Once you filtered the summary (e.g. to keep only the cross-validation reports), if
+# you now call :meth:`~skore.Summary.compare`, you get only the
 # :class:`~skore.CrossValidationReport` objects, which
 # you can directly put in the form of a :class:`~skore.ComparisonReport`:
 
 # %%
-
-# sphinx_gallery_start_ignore
-# Pretend that the cross-validation reports were selected in the widget
-summary = summary.query('report_type == "cross-validation"')
-# sphinx_gallery_end_ignore
-
-new_report = summary.reports(return_as="comparison")
-new_report.help()
+new_report = summary.query('report_type == "cross-validation"').compare(
+    return_as="report"
+)
+new_report
 
 # %%
 # .. admonition:: Stay tuned!

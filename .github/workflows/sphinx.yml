@@ -68,11 +68,12 @@ defaults:
 
 env:
   PYTHON: '3.14'
-  SCIKIT_LEARN: '1.8'
-  LOCKFILE: 'ci/requirements/skore/python-3.14/scikit-learn-1.8/sphinx-requirements.txt'
+  SCIKIT_LEARN: '1.9'
+  LOCKFILE: 'ci/requirements/skore/python-3.14/scikit-learn-1.9/sphinx-requirements.txt'
 
 jobs:
   sphinx-changes:
+    if: ${{ github.repository == 'probabl-ai/skore' }}
     runs-on: ubuntu-latest
     outputs:
       changes: ${{ steps.filter.outputs.sphinx }}
@@ -100,7 +101,7 @@ jobs:
   sphinx-lockfiles:
     runs-on: ubuntu-latest
     needs: [sphinx-changes]
-    if: ${{ (contains(fromJSON('["pull_request", "merge_group"]'), github.event_name)) && (needs.sphinx-changes.outputs.changes == 'true') }}
+    if: ${{ (github.repository == 'probabl-ai/skore') && (contains(fromJSON('["pull_request", "merge_group"]'), github.event_name)) && (needs.sphinx-changes.outputs.changes == 'true') }}
     permissions:
       contents: read
     steps:
@@ -145,7 +146,7 @@ jobs:
   sphinx-version:
     runs-on: ubuntu-latest
     needs: [sphinx-changes]
-    if: ${{ (github.event_name == 'push') || (needs.sphinx-changes.outputs.changes == 'true') }}
+    if: ${{ (github.repository == 'probabl-ai/skore') && ((github.event_name == 'push') || (needs.sphinx-changes.outputs.changes == 'true')) }}
     outputs:
       SPHINX_VERSION: ${{ steps.sphinx-version.outputs.SPHINX_VERSION }}
       SPHINX_RELEASE: ${{ steps.sphinx-version.outputs.SPHINX_RELEASE }}
@@ -178,7 +179,7 @@ jobs:
   sphinx-build:
     runs-on: ubuntu-latest
     needs: [sphinx-version]
-    if: ${{ (github.event_name == 'push') || (needs.sphinx-changes.outputs.changes == 'true') }}
+    if: ${{ (github.repository == 'probabl-ai/skore') && ((github.event_name == 'push') || (needs.sphinx-changes.outputs.changes == 'true')) }}
     permissions:
       contents: read
     steps:
@@ -220,10 +221,7 @@ jobs:
 
       - name: Install dependencies in python-venv
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
-        run: |
-          set -eu
-          python -m pip install --upgrade pip build
-          python -m pip install --requirement "${LOCKFILE}"
+        run: python -m pip install --requirement "${LOCKFILE}"
 
       - name: Save python-venv
         uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -239,9 +237,6 @@ jobs:
       - name: Install all packages from local branch
         run: |
           python -m pip install --force-reinstall --no-deps skore/
-          python -m pip install --force-reinstall --no-deps skore-hub-project/
-          python -m pip install --force-reinstall --no-deps skore-local-project/
-          python -m pip install --force-reinstall --no-deps skore-mlflow-project/
 
       - name: Build documentation
         working-directory: sphinx
@@ -256,13 +251,13 @@ jobs:
           SPHINX_EXAMPLE_BASE_URL: ${{ vars.DOCUMENTATION_EXAMPLE_BASE_URL }}
 
       - name: Upload documentation
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sphinx-html-artifact
           path: sphinx/build/html/
 
   sphinx-deploy-html:
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ (github.repository == 'probabl-ai/skore') && (github.event_name == 'push') }}
     runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build]
     environment: prod
@@ -291,7 +286,7 @@ jobs:
           DESTINATION: ${{ needs.sphinx-version.outputs.SPHINX_VERSION }}/
 
   sphinx-deploy-root-files:
-    if: ${{ (github.event_name == 'push') && (github.ref_type == 'tag') }}
+    if: ${{ (github.repository == 'probabl-ai/skore') && (github.event_name == 'push') && (github.ref_type == 'tag') }}
     runs-on: ubuntu-latest
     environment: prod
     needs: [sphinx-version, sphinx-build, sphinx-deploy-html]
@@ -377,7 +372,7 @@ jobs:
           DESTINATION:
 
   sphinx-deploy-stable:
-    if: ${{ (github.event_name == 'push') && (github.ref_type == 'tag') && (needs.sphinx-deploy-root-files.outputs.preferred == 'true')}}
+    if: ${{ (github.repository == 'probabl-ai/skore') && (github.event_name == 'push') && (github.ref_type == 'tag') && (needs.sphinx-deploy-root-files.outputs.preferred == 'true') }}
     runs-on: ubuntu-latest
     needs: [sphinx-version, sphinx-build, sphinx-deploy-html, sphinx-deploy-root-files]
     environment: prod
@@ -417,11 +412,11 @@ jobs:
     #
     # https://github.com/actions/runner/issues/1540
     #
-    if: ${{ (! cancelled()) && ((needs.sphinx-deploy-html.result == 'success') || (needs.sphinx-deploy-root-files == 'success') || (needs.sphinx-stable == 'success')) }}
+    if: ${{ (github.repository == 'probabl-ai/skore') && (! cancelled()) && ((needs.sphinx-deploy-html.result == 'success') || (needs.sphinx-deploy-root-files == 'success') || (needs.sphinx-stable == 'success')) }}
     needs: [sphinx-deploy-html, sphinx-deploy-root-files, sphinx-deploy-stable]
     steps:
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
         with:
           role-to-assume: ${{ vars.AWS_ROLE }}
           aws-region: ${{ vars.AWS_REGION }}
@@ -434,7 +429,7 @@ jobs:
 
   sphinx-clean-artifacts:
     runs-on: ubuntu-latest
-    if: ${{ always() && (github.event_name != 'pull_request') }}
+    if: ${{ (github.repository == 'probabl-ai/skore') && always() && (github.event_name != 'pull_request') }}
     needs: [sphinx-deploy-html, sphinx-deploy-root-files, sphinx-deploy-stable]
     steps:
       - uses: geekyeggo/delete-artifact@176a747ab7e287e3ff4787bf8a148716375ca118 # v6.0.0
@@ -451,7 +446,7 @@ jobs:
       - sphinx-deploy-root-files
       - sphinx-deploy-stable
       - sphinx-clean-artifacts
-    if: ${{ always() }}
+    if: ${{ (github.repository == 'probabl-ai/skore') && always() }}
     runs-on: Ubuntu-latest
     steps:
       - run: |

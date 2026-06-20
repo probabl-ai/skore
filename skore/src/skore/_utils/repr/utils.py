@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import base64
 import re
+from io import BytesIO
+
+from matplotlib.figure import Figure
 
 # Strip script bodies when counting <div> so strings like "</div>" in JS do not skew.
 _HTML_SCRIPT_RE = re.compile(
@@ -14,7 +18,7 @@ def repair_estimator_html_for_slotted_host(html: str) -> str:
     """Append missing closing ``</div>`` tags so sibling slotted nodes stay valid.
 
     Estimator HTML from ``estimator_._repr_html_()`` is concatenated in the light DOM
-    next to ``<div slot="table-report">`` and ``<div slot="diagnostic">`` on the
+    next to ``<div slot="table-report">`` and ``<div slot="checks-summary">`` on the
     same shadow host. Named slots only consider **direct children** of that host; if
     the sklearn fragment leaves ``<div>`` elements unclosed, the HTML parser nests the
     following slotted elements inside the estimator subtree, so they no longer
@@ -31,3 +35,12 @@ def repair_estimator_html_for_slotted_host(html: str) -> str:
     if deficit > 0:
         return f"{html}{'</div>' * deficit}"
     return html
+
+
+def figure_to_html(figure: Figure) -> str:
+    """Return an HTML ``<img>`` tag embedding a matplotlib figure as base64 PNG."""
+    buffer = BytesIO()
+    figure.savefig(buffer, format="png", bbox_inches="tight")
+    buffer.seek(0)
+    encoded = base64.b64encode(buffer.read()).decode("ascii")
+    return f'<img src="data:image/png;base64,{encoded}">'

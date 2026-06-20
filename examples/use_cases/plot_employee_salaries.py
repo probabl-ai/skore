@@ -131,7 +131,7 @@ hgbt_model_report.metrics.summarize().frame()
 # used.
 
 # %%
-data_display = hgbt_model_report.data.analyze()
+data_display = hgbt_model_report.data.summarize()
 data_display
 
 # %%
@@ -156,7 +156,7 @@ fig
 # :class:`skore.EstimatorReport` for each split.
 
 # %%
-hgbt_split_1 = hgbt_model_report.estimator_reports_[0]
+hgbt_split_1 = hgbt_model_report.reports_[0]
 hgbt_split_1.metrics.summarize().frame(favorability=True)
 
 # %%

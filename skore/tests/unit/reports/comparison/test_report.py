@@ -11,16 +11,17 @@ import pandas as pd
 import pytest
 import skrub
 from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression, RidgeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
-from sklearn.utils._testing import _convert_container
 
 from skore import (
     ComparisonReport,
     CrossValidationReport,
     EstimatorReport,
+    evaluate,
 )
+from skore._externals._sklearn_compat import convert_container
 
 
 def test_pickle(tmp_path, report):
@@ -111,8 +112,8 @@ def test_comparison_report_pos_label_multiclass_is_none():
 @pytest.mark.parametrize(
     ("container_types", "concatenate_train_and_test"),
     [
-        (("dataframe", "series"), False),
-        (("dataframe", "series"), True),
+        (("pandas", "series"), False),
+        (("pandas", "series"), True),
         (("array", "array"), False),
         (("array", "array"), True),
     ],
@@ -123,8 +124,8 @@ def test_create_estimator_report_from_estimator_reports(
     """Test creating an estimator report from a comparison report with
     EstimatorReports."""
     X, y = binary_classification_data
-    X = _convert_container(X, container_types[0])
-    y = _convert_container(y, container_types[1])
+    X = convert_container(X, container_types[0])
+    y = convert_container(y, container_types[1])
     X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
@@ -174,17 +175,15 @@ def test_create_estimator_report_from_estimator_reports(
         assert joblib.hash(est_report_w_test.y_train) == joblib.hash(expected_y_train)
 
 
-@pytest.mark.parametrize(
-    "container_types", [("dataframe", "series"), ("array", "array")]
-)
+@pytest.mark.parametrize("container_types", [("pandas", "series"), ("array", "array")])
 def test_create_estimator_report_from_cross_validation_reports(
     container_types, binary_classification_data
 ):
     """Test creating an estimator report from a comparison report with
     CrossValidationReports."""
     X, y = binary_classification_data
-    X = _convert_container(X, container_types[0])
-    y = _convert_container(y, container_types[1])
+    X = convert_container(X, container_types[0])
+    y = convert_container(y, container_types[1])
     X_experiment, X_heldout, y_experiment, y_heldout = train_test_split(
         X, y, test_size=0.2, random_state=42, shuffle=False
     )
@@ -448,6 +447,76 @@ def test_create_estimator_report_tabular_rejects_test_data(binary_classification
             y_test=y_heldout,
             test_data={},
         )
+
+
+@pytest.mark.parametrize(
+    "comparison_fixture",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_cross_validation_reports_binary_classification",
+    ],
+)
+def test_to_markdown(comparison_fixture, request):
+    report = request.getfixturevalue(comparison_fixture)
+    markdown = report.to_markdown()
+    assert markdown.startswith("# ComparisonReport:")
+    for section in ("## Estimators", "## Metrics", "## Checks (fast mode)", "## Data"):
+        assert section in markdown
+    assert "n_rows=" in markdown
+    assert "| column | dtype |" in markdown
+    for label in report.reports_:
+        assert label in markdown
+    assert "report.metrics.summarize().frame()" in markdown
+    assert "report.checks.summarize()" in markdown
+    assert "Mute a check with .checks.summarize(ignore=['<code>'])." in markdown
+    assert "| estimator |" not in markdown
+    assert "estimator_" not in markdown
+    assert "- ml task:" in markdown
+    if "cross_validation" in comparison_fixture:
+        assert "cross-validation folds" in markdown
+        assert "splitter" in markdown
+    assert "fit time" in markdown
+    assert "predict time" in markdown
+
+
+def test_to_markdown_pos_label():
+    X, y = make_classification(n_classes=2, random_state=0)
+    markdown = evaluate(
+        [RidgeClassifier(), LogisticRegression()],
+        X,
+        y,
+        pos_label=0,
+    ).to_markdown()
+    assert "- pos_label: 0" in markdown
+
+
+def test_to_markdown_different_datasets():
+    X1, y = make_classification(n_samples=100, n_features=20, random_state=0)
+    X2, _ = make_classification(n_samples=100, n_features=10, random_state=1)
+    report = evaluate([LinearRegression(), LinearRegression()], [X1, X2], y)
+    markdown = report.to_markdown()
+    assert "## Data" in markdown
+    assert "| report name | n_rows | n_columns |" in markdown
+    assert "| column | dtype |" not in markdown
+    for label in report.reports_:
+        assert label in markdown
+
+
+@pytest.mark.parametrize(
+    "comparison_fixture",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_cross_validation_reports_binary_classification",
+    ],
+)
+def test_text_repr(comparison_fixture, request):
+    report = request.getfixturevalue(comparison_fixture)
+    repr_str = repr(report)
+    assert repr_str.startswith("ComparisonReport:")
+    assert "to_markdown()" in repr_str
+    for label in report.reports_:
+        assert label in repr_str
+    assert "Accuracy" in repr_str
 
 
 @pytest.mark.parametrize(

@@ -1,4 +1,5 @@
 import pytest
+import skrub
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import KFold, StratifiedKFold
 
@@ -45,7 +46,7 @@ def test_int_splitter(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=3)
     assert isinstance(report, CrossValidationReport)
-    assert len(report.estimator_reports_) == 3
+    assert len(report.reports_) == 3
 
 
 def test_cv_object_splitter(regression_data):
@@ -53,7 +54,7 @@ def test_cv_object_splitter(regression_data):
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=KFold(n_splits=4))
     assert isinstance(report, CrossValidationReport)
-    assert len(report.estimator_reports_) == 4
+    assert len(report.reports_) == 4
 
 
 def test_multiple_estimators(regression_data):
@@ -175,20 +176,11 @@ def test_dict_estimators_prefit(regression_data):
     assert set(report.reports_) == {"a", "b"}
 
 
-def test_dict_estimators_prefit_X_none(regression_data):
-    """A dict of prefit estimators with X=None returns ComparisonReport."""
-    X, y = regression_data
-    fitted1 = LinearRegression().fit(X, y)
-    fitted2 = LinearRegression().fit(X, y)
-    report = evaluate({"a": fitted1, "b": fitted2}, None, y, splitter="prefit")
-    assert isinstance(report, ComparisonReport)
-    assert set(report.reports_) == {"a", "b"}
-
-
-def test_empty_dict_raises():
+def test_empty_dict_raises(regression_data):
     """An empty estimator dict raises ValueError."""
+    X, y = regression_data
     with pytest.raises(ValueError, match="Expected.*reports to compare"):
-        evaluate({}, None, None)
+        evaluate({}, X, y)
 
 
 def test_single_estimator_list_X_raises(regression_data):
@@ -224,7 +216,7 @@ def test_classification_cv(binary_classification_data):
     X, y = binary_classification_data
     report = evaluate(LogisticRegression(), X, y, splitter=StratifiedKFold(n_splits=3))
     assert isinstance(report, CrossValidationReport)
-    assert len(report.estimator_reports_) == 3
+    assert len(report.reports_) == 3
 
 
 def test_pos_label(binary_classification_data):
@@ -233,3 +225,30 @@ def test_pos_label(binary_classification_data):
     report = evaluate(LogisticRegression(), X, y, splitter=0.2, pos_label=0)
     assert isinstance(report, EstimatorReport)
     assert report.pos_label == 0
+
+
+def test_no_data_raises():
+    """No data provided raises ValueError."""
+    with pytest.raises(
+        ValueError,
+        match="Provide data through X and y or through data to evaluate your estimator",
+    ):
+        evaluate(LinearRegression())
+
+
+def test_evaluate_learner(binary_classification_data):
+    class Splitter:
+        """A splitter with get_n_splits that requires X and y"""
+
+        def split(self, X, y, groups=None):
+            return KFold().split(X, y)
+
+        def get_n_splits(self, X, y, groups=None):
+            if X is None or y is None:
+                raise TypeError("X and y cannot be None")
+            return KFold().get_n_splits(X, y)
+
+    X, y = binary_classification_data
+    learner = skrub.X().skb.apply(LogisticRegression(), y=skrub.y()).skb.make_learner()
+    report = evaluate(learner, data={"X": X, "y": y}, splitter=Splitter())
+    assert len(report.reports_) == 5

@@ -48,7 +48,7 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     assert list(split_names) == expected_split_names
 
     # check that something was written to the children's cache
-    assert all(report._cache != {} for report in report.estimator_reports_)
+    assert all(report._cache != {} for report in report.reports_)
     report.clear_cache()
 
     _check_metrics_names(result, [metric], expected_nb_stats)
@@ -76,6 +76,7 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
         ("brier_score", 1),
         ("roc_auc", 1),
         ("log_loss", 1),
+        ("score", 1),
     ],
 )
 def test_binary_classification(forest_binary_classification_data, metric, nb_stats):
@@ -95,6 +96,7 @@ def test_binary_classification(forest_binary_classification_data, metric, nb_sta
         ("recall", 3),
         ("roc_auc", 3),
         ("log_loss", 1),
+        ("score", 1),
     ],
 )
 def test_multiclass_classification(
@@ -109,7 +111,14 @@ def test_multiclass_classification(
 
 
 @pytest.mark.parametrize(
-    "metric, nb_stats", [("r2", 1), ("rmse", 1), ("mae", 1), ("mape", 1)]
+    "metric, nb_stats",
+    [
+        ("r2", 1),
+        ("rmse", 1),
+        ("mae", 1),
+        ("mape", 1),
+        ("score", 1),
+    ],
 )
 def test_regression(linear_regression_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
@@ -119,7 +128,14 @@ def test_regression(linear_regression_data, metric, nb_stats):
 
 
 @pytest.mark.parametrize(
-    "metric, nb_stats", [("r2", 2), ("rmse", 2), ("mae", 2), ("mape", 2)]
+    "metric, nb_stats",
+    [
+        ("r2", 2),
+        ("rmse", 2),
+        ("mae", 2),
+        ("mape", 2),
+        ("score", 1),
+    ],
 )
 def test_regression_multioutput(linear_regression_multioutput_data, metric, nb_stats):
     """Check the behaviour of the metrics methods available for regression."""
@@ -193,15 +209,30 @@ def test_precision_recall_pos_label_overwrite(
     )
 
 
-def test_data_source_both(logistic_binary_classification_data):
-    """
-    data_source="both" is not yet supported for CrossValidationReport.
+# report.metrics.get
 
-    Non regression test for https://github.com/probabl-ai/skore/issues/2546
-    """
-    classifier, X, y = logistic_binary_classification_data
-    report = CrossValidationReport(classifier, X, y)
 
-    error_msg = 'data_source="both" is not yet supported for CrossValidationReport'
-    with pytest.raises(NotImplementedError, match=error_msg):
-        report.metrics.summarize(data_source="both")
+def test_get(forest_binary_classification_data):
+    """``get`` works."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    assert isinstance(report.metrics.get("precision"), pd.DataFrame)
+    with pytest.raises(KeyError):
+        report.metrics.get("non-existing metric")
+
+
+def test_get_custom(forest_binary_classification_data):
+    """``get`` works for custom metrics."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X, y, splitter=2)
+
+    with pytest.raises(KeyError):
+        report.metrics.get("hello")
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.get("hello").to_dict() == {
+        ("RandomForestClassifier", "mean"): {"Hello": 1.0},
+        ("RandomForestClassifier", "std"): {"Hello": 0.0},
+    }

@@ -1,3 +1,4 @@
+import warnings
 from typing import Literal
 
 from skrub import _dataframe as sbd
@@ -64,8 +65,9 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         return X, y
 
-    def analyze(
+    def summarize(
         self,
+        *,
         data_source: Literal["train", "test", "both"] = "both",
         with_y: bool = True,
         subsample: int | None = None,
@@ -77,7 +79,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Parameters
         ----------
         data_source : {"train", "test", "both"}, default="both"
-            The dataset to analyze. If "train", only the training set is used.
+            The dataset to summarize. If "train", only the training set is used.
             If "test", only the test set is used. If "both", both sets are concatenated
             vertically.
 
@@ -90,14 +92,14 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             the strategy set by ``subsample_strategy``. It must be a strictly positive
             integer. If ``None``, no subsampling is applied.
 
-        subsample_strategy : {'head', 'random'}, default='head',
+        subsample_strategy : {"head", "random"}, default="head"
             The strategy used to subsample the dataframe hold by the display. It only
             has an effect when ``subsample`` is not None.
 
-            - If ``'head'``: subsample by taking the ``subsample`` first points of the
+            - If ``"head"``: subsample by taking the ``subsample`` first points of the
               dataframe, similar to Pandas: ``df.head(n)``.
-            - If ``'random'``: randomly subsample the dataframe by using a uniform
-              distribution. The random seed is controlled by ``random_state``.
+            - If ``"random"``: randomly subsample the dataframe by using a uniform
+              distribution. The random seed is controlled by ``seed``.
 
         seed : int, default=None
             The random seed to use when randomly subsampling. It only has an effect when
@@ -116,7 +118,7 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> report.data.analyze().frame()
+        >>> report.data.summarize().frame()
         """
         df = self._prepare_dataframe_for_display(
             data_source=data_source,
@@ -126,6 +128,15 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             seed=seed,
         )
         return TableReportDisplay._compute_data_for_display(df)
+
+    def analyze(self, **kwargs) -> TableReportDisplay:
+        """Use :meth:`summarize` instead."""
+        warnings.warn(
+            "data.analyze() is deprecated, use data.summarize() instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        return self.summarize(**kwargs)
 
     def _prepare_dataframe_for_display(
         self, data_source, with_y, subsample, subsample_strategy, seed
@@ -167,11 +178,3 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 df = sbd.sample(df, subsample, seed=seed)
 
         return df
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(class_name="skore.EstimatorReport.data")

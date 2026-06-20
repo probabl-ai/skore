@@ -1,8 +1,11 @@
 import warnings
 
 import numpy as np
+import pandas as pd
 import pytest
+import skrub
 from sklearn.datasets import make_classification
+from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     precision_score,
@@ -23,9 +26,7 @@ def deep_contain(value, test_value):
         return False
 
 
-def test_interaction_cache_metrics(
-    linear_regression_multioutput_with_test,
-):
+def test_interaction_cache_metrics(linear_regression_multioutput_with_test):
     """Check that the cache take into account the 'kwargs' of a metric."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -181,3 +182,103 @@ def test_roc_multiclass_requires_predict_proba(
     report = EstimatorReport(classifier, X_test=X_test, y_test=y_test)
     assert hasattr(report.metrics, "roc_auc")
     report.metrics.roc_auc()
+
+
+def test_r2_returns_float(linear_regression_with_test):
+    estimator, X_test, y_test = linear_regression_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+
+    assert isinstance(report.metrics.r2(), float)
+
+
+# report.metrics.score
+
+
+def test_score_matches_sklearn_score(logistic_binary_classification_with_train_test):
+    """For a plain sklearn estimator, ``score`` returns ``estimator.score(X, y)``."""
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    report = EstimatorReport(
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    )
+
+    assert report.metrics.score() == report.estimator_.score(X_test, y_test)
+
+
+def skrub_report(*, with_scoring):
+    X, y = make_classification(random_state=0)
+
+    # String-labeled y avoids the int/str clash in MetricsSummaryDisplay's label
+    # column when ``Score`` emits a dict keyed by scorer name.
+    y = np.where(y == 1, "pos", "neg")
+
+    data_op = skrub.X(X).skb.apply(DummyClassifier(), y=skrub.y(y))
+    if with_scoring:
+        data_op = data_op.skb.with_scoring("accuracy").skb.with_scoring(
+            "accuracy", name="weighted_accuracy"
+        )
+
+    learner = data_op.skb.make_learner()
+    split = data_op.skb.train_test_split()
+    return EstimatorReport(learner, train_data=split["train"], test_data=split["test"])
+
+
+@pytest.mark.parametrize("with_scoring", [False, True])
+def test_score_skrub_learner(with_scoring):
+    """``score`` on a report containing a SkrubLearner returns the same result
+    as ``score`` on the learner directly.
+
+    Non-regression test: previously ``SkrubLearner.score`` was called as
+    ``score(X, y)`` but it expects an environment dict.
+    """
+    report = skrub_report(with_scoring=with_scoring)
+
+    assert report.metrics.score() == report.estimator_.score(
+        {"_skrub_X": report.X_test, "_skrub_y": report.y_test}
+    )
+
+
+def test_score_skrub_learner_with_extra_env_vars():
+    """``score`` works when the DataOp env has variables beyond X and y."""
+    df = pd.DataFrame({"feat": np.arange(20, dtype=float), "target": ["a", "b"] * 10})
+    data = skrub.var("df", df)
+    weight = skrub.var("weight", 0.5)
+
+    X = data[["feat"]].skb.mark_as_X()
+    weighted_X = X * weight  # brings in `weight` after marking the X
+    y = data["target"].skb.mark_as_y()
+
+    data_op = weighted_X.skb.apply(DummyClassifier(), y=y)
+    learner = data_op.skb.make_learner()
+    split = data_op.skb.train_test_split()
+    report = EstimatorReport(
+        learner, train_data=split["train"], test_data=split["test"]
+    )
+
+    assert isinstance(report.metrics.score(), float)
+
+
+# report.metrics.get
+
+
+def test_get(binary_classification_report):
+    """``get`` works."""
+    report = binary_classification_report
+
+    assert report.metrics.get("precision") == 1
+
+    with pytest.raises(KeyError):
+        report.metrics.get("non-existing metric")
+
+
+def test_get_custom(binary_classification_report):
+    """``get`` works for custom metrics."""
+    report = binary_classification_report
+
+    with pytest.raises(KeyError):
+        report.metrics.get("hello")
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.get("hello") == 1

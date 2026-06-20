@@ -21,7 +21,7 @@ from skore._utils._index import flatten_multi_index
 
 
 class ImpurityDecreaseDisplay(DisplayMixin):
-    """Display to inspect the Mean Decrease in Impurity (MDI) of tree-based models.
+    """Display mean decrease in impurity importances.
 
     Parameters
     ----------
@@ -36,6 +36,24 @@ class ImpurityDecreaseDisplay(DisplayMixin):
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
         Report type from which the display is created.
+
+    Attributes
+    ----------
+    importances : DataFrame
+        MDI values per feature, estimator, and split.
+    report_type : ReportType
+        The type of report.
+
+    See Also
+    --------
+    EstimatorReport.inspection.impurity_decrease : Create this display from a report.
+    CoefficientsDisplay : Display linear model coefficients.
+    PermutationImportanceDisplay : Display permutation importances.
+
+    Notes
+    -----
+    For cross-validation and comparison reports, :meth:`frame` and :meth:`plot`
+    can aggregate importances across splits using the ``aggregate`` parameter.
 
     Examples
     --------
@@ -368,7 +386,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 hue=hue,
                 col=col,
                 kind="bar",
-                **barplot_kwargs,
+                **(barplot_kwargs or {}),
             )
         else:  # "cross-validation" in report_type
             facet = sns.catplot(
@@ -379,14 +397,14 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 col=col,
                 kind="strip",
                 dodge=True,
-                **stripplot_kwargs,
+                **(stripplot_kwargs or {}),
             ).map_dataframe(
                 sns.boxplot,
                 x="importance",
                 y="feature",
                 hue=hue,
                 palette="tab10",
-                **boxplot_kwargs,
+                **(boxplot_kwargs or {}),
             )
         add_background_features = hue is not None
 

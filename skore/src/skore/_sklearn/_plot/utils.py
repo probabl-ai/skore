@@ -255,6 +255,32 @@ def sample_mpl_colormap(
     return [cmap(i) for i in indices]
 
 
+def _reorder_categoricals_by_appearance(
+    plot_data: DataFrame, columns: Sequence[str | None]
+) -> DataFrame:
+    """Reorder categorical levels of ``columns`` to their order of appearance.
+
+    Seaborn draws and colors categorical levels by the categorical's *category*
+    order, which (e.g. on pandas >= 3) can differ from the order of appearance used
+    to build the manually constructed legend. That mismatch pairs labels with the
+    wrong color/linestyle and lists estimators out of the order they were passed.
+    Reordering the categories to the order of appearance makes seaborn draw in that
+    same order, keeping curves and legend in sync.
+    """
+    for column in columns:
+        if column is None:
+            continue
+        series = plot_data[column]
+        if isinstance(series.dtype, CategoricalDtype):
+            # ``order`` is every value present, in order of appearance:
+            # ``set_categories`` only drops categories that have no rows (none here, so
+            # no row is altered), and these columns are built internally without NaN, so
+            # ``pd.unique`` cannot surface a NaN that ``set_categories`` would reject.
+            order = list(pd.unique(series))
+            plot_data[column] = series.cat.set_categories(order, ordered=True)
+    return plot_data
+
+
 def _get_curve_plot_columns(
     plot_data: DataFrame,
     report_type: ReportType,
@@ -266,12 +292,12 @@ def _get_curve_plot_columns(
 
     Rules:
     - Default ("auto"): None for EstimatorReport and Cross-Validation Report,
-        "estimator" for ComparisonReport
+      "estimator" for ComparisonReport
     - subplot_by=None disallowed for comparison when plotting one-vs-rest curves
     - subplot_by="estimator" only allowed for comparison reports
     - subplot_by="label" only allowed when plotting one-vs-rest curves
-    - subplot_by="data_source" only allowed for EstimatorReport with both data \
-        sources
+    - subplot_by="data_source" only allowed for EstimatorReport with both data
+      sources
     - hue priority: estimator > label > data_source (excluding col)
 
     Returns (col, hue, style) tuple where each can be None if not applicable.
@@ -486,3 +512,35 @@ def _check_label(labels: list, label: PositiveLabel, default_label: PositiveLabe
         # Ex: with `labels=[0, 1]` and `label=True`:
         # `label in labels` is true but `df.query("label == @label")` is empty.
         return labels[labels.index(label)]
+
+
+def _downsample_thresholds_indices(n_total: int, max_n: int | None) -> NDArray:
+    """Compute the indices to keep when downsampling a sorted threshold array.
+
+    Picks ``max_n`` evenly-spaced indices in ``[0, n_total - 1]``, which is
+    equivalent to quantile sampling on the empirical distribution of the
+    original thresholds. The first and last indices are always preserved so
+    that the endpoints of the curve are kept.
+
+    Parameters
+    ----------
+    n_total : int
+        Total number of available thresholds (i.e. length of the sorted
+        threshold array returned by scikit-learn).
+
+    max_n : int or None
+        Maximum number of thresholds to keep. ``None`` disables downsampling
+        and returns ``np.arange(n_total)``. Otherwise must be at least 2.
+
+    Returns
+    -------
+    indices : ndarray of int
+        Sorted, unique indices in ``[0, n_total - 1]`` to keep. When
+        ``max_n is None`` or ``n_total <= max_n``, the returned array is
+        ``np.arange(n_total)``.
+    """
+    if max_n is not None and max_n < 2:
+        raise ValueError(f"`max_n_thresholds` must be at least 2 (got {max_n}).")
+    if max_n is None or n_total <= max_n:
+        return np.arange(n_total)
+    return np.linspace(0, n_total - 1, max_n).astype(int)

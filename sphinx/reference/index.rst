@@ -37,8 +37,6 @@ ML Assistance
      - Evaluate one or more estimators on the given data.
    * - :func:`compare`
      - Compare pre-existing reports with a :class:`~skore.ComparisonReport`
-   * - :func:`train_test_split`
-     - Split arrays or matrices into random train and test subsets
    * - :class:`TrainTestSplit`
      - Single train-test splitter compatible with the `scikit-learn CV splitter
        API <https://scikit-learn.org/stable/glossary.html#term-CV-splitter>`_
@@ -89,6 +87,20 @@ Inspection
      - Display for visualizing feature importance via Mean Decrease in Impurity (MDI)
    * - :class:`PermutationImportanceDisplay`
      - Display for visualizing feature importance via permutation importance
+
+
+Checks
+^^^^^^
+
+.. list-table::
+   :widths: 30 70
+
+   * - :class:`ChecksSummaryDisplay`
+     - Display for check results returned by the ``checks`` accessor
+   * - :class:`Check`
+     - Protocol for defining custom checks
+   * - :exc:`CheckNotApplicable`
+     - Exception raised when a check cannot run on the given report
 
 
 Utilities

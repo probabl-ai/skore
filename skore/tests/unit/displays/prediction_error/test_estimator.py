@@ -1,7 +1,9 @@
 import matplotlib as mpl
+import pandas as pd
 import pytest
 
 from skore import EstimatorReport
+from skore._utils._testing import check_cache_unchanged
 
 
 @pytest.mark.parametrize(
@@ -153,11 +155,34 @@ def test_pass_kind_to_plot(pyplot, estimator_reports_regression):
         display.plot(kind="invalid")
 
 
-def test_random_state(linear_regression_with_train_test):
-    """If random_state is None (the default) the call should not be cached."""
+def test_seed_none(linear_regression_with_train_test):
+    """If seed is None (the default) the call should not be cached."""
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
+    report.cache_predictions()
+    with check_cache_unchanged(report._cache):
+        report.metrics.prediction_error()
+
+
+def test_multioutput_regression_dataframe_y(
+    linear_regression_multioutput_with_train_test,
+):
+    """It should work when y is a DataFrame.
+
+    Non-regression test for https://github.com/probabl-ai/skore/pull/2962
+    """
+    estimator, X_train, X_test, y_train, y_test = (
+        linear_regression_multioutput_with_train_test
+    )
+
+    report = EstimatorReport(
+        estimator,
+        X_train=X_train,
+        y_train=pd.DataFrame(y_train),
+        X_test=X_test,
+        y_test=pd.DataFrame(y_test),
+    )
+
     report.metrics.prediction_error()
-    assert len(report._cache) == 2

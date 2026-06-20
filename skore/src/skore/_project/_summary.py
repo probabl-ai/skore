@@ -2,214 +2,337 @@
 
 from __future__ import annotations
 
-import warnings
+import uuid
 from typing import TYPE_CHECKING
 
-from pandas import Categorical, DataFrame, Index, MultiIndex, RangeIndex
+from pandas import Categorical, DataFrame, Timestamp, isna, to_datetime
+from pandas.api.types import is_datetime64_any_dtype, is_numeric_dtype
 
-from skore._utils._jupyter import _jupyter_dependencies_available
+from skore._utils.repr import ReprHTMLMixin
+from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
-    from typing import Literal
+    from typing import Any, Literal
 
     from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
 
-class Summary(DataFrame):
+_IGNORED_COLUMNS = ["ml_task"]
+_METADATA_COLUMNS = frozenset(
+    {"key", "date", "learner", "dataset", "ml_task", "report_type"}
+)
+# Order of columns in the HTML table; metric columns are inserted at ``...``.
+_COLUMN_ORDER = ("id", "key", ..., "date", "learner", "dataset", "report_type")
+_HIDDEN_COLUMNS = ("learner", "dataset", "report_type")
+
+_COLUMN_LABELS = {
+    "id": "ID",
+    "key": "Key",
+    "date": "Date",
+    "learner": "Learner",
+    "dataset": "Dataset",
+    "report_type": "Report type",
+    "rmse": "RMSE",
+    "log_loss": "Log loss",
+    "roc_auc": "ROC AUC",
+    "fit_time": "Fit time (s)",
+    "predict_time": "Predict time (s)",
+}
+
+
+class Summary(ReprHTMLMixin):
     """
     Metadata and metrics for all reports persisted in a project at a given moment.
 
-    A summary object is an extended :class:`pandas.DataFrame`, containing all the
-    metadata and metrics of the reports that have been persisted in a project. It
-    implements a custom HTML representation, that allows user to filter its reports
-    using a parallel coordinates plot. In a Jupyter Notebook, this representation
-    automatically replaces the standard :class:`pandas.DataFrame` one and displays an
-    interactive plot.
+    A summary object stores the metadata and metrics of the reports that have been
+    persisted in a project as a :class:`pandas.DataFrame`, accessible through the
+    :meth:`frame` method. It implements a custom HTML representation that displays the
+    information as a table. The table provides a per-row selection and builds a query
+    string that can be copied and passed to :meth:`query` to recover a subset of
+    reports.
 
-    The parallel coordinates plot is interactive, such the user can select a filter path
-    and retrieve the corresponding reports.
+    Use :meth:`query` to filter the reports and :meth:`compare` to load the
+    corresponding report objects from the project.
 
-    Outside a Jupyter Notebook, the summary object can be used as a standard
-    :class:`pandas.DataFrame` object. This means that it can be questioned, divided
-    etc., using the standard :class:`pandas.DataFrame` functions.
-
-    Refer to :class:`pandas.DataFrame` for the standard methods and attributes.
+    See Also
+    --------
+    :func:`~skore.compare` :
+        Compare selected reports side by side.
+    :meth:`Project.summarize` :
+        Create a summary from a project.
     """
 
-    _metadata = ["project"]
+    def __init__(self, dataframe: DataFrame, project: Any = None) -> None:
+        if not dataframe.empty:
+            dataframe["date"] = to_datetime(dataframe["date"], errors="coerce")
+            dataframe["learner"] = Categorical(dataframe["learner"])
+            for column in ("key", "dataset", "ml_task", "report_type"):
+                dataframe[column] = dataframe[column].astype("string")
+            dataframe = self._coalesce_mean_metrics(dataframe)
+        self._summary = dataframe
+        self.project = project
 
     @staticmethod
-    def factory(project, /):
+    def _verbose_name(column: str) -> str:
+        """Return a human-readable name for ``column``."""
+        if column in _COLUMN_LABELS:
+            return _COLUMN_LABELS[column]
+        if column.endswith("_std"):
+            base = column[: -len("_std")]
+            return f"{Summary._verbose_name(base)} (std)"
+        return column.replace("_", " ").capitalize()
+
+    @staticmethod
+    def _coalesce_mean_metrics(dataframe: DataFrame) -> DataFrame:
+        """Merge ``metric_mean`` columns into the matching ``metric`` column."""
+        for mean_column in [
+            column for column in dataframe.columns if column.endswith("_mean")
+        ]:
+            base = mean_column[: -len("_mean")]
+            if base not in dataframe.columns:
+                dataframe = dataframe.rename(columns={mean_column: base})
+                continue
+            if not dataframe[mean_column].isna().all():
+                if dataframe[base].isna().all():
+                    dataframe[base] = dataframe[mean_column]
+                else:
+                    dataframe[base] = dataframe[base].combine_first(
+                        dataframe[mean_column]
+                    )
+            dataframe = dataframe.drop(columns=mean_column)
+        return dataframe
+
+    @staticmethod
+    def _column_role(column: str) -> str:
+        """Return ``metadata``, ``metric``, or ``std`` for a frame column."""
+        if column in _METADATA_COLUMNS:
+            return "metadata"
+        if column.endswith("_std"):
+            return "std"
+        return "metric"
+
+    @staticmethod
+    def _is_hidden_by_default(column: str) -> bool:
+        """Return whether ``column`` should start hidden in the HTML table."""
+        return column in _HIDDEN_COLUMNS or column.endswith("_std")
+
+    def _dtype_to_html_kind(self, column: str) -> str:
+        """Map a frame column to the HTML table sort kind."""
+        if column == "id":
+            return "text"
+        dtype = self._summary.dtypes[column]
+        if is_datetime64_any_dtype(dtype):
+            return "date"
+        if is_numeric_dtype(dtype):
+            return "number"
+        return "text"
+
+    def frame(
+        self, *, report_type: Literal["estimator", "cross-validation"] | None = None
+    ) -> DataFrame:
         """
-        Construct a summary object from ``project`` at a given moment.
+        Return the metadata and metrics as a :class:`pandas.DataFrame`.
 
         Parameters
         ----------
-        project : ``skore_local_project.Project`` | ``skore_hub_project.Project``
-            The project from which the summary object is to be constructed.
+        report_type : {"estimator", "cross-validation"}, default=None
+            Filter the rows to a specific type of report. When ``None``, all reports
+            are returned.
 
-        Notes
-        -----
-        This function is not intended for direct use. Instead simply use the accessor
-        :meth:`skore.Project.summarize`.
+        Returns
+        -------
+        frame : pandas.DataFrame
+            The metadata and metrics of the reports.
         """
-        summary = DataFrame(project.summarize(), copy=False)
+        frame = self._summary
 
-        if not summary.empty:
-            summary["learner"] = Categorical(summary["learner"])
-            summary.index = MultiIndex.from_arrays(
-                [
-                    RangeIndex(len(summary)),
-                    Index(summary.pop("id"), name="id", dtype=str),
-                ]
-            )
+        if report_type is not None:
+            frame = frame[frame["report_type"] == report_type]
 
-        # Cast standard dataframe to Summary for lazy reports selection.
-        summary = Summary(summary, copy=False)
-        summary.project = project
+        return frame[
+            [
+                column
+                for column in frame.columns
+                if column not in _IGNORED_COLUMNS
+                and (column in _METADATA_COLUMNS or not frame[column].isna().all())
+            ]
+        ]
 
-        return summary
+    def query(self, expr: str) -> Summary:
+        """
+        Filter the summary using a :meth:`pandas.DataFrame.query` expression.
 
-    @property
-    def _constructor(self) -> type[Summary]:
-        return Summary
+        Parameters
+        ----------
+        expr : str
+            The query string to evaluate. The report ``id`` is available as an index
+            level, so selections built from the HTML representation (e.g.
+            ``"id in ['ab12cd34']"``) can be used to recover specific reports.
 
-    def reports(
+        Returns
+        -------
+        summary : Summary
+            A new summary restricted to the rows matching ``expr``.
+        """
+        return Summary(self._summary.query(expr), self.project)
+
+    def compare(
         self,
         *,
-        filter: bool = True,
-        return_as: Literal["list", "comparison"] = "list",
+        return_as: Literal["list", "report"] = "list",
     ) -> list[EstimatorReport | CrossValidationReport] | ComparisonReport:
         """
         Return the reports referenced by the summary object from the project.
 
         Parameters
         ----------
-        filter : bool, default=True
-            Filter the reports to return with the user query string selection.
-        return_as : {"list", "comparison"}, default="list"
+        return_as : {"list", "report"}, default="list"
             In what form the reports should be returned.
+
+        Returns
+        -------
+        reports : list of reports or ComparisonReport
+            If ``return_as="list"``, a list of
+            :class:`~skore.EstimatorReport` or
+            :class:`~skore.CrossValidationReport` objects.
+            If ``return_as="report"``, a :class:`~skore.ComparisonReport`.
+
+        See Also
+        --------
+        :func:`~skore.compare` :
+            Compare reports side by side.
         """
         from skore import ComparisonReport
 
-        if self.empty:
+        if self._summary.empty:
             return []
 
-        if not hasattr(self, "project") or "id" not in self.index.names:
-            raise RuntimeError("Bad condition: it is not a valid `Summary` object.")
+        reports = [
+            self.project.get(id) for id in self._summary.index.get_level_values("id")
+        ]
 
-        if filter and (querystr := self._query_string_selection()):
-            self = self.query(querystr)
-
-        reports = [self.project.get(id) for id in self.index.get_level_values("id")]
-
-        if return_as == "comparison":
+        if return_as == "report":
             try:
                 return ComparisonReport(reports)
             except ValueError as e:
                 raise RuntimeError(
-                    f"Bad condition: the comparison mode is only applicable when "
+                    f"Bad condition: the report mode is only applicable when "
                     f"reports have the same dataset.\n"
-                    f"Found '{self['dataset'].unique()}'.\n"
-                    f"Please query the dataframe or use the widget to make your "
-                    f"selection."
+                    f"Found '{self._summary['dataset'].unique()}'.\n"
+                    f"Please query the summary to make your selection."
                 ) from e
         return reports
 
-    # Override pandas DataFrame's _repr_html_ to only show the widget
-    def _repr_html_(self):
-        return ""
+    def plot(self) -> None:
+        """Plot a visual summary of the reports referenced by this object.
 
-    def _repr_mimebundle_(self, include=None, exclude=None):
-        """Display the interactive plot and controls."""
-        if not _jupyter_dependencies_available():
-            warnings.warn(
-                "Jupyter dependencies (IPython, ipywidgets) are not installed. "
-                "Install them for the interactive widget: pip install skore[jupyter]. "
-                "Showing the summary as a table.",
-                UserWarning,
-                stacklevel=2,
+        Raises
+        ------
+        NotImplementedError
+            This method is not implemented yet.
+        """
+        raise NotImplementedError
+
+    def __repr__(self) -> str:
+        return repr(self._summary)
+
+    @staticmethod
+    def _cell(record: dict[str, Any], column: str) -> dict[str, str]:
+        """Build the display/sort parts of a single HTML table cell."""
+        value = record[column]
+        if isna(value):
+            cell = {"display": "", "sort": ""}
+        elif isinstance(value, Timestamp):
+            text = value.isoformat()
+            cell = {"display": text, "sort": text}
+        elif isinstance(value, float):
+            cell = {"display": "", "sort": repr(float(value))}
+        else:
+            text = str(value)
+            cell = {"display": text, "sort": text.lower()}
+        std_column = f"{column}_std"
+        if std_column in record:
+            std_value = record[std_column]
+            cell["std"] = (
+                repr(float(std_value))
+                if std_value is not None and not isna(std_value)
+                else "nan"
             )
-            return {"text/html": DataFrame._repr_html_(self)}
+        return cell
 
-        from skore._project._widget import ModelExplorerWidget
+    def _html_repr(self) -> str:
+        """Show the HTML representation of the summary as a table."""
+        container_id = f"skore-summary-{uuid.uuid4().hex[:8]}"
 
-        self._plot_widget = ModelExplorerWidget(dataframe=self)
-        return {"text/html": self._plot_widget.display()}
+        if self._summary.empty:
+            return render_template(
+                "project/summary.html.j2",
+                {
+                    "container_id": container_id,
+                    "report_title": "Project summary",
+                    "columns": [],
+                    "rows": [],
+                    "filters": [],
+                    "has_rows": False,
+                },
+            )
 
-    def _query_string_selection(self) -> str | None:
-        """
-        Generate a pandas query string based on user selections in the plot.
+        frame = self.frame()
 
-        This method translates the visual selections made on the parallel
-        coordinates plot into a pandas query string that can be used to
-        filter the dataframe.
+        known = {column for column in _COLUMN_ORDER if column is not ...}
+        metric_columns = [column for column in frame.columns if column not in known]
+        data_columns = []
+        for column in _COLUMN_ORDER:
+            if column is ...:
+                data_columns.extend(metric_columns)
+            elif column == "id" or column in frame.columns:
+                data_columns.append(column)
 
-        Returns
-        -------
-        str
-            A query string that can be used with DataFrame.query() to filter
-            the original dataframe based on the visual selection.
-            Returns an empty string if no selections are active.
+        columns = [
+            {
+                "key": column,
+                "label": self._verbose_name(column),
+                "kind": self._dtype_to_html_kind(column),
+                "role": self._column_role(column),
+                "hidden_by_default": self._is_hidden_by_default(column),
+            }
+            for column in data_columns
+        ]
 
-        Examples
-        --------
-        >>> # xdoctest: +SKIP
-        >>> query_string = df._query_string_selection()
-        >>> df_filtered = df.query(query_string)
-        """
-        if not hasattr(self, "_plot_widget"):
-            return None
+        filters = [
+            {
+                "field": field,
+                "label": self._verbose_name(field),
+                "options": [
+                    {"value": str(value)} for value in sorted(frame[field].unique())
+                ],
+            }
+            for field in ("report_type", "learner", "dataset")
+        ]
 
-        self._plot_widget.update_selection()
-        selection = self._plot_widget.current_selection.copy()
-        query_parts = []
+        rows = [
+            {
+                "id": record["id"],
+                "key": str(record["key"]),
+                "report_type": str(record["report_type"]),
+                "learner": str(record["learner"]),
+                "dataset": str(record["dataset"]),
+                "date": self._cell(record, "date")["display"],
+                "cells": [self._cell(record, column) for column in data_columns],
+            }
+            for record in frame.assign(id=frame.index.get_level_values("id")).to_dict(
+                orient="records"
+            )
+        ]
 
-        task = selection.pop("ml_task")
-        query_parts.append(f"ml_task.str.contains('{task}')")
-
-        dataset = selection.pop("dataset")
-        query_parts.append(f"dataset == '{dataset}'")
-
-        for column_name, range_values in selection.items():
-            if not isinstance(range_values[0], tuple):  # single selection
-                range_values = (range_values,)
-
-            if column_name == "learner":
-                for dim in self._plot_widget.current_fig.data[0].dimensions:
-                    if dim["label"] == "Learner":
-                        learner_values = dim["ticktext"]
-                        learner_codes = dim["tickvals"]
-                        break
-
-                selected_learners = []
-                for min_val, max_val in range_values:
-                    # When selecting on the parallel coordinates plot, the min and max
-                    # values my not be exactly the min or max of the learner codes. We
-                    # clip them to be sure that it falls into the correct range.
-                    if min_val < 1e-8:
-                        min_val = 0
-                    if max_val > max(learner_codes) - 1e-8:
-                        max_val = max(learner_codes)
-
-                    for i, learner in enumerate(learner_values):
-                        # Get the jittered code value for this learner
-                        code_val = learner_codes[i]
-                        if min_val <= code_val <= max_val:
-                            selected_learners.append(learner)
-
-                if selected_learners:
-                    values_str = ", ".join(
-                        [f"'{value}'" for value in selected_learners]
-                    )
-                    query_parts.append(f"learner.isin([{values_str}])")
-            else:
-                dim_query = []
-                for min_val, max_val in range_values:
-                    dim_query.append(
-                        f"({column_name} >= {min_val:.6f} and "
-                        f"{column_name} <= {max_val:.6f})"
-                    )
-                query_parts.append("(" + " or ".join(dim_query) + ")")
-
-        return " and ".join(query_parts)
+        return render_template(
+            "project/summary.html.j2",
+            {
+                "container_id": container_id,
+                "report_title": "Project summary",
+                "columns": columns,
+                "rows": rows,
+                "filters": filters,
+                "has_rows": bool(rows),
+            },
+        )

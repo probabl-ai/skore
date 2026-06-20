@@ -24,12 +24,12 @@ from skore._sklearn._plot.inspection.utils import (
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.metrics import MetricLike
 from skore._sklearn.types import Aggregate, DataSource, ReportType
-from skore._utils._callable_name import _callable_name
+from skore._utils._callable import _callable_name
 from skore._utils._index import flatten_multi_index
 
 
 class PermutationImportanceDisplay(DisplayMixin):
-    """Display to inspect feature importance via feature permutation.
+    """Display permutation feature importances.
 
     Parameters
     ----------
@@ -48,6 +48,24 @@ class PermutationImportanceDisplay(DisplayMixin):
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
         Report type from which the display is created.
+
+    Attributes
+    ----------
+    importances : pd.DataFrame
+        Permutation importance values per feature, metric, and repetition.
+    report_type : ReportType
+        The type of report.
+
+    See Also
+    --------
+    EstimatorReport.inspection.permutation_importance : Create this display.
+    CoefficientsDisplay : Display linear model coefficients.
+    ImpurityDecreaseDisplay : Display tree-based MDI importances.
+
+    Notes
+    -----
+    For cross-validation and comparison reports, :meth:`frame` and :meth:`plot`
+    can aggregate importances across splits using the ``aggregate`` parameter.
     """
 
     _default_boxplot_kwargs: dict[str, Any] = {
@@ -81,6 +99,53 @@ class PermutationImportanceDisplay(DisplayMixin):
         seed: int | None,
         report_type: ReportType,
     ) -> PermutationImportanceDisplay:
+        """Compute the data for the display from a single estimator.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}
+            The data source to use.
+
+        estimator : estimator
+            The estimator to compute importances for.
+
+        name : str
+            The name of the estimator.
+
+        X : array-like
+            Feature matrix.
+
+        y : array-like
+            Target vector.
+
+        at_step : int or str
+            Pipeline step at which to evaluate importances (see
+            :meth:`EstimatorReport.inspection.permutation_importance`).
+
+        metric : MetricLike, list, dict, or None
+            Scoring metric passed to
+            :func:`sklearn.inspection.permutation_importance`.
+
+        n_repeats : int
+            Number of permutation repeats.
+
+        max_samples : float
+            Fraction or count of samples used per repeat.
+
+        n_jobs : int or None
+            Number of parallel jobs.
+
+        seed : int or None
+            Random seed for permutations.
+
+        report_type : ReportType
+            The type of report.
+
+        Returns
+        -------
+        PermutationImportanceDisplay
+            The display populated with computed importances.
+        """
         if not isinstance(at_step, str | int):
             raise ValueError(f"at_step must be an integer or a string; got {at_step!r}")
 
@@ -114,7 +179,7 @@ class PermutationImportanceDisplay(DisplayMixin):
 
         if issparse(X_transformed):
             X_transformed = cast(spmatrix, X_transformed)
-            X_transformed = X_transformed.todense()
+            X_transformed = np.asarray(X_transformed.todense())
 
         scores = permutation_importance(
             estimator=estimator,
@@ -468,7 +533,7 @@ class PermutationImportanceDisplay(DisplayMixin):
             Filter the importances by metric. If `None`, all importances associated with
             each metric are returned.
 
-        aggregate : {"mean", "std"}, ("mean", std) or None, default=("mean", "std")
+        aggregate : {"mean", "std"}, ("mean", "std") or None, default=("mean", "std")
             How to aggregate the importances. Applied on repetitions or on repetitions
             then splits, for (comparisons of) cross validation reports and depending
             on the value of `level`.

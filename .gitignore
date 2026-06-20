@@ -197,9 +197,6 @@ examples/integrations/mlruns/
 
 # Exclude hatch artifacts
 skore/LICENSE
-skore-hub-project/LICENSE
-skore-local-project/LICENSE
-skore-mlflow-project/LICENSE
 .aider*
 
 # uv
@@ -208,3 +205,5 @@ uv.lock
 # mlflow
 mlflow.db
 mlruns
+
+.claude

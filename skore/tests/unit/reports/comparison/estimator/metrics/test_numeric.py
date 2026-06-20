@@ -10,6 +10,17 @@ from skore import ComparisonReport, EstimatorReport
     "metric_name, expected",
     [
         (
+            "score",
+            pd.DataFrame(
+                [[0.45, 0.55]],
+                columns=pd.Index(
+                    ["DummyClassifier_1", "DummyClassifier_2"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["Score"], name="Metric"),
+            ),
+        ),
+        (
             "accuracy",
             pd.DataFrame(
                 [[0.45, 0.55]],
@@ -113,6 +124,17 @@ def test_binary_classification(
 @pytest.mark.parametrize(
     "metric_name, expected",
     [
+        (
+            "score",
+            pd.DataFrame(
+                [[-0.061173, -0.061173]],
+                columns=pd.Index(
+                    ["DummyRegressor_1", "DummyRegressor_2"],
+                    name="Estimator",
+                ),
+                index=pd.Index(["Score"], name="Metric"),
+            ),
+        ),
         (
             "rmse",
             pd.DataFrame(
@@ -308,3 +330,30 @@ def test_precision_recall_pos_label_default(
     result_both_labels = getattr(report.metrics, metric)().reset_index()
     assert result_both_labels["Label"].to_list() == ["A", "B"]
     result_both_labels = result_both_labels.set_index(["Metric", "Label"])
+
+
+# report.metrics.get
+
+
+def test_get(comparison_estimator_reports_binary_classification):
+    """``get`` works."""
+    report = comparison_estimator_reports_binary_classification
+
+    assert isinstance(report.metrics.get("precision"), pd.DataFrame)
+    with pytest.raises(KeyError):
+        report.metrics.get("non-existing metric")
+
+
+def test_get_custom(comparison_estimator_reports_binary_classification):
+    """``get`` works for custom metrics."""
+    report = comparison_estimator_reports_binary_classification
+
+    with pytest.raises(KeyError):
+        report.metrics.get("hello")
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.get("hello").to_dict() == {
+        "DummyClassifier_1": {"Hello": 1},
+        "DummyClassifier_2": {"Hello": 1},
+    }

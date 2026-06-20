@@ -1,8 +1,9 @@
 from importlib.metadata import EntryPoint, EntryPoints
 from re import escape
 from unittest.mock import Mock
+from uuid import uuid4
 
-from pandas import DataFrame, MultiIndex, Series
+from pandas import DataFrame, MultiIndex, Series, Timestamp
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -120,22 +121,50 @@ class TestProject:
             "workspace": "<workspace>",
         }
 
-    def test_init_local_unknown_plugin(self, monkeypatch, tmp_path):
+    def test_init_local_missing_optional_dependency(self, monkeypatch):
+        fake_library_name = uuid4().hex
+
+        def fake_requires(name):
+            assert name == "skore"
+            return [f'{fake_library_name} ; extra == "local"']
+
+        monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
+
+        with raises(
+            ImportError,
+            match=escape(
+                f"Missing library: `{fake_library_name}`. "
+                "You can fix this error by installing `skore[local]`."
+            ),
+        ):
+            Project(mode="local", name="<name>")
+
+    def test_init_local_missing_optional_dependency_without_plugin(self, monkeypatch):
+        """Non-regression test for missing extras before plugin discovery."""
+        fake_library_name = uuid4().hex
+
+        def fake_requires(name):
+            assert name == "skore"
+            return [f'{fake_library_name} ; extra == "local"']
+
         monkeypatch.undo()
+        monkeypatch.setattr("skore._project.dependencies.requires", fake_requires)
         monkeypatch.setattr(
             "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
         )
 
         with raises(
-            ValueError,
+            ImportError,
             match=escape(
-                "The mode `local` is not supported. You need to install "
-                "`skore-local-project` to use it."
+                f"Missing library: `{fake_library_name}`. "
+                "You can fix this error by installing `skore[local]`."
             ),
         ):
             Project(mode="local", name="<name>")
 
-    def test_init_hub(self, FakeHubProject):
+    def test_init_hub(self, FakeHubProject, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+
         project = Project(mode="hub", name="<workspace>/<name>")
 
         assert isinstance(project, Project)
@@ -148,7 +177,9 @@ class TestProject:
             "name": "<name>",
         }
 
-    def test_init_mlflow(self, FakeMlflowProject):
+    def test_init_mlflow(self, FakeMlflowProject, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+
         project = Project(mode="mlflow", name="<name>", tracking_uri="<uri>")
 
         assert isinstance(project, Project)
@@ -160,21 +191,6 @@ class TestProject:
             "name": "<name>",
             "tracking_uri": "<uri>",
         }
-
-    def test_init_hub_unknown_plugin(self, monkeypatch, tmp_path):
-        monkeypatch.undo()
-        monkeypatch.setattr(
-            "skore._project.plugin.entry_points", lambda **kwargs: EntryPoints([])
-        )
-
-        with raises(
-            ValueError,
-            match=escape(
-                "The mode `hub` is not supported. You need to install "
-                "`skore-hub-project` to use it."
-            ),
-        ):
-            Project(mode="hub", name="<workspace>/<name>")
 
     def test_init_exception_wrong_ml_task(self, monkeypatch):
         """If the underlying Project implementation contains reports with
@@ -209,16 +225,19 @@ class TestProject:
         with raises(RuntimeError, match=err_msg):
             Project(mode="local", name="<name>", workspace="<workspace>")
 
-    def test_mode(self):
-        assert Project(mode="local", name="<name>").mode == "local"
-        assert Project(mode="hub", name="<workspace>/<name>").mode == "hub"
-        assert Project(mode="mlflow", name="<name>").mode == "mlflow"
+    def test_mode(self, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
-    def test_name(self):
-        assert Project(mode="local", name="<name>").name == "<name>"
-        assert (
-            Project(mode="hub", name="<workspace>/<name>").name == "<workspace>/<name>"
-        )
+        assert Project(mode="local", name="name").mode == "local"
+        assert Project(mode="hub", name="workspace/name").mode == "hub"
+        assert Project(mode="mlflow", name="name").mode == "mlflow"
+
+    def test_name(self, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+
+        assert Project(mode="local", name="name").name == "name"
+        assert Project(mode="hub", name="workspace/name").name == "workspace/name"
+        assert Project(mode="mlflow", name="name").name == "name"
 
     @mark.parametrize(
         "report",
@@ -275,25 +294,39 @@ class TestProject:
         project = Project(mode="local", name="<name>")
         project._Project__project.summarize.return_value = [
             {
-                "learner": "<learner>",
-                "accuracy": 1.0,
                 "id": "<id>",
+                "key": "<key>",
+                "date": "2024-01-01T00:00:00",
+                "learner": "<learner>",
+                "ml_task": "regression",
+                "report_type": "estimator",
+                "dataset": "<dataset>",
+                "accuracy": 1.0,
             }
         ]
 
         summary = project.summarize()
 
         assert project._Project__project.summarize.called
-        assert isinstance(summary, DataFrame)
         assert isinstance(summary, Summary)
         assert DataFrame.equals(
-            summary,
+            summary.frame(),
             DataFrame(
                 data={
+                    "key": Series(["<key>"], dtype="string", index=[(0, "<id>")]),
+                    "date": Series(
+                        [Timestamp("2024-01-01T00:00:00")], index=[(0, "<id>")]
+                    ),
                     "learner": Series(
                         ["<learner>"],
                         dtype="category",
                         index=[(0, "<id>")],
+                    ),
+                    "report_type": Series(
+                        ["estimator"], dtype="string", index=[(0, "<id>")]
+                    ),
+                    "dataset": Series(
+                        ["<dataset>"], dtype="string", index=[(0, "<id>")]
                     ),
                     "accuracy": Series([1.0], index=[(0, "<id>")]),
                 },
@@ -302,7 +335,7 @@ class TestProject:
         )
 
     def test_summarize_with_skore_local_project(self, monkeypatch, tmpdir):
-        """Smoke test to check that ModelExplorerWidget can be shown."""
+        """Smoke test to check that the summary HTML repr can be shown."""
         from IPython.core.interactiveshell import InteractiveShell
 
         snippet = f"""
@@ -328,7 +361,8 @@ class TestProject:
 
         project = Project(mode="local", name="<project>", workspace=Path(r"{tmpdir}"))
         project.put("<report>", regression)
-        project.summarize()
+        summary = project.summarize()
+        summary._repr_mimebundle_()
         """
 
         monkeypatch.undo()

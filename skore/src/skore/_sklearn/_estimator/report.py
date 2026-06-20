@@ -6,22 +6,24 @@ import uuid
 import warnings
 from dataclasses import asdict
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
 
 import numpy as np
 import skrub
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator, MetaEstimatorMixin, clone
+from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils._response import (
     _check_response_method,
 )
 from sklearn.utils.validation import _num_samples, check_is_fitted
+from skrub._reporting._summarize import summarize_dataframe
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.metrics import MetricRegistry
 from skore._sklearn.types import DataSource, PositiveLabel
@@ -31,9 +33,11 @@ from skore._utils._measure_time import MeasureTime
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
+    from skore._sklearn._checks.accessor import _ChecksAccessor
     from skore._sklearn._estimator.data_accessor import _DataAccessor
     from skore._sklearn._estimator.inspection_accessor import _InspectionAccessor
     from skore._sklearn._estimator.metrics_accessor import _MetricsAccessor
@@ -41,6 +45,11 @@ if TYPE_CHECKING:
 
 
 _STATE_VERSION = 1
+
+
+class PredictTime(TypedDict):
+    train: NotRequired[float]
+    test: NotRequired[float]
 
 
 def _check_estimator_and_data(
@@ -51,7 +60,7 @@ def _check_estimator_and_data(
     y_test: ArrayLike | None,
     train_data: dict | None,
     test_data: dict | None,
-) -> tuple[bool, EstimatorLike, dict | None, dict | None]:
+) -> tuple[bool, skrub.SkrubLearner, dict | None, dict | None]:
     """Check and validate the estimator and data."""
     if is_skrub_learner(estimator):
         initialized_with_data_op = True
@@ -61,9 +70,11 @@ def _check_estimator_and_data(
                 "estimator is a SkrubLearner. "
                 "Provide train_data and test_data instead."
             )
-        test_data = (
-            None if test_data is None else eval_X_y(estimator.data_op, test_data)
-        )
+        if test_data is None:
+            raise TypeError(
+                "test_data must be provided when estimator is a SkrubLearner."
+            )
+        test_data = eval_X_y(estimator.data_op, test_data)
         train_data = (
             None if train_data is None else eval_X_y(estimator.data_op, train_data)
         )
@@ -76,7 +87,12 @@ def _check_estimator_and_data(
                 "Provide X_train, y_train, X_test, y_test instead."
             )
         estimator = to_learner(estimator)
-        test_data = None if X_test is None else {"_skrub_X": X_test, "_skrub_y": y_test}
+        if X_test is None:
+            raise TypeError(
+                "X_test must be provided (unless estimator is a "
+                "SkrubLearner and test_data is provided instead)."
+            )
+        test_data = {"_skrub_X": X_test, "_skrub_y": y_test}
         train_data = (
             None if X_train is None else {"_skrub_X": X_train, "_skrub_y": y_train}
         )
@@ -84,10 +100,7 @@ def _check_estimator_and_data(
 
 
 class EstimatorReport(_BaseReport, DirNamesMixin):
-    """Report for a fitted estimator.
-
-    This class provides a set of tools to quickly validate and inspect a scikit-learn
-    compatible estimator.
+    """Provide tools to validate and inspect a fitted estimator.
 
     Refer to the :ref:`estimator_report` section of the user guide for more details.
 
@@ -139,14 +152,40 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     Attributes
     ----------
     estimator_ : estimator object
-        The cloned or copied estimator.
+        The fitted estimator, exposed with the same interface as ``estimator``:
+
+        - if the input was a regular scikit-learn estimator, its ``predict`` method
+          should be used with arrays as usual, e.g. ``Report.estimator_.predict(X)``;
+        - if the input was a :class:`skrub.DataOp` or a :class:`skrub.SkrubLearner`,
+          ``estimator_`` is a :class:`skrub.SkrubLearner` so its ``predict`` method
+          should be used with an environment dict, e.g.
+          ``Report.estimator_.predict({"a": ..., "b": ...})``.
+
+    estimator : estimator object
+        The estimator that was given as input.
+
+    learner_ : skrub.SkrubLearner
+        The fitted estimator wrapped in a :class:`skrub.SkrubLearner`. If the
+        input was already a :class:`skrub.SkrubLearner`, it is used as-is without
+        further wrapping.
 
     estimator_name_ : str
         The name of the estimator.
 
-    fit_time_ : float or None
-        The time taken to fit the estimator, in seconds. If the estimator is not
-        internally fitted, the value is `None`.
+    ml_task : str
+        The machine learning task inferred from the data and estimator.
+
+    metrics : MetricsAccessor
+        Accessor for computing and plotting metrics.
+
+    inspection : InspectionAccessor
+        Accessor for model inspection (coefficients, feature importance, etc.).
+
+    data : DataAccessor
+        Accessor for dataset analysis.
+
+    checks : ChecksAccessor
+        Accessor for running diagnostic checks.
 
     See Also
     --------
@@ -159,19 +198,22 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from skore import train_test_split
+    >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> X, y = make_classification(random_state=42)
-    >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> estimator = LogisticRegression()
     >>> from skore import EstimatorReport
-    >>> report = EstimatorReport(estimator, **split_data)
+    >>> report = EstimatorReport(
+    ...     estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    ... )
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "checks": {"name": "checks"},
     }
 
     _report_type: Literal["estimator"] = "estimator"
@@ -179,6 +221,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor
+    checks: _ChecksAccessor
 
     def _fit_estimator(
         self,
@@ -227,7 +270,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     ) -> None:
         super().__init__()
         estimator = self._copy_estimator(estimator)
-        self._raw_estimator = estimator
+        self.estimator = estimator
         self._fit = fit
 
         if isinstance(estimator, skrub.DataOp):
@@ -251,20 +294,20 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         if fit == "auto":
             try:
                 check_is_fitted(estimator)
-                self._estimator = estimator
+                self.learner_ = estimator
             except NotFittedError:
-                self._estimator, self._fit_time = self._fit_estimator(
+                self.learner_, self._fit_time = self._fit_estimator(
                     estimator, self._train_data
                 )
         elif fit is True:
-            self._estimator, self._fit_time = self._fit_estimator(
+            self.learner_, self._fit_time = self._fit_estimator(
                 estimator, self._train_data
             )
         else:  # fit is False
-            self._estimator = estimator
+            self.learner_ = estimator
 
+        self._predict_time: PredictTime = {}
         self._pos_label = pos_label
-        self.fit_time_ = self._fit_time
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
         self._cache = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
@@ -284,7 +327,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 f"It should be one of: {labels!r}."
             )
 
-    def get_state(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a serializable representation of the report state.
 
         This state is meant to ease serialization/deserialization of
@@ -292,10 +335,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         versions. In particular, this is more stable than pickling a report
         object directly, which can break when internal implementations change.
         """
-        # split the cache between predictions and results:
+        # split the cache between predictions and results
         pred_key_names = {
             "predict",
-            "predict_time",
             "decision_function",
             "predict_proba",
             "predict_log_proba",
@@ -317,12 +359,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             # -------- CORE STATE ---------
             "metadata": self._metadata,
             "initialized_with_data_op": self._initialized_with_data_op,
-            "raw_estimator": self._raw_estimator,
+            "estimator": self.estimator,
             "ml_task": self._ml_task,
             "fit": self._fit,
-            "fit_time": self.fit_time_,
+            "fit_time": self._fit_time,
+            "predict_time": self._predict_time,
             "pos_label": self._pos_label,
-            "estimator": self._estimator,
+            "learner": self.learner_,
             "data": {
                 "train_data": self._train_data,
                 "test_data": self._test_data,
@@ -338,11 +381,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         }
 
     @classmethod
-    def from_state(cls, state: dict[str, Any]) -> EstimatorReport:
-        """Rebuild a report from :meth:`get_state` output."""
+    def from_dict(cls, state: dict[str, Any]) -> EstimatorReport:
+        """Build a report from :meth:`to_dict` output."""
         version = state.get("version")
         if version != _STATE_VERSION:
-            # in the future, we could support some BW compatibility instead of crashing
+            # For now, no backward compatibility
             raise ValueError(f"Unexpected state version: {version!r}")
 
         report_type = state["metadata"]["report_type"]
@@ -355,10 +398,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
         report._fit = state["fit"]
-        report.fit_time_ = state["fit_time"]
+        report._fit_time = state["fit_time"]
+        report._predict_time = state["predict_time"]
         report._pos_label = state["pos_label"]
-        report._estimator = state["estimator"]
-        report._raw_estimator = state["raw_estimator"]
+        report.learner_ = state["learner"]
+        report.estimator = state["estimator"]
         data = state["data"]
         report._train_data = data["train_data"]
         report._test_data = data["test_data"]
@@ -371,6 +415,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             }
         )
         report._metric_registry = state["metric_registry"]
+        report._checks_registry = list(_BUILTIN_CHECKS)
 
         return report
 
@@ -381,12 +426,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.cache_predictions()
         >>> report.clear_cache()
         >>> report._cache
@@ -396,6 +439,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def cache_predictions(
         self,
+        *,
         data_source: DataSource | Literal["both"] = "both",
     ) -> None:
         """Cache estimator's predictions.
@@ -413,12 +457,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
+        >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.cache_predictions()
         >>> report._cache
         {...}
@@ -438,8 +480,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             )
 
         pred_key = make_cache_key(data_source, "predict")
-        time_key = make_cache_key(data_source, "predict_time")
-
         if pred_key in self._cache:
             return
 
@@ -447,11 +487,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         # from decision_function/predict_proba:
         if not self._can_skip_predict:
             with MeasureTime() as pred_time:
-                self._cache[pred_key] = self._estimator.predict(data)
-            self._cache[time_key] = pred_time()
+                self._cache[pred_key] = self.learner_.predict(data)
+            self._predict_time[data_source] = pred_time()
 
-        has_proba = hasattr(self._estimator, "predict_proba")
-        has_decision = hasattr(self._estimator, "decision_function")
+        has_proba = hasattr(self.learner_, "predict_proba")
+        has_decision = hasattr(self.learner_, "decision_function")
 
         if not (has_proba or has_decision):
             return
@@ -465,7 +505,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             decision_key = make_cache_key(data_source, "decision_function")
             self._cache[decision_key] = response
             if self._can_skip_predict:
-                self._cache[time_key] = pred_time
+                self._predict_time[data_source] = pred_time
                 self._cache[pred_key] = predictions
 
         if has_proba:
@@ -483,7 +523,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             with np.errstate(divide="ignore"):
                 self._cache[log_key] = np.log(response)
             if self._can_skip_predict:
-                self._cache[time_key] = pred_time
+                self._predict_time[data_source] = pred_time
                 self._cache[pred_key] = predictions
 
     def _get_response_and_derived_predictions(
@@ -513,8 +553,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             Time spent computing ``response_method(data)`` in seconds.
         """
         with MeasureTime() as pred_time:
-            response = getattr(self._estimator, response_method)(data)
-        classes = to_estimator(self._estimator).classes_
+            response = getattr(self.learner_, response_method)(data)
+        classes = self.learner_.classes_
         if response_method == "decision_function":
             if self.ml_task == "binary-classification":
                 response = np.vstack((-response, response)).T
@@ -532,13 +572,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         `decision_function(X)`. The result is cached because running the probe
         requires extra predictions.
         """
-        estimator = to_estimator(self._estimator)
-        if isinstance(estimator, MetaEstimatorMixin | Pipeline):
-            return False
-
         response_methods = ["decision_function", "predict_proba"]
         try:
-            method = _check_response_method(estimator, response_methods)
+            method = _check_response_method(self.learner_, response_methods)
         except AttributeError:
             return False
         data = self.train_data if self.test_data is None else self.test_data
@@ -557,7 +593,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             sampled_data = data | {"_skrub_X": X_sample}
 
         # probe:
-        predictions = self._estimator.predict(sampled_data)
+        predictions = self.learner_.predict(sampled_data)
         _, deduced_predictions, _ = self._get_response_and_derived_predictions(
             sampled_data,
             response_method=method.__name__,
@@ -621,7 +657,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train"}
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
@@ -643,17 +679,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Examples
         --------
-        >>> from sklearn.datasets import make_classification
-        >>> from skore import train_test_split
+        >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
-        >>> estimator = LogisticRegression()
-        >>> from skore import EstimatorReport
-        >>> report = EstimatorReport(estimator, **split_data)
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> predictions = report.get_predictions(data_source="test")
         >>> predictions.shape
-        (25,)
+        (114,)
         """
         pos_label = self.pos_label
         if (
@@ -727,14 +761,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return self._ml_task
 
     @property
-    def estimator(self) -> BaseEstimator:
-        return self.estimator_
-
-    @property
-    def estimator_(self) -> BaseEstimator:
+    def estimator_(self) -> EstimatorLike:
+        """The report's fitted estimator."""
         if self._initialized_with_data_op:
-            return self._estimator
-        return to_estimator(self._estimator)
+            return self.learner_
+        return to_estimator(self.learner_)
 
     @property
     def X_train(self) -> ArrayLike | None:
@@ -770,10 +801,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     @property
     def estimator_name_(self) -> str:
-        if isinstance(self._raw_estimator, Pipeline):
-            name = self._raw_estimator[-1].__class__.__name__
+        if isinstance(self.estimator, Pipeline):
+            name = self.estimator[-1].__class__.__name__
         else:
-            name = self._raw_estimator.__class__.__name__
+            name = self.estimator.__class__.__name__
         return name
 
     ####################################################################################
@@ -791,9 +822,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         return f"""{self.__class__.__name__}:
-        {self.estimator_!r}
+        {self.estimator_name_!r}
 
-        {self.metrics.summarize().frame()}"""
+        {self.metrics.summarize(data_source="test").frame()}
+        Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
     def _html_repr_fragments(self) -> dict[str, str]:
         """HTML snippets for the report body (metrics, estimator diagram, data table).
@@ -801,41 +833,25 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
         one report's views in the comparison HTML repr.
         """
-        match self.X_train, self.X_test:
-            case None, None:
-                data_source = None
-            case _, None:
-                data_source = "train"
-            case None, _:
-                data_source = "test"
-            case _:
-                data_source = "both"
-        if data_source is None:
-            table_report_html = "<p>No data provided</p>"
-            metrics_html = "<p>No data provided</p>"
-        else:
-            table_report = skrub.TableReport(
-                self.data._prepare_dataframe_for_display(
-                    data_source=data_source,
-                    with_y=True,
-                    subsample=None,
-                    subsample_strategy="head",
-                    seed=None,
-                ),
-                max_plot_columns=0,
-                max_association_columns=0,
-                verbose=False,
-            )
-            table_report._set_minimal_mode()
-            table_report_html = table_report.html_snippet()
-            metrics_html = (
-                self.metrics.summarize(
-                    data_source="train" if data_source == "train" else "test"
-                )
-                .frame()
-                .reset_index()
-                .to_html(index=False)
-            )
+        table_report = skrub.TableReport(
+            self.data._prepare_dataframe_for_display(
+                data_source="both" if self.X_train is not None else "test",
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            plot_distributions=False,
+            verbose=False,
+        )
+        table_report._set_minimal_mode()
+        table_report_html = table_report.html_snippet()
+        metrics_html = (
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .reset_index()
+            .to_html(index=False)
+        )
         try:
             estimator_html = repair_estimator_html_for_slotted_host(
                 self.estimator_._repr_html_()
@@ -843,13 +859,14 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostic = self.diagnose()
-        diagnostic_html = (
-            "<div class='report-diagnostic-details'>"
-            f"{len(diagnostic.frame(severity='issue'))} issue(s), "
-            f"{len(diagnostic.frame(severity='tip'))} tip(s), "
-            f"{len(diagnostic.frame(severity='passed'))} passed, "
-            f"{diagnostic.n_ignored_codes} ignored."
+        checks_summary = self.checks.summarize(fast_mode=True)
+        checks_summary_html = (
+            "<div class='report-checks-summary-details'>"
+            f"{len(checks_summary.frame(section='issue'))} issue(s), "
+            f"{len(checks_summary.frame(section='tip'))} tip(s), "
+            f"{len(checks_summary.frame(section='passed'))} passed, "
+            f"{len(checks_summary.frame(section='not_applicable'))} not applicable, "
+            f"{checks_summary._n_ignored_codes} ignored."
             "</div>"
         )
 
@@ -857,7 +874,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
-            "diagnostic": diagnostic_html,
+            "checks_summary": checks_summary_html,
         }
 
     def _repr_html_(self) -> str:
@@ -877,13 +894,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
-        diagnose_documentation_url = get_documentation_url(
-            obj=self, method_name="diagnose"
+        checks_documentation_url = get_documentation_url(
+            obj=self, accessor_name="checks"
         )
         help_ctx = asdict(self._build_help_data())
         help_ctx["is_report"] = True
         return render_template(
-            "estimator_report.html.j2",
+            "report/estimator_report.html.j2",
             {
                 "container_id": container_id,
                 "report_class_name": report_class_name,
@@ -891,7 +908,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "diagnose_documentation_url": diagnose_documentation_url,
+                "checks_documentation_url": checks_documentation_url,
                 **fragments,
                 **help_ctx,
             },
@@ -902,3 +919,43 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         output = {"text/plain": repr(self)}
         output["text/html"] = self._repr_html_()
         return output
+
+    def to_markdown(self) -> str:
+        """Return a markdown summary of the report.
+
+        The summary contains four sections (Estimator, Metrics, Checks, Data) that
+        mirror the tabs of the HTML representation. Each section ends with a pointer
+        to the corresponding accessor for full details.
+
+        Returns
+        -------
+        str
+            The markdown summary of the report.
+        """
+        metrics_text = repr(self.metrics.summarize(data_source="test").frame())
+        timings = self.metrics.timings()
+        summary = summarize_dataframe(
+            self.data._prepare_dataframe_for_display(
+                data_source="both" if self.X_train is not None else "test",
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            with_plots=False,
+            with_associations=False,
+            verbose=0,
+        )
+        return render_template(
+            "report/estimator_report_markdown.j2",
+            {
+                **report_markdown_context(self),
+                "fit_time": timings.get("fit_time"),
+                "predict_time": timings.get("predict_time_test"),
+                "metrics_text": metrics_text,
+                **markdown_data_section(
+                    summary,
+                    data_label="full" if self.X_train is not None else "test",
+                ),
+            },
+        )

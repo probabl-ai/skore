@@ -38,7 +38,7 @@ def case_timings_with_predictions(
     comparison_cross_validation_reports_binary_classification,
 ):
     expected_index = pd.Index(
-        ["Fit time (s)", "Predict time test (s)", "Predict time train (s)"],
+        ["Fit time (s)", "Predict time train (s)", "Predict time test (s)"],
         name="Metric",
     )
 
@@ -47,6 +47,17 @@ def case_timings_with_predictions(
     return (
         report,
         "timings",
+        expected_index,
+        expected_columns,
+    )
+
+
+@pytest.fixture
+def case_score(comparison_cross_validation_reports_binary_classification):
+    expected_index = pd.Index(["Score"], name="Metric")
+    return (
+        comparison_cross_validation_reports_binary_classification,
+        "score",
         expected_index,
         expected_columns,
     )
@@ -181,6 +192,7 @@ def case(request):
     [
         "case_timings_no_predictions",
         "case_timings_with_predictions",
+        "case_score",
         "case_accuracy",
         "case_precision",
         "case_recall",
@@ -205,6 +217,7 @@ def test_metrics(case):
     [
         "case_timings_no_predictions",
         "case_timings_with_predictions",
+        "case_score",
         "case_accuracy",
         "case_precision",
         "case_recall",
@@ -283,3 +296,32 @@ def test_precision_recall_pos_label_default(metric):
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result_both_labels = getattr(report.metrics, metric)().reset_index()
     assert result_both_labels["Label"].to_list() == ["A", "B"]
+
+
+# report.metrics.get
+
+
+def test_get(comparison_cross_validation_reports_binary_classification):
+    """``get`` works."""
+    report = comparison_cross_validation_reports_binary_classification
+
+    assert isinstance(report.metrics.get("precision"), pd.DataFrame)
+    with pytest.raises(KeyError):
+        report.metrics.get("non-existing metric")
+
+
+def test_get_custom(comparison_cross_validation_reports_binary_classification):
+    """``get`` works for custom metrics."""
+    report = comparison_cross_validation_reports_binary_classification
+
+    with pytest.raises(KeyError):
+        report.metrics.get("hello")
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.get("hello").to_dict() == {
+        ("mean", "DummyClassifier_1"): {"Hello": 1.0},
+        ("mean", "DummyClassifier_2"): {"Hello": 1.0},
+        ("std", "DummyClassifier_1"): {"Hello": 0.0},
+        ("std", "DummyClassifier_2"): {"Hello": 0.0},
+    }

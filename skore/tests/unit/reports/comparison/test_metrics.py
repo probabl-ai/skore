@@ -100,7 +100,7 @@ def test_available_for_single_report_name(report):
 
     comparison_report = ComparisonReport(reports)
     assert (
-        comparison_report.metrics.available("LinearSVC")
+        comparison_report.metrics.available(report_name="LinearSVC")
         == reports["LinearSVC"].metrics.available()
     )
 
@@ -125,4 +125,4 @@ def test_available_with_unknown_report_name_raises(report):
 
     comparison_report = ComparisonReport(reports)
     with pytest.raises(ValueError, match="Unknown report name"):
-        comparison_report.metrics.available("unknown")
+        comparison_report.metrics.available(report_name="unknown")

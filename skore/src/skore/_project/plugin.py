@@ -22,9 +22,6 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
     compatible with ``skore`` could expose its own plugins, as long as they are
     registered in the right groups and comply with APIs.
 
-    It is usually used to retrieve the plugins exposed by ``skore-local-project``,
-    ``skore-hub-project`` or ``skore-mlflow-project``.
-
     Parameters
     ----------
     group : PluginGroup
@@ -49,14 +46,4 @@ def get(*, group: PluginGroup, mode: ProjectMode) -> Any:
     assert group in GROUPS, f"`group` must be in {GROUPS} (found {group})"
     assert mode in MODES, f"`mode` must be in {MODES} (found {mode})"
 
-    plugins = entry_points(group=group)
-
-    if mode not in plugins.names:
-        raise ValueError(
-            f"The mode `{mode}` is not supported. You need to install "
-            f"`skore-{mode}-project` to use it. You can install it with pip:\n"
-            f'    pip install "skore[{mode}]"\n'
-            f"`skore-{mode}-project` is already included in `skore` conda package."
-        )
-
-    return plugins[mode].load()
+    return entry_points(group=group)[mode].load()

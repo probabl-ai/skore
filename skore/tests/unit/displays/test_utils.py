@@ -1,14 +1,44 @@
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.linear_model import LogisticRegression
 
 from skore import evaluate
 from skore._sklearn._plot.utils import (
     _adjust_fig_size,
+    _downsample_thresholds_indices,
     _get_adjusted_fig_size,
+    _reorder_categoricals_by_appearance,
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
+
+
+def test_reorder_categoricals_by_appearance():
+    """Categorical levels are reordered to their order of appearance.
+
+    Guards the fix for https://github.com/probabl-ai/skore/issues/2925: seaborn draws
+    categorical levels in category order, so the category order must match the order of
+    appearance used to build the legend. This is version-independent, unlike the
+    end-to-end rendering which only desyncs on pandas >= 3.
+    """
+    df = pd.DataFrame(
+        {
+            "estimator": pd.Categorical(["b", "b", "a", "a"], categories=["a", "b"]),
+            "data_source": pd.Categorical(
+                ["train", "test", "train", "test"], categories=["test", "train"]
+            ),
+            "value": [1, 2, 3, 4],
+        }
+    )
+    assert list(df["estimator"].cat.categories) == ["a", "b"]
+    assert list(df["data_source"].cat.categories) == ["test", "train"]
+
+    result = _reorder_categoricals_by_appearance(df, ["estimator", "data_source", None])
+
+    assert list(result["estimator"].cat.categories) == ["b", "a"]
+    assert list(result["data_source"].cat.categories) == ["train", "test"]
+    assert result["value"].tolist() == [1, 2, 3, 4]
 
 
 @pytest.mark.parametrize(
@@ -116,3 +146,41 @@ def test_apostrophe_in_label(binary_classification_data):
     fig = display.plot()
     legend_text = [t.get_text() for t in fig.axes[0].get_legend().get_texts()]
     assert any("A'B" in text for text in legend_text)
+
+
+@pytest.mark.parametrize("n_total", [0, 1, 5, 10, 1_000])
+def test_downsample_thresholds_indices_none(n_total):
+    """With ``max_n=None``, the helper returns ``np.arange(n_total)``."""
+    indices = _downsample_thresholds_indices(n_total, None)
+    np.testing.assert_array_equal(indices, np.arange(n_total))
+
+
+@pytest.mark.parametrize("n_total, max_n", [(5, 5), (5, 10), (0, 2), (1, 2)])
+def test_downsample_thresholds_indices_no_downsampling(n_total, max_n):
+    """When ``n_total <= max_n``, all indices are kept."""
+    indices = _downsample_thresholds_indices(n_total, max_n)
+    np.testing.assert_array_equal(indices, np.arange(n_total))
+
+
+@pytest.mark.parametrize(
+    "n_total, max_n", [(10, 5), (1_000, 100), (1_234, 500), (97, 3)]
+)
+def test_downsample_thresholds_indices_downsampling(n_total, max_n):
+    """When ``n_total > max_n``, exactly ``max_n`` indices are returned and
+    endpoints (0 and ``n_total - 1``) are preserved; indices are sorted and
+    strictly increasing.
+    """
+    indices = _downsample_thresholds_indices(n_total, max_n)
+    assert indices.shape == (max_n,)
+    assert indices[0] == 0
+    assert indices[-1] == n_total - 1
+    # The indices are sorted and strictly increasing (no duplicates) when
+    # ``max_n <= n_total``.
+    assert np.all(np.diff(indices) >= 1)
+
+
+@pytest.mark.parametrize("max_n", [0, 1, -3])
+def test_downsample_thresholds_indices_invalid(max_n):
+    """`max_n_thresholds` smaller than 2 raises a clear ``ValueError``."""
+    with pytest.raises(ValueError, match="must be at least 2"):
+        _downsample_thresholds_indices(10, max_n)

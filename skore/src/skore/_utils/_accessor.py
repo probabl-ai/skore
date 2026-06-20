@@ -63,7 +63,7 @@ def _check_roc_auc(ml_task_and_methods: list[tuple[str, list[str]]]):
         for ml_task, methods in ml_task_and_methods:
             is_supported_ml_task = ml_task in accessor._parent._ml_task
             has_methods = any(
-                hasattr(accessor._parent._estimator, method) for method in methods
+                hasattr(accessor._parent.learner_, method) for method in methods
             )
             are_supported_cases.append(is_supported_ml_task and has_methods)
 
@@ -158,7 +158,7 @@ def _check_estimator_report_has_method(
     method_name: str,
 ) -> Callable:
     def check(accessor: Any) -> bool:
-        estimator_report = accessor._parent.estimator_reports_[0]
+        estimator_report = accessor._parent.reports_[0]
 
         if not hasattr(estimator_report, accessor_name):
             raise AttributeError(
@@ -181,7 +181,7 @@ def _check_estimator_report_has_method(
 def _check_cross_validation_sub_estimator_has_coef() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the underlying estimator has a `coef_` attribute."""
-        return _check_has_coef(accessor._parent.estimator_reports_[0].estimator)
+        return _check_has_coef(accessor._parent.reports_[0].estimator_)
 
     return check
 
@@ -189,9 +189,7 @@ def _check_cross_validation_sub_estimator_has_coef() -> Callable:
 def _check_cross_validation_sub_estimator_has_feature_importances() -> Callable:
     def check(accessor: Any) -> bool:
         """Check if the underlying estimator has a `feature_importances_` attribute."""
-        return _check_has_feature_importances(
-            accessor._parent.estimator_reports_[0].estimator_
-        )
+        return _check_has_feature_importances(accessor._parent.reports_[0].estimator_)
 
     return check
 
@@ -207,7 +205,7 @@ def _check_comparison_report_sub_estimators_have_coef() -> Callable:
         parent = accessor._parent
         if parent._report_type == "comparison-cross-validation":
             parent_estimators = [
-                parent_report.estimator_reports_[0].estimator_
+                parent_report.reports_[0].estimator_
                 for parent_report in parent.reports_.values()
             ]
         elif parent._report_type == "comparison-estimator":
@@ -227,7 +225,7 @@ def _check_comparison_report_sub_estimators_have_feature_importances() -> Callab
         parent = accessor._parent
         if parent._report_type == "comparison-cross-validation":
             parent_estimators = [
-                parent_report.estimator_reports_[0].estimator_
+                parent_report.reports_[0].estimator_
                 for parent_report in parent.reports_.values()
             ]
         elif parent._report_type == "comparison-estimator":

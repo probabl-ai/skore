@@ -10,7 +10,7 @@ from skore import configuration
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.train_test_split.train_test_split import TrainTestSplit
+from skore._sklearn.train_test_split import TrainTestSplit
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -89,8 +89,19 @@ def evaluate(
     Returns
     -------
     report : :class:`~skore.EstimatorReport`, :class:`~skore.CrossValidationReport` \
-        or :class:`~skore.ComparisonReport`
+            or :class:`~skore.ComparisonReport`
         The report corresponding to the evaluation strategy.
+
+    See Also
+    --------
+    :func:`~skore.compare` :
+        Compare already evaluated reports.
+    :class:`~skore.EstimatorReport` :
+        Report for a fitted estimator on a test set.
+    :class:`~skore.CrossValidationReport` :
+        Report for cross-validation of an estimator.
+    :class:`~skore.ComparisonReport` :
+        Report comparing several evaluated models.
 
     Examples
     --------
@@ -129,6 +140,11 @@ def evaluate(
         raise TypeError(
             "X must be a single array-like (or None) when estimator is not a list"
             " or dict."
+        )
+
+    if X is None and y is None and data is None:
+        raise ValueError(
+            "Provide data through X and y or through data to evaluate your estimator."
         )
 
     if isinstance(estimator, (list, dict)):
@@ -204,7 +220,7 @@ def evaluate(
     if isinstance(splitter, float):
         splitter = TrainTestSplit(test_size=splitter)
 
-    if hasattr(splitter, "get_n_splits") and splitter.get_n_splits(X, y) == 1:
+    if isinstance(splitter, TrainTestSplit):
         # It's easier to make a 1-split CrossValidationReport
         # and extract an EstimatorReport from it,
         # than to make an EstimatorReport from scratch
@@ -218,7 +234,7 @@ def evaluate(
                 splitter=splitter,
                 n_jobs=n_jobs,
             )
-        return report.estimator_reports_[0]
+        return report.reports_[0]
 
     return CrossValidationReport(
         estimator,

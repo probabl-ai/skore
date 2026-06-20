@@ -15,6 +15,7 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 from sklearn.base import clone
 from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_score, recall_score
 from sklearn.model_selection import train_test_split
@@ -37,6 +38,7 @@ def check_display_structure(
     data = display.data
 
     assert set(data.columns) == {
+        "metric_name",
         "metric_verbose_name",
         "estimator_name",
         "data_source",
@@ -229,6 +231,38 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
     )
 
 
+def test_default_non_standard_score(binary_classification_data):
+    """
+    If the estimator has a non-standard `.score` method, `summarize` will include it.
+    """
+
+    class CustomScoreEstimator(RandomForestClassifier):
+        def score(self, X, y):
+            return 1
+
+    X, y = binary_classification_data
+    report = EstimatorReport(
+        CustomScoreEstimator(), X_train=X, y_train=y, X_test=X, y_test=y
+    )
+    display = report.metrics.summarize()
+
+    check_display_structure(
+        display,
+        expected_metrics={
+            "Score",
+            "Brier score",
+            "Log loss",
+            "ROC AUC",
+            "Accuracy",
+            "Precision",
+            "Recall",
+            "Fit time (s)",
+            "Predict time (s)",
+        },
+        expected_estimator_name="CustomScoreEstimator",
+    )
+
+
 # Metric strings
 
 
@@ -365,7 +399,7 @@ def test_pos_label_overwrite(metric, metric_fn):
     assert score_A == pytest.approx(metric_fn(y, classifier.predict(X), pos_label="A"))
 
 
-# Cache and data_source
+# Cache
 
 
 def test_cache(forest_binary_classification_with_test):
@@ -380,6 +414,28 @@ def test_cache(forest_binary_classification_with_test):
     with check_cache_unchanged(report._cache):
         result_from_cache = report.metrics.summarize()
     assert_frame_equal(result.data, result_from_cache.data)
+
+
+@pytest.mark.parametrize(
+    "metric, fixture",
+    [
+        ("predict_time", "forest_binary_classification_with_test"),
+        ("precision", "forest_binary_classification_with_test"),
+        ("roc_auc", "forest_binary_classification_with_test"),
+        ("r2", "linear_regression_with_test"),
+    ],
+)
+def test_cache_interaction(request, metric, fixture):
+    """Calling a metric explicitly after calling summarize() should hit the cache."""
+    estimator, X_test, y_test = request.getfixturevalue(fixture)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report.metrics.summarize(metric=metric)
+
+    with check_cache_unchanged(report._cache):
+        getattr(report.metrics, metric)()
+
+
+# Data source
 
 
 def test_data_source_both(forest_binary_classification_data):

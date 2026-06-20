@@ -1,0 +1,54 @@
+{%- autoescape false -%}
+# {{ report_class_name }}: {{ estimator_name }}
+
+## Estimator
+
+- name: `{{ estimator_name }}`
+- kind: {{ estimator_kind }}
+- ml task: {{ ml_task }}
+{%- if fit_time is not none %}
+- fit time: {{ fit_time }}
+{%- endif %}
+{%- if predict_time is not none %}
+- predict time (on test set): {{ predict_time }}
+{%- endif %}
+{%- if pos_label_repr is not none %}
+- pos_label: {{ pos_label_repr }}
+{%- endif %}
+- cross-validation folds: {{ n_folds }}
+- splitter: {{ splitter_repr }}
+
+```text
+{{ estimator_repr }}
+```
+
+Full estimator info: `report.estimator_`.
+
+## Metrics
+
+```text
+{{ metrics_text }}
+
+Get the metrics results and control output format with: `report.metrics.summarize().frame()`.
+```
+
+## Checks (fast mode)
+
+```text
+{{ checks_text }}
+```
+
+Get the full checks results with: `report.checks.summarize()`.
+
+## Data
+
+Computed on the {{ data_label }} dataset (n_rows={{ data_n_rows }}, n_columns={{ data_n_columns }}, n_constant_columns={{ data_n_constant_columns }}).
+
+| column | dtype | null_count | n_unique |
+| ------ | ----- | ---------- | -------- |
+{%- for col in data_columns %}
+| {{ col.name }} | {{ col.dtype }} | {{ col.null_count }} | {{ col.n_unique }} |
+{%- endfor %}
+
+Get the data summary with: `report.data.summarize()`.
+{%- endautoescape %}

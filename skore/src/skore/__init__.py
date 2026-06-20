@@ -1,4 +1,8 @@
-"""Configure logging and global settings."""
+"""Evaluate and compare scikit-learn compatible models with rich reports.
+
+This package provides tools to evaluate estimators, compare models, persist
+experiment results, and inspect model behavior through interactive reports.
+"""
 
 from importlib.metadata import version
 from logging import INFO, NullHandler, getLogger
@@ -11,6 +15,7 @@ from rich.theme import Theme
 
 from skore._config import configuration
 from skore._externals._sklearn_compat import parse_version
+from skore._project._summary import Summary
 from skore._project.login import login
 from skore._project.project import Project
 from skore._sklearn import (
@@ -26,10 +31,12 @@ from skore._sklearn import (
     TrainTestSplit,
     compare,
     evaluate,
-    train_test_split,
 )
-from skore._sklearn._diagnostic import Check, CheckNotApplicable, DiagnosticDisplay
+from skore._sklearn._checks import Check, CheckNotApplicable, ChecksSummaryDisplay
 from skore._sklearn._plot.base import Display
+from skore._sklearn._plot.inspection.calibration_curve import (
+    CalibrationDisplay,
+)
 from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
 from skore._sklearn._plot.inspection.impurity_decrease import (
     ImpurityDecreaseDisplay,
@@ -63,7 +70,7 @@ __all__ = [
     "ComparisonReport",
     "ConfusionMatrixDisplay",
     "CrossValidationReport",
-    "DiagnosticDisplay",
+    "ChecksSummaryDisplay",
     "Display",
     "EstimatorReport",
     "ImpurityDecreaseDisplay",
@@ -73,16 +80,15 @@ __all__ = [
     "PredictionErrorDisplay",
     "Project",
     "RocCurveDisplay",
-    "THREADABLE",
+    "CalibrationDisplay",
+    "Summary",
     "TableReportDisplay",
     "TrainTestSplit",
     "compare",
     "configuration",
-    "console",
     "evaluate",
     "login",
     "show_versions",
-    "train_test_split",
 ]
 
 
@@ -101,6 +107,8 @@ console = Console(
 )
 
 
+# Whether threading is available or not.
+THREADABLE: bool = True
 try:
     from threading import Thread
 
@@ -109,5 +117,3 @@ try:
     thread.join()
 except Exception:
     THREADABLE = False
-else:
-    THREADABLE = True

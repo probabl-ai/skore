@@ -3,6 +3,7 @@
 from logging import getLogger
 
 from skore._project import plugin
+from skore._project.dependencies import assert_optional_dependencies_installed
 from skore._project.types import ProjectMode
 
 logger = getLogger(__name__)
@@ -10,53 +11,53 @@ logger = getLogger(__name__)
 
 def login(*, mode: ProjectMode = "hub", **kwargs):
     """
-    Login to the storage backend.
+    Log in to Skore Hub for the duration of the session (e.g. script).
 
-    It configures the credentials used to communicate with the desired storage backend.
-    It only affects the current session: credentials are stored in memory and are not
-    persisted.
+    This command is only useful if you have an account on Skore Hub and wish
+    to push artifacts to it.
 
-    It must be called at the top of your script.
-
-    Several storage backends are available and their credentials can be configured
-    using the ``mode`` parameter. Please note that both can be configured in the
-    same script without side-effect.
-
-    .. rubric:: Hub mode
-
-    It configures the credentials used to communicate with the ``Skore Hub``, persisting
-    projects remotely.
-
-    In this mode, you must be already registered to the ``Skore Hub``. Also, we
-    recommend that you set up an API key via https://skore.probabl.ai/account
-    and use it to log in.
-
-    .. rubric:: Local mode
-
-    Otherwise, it configures the credentials used to communicate with the ``local``
-    backend, persisting projects on the user machine.
-
-    .. rubric:: MLflow mode
-
-    For MLflow projects, no explicit authentication step is required by ``skore`` and
-    this function is a no-op.
+    By default, it will open a login screen on your browser. However, this login only
+    persists for the lifetime of the Python process (e.g. one run of a script, or one
+    Jupyter session), so you will have to authenticate via your browser at every run.
+    The recommended way to connect to Skore Hub for repeated script runs is using an
+    API key; refer to the Skore Hub documentation for how to create one.
 
     Parameters
     ----------
-    mode : {"local", "hub", "mlflow"}, default="hub"
-        The mode of the storage backend to log in.
+    mode : {"hub", "local", "mlflow"}, default="hub"
+        The mode of the storage backend to log in. If the mode is not "hub", the
+        function is a no-op.
+
     **kwargs : dict
         Extra keyword arguments passed to the login function, depending on its mode.
 
+        Arguments for ``mode="hub"``:
+
         timeout : int, default=600
-            The maximum time in second before raising an error when communicating with
-            the hub. Only available when `mode="hub"`.
+            The time, in seconds, before raising an error if communication with
+            Skore Hub fails.
+
+    Returns
+    -------
+    None
+        For ``mode="local"`` and ``mode="mlflow"``. For ``mode="hub"``, the return
+        value depends on the hub login plugin.
+
+    Examples
+    --------
+    >>> from skore import login
+    >>> login(mode="local")
 
     See Also
     --------
     :class:`~skore.Project` :
         Refer to the :ref:`project` section of the user guide for more details.
     """
+    if mode not in {"hub", "local", "mlflow"}:
+        raise ValueError(f'`mode` must be "hub", "local" or "mlflow" (found {mode})')
+
+    assert_optional_dependencies_installed(mode)
+
     if mode == "local":
         logger.debug("Login to local storage.")
         return

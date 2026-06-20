@@ -15,9 +15,10 @@ import matplotlib.pyplot as plt
 from jinja2 import Environment, FileSystemLoader
 from sphinx.application import Sphinx
 
+# Use California housing dataset for reproducibility, see https://github.com/probabl-ai/skore/issues/2963
 DATA_LOADING_CODE = """\
-from skrub.datasets import fetch_employee_salaries
-dataset = fetch_employee_salaries()
+from skrub.datasets import fetch_california_housing
+dataset = fetch_california_housing()
 df = dataset.X
 y = dataset.y"""
 
@@ -40,10 +41,19 @@ error = report_ridge.metrics.prediction_error()
 error.plot(kind="actual_vs_predicted")"""
 
 PROJECT_CODE = """\
+import numpy as np
+
 project = skore.Project(
     name="adult_census_survey", mode="local"
 )
-project.put("ridge", report_ridge)"""
+for alpha in np.logspace(-5, 5, 11):
+    model = skrub.tabular_pipeline(
+        sklearn.linear_model.Ridge(alpha=alpha)
+    )
+    project.put(
+        f"ridge-{alpha:g}",
+        skore.evaluate(model, df, y, splitter=3),
+    )"""
 
 
 def _code_block(app: Sphinx, code: str) -> str:
@@ -73,6 +83,8 @@ def generate_landing_page(app: Sphinx) -> None:
 
     exec(PROJECT_CODE, ns)
 
+    project_summary_html = ns["project"].summarize()._repr_html_()
+
     env = Environment(loader=FileSystemLoader(str(template_dir)))
     template = env.get_template("landing.html")
 
@@ -83,6 +95,7 @@ def generate_landing_page(app: Sphinx) -> None:
         plot_error=_code_block(app, PLOT_CODE),
         summarize=_code_block(app, SUMMARIZE_FRAME_CODE),
         put_in_project=_code_block(app, PROJECT_CODE),
+        project_summary_html=project_summary_html,
     )
 
     (template_dir / "generated_landing.html").write_text(output)

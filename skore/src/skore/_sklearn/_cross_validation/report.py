@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import uuid
+from collections import defaultdict
 from collections.abc import Generator
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
@@ -9,14 +10,16 @@ from typing import TYPE_CHECKING, Any, Literal
 import skrub
 from joblib import Parallel
 from numpy.typing import ArrayLike
-from sklearn.base import BaseEstimator, clone, is_classifier
+from sklearn.base import clone, is_classifier
 from sklearn.model_selection import check_cv
 from sklearn.pipeline import Pipeline
+from skrub._reporting._summarize import summarize_dataframe
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._diagnostic.base import CheckCode
+from skore._sklearn._checks.base import CheckCode
+from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -25,11 +28,13 @@ from skore._utils._progress_bar import track
 from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
+    from skore._sklearn._checks.accessor import _ChecksAccessor
     from skore._sklearn._cross_validation.data_accessor import _DataAccessor
     from skore._sklearn._cross_validation.inspection_accessor import (
         _InspectionAccessor,
@@ -65,7 +70,7 @@ def _check_estimator_and_data(
     X: ArrayLike | None,
     y: ArrayLike | None,
     data: dict | None,
-) -> tuple[bool, EstimatorLike, dict]:
+) -> tuple[bool, skrub.SkrubLearner, dict]:
     if is_skrub_learner(estimator):
         initialized_with_data_op = True
         if X is not None or y is not None:
@@ -89,10 +94,10 @@ def _check_estimator_and_data(
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
-    """Report for cross-validation results.
+    """Provide a report of cross-validation results.
 
-    Upon initialization, `CrossValidationReport` will clone ``estimator`` according to
-    ``splitter`` and fit the generated estimators. The fitting is done in parallel.
+    Upon initialization, clones ``estimator`` according to ``splitter`` and fits each
+    fold in parallel.
 
     Refer to the :ref:`cross_validation_report` section of the user guide for more
     details.
@@ -152,13 +157,34 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     Attributes
     ----------
     estimator_ : estimator object
-        The cloned or copied estimator.
+        The fitted estimator.
+
+    estimator : estimator object
+        The estimator that was given as input.
+
+    learner_ : skrub.SkrubLearner
+        The estimator wrapped in a skrub Learner.
 
     estimator_name_ : str
         The name of the estimator.
 
-    estimator_reports_ : list of EstimatorReport
+    reports_ : list of EstimatorReport
         The estimator reports for each split.
+
+    ml_task : str
+        The machine learning task inferred from the data and estimator.
+
+    metrics : MetricsAccessor
+        Accessor for computing and plotting metrics aggregated over folds.
+
+    inspection : InspectionAccessor
+        Accessor for model inspection aggregated over folds.
+
+    data : DataAccessor
+        Accessor for dataset analysis.
+
+    checks : ChecksAccessor
+        Accessor for running diagnostic checks.
 
     See Also
     --------
@@ -182,6 +208,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         "data": {"name": "data"},
         "metrics": {"name": "metrics"},
         "inspection": {"name": "inspection"},
+        "checks": {"name": "checks"},
     }
 
     _report_type: Literal["cross-validation"] = "cross-validation"
@@ -189,6 +216,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     metrics: _MetricsAccessor
     inspection: _InspectionAccessor
     data: _DataAccessor
+    checks: _ChecksAccessor
 
     def __init__(
         self,
@@ -201,7 +229,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_jobs: int | None = None,
     ) -> None:
         super().__init__()
-        self._raw_estimator = estimator
+        self.estimator = estimator
         if isinstance(estimator, skrub.DataOp):
             if data is None:
                 data = estimator.skb.get_data()
@@ -211,7 +239,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "Clustering models are not supported yet. Please use a"
                 " classification or regression model instead."
             )
-        self._initialized_with_data_op, self._estimator, self._data = (
+        self._initialized_with_data_op, self.learner_, self._data = (
             _check_estimator_and_data(clone(estimator), X, y, data)
         )
         self._pos_label = pos_label
@@ -219,8 +247,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self._split_indices = tuple(self._splitter.split(self.X, self.y))
         self.n_jobs = n_jobs
 
-        self.estimator_reports_: list[EstimatorReport] = self._fit_estimator_reports()
-        self._ml_task = self.estimator_reports_[0].ml_task
+        self.reports_: list[EstimatorReport] = self._fit_estimator_reports()
+        self._ml_task = self.reports_[0].ml_task
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
@@ -241,12 +269,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 track(
                     parallel(
                         delayed(EstimatorReport)(
-                            clone(self._estimator),
+                            clone(self.learner_),
                             train_data=split["train"],
                             test_data=split["test"],
                             pos_label=self._pos_label,
                         )
-                        for split in self._estimator.data_op.skb.iter_cv_splits(
+                        for split in self.learner_.data_op.skb.iter_cv_splits(
                             environment=self._data, cv=self.split_indices
                         )
                     ),
@@ -261,7 +289,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 track(
                     parallel(
                         delayed(_generate_estimator_report)(
-                            clone(self._raw_estimator),
+                            clone(self.estimator),
                             self.X,
                             self.y,
                             self.pos_label,
@@ -276,7 +304,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 )
             )
 
-    def get_state(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Return a serializable representation of the report state.
 
         This state is meant to ease serialization/deserialization of
@@ -284,7 +312,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         versions. In particular, this is more stable than pickling a report
         object directly, which can break when internal implementations change.
         """
-        sub_states = [report.get_state() for report in self.estimator_reports_]
+        sub_states = [report.to_dict() for report in self.reports_]
         for state in sub_states:
             # data can be reconstructed from X, y and split_indices
             state.pop("data")
@@ -293,18 +321,18 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "version": _STATE_VERSION,
             "metadata": self._metadata,
             "initialized_with_data_op": self._initialized_with_data_op,
-            "raw_estimator": self._raw_estimator,
+            "estimator": self.estimator,
             "ml_task": self.ml_task,
             "pos_label": self.pos_label,
-            "estimator": self._estimator,
+            "learner": self.learner_,
             "data": self._data,
             "split_indices": self._split_indices,
             "estimator_reports": sub_states,
         }
 
     @classmethod
-    def from_state(cls, state: dict[str, Any]) -> CrossValidationReport:
-        """Rebuild a report from :meth:`get_state` output."""
+    def from_dict(cls, state: dict[str, Any]) -> CrossValidationReport:
+        """Rebuild a report from :meth:`to_dict` output."""
         version = state.get("version", 0)
         if version != _STATE_VERSION:
             # in the future, we could support some BW compatibility instead of crashing
@@ -320,17 +348,18 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
         report._pos_label = state["pos_label"]
-        report._estimator = state["estimator"]
-        report._raw_estimator = state["raw_estimator"]
+        report.learner_ = state["learner"]
+        report.estimator = state["estimator"]
         report._data = state["data"]
         report._split_indices = state["split_indices"]
+        report._checks_registry = list(_BUILTIN_CHECKS)
         # TODO? Include splitter in state?
         report._splitter = None
         report.n_jobs = None
 
-        report.estimator_reports_ = []
+        report.reports_ = []
         if report._initialized_with_data_op:
-            split_data_iterator = report._estimator.data_op.skb.iter_cv_splits(
+            split_data_iterator = report.learner_.data_op.skb.iter_cv_splits(
                 environment=report._data,
                 cv=report._split_indices,
             )
@@ -367,8 +396,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "test_data": split_data["test"],
                 },
             }
-            sub_report = EstimatorReport.from_state(sub_state_with_data)
-            report.estimator_reports_.append(sub_report)
+            sub_report = EstimatorReport.from_dict(sub_state_with_data)
+            report.reports_.append(sub_report)
 
         return report
 
@@ -385,10 +414,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
         >>> report.clear_cache()
-        >>> report.estimator_reports_[0]._cache
+        >>> report.reports_[0]._cache
         {}
         """
-        for report in self.estimator_reports_:
+        for report in self.reports_:
             report.clear_cache()
 
     def cache_predictions(
@@ -405,11 +434,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
         >>> report.cache_predictions()
-        >>> report.estimator_reports_[0]._cache
+        >>> report.reports_[0]._cache
         {...}
         """
         for estimator_report in track(
-            self.estimator_reports_,
+            self.reports_,
             description="Cross-validation predictions for split",
         ):
             estimator_report.cache_predictions()
@@ -429,7 +458,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train"}
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
@@ -471,7 +500,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 data_source=data_source,
                 response_method=response_method,
             )
-            for report in self.estimator_reports_
+            for report in self.reports_
         ]
 
     def create_estimator_report(
@@ -501,45 +530,37 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             variables contained in the DataOp that was used to create this learner
             (e.g. ``{"X": X_df, "other_table": df, ...}``).
 
+        Returns
+        -------
+        :class:`~skore.EstimatorReport`
+            The estimator report.
+
         Examples
         --------
         >>> from sklearn.datasets import make_classification
         >>> from sklearn.ensemble import RandomForestClassifier
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import ComparisonReport, CrossValidationReport
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import evaluate
         >>> X, y = make_classification(random_state=42)
         >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-        >>> linear_report = CrossValidationReport(
-        ...     LogisticRegression(random_state=42), X_train, y_train
+        >>> forest_report = evaluate(
+        ...     RandomForestClassifier(random_state=42), X_train, y_train, splitter=5
         ... )
-        >>> forest_report = CrossValidationReport(
-        ...     RandomForestClassifier(random_state=42), X_train, y_train
-        ... )
-        >>> comparison_report = ComparisonReport([linear_report, forest_report])
-        >>> summary = comparison_report.metrics.summarize().frame()
-
-        >>> # Notice that e.g. the RandomForestClassifier performs best
         >>> final_report = forest_report.create_estimator_report(
         ...     X_test=X_test, y_test=y_test
         ... )
         >>> final_report.metrics.summarize().frame()
-
-        Returns
-        -------
-        report : :class:`~skore.EstimatorReport`
-            The estimator report.
         """
         if self._initialized_with_data_op:
             report = EstimatorReport(
-                self._estimator,
+                self.learner_,
                 train_data=self._data,
                 test_data=test_data,
                 pos_label=self._pos_label,
             )
         else:
             report = EstimatorReport(
-                self._raw_estimator,
+                self.estimator,
                 X_train=self.X,
                 y_train=self.y,
                 X_test=X_test,
@@ -549,26 +570,37 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return report
 
     def _aggregate_checks(
-        self, ignored_codes: set[CheckCode]
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
-        total_splits = len(self.estimator_reports_)
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
+        total_splits = len(self.reports_)
         all_applicable_codes: set[CheckCode] = set()
-        positives_by_code: dict[CheckCode, list[dict]] = {}
+        all_not_applicable_codes: set[CheckCode] = set()
+        positives_by_code: defaultdict[CheckCode, list[dict]] = defaultdict(list)
+        ref_by_code: dict[CheckCode, dict] = {}
 
-        for estimator_report in self.estimator_reports_:
-            estimator_report.add_checks(self._checks_registry)
-            results, applicable_codes = estimator_report._get_results(ignored_codes)
+        for estimator_report in self.reports_:
+            estimator_report.checks.add(self._checks_registry)
+            results, applicable_codes, not_applicable_codes = (
+                estimator_report._get_results(ignored_codes, fast_mode=fast_mode)
+            )
             all_applicable_codes |= applicable_codes
-            for code, diagnostic in results.items():
-                if diagnostic["explanation"] is not None:
-                    positives_by_code.setdefault(code, []).append(diagnostic)
+            all_not_applicable_codes |= not_applicable_codes
+            for code, check_result in results.items():
+                ref_by_code.setdefault(code, check_result)
+                if check_result["explanation"] is not None:
+                    positives_by_code[code].append(check_result)
 
-        issues: dict[CheckCode, dict] = {}
+        all_not_applicable_codes -= all_applicable_codes
+
+        aggregated: dict[CheckCode, dict] = {}
         for code in all_applicable_codes:
-            positives = positives_by_code.get(code, [])
+            positives = positives_by_code[code]
             if len(positives) > total_splits / 2:
                 ref = positives[0]
-                issues[code] = {
+                aggregated[code] = {
                     "title": ref["title"],
                     "docs_url": ref.get("docs_url"),
                     "explanation": (
@@ -576,28 +608,41 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     ),
                     "severity": ref.get("severity"),
                 }
-        return issues, all_applicable_codes
+            else:
+                ref = ref_by_code[code]
+                aggregated[code] = {
+                    "title": ref["title"],
+                    "docs_url": ref.get("docs_url"),
+                    "explanation": None,
+                    "severity": ref.get("severity"),
+                }
+        for code in all_not_applicable_codes:
+            ref = ref_by_code[code]
+            aggregated[code] = {
+                "title": ref["title"],
+                "docs_url": ref.get("docs_url"),
+                "explanation": None,
+                "severity": ref.get("severity"),
+            }
+        return aggregated, all_applicable_codes, all_not_applicable_codes
 
     @property
     def ml_task(self) -> str:
         return self._ml_task
 
     @property
-    def estimator(self) -> BaseEstimator:
-        return self.estimator_
-
-    @property
-    def estimator_(self) -> BaseEstimator:
+    def estimator_(self) -> EstimatorLike:
+        """The report's fitted estimator."""
         if self._initialized_with_data_op:
-            return self._estimator
-        return to_estimator(self._estimator)
+            return self.learner_
+        return to_estimator(self.learner_)
 
     @property
     def estimator_name_(self) -> str:
-        if isinstance(self._raw_estimator, Pipeline):
-            name = self._raw_estimator[-1].__class__.__name__
+        if isinstance(self.estimator, Pipeline):
+            name = self.estimator[-1].__class__.__name__
         else:
-            name = self._raw_estimator.__class__.__name__
+            name = self.estimator.__class__.__name__
         return name
 
     @property
@@ -639,7 +684,67 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        return f"{self.__class__.__name__}(estimator={self.estimator_}, ...)"
+        return f"""{self.__class__.__name__}:
+        {self.estimator_name_!r}
+
+        {
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .droplevel(level=0, axis="columns")
+        }
+        Call `report.to_markdown()` for a markdown summary of the report's contents."""
+
+    def to_markdown(self) -> str:
+        """Return a markdown summary of the report.
+
+        The summary contains four sections (Results, Checks, Estimator, Data) that
+        mirror the tabs of the HTML representation. Each section ends with a pointer
+        to the corresponding accessor for full details.
+
+        Returns
+        -------
+        str
+            The markdown summary of the report.
+        """
+        metrics_text = repr(
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .droplevel(level=0, axis="columns")
+        )
+        timings = self.metrics.timings()
+        summary = summarize_dataframe(
+            self.data._prepare_dataframe_for_display(
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            with_plots=False,
+            with_associations=False,
+            verbose=0,
+        )
+        return render_template(
+            "report/cross_validation_report_markdown.j2",
+            {
+                **report_markdown_context(self),
+                "fit_time": (
+                    f"{timings.loc['Fit time (s)', 'mean']:.3f} s"
+                    f" (± {timings.loc['Fit time (s)', 'std']:.3f})"
+                ),
+                "predict_time": (
+                    f"{timings.loc['Predict time test (s)', 'mean']:.3f} s"
+                    f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
+                ),
+                "n_folds": len(self.reports_),
+                "splitter_repr": (
+                    repr(self.splitter)
+                    if self.splitter is not None
+                    else f"{len(self.split_indices)} folds"
+                ),
+                "metrics_text": metrics_text,
+                **markdown_data_section(summary, data_label="full"),
+            },
+        )
 
     def _html_repr_fragments(self) -> dict[str, str]:
         """HTML snippets for the report body (metrics, estimator diagram, data table).
@@ -660,8 +765,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
         table_report = skrub.TableReport(
             df,
-            max_plot_columns=0,
-            max_association_columns=0,
+            plot_distributions=False,
             verbose=False,
         )
         table_report._set_minimal_mode()
@@ -674,13 +778,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        diagnostic = self.diagnose()
-        diagnostic_html = (
-            "<div class='report-diagnostic-details'>"
-            f"{len(diagnostic.frame(severity='issue'))} issue(s), "
-            f"{len(diagnostic.frame(severity='tip'))} tip(s), "
-            f"{len(diagnostic.frame(severity='passed'))} passed, "
-            f"{diagnostic.n_ignored_codes} ignored."
+        checks_summary = self.checks.summarize(fast_mode=True)
+        checks_summary_html = (
+            "<div class='report-checks-summary-details'>"
+            f"{len(checks_summary.frame(section='issue'))} issue(s), "
+            f"{len(checks_summary.frame(section='tip'))} tip(s), "
+            f"{len(checks_summary.frame(section='passed'))} passed, "
+            f"{len(checks_summary.frame(section='not_applicable'))} not applicable, "
+            f"{checks_summary._n_ignored_codes} ignored."
             "</div>"
         )
 
@@ -688,7 +793,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             "metrics_summary": metrics_html,
             "estimator_display": estimator_html,
             "table_report": table_report_html,
-            "diagnostic": diagnostic_html,
+            "checks_summary": checks_summary_html,
         }
 
     def _repr_html_(self) -> str:
@@ -703,13 +808,13 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             obj=self, accessor_name="inspection"
         )
         data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
-        diagnose_documentation_url = get_documentation_url(
-            obj=self, method_name="diagnose"
+        checks_documentation_url = get_documentation_url(
+            obj=self, accessor_name="checks"
         )
         help_ctx = asdict(self._build_help_data())
         help_ctx["is_report"] = True
         return render_template(
-            "cross_validation_report.html.j2",
+            "report/cross_validation_report.html.j2",
             {
                 "container_id": container_id,
                 "report_class_name": report_class_name,
@@ -717,7 +822,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "metrics_accessor_doc_url": metrics_accessor_doc_url,
                 "inspection_accessor_doc_url": inspection_accessor_doc_url,
                 "data_accessor_doc_url": data_accessor_doc_url,
-                "diagnose_documentation_url": diagnose_documentation_url,
+                "checks_documentation_url": checks_documentation_url,
                 **fragments,
                 **help_ctx,
             },
