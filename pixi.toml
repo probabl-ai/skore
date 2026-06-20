@@ -37,13 +37,21 @@ mlflow = "3.*"
 [feature.pandas2.dependencies]
 pandas = "2.*"
 
-[feature.test.pypi-dependencies]
-skore = { path = "skore", editable = true, extras = ["test"] }
-
 [feature.test.tasks]
 tests = { cmd = "pytest src/ tests/ --no-cov", cwd = "skore" }
 tests-coverage = { cmd = "pytest src/ tests/ --showlocals --durations=20 --junitxml=coverage/pytest.xml -o junit_family=legacy --cov-config=pyproject.toml --cov=skore --cov-report=", cwd = "skore" }
 coverage-combine = { cmd = "(coverage combine --append || true) && coverage xml -o coverage/coverage.xml", cwd = "skore" }
+
+# `skore` is installed in two flavours depending on the environment:
+# - `editable`: an editable install for local development, so source changes are
+#   picked up without rebuilding (used by the `default` environment).
+# - `wheel`: a regular (built) install, so the CI matrix tests the package exactly
+#   as a user would consume it instead of testing `src/` directly.
+[feature.editable.pypi-dependencies]
+skore = { path = "skore", editable = true, extras = ["test"] }
+
+[feature.wheel.pypi-dependencies]
+skore = { path = "skore", extras = ["test"] }
 
 [feature.lint.dependencies]
 pre-commit = "*"
@@ -76,17 +84,20 @@ docs = { cmd = "make html", cwd = "sphinx" }
 scripts = ["scripts/activate_dot.sh"]
 
 [environments]
-py311-sklearn16 = ["py311", "sklearn16", "test"]
-py311-sklearn16-mlflow2 = ["py311", "sklearn16", "mlflow2", "test"]
-py311-sklearn19 = ["py311", "sklearn19", "test"]
-py312-sklearn19 = ["py312", "sklearn19", "test"]
-py313-sklearn16 = ["py313", "sklearn16", "test"]
-py313-sklearn19 = ["py313", "sklearn19", "test"]
-py314-sklearn17 = ["py314", "sklearn17", "test"]
-py314-sklearn18 = ["py314", "sklearn18", "test"]
-py314-sklearn19 = ["py314", "sklearn19", "test"]
-py314-sklearn19-pandas2 = ["py314", "sklearn19", "pandas2", "test"]
-py314-sklearn19-mlflow3 = ["py314", "sklearn19", "mlflow3", "test"]
+# Default environment for local development: latest supported stack with an
+# editable install, so `pixi run tests` reflects local source changes.
+default = ["py314", "sklearn19", "test", "editable"]
+py311-sklearn16 = ["py311", "sklearn16", "test", "wheel"]
+py311-sklearn16-mlflow2 = ["py311", "sklearn16", "mlflow2", "test", "wheel"]
+py311-sklearn19 = ["py311", "sklearn19", "test", "wheel"]
+py312-sklearn19 = ["py312", "sklearn19", "test", "wheel"]
+py313-sklearn16 = ["py313", "sklearn16", "test", "wheel"]
+py313-sklearn19 = ["py313", "sklearn19", "test", "wheel"]
+py314-sklearn17 = ["py314", "sklearn17", "test", "wheel"]
+py314-sklearn18 = ["py314", "sklearn18", "test", "wheel"]
+py314-sklearn19 = ["py314", "sklearn19", "test", "wheel"]
+py314-sklearn19-pandas2 = ["py314", "sklearn19", "pandas2", "test", "wheel"]
+py314-sklearn19-mlflow3 = ["py314", "sklearn19", "mlflow3", "test", "wheel"]
 sphinx = ["py314", "sklearn19", "sphinx"]
 lint = ["py312", "lint"]
 export = ["py311", "export"]

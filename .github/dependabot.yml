@@ -10,5 +10,6 @@ updates:
       prefix: "chore(dependencies): GITHUB-ACTIONS"
 
 # Python deps are now resolved by pixi (see `pixi.toml` / `pixi.lock`).
-# Dependabot has no native pixi ecosystem; refresh the lockfile with `pixi update`
-# (manually or via a scheduled workflow).
+# Dependabot has no native pixi ecosystem; the lockfile is refreshed by the
+# `.github/workflows/update-pixi-lock.yml` scheduled workflow (or manually with
+# `pixi lock`).

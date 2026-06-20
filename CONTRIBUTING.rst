@@ -109,12 +109,17 @@ First, install pixi by following the `official installation instructions
 
 pixi creates an isolated environment for you (you do not need to create a virtual
 environment yourself) and downloads the dependencies on first use. The environments are
-named in the ``[environments]`` table of ``pixi.toml``. The most common commands are:
+named in the ``[environments]`` table of ``pixi.toml``. The ``default`` environment
+targets the latest supported Python/scikit-learn stack and is used when no environment is
+given. The most common commands are:
 
 .. code-block:: bash
 
-    # Run the test suite in a given environment
-    pixi run -e py311-sklearn19 tests
+    # Run the test suite in the default environment
+    pixi run tests
+
+    # Run the test suite in a specific environment from the matrix
+    pixi run -e py311-sklearn16 tests
 
     # Run the linters (ruff, pre-commit hooks, ...)
     pixi run -e lint lint
@@ -151,13 +156,15 @@ pre-commit with:
 
 .. code-block:: bash
 
-    make install-skore
+    python -m pip install --upgrade --editable './skore[test,sphinx,dev]'
+    pre-commit install
 
 On `old CPU architecture <https://github.com/pola-rs/polars?tab=readme-ov-file#legacy>`_ to get the support of ``polars``:
 
 .. code-block:: bash
 
-    make install-skore-lts-cpu
+    python -m pip install --upgrade --editable './skore[test-lts-cpu,sphinx-lts-cpu,dev]'
+    pre-commit install
 
 Consider re-executing this command each time you rebase your branch with main, as dependencies can change.
 
@@ -267,7 +274,11 @@ To run the tests locally, you may run:
 
 .. code-block:: bash
 
-    make test
+    # With pixi (uses the default environment)
+    pixi run tests
+
+    # Or, in a plain virtual environment, from the `skore` directory
+    cd skore && pytest
 
 Linting
 -------
@@ -276,7 +287,11 @@ We use the linter ruff to make sure that the code is formatted correctly:
 
 .. code-block:: bash
 
-    make lint
+    # With pixi
+    pixi run -e lint lint
+
+    # Or, in a plain virtual environment
+    pre-commit run --all-files
 
 Pre-commit Hooks
 ^^^^^^^^^^^^^^^^
