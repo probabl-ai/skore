@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
 from pandas import Timestamp, isna, to_datetime
@@ -18,8 +19,6 @@ from skore._project._sync_result import (
 from skore._project.types import ConflictPolicy, SyncDirection
 
 if TYPE_CHECKING:
-    from pathlib import Path
-
     from skore._project.project import Project
 
 
@@ -55,7 +54,8 @@ def _sync_registry_for_pair(left: Project, right: Project) -> SyncRegistry | Non
     for project in (left, right):
         if project.mode != "local":
             continue
-        workspace = project._Project__project.workspace  # type: ignore[attr-defined]
+        workspace = project.workspace
+        assert isinstance(workspace, Path)  # local mode always yields a Path
         candidates.append(
             (project_uri(mode=project.mode, name=project.name), workspace)
         )

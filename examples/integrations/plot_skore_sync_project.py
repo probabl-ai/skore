@@ -27,7 +27,7 @@ X, y = make_regression(random_state=42)
 report = evaluate(LinearRegression(), X, y, splitter=0.2)
 
 offline_dir = TemporaryDirectory()
-offline = Project("offline-xp", workspace=Path(offline_dir.name))
+offline = Project(name="offline-xp", mode="local", workspace=Path(offline_dir.name))
 offline.put("baseline", report)
 
 # %%
@@ -35,13 +35,20 @@ offline.put("baseline", report)
 # =====================================================
 #
 # Here we simulate uploading to a remote backend with a second local workspace.
-# Replace ``remote`` with ``Project("workspace/project", mode="hub")`` after
-# calling ``skore.login(mode="hub")``, or with an MLflow experiment project.
+# Replace ``remote`` with ``Project(name="project", mode="hub", workspace="my-team")``
+# after calling ``skore.login(mode="hub")``, or with an MLflow experiment project.
 remote_dir = TemporaryDirectory()
-remote = Project("remote-xp", workspace=Path(remote_dir.name))
+remote = Project(name="remote-xp", mode="local", workspace=Path(remote_dir.name))
 
 result = offline.sync_with(remote, direction="put")
 result.summary()
+
+# %%
+# As a shortcut, you can pass the target mode instead of building the counterpart
+# project yourself. It reuses ``offline.name`` and forwards the mode-specific
+# arguments (``workspace`` for hub, ``tracking_uri`` for mlflow), for example::
+#
+#     offline.sync_with("hub", workspace="my-team", direction="put")
 
 # %%
 # Inspect the remote project summary

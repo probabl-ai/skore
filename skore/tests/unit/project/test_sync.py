@@ -329,6 +329,28 @@ def test_sync_with_ml_task_mismatch(workspaces, regression_report):
         left.sync_with(right)
 
 
+def test_sync_with_mode_string(workspaces, regression_report):
+    left_ws, right_ws = workspaces
+    source = Project("shared", mode="local", workspace=left_ws)
+    source.put("baseline", regression_report)
+
+    # The counterpart is built as Project("shared", mode="local", workspace=right_ws).
+    result = source.sync_with("local", workspace=right_ws, direction="put")
+
+    assert len(result.put) == 1
+    destination = Project("shared", mode="local", workspace=right_ws)
+    assert len(destination.summarize().frame()) == 1
+
+
+def test_sync_with_kwargs_requires_mode_string(workspaces, regression_report):
+    left_ws, right_ws = workspaces
+    source = Project("source", mode="local", workspace=left_ws)
+    destination = Project("destination", mode="local", workspace=right_ws)
+
+    with pytest.raises(TypeError, match="only supported when `other` is a mode string"):
+        source.sync_with(destination, workspace=right_ws)
+
+
 def test_sync_result_summary():
     result = SyncResult(put=(), got=(), skipped=(), conflicts=(), failed=())
     assert result.summary() == "put 0, got 0, skipped 0, conflicts 0"

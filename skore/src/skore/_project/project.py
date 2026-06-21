@@ -392,24 +392,29 @@ class Project:
 
     def sync_with(
         self,
-        other: Project,
+        other: Project | ProjectMode,
         *,
         direction: SyncDirection = "both",
         on_conflict: ConflictPolicy = "latest_wins",
         dry_run: bool = False,
+        **kwargs: Any,
     ) -> SyncResult:
         """
         Synchronize this project with another project in a different mode.
 
         Use this method to reconcile reports between local, hub, and mlflow backends.
         Typical offline workflows persist reports locally, then call
-        ``local.sync_with(hub, direction="put")`` once connectivity is restored.
+        ``local.sync_with("hub", workspace="my-workspace", direction="put")`` once
+        connectivity is restored.
 
         Parameters
         ----------
-        other : Project
-            The project to synchronize with. Must use a different backend than
-            ``self`` (or a different local workspace).
+        other : Project or {"hub", "local", "mlflow"}
+            The project to synchronize with. Either an existing :class:`Project`
+            instance, or a target mode given as a string. When a mode is given, the
+            counterpart project is built as ``Project(self.name, mode=other,
+            **kwargs)``, i.e. it reuses this project's :attr:`name` and forwards the
+            mode-specific keyword arguments below.
         direction : {"put", "get", "both"}, default="both"
             Direction of synchronization relative to ``self``.
 
@@ -423,6 +428,11 @@ class Project:
         dry_run : bool, default=False
             When ``True``, compute the synchronization plan without transferring
             reports.
+        **kwargs : dict
+            Mode-specific arguments used to build the counterpart project when
+            ``other`` is a mode string (e.g. ``workspace`` for ``"hub"`` or
+            ``"local"``, ``tracking_uri`` for ``"mlflow"``). Must be empty when
+            ``other`` is already a :class:`Project`.
 
         Returns
         -------
@@ -433,7 +443,25 @@ class Project:
         --------
         :class:`~skore.SyncResult` :
             Details of the synchronization outcome.
+
+        Examples
+        --------
+        Synchronize with an explicit counterpart project:
+
+        >>> local.sync_with(hub, direction="put")  # doctest: +SKIP
+
+        Or let the shortcut build it from this project's name:
+
+        >>> local.sync_with("hub", workspace="team")  # doctest: +SKIP
         """
+        if isinstance(other, str):
+            other = Project(self.name, mode=other, **kwargs)
+        elif kwargs:
+            raise TypeError(
+                "Extra keyword arguments are only supported when `other` is a mode "
+                "string; pass a fully constructed Project otherwise."
+            )
+
         return _sync_with(
             self,
             other,
