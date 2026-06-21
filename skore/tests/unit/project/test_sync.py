@@ -302,6 +302,16 @@ def test_sync_with_cannot_sync_with_self(workspaces):
         project.sync_with(project)
 
 
+def test_sync_with_same_backend_is_rejected(workspaces):
+    left_ws, _ = workspaces
+    # Two distinct objects pointing at the same name + workspace are the same backend.
+    a = Project("dup", mode="local", workspace=left_ws)
+    b = Project("dup", mode="local", workspace=left_ws)
+
+    with pytest.raises(ValueError, match="Cannot synchronize a project with itself"):
+        a.sync_with(b)
+
+
 def test_sync_with_ml_task_mismatch(workspaces, regression_report):
     from sklearn.datasets import make_classification
     from sklearn.linear_model import LogisticRegression

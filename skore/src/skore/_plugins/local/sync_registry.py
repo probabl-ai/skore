@@ -30,9 +30,14 @@ class SyncRecord(TypedDict):
     remotes: dict[str, RemoteLink]
 
 
-def project_uri(*, mode: str, name: str) -> str:
-    """Return a stable identifier for a project backend."""
-    return f"{mode}:{name}"
+def project_uri(*, mode: str, name: str, workspace: str | Path | None = None) -> str:
+    """Return a stable identifier for a project backend.
+
+    ``workspace`` is the per-mode discriminator that distinguishes two backends
+    sharing the same ``mode`` and ``name`` (the local workspace path, the hub
+    workspace name, or the mlflow tracking URI).
+    """
+    return f"{mode}:{workspace}:{name}"
 
 
 class SyncRegistry:

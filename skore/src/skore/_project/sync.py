@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 from pandas import Timestamp, isna, to_datetime
 
@@ -44,6 +44,19 @@ class _Op:
     key: str
 
 
+def _project_uri(project: Project) -> str:
+    """Return a backend identifier that also distinguishes same-named projects.
+
+    The discriminator is the local workspace path, the hub workspace name, or the
+    mlflow tracking URI, so two backends sharing ``mode`` and ``name`` (but living
+    in different workspaces/servers) never collide.
+    """
+    discriminator = (
+        project.tracking_uri if project.mode == "mlflow" else project.workspace
+    )
+    return project_uri(mode=project.mode, name=project.name, workspace=discriminator)
+
+
 def _sync_registry_for_pair(left: Project, right: Project) -> SyncRegistry | None:
     """Return a registry whose location is independent of argument order.
 
@@ -54,11 +67,9 @@ def _sync_registry_for_pair(left: Project, right: Project) -> SyncRegistry | Non
     for project in (left, right):
         if project.mode != "local":
             continue
-        workspace = project.workspace
-        assert isinstance(workspace, Path)  # local mode always yields a Path
-        candidates.append(
-            (project_uri(mode=project.mode, name=project.name), workspace)
-        )
+        # ``Project.workspace`` is typed as ``Path | str | None``; local always Path.
+        workspace = cast(Path, project.workspace)
+        candidates.append((_project_uri(project), workspace))
 
     if not candidates:
         return None
@@ -321,13 +332,14 @@ def sync_with(
 
     See :meth:`~skore.Project.sync_with` for the public API documentation.
     """
-    if self is other:
+    self_uri = _project_uri(self)
+    other_uri = _project_uri(other)
+
+    if self is other or self_uri == other_uri:
         raise ValueError("Cannot synchronize a project with itself.")
 
     _validate_ml_task_compatibility(self, other)
 
-    self_uri = project_uri(mode=self.mode, name=self.name)
-    other_uri = project_uri(mode=other.mode, name=other.name)
     registry = _sync_registry_for_pair(self, other)
 
     self_refs = _latest_by_key(self)
