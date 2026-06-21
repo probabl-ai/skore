@@ -9,8 +9,10 @@ from pandas import DataFrame, Index, MultiIndex, RangeIndex
 
 from skore._project import plugin
 from skore._project._summary import Summary
+from skore._project._sync_result import SyncResult
 from skore._project.dependencies import assert_optional_dependencies_installed
-from skore._project.types import ProjectMode
+from skore._project.sync import sync_with as _sync_with
+from skore._project.types import ConflictPolicy, ProjectMode, SyncDirection
 
 if TYPE_CHECKING:
     from skore import CrossValidationReport, EstimatorReport
@@ -341,6 +343,58 @@ class Project:
                 ]
             )
         return Summary(frame, self.__project)
+
+    def sync_with(
+        self,
+        other: Project,
+        *,
+        direction: SyncDirection = "both",
+        on_conflict: ConflictPolicy = "latest_wins",
+        dry_run: bool = False,
+    ) -> SyncResult:
+        """
+        Synchronize this project with another project in a different mode.
+
+        Use this method to reconcile reports between local, hub, and mlflow backends.
+        Typical offline workflows persist reports locally, then call
+        ``local.sync_with(hub, direction="put")`` once connectivity is restored.
+
+        Parameters
+        ----------
+        other : Project
+            The project to synchronize with. Must use a different backend than
+            ``self`` (or a different local workspace).
+        direction : {"put", "get", "both"}, default="both"
+            Direction of synchronization relative to ``self``.
+
+            - ``"put"`` transfers reports from ``self`` to ``other`` only.
+            - ``"get"`` transfers reports from ``other`` to ``self`` only.
+            - ``"both"`` performs bidirectional reconciliation.
+        on_conflict : {"latest_wins", "source_wins", "destination_wins", "skip", \
+                "keep_both", "error"}, default="latest_wins"
+            Policy applied when the same key refers to different reports on both
+            sides.
+        dry_run : bool, default=False
+            When ``True``, compute the synchronization plan without transferring
+            reports.
+
+        Returns
+        -------
+        result : SyncResult
+            Summary of put, got, skipped, and conflicting reports.
+
+        See Also
+        --------
+        :class:`~skore.SyncResult` :
+            Details of the synchronization outcome.
+        """
+        return _sync_with(
+            self,
+            other,
+            direction=direction,
+            on_conflict=on_conflict,
+            dry_run=dry_run,
+        )
 
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()

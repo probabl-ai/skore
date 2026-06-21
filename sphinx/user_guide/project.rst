@@ -29,3 +29,28 @@ returned by :meth:`Project.summarize`. This method returns a list of
 
 To retrieve a specific report for which you have its `id`, use the method
 :meth:`Project.get` to retrieve the :class:`EstimatorReport`.
+
+Synchronizing across modes
+--------------------------
+
+Projects in different modes (``local``, ``hub``, ``mlflow``) can be reconciled with
+:meth:`Project.sync_with`. This is useful when you work offline in local mode and upload
+experiments once connectivity is restored:
+
+.. code-block:: python
+
+    from skore import Project, login
+
+    local = Project("my-xp", mode="local")
+    local.put("baseline", report)
+
+    login(mode="hub")
+    hub = Project("my-workspace/my-xp", mode="hub")
+
+    result = local.sync_with(hub, direction="put")
+    print(result.summary())
+
+Use ``direction="get"`` to download remote reports locally, or ``direction="both"`` for
+bidirectional reconciliation. When the same key refers to different reports on both
+sides, control the outcome with ``on_conflict`` (for example ``"latest_wins"`` or
+``"skip"``). See :class:`SyncResult` for the outcome details.
