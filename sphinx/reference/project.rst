@@ -30,6 +30,7 @@ These functions and classes are meant for managing a `Project` and its reports.
    Project.get
    Project.summarize
    Project.sync_with
+   Project.delete
 
 .. autosummary::
    :toctree: api/

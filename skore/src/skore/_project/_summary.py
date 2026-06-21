@@ -46,10 +46,10 @@ class Summary(ReprHTMLMixin):
 
     A summary object stores the metadata and metrics of the reports that have been
     persisted in a project as a :class:`pandas.DataFrame`, accessible through the
-    :meth:`frame` method. It implements a custom HTML representation that displays the
-    information as a table. The table provides a per-row selection and builds a query
-    string that can be copied and passed to :meth:`query` to recover a subset of
-    reports.
+    :meth:`frame` method. Rows are ordered by ascending ``date``. It implements a
+    custom HTML representation that displays the information as a table. The table
+    provides a per-row selection and builds a query string that can be copied and
+    passed to :meth:`query` to recover a subset of reports.
 
     Use :meth:`query` to filter the reports and :meth:`compare` to load the
     corresponding report objects from the project.

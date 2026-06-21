@@ -316,17 +316,18 @@ class Project:
         report_url = f"{self.__frontend_url}/{frontend_slug}/{response.json()['id']}"
         console.print(f"Consult your report at [link={report_url}]{report_url}[/link]")
 
-    def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
-        """Get a persisted report by its URN."""
-        if m := re.match(Project.__REPORT_URN_PATTERN, urn):
+    def get(self, id: str) -> EstimatorReport | CrossValidationReport:
+        """Get a persisted report by its id (hub URN)."""
+        if m := re.match(Project.__REPORT_URN_PATTERN, id):
             workspace = self.workspace
             name = self.name
             type = m["type"]
-            id = m["id"]
-            url = f"projects/{workspace}/{name}/{type}-reports/{id}"
+            report_id = m["id"]
+            url = f"projects/{workspace}/{name}/{type}-reports/{report_id}"
         else:
             raise ValueError(
-                f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'."
+                f"Report id '{id}' format does not match "
+                f"'{Project.__REPORT_URN_PATTERN}'."
             )
 
         # Retrieve presigned URL
