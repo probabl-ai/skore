@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import uuid
+from collections import defaultdict
 from collections.abc import Generator
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
@@ -573,27 +574,33 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
         total_splits = len(self.reports_)
         all_applicable_codes: set[CheckCode] = set()
-        positives_by_code: dict[CheckCode, list[dict]] = {}
+        all_not_applicable_codes: set[CheckCode] = set()
+        positives_by_code: defaultdict[CheckCode, list[dict]] = defaultdict(list)
+        ref_by_code: dict[CheckCode, dict] = {}
 
         for estimator_report in self.reports_:
             estimator_report.checks.add(self._checks_registry)
-            results, applicable_codes = estimator_report._get_results(
-                ignored_codes, fast_mode=fast_mode
+            results, applicable_codes, not_applicable_codes = (
+                estimator_report._get_results(ignored_codes, fast_mode=fast_mode)
             )
             all_applicable_codes |= applicable_codes
+            all_not_applicable_codes |= not_applicable_codes
             for code, check_result in results.items():
+                ref_by_code.setdefault(code, check_result)
                 if check_result["explanation"] is not None:
-                    positives_by_code.setdefault(code, []).append(check_result)
+                    positives_by_code[code].append(check_result)
 
-        issues: dict[CheckCode, dict] = {}
+        all_not_applicable_codes -= all_applicable_codes
+
+        aggregated: dict[CheckCode, dict] = {}
         for code in all_applicable_codes:
-            positives = positives_by_code.get(code, [])
+            positives = positives_by_code[code]
             if len(positives) > total_splits / 2:
                 ref = positives[0]
-                issues[code] = {
+                aggregated[code] = {
                     "title": ref["title"],
                     "docs_url": ref.get("docs_url"),
                     "explanation": (
@@ -601,7 +608,23 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     ),
                     "severity": ref.get("severity"),
                 }
-        return issues, all_applicable_codes
+            else:
+                ref = ref_by_code[code]
+                aggregated[code] = {
+                    "title": ref["title"],
+                    "docs_url": ref.get("docs_url"),
+                    "explanation": None,
+                    "severity": ref.get("severity"),
+                }
+        for code in all_not_applicable_codes:
+            ref = ref_by_code[code]
+            aggregated[code] = {
+                "title": ref["title"],
+                "docs_url": ref.get("docs_url"),
+                "explanation": None,
+                "severity": ref.get("severity"),
+            }
+        return aggregated, all_applicable_codes, all_not_applicable_codes
 
     @property
     def ml_task(self) -> str:
@@ -758,9 +781,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         checks_summary = self.checks.summarize(fast_mode=True)
         checks_summary_html = (
             "<div class='report-checks-summary-details'>"
-            f"{len(checks_summary.frame(severity='issue'))} issue(s), "
-            f"{len(checks_summary.frame(severity='tip'))} tip(s), "
-            f"{len(checks_summary.frame(severity='passed'))} passed, "
+            f"{len(checks_summary.frame(section='issue'))} issue(s), "
+            f"{len(checks_summary.frame(section='tip'))} tip(s), "
+            f"{len(checks_summary.frame(section='passed'))} passed, "
+            f"{len(checks_summary.frame(section='not_applicable'))} not applicable, "
             f"{checks_summary._n_ignored_codes} ignored."
             "</div>"
         )

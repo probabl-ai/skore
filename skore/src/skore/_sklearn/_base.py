@@ -38,21 +38,21 @@ class _BaseReport(ReportHelpMixin):
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
         """Aggregate EstimatorReport checks.
 
         Overwritten in CrossValidation and Comparison reports.
 
-        Returns ``(check_results, applicable_codes)``.
+        Returns ``(check_results, applicable_codes, not_applicable_codes)``.
         """
-        return ({}, set())
+        return {}, set(), set()
 
     def _get_results(
         self,
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
         """Get the check results from the cache or compute them.
 
         Parameters
@@ -65,15 +65,17 @@ class _BaseReport(ReportHelpMixin):
             (their `check_function` is never invoked). Cached slow results
             are still surfaced.
 
-        Returns ``(check_results, applicable_codes)`` where ``applicable_codes``
-        contains the codes of the checks that actually ran on the report,
-        i.e. those that did not raise :class:`CheckNotApplicable` and are not
-        in the ``ignored_codes`` set.
+        Returns ``(check_results, applicable_codes, not_applicable_codes)``
+        where ``applicable_codes`` contains the codes of the checks that ran
+        without raising :class:`CheckNotApplicable`, and
+        ``not_applicable_codes`` contains those that raised it.
         """
         if not hasattr(self, "_check_results_cache"):
             self._check_results_cache: dict[CheckCode, dict] = {}
         if not hasattr(self, "_applicable_codes"):
             self._applicable_codes: set[CheckCode] = set()
+        if not hasattr(self, "_not_applicable_codes"):
+            self._not_applicable_codes: set[CheckCode] = set()
 
         checks_to_run = [
             check
@@ -94,6 +96,7 @@ class _BaseReport(ReportHelpMixin):
                 self._applicable_codes.add(check.code)
             except CheckNotApplicable:
                 explanation = None
+                self._not_applicable_codes.add(check.code)
             self._check_results_cache[check.code] = {
                 "title": check.title,
                 "docs_url": check.docs_url,
@@ -102,15 +105,20 @@ class _BaseReport(ReportHelpMixin):
             }
 
         if "cross-validation" in self._report_type or "comparison" in self._report_type:
-            agg_check_results, agg_applicable = self._aggregate_checks(
-                ignored_codes, fast_mode=fast_mode
+            agg_check_results, agg_applicable, agg_not_applicable = (
+                self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
             )
             return (
                 self._check_results_cache | agg_check_results,
                 self._applicable_codes | agg_applicable,
+                self._not_applicable_codes | agg_not_applicable,
             )
 
-        return self._check_results_cache, self._applicable_codes
+        return (
+            self._check_results_cache,
+            self._applicable_codes,
+            self._not_applicable_codes,
+        )
 
     def __init__(self) -> None:
         self._metadata = {

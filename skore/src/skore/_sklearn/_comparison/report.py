@@ -7,8 +7,6 @@ from dataclasses import asdict
 from typing import TYPE_CHECKING, Literal, cast
 
 import joblib
-import numpy as np
-import pandas as pd
 from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -17,6 +15,7 @@ from skore._sklearn._checks.base import CheckCode
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
+from skore._utils._dataframe import _concat_vertical
 from skore._utils._progress_bar import track
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
@@ -505,15 +504,21 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
 
         if concatenate_train_and_test:
-            X_train = (
-                pd.concat([estimator_report.X_train, estimator_report.X_test])
-                if isinstance(estimator_report.X_train, pd.DataFrame)
-                else np.concatenate([estimator_report.X_train, estimator_report.X_test])
+            if (
+                estimator_report.X_train is None
+                or estimator_report.y_train is None
+                or estimator_report.X_test is None
+                or estimator_report.y_test is None
+            ):
+                raise ValueError(
+                    "The source report must provide X_train, y_train, X_test, and "
+                    "y_test when concatenate_train_and_test=True."
+                )
+            X_train = _concat_vertical(
+                estimator_report.X_train, estimator_report.X_test
             )
-            y_train = (
-                pd.concat([estimator_report.y_train, estimator_report.y_test])
-                if isinstance(estimator_report.y_train, (pd.DataFrame, pd.Series))
-                else np.concatenate([estimator_report.y_train, estimator_report.y_test])
+            y_train = _concat_vertical(
+                estimator_report.y_train, estimator_report.y_test
             )
         else:
             X_train, y_train = estimator_report.X_train, estimator_report.y_train
@@ -541,16 +546,18 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode]]:
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
         comparison_results: dict[CheckCode, dict] = {}
         reports_by_code: dict[CheckCode, list[str]] = {}
         all_applicable_codes: set[CheckCode] = set()
+        all_not_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
             report.checks.add(self._checks_registry)
-            report_results, applicable_codes = report._get_results(
-                ignored_codes, fast_mode=fast_mode
+            report_results, applicable_codes, not_applicable_codes = (
+                report._get_results(ignored_codes, fast_mode=fast_mode)
             )
             all_applicable_codes |= applicable_codes
+            all_not_applicable_codes |= not_applicable_codes
 
             for code, result in report_results.items():
                 comparison_results.setdefault(
@@ -565,11 +572,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 if result["explanation"] is not None:
                     reports_by_code.setdefault(code, []).append(report_name)
 
+        all_not_applicable_codes -= all_applicable_codes
+
         for code, reports in reports_by_code.items():
             comparison_results[code]["explanation"] = (
                 f"Detected in: {', '.join(f'[{r}]' for r in reports)}."
             )
-        return comparison_results, all_applicable_codes
+        return comparison_results, all_applicable_codes, all_not_applicable_codes
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

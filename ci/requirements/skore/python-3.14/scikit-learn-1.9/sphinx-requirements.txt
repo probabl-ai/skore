@@ -203,6 +203,7 @@ multidict==6.7.1
     #   yarl
 narwhals==2.22.0
     # via
+    #   skore (skore/pyproject.toml)
     #   altair
     #   plotly
     #   scikit-learn

@@ -4,8 +4,8 @@ import numbers
 from collections import defaultdict
 from typing import TYPE_CHECKING, Literal, cast
 
+import narwhals as nw
 import numpy as np
-import pandas as pd
 from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -17,8 +17,8 @@ from sklearn.linear_model import LogisticRegression, RidgeCV
 from sklearn.model_selection._search import BaseSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.utils._pprint import _changed_params
+from skrub import tabular_pipeline
 
-from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._checks._utils import (
     CheckNotApplicable,
     ClassName,
@@ -40,6 +40,7 @@ from skore._sklearn._checks.tunable_hyperparameters import (
     INFRASTRUCTURE_PARAMS,
 )
 from skore._sklearn.feature_names import _get_feature_names
+from skore._utils._dataframe import UserSeries
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -272,8 +273,13 @@ class CheckHighClassImbalance(Check):
         if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
+        y = nw.from_native(cast(UserSeries, y), series_only=True)
         counts = y.value_counts()
-        overrepresented_class = counts[counts >= 0.8 * counts.sum()].index
+        value_col = counts.columns[0]
+        total = counts["count"].sum()
+        overrepresented_class = counts.filter(nw.col("count") >= 0.8 * total)[
+            value_col
+        ].to_list()
 
         if len(overrepresented_class) > 0:
             return (
@@ -304,8 +310,13 @@ class CheckUnderrepresentedClasses(Check):
         if report.ml_task != "multiclass-classification" or y is None:
             raise CheckNotApplicable()
 
+        y = nw.from_native(cast(UserSeries, y), series_only=True)
         counts = y.value_counts()
-        underrepresented_classes = counts[counts <= 0.1 * counts.sum()].index
+        value_col = counts.columns[0]
+        total = counts["count"].sum()
+        underrepresented_classes = counts.filter(nw.col("count") <= 0.1 * total)[
+            value_col
+        ].to_list()
         if len(underrepresented_classes) > 0:
             return (
                 f"Classes {underrepresented_classes} each represent less than 10% of "
@@ -338,8 +349,8 @@ class CheckCoefficientsInterpretation(Check):
         if X is None or not hasattr(predictor, "coef_"):
             raise CheckNotApplicable()
 
-        stds = X.std(axis=0)
-        if not np.allclose(stds, stds.iloc[0], atol=0.05):
+        std_values = nw.from_native(X).select(nw.all().std()).to_numpy().ravel()
+        if not np.allclose(std_values, std_values[0], atol=0.05):
             return (
                 "Features are not on the same scale: coefficient magnitudes "
                 "are not directly comparable as feature importance."
@@ -375,8 +386,12 @@ class CheckMDIHighCardinalityBias(Check):
         if X is None or not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable()
 
+        X = nw.from_native(X)
+        n_samples = X.shape[0]
         high_cardinality_features = [
-            c for c in X.columns if X[c].nunique() > 0.5 * len(X)
+            column
+            for column in X.columns
+            if X.select(nw.col(column).n_unique()).item(0, 0) > 0.5 * n_samples
         ]
 
         if high_cardinality_features:
@@ -424,11 +439,11 @@ class CheckCorrelatedFeatures(Check):
 
         if X is None:
             raise CheckNotApplicable()
-        X = X.select_dtypes(include="number")
+        X = nw.from_native(X).select(nw.selectors.numeric())
         if X.shape[1] < 2 or X.shape[1] > 1000:
             raise CheckNotApplicable()
 
-        corr = np.abs(spearmanr(X).statistic)
+        corr = np.abs(spearmanr(X.to_numpy()).statistic)
         if corr.ndim < 2:
             return None
         np.fill_diagonal(corr, 0)
@@ -580,14 +595,16 @@ class CheckGoldenFeature(Check):
         )
         full_test = collect_scores(report, data_source="test")
 
+        X_train, X_test = nw.from_native(X_train), nw.from_native(X_test)
         golden_features: list[str] = []
         for i in range(X_train.shape[1]):
+            column = X_train.columns[i]
             try:
                 single_report = EstimatorReport(
                     clone(predictor_),
-                    X_train=X_train.iloc[:, [i]],
+                    X_train=X_train.select(nw.col(column)).to_native(),
                     y_train=y_train,
-                    X_test=X_test.iloc[:, [i]],
+                    X_test=X_test.select(nw.col(column)).to_native(),
                     y_test=y_test,
                     pos_label=report.pos_label,
                 )
@@ -689,25 +706,22 @@ class CheckTrainTestTimeOverlap(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        if not isinstance(report.X_train, pd.DataFrame) or not isinstance(
-            report.X_test, pd.DataFrame
-        ):
+        if report.X_train is None or report.X_test is None:
+            raise CheckNotApplicable()
+        if not nw.dependencies.is_into_dataframe(
+            report.X_train
+        ) or not nw.dependencies.is_into_dataframe(report.X_test):
             raise CheckNotApplicable()
 
-        datetime_columns = [
-            col
-            for col in report.X_train.columns
-            if col in report.X_test.columns
-            and pd.api.types.is_datetime64_any_dtype(report.X_train[col])
-            and pd.api.types.is_datetime64_any_dtype(report.X_test[col])
-        ]
+        X_train, X_test = nw.from_native(report.X_train), nw.from_native(report.X_test)
+        train_datetime_columns = set(X_train.select(nw.selectors.datetime()).columns)
+        test_datetime_columns = set(X_test.select(nw.selectors.datetime()).columns)
+        datetime_columns = sorted(train_datetime_columns & test_datetime_columns)
         if not datetime_columns:
             raise CheckNotApplicable()
 
         overlapping = [
-            col
-            for col in datetime_columns
-            if report.X_train[col].max() >= report.X_test[col].min()
+            col for col in datetime_columns if X_train[col].max() >= X_test[col].min()
         ]
         if overlapping:
             return (
