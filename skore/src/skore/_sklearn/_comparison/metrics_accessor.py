@@ -358,8 +358,9 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
         >>> report = evaluate([estimator_1, estimator_2], X, y, splitter=0.2)
         >>> report.metrics.timings()
-                        LogisticRegression_1    LogisticRegression_2
-        Fit time (s)                     ...                     ...
+                                LogisticRegression_1    LogisticRegression_2
+        Fit time (s)                             ...                     ...
+        Predict time test (s)                    ...                     ...
         >>> report.cache_predictions()
         >>> report.metrics.timings()
                                 LogisticRegression_1    LogisticRegression_2

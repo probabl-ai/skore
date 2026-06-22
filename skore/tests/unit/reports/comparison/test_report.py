@@ -279,7 +279,7 @@ def test_create_estimator_report_skrub_concatenate_train_and_test_raises():
 
 
 def test_create_estimator_report_skrub_uses_fitted_estimator_without_refit():
-    """Skrub path should pass fit=False and new test_data for held-out evaluation."""
+    """Skrub path should use new test_data for held-out evaluation."""
     X, y = make_classification(n_samples=40, random_state=0)
     data_op_a = skrub.X(X).skb.apply(
         LogisticRegression(C=0.5, random_state=0), y=skrub.y(y)
@@ -293,21 +293,16 @@ def test_create_estimator_report_skrub_uses_fitted_estimator_without_refit():
     source_a = EstimatorReport(
         learner_a, train_data=split["train"], test_data=split["test"]
     )
-    comparison = ComparisonReport(
-        {
-            "model_a": source_a,
-            "model_b": EstimatorReport(
-                learner_b, train_data=split["train"], test_data=split["test"]
-            ),
-        }
+    source_b = EstimatorReport(
+        learner_b, train_data=split["train"], test_data=split["test"]
     )
+    comparison = ComparisonReport({"model_a": source_a, "model_b": source_b})
     final_report = comparison.create_estimator_report(
         report_key="model_a",
         test_data=split["test"],
         concatenate_train_and_test=False,
     )
     assert isinstance(final_report, EstimatorReport)
-    assert final_report.fit is False
     assert joblib.hash(final_report.X_train) == joblib.hash(source_a.X_train)
     assert joblib.hash(final_report.X_test) == joblib.hash(source_a.X_test)
 

@@ -25,24 +25,14 @@ def test_only_fit(estimator_data):
 
     result = report.metrics.timings()
     assert isinstance(result, dict)
-    assert len(result) == 1
-    assert isinstance(result.get("fit_time"), float)
-
-
-def test_only_fit_unfitted(estimator_data):
-    """If the wrapped estimator is unfitted and fit=False,
-    then the fit time is not included in timings."""
-    estimator, data = estimator_data
-    report = EstimatorReport(estimator, fit=False, **data)
-
-    result = report.metrics.timings()
-    assert result == {}
+    assert list(result) == ["fit_time", "predict_time_test"]
+    assert isinstance(result["fit_time"], float)
 
 
 @pytest.mark.parametrize("data_source", ["test", "train"])
 def test_predict_prefitted(data_source, estimator_data):
-    """If the wrapped estimator is prefitted, and some predictions are computed,
-    then `timings` has one key per prediction data source."""
+    """If the estimator is prefitted, and some predictions are computed,
+    then `timings` is filled up accordingly."""
     estimator, data = estimator_data
     report = EstimatorReport(estimator.fit(data["X_train"], data["y_train"]), **data)
 
@@ -51,8 +41,11 @@ def test_predict_prefitted(data_source, estimator_data):
 
     result = report.metrics.timings()
     assert isinstance(result, dict)
-    assert len(result) == 1
-    assert isinstance(result.get(f"predict_time_{data_source}"), float)
+    if data_source == "train":
+        assert list(result) == ["predict_time_train", "predict_time_test"]
+    else:
+        assert list(result) == ["predict_time_test"]
+    assert all(isinstance(v, float) for v in result.values())
 
 
 def test_everything(estimator_data):
@@ -86,15 +79,6 @@ def test_fit_time_estimator_already_fitted(estimator_data):
     estimator, data = estimator_data
     estimator.fit(data["X_train"], data["y_train"])
     report = EstimatorReport(estimator, X_test=data["X_test"], y_test=data["y_test"])
-
-    assert report.metrics.fit_time(cast=False) is None
-    assert math.isnan(report.metrics.fit_time(cast=True))
-
-
-def test_fit_time_estimator_unfitted(estimator_data):
-    """If the wrapped estimator is unfitted and fit=False, then the fit time is None."""
-    estimator, data = estimator_data
-    report = EstimatorReport(estimator, fit=False, **data)
 
     assert report.metrics.fit_time(cast=False) is None
     assert math.isnan(report.metrics.fit_time(cast=True))
