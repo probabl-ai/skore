@@ -55,6 +55,36 @@ SPLITTERS = {
 }
 
 
+def _regression_target_kdes(
+    y: np.ndarray,
+) -> tuple[list[list[float]], list[tuple[float, float]]]:
+    """Estimate per-target density curves for regression splitting strategy."""
+    sample_count = TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT
+    y = np.asarray(y)
+    if y.ndim == 1:
+        lo, hi = float(y.min()), float(y.max())
+        linspace = np.linspace(lo, hi, num=sample_count)
+        kde = gaussian_kde(y)
+        return [[float(x) for x in kde(linspace)]], [(lo, hi)]
+
+    curves: list[list[float]] = []
+    ranges: list[tuple[float, float]] = []
+    for col in y.T:
+        col_arr = np.asarray(col).ravel()
+        lo, hi = float(col_arr.min()), float(col_arr.max())
+        linspace = np.linspace(lo, hi, num=sample_count)
+        curves.append([float(x) for x in gaussian_kde(col_arr).evaluate(linspace)])
+        ranges.append((lo, hi))
+    return curves, ranges
+
+
+def _flatten_regression_target_kdes(curves: list[list[float]]) -> list[float]:
+    """Flatten per-target density curves for hub payload storage."""
+    if len(curves) == 1:
+        return curves[0]
+    return [value for curve in curves for value in curve]
+
+
 class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     """
     Payload used to send a cross-validation report to ``hub``.
@@ -93,6 +123,8 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     def model_post_init(self, _: Any) -> None:  # noqa: D102
         self.__sample_to_class_index: list[int] | None
         self.__classes: list[str] | None
+        self.__target_names: list[str] | None
+        self.__target_ranges: list[list[float]] | None
 
         if "classification" in self.ml_task and (self.report.y is not None):
             class_to_class_indice: defaultdict[Any, int] = defaultdict(
@@ -109,9 +141,24 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             self.__classes = [str(class_) for class_ in class_to_class_indice]
 
             assert max(self.__sample_to_class_index) == (len(self.__classes) - 1)
+            self.__target_names = None
+            self.__target_ranges = None
+        elif self.ml_task == "multioutput-regression" and (self.report.y is not None):
+            from skore._utils._dataframe import _normalize_y_as_dataframe
+
+            y_df = _normalize_y_as_dataframe(self.report.y)
+            self.__sample_to_class_index = None
+            self.__classes = None
+            self.__target_names = [str(name) for name in y_df.columns]
+            y_arr = np.asarray(self.report.y)
+            self.__target_ranges = [
+                [float(col.min()), float(col.max())] for col in y_arr.T
+            ]
         else:
             self.__sample_to_class_index = None
             self.__classes = None
+            self.__target_names = None
+            self.__target_ranges = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -219,16 +266,12 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                     train_target_distribution.append(train.get(label, 0))
                     test_target_distribution.append(test.get(label, 0))
             else:
-                y = np.asarray(self.report.y)
-                linspace = np.linspace(
-                    float(y.min()),
-                    float(y.max()),
-                    num=TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT,
+                train_curves, _ = _regression_target_kdes(train_y)
+                test_curves, _ = _regression_target_kdes(test_y)
+                train_target_distribution = _flatten_regression_target_kdes(
+                    train_curves
                 )
-                train_kernel = gaussian_kde(train_y)
-                train_target_distribution = [float(x) for x in train_kernel(linspace)]
-                test_kernel = gaussian_kde(test_y)
-                test_target_distribution = [float(x) for x in test_kernel(linspace)]
+                test_target_distribution = _flatten_regression_target_kdes(test_curves)
 
             train_target_distributions.append(train_target_distribution)
             train_target_distributions_sample_count.append(len(train_y))
@@ -255,6 +298,18 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     def class_names(self) -> list[str] | None:
         """In classification, the class names of the dataset used in the report."""
         return self.__classes
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def target_names(self) -> list[str] | None:
+        """In multi-output regression, the target names of the dataset."""
+        return self.__target_names
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def target_ranges(self) -> list[list[float]] | None:
+        """In multi-output regression, the per-target value ranges."""
+        return self.__target_ranges
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
