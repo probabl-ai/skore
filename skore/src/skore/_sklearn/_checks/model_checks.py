@@ -82,7 +82,7 @@ def _baseline_estimator_report(
     if not (is_classification or report.ml_task == "regression"):
         raise CheckNotApplicable(
             "Unsupported ML task. Supported tasks are: binary-classification, "
-            "multiclass-classification, regression."
+            f"multiclass-classification, regression. Got {report.ml_task}."
         )
     if kind == "dummy":
         estimator = (
@@ -269,7 +269,9 @@ class CheckHighClassImbalance(Check):
         """Detect when the majority class exceeds 80% of samples."""
         report = cast("EstimatorReport", report)
         if report.ml_task != "binary-classification":
-            raise CheckNotApplicable("ML task is not binary classification.")
+            raise CheckNotApplicable(
+                f"ML task is not binary classification. Got {report.ml_task}."
+            )
 
         y = get_report_y(report, data_source="both")
         if y is None:
@@ -309,7 +311,9 @@ class CheckUnderrepresentedClasses(Check):
         """Detect classes that each represent less than 10% of samples."""
         report = cast("EstimatorReport", report)
         if report.ml_task != "multiclass-classification":
-            raise CheckNotApplicable("ML task is not multiclass classification.")
+            raise CheckNotApplicable(
+                f"ML task is not multiclass classification. Got {report.ml_task}."
+            )
 
         y = get_report_y(report, data_source="both")
         if y is None:
@@ -731,7 +735,8 @@ class CheckTrainTestTimeOverlap(Check):
             report.X_train
         ) or not nw.dependencies.is_into_dataframe(report.X_test):
             raise CheckNotApplicable(
-                "Input data is not a narwhals compatible DataFrame."
+                "Input data is not a narwhals compatible DataFrame. "
+                f"Got {type(report.X_train)}."
             )
 
         X_train, X_test = nw.from_native(report.X_train), nw.from_native(report.X_test)
@@ -773,7 +778,9 @@ class CheckHyperparamsAtSearchEdge(Check):
         report = cast("EstimatorReport", report)
         estimator = report.estimator_
         if not isinstance(estimator, BaseSearchCV):
-            raise CheckNotApplicable("Estimator is not a BaseSearchCV instance.")
+            raise CheckNotApplicable(
+                f"Estimator is not a BaseSearchCV instance. Got {type(estimator)}."
+            )
 
         param_combinations = estimator.cv_results_["params"]
 
@@ -862,7 +869,10 @@ class CheckSearchParamsToTune(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
         if not isinstance(report.estimator_, BaseSearchCV):
-            raise CheckNotApplicable("Estimator is not a BaseSearchCV instance.")
+            raise CheckNotApplicable(
+                "Estimator is not a BaseSearchCV instance. "
+                f"Got {type(report.estimator_)}."
+            )
 
         searched_keys = {
             key for params in report.estimator_.cv_results_["params"] for key in params
