@@ -198,16 +198,10 @@ def test_timings(comparison_estimator_reports_binary_classification):
     report = comparison_estimator_reports_binary_classification
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
-    assert timings.index.tolist() == ["Fit time (s)"]
+    assert timings.index.tolist() == ["Fit time (s)", "Predict time test (s)"]
     assert timings.columns.tolist() == list(report.reports_.keys())
 
     report.get_predictions(data_source="train")
-    timings = report.metrics.timings()
-    assert isinstance(timings, pd.DataFrame)
-    assert timings.index.tolist() == ["Fit time (s)", "Predict time train (s)"]
-    assert timings.columns.tolist() == list(report.reports_.keys())
-
-    report.get_predictions(data_source="test")
     timings = report.metrics.timings()
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == [

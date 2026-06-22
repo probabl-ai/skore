@@ -19,16 +19,10 @@ def test_timings(forest_binary_classification_data, aggregate, expected_columns)
     report = CrossValidationReport(estimator, X, y, splitter=2)
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
-    assert timings.index.tolist() == ["Fit time (s)"]
+    assert timings.index.tolist() == ["Fit time (s)", "Predict time test (s)"]
     assert timings.columns.tolist() == expected_columns
 
     report.get_predictions(data_source="train")
-    timings = report.metrics.timings(aggregate=aggregate)
-    assert isinstance(timings, pd.DataFrame)
-    assert timings.index.tolist() == ["Fit time (s)", "Predict time train (s)"]
-    assert timings.columns.tolist() == expected_columns
-
-    report.get_predictions(data_source="test")
     timings = report.metrics.timings(aggregate=aggregate)
     assert isinstance(timings, pd.DataFrame)
     assert timings.index.tolist() == [
