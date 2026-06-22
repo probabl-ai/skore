@@ -458,7 +458,8 @@ class CheckCorrelatedFeatures(Check):
         X = nw.from_native(X).select(nw.selectors.numeric())
         if X.shape[1] < 2 or X.shape[1] > 1000:
             raise CheckNotApplicable(
-                "Train data has less than 2 or more than 1000 features."
+                "Expected train data to have between 2 and 1000 features; "
+                f"got {X.shape[1]}."
             )
 
         corr = np.abs(spearmanr(X.to_numpy()).statistic)
