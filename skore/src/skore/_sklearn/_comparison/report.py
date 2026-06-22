@@ -486,7 +486,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 )
             return EstimatorReport(
                 estimator_report.estimator_,
-                fit=False,
                 train_data=estimator_report.train_data,
                 test_data=test_data,
                 pos_label=self._pos_label,
@@ -525,7 +524,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         return EstimatorReport(
             estimator_report.estimator,
-            fit=True,
             X_train=X_train,
             y_train=y_train,
             X_test=X_test,

@@ -107,18 +107,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     Parameters
     ----------
     estimator : estimator object
-        Estimator to make the report from. When the estimator is not fitted,
-        it is deep-copied to avoid side-effects. If it is fitted, it is cloned instead.
-        An estimator can be one of the following:
+        Estimator to make the report from. An estimator can be one of the following:
 
         - a scikit-learn compatible estimator as a :class:`~sklearn.base.BaseEstimator`;
         - a skrub :class:`~skrub.DataOp` to preprocess the data;
         - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
           by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
-    fit : {"auto", True, False}, default="auto"
-        Whether to fit the estimator on the training data. If "auto", the estimator
-        is fitted only if the training data is provided.
+        The estimator passed will not be modified in-place: it is deep-copied, and if
+        it is not already fitted, the copy is cloned before being fitted on the
+        training data.
 
     X_train : {array-like, sparse matrix} of shape (n_samples, n_features) or \
             None
@@ -228,7 +226,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         estimator: EstimatorLike,
         data: dict | None,
     ) -> tuple[EstimatorLike, float]:
-        """Fit the estimator on the training data."""
+        """Clone then fit the estimator on the training data."""
         if data is None:
             raise ValueError(
                 "The training data is required to fit the estimator. "
@@ -259,7 +257,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self,
         estimator: EstimatorLike,
         *,
-        fit: Literal["auto"] | bool = "auto",
         X_train: ArrayLike | None = None,
         y_train: ArrayLike | None = None,
         X_test: ArrayLike | None = None,
@@ -271,7 +268,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         super().__init__()
         estimator = self._copy_estimator(estimator)
         self.estimator = estimator
-        self._fit = fit
 
         if isinstance(estimator, skrub.DataOp):
             if test_data is None and train_data is None:
@@ -290,27 +286,23 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 estimator, X_train, y_train, X_test, y_test, train_data, test_data
             )
         )
+
         self._fit_time: float | None = None
-        if fit == "auto":
-            try:
-                check_is_fitted(estimator)
-                self.learner_ = estimator
-            except NotFittedError:
-                self.learner_, self._fit_time = self._fit_estimator(
-                    estimator, self._train_data
-                )
-        elif fit is True:
+        try:
+            check_is_fitted(estimator)
+            self.learner_ = estimator
+        except NotFittedError:
             self.learner_, self._fit_time = self._fit_estimator(
                 estimator, self._train_data
             )
-        else:  # fit is False
-            self.learner_ = estimator
 
-        self._predict_time: PredictTime = {}
         self._pos_label = pos_label
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
         self._cache = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
+
+        self._predict_time: PredictTime = {}
+        self.cache_predictions(data_source="test")
 
         self._metric_registry = MetricRegistry(self)
 
@@ -361,7 +353,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "initialized_with_data_op": self._initialized_with_data_op,
             "estimator": self.estimator,
             "ml_task": self._ml_task,
-            "fit": self._fit,
             "fit_time": self._fit_time,
             "predict_time": self._predict_time,
             "pos_label": self._pos_label,
@@ -397,7 +388,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report._metadata = state["metadata"]
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
-        report._fit = state["fit"]
         report._fit_time = state["fit_time"]
         report._predict_time = state["predict_time"]
         report._pos_label = state["pos_label"]
@@ -430,7 +420,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.cache_predictions()
+        >>> report._cache
+        {...}
         >>> report.clear_cache()
         >>> report._cache
         {}
@@ -461,6 +452,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2)
+        >>> report.clear_cache()
         >>> report.cache_predictions()
         >>> report._cache
         {...}
@@ -794,10 +786,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     @property
     def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
-
-    @property
-    def fit(self) -> str | bool:
-        return self._fit
 
     @property
     def estimator_name_(self) -> str:

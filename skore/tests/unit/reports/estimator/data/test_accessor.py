@@ -51,8 +51,8 @@ def test_summarize_data_source_without_y():
     X, y = make_classification(n_classes=2, random_state=42)
     X = pd.DataFrame(X, columns=[f"Column {i}" for i in range(X.shape[1])])
     y = pd.Series(y, name="Classification target")
-    X_train, X_test = X.iloc[:100], X.iloc[100:]
-    y_train, y_test = y.iloc[:100], y.iloc[100:]
+    X_train, X_test = X.iloc[:50], X.iloc[50:]
+    y_train, y_test = y.iloc[:50], y.iloc[50:]
     classifier = LogisticRegression()
 
     report = EstimatorReport(

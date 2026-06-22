@@ -56,7 +56,6 @@ def _generate_estimator_report(
 ) -> EstimatorReport:
     return EstimatorReport(
         estimator,
-        fit=True,
         X_train=_safe_indexing(X, train_indices),
         y_train=_safe_indexing(y, train_indices),
         X_test=_safe_indexing(X, test_indices),
@@ -412,7 +411,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
-        >>> report.cache_predictions()
+        >>> report.reports_[0]._cache
+        {...}
         >>> report.clear_cache()
         >>> report.reports_[0]._cache
         {}
@@ -420,9 +420,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         for report in self.reports_:
             report.clear_cache()
 
-    def cache_predictions(
-        self,
-    ) -> None:
+    def cache_predictions(self) -> None:
         """Cache the predictions for sub-estimators reports.
 
         Examples
@@ -433,6 +431,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
+        >>> report.clear_cache()
+        >>> report.reports_[0]._cache
+        {}
         >>> report.cache_predictions()
         >>> report.reports_[0]._cache
         {...}
@@ -515,7 +516,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         This method creates a new :class:`~skore.EstimatorReport` with the same
         estimator and the same data as the cross-validation report. It is useful to
         evaluate and deploy a model that was deemed optimal with cross-validation.
-        Provide a held out test set to properly evaluate the performance of the model.
+        Provide a held-out test set to properly evaluate the performance of the model.
 
         Parameters
         ----------

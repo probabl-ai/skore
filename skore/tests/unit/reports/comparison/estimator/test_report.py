@@ -5,9 +5,7 @@ from sklearn.cluster import KMeans
 from skore import ComparisonReport, EstimatorReport
 
 
-def test_init_wrong_parameters(
-    estimator_reports_binary_classification,
-):
+def test_init_wrong_parameters(estimator_reports_binary_classification):
     """If the input is not valid, raise."""
     report, _ = estimator_reports_binary_classification
     with pytest.raises(TypeError, match="Expected reports to be a list or dict"):
@@ -22,9 +20,7 @@ def test_init_wrong_parameters(
         ComparisonReport([None, report])
 
 
-def test_different_test_data(
-    logistic_binary_classification_with_train_test,
-):
+def test_different_test_data(logistic_binary_classification_with_train_test):
     """Raise an error if the passed estimators do not have the same testing targets."""
     estimator, _, X_test, _, y_test = logistic_binary_classification_with_train_test
 
