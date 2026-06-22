@@ -153,8 +153,10 @@ class CheckNotApplicable(Exception):
     """
 
 
-def get_space_bound(estimator, param_name: str, side: str) -> float | None:
-    """Return the closed parameter-space boundary for side ('left' or 'right').
+def get_space_bound(
+    estimator, *, param_name: str, side: Literal["left", "right"]
+) -> float | None:
+    """Fetch the closed parameter-space boundary for `side` if it exists.
 
     Navigates nested estimators (e.g. `Pipeline`) using `__`-separated names,
     then inspects `_parameter_constraints` for an
@@ -176,7 +178,9 @@ def get_space_bound(estimator, param_name: str, side: str) -> float | None:
 
     # Find the Interval constraint for the leaf_param
     closed_sides_for_bound = {"left": ("left", "both"), "right": ("right", "both")}
-    for constraint in owner._parameter_constraints.get(leaf_param, []):
+    if leaf_param not in owner._parameter_constraints:
+        return None
+    for constraint in owner._parameter_constraints[leaf_param]:
         if not isinstance(constraint, Interval):
             continue
         bound_value = getattr(constraint, side)

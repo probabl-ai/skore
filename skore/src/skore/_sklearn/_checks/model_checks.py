@@ -779,7 +779,9 @@ class CheckHyperparamsAtSearchEdge(Check):
             if np.isclose(
                 float(best_value), float(search_low), rtol=0.0, atol=0.0, equal_nan=True
             ):
-                space_low = get_space_bound(estimator.estimator, param_name, "left")
+                space_low = get_space_bound(
+                    estimator.estimator, param_name=param_name, side="left"
+                )
                 if space_low is not None and np.isclose(
                     float(search_low), space_low, rtol=0.0, atol=0.0, equal_nan=True
                 ):
@@ -792,7 +794,9 @@ class CheckHyperparamsAtSearchEdge(Check):
                 atol=0.0,
                 equal_nan=True,
             ):
-                space_high = get_space_bound(estimator.estimator, param_name, "right")
+                space_high = get_space_bound(
+                    estimator.estimator, param_name=param_name, side="right"
+                )
                 if space_high is not None and np.isclose(
                     float(search_high), space_high, rtol=0.0, atol=0.0, equal_nan=True
                 ):
