@@ -773,7 +773,7 @@ def test_not_applicable_reason_in_summarize(regression_train_test_split):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     na = report.checks.summarize().frame(section="not_applicable").set_index("code")
     assert "SKD001" in na.index
-    assert na.loc["SKD001", "explanation"] == ("Train data is unavailable.")
+    assert na.loc["SKD001", "explanation"] == "Train data is unavailable."
 
 
 def test_exception_when_baseline_report_creation_fails(regression_data, monkeypatch):

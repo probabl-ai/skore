@@ -73,7 +73,7 @@ class MockEstimator(ClassifierMixin, BaseEstimator):
 
     def __sklearn_clone__(self):
         self.n_call += 1
-        return self
+        return super().__sklearn_clone__()
 
     def predict(self, X):
         return np.ones(X.shape[0])
