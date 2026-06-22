@@ -102,30 +102,6 @@ print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
 
 # %%
 #
-# An interesting feature provided by the :class:`skore.EstimatorReport` is the
-# the caching mechanism. Indeed, when we have a large enough dataset, computing the
-# predictions for a model is not cheap anymore. For instance, on our smallish dataset,
-# it took a couple of seconds to compute the metrics. The report will cache the
-# predictions and if we are interested in computing a metric again or an alternative
-# metric that requires the same predictions, it will be faster. Let's check by
-# requesting the same metrics report again.
-
-start = time.time()
-metric_report = report.metrics.summarize().frame()
-end = time.time()
-metric_report
-
-# %%
-print(f"Time taken to compute the metrics: {end - start:.2f} seconds")
-
-# %%
-#
-# Note that when the model is fitted or the predictions are computed,
-# we additionally store the time the operation took:
-report.metrics.timings()
-
-# %%
-#
 # Since the output is a pandas dataframe, we can also use the plotting interface of
 # pandas.
 ax = metric_report.plot.barh()
@@ -133,30 +109,18 @@ _ = ax.set_title("Metrics report")
 
 # %%
 #
-# Whenever computing a metric, we check if the predictions are available in the cache
-# and reload them if available. So for instance, let's compute the log loss.
-
-start = time.time()
-log_loss = report.metrics.log_loss()
-end = time.time()
-log_loss
-
-# %%
-print(f"Time taken to compute the log loss: {end - start:.2f} seconds")
+# An interesting feature of the :class:`skore.EstimatorReport` is its caching mechanism.
+# Indeed, when we have a large enough dataset, computing the predictions for a model can
+# be expensive. To amortize this cost, the report will cache the predictions when
+# it is first created; this way, calculations that need the model predictions can get
+# them from the cache and save a lot of time. This is why the metrics computation above
+# is so fast.
 
 # %%
 #
-# We can show that without initial cache, it would have taken more time to compute
-# the log loss.
-report.clear_cache()
-
-start = time.time()
-log_loss = report.metrics.log_loss()
-end = time.time()
-log_loss
-
-# %%
-print(f"Time taken to compute the log loss: {end - start:.2f} seconds")
+# When the model is fitted or the predictions are computed,
+# we additionally store the time the operation took:
+report.metrics.timings()
 
 # %%
 #
@@ -245,37 +209,17 @@ fig
 
 # %%
 #
-# Similarly to the metrics, we aggressively use the caching to avoid recomputing the
-# predictions of the model. We also cache the plot display object by detection if the
-# input parameters are the same as the previous call. Let's demonstrate the kind of
-# performance gain we can get.
+# Similarly to the metrics, the cache allows us to avoid recomputing the model
+# predictions, which speeds up the display generation.
 start = time.time()
-# we already trigger the computation of the predictions in a previous call
 display = report.metrics.roc()
-fig = display.plot()
+_ = display.plot()
 end = time.time()
-fig
-
-# %%
 print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
 
 # %%
-#
-# Now, let's clean the cache and check if we get a slowdown.
-report.clear_cache()
-
-# %%
-start = time.time()
-display = report.metrics.roc()
-fig = display.plot()
-end = time.time()
-fig
-
-# %%
-print(f"Time taken to compute the ROC curve: {end - start:.2f} seconds")
-
-# %%
-# As expected, since we need to recompute the predictions, it takes more time.
+# You can learn more about the cache system in the corresponding example:
+# :ref:`example_cache_mechanism`.
 
 # %%
 # Visualizing the confusion matrix

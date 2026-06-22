@@ -16,7 +16,6 @@ from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
 from skore._utils._dataframe import _concat_vertical
-from skore._utils._progress_bar import track
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 from skore._utils.repr.markdown import (
@@ -26,9 +25,7 @@ from skore._utils.repr.markdown import (
 
 if TYPE_CHECKING:
     from skore._sklearn._checks.accessor import _ChecksAccessor
-    from skore._sklearn._comparison.inspection_accessor import (
-        _InspectionAccessor,
-    )
+    from skore._sklearn._comparison.inspection_accessor import _InspectionAccessor
     from skore._sklearn._comparison.metrics_accessor import _MetricsAccessor
 
     ComparisonReportType = Literal[
@@ -266,50 +263,15 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self.n_jobs = n_jobs
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
 
-    def clear_cache(self) -> None:
-        """Clear the cache.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import make_classification
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import compare, evaluate
-        >>> X, y = make_classification(random_state=42)
-        >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
-        >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
-        >>> report = compare([estimator_report_1, estimator_report_2])
-        >>> report.cache_predictions()
-        >>> report.clear_cache()
-        """
+    def _clear_cache(self) -> None:
+        """Clear the cache."""
         for report in self.reports_.values():
-            report.clear_cache()
+            report._clear_cache()
 
-    def cache_predictions(
-        self,
-    ) -> None:
-        """Cache the predictions for sub-estimators reports.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import make_classification
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import compare, evaluate
-        >>> X, y = make_classification(random_state=42)
-        >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
-        >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
-        >>> report = compare([estimator_report_1, estimator_report_2])
-        >>> report.cache_predictions()
-        """
-        for report in track(
-            self.reports_.values(),
-            description="Estimator predictions",
-            total=len(self.reports_),
-        ):
-            report.cache_predictions()
+    def _cache_predictions(self) -> None:
+        """Cache the predictions for sub-estimators reports."""
+        for report in self.reports_.values():
+            report._cache_predictions()
 
     def get_predictions(
         self,
@@ -359,7 +321,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
         >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
         >>> report = compare([estimator_report_1, estimator_report_2])
-        >>> report.cache_predictions()
         >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(20,), (20,)]

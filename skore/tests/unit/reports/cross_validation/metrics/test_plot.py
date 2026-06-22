@@ -73,7 +73,7 @@ def test_seed_none(linear_regression_data):
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
 
-    report.cache_predictions()
+    report._cache_predictions()
 
     with check_cache_unchanged([r._cache for r in report.reports_]):
         report.metrics.prediction_error(seed=None)

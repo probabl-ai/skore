@@ -110,15 +110,10 @@ hgbt_model_report.help()
 # %%
 # A report provides a collection of useful information. For instance, it allows to
 # compute on demand the predictions of the model and some performance metrics.
-#
-# Let's cache the predictions of the cross-validated models once and for all.
 
 # %%
-hgbt_model_report.cache_predictions()
-
-# %%
-# Now that the predictions are cached, any request to compute a metric will be
-# performed using the cached predictions and will thus be fast.
+# Side-note: performance metrics rely on the model predictions, so the report saves
+# the predictions once at the beginning to speed up metric computations.
 #
 # We can now have a look at the performance of the model with some standard metrics.
 
@@ -254,14 +249,6 @@ linear_model_report.help()
 # We observe that the cross-validation report has detected that we have a regression
 # task at hand and thus provides us with some metrics and plots that make sense with
 # regards to our specific problem at hand.
-#
-# To accelerate any future computation (e.g. of a metric), we cache the predictions of
-# our model once and for all.
-# Note that we do not necessarily need to cache the predictions as the report will
-# compute them on the fly (if not cached) and cache them for us.
-
-# %%
-linear_model_report.cache_predictions()
 
 # %%
 # We can now have a look at the performance of the model with some standard metrics.
