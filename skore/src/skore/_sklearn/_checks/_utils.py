@@ -174,7 +174,7 @@ def get_report_y(
     """Return the target as a 1d Series or multi-output DataFrame."""
     try:
         if data_source == "both":
-            if report.y_train is None or report.y_test is None:
+            if report.y_train is None:
                 return None
             y = sbd.concat(
                 _normalize_y_as_dataframe(report.y_train),
@@ -186,8 +186,6 @@ def get_report_y(
                 return None
             y = _normalize_y_as_dataframe(report.y_train)
         else:
-            if report.y_test is None:
-                return None
             y = _normalize_y_as_dataframe(report.y_test)
         return y.iloc[:, 0] if y.shape[1] == 1 else y
     except NotImplementedError:
@@ -210,7 +208,7 @@ def get_preprocessed_X(
     """
     try:
         if data_source == "both":
-            if report.X_train is None or report.X_test is None:
+            if report.X_train is None:
                 return None
             data = sbd.concat(
                 _normalize_X_as_dataframe(report.X_train),
@@ -222,8 +220,6 @@ def get_preprocessed_X(
                 return None
             data = _normalize_X_as_dataframe(report.X_train)
         else:
-            if report.X_test is None:
-                return None
             data = _normalize_X_as_dataframe(report.X_test)
     except NotImplementedError:
         return None
