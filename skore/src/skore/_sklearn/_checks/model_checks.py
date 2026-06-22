@@ -792,30 +792,18 @@ class CheckHyperparamsAtSearchEdge(Check):
                 best_value, bool | np.bool_
             ):
                 continue
-            if np.isclose(
-                float(best_value), float(search_low), rtol=0.0, atol=0.0, equal_nan=True
-            ):
+            if float(best_value) == float(search_low):
                 space_low = self._get_space_bound(
                     estimator.estimator, param_name=param_name, side="left"
                 )
-                if space_low is not None and np.isclose(
-                    float(search_low), space_low, rtol=0.0, atol=0.0, equal_nan=True
-                ):
+                if space_low is not None and float(search_low) == space_low:
                     continue
                 edge_params.append((param_name, "minimum"))
-            elif np.isclose(
-                float(best_value),
-                float(search_high),
-                rtol=0.0,
-                atol=0.0,
-                equal_nan=True,
-            ):
+            elif float(best_value) == float(search_high):
                 space_high = self._get_space_bound(
                     estimator.estimator, param_name=param_name, side="right"
                 )
-                if space_high is not None and np.isclose(
-                    float(search_high), space_high, rtol=0.0, atol=0.0, equal_nan=True
-                ):
+                if space_high is not None and float(search_high) == space_high:
                     continue
                 edge_params.append((param_name, "maximum"))
 
