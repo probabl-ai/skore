@@ -151,8 +151,8 @@ class CheckNotApplicable(Exception):
     ...     docs_url = None
     ...     severity = "issue"
     ...     def check_function(self, report):
-    ...         if report.X_test is None:
-    ...             raise CheckNotApplicable("Test data is unavailable.")
+    ...         if report.X_train is None:
+    ...             raise CheckNotApplicable("Train data is unavailable.")
     ...         return None
     """
 
