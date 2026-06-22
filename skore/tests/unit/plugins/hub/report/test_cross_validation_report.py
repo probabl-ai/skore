@@ -198,6 +198,52 @@ class TestCrossValidationReportPayload:
         }
 
     @mark.filterwarnings(
+        (
+            "ignore:scipy.optimize.*The `disp` and `iprint` options of the L-BFGS-B "
+            "solver are deprecated:DeprecationWarning"
+        ),
+    )
+    def test_multioutput_regression_splitting_strategy(self, project, monkeypatch):
+        """Regression for https://github.com/probabl-ai/skore/issues/3021."""
+        monkeypatch.setattr(
+            "skore._plugins.hub.report.cross_validation_report.TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT",
+            10,
+        )
+
+        X, y = make_regression(
+            n_samples=100, n_features=10, n_targets=2, random_state=0
+        )
+
+        report = CrossValidationReport(
+            DummyRegressor(), X, y, splitter=KFold(3, shuffle=False)
+        )
+        payload = CrossValidationReportPayload(
+            project=project, report=report, key="<key>"
+        )
+
+        train_target_distributions = payload.splitting_strategy[
+            "train_target_distributions"
+        ]
+        test_target_distributions = payload.splitting_strategy[
+            "test_target_distributions"
+        ]
+
+        for train_distribution, test_distribution in zip(
+            train_target_distributions, test_target_distributions, strict=True
+        ):
+            assert len(train_distribution) == len(test_distribution) == 20
+            assert all(distribution >= 0 for distribution in train_distribution)
+            assert all(distribution >= 0 for distribution in test_distribution)
+
+        assert payload.ml_task == "multioutput-regression"
+        assert payload.target_names == ["Target 0", "Target 1"]
+        assert payload.target_ranges == [
+            [float(y[:, 0].min()), float(y[:, 0].max())],
+            [float(y[:, 1].min()), float(y[:, 1].max())],
+        ]
+        assert payload.target_range == [float(y.min()), float(y.max())]
+
+    @mark.filterwarnings(
         # ignore deprecation warning due to `scikit-learn` misusing `scipy` arguments,
         # raised by `scipy`
         (
@@ -711,6 +757,8 @@ class TestCrossValidationReportPayload:
             "class_names": ["1", "0"],
             "groups": None,
             "target_range": None,
+            "target_names": None,
+            "target_ranges": None,
         }
 
     @mark.respx(assert_all_called=False)
