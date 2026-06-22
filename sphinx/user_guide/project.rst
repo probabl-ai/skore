@@ -12,13 +12,56 @@ initialization. When `mode` is set to `hub`, the project is configured to commun
 with `skore hub`. Refer to the documentation of :class:`Project` for the detailed API
 and take a look on the `example <example-getting-started_>`_.
 
+Creating a project
+------------------
+
+All modes share the same constructor shape: pass ``name``, ``mode``, and any
+mode-specific keyword arguments.
+
+.. code-block:: python
+
+   from pathlib import Path
+   from skore import Project
+
+   # Local persistence
+   project_local = Project(name="my-xp", mode="local", workspace=Path("/tmp/skore"))
+
+   # Skore Hub (requires skore.login() first)
+   project_hub = Project(name="my-xp", mode="hub", workspace="my-workspace")
+
+   # MLflow experiment
+   project_mlflow = Project(
+       name="my-experiment",
+       mode="mlflow",
+       tracking_uri="http://localhost:5000",
+   )
+
+.. rubric:: Migration from previous hub API
+
+Hub projects previously used a combined ``"<workspace>/<name>"`` string for ``name``.
+That format is no longer supported. Pass ``workspace`` and ``name`` separately instead:
+
+.. code-block:: python
+
+   # Before
+   Project("acme/my-xp", mode="hub")
+
+   # After
+   Project("my-xp", mode="hub", workspace="acme")
+
+The :attr:`Project.name` attribute now always returns the project name only. Use
+:attr:`Project.workspace` to read the hub workspace.
+
+Working with reports
+--------------------
+
 Once a project is created, store :class:`EstimatorReport` via the method
 :meth:`Project.put`.
 
 To retrieve the reports stored in the project, use the project summary by calling the
 method :meth:`Project.summarize`. This method returns a ``Summary`` object that holds
 the metadata and metrics of the stored reports and renders as an interactive table in
-Jupyter-like environments.
+Jupyter-like environments. Reports are listed in ascending order of their ``date``.
 
 The interactive view provides different views to sort, group by, and filter the reports;
 the selection produces a query string ready to pass to ``Summary.query(...)``. Once the
@@ -27,5 +70,41 @@ returned by :meth:`Project.summarize`. This method returns a list of
 :class:`EstimatorReport` instances (or a :class:`ComparisonReport` when called with
 ``return_as="report"``).
 
-To retrieve a specific report for which you have its `id`, use the method
-:meth:`Project.get` to retrieve the :class:`EstimatorReport`.
+To retrieve a specific report for which you have its ``id`` (as returned by
+:meth:`Project.summarize`), use the method :meth:`Project.get` to retrieve the
+:class:`EstimatorReport`.
+
+Synchronizing across modes
+--------------------------
+
+Projects in different modes (``local``, ``hub``, ``mlflow``) can be reconciled with
+:meth:`Project.sync_with`. This is useful when you work offline in local mode and upload
+experiments once connectivity is restored.
+
+You can pass an explicit counterpart :class:`Project`:
+
+.. code-block:: python
+
+    from skore import Project, login
+
+    local = Project("my-xp", mode="local")
+    local.put("baseline", report)
+
+    login(mode="hub")
+    hub = Project("my-xp", mode="hub", workspace="my-workspace")
+
+    result = local.sync_with(hub, direction="put")
+    print(result.summary())
+
+As a shortcut, pass a target mode instead of an instance. The counterpart project is
+built with the same :attr:`Project.name`, and mode-specific arguments (``workspace`` for
+hub, ``tracking_uri`` for mlflow) are forwarded:
+
+.. code-block:: python
+
+    result = local.sync_with("hub", workspace="my-workspace", direction="put")
+
+Use ``direction="get"`` to download remote reports locally, or ``direction="both"`` for
+bidirectional reconciliation. When the same key refers to different reports on both
+sides, control the outcome with ``on_conflict`` (for example ``"latest_wins"`` or
+``"skip"``). See :class:`SyncResult` for the outcome details.

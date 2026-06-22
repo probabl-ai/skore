@@ -29,6 +29,14 @@ These functions and classes are meant for managing a `Project` and its reports.
    Project.put
    Project.get
    Project.summarize
+   Project.sync_with
+   Project.delete
+
+.. autosummary::
+   :toctree: api/
+   :template: base.rst
+
+   SyncResult
 
 Skore project's summary
 ^^^^^^^^^^^^^^^^^^^^^^^

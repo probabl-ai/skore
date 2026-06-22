@@ -20,26 +20,39 @@ class FakeEntryPoint(EntryPoint):
 
 @fixture
 def FakeLocalProject():
-    project = Mock()
-    project.summarize = Mock(return_value=[])
-    project_factory = Mock(return_value=project)
-    return project_factory
+    def factory(**kwargs):
+        project = Mock()
+        project.name = kwargs.get("name", "<name>")
+        if "workspace" in kwargs:
+            project.workspace = kwargs["workspace"]
+        project.summarize = Mock(return_value=[])
+        return project
+
+    return Mock(side_effect=factory)
 
 
 @fixture
 def FakeHubProject():
-    project = Mock()
-    project.summarize = Mock(return_value=[])
-    project_factory = Mock(return_value=project)
-    return project_factory
+    def factory(**kwargs):
+        project = Mock()
+        project.name = kwargs.get("name", "<name>")
+        project.workspace = kwargs.get("workspace", "<workspace>")
+        project.summarize = Mock(return_value=[])
+        return project
+
+    return Mock(side_effect=factory)
 
 
 @fixture
 def FakeMlflowProject():
-    project = Mock()
-    project.summarize = Mock(return_value=[])
-    project_factory = Mock(return_value=project)
-    return project_factory
+    def factory(**kwargs):
+        project = Mock()
+        project.name = kwargs.get("name", "<name>")
+        project.tracking_uri = kwargs.get("tracking_uri", "file:///tmp/mlflow")
+        project.summarize = Mock(return_value=[])
+        return project
+
+    return Mock(side_effect=factory)
 
 
 @fixture(autouse=True)
@@ -112,8 +125,10 @@ class TestProject:
         project = Project(mode="local", name="<name>", workspace="<workspace>")
 
         assert isinstance(project, Project)
-        assert project._Project__mode == "local"
-        assert project._Project__name == "<name>"
+        assert project.mode == "local"
+        assert project.name == "<name>"
+        assert project.workspace == "<workspace>"
+        assert project.tracking_uri is None
         assert FakeLocalProject.called
         assert not FakeLocalProject.call_args.args
         assert FakeLocalProject.call_args.kwargs == {
@@ -165,11 +180,13 @@ class TestProject:
     def test_init_hub(self, FakeHubProject, monkeypatch):
         monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
-        project = Project(mode="hub", name="<workspace>/<name>")
+        project = Project(mode="hub", name="<name>", workspace="<workspace>")
 
         assert isinstance(project, Project)
-        assert project._Project__mode == "hub"
-        assert project._Project__name == "<workspace>/<name>"
+        assert project.mode == "hub"
+        assert project.name == "<name>"
+        assert project.workspace == "<workspace>"
+        assert project.tracking_uri is None
         assert FakeHubProject.called
         assert not FakeHubProject.call_args.args
         assert FakeHubProject.call_args.kwargs == {
@@ -177,14 +194,28 @@ class TestProject:
             "name": "<name>",
         }
 
+    def test_init_hub_missing_workspace(self, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+
+        with raises(TypeError, match="`workspace` is required"):
+            Project(mode="hub", name="<name>")
+
+    def test_init_hub_name_with_slash(self, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+
+        with raises(ValueError, match="must not contain '/'"):
+            Project(mode="hub", name="workspace/name", workspace="workspace")
+
     def test_init_mlflow(self, FakeMlflowProject, monkeypatch):
         monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
         project = Project(mode="mlflow", name="<name>", tracking_uri="<uri>")
 
         assert isinstance(project, Project)
-        assert project._Project__mode == "mlflow"
-        assert project._Project__name == "<name>"
+        assert project.mode == "mlflow"
+        assert project.name == "<name>"
+        assert project.workspace is None
+        assert project.tracking_uri == "<uri>"
         assert FakeMlflowProject.called
         assert not FakeMlflowProject.call_args.args
         assert FakeMlflowProject.call_args.kwargs == {
@@ -229,14 +260,14 @@ class TestProject:
         monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
         assert Project(mode="local", name="name").mode == "local"
-        assert Project(mode="hub", name="workspace/name").mode == "hub"
+        assert Project(mode="hub", name="name", workspace="workspace").mode == "hub"
         assert Project(mode="mlflow", name="name").mode == "mlflow"
 
     def test_name(self, monkeypatch):
         monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
         assert Project(mode="local", name="name").name == "name"
-        assert Project(mode="hub", name="workspace/name").name == "workspace/name"
+        assert Project(mode="hub", name="name", workspace="workspace").name == "name"
         assert Project(mode="mlflow", name="name").name == "name"
 
     @mark.parametrize(
@@ -289,6 +320,36 @@ class TestProject:
         assert project._Project__project.get.called
         assert project._Project__project.get.call_args.args == ("<id>",)
         assert not project._Project__project.get.call_args.kwargs
+
+    def test_summarize_sorts_by_date(self):
+        project = Project(mode="local", name="<name>")
+        project._Project__project.summarize.return_value = [
+            {
+                "id": "<id-2>",
+                "key": "<key-2>",
+                "date": "2024-01-02T00:00:00",
+                "learner": "<learner>",
+                "ml_task": "regression",
+                "report_type": "estimator",
+                "dataset": "<dataset>",
+            },
+            {
+                "id": "<id-1>",
+                "key": "<key-1>",
+                "date": "2024-01-01T00:00:00",
+                "learner": "<learner>",
+                "ml_task": "regression",
+                "report_type": "estimator",
+                "dataset": "<dataset>",
+            },
+        ]
+
+        summary = project.summarize()
+
+        assert summary.frame().index.get_level_values("id").tolist() == [
+            "<id-1>",
+            "<id-2>",
+        ]
 
     def test_summarize(self):
         project = Project(mode="local", name="<name>")
@@ -387,7 +448,7 @@ class TestProject:
         }
 
     def test_delete_hub(self, FakeHubProject):
-        Project.delete(mode="hub", name="<workspace>/<name>")
+        Project.delete(mode="hub", name="<name>", workspace="<workspace>")
 
         assert not FakeHubProject.called
         assert FakeHubProject.delete.called
