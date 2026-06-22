@@ -6,8 +6,6 @@ CrossValidationReports.
 from io import BytesIO
 
 import joblib
-import numpy as np
-import pandas as pd
 import pytest
 import skrub
 from sklearn.datasets import make_classification
@@ -22,6 +20,7 @@ from skore import (
     evaluate,
 )
 from skore._externals._sklearn_compat import convert_container
+from skore._utils._dataframe import _concat_vertical
 
 
 def test_pickle(tmp_path, report):
@@ -116,6 +115,8 @@ def test_comparison_report_pos_label_multiclass_is_none():
         (("pandas", "series"), True),
         (("array", "array"), False),
         (("array", "array"), True),
+        (("polars", "polars_series"), False),
+        (("polars", "polars_series"), True),
     ],
 )
 def test_create_estimator_report_from_estimator_reports(
@@ -161,21 +162,16 @@ def test_create_estimator_report_from_estimator_reports(
         assert joblib.hash(est_report_w_test.X_train) == joblib.hash(X_train)
         assert joblib.hash(est_report_w_test.y_train) == joblib.hash(y_train)
     else:
-        expected_X_train = (
-            pd.concat([X_train, X_test])
-            if isinstance(X_train, pd.DataFrame)
-            else np.concatenate([X_train, X_test])
-        )
-        expected_y_train = (
-            pd.concat([y_train, y_test])
-            if isinstance(y_train, (pd.DataFrame, pd.Series))
-            else np.concatenate([y_train, y_test])
-        )
+        expected_X_train = _concat_vertical(X_train, X_test)
+        expected_y_train = _concat_vertical(y_train, y_test)
         assert joblib.hash(est_report_w_test.X_train) == joblib.hash(expected_X_train)
         assert joblib.hash(est_report_w_test.y_train) == joblib.hash(expected_y_train)
 
 
-@pytest.mark.parametrize("container_types", [("pandas", "series"), ("array", "array")])
+@pytest.mark.parametrize(
+    "container_types",
+    [("pandas", "series"), ("array", "array"), ("polars", "polars_series")],
+)
 def test_create_estimator_report_from_cross_validation_reports(
     container_types, binary_classification_data
 ):

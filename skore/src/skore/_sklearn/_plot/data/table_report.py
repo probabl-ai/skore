@@ -1,5 +1,6 @@
 from typing import Any, Literal
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -15,13 +16,13 @@ from skrub._reporting._utils import (
     top_k_value_counts,
 )
 
-from skore._externals._skrub_compat import sbd
 from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _adjust_fig_size,
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
+from skore._utils._dataframe import UserDataFrame
 
 
 def _truncate_top_k_categories(
@@ -48,14 +49,14 @@ def _truncate_top_k_categories(
     pd.Series
         The truncated column.
     """
-    if col is None or sbd.is_numeric(col):
+    if col is None or pd.api.types.is_numeric_dtype(col):
         return col
 
     col = col.copy()
     _, counter = top_k_value_counts(col, k=k)
     values, _ = zip(*counter, strict=False)
     # we don't want to replace NaN with 'other'
-    keep = sbd.is_in(col, values) | sbd.is_null(col)
+    keep = col.isin(values) | col.isna()
     if isinstance(col.dtype, pd.CategoricalDtype):
         col = col.cat.add_categories(other_label)
         col[~keep] = other_label
@@ -99,7 +100,7 @@ def _compute_contingency_table(
     pd.DataFrame
         The contingency table.
     """
-    if sbd.name(x) is None or sbd.name(y) is None:
+    if x.name is None or y.name is None:
         raise ValueError("The series x and y must have a name.")
 
     if hue is None:
@@ -107,7 +108,7 @@ def _compute_contingency_table(
     else:
         contingency_table = pd.crosstab(index=y, columns=x, values=hue, aggfunc="mean")
 
-    cols = sbd.concat(sbd.to_frame(x), sbd.to_frame(y), axis=1)
+    cols = pd.concat([x.to_frame(), y.to_frame()], axis=1)
     top_pairs = cols.value_counts().nlargest(k).index
 
     top_x_values = sorted({pair[0] for pair in top_pairs})
@@ -135,7 +136,7 @@ def _resize_categorical_axis(
 
     Parameters
     ----------
-    fig : Figure
+    figure : Figure
         The figure to resize.
 
     ax : Axes
@@ -198,13 +199,13 @@ class TableReportDisplay(DisplayMixin):
         self.summary = summary
 
     @classmethod
-    def _compute_data_for_display(cls, dataset: pd.DataFrame) -> "TableReportDisplay":
+    def _compute_data_for_display(cls, dataset: UserDataFrame) -> "TableReportDisplay":
         """Private method to create a TableReportDisplay from a dataset.
 
         Parameters
         ----------
-        dataset : DataFrame
-            The dataset to summarize.
+        dataset : UserDataFrame
+            The dataset to summarize, as a pandas or polars DataFrame.
 
         Returns
         -------
@@ -375,36 +376,45 @@ class TableReportDisplay(DisplayMixin):
         """
         default_histplot_kwargs: dict[str, Any] = {}
 
-        column = sbd.col(self.summary["dataframe"], x or y)
+        column = nw.from_native(self.summary["dataframe"])[x or y]
+        dtype = column.dtype
 
         duration_unit = None
-        if sbd.is_duration(column):
-            column, duration_unit = duration_to_numeric(column)
-
-        if is_categorical := not (sbd.is_numeric(column) or sbd.is_any_date(column)):
-            top_k = sbd.col(sbd.head(sbd.value_counts(column), k), "value")
-
-            column = sbd.filter(column, sbd.is_in(column, top_k))
-            column = sbd.to_pandas(column)
-            column = column.astype(
-                pd.CategoricalDtype(categories=sbd.to_list(top_k), ordered=True)
+        is_categorical = False
+        if dtype == nw.Duration:
+            # `duration_to_numeric` is a skrub helper operating on pandas.
+            plot_column, duration_unit = duration_to_numeric(column.to_pandas())
+        elif is_categorical := not (dtype.is_numeric() or dtype.is_temporal()):
+            top_k = (
+                column.drop_nulls().value_counts(sort=True).head(k)[column.name]
+            ).to_list()
+            plot_column = pd.Series(
+                pd.Categorical(
+                    column.filter(column.is_in(top_k)).to_numpy(),
+                    categories=top_k,
+                    ordered=True,
+                ),
+                name=column.name,
             )
             default_histplot_kwargs["color"] = "tab:orange"
-
-        if sbd.is_integer(column) or is_categorical:
             default_histplot_kwargs["discrete"] = True
+        else:
+            # Numeric/temporal columns are passed to seaborn as native series.
+            plot_column = column.to_native()
+            if dtype.is_integer():
+                default_histplot_kwargs["discrete"] = True
 
         histplot_kwargs_validated = _validate_style_kwargs(
             default_histplot_kwargs, histplot_kwargs
         )
 
         if x is not None:
-            histplot_params = {"x": column}
+            histplot_params = {"x": plot_column}
             despine_params = {"bottom": is_categorical}
             if duration_unit is not None:
                 ax.set(xlabel=f"{duration_unit.capitalize()}s")
         else:  # y is not None
-            histplot_params = {"y": column}
+            histplot_params = {"y": plot_column}
             despine_params = {"left": is_categorical}
             if duration_unit is not None:
                 ax.set(ylabel=f"{duration_unit.capitalize()}s")
@@ -423,7 +433,7 @@ class TableReportDisplay(DisplayMixin):
             _resize_categorical_axis(
                 figure=figure,
                 ax=ax,
-                n_categories=sbd.n_unique(column),
+                n_categories=plot_column.nunique(),
                 is_x_axis=x is not None,
             )
 
@@ -478,23 +488,37 @@ class TableReportDisplay(DisplayMixin):
         k : int, default=20
             The number of most frequent categories to plot.
         """
-        x = sbd.col(self.summary["dataframe"], x) if x is not None else None
-        y = sbd.col(self.summary["dataframe"], y) if y is not None else None
-        hue = sbd.col(self.summary["dataframe"], hue) if hue is not None else None
-        x, y = hue if x is None else x, y if y is not None else hue
+        dataframe = nw.from_native(self.summary["dataframe"])
+        x_col = dataframe[x] if x is not None else None
+        y_col = dataframe[y] if y is not None else None
+        hue_col = dataframe[hue] if hue is not None else None
+        x_col, y_col = (
+            hue_col if x_col is None else x_col,
+            y_col if y_col is not None else hue_col,
+        )
 
         despine_params = {"top": True, "right": True, "trim": True, "offset": 10}
-        is_x_num, is_y_num = sbd.is_numeric(x), sbd.is_numeric(y)
-        hue = _truncate_top_k_categories(hue, k)
+        is_x_num = x_col is not None and x_col.dtype.is_numeric()
+        is_y_num = y_col is not None and y_col.dtype.is_numeric()
+        is_hue_num = hue_col is not None and hue_col.dtype.is_numeric()
+
+        # `_truncate_top_k_categories`, `pd.crosstab`, and seaborn require a single
+        # backend per call, so materialize 2D distribution columns to pandas here.
+        x_series: pd.Series | None = x_col.to_pandas() if x_col is not None else None
+        y_series: pd.Series | None = y_col.to_pandas() if y_col is not None else None
+        hue_series: pd.Series | None = (
+            hue_col.to_pandas() if hue_col is not None else None
+        )
+        hue_series = _truncate_top_k_categories(hue_series, k)
 
         if is_x_num and is_y_num:
             scatterplot_kwargs_validated = _validate_style_kwargs(
                 {"alpha": 0.1}, scatterplot_kwargs
             )
             sns.scatterplot(
-                x=x,
-                y=y,
-                hue=hue,
+                x=x_series,
+                y=y_series,
+                hue=hue_series,
                 ax=ax,
                 **scatterplot_kwargs_validated,
             )
@@ -525,17 +549,26 @@ class TableReportDisplay(DisplayMixin):
             )
 
             if is_x_num:
-                y = _truncate_top_k_categories(y, k)
+                y_series = _truncate_top_k_categories(y_series, k)
             else:
-                x = _truncate_top_k_categories(x, k)
+                x_series = _truncate_top_k_categories(x_series, k)
 
-            sns.boxplot(x=x, y=y, ax=ax, **boxplot_kwargs_validated)
-            sns.stripplot(x=x, y=y, hue=hue, ax=ax, **stripplot_kwargs_validated)
+            sns.boxplot(x=x_series, y=y_series, ax=ax, **boxplot_kwargs_validated)
+            sns.stripplot(
+                x=x_series,
+                y=y_series,
+                hue=hue_series,
+                ax=ax,
+                **stripplot_kwargs_validated,
+            )
+
+            categorical_series = y_series if is_x_num else x_series
+            assert categorical_series is not None
 
             _resize_categorical_axis(
                 figure=figure,
                 ax=ax,
-                n_categories=sbd.n_unique(y) if is_x_num else sbd.n_unique(x),
+                n_categories=categorical_series.nunique(),
                 is_x_axis=not is_x_num,
             )
             if is_x_num:
@@ -545,12 +578,14 @@ class TableReportDisplay(DisplayMixin):
                 if any(len(label.get_text()) > 1 for label in ax.get_xticklabels()):
                     _rotate_ticklabels(ax, rotation=45)
         else:
-            if (hue is not None) and (not sbd.is_numeric(hue)):
+            if (hue_series is not None) and (not is_hue_num):
                 raise ValueError(
                     "If 'x' and 'y' are categories, 'hue' must be continuous."
                 )
 
-            contingency_table = _compute_contingency_table(x, y, hue, k)
+            contingency_table = _compute_contingency_table(
+                x_series, y_series, hue_series, k
+            )
             contingency_table.index = [
                 ellide_string(s) for s in contingency_table.index
             ]
@@ -575,8 +610,8 @@ class TableReportDisplay(DisplayMixin):
                 size_per_category = 0.6
 
             cbar_kwargs = (
-                {"label": f"Mean {sbd.name(hue)}"}
-                if hue is not None
+                {"label": f"Mean {hue_series.name}"}
+                if hue_series is not None
                 else {"label": "Count"}
             )
 
@@ -606,14 +641,17 @@ class TableReportDisplay(DisplayMixin):
                 _resize_categorical_axis(
                     figure=figure,
                     ax=ax,
-                    n_categories=sbd.n_unique(x_or_y),
+                    n_categories=x_or_y.nunique(),
                     is_x_axis=is_x_axis,
                     size_per_category=size_per_category,
                 )
 
         sns.despine(figure, **despine_params)
 
-        ax.set(xlabel=sbd.name(x), ylabel=sbd.name(y))
+        ax.set(
+            xlabel=x_series.name if x_series is not None else None,
+            ylabel=y_series.name if y_series is not None else None,
+        )
         if ax.legend_ is not None:
             sns.move_legend(ax, (1.05, 0.0))
 
@@ -640,10 +678,13 @@ class TableReportDisplay(DisplayMixin):
             heatmap_kwargs,
         )
 
+        dataframe = self.summary["dataframe"]
+        columns = nw.from_native(dataframe).columns
+
         cramer_v_table = pd.DataFrame(
-            _column_associations._cramer_v_matrix(self.summary["dataframe"]),
-            columns=self.summary["dataframe"].columns,
-            index=self.summary["dataframe"].columns,
+            _column_associations._cramer_v_matrix(dataframe),
+            columns=columns,
+            index=columns,
         )
         # only show the lower triangle of the heatmap since it is a correlation matrix
         # and keep the diagonal as well.
@@ -654,7 +695,7 @@ class TableReportDisplay(DisplayMixin):
 
     def frame(
         self, *, kind: Literal["dataset", "top-associations"] = "dataset"
-    ) -> pd.DataFrame:
+    ) -> UserDataFrame:
         """Get the data related to the table report.
 
         Parameters
@@ -664,8 +705,10 @@ class TableReportDisplay(DisplayMixin):
 
         Returns
         -------
-        DataFrame
-            The dataset used to create the table report.
+        UserDataFrame or pd.DataFrame
+            When ``kind="dataset"``, the dataframe is returned in the user's native
+            backend (pandas or polars). When ``kind="top-associations"``, a pandas
+            DataFrame of column associations is returned.
         """
         if kind == "dataset":
             return self.summary["dataframe"]

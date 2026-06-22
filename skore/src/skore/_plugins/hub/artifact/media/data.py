@@ -1,6 +1,8 @@
 """Definition of the payload used to associate a data category media with report."""
 
-from typing import Literal
+from typing import Any, Literal
+
+import narwhals as nw
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.hub.artifact.media.media import Media, Report
@@ -27,9 +29,17 @@ class TableReport(Media[Report]):  # noqa: D101
         table_report = display.summary
 
         # Replace full dataset by its head/tail
-        dataframe = table_report.pop("dataframe")
-        table_report["extract_head"] = dataframe.head(3).to_dict(orient="split")
-        table_report["extract_tail"] = dataframe.tail(3).to_dict(orient="split")
+        dataframe_nw = nw.from_native(table_report.pop("dataframe"))
+
+        def to_split(frame: nw.DataFrame[Any]) -> dict[str, Any]:
+            return {
+                "index": list(range(frame.shape[0])),
+                "columns": frame.columns,
+                "data": frame.rows(),
+            }
+
+        table_report["extract_head"] = to_split(dataframe_nw.head(3))
+        table_report["extract_tail"] = to_split(dataframe_nw.tail(3))
 
         # Remove irrelevant information
         del table_report["sample_table"]

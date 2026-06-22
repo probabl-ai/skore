@@ -200,7 +200,10 @@ def test_clustering():
         CrossValidationReport(KMeans(), X=np.random.rand(10, 5), y=None)
 
 
-@pytest.mark.parametrize("container_types", [("pandas", "series"), ("array", "array")])
+@pytest.mark.parametrize(
+    "container_types",
+    [("pandas", "series"), ("array", "array"), ("polars", "polars_series")],
+)
 def test_create_estimator_report(container_types, forest_binary_classification_data):
     """Test the `create_estimator_report` method."""
     estimator, X, y = forest_binary_classification_data

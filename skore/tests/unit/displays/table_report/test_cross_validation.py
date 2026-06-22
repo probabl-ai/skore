@@ -3,9 +3,10 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
+from skrub import tabular_pipeline
 
 from skore import CrossValidationReport, Display, TableReportDisplay
-from skore._externals._skrub_compat import tabular_pipeline
+from skore._externals._sklearn_compat import convert_container
 
 
 @pytest.fixture(scope="module")
@@ -57,6 +58,27 @@ def test_table_report_display_frame(cross_validation_report, display):
     pd.testing.assert_frame_equal(
         associations, pd.DataFrame(display.summary["top_associations"])
     )
+
+
+@pytest.mark.parametrize(
+    "x_container,y_container",
+    [
+        ("array", "array"),
+        ("pandas", "series"),
+        ("polars", "polars_series"),
+    ],
+)
+def test_display_creation_with_containers(x_container, y_container):
+    """Check that the display can be created with paired container types."""
+    X, y = make_regression(n_samples=100, n_features=5, random_state=42)
+    feature_columns = [f"Feature_{i}" for i in range(X.shape[1])]
+    X = convert_container(
+        X, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y = convert_container(y, y_container, minversion="0.20.23")
+    report = CrossValidationReport(tabular_pipeline(DummyRegressor()), X=X, y=y)
+    display = report.data.summarize()
+    assert isinstance(display, TableReportDisplay)
 
 
 @pytest.mark.parametrize(
