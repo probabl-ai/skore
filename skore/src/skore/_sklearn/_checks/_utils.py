@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
-from sklearn.utils._param_validation import Interval
 
 from skore._sklearn.types import PositiveLabel
 from skore._utils._dataframe import (
@@ -151,43 +150,6 @@ class CheckNotApplicable(Exception):
     ...             raise CheckNotApplicable()
     ...         return None
     """
-
-
-def get_space_bound(
-    estimator, *, param_name: str, side: Literal["left", "right"]
-) -> float | None:
-    """Fetch the closed parameter-space boundary for `side` if it exists.
-
-    Navigates nested estimators (e.g. `Pipeline`) using `__`-separated names,
-    then inspects `_parameter_constraints` for an
-    :class:`~sklearn.utils._param_validation.Interval` whose corresponding bound is
-    finite and closed (i.e. included in the domain).
-    Returns `None` when no such constraint can be found.
-    """
-    *step_names, leaf_param = param_name.split("__")
-    owner = estimator
-
-    # Find the estimator that owns leaf_param
-    for step_name in step_names:
-        nested_params = owner.get_params(deep=True)
-        if step_name not in nested_params:
-            return None
-        owner = nested_params[step_name]
-    if not hasattr(owner, "_parameter_constraints"):
-        return None
-
-    # Find the Interval constraint for the leaf_param
-    closed_sides_for_bound = {"left": ("left", "both"), "right": ("right", "both")}
-    if leaf_param not in owner._parameter_constraints:
-        return None
-    for constraint in owner._parameter_constraints[leaf_param]:
-        if not isinstance(constraint, Interval):
-            continue
-        bound_value = getattr(constraint, side)
-        bound_is_closed = constraint.closed in closed_sides_for_bound[side]
-        if bound_value is not None and bound_is_closed:
-            return float(bound_value)
-    return None
 
 
 def split_preprocessor_estimator(estimator):

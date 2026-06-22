@@ -29,7 +29,7 @@ from skrub import DatetimeEncoder, tabular_pipeline
 
 from skore import Check, EstimatorReport, configuration, evaluate
 from skore._externals._sklearn_compat import convert_container
-from skore._sklearn._checks._utils import CheckNotApplicable, get_space_bound
+from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import (
     ChecksSummaryDisplay,
     _get_issue_documentation_url,
@@ -39,6 +39,7 @@ from skore._sklearn._checks.model_checks import (
     CheckHyperparamsAtSearchEdge,
     CheckSearchParamsToTune,
 )
+from skore._utils._testing import MockEstimator
 
 
 @pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
@@ -402,8 +403,8 @@ def test_skd010_not_detected_for_fast_model(regression_data):
         (Ridge(), "alpha", "right", None),
         # BayesianRidge.tol: Interval(Real, 0, None, closed='neither') -> open, no bound
         (BayesianRidge(), "tol", "left", None),
-        # unknown parameter
-        (Ridge(), "nonexistent", "left", None),
+        # estimator without _parameter_constraints
+        (MockEstimator(error=ValueError("unused")), "alpha", "left", None),
         # Pipeline: navigate 'ridge__alpha' to Ridge.alpha left bound
         (
             Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]),
@@ -411,17 +412,15 @@ def test_skd010_not_detected_for_fast_model(regression_data):
             "left",
             0.0,
         ),
-        # Pipeline: unknown step name
-        (
-            Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]),
-            "unknown__alpha",
-            "left",
-            None,
-        ),
     ],
 )
 def test_get_space_bound(estimator, param_name, side, expected):
-    assert get_space_bound(estimator, param_name, side) == expected
+    assert (
+        CheckHyperparamsAtSearchEdge._get_space_bound(
+            estimator, param_name=param_name, side=side
+        )
+        == expected
+    )
 
 
 def _prefit_grid_search_report(X, y, search):

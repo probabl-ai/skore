@@ -16,6 +16,7 @@ from sklearn.ensemble import (
 from sklearn.linear_model import LogisticRegression, RidgeCV
 from sklearn.model_selection._search import BaseSearchCV
 from sklearn.pipeline import Pipeline
+from sklearn.utils._param_validation import Interval
 from sklearn.utils._pprint import _changed_params
 from skrub import tabular_pipeline
 
@@ -29,7 +30,6 @@ from skore._sklearn._checks._utils import (
     detect_outliers_modified_zscore,
     get_preprocessed_X,
     get_report_y,
-    get_space_bound,
     majority_vote,
     split_preprocessor_estimator,
 )
@@ -748,6 +748,22 @@ class CheckHyperparamsAtSearchEdge(Check):
     docs_url = "skd014-hyperparams-at-search-edge"
     severity = "issue"
 
+    @staticmethod
+    def _get_space_bound(
+        estimator, *, param_name: str, side: Literal["left", "right"]
+    ) -> float | None:
+        """Fetch the closed parameter-space boundary for `side` if it exists."""
+        *step_names, leaf_param = param_name.split("__")
+        owner = estimator
+        for step_name in step_names:
+            owner = owner.get_params(deep=True)[step_name]
+        if not hasattr(owner, "_parameter_constraints"):
+            return None
+        for constraint in owner._parameter_constraints[leaf_param]:
+            if isinstance(constraint, Interval) and constraint.closed in [side, "both"]:
+                return float(getattr(constraint, side))
+        return None
+
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
         estimator = report.estimator_
@@ -779,7 +795,7 @@ class CheckHyperparamsAtSearchEdge(Check):
             if np.isclose(
                 float(best_value), float(search_low), rtol=0.0, atol=0.0, equal_nan=True
             ):
-                space_low = get_space_bound(
+                space_low = self._get_space_bound(
                     estimator.estimator, param_name=param_name, side="left"
                 )
                 if space_low is not None and np.isclose(
@@ -794,7 +810,7 @@ class CheckHyperparamsAtSearchEdge(Check):
                 atol=0.0,
                 equal_nan=True,
             ):
-                space_high = get_space_bound(
+                space_high = self._get_space_bound(
                     estimator.estimator, param_name=param_name, side="right"
                 )
                 if space_high is not None and np.isclose(
