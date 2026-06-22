@@ -539,7 +539,7 @@ def test_skd014_not_raised_when_search_edge_matches_space_edge(
     X, y = regression_data
     report = _prefit_grid_search_report(X, y, search)
     monkeypatch.setattr(report.estimator_, "best_params_", best_params)
-    codes = set(report.checks.summarize().frame(severity="issue")["code"])
+    codes = set(report.checks.summarize().frame(section="issue")["code"])
     assert "SKD014" not in codes
 
 
@@ -977,7 +977,7 @@ class TipCheck(Check):
 
 
 def test_tip_goes_to_tips_not_issues(regression_report):
-    """A check with severity='tip' is routed to tips, not issues."""
+    """A check with section='tip' is routed to tips, not issues."""
     regression_report.checks.add([TipCheck()])
     result = regression_report.checks.summarize()
     tips = result.frame(section="tip").set_index("code")
