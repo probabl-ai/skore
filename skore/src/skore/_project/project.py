@@ -35,10 +35,9 @@ class Project:
 
     The project is configured to communicate with ``skore hub``.
 
-    In this mode, ``workspace`` must be passed as a separate keyword argument. The
-    workspace is a ``skore hub`` concept that must be configured on the
-    ``skore hub`` interface. It represents an isolated entity managing users, projects,
-    and resources. It can be a company, organization, or team that operates
+    In this mode, ``workspace`` is a ``skore hub`` concept that must be configured on
+    the ``skore hub`` interface. It represents an isolated entity managing users,
+    projects, and resources. It can be a company, organization, or team that operates
     independently within the system.
 
     Note: Using Project in ``hub`` mode requires an account on ``skore hub``, with
@@ -77,8 +76,10 @@ class Project:
         Extra keyword arguments passed to the project, depending on its mode.
 
         workspace : str or Path-like, optional
-            Hub workspace name when ``mode="hub"`` (required). Local persistence
-            directory when ``mode="local"`` (optional). Ignored when ``mode="mlflow"``.
+
+            - If ``mode="hub"``, the Hub workspace name (required);
+            - If ``mode="local"``, the local persistence directory (optional);
+            - If ``mode="mlflow"``, ignored.
 
         tracking_uri : str, mode:mlflow only.
             The URI of the MLflow tracking server.
@@ -147,14 +148,14 @@ class Project:
                 raise ValueError(
                     f"In hub mode, `name` must not contain '/' (found {name!r}). "
                     "Pass `workspace` separately instead, e.g. "
-                    'Project(name="my-xp", mode="hub", workspace="acme").'
+                    'Project(name="my-xp", workspace="acme", mode="hub").'
                 )
 
             workspace = kwargs.get("workspace")
             if workspace is None:
                 raise TypeError(
                     "In hub mode, `workspace` is required. "
-                    'Use Project(name="...", mode="hub", workspace="...").'
+                    'Use Project(name="...", workspace="...", mode="hub").'
                 )
 
             parameters = {"workspace": workspace, "name": name}
@@ -200,7 +201,7 @@ class Project:
                 | The workspace can be set using kwargs or the environment variable
                   ``SKORE_WORKSPACE``.
                 | If not, it will be by default set to a ``skore/`` directory in the
-                  USER data directory:
+                  user data directory:
 
                 - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
                 - on Linux, usually ``${HOME}/.local/share/skore``,
@@ -406,21 +407,7 @@ class Project:
             Extra keyword arguments passed to the project, depending on its mode.
 
             workspace : str or Path-like, optional
-                Hub workspace name when ``mode="hub"`` (required). Local persistence
-                directory when ``mode="local"`` (optional). Ignored when
-                ``mode="mlflow"``.
-
-                For ``mode="local"``:
-
-                | The workspace can be shared between all the projects.
-                | The workspace can be set using kwargs or the environment variable
-                  ``SKORE_WORKSPACE``.
-                | If not, it will be by default set to a ``skore/`` directory in the
-                  USER data directory:
-
-                - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-                - on Linux, usually ``${HOME}/.local/share/skore``,
-                - on macOS, usually ``${HOME}/Library/Application Support/skore``.
+                See the :class:`Project` class docstring for details.
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.

@@ -391,7 +391,7 @@ from httpx import HTTPStatusError, codes
 from skore import Project
 
 try:
-    Project.delete(name=PROJECT, mode="hub", workspace=WORKSPACE)
+    Project.delete(name=PROJECT, workspace=WORKSPACE, mode="hub")
 except HTTPStatusError as e:
     if e.response.status_code != codes.NOT_FOUND:
         raise
@@ -400,7 +400,7 @@ except HTTPStatusError as e:
 # %%
 # We load or create a hub project:
 
-project = Project(name=PROJECT, mode="hub", workspace=WORKSPACE)
+project = Project(name=PROJECT, workspace=WORKSPACE, mode="hub")
 
 # %%
 # We store our reports with descriptive keys:

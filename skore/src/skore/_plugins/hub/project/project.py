@@ -317,7 +317,7 @@ class Project:
         console.print(f"Consult your report at [link={report_url}]{report_url}[/link]")
 
     def get(self, id: str) -> EstimatorReport | CrossValidationReport:
-        """Get a persisted report by its id (hub URN)."""
+        """Get a persisted report by its ID (hub URN)."""
         if m := re.match(Project.__REPORT_URN_PATTERN, id):
             workspace = self.workspace
             name = self.name
@@ -326,7 +326,7 @@ class Project:
             url = f"projects/{workspace}/{name}/{type}-reports/{report_id}"
         else:
             raise ValueError(
-                f"Report id '{id}' format does not match "
+                f"Report ID '{id}' format does not match "
                 f"'{Project.__REPORT_URN_PATTERN}'."
             )
 

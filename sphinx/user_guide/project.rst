@@ -27,7 +27,7 @@ mode-specific keyword arguments.
    project_local = Project(name="my-xp", mode="local", workspace=Path("/tmp/skore"))
 
    # Skore Hub (requires skore.login() first)
-   project_hub = Project(name="my-xp", mode="hub", workspace="my-workspace")
+   project_hub = Project(name="my-xp", workspace="my-workspace", mode="hub")
 
    # MLflow experiment
    project_mlflow = Project(
@@ -35,22 +35,6 @@ mode-specific keyword arguments.
        mode="mlflow",
        tracking_uri="http://localhost:5000",
    )
-
-.. rubric:: Migration from previous hub API
-
-Hub projects previously used a combined ``"<workspace>/<name>"`` string for ``name``.
-That format is no longer supported. Pass ``workspace`` and ``name`` separately instead:
-
-.. code-block:: python
-
-   # Before
-   Project("acme/my-xp", mode="hub")
-
-   # After
-   Project("my-xp", mode="hub", workspace="acme")
-
-The :attr:`Project.name` attribute now always returns the project name only. Use
-:attr:`Project.workspace` to read the hub workspace.
 
 Working with reports
 --------------------

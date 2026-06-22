@@ -339,7 +339,7 @@ class Project:
         experiment = client.get_experiment_by_name(name)
         if experiment is None or experiment.lifecycle_stage != "active":
             raise LookupError(
-                f"Project(mode='mlflow', name='{name}', "
+                f"Project(mode='mlflow', name={name!r}, "
                 f"tracking_uri='{tracking_uri}') does not exist."
             )
 
@@ -369,7 +369,7 @@ class Project:
 
     def __repr__(self) -> str:  # noqa: D105
         return (
-            f"Project(mode='mlflow', name='{self.name}', "
+            f"Project(mode='mlflow', name={self.name!r}, "
             f"tracking_uri='{self.tracking_uri}')"
         )
 
