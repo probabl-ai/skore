@@ -24,7 +24,7 @@ from skore._sklearn._plot.inspection.utils import (
 from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.metrics import MetricLike
 from skore._sklearn.types import Aggregate, DataSource, ReportType
-from skore._utils._callable_name import _callable_name
+from skore._utils._callable import _callable_name
 from skore._utils._index import flatten_multi_index
 
 

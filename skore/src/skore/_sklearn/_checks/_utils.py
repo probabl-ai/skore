@@ -3,14 +3,19 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING, Literal
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
-from skrub import _dataframe as sbd
 
 from skore._sklearn.types import PositiveLabel
-from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
+from skore._utils._dataframe import (
+    UserDataFrame,
+    UserTarget,
+    _normalize_X_as_dataframe,
+    _normalize_y_as_dataframe,
+)
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
@@ -170,24 +175,28 @@ def get_report_y(
     report: EstimatorReport,
     *,
     data_source: Literal["train", "test", "both"],
-) -> pd.Series | pd.DataFrame | None:
+) -> UserTarget | None:
     """Return the target as a 1d Series or multi-output DataFrame."""
     try:
         if data_source == "both":
             if report.y_train is None:
                 return None
-            y = sbd.concat(
-                _normalize_y_as_dataframe(report.y_train),
-                _normalize_y_as_dataframe(report.y_test),
-                axis=0,
+            y = nw.concat(
+                [
+                    nw.from_native(_normalize_y_as_dataframe(report.y_train)),
+                    nw.from_native(_normalize_y_as_dataframe(report.y_test)),
+                ],
+                how="vertical",
             )
         elif data_source == "train":
             if report.y_train is None:
                 return None
-            y = _normalize_y_as_dataframe(report.y_train)
+            y = nw.from_native(_normalize_y_as_dataframe(report.y_train))
         else:
-            y = _normalize_y_as_dataframe(report.y_test)
-        return y.iloc[:, 0] if y.shape[1] == 1 else y
+            y = nw.from_native(_normalize_y_as_dataframe(report.y_test))
+        if y.shape[1] == 1:
+            return y.get_column(y.columns[0]).to_native()
+        return y.to_native()
     except NotImplementedError:
         return None
 
@@ -196,7 +205,7 @@ def get_preprocessed_X(
     report: EstimatorReport,
     *,
     data_source: Literal["train", "test", "both"],
-) -> pd.DataFrame | None:
+) -> UserDataFrame | None:
     """Return the feature matrix seen by the predictor.
 
     When the report's estimator is a :class:`~sklearn.pipeline.Pipeline`, the
@@ -210,11 +219,13 @@ def get_preprocessed_X(
         if data_source == "both":
             if report.X_train is None:
                 return None
-            data = sbd.concat(
-                _normalize_X_as_dataframe(report.X_train),
-                _normalize_X_as_dataframe(report.X_test),
-                axis=0,
-            )
+            data = nw.concat(
+                [
+                    nw.from_native(_normalize_X_as_dataframe(report.X_train)),
+                    nw.from_native(_normalize_X_as_dataframe(report.X_test)),
+                ],
+                how="vertical",
+            ).to_native()
         elif data_source == "train":
             if report.X_train is None:
                 return None

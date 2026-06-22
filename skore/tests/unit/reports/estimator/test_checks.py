@@ -22,6 +22,7 @@ from sklearn.tree import DecisionTreeRegressor
 from skrub import DatetimeEncoder, tabular_pipeline
 
 from skore import Check, EstimatorReport, configuration, evaluate
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import (
     ChecksSummaryDisplay,
@@ -89,9 +90,22 @@ def test_skd001_detects_overfitting(regression_data):
     )
 
 
-def test_skd002_detects_underfitting(regression_data):
+@pytest.mark.parametrize(
+    "x_container, y_container",
+    [
+        ("array", "array"),
+        ("pandas", "series"),
+        ("polars", "polars_series"),
+    ],
+)
+def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     """Check that the underfitting issue is detected."""
     X, y = regression_data
+    feature_columns = [str(i) for i in range(X.shape[1])]
+    X = convert_container(
+        X, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y = convert_container(y, y_container, minversion="0.20.23")
     report = evaluate(DummyRegressor(), X, y)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
@@ -103,9 +117,19 @@ def test_skd002_detects_underfitting(regression_data):
 
 
 @pytest.mark.parametrize(
+    "x_container,y_container",
+    [
+        ("array", "array"),
+        ("pandas", "series"),
+        ("polars", "polars_series"),
+    ],
+)
+@pytest.mark.parametrize(
     "weights, code", [([0.9, 0.1], "SKD004"), ([0.9, 0.05, 0.05], "SKD005")]
 )
-def test_skd004_skd005_detects_high_class_imbalance(weights, code):
+def test_skd004_skd005_detects_high_class_imbalance(
+    weights, code, x_container, y_container
+):
     """Check that the high class imbalance issue is detected."""
     X, y = make_classification(
         n_samples=400,
@@ -126,6 +150,11 @@ def test_skd004_skd005_detects_high_class_imbalance(weights, code):
         weights=weights,
         random_state=0,
     )
+    feature_columns = [str(i) for i in range(X.shape[1])]
+    X = convert_container(
+        X, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y = convert_container(y, y_container, minversion="0.20.23")
     report = evaluate(LogisticRegression(), X, y, splitter=0.2)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert code in issues.index

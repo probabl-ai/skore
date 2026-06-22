@@ -19,7 +19,7 @@ from sklearn.metrics._scorer import _BaseScorer
 
 from skore._sklearn.types import DataSource, PositiveLabel
 from skore._utils._cache_key import make_cache_key
-from skore._utils._callable_name import _callable_name
+from skore._utils._callable import _callable_hash, _callable_name
 
 if TYPE_CHECKING:
     from skore import EstimatorReport
@@ -61,6 +61,9 @@ class MetricRow(TypedDict):
     metric_verbose_name : str
         Human-readable metric name.
 
+    fingerprint : str or None
+        Identifier for custom metrics.
+
     greater_is_better : bool or None
         Whether higher values are better.
 
@@ -78,6 +81,7 @@ class MetricRow(TypedDict):
     """
 
     metric_verbose_name: str
+    fingerprint: str | None
     greater_is_better: bool | None
     score: float
     label: PositiveLabel | None
@@ -133,6 +137,9 @@ class Metric:
     function_kind : FunctionKind or None, default=None
         Kind of scoring function (either metric or scorer).
 
+    fingerprint : str or None, default=None
+        Identifier for custom metrics.
+
     kwargs : dict, default={}
         Default keyword arguments for the scoring function.
 
@@ -158,6 +165,7 @@ class Metric:
         response_method: str | list[str] | tuple[str, ...] | None = None,
         function: ScorerCallable | MetricCallable | None = None,
         function_kind: FunctionKind | None = None,
+        fingerprint: str | None = None,
         kwargs: dict[str, Any] | None = None,
     ):
         """Construct a Metric.
@@ -167,8 +175,9 @@ class Metric:
         """
         # When name is None, the metric is being instantiated from a subclass
         # (e.g. Accuracy()) whose fields are defined as class attributes.
-        # Only `kwargs` needs to be set as an instance attribute.
+        # Only some attributes needs to be set at the instance level.
         self.kwargs = kwargs or self.kwargs
+        self.fingerprint = fingerprint
 
         if name is None:
             return
@@ -255,6 +264,7 @@ class Metric:
                 response_method=metric._response_method,
                 kwargs=metric._kwargs.copy(),
                 function_kind=FunctionKind.METRIC,
+                fingerprint=_callable_hash(metric._score_func),
             )
         elif isinstance(metric, str):
             metric_with_neg = _METRIC_ALIASES.get(metric, metric)
@@ -304,6 +314,7 @@ class Metric:
                 function=metric,
                 kwargs=resolved_kwargs,
                 function_kind=FunctionKind.SCORER,
+                fingerprint=_callable_hash(metric),
             )
         else:
             raise TypeError(
@@ -436,6 +447,7 @@ class Metric:
         return MetricRow(
             metric_verbose_name=self.verbose_name,
             greater_is_better=self.greater_is_better,
+            fingerprint=self.fingerprint,
             score=score.item() if hasattr(score, "item") else score,
             label=label,
             average=average,
@@ -800,7 +812,6 @@ class Score(Metric):
 
 # Order matters for default display
 BUILTIN_METRICS: list[Metric] = [
-    Score(),
     Accuracy(),
     Precision(),
     Recall(),
@@ -841,6 +852,11 @@ class MetricRegistry(UserDict[str, Metric]):
             for metric in BUILTIN_METRICS
             if metric.available(report)
         )
+
+        if Score.available(report):
+            fingerprint = _callable_hash(report.estimator_.score)
+            self.data["score"] = Score(fingerprint=fingerprint)
+            self.data.move_to_end("score", last=False)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({list(self.data.keys())})"

@@ -6,6 +6,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import Check, evaluate
+from skore._externals._sklearn_compat import convert_container
 
 
 @pytest.fixture
@@ -83,13 +84,58 @@ def test_skd001_aggregates_overfitting_across_splits(regression_data):
     assert "3/3 evaluated splits" in issues.loc["SKD001", "explanation"]
 
 
-def test_skd002_aggregates_underfitting_across_splits(regression_data):
+@pytest.mark.parametrize(
+    "x_container,y_container",
+    [
+        ("array", "array"),
+        ("pandas", "series"),
+        ("polars", "polars_series"),
+    ],
+)
+def test_skd002_aggregates_underfitting_across_splits(
+    regression_data, x_container, y_container
+):
     """Check that the underfitting issue is aggregated across splits."""
     X, y = regression_data
+    feature_columns = [str(i) for i in range(X.shape[1])]
+    X = convert_container(
+        X, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y = convert_container(y, y_container, minversion="0.20.23")
     report = evaluate(DummyRegressor(), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD002" in issues.index
     assert "3/3 evaluated splits" in issues.loc["SKD002", "explanation"]
+
+
+@pytest.mark.parametrize(
+    "x_container,y_container",
+    [
+        ("array", "array"),
+        ("pandas", "series"),
+        ("polars", "polars_series"),
+    ],
+)
+def test_skd004_detects_high_class_imbalance(x_container, y_container):
+    """Check that high class imbalance is detected with several container types."""
+    weights = [0.9, 0.1]
+    X, y = make_classification(
+        n_samples=400,
+        n_features=6,
+        n_informative=3,
+        n_classes=len(weights),
+        weights=weights,
+        random_state=0,
+    )
+    feature_columns = [str(i) for i in range(X.shape[1])]
+    X = convert_container(
+        X, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y = convert_container(y, y_container, minversion="0.20.23")
+    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD004" in issues.index
+    assert "Accuracy should not be used alone" in issues.loc["SKD004", "explanation"]
 
 
 def test_reuses_split_cached_results(monkeypatch, regression_report):
