@@ -68,10 +68,11 @@ def _baseline_estimator_report(
     except ValueError:
         raise CheckNotApplicable("Train data is unavailable.") from None
 
-    X_test, _ = report.data._retrieve_data_as_frame("test", False, "test")
     y_train = get_report_y(report, data_source="train")
     if y_train is None:
         raise CheckNotApplicable("Train data is unavailable.")
+
+    X_test, _ = report.data._retrieve_data_as_frame("test", False, "test")
     y_test = get_report_y(report, data_source="test")
 
     is_classification = report.ml_task in (
