@@ -616,3 +616,5 @@ def test_no_data_error():
     estimator = DummyClassifier().fit(X, y)
     with pytest.raises(TypeError, match="Test data must be provided"):
         EstimatorReport(estimator)
+        EstimatorReport(estimator, X_test=X)
+        EstimatorReport(estimator, y_test=y)
