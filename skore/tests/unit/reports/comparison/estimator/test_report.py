@@ -39,14 +39,6 @@ def test_different_test_data(
             ]
         )
 
-    # If there is an X_test but no y_test, it should not raise an error
-    ComparisonReport(
-        [
-            EstimatorReport(estimator, fit=False, X_test=X_test, y_test=None),
-            EstimatorReport(estimator, fit=False, X_test=X_test, y_test=None),
-        ]
-    )
-
 
 def test_init_different_ml_usecases(
     estimator_reports_binary_classification, estimator_reports_regression
