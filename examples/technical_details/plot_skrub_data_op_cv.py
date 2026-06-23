@@ -26,7 +26,7 @@ from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import LeaveOneGroupOut
 
 df = skrub.datasets.toy_products()
-data = skrub.var("df", df)
+data = skrub.var("df")
 groups = data["seller"]
 X = data[["description", "price"]].skb.mark_as_X(
     cv=LeaveOneGroupOut(), split_kwargs={"groups": groups}
