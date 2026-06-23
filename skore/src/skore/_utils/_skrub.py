@@ -42,7 +42,7 @@ def get_data_op(estimator: EstimatorLike) -> DataOp | None:
 
 def data_op_has_explicit_cv(data_op: DataOp) -> bool:
     """Return whether ``mark_as_X`` was called with an explicit ``cv`` argument."""
-    return data_op.skb.find_X_y().get("cv") is None
+    return data_op.skb.find_X_y().get("cv") is not None
 
 
 class _LearnerAdapter(BaseEstimator):
