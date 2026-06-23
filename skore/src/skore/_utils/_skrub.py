@@ -3,19 +3,14 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING, TypeGuard
 
-import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import NotFittedError, check_is_fitted
 from skrub import DataOp, SkrubLearner
 
-from skore._sklearn.types import _DEFAULT, EstimatorLike, _DefaultType
+from skore._sklearn.types import EstimatorLike
 
 if TYPE_CHECKING:
-    from collections.abc import Generator
-
-    from numpy.typing import ArrayLike
-
-    from skore._sklearn.types import SKLearnCrossValidator
+    pass
 
 
 def eval_X_y(data_op: DataOp, env: dict) -> dict:
@@ -51,23 +46,6 @@ def get_data_op(estimator: EstimatorLike) -> DataOp | None:
 def data_op_has_explicit_cv(data_op: DataOp) -> bool:
     """Return whether ``mark_as_X`` was called with an explicit ``cv`` argument."""
     return "cv" in data_op.skb.find_X_y()
-
-
-def resolve_data_op_split_indices(
-    data_op: DataOp,
-    environment: dict,
-    *,
-    cv: int | SKLearnCrossValidator | Generator | _DefaultType | None = _DEFAULT,
-) -> tuple[tuple[ArrayLike, ArrayLike], ...]:
-    """Resolve cross-validation split indices from a skrub DataOp."""
-    cv_arg = None if cv is _DEFAULT else cv
-    return tuple(
-        (
-            np.asarray(split["row_indices_train"]),
-            np.asarray(split["row_indices_test"]),
-        )
-        for split in data_op.skb.iter_cv_splits(environment=environment, cv=cv_arg)
-    )
 
 
 class _LearnerAdapter(BaseEstimator):

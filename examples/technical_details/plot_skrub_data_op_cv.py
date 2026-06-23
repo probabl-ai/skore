@@ -71,5 +71,5 @@ holdout_report
 
 # %%
 # Explicitly passing a ``splitter`` always overrides the DataOp configuration.
-override_report = evaluate(learner, data={"df": df}, splitter=3)
+override_report = evaluate(learner, data={"df": df}, splitter=2)
 override_report

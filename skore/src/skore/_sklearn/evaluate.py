@@ -223,7 +223,7 @@ def evaluate(
                 y,
                 data=data,
                 pos_label=pos_label,
-                splitter=_DEFAULT,
+                splitter=None,
                 n_jobs=n_jobs,
             )
         splitter = 0.2
@@ -260,6 +260,8 @@ def evaluate(
                 n_jobs=n_jobs,
             )
         return report.reports_[0]
+
+    splitter = cast(int | SKLearnCrossValidator | Generator, splitter)
 
     return CrossValidationReport(
         estimator,

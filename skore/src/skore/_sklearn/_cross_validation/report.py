@@ -22,18 +22,14 @@ from skore._sklearn._checks.base import CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import (
-    _DEFAULT,
     PositiveLabel,
     SKLearnCrossValidator,
-    _DefaultType,
 )
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 from skore._utils._skrub import (
-    eval_X_y,
     is_skrub_learner,
-    resolve_data_op_split_indices,
     to_estimator,
     to_learner,
 )
@@ -72,34 +68,6 @@ def _generate_estimator_report(
         y_test=_safe_indexing(y, test_indices),
         pos_label=pos_label,
     )
-
-
-def _check_estimator_and_data(
-    estimator: EstimatorLike,
-    X: ArrayLike | None,
-    y: ArrayLike | None,
-    data: dict | None,
-) -> tuple[bool, skrub.SkrubLearner, dict]:
-    if is_skrub_learner(estimator):
-        initialized_with_data_op = True
-        if X is not None or y is not None:
-            raise TypeError(
-                "X and y cannot be provided when estimator is a SkrubLearner. "
-                "Provide `data` instead."
-            )
-        if data is None:
-            raise TypeError("data must be provided when estimator is a SkrubLearner")
-        data = eval_X_y(estimator.data_op, data)
-    else:
-        initialized_with_data_op = False
-        if data is not None:
-            raise TypeError(
-                "`data` can only be provided when estimator "
-                "is a SkrubLearner. Provide X and y instead."
-            )
-        estimator = to_learner(estimator)
-        data = {"_skrub_X": X, "_skrub_y": y}
-    return initialized_with_data_op, estimator, data
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
@@ -234,10 +202,26 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         y: ArrayLike | None = None,
         data: dict | None = None,
         pos_label: PositiveLabel | None = None,
-        splitter: int | SKLearnCrossValidator | Generator | _DefaultType | None = None,
+        splitter: int | SKLearnCrossValidator | Generator | None = None,
         n_jobs: int | None = None,
     ) -> None:
         super().__init__()
+        self._check_estimator_and_data(estimator, X, y, data, splitter)
+        self._pos_label = pos_label
+        self.n_jobs = n_jobs
+
+        self.reports_: list[EstimatorReport] = self._fit_estimator_reports()
+
+        self._ml_task = self.reports_[0].ml_task
+
+    def _check_estimator_and_data(
+        self,
+        estimator,
+        X: ArrayLike | None,
+        y: ArrayLike | None,
+        data: dict | None,
+        splitter: int | SKLearnCrossValidator | Generator | None,
+    ) -> None:
         self.estimator = estimator
         if isinstance(estimator, skrub.DataOp):
             if data is None:
@@ -248,34 +232,37 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "Clustering models are not supported yet. Please use a"
                 " classification or regression model instead."
             )
-        self._initialized_with_data_op, self.learner_, self._data = (
-            _check_estimator_and_data(clone(estimator), X, y, data)
-        )
-        self._pos_label = pos_label
-        if self._initialized_with_data_op:
-            cv_for_indices = splitter if splitter is not None else _DEFAULT
-            self._split_indices = resolve_data_op_split_indices(
-                self.learner_.data_op,
-                self._data,
-                cv=cv_for_indices,
-            )
-            self._splitter = (
-                None
-                if splitter in (None, _DEFAULT)
-                else check_cv(
-                    splitter, self.y, classifier=is_classifier(self.estimator_)
+        estimator = clone(estimator)
+        if is_skrub_learner(estimator):
+            self._initialized_with_data_op = True
+            if X is not None or y is not None:
+                raise TypeError(
+                    "X and y cannot be provided when estimator is a SkrubLearner. "
+                    "Provide `data` instead."
                 )
-            )
+            if data is None:
+                raise TypeError(
+                    "data must be provided when estimator is a SkrubLearner"
+                )
+            self.learner_ = estimator
+            X_y_cv = skrub.as_data_op(estimator.data_op.skb.find_X_y()).skb.eval(data)
+            X, y = X_y_cv["X"], X_y_cv["y"]
+            self._data = data | {"_skrub_X": X, "_skrub_y": y}
+            if splitter is None and (cv := X_y_cv.get("cv")) is not None:
+                self._splitter = cv
+                self._split_indices = tuple(cv.split(X, y, **X_y_cv["split_kwargs"]))
         else:
-            resolved_splitter = None if splitter is _DEFAULT else splitter
-            self._splitter = check_cv(
-                resolved_splitter, y, classifier=is_classifier(estimator)
-            )
-            self._split_indices = tuple(self._splitter.split(self.X, self.y))
-        self.n_jobs = n_jobs
-
-        self.reports_: list[EstimatorReport] = self._fit_estimator_reports()
-        self._ml_task = self.reports_[0].ml_task
+            self._initialized_with_data_op = False
+            if data is not None:
+                raise TypeError(
+                    "`data` can only be provided when estimator "
+                    "is a SkrubLearner. Provide X and y instead."
+                )
+            self.learner_ = to_learner(estimator)
+            self._data = {"_skrub_X": X, "_skrub_y": y}
+        if getattr(self, "_splitter", None) is None:
+            self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
+            self._split_indices = tuple(self._splitter.split(X, y))
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
