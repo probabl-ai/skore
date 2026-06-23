@@ -199,11 +199,13 @@ class ChecksSummaryDisplay(DisplayMixin):
             if df.empty:
                 continue
             lines.append(f"{label}:")
-            if section in ("passed", "not_applicable"):
+            if section == "passed":
                 lines.extend(f"- [{row.code}] {row.title}" for row in df.itertuples())
             else:
                 for row in df.itertuples():
-                    msg = f"- [{row.code}] {row.title}. {row.explanation}"
+                    msg = f"- [{row.code}] {row.title}"
+                    if pd.notna(row.explanation):
+                        msg += f". {row.explanation}"
                     if pd.notna(row.documentation_url):
                         msg += f" Read more about this here: {row.documentation_url}."
                     lines.append(msg)
