@@ -65,13 +65,13 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        assert Project(workspace="available", name="name").workspace == "available"
+        assert Project(name="name", workspace="available").workspace == "available"
 
         with raises(NotFoundException, match="not found"):
-            Project(workspace="unavailable", name="name")
+            Project(name="name", workspace="unavailable")
 
         with raises(ForbiddenException, match="not member"):
-            Project(workspace="forbidden", name="name")
+            Project(name="name", workspace="forbidden")
 
     @mark.parametrize(
         "input,output,warning",
@@ -109,9 +109,9 @@ class TestProject:
 
         if warning:
             with warns(UserWarning, match=f".*'{output}'.*"):
-                assert Project(workspace="workspace", name=input).name == output
+                assert Project(name=input, workspace="workspace").name == output
         else:
-            assert Project(workspace="workspace", name=input).name == output
+            assert Project(name=input, workspace="workspace").name == output
 
     @mark.respx()
     def test_name_empty(self, respx_mock):
@@ -121,13 +121,13 @@ class TestProject:
             respx_mock.request(method=method, url=url).mock(response)
 
         with raises(ValueError, match="Project name must not be empty."):
-            Project(workspace="workspace", name="")
+            Project(name="", workspace="workspace")
 
         with (
             raises(ValueError, match="Project name must not be empty."),
             warns(UserWarning, match="Your project will be created as ''"),
         ):
-            Project(workspace="workspace", name="あいうえお")
+            Project(name="あいうえお", workspace="workspace")
 
     @mark.respx()
     def test_name_too_long(self, respx_mock):
@@ -139,7 +139,7 @@ class TestProject:
         with raises(
             ValueError, match="Project name must be no more than 64 characters long."
         ):
-            Project(workspace="workspace", name=("a" * 500))
+            Project(name=("a" * 500), workspace="workspace")
 
     @mark.respx()
     def test_put_exception(
@@ -162,13 +162,13 @@ class TestProject:
             respx_mock.request(method=method, url=url).mock(response)
 
         with raises(TypeError, match="Key must be a string"):
-            Project(workspace="workspace", name="name").put(None, "<value>")
+            Project(name="name", workspace="workspace").put(None, "<value>")
 
         with raises(
             TypeError,
             match="must be a `skore.EstimatorReport` or `skore.CrossValidationReport`",
         ):
-            Project(workspace="workspace", name="name").put("<key>", "<value>")
+            Project(name="name", workspace="workspace").put("<key>", "<value>")
 
     @mark.respx()
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
@@ -193,7 +193,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         project.put("<key>", binary_classification)
 
         # Retrieve the content of the request
@@ -242,7 +242,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         project.put("<key>", small_cv_binary_classification)
 
         # Retrieve the content of the request
@@ -284,7 +284,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = binary_classification_string_labels_with_pos_label
         project.put("<key>", report)
 
@@ -324,7 +324,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = binary_classification_string_labels
         project.put("<key>", report)
 
@@ -368,7 +368,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = cv_binary_classification_string_labels
         project.put("<key>", report)
 
@@ -412,7 +412,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = cv_binary_classification_string_labels_with_pos_label
         project.put("<key>", report)
 
@@ -452,7 +452,7 @@ class TestProject:
             for method, url, response in mocks:
                 respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = project.get("skore:report:estimator:<report_id>")
 
         assert isinstance(report, EstimatorReport)
@@ -485,7 +485,7 @@ class TestProject:
             for method, url, response in mocks:
                 respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = project.get("skore:report:cross-validation:<report_id>")
 
         assert isinstance(report, CrossValidationReport)
@@ -583,7 +583,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         summary = project.summarize()
 
         assert summary == [
@@ -671,7 +671,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        Project.delete(workspace="workspace", name="name")
+        Project.delete(name="name", workspace="workspace")
 
     @mark.respx
     def test_delete_exception(self, respx_mock):
@@ -690,7 +690,7 @@ class TestProject:
                 "please contact the 'workspace' owner"
             ),
         ):
-            Project.delete(workspace="workspace", name="name")
+            Project.delete(name="name", workspace="workspace")
 
     @mark.filterwarnings(
         # ignore deprecation warnings generated by the way `pandas` is used by
@@ -732,7 +732,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
 
         report_url = "http://domain/workspace/name/estimators/42"
 
