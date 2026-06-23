@@ -313,6 +313,10 @@
     background-color: var(--color-blue-hover);
 }
 
+.report-checks-summary {
+    padding-top: 0.5em;
+}
+
 .report-estimator {
     padding-top: 0.5em;
 }
