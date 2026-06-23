@@ -25,4 +25,3 @@ class ProjectBackend(Protocol):
 
     @staticmethod
     def delete(**kwargs: Any) -> None: ...
-
