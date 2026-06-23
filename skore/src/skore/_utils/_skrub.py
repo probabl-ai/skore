@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING, TypeGuard
+from typing import TypeGuard
 
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import NotFittedError, check_is_fitted
 from skrub import DataOp, SkrubLearner
 
 from skore._sklearn.types import EstimatorLike
-
-if TYPE_CHECKING:
-    pass
 
 
 def eval_X_y(data_op: DataOp, env: dict) -> dict:
@@ -45,7 +42,7 @@ def get_data_op(estimator: EstimatorLike) -> DataOp | None:
 
 def data_op_has_explicit_cv(data_op: DataOp) -> bool:
     """Return whether ``mark_as_X`` was called with an explicit ``cv`` argument."""
-    return "cv" in data_op.skb.find_X_y()
+    return data_op.skb.find_X_y().get("cv") is None
 
 
 class _LearnerAdapter(BaseEstimator):
