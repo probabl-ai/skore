@@ -13,6 +13,7 @@ from skore._sklearn.types import PositiveLabel
 from skore._utils._dataframe import (
     UserDataFrame,
     UserTarget,
+    _concat_vertical,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
@@ -208,31 +209,21 @@ def get_preprocessed_X(
 ) -> UserDataFrame | None:
     """Return the feature matrix seen by the predictor.
 
-    When the report's estimator is a :class:`~sklearn.pipeline.Pipeline`, the
-    raw feature matrix is passed through the fitted preprocessor (all steps
-    except the last) before being returned.
+    Features are retrieved in the same format as at fit time, passed through
+    the fitted preprocessor when present, then normalized for analysis.
 
     Returns ``None`` when no data is available or when the preprocessor
     produces an unsupported type (e.g. sparse matrices).
     """
-    try:
-        if data_source == "both":
-            if report.X_train is None:
-                return None
-            data = nw.concat(
-                [
-                    nw.from_native(_normalize_X_as_dataframe(report.X_train)),
-                    nw.from_native(_normalize_X_as_dataframe(report.X_test)),
-                ],
-                how="vertical",
-            ).to_native()
-        elif data_source == "train":
-            if report.X_train is None:
-                return None
-            data = _normalize_X_as_dataframe(report.X_train)
-        else:
-            data = _normalize_X_as_dataframe(report.X_test)
-    except NotImplementedError:
+    if data_source == "both":
+        if report.X_train is None:
+            return None
+        data = _concat_vertical(report.X_train, report.X_test)
+    elif data_source == "train":
+        data = report.X_train
+    else:
+        data = report.X_test
+    if data is None:
         return None
 
     preprocessor, _ = split_preprocessor_estimator(report.estimator_)

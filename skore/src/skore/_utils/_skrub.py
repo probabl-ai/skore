@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import functools
 from typing import TypeGuard
 
@@ -27,6 +29,20 @@ def eval_X_y(data_op: DataOp, env: dict) -> dict:
 def is_skrub_learner(obj: EstimatorLike) -> TypeGuard[SkrubLearner]:
     """Detect if obj is a skrub learner (SkrubLearner, ParamSearch, OptunaSearch)."""
     return hasattr(obj, "__skrub_to_Xy_pipeline__")
+
+
+def get_data_op(estimator: EstimatorLike) -> DataOp | None:
+    """Return the DataOp backing a skrub learner, if any."""
+    if isinstance(estimator, DataOp):
+        return estimator
+    if is_skrub_learner(estimator):
+        return estimator.data_op
+    return None
+
+
+def data_op_has_explicit_cv(data_op: DataOp) -> bool:
+    """Return whether ``mark_as_X`` was called with an explicit ``cv`` argument."""
+    return data_op.skb.find_X_y().get("cv") is not None
 
 
 class _LearnerAdapter(BaseEstimator):
