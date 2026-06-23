@@ -29,6 +29,7 @@ from skore._sklearn._checks._utils import (
     check_score_gap_to_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
+    get_fit_time,
     get_fitted_estimator,
     get_preprocessed_X,
     get_report_y,
@@ -53,10 +54,10 @@ _TIMING_METRICS_FLAT = {"fit_time_s", "predict_time_s"}
 
 
 def _baseline_estimator_report(
-    report: EstimatorReport,
+    report: EstimatorReport | CrossValidationReport,
     kind: Literal["dummy", "performance", "fast"],
-) -> EstimatorReport:
-    """Build a baseline EstimatorReport mirroring ``report``.
+) -> EstimatorReport | CrossValidationReport:
+    """Build a baseline report mirroring ``report``.
 
     For ``kind="dummy"``, returns a plain ``DummyClassifier`` / ``DummyRegressor``
     baseline. For ``kind="performance"`` and ``kind="fast"``, the estimator is
@@ -64,18 +65,8 @@ def _baseline_estimator_report(
 
     Raises :class:`CheckNotApplicable` for unsupported ml tasks.
     """
+    from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
-
-    if report.X_train is None:
-        raise CheckNotApplicable("Train data is unavailable.")
-    try:
-        X_train = _normalize_X_as_dataframe(report.X_train)
-        X_test = _normalize_X_as_dataframe(report.X_test)
-    except NotImplementedError:
-        raise CheckNotApplicable("Data is sparse.") from None
-
-    y_train = get_report_y(report, data_source="train")
-    y_test = get_report_y(report, data_source="test")
 
     is_classification = report.ml_task in (
         "binary-classification",
@@ -102,6 +93,34 @@ def _baseline_estimator_report(
         estimator = tabular_pipeline(
             LogisticRegression(max_iter=1000) if is_classification else RidgeCV()
         )
+
+    if report._report_type == "cross-validation":
+        try:
+            baseline = CrossValidationReport(
+                estimator,
+                X=report.X,
+                y=report.y,
+                splitter=report.splitter,
+                pos_label=report.pos_label,
+                n_jobs=report.n_jobs,
+            )
+        except Exception as exc:
+            raise CheckNotApplicable("Failed to create baseline report.") from exc
+        registry = report.reports_[0]._metric_registry.copy()
+        for baseline_split in baseline.reports_:
+            baseline_split._metric_registry = registry
+        return baseline
+
+    if report.X_train is None:
+        raise CheckNotApplicable("Train data is unavailable.")
+    try:
+        X_train = _normalize_X_as_dataframe(report.X_train)
+        X_test = _normalize_X_as_dataframe(report.X_test)
+    except NotImplementedError:
+        raise CheckNotApplicable("Data is sparse.") from None
+
+    y_train = get_report_y(report, data_source="train")
+    y_test = get_report_y(report, data_source="test")
 
     try:
         baseline_report = EstimatorReport(
@@ -171,13 +190,13 @@ class CheckUnderfitting(Check):
 
     code = "SKD002"
     title = "Potential underfitting"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd002-underfitting"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect train and test scores close to a dummy baseline."""
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         baseline = _baseline_estimator_report(report, kind="dummy")
 
         report_train = collect_scores(report, data_source="train")
@@ -483,13 +502,13 @@ class CheckWorseThanBaseline(Check):
 
     code = "SKD009"
     title = "Model worse than baseline"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd009-worse-than-baseline"
     severity = "issue"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         baseline = _baseline_estimator_report(report, kind="performance")
 
         report_test = collect_scores(report, data_source="test")
@@ -529,20 +548,20 @@ class CheckSlowerThanBaseline(Check):
 
     code = "SKD010"
     title = "Model slower than baseline"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd010-slower-than-baseline"
     severity = "issue"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         baseline = _baseline_estimator_report(report, kind="fast")
 
-        if report._fit_time is None or baseline._fit_time is None:
-            raise CheckNotApplicable("Fit time is unavailable.")
+        report_fit_time = get_fit_time(report)
+        baseline_fit_time = get_fit_time(baseline)
 
-        slowness_ratio = report._fit_time / baseline._fit_time
-        if slowness_ratio < 2.0 or report._fit_time - baseline._fit_time < 0.05:
+        slowness_ratio = report_fit_time / baseline_fit_time
+        if slowness_ratio < 2.0 or report_fit_time - baseline_fit_time < 0.05:
             return None
 
         report_test = collect_scores(report, data_source="test")

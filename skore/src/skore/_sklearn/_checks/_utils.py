@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from collections import defaultdict
 from typing import TYPE_CHECKING, Literal, cast
 
 import narwhals as nw
@@ -9,6 +10,7 @@ import pandas as pd
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
 
+from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._sklearn.types import EstimatorLike, PositiveLabel
 from skore._utils._dataframe import (
     UserDataFrame,
@@ -22,9 +24,6 @@ if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
     from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
-    from skore._sklearn._plot.metrics.metrics_summary_display import (
-        MetricsSummaryRow,
-    )
     from skore._sklearn.types import DataSource
 
 _TIMING_METRICS = {"Fit time (s)", "Predict time (s)"}
@@ -46,22 +45,36 @@ def _metric_key(row: MetricsSummaryRow) -> MetricKey:
 
 
 def collect_scores(
-    report: EstimatorReport,
+    report: EstimatorReport | CrossValidationReport,
     *,
     data_source: DataSource,
-    include_timing: bool = False,
 ) -> dict[MetricKey, MetricsSummaryRow]:
-    """Collect ``summarize`` rows keyed by metric identity for an estimator report.
+    """Collect ``summarize`` rows keyed by metric identity.
 
+    For cross-validation reports, scores are mean-aggregated across splits.
     Timing rows are filtered out by default.
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
         rows = report.metrics.summarize(data_source=data_source).rows
+    filtered_rows = [
+        row for row in rows if row["metric_verbose_name"] not in _TIMING_METRICS
+    ]
+    if report._report_type == "estimator":
+        return {_metric_key(row): row for row in filtered_rows}
+
+    grouped: dict[MetricKey, list[MetricsSummaryRow]] = defaultdict(list)
+    for row in filtered_rows:
+        grouped[_metric_key(row)].append(row)
     return {
-        _metric_key(row): row
-        for row in rows
-        if include_timing or row["metric_verbose_name"] not in _TIMING_METRICS
+        key: cast(
+            MetricsSummaryRow,
+            {
+                **split_rows[0],
+                "score": float(np.mean([row["score"] for row in split_rows])),
+            },
+        )
+        for key, split_rows in grouped.items()
     }
 
 
@@ -223,6 +236,16 @@ def get_fitted_estimator(
     if report._report_type == "cross-validation":
         return report.reports_[0].estimator_
     return report.estimator_
+
+
+def get_fit_time(report: EstimatorReport | CrossValidationReport) -> float:
+    if report._report_type == "cross-validation":
+        return float(
+            report.metrics.timings(aggregate="mean").loc["Fit time (s)", "mean"]
+        )
+    if report._fit_time is None:
+        raise CheckNotApplicable("Fit time is unavailable.")
+    return report._fit_time
 
 
 def get_preprocessed_X(

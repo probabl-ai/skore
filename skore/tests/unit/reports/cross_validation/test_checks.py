@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
-from sklearn.datasets import make_classification
-from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.datasets import make_classification, make_regression
+from sklearn.dummy import DummyRegressor
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression, LogisticRegression, RidgeCV
 
 from skore import Check, evaluate
 from skore._externals._sklearn_compat import convert_container
@@ -62,6 +64,69 @@ def test_skd003_detects_inconsistent_splits():
         - 2  # -2 for the timing metrics
     )
     assert f"for {n_metrics}/{n_metrics} metrics" in issues.loc["SKD003", "explanation"]
+
+
+@pytest.mark.parametrize(
+    "x_container,y_container",
+    [
+        ("array", "array"),
+        ("pandas", "series"),
+        ("polars", "polars_series"),
+    ],
+)
+def test_skd002_detects_underfitting(regression_data, x_container, y_container):
+    """Check that the underfitting issue is detected on a CV report."""
+    X, y = regression_data
+    feature_columns = [str(i) for i in range(X.shape[1])]
+    X = convert_container(
+        X, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y = convert_container(y, y_container, minversion="0.20.23")
+    report = evaluate(DummyRegressor(), X, y, splitter=3)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    n_metrics = len(
+        {
+            (row["metric_verbose_name"], row["label"], row["average"], row["output"])
+            for row in report.metrics.summarize(data_source="test").rows
+            if row["metric_verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
+        }
+    )
+    assert "SKD002" in issues.index
+    assert (
+        f"for {n_metrics}/{n_metrics} comparable metrics"
+        in issues.loc["SKD002", "explanation"]
+    )
+
+
+def test_skd009_detects_worse_than_baseline(regression_data):
+    """Check that the worse-than-baseline issue is detected on a CV report."""
+    X, y = regression_data
+    report = evaluate(DummyRegressor(), X, y, splitter=3)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD009" in issues.index
+    assert (
+        "not significantly better than a HistGradientBoosting baseline"
+        in issues.loc["SKD009", "explanation"]
+    )
+
+
+def test_skd009_not_detected_on_strong_model():
+    """Check that SKD009 is not detected when the model beats HistGradientBoosting."""
+    X, y = make_regression(n_features=4, noise=0.1, random_state=0)
+    report = evaluate(RidgeCV(), X, y, splitter=3)
+    codes = set(report.checks.summarize().frame(section="issue")["code"])
+    assert "SKD009" not in codes
+
+
+def test_skd010_detects_slower_than_baseline(regression_data):
+    """Check that SKD010 is detected when the model is slower with similar scores."""
+    X, y = regression_data
+    report = evaluate(
+        RandomForestRegressor(n_estimators=200, random_state=0), X, y, splitter=3
+    )
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD010" in issues.index
+    assert "slower than a fast linear baseline" in issues.loc["SKD010", "explanation"]
 
 
 @pytest.mark.parametrize(

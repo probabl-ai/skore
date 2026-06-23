@@ -778,6 +778,7 @@ def test_exception_when_baseline_report_creation_fails(regression_data, monkeypa
     """Check that an exception is raised when the baseline report creation fails."""
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y)
+    cv_report = evaluate(LinearRegression(), X, y, splitter=3)
 
     def failing_fit(self, **kwargs):
         raise RuntimeError("Test error")
@@ -787,6 +788,10 @@ def test_exception_when_baseline_report_creation_fails(regression_data, monkeypa
         if check.code in ["SKD002", "SKD009", "SKD010"]:
             with pytest.raises(CheckNotApplicable):
                 check.check_function(report)
+    for check in cv_report._checks_registry:
+        if check.code in ["SKD002", "SKD009", "SKD010"]:
+            with pytest.raises(CheckNotApplicable):
+                check.check_function(cv_report)
 
 
 def test_no_issues(monkeypatch, regression_report):
