@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Literal, cast
@@ -546,7 +546,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         fast_mode: bool = False,
     ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
         comparison_results: dict[CheckCode, dict] = {}
-        reports_by_code: dict[CheckCode, list[str]] = {}
+        reports_by_code: defaultdict[CheckCode, list[str]] = defaultdict(list)
+        ref_by_code: dict[CheckCode, dict] = {}
         all_applicable_codes: set[CheckCode] = set()
         all_not_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
@@ -558,6 +559,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             all_not_applicable_codes |= not_applicable_codes
 
             for code, result in report_results.items():
+                ref_by_code.setdefault(code, result)
                 comparison_results.setdefault(
                     code,
                     {
@@ -567,8 +569,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                         "severity": result.get("severity"),
                     },
                 )
-                if result["explanation"] is not None:
-                    reports_by_code.setdefault(code, []).append(report_name)
+                if code in applicable_codes and result["explanation"] is not None:
+                    reports_by_code[code].append(report_name)
 
         all_not_applicable_codes -= all_applicable_codes
 
@@ -576,6 +578,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             comparison_results[code]["explanation"] = (
                 f"Detected in: {', '.join(f'[{r}]' for r in reports)}."
             )
+        for code in all_not_applicable_codes:
+            comparison_results[code]["explanation"] = ref_by_code[code]["explanation"]
         return comparison_results, all_applicable_codes, all_not_applicable_codes
 
     def _get_help_title(self) -> str:

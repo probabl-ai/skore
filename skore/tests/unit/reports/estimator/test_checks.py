@@ -10,7 +10,13 @@ from sklearn.decomposition import PCA
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.kernel_approximation import RBFSampler
-from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, RidgeCV
+from sklearn.linear_model import (
+    BayesianRidge,
+    LinearRegression,
+    LogisticRegression,
+    Ridge,
+    RidgeCV,
+)
 from sklearn.model_selection import (
     GridSearchCV,
     RandomizedSearchCV,
@@ -33,6 +39,7 @@ from skore._sklearn._checks.model_checks import (
     CheckHyperparamsAtSearchEdge,
     CheckSearchParamsToTune,
 )
+from skore._utils._testing import MockEstimator
 
 
 @pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
@@ -395,6 +402,35 @@ def test_skd010_not_detected_for_fast_model(regression_data):
     assert "SKD010" not in codes
 
 
+@pytest.mark.parametrize(
+    "estimator, param_name, side, expected",
+    [
+        # Ridge.alpha: Interval(Real, 0, None, closed='left') -> left bound is 0.0
+        (Ridge(), "alpha", "left", 0.0),
+        # Ridge.alpha has no finite right bound
+        (Ridge(), "alpha", "right", None),
+        # BayesianRidge.tol: Interval(Real, 0, None, closed='neither') -> open, no bound
+        (BayesianRidge(), "tol", "left", None),
+        # estimator without _parameter_constraints
+        (MockEstimator(error=ValueError("unused")), "alpha", "left", None),
+        # Pipeline: navigate 'ridge__alpha' to Ridge.alpha left bound
+        (
+            Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]),
+            "ridge__alpha",
+            "left",
+            0.0,
+        ),
+    ],
+)
+def test_get_space_bound(estimator, param_name, side, expected):
+    assert (
+        CheckHyperparamsAtSearchEdge._get_space_bound(
+            estimator, param_name=param_name, side=side
+        )
+        == expected
+    )
+
+
 def _prefit_grid_search_report(X, y, search):
     search.fit(X, y)
     return evaluate(search, X, y, splitter="prefit")
@@ -484,6 +520,34 @@ def test_skd014_search_classes(regression_data, monkeypatch, search):
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD014" in issues.index
     assert "minimum" in issues.loc["SKD014", "explanation"]
+
+
+@pytest.mark.parametrize(
+    "search, best_params",
+    [
+        (
+            GridSearchCV(Ridge(), param_grid={"alpha": [0.0, 1.0, 10.0]}, cv=2),
+            {"alpha": 0.0},
+        ),
+        (
+            GridSearchCV(
+                Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())]),
+                param_grid={"ridge__alpha": [0.0, 1.0, 10.0]},
+                cv=2,
+            ),
+            {"ridge__alpha": 0.0},
+        ),
+    ],
+)
+def test_skd014_not_raised_when_search_edge_matches_space_edge(
+    regression_data, monkeypatch, search, best_params
+):
+    """SKD014 is absent when the search minimum equals the parameter-space minimum."""
+    X, y = regression_data
+    report = _prefit_grid_search_report(X, y, search)
+    monkeypatch.setattr(report.estimator_, "best_params_", best_params)
+    codes = set(report.checks.summarize().frame(section="issue")["code"])
+    assert "SKD014" not in codes
 
 
 def test_skd015_suggests_missing_params(regression_data):
@@ -700,6 +764,16 @@ def test_exception_when_train_data_missing(regression_train_test_split):
         if check.code in ["SKD001", "SKD002", "SKD009", "SKD010"]:
             with pytest.raises(CheckNotApplicable):
                 check.check_function(report)
+
+
+def test_not_applicable_reason_in_summarize(regression_train_test_split):
+    """Not-applicable checks surface their reason in the summary."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    estimator = LinearRegression().fit(X_train, y_train)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    na = report.checks.summarize().frame(section="not_applicable").set_index("code")
+    assert "SKD001" in na.index
+    assert na.loc["SKD001", "explanation"] == ("Train data is unavailable.")
 
 
 def test_exception_when_baseline_report_creation_fails(regression_data, monkeypatch):
@@ -920,7 +994,7 @@ class TipCheck(Check):
 
 
 def test_tip_goes_to_tips_not_issues(regression_report):
-    """A check with severity='tip' is routed to tips, not issues."""
+    """A check with section='tip' is routed to tips, not issues."""
     regression_report.checks.add([TipCheck()])
     result = regression_report.checks.summarize()
     tips = result.frame(section="tip").set_index("code")
@@ -994,14 +1068,16 @@ class NotApplicableMockCheck(Check):
     docs_url = "tstna"
 
     def check_function(self, report):
-        raise CheckNotApplicable()
+        raise CheckNotApplicable("Mock check is not applicable.")
 
 
 def test_not_applicable_goes_to_not_applicable_section(regression_report):
     """A check raising CheckNotApplicable appears under not applicable."""
     regression_report.checks.add([NotApplicableMockCheck()])
     result = regression_report.checks.summarize()
-    assert "TSTNA" in set(result.frame(section="not_applicable")["code"])
+    na = result.frame(section="not_applicable").set_index("code")
+    assert "TSTNA" in na.index
+    assert na.loc["TSTNA", "explanation"] == "Mock check is not applicable."
     assert "TSTNA" not in set(result.frame(section="passed")["code"])
     assert "TSTNA" not in set(result.frame(section="issue")["code"])
     assert "TSTNA" not in set(result.frame(section="tip")["code"])
