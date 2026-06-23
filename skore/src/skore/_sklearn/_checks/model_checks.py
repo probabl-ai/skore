@@ -147,14 +147,16 @@ class CheckOverfitting(Check):
 
     code = "SKD001"
     title = "Potential overfitting"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd001-overfitting"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect significant gaps between train and test scores."""
-        report = cast("EstimatorReport", report)
-        if report.X_train is None or report.y_train is None:
+        report = cast_report(report)
+        if report._report_type == "estimator" and (
+            report.X_train is None or report.y_train is None
+        ):
             raise CheckNotApplicable("Train data is unavailable.")
 
         report_train = collect_scores(report, data_source="train")
@@ -597,51 +599,79 @@ class CheckGoldenFeature(Check):
 
     code = "SKD011"
     title = "Golden feature"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd011-golden-feature"
     severity = "tip"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
+        from skore._sklearn._cross_validation.report import CrossValidationReport
         from skore._sklearn._estimator.report import EstimatorReport
 
-        report = cast("EstimatorReport", report)
-        X_train = get_preprocessed_X(report, data_source="train")
-        X_test = get_preprocessed_X(report, data_source="test")
-        y_train = get_report_y(report, data_source="train")
-        y_test = get_report_y(report, data_source="test")
-        if X_train.shape[1] < 2:
-            raise CheckNotApplicable("Train data has only one feature.")
+        report = cast_report(report)
+        is_cv = report._report_type == "cross-validation"
+        if is_cv:
+            cv_report = cast("CrossValidationReport", report)
+            X = get_preprocessed_X(cv_report, data_source="test")
+            y = get_report_y(cv_report, data_source="test")
+            if X.shape[1] < 2:
+                raise CheckNotApplicable("Train data has only one feature.")
+            X_nw = nw.from_native(X)
+            metric_registry = cv_report.reports_[0]._metric_registry.copy()
+        else:
+            estimator_report = cast("EstimatorReport", report)
+            X_train = get_preprocessed_X(estimator_report, data_source="train")
+            X_test = get_preprocessed_X(estimator_report, data_source="test")
+            y_train = get_report_y(estimator_report, data_source="train")
+            y_test = get_report_y(estimator_report, data_source="test")
+            if X_train.shape[1] < 2:
+                raise CheckNotApplicable("Train data has only one feature.")
+            X_nw = nw.from_native(X_train)
+            X_test_nw = nw.from_native(X_test)
+            metric_registry = estimator_report._metric_registry
 
-        preprocessor_, predictor_ = split_preprocessor_estimator(report.estimator_)
+        preprocessor_, predictor_ = split_preprocessor_estimator(
+            get_fitted_estimator(report)
+        )
         feature_names = _get_feature_names(
             predictor_,
             transformer=preprocessor_,
-            X=X_train,
-            n_features=X_train.shape[1],
+            X=X if is_cv else X_train,
+            n_features=X_nw.shape[1],
         )
         full_test = collect_scores(report, data_source="test")
 
-        X_train, X_test = nw.from_native(X_train), nw.from_native(X_test)
         golden_features: list[str] = []
-        for i in range(X_train.shape[1]):
-            column = X_train.columns[i]
+        for i in range(X_nw.shape[1]):
+            column = X_nw.columns[i]
             try:
-                single_report = EstimatorReport(
-                    clone(predictor_),
-                    X_train=X_train.select(nw.col(column)).to_native(),
-                    y_train=y_train,
-                    X_test=X_test.select(nw.col(column)).to_native(),
-                    y_test=y_test,
-                    pos_label=report.pos_label,
-                )
+                if is_cv:
+                    single_cv = CrossValidationReport(
+                        clone(predictor_),
+                        X=X_nw.select(nw.col(column)).to_native(),
+                        y=y,
+                        splitter=cv_report.splitter,
+                        pos_label=cv_report.pos_label,
+                        n_jobs=cv_report.n_jobs,
+                    )
+                    for split in single_cv.reports_:
+                        split._metric_registry = metric_registry
+                    single_test = collect_scores(single_cv, data_source="test")
+                else:
+                    single_estimator = EstimatorReport(
+                        clone(predictor_),
+                        X_train=X_nw.select(nw.col(column)).to_native(),
+                        y_train=y_train,
+                        X_test=X_test_nw.select(nw.col(column)).to_native(),
+                        y_test=y_test,
+                        pos_label=estimator_report.pos_label,
+                    )
+                    single_estimator._metric_registry = metric_registry
+                    single_test = collect_scores(single_estimator, data_source="test")
             except Exception as exc:
                 raise CheckNotApplicable(
                     "Failed to create report from single feature."
                 ) from exc
-            single_report._metric_registry = report._metric_registry
-            single_test = collect_scores(single_report, data_source="test")
-
             votes = [
                 not check_score_gap_to_baseline(
                     score=full_test[key]["score"],
@@ -652,8 +682,7 @@ class CheckGoldenFeature(Check):
                 )
                 for key in full_test.keys() & single_test.keys()
             ]
-            majority, _, _ = majority_vote(votes)
-            if majority:
+            if majority_vote(votes)[0]:
                 golden_features.append(str(feature_names[i]))
 
         if golden_features:
@@ -718,6 +747,16 @@ class CheckUselessFeatures(Check):
         return None
 
 
+def _datetime_overlap_columns(X_train, X_test) -> list[str]:
+    X_train_nw, X_test_nw = nw.from_native(X_train), nw.from_native(X_test)
+    train_datetime_columns = set(X_train_nw.select(nw.selectors.datetime()).columns)
+    test_datetime_columns = set(X_test_nw.select(nw.selectors.datetime()).columns)
+    datetime_columns = sorted(train_datetime_columns & test_datetime_columns)
+    return [
+        col for col in datetime_columns if X_train_nw[col].max() >= X_test_nw[col].min()
+    ]
+
+
 class CheckTrainTestTimeOverlap(Check):
     """Check for train/test temporal overlap (SKD013).
 
@@ -731,38 +770,56 @@ class CheckTrainTestTimeOverlap(Check):
 
     code = "SKD013"
     title = "Train-test overlap in time series"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd013-train-test-time-overlap"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
-        if report.X_train is None:
-            raise CheckNotApplicable("Train data is unavailable.")
-        if not nw.dependencies.is_into_dataframe(
-            report.X_train
-        ) or not nw.dependencies.is_into_dataframe(report.X_test):
-            raise CheckNotApplicable(
-                "Input data is not a narwhals compatible DataFrame. "
-                f"Got {type(report.X_train)}."
+        report = cast_report(report)
+        is_cv = report._report_type == "cross-validation"
+        if is_cv:
+            splits = cast("CrossValidationReport", report).reports_
+        else:
+            splits = [cast("EstimatorReport", report)]
+
+        overlapping: set[str] = set()
+        found_datetime = False
+        for split_report in splits:
+            if split_report.X_train is None:
+                if is_cv:
+                    continue
+                raise CheckNotApplicable("Train data is unavailable.")
+            if not nw.dependencies.is_into_dataframe(
+                split_report.X_train
+            ) or not nw.dependencies.is_into_dataframe(split_report.X_test):
+                if is_cv:
+                    continue
+                raise CheckNotApplicable(
+                    "Input data is not a narwhals compatible DataFrame. "
+                    f"Got {type(split_report.X_train)}."
+                )
+            X_train, X_test = (
+                nw.from_native(split_report.X_train),
+                nw.from_native(split_report.X_test),
             )
+            train_datetime_columns = set(
+                X_train.select(nw.selectors.datetime()).columns
+            )
+            test_datetime_columns = set(X_test.select(nw.selectors.datetime()).columns)
+            if train_datetime_columns & test_datetime_columns:
+                found_datetime = True
+                overlapping.update(
+                    _datetime_overlap_columns(split_report.X_train, split_report.X_test)
+                )
 
-        X_train, X_test = nw.from_native(report.X_train), nw.from_native(report.X_test)
-        train_datetime_columns = set(X_train.select(nw.selectors.datetime()).columns)
-        test_datetime_columns = set(X_test.select(nw.selectors.datetime()).columns)
-        datetime_columns = sorted(train_datetime_columns & test_datetime_columns)
-        if not datetime_columns:
+        if not found_datetime:
             raise CheckNotApplicable("No datetime column found.")
-
-        overlapping = [
-            col for col in datetime_columns if X_train[col].max() >= X_test[col].min()
-        ]
         if overlapping:
             return (
-                f"Datetime column(s) {overlapping} contain training timestamps "
-                "that are after the earliest test timestamp. Future points "
-                "may be leaking into the training set; consider a time-based "
-                "split."
+                f"Datetime column(s) {sorted(overlapping)} contain training "
+                "timestamps that are after the earliest test timestamp. Future "
+                "points may be leaking into the training set; consider a "
+                "time-based split."
             )
         return None
 
