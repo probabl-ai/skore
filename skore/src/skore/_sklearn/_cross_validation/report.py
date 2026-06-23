@@ -21,19 +21,24 @@ from skore._sklearn._base import _BaseReport
 from skore._sklearn._checks.base import CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
+from skore._sklearn.types import (
+    PositiveLabel,
+    SKLearnCrossValidator,
+)
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
-from skore._utils._skrub import eval_X_y, is_skrub_learner, to_estimator, to_learner
+from skore._utils._skrub import (
+    is_skrub_learner,
+    to_estimator,
+    to_learner,
+)
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
 from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     from skore._sklearn._checks.accessor import _ChecksAccessor
     from skore._sklearn._cross_validation.data_accessor import _DataAccessor
     from skore._sklearn._cross_validation.inspection_accessor import (
@@ -62,34 +67,6 @@ def _generate_estimator_report(
         y_test=_safe_indexing(y, test_indices),
         pos_label=pos_label,
     )
-
-
-def _check_estimator_and_data(
-    estimator: EstimatorLike,
-    X: ArrayLike | None,
-    y: ArrayLike | None,
-    data: dict | None,
-) -> tuple[bool, skrub.SkrubLearner, dict]:
-    if is_skrub_learner(estimator):
-        initialized_with_data_op = True
-        if X is not None or y is not None:
-            raise TypeError(
-                "X and y cannot be provided when estimator is a SkrubLearner. "
-                "Provide `data` instead."
-            )
-        if data is None:
-            raise TypeError("data must be provided when estimator is a SkrubLearner")
-        data = eval_X_y(estimator.data_op, data)
-    else:
-        initialized_with_data_op = False
-        if data is not None:
-            raise TypeError(
-                "`data` can only be provided when estimator "
-                "is a SkrubLearner. Provide X and y instead."
-            )
-        estimator = to_learner(estimator)
-        data = {"_skrub_X": X, "_skrub_y": y}
-    return initialized_with_data_op, estimator, data
 
 
 class CrossValidationReport(_BaseReport, DirNamesMixin):
@@ -228,6 +205,22 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         n_jobs: int | None = None,
     ) -> None:
         super().__init__()
+        self._check_estimator_and_data(estimator, X, y, data, splitter)
+        self._pos_label = pos_label
+        self.n_jobs = n_jobs
+
+        self.reports_: list[EstimatorReport] = self._fit_estimator_reports()
+
+        self._ml_task = self.reports_[0].ml_task
+
+    def _check_estimator_and_data(
+        self,
+        estimator,
+        X: ArrayLike | None,
+        y: ArrayLike | None,
+        data: dict | None,
+        splitter: int | SKLearnCrossValidator | Generator | None,
+    ) -> None:
         self.estimator = estimator
         if isinstance(estimator, skrub.DataOp):
             if data is None:
@@ -238,16 +231,40 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 "Clustering models are not supported yet. Please use a"
                 " classification or regression model instead."
             )
-        self._initialized_with_data_op, self.learner_, self._data = (
-            _check_estimator_and_data(clone(estimator), X, y, data)
-        )
-        self._pos_label = pos_label
-        self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
-        self._split_indices = tuple(self._splitter.split(self.X, self.y))
-        self.n_jobs = n_jobs
-
-        self.reports_: list[EstimatorReport] = self._fit_estimator_reports()
-        self._ml_task = self.reports_[0].ml_task
+        estimator = clone(estimator)
+        if is_skrub_learner(estimator):
+            self._initialized_with_data_op = True
+            if X is not None or y is not None:
+                raise TypeError(
+                    "X and y cannot be provided when estimator is a SkrubLearner. "
+                    "Provide `data` instead."
+                )
+            if data is None:
+                raise TypeError(
+                    "data must be provided when estimator is a SkrubLearner"
+                )
+            self.learner_ = estimator
+            X_y_cv = skrub.as_data_op(estimator.data_op.skb.find_X_y()).skb.eval(data)
+            X, y = X_y_cv["X"], X_y_cv["y"]
+            self._data = data | {"_skrub_X": X, "_skrub_y": y}
+            if splitter is None and (cv := X_y_cv.get("cv")) is not None:
+                self._splitter = cv
+                split_kwargs = X_y_cv["split_kwargs"]
+                if split_kwargs is None:
+                    split_kwargs = {}
+                self._split_indices = tuple(cv.split(X, y, **split_kwargs))
+        else:
+            self._initialized_with_data_op = False
+            if data is not None:
+                raise TypeError(
+                    "`data` can only be provided when estimator "
+                    "is a SkrubLearner. Provide X and y instead."
+                )
+            self.learner_ = to_learner(estimator)
+            self._data = {"_skrub_X": X, "_skrub_y": y}
+        if getattr(self, "_splitter", None) is None:
+            self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
+            self._split_indices = tuple(self._splitter.split(X, y))
 
     def _fit_estimator_reports(self) -> list[EstimatorReport]:
         """Fit the estimator reports.
@@ -664,7 +681,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._splitter
 
     @property
-    def split_indices(self) -> tuple[tuple[Iterable[int], Iterable[int]]]:
+    def split_indices(self) -> tuple[tuple[ArrayLike, ArrayLike], ...]:
         return self._split_indices
 
     @property
@@ -737,11 +754,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
                 ),
                 "n_folds": len(self.reports_),
-                "splitter_repr": (
-                    repr(self.splitter)
-                    if self.splitter is not None
-                    else f"{len(self.split_indices)} folds"
-                ),
+                "splitter_repr": (repr(self.splitter)),
                 "metrics_text": metrics_text,
                 **markdown_data_section(summary, data_label="full"),
             },

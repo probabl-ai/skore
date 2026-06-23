@@ -1,7 +1,9 @@
+import numpy as np
 import pytest
 import skrub
+from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.model_selection import KFold, LeaveOneGroupOut, StratifiedKFold
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport, evaluate
 
@@ -252,3 +254,62 @@ def test_evaluate_learner(binary_classification_data):
     learner = skrub.X().skb.apply(LogisticRegression(), y=skrub.y()).skb.make_learner()
     report = evaluate(learner, data={"X": X, "y": y}, splitter=Splitter())
     assert len(report.reports_) == 5
+
+
+def test_evaluate_skrub_learner_default_holdout_without_explicit_cv(
+    binary_classification_data,
+):
+    """Skrub learners without an explicit DataOp cv keep the 0.2 holdout default."""
+    X, y = binary_classification_data
+    learner = skrub.X().skb.apply(LogisticRegression(), y=skrub.y()).skb.make_learner()
+    report = evaluate(learner, data={"X": X, "y": y})
+    assert isinstance(report, EstimatorReport)
+    assert len(report.X_test) == round(0.2 * len(X))
+
+
+def test_evaluate_skrub_learner_uses_data_op_cv_with_split_kwargs():
+    """Reproduce issue #2884: grouped CV from mark_as_X split_kwargs."""
+    df = skrub.datasets.toy_products()
+    data = skrub.var("df", df)
+    groups = data["seller"]
+    X = data[["description", "price"]].skb.mark_as_X(
+        cv=LeaveOneGroupOut(), split_kwargs={"groups": groups}
+    )
+    y = data["category"].skb.mark_as_y()
+    pred = X.skb.apply(DummyClassifier(), y=y)
+    learner = pred.skb.make_learner()
+
+    report = evaluate(learner, data={"df": df})
+    assert isinstance(report, CrossValidationReport)
+    assert len(report.reports_) == 2
+
+    expected_indices = tuple(
+        (split["row_indices_train"], split["row_indices_test"])
+        for split in pred.skb.iter_cv_splits(environment={"df": df}, cv=None)
+    )
+    assert len(report.split_indices) == len(expected_indices)
+    for (train_a, test_a), (train_b, test_b) in zip(
+        report.split_indices, expected_indices, strict=True
+    ):
+        np.testing.assert_array_equal(train_a, train_b)
+        np.testing.assert_array_equal(test_a, test_b)
+
+    skrub_cv = pred.skb.cross_validate({"df": df})
+    skore_accuracy = report.metrics.accuracy(aggregate="mean").iloc[0, 0]
+    assert skore_accuracy == pytest.approx(skrub_cv["test_score"].mean())
+
+
+def test_evaluate_skrub_learner_explicit_splitter_overrides_data_op_cv():
+    """An explicit splitter argument overrides the DataOp cv configuration."""
+    df = skrub.datasets.toy_products()
+    data = skrub.var("df", df)
+    groups = data["seller"]
+    X = data[["description", "price"]].skb.mark_as_X(
+        cv=LeaveOneGroupOut(), split_kwargs={"groups": groups}
+    )
+    y = data["category"].skb.mark_as_y()
+    learner = X.skb.apply(DummyClassifier(), y=y).skb.make_learner()
+
+    report = evaluate(learner, data={"df": df}, splitter=3)
+    assert isinstance(report, CrossValidationReport)
+    assert len(report.reports_) == 3
