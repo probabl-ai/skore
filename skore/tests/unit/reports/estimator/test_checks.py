@@ -758,6 +758,16 @@ def test_exception_when_train_data_missing(regression_train_test_split):
                 check.check_function(report)
 
 
+def test_not_applicable_reason_in_summarize(regression_train_test_split):
+    """Not-applicable checks surface their reason in the summary."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    estimator = LinearRegression().fit(X_train, y_train)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    na = report.checks.summarize().frame(section="not_applicable").set_index("code")
+    assert "SKD001" in na.index
+    assert na.loc["SKD001", "explanation"] == ("Train data is unavailable.")
+
+
 def test_exception_when_baseline_report_creation_fails(regression_data, monkeypatch):
     """Check that an exception is raised when the baseline report creation fails."""
     X, y = regression_data
@@ -1050,14 +1060,16 @@ class NotApplicableMockCheck(Check):
     docs_url = "tstna"
 
     def check_function(self, report):
-        raise CheckNotApplicable()
+        raise CheckNotApplicable("Mock check is not applicable.")
 
 
 def test_not_applicable_goes_to_not_applicable_section(regression_report):
     """A check raising CheckNotApplicable appears under not applicable."""
     regression_report.checks.add([NotApplicableMockCheck()])
     result = regression_report.checks.summarize()
-    assert "TSTNA" in set(result.frame(section="not_applicable")["code"])
+    na = result.frame(section="not_applicable").set_index("code")
+    assert "TSTNA" in na.index
+    assert na.loc["TSTNA", "explanation"] == "Mock check is not applicable."
     assert "TSTNA" not in set(result.frame(section="passed")["code"])
     assert "TSTNA" not in set(result.frame(section="issue")["code"])
     assert "TSTNA" not in set(result.frame(section="tip")["code"])

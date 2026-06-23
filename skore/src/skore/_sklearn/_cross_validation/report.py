@@ -591,7 +591,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             all_not_applicable_codes |= not_applicable_codes
             for code, check_result in results.items():
                 ref_by_code.setdefault(code, check_result)
-                if check_result["explanation"] is not None:
+                if code in applicable_codes and check_result["explanation"] is not None:
                     positives_by_code[code].append(check_result)
 
         all_not_applicable_codes -= all_applicable_codes
@@ -622,7 +622,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             aggregated[code] = {
                 "title": ref["title"],
                 "docs_url": ref.get("docs_url"),
-                "explanation": None,
+                "explanation": ref["explanation"],
                 "severity": ref.get("severity"),
             }
         return aggregated, all_applicable_codes, all_not_applicable_codes
