@@ -18,32 +18,13 @@ from skore._project._summary import Summary
 @pytest.fixture
 def regression_report() -> EstimatorReport:
     X, y = make_regression(random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
-    return EstimatorReport(
-        Ridge(random_state=42),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
+    return evaluate(Ridge(random_state=42), X, y)
 
 
 @pytest.fixture
 def second_regression_report() -> EstimatorReport:
     X, y = make_regression(random_state=7)
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=7
-    )
-    return EstimatorReport(
-        LinearRegression(),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
-    )
-
+    return evaluate(LinearRegression(), X, y)
 
 class TestLocalProjectContract:
     def test_api_contract(self, tmp_path, regression_report, second_regression_report):

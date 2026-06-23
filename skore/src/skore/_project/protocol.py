@@ -1,4 +1,4 @@
-"""Private protocol for project backend plugins."""
+"""Project backend protocol."""
 
 from __future__ import annotations
 
@@ -13,8 +13,7 @@ if TYPE_CHECKING:
 class ProjectBackend(Protocol):
     """Contract implemented by project plugins loaded via entry points."""
 
-    @property
-    def name(self) -> str: ...
+    name: str
 
     def put(
         self, key: str, report: EstimatorReport | CrossValidationReport
@@ -27,4 +26,3 @@ class ProjectBackend(Protocol):
     @staticmethod
     def delete(**kwargs: Any) -> None: ...
 
-    def __repr__(self) -> str: ...

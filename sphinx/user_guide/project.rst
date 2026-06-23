@@ -55,5 +55,4 @@ returned by :meth:`Project.summarize`. This method returns a list of
 ``return_as="report"``).
 
 To retrieve a specific report for which you have its ``id`` (as returned by
-:meth:`Project.summarize`), use the method :meth:`Project.get` to retrieve the
-:class:`EstimatorReport`.
+:meth:`Project.summarize`), use the :meth:`Project.get` method.
