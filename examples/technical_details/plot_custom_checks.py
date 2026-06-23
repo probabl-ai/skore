@@ -131,8 +131,8 @@ cv_report.checks.add([CustomCheck2()])
 cv_report.checks.summarize()
 
 # %%
-# Estimator-scoped checks on cross-validation reports
-# ===================================================
+# Estimator-scoped checks on cross-validation and comparison reports
+# ==================================================================
 #
 # Estimator-scoped checks such as ``CustomCheck1`` run only on
 # :class:`~skore.EstimatorReport` instances. They are not executed on

@@ -108,14 +108,15 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 or not check.report_type
             ):
                 raise ValueError(
-                    "Check report_type must be a non-empty list of report types."
+                    "Check report_type must be a non-empty list or tuple of report "
+                    f"types. Got {type(check.report_type)}."
                 )
             invalid_types = set(check.report_type) - valid_report_types
             if invalid_types:
                 raise ValueError(
-                    f"Check report_type contains unsupported values: "
-                    f"{', '.join(sorted(invalid_types))}. "
-                    f"Supported values are: {', '.join(sorted(valid_report_types))}."
+                    f"Supported values for report_type are: {valid_report_types}. "
+                    f"{check.code}'s report_type contains unsupported values: "
+                    f"{invalid_types}. "
                 )
         self._parent._checks_registry.extend(checks)
 
