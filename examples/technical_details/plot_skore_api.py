@@ -131,10 +131,10 @@ _ = cv_report.inspection.coefficients().plot(select_k=10, sorting_order="descend
 # Third report type: comparison
 # =============================
 #
-# Passing a **list or dict of estimators** to :func:`~skore.evaluate` returns a
-# :class:`~skore.ComparisonReport`. It exposes the same ``metrics`` and
-# ``inspection`` accessors (no ``data`` accessor, since compared models can
-# use different datasets). The display API is unchanged.
+# ``inspection`` accessors (no ``data`` accessor on
+# :class:`~skore.ComparisonReport`). To compare evaluations on different
+# feature matrices, use :func:`~skore.evaluate` then :func:`~skore.compare`.
+# The display API is unchanged.
 
 # %%
 # Summary
