@@ -29,6 +29,7 @@ from skore._sklearn._checks._utils import (
     check_score_gap_to_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
+    get_fitted_estimator,
     get_preprocessed_X,
     get_report_y,
     majority_vote,
@@ -300,13 +301,13 @@ class CheckUnderrepresentedClasses(Check):
 
     code = "SKD005"
     title = "Underrepresented classes"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd005-underrepresented-classes"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect classes that each represent less than 10% of samples."""
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         if report.ml_task != "multiclass-classification":
             raise CheckNotApplicable(
                 f"ML task is not multiclass classification. Got {report.ml_task}."
@@ -340,14 +341,14 @@ class CheckCoefficientsInterpretation(Check):
 
     code = "SKD006"
     title = "Coefficient interpretation"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd006-unscaled-coefficients"
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Assess whether linear-model coefficients are comparable and interpretable."""
-        report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.estimator_)
+        report = cast_report(report)
+        _, predictor = split_preprocessor_estimator(get_fitted_estimator(report))
 
         if not hasattr(predictor, "coef_"):
             raise CheckNotApplicable(
@@ -380,14 +381,14 @@ class CheckMDIHighCardinalityBias(Check):
 
     code = "SKD007"
     title = "MDI biased for high-cardinality features"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd007-mdi-cardinality-bias"
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect high-cardinality features that may bias MDI importances."""
-        report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.estimator_)
+        report = cast_report(report)
+        _, predictor = split_preprocessor_estimator(get_fitted_estimator(report))
 
         if not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable(
@@ -430,7 +431,7 @@ class CheckCorrelatedFeatures(Check):
 
     code = "SKD008"
     title = "Highly correlated input features"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd008-correlated-features"
     severity = "issue"
 
@@ -445,7 +446,7 @@ class CheckCorrelatedFeatures(Check):
             :class:`CheckNotApplicable` when feature data is unavailable or
             fewer than two numeric features are present.
         """
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         X = get_preprocessed_X(report, data_source="train")
 
         X = nw.from_native(X).select(nw.selectors.numeric())
@@ -659,13 +660,13 @@ class CheckUselessFeatures(Check):
 
     code = "SKD012"
     title = "Useless features"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd012-useless-features"
     severity = "tip"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
 
         try:
             importance_frame = report.inspection.permutation_importance(
@@ -757,7 +758,7 @@ class CheckHyperparamsAtSearchEdge(Check):
 
     code = "SKD014"
     title = "Hyperparameters at search edge"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd014-hyperparams-at-search-edge"
     severity = "issue"
 
@@ -778,8 +779,8 @@ class CheckHyperparamsAtSearchEdge(Check):
         return None
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
-        estimator = report.estimator_
+        report = cast_report(report)
+        estimator = get_fitted_estimator(report)
         if not isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable(
                 f"Estimator is not a BaseSearchCV instance. Got {type(estimator)}."
@@ -867,23 +868,23 @@ class CheckSearchParamsToTune(Check):
 
     code = "SKD015"
     title = "Hyperparameters worth tuning"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd015-hyperparameters-worth-tuning"
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
-        if not isinstance(report.estimator_, BaseSearchCV):
+        report = cast_report(report)
+        estimator = get_fitted_estimator(report)
+        if not isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable(
-                "Estimator is not a BaseSearchCV instance. "
-                f"Got {type(report.estimator_)}."
+                f"Estimator is not a BaseSearchCV instance. Got {type(estimator)}."
             )
 
         searched_keys = {
-            key for params in report.estimator_.cv_results_["params"] for key in params
+            key for params in estimator.cv_results_["params"] for key in params
         }
-        estimator = report.estimator_.estimator
-        if isinstance(estimator, Pipeline):
+        inner_estimator = estimator.estimator
+        if isinstance(inner_estimator, Pipeline):
             searched_params_by_step: dict[StepName, set[ParameterName]] = defaultdict(
                 set
             )
@@ -893,7 +894,7 @@ class CheckSearchParamsToTune(Check):
                     searched_params_by_step[step_name].add(suffix)
             searched_by_estimator: list[tuple[ClassName, set[ParameterName]]] = [
                 (type(step).__name__, searched_params_by_step.get(name, set()))
-                for name, step in estimator.steps
+                for name, step in inner_estimator.steps
                 if type(step).__name__ in HYPERPARAMETERS_TO_TUNE
             ]
             if not searched_by_estimator:
@@ -901,7 +902,7 @@ class CheckSearchParamsToTune(Check):
                     "No parameter to recommend for any of the steps."
                 )
         else:
-            class_name = type(estimator).__name__
+            class_name = type(inner_estimator).__name__
             if class_name not in HYPERPARAMETERS_TO_TUNE:
                 raise CheckNotApplicable("No parameter to recommend for the estimator.")
             searched_by_estimator = [(class_name, searched_keys)]
@@ -937,13 +938,13 @@ class CheckEstimatorNotTuned(Check):
 
     code = "SKD016"
     title = "Estimator not tuned"
-    report_type = ["estimator"]
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd016-estimator-not-tuned"
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
-        estimator = report.estimator_
+        report = cast_report(report)
+        estimator = get_fitted_estimator(report)
         if isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable("Estimator is a BaseSearchCV instance.")
 

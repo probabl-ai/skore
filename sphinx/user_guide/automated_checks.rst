@@ -44,11 +44,6 @@ In fast mode, slow checks that are not yet in the cache are not run; cached
 slow results from a previous call are still surfaced. The HTML representation
 of a report uses fast mode so it never triggers an expensive computation.
 
-For cross-validation reports, checks run directly on the
-:class:`~skore.CrossValidationReport` when their ``report_type`` includes
-``"cross-validation"``. Use ``["estimator", "cross-validation"]`` when a check
-should run on both estimator and cross-validation reports.
-
 For comparison reports, :meth:`~skore.ComparisonReport.checks.summarize` builds a global
 summary from each component report in the comparison. Issues are grouped by
 component report and emitted as a single message.

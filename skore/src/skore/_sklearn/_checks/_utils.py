@@ -9,7 +9,7 @@ import pandas as pd
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
 
-from skore._sklearn.types import PositiveLabel
+from skore._sklearn.types import EstimatorLike, PositiveLabel
 from skore._utils._dataframe import (
     UserDataFrame,
     UserTarget,
@@ -220,8 +220,16 @@ def get_report_y(
         raise CheckNotApplicable("Target data is sparse.") from err
 
 
+def get_fitted_estimator(
+    report: EstimatorReport | CrossValidationReport,
+) -> EstimatorLike:
+    if report._report_type == "cross-validation":
+        return report.reports_[0].estimator_
+    return report.estimator_
+
+
 def get_preprocessed_X(
-    report: EstimatorReport,
+    report: EstimatorReport | CrossValidationReport,
     *,
     data_source: Literal["train", "test", "both"],
 ) -> UserDataFrame:
@@ -231,10 +239,22 @@ def get_preprocessed_X(
     raw feature matrix is passed through the fitted preprocessor (all steps
     except the last) before being returned.
 
+    For cross-validation reports, returns features from the full dataset and
+    ``data_source`` is ignored. The preprocessor is taken from the first fold's
+    fitted estimator.
+
     Raises `CheckNotApplicable` when no data is available or when
     the preprocessor produces an unsupported type (e.g. sparse matrices).
     """
     try:
+        if report._report_type == "cross-validation":
+            data = _normalize_X_as_dataframe(report.X)
+            preprocessor, _ = split_preprocessor_estimator(
+                report.reports_[0].estimator_
+            )
+            if preprocessor is not None and len(preprocessor.steps) > 0:
+                data = preprocessor.transform(data)
+            return _normalize_X_as_dataframe(data)
         if data_source == "both":
             if report.X_train is None:
                 raise CheckNotApplicable("Train data is unavailable.")
@@ -254,7 +274,7 @@ def get_preprocessed_X(
     except NotImplementedError as err:
         raise CheckNotApplicable("Feature data is sparse.") from err
 
-    preprocessor, _ = split_preprocessor_estimator(report.estimator_)
+    preprocessor, _ = split_preprocessor_estimator(get_fitted_estimator(report))
     if preprocessor is not None and len(preprocessor.steps) > 0:
         data = preprocessor.transform(data)
 
