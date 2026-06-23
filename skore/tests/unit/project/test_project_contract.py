@@ -3,16 +3,27 @@
 from __future__ import annotations
 
 from pathlib import Path
+from urllib.parse import urljoin
 
 import mlflow
 import pytest
-from httpx import Response
+from httpx import Client, Response
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.model_selection import train_test_split
 
 from skore import EstimatorReport, Project
 from skore._project._summary import Summary
+
+
+class FakeClient(Client):
+    def __init__(self, *args, **kwargs):
+        super().__init__()
+
+    def request(self, method, url, **kwargs):
+        response = super().request(method, urljoin("http://localhost", url), **kwargs)
+        response.raise_for_status()
+        return response
 
 
 @pytest.fixture
@@ -126,21 +137,6 @@ class TestMlflowProjectContract:
 class TestHubProjectContract:
     @pytest.fixture(autouse=True)
     def hub_client(self, monkeypatch):
-        from urllib.parse import urljoin
-
-        from httpx import Client
-
-        class FakeClient(Client):
-            def __init__(self, *args, **kwargs):
-                super().__init__()
-
-            def request(self, method, url, **kwargs):
-                response = super().request(
-                    method, urljoin("http://localhost", url), **kwargs
-                )
-                response.raise_for_status()
-                return response
-
         monkeypatch.setattr("skore._plugins.hub.project.project.HUBClient", FakeClient)
         monkeypatch.setattr("skore._plugins.hub.artifact.upload.HUBClient", FakeClient)
 
