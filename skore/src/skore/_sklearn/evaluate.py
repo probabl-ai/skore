@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from collections.abc import Generator
+from typing import cast
 
 from numpy.typing import ArrayLike
 
@@ -11,13 +12,13 @@ from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.train_test_split import TrainTestSplit
-from skore._sklearn.types import _DEFAULT, _DefaultType
+from skore._sklearn.types import (
+    _DEFAULT,
+    EstimatorLike,
+    SKLearnCrossValidator,
+    _DefaultType,
+)
 from skore._utils._skrub import data_op_has_explicit_cv, get_data_op
-
-if TYPE_CHECKING:
-    from collections.abc import Generator
-
-    from skore._sklearn.types import EstimatorLike, SKLearnCrossValidator
 
 
 def evaluate(
