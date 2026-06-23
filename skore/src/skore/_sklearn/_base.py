@@ -94,8 +94,8 @@ class _BaseReport(ReportHelpMixin):
             try:
                 explanation = check.check_function(self)
                 self._applicable_codes.add(check.code)
-            except CheckNotApplicable:
-                explanation = None
+            except CheckNotApplicable as exc:
+                explanation = exc.args[0] if exc.args else None
                 self._not_applicable_codes.add(check.code)
             self._check_results_cache[check.code] = {
                 "title": check.title,

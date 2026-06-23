@@ -60,7 +60,7 @@ def _check_estimator_and_data(
     y_test: ArrayLike | None,
     train_data: dict | None,
     test_data: dict | None,
-) -> tuple[bool, skrub.SkrubLearner, dict | None, dict | None]:
+) -> tuple[bool, skrub.SkrubLearner, dict | None, dict]:
     """Check and validate the estimator and data."""
     if is_skrub_learner(estimator):
         initialized_with_data_op = True
@@ -768,12 +768,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return (self._train_data or {}).get("_skrub_y")
 
     @property
-    def X_test(self) -> ArrayLike | None:
-        return (self._test_data or {}).get("_skrub_X")
+    def X_test(self) -> ArrayLike:
+        return self._test_data["_skrub_X"]
 
     @property
-    def y_test(self) -> ArrayLike | None:
-        return (self._test_data or {}).get("_skrub_y")
+    def y_test(self) -> ArrayLike:
+        return self._test_data["_skrub_y"]
 
     @property
     def train_data(self) -> dict | None:

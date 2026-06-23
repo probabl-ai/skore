@@ -129,6 +129,11 @@ def detect_outliers_modified_zscore(scores, threshold=3):
 class CheckNotApplicable(Exception):
     """Raised when a check cannot run on the given report.
 
+    Parameters
+    ----------
+    message : str or None, default=None
+        Optional reason shown in the checks summary explanation.
+
     Notes
     -----
     Check implementations raise this exception when required data, task type,
@@ -146,8 +151,8 @@ class CheckNotApplicable(Exception):
     ...     docs_url = None
     ...     severity = "issue"
     ...     def check_function(self, report):
-    ...         if report.X_test is None:
-    ...             raise CheckNotApplicable()
+    ...         if report.X_train is None:
+    ...             raise CheckNotApplicable("Train data is unavailable.")
     ...         return None
     """
 
@@ -174,7 +179,7 @@ def get_report_y(
     """Return the target as a 1d Series or multi-output DataFrame."""
     try:
         if data_source == "both":
-            if report.y_train is None or report.y_test is None:
+            if report.y_train is None:
                 return None
             y = nw.concat(
                 [
@@ -188,8 +193,6 @@ def get_report_y(
                 return None
             y = nw.from_native(_normalize_y_as_dataframe(report.y_train))
         else:
-            if report.y_test is None:
-                return None
             y = nw.from_native(_normalize_y_as_dataframe(report.y_test))
         if y.shape[1] == 1:
             return y.get_column(y.columns[0]).to_native()
@@ -214,7 +217,7 @@ def get_preprocessed_X(
     """
     try:
         if data_source == "both":
-            if report.X_train is None or report.X_test is None:
+            if report.X_train is None:
                 return None
             data = nw.concat(
                 [
@@ -228,8 +231,6 @@ def get_preprocessed_X(
                 return None
             data = _normalize_X_as_dataframe(report.X_train)
         else:
-            if report.X_test is None:
-                return None
             data = _normalize_X_as_dataframe(report.X_test)
     except NotImplementedError:
         return None
