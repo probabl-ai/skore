@@ -357,9 +357,7 @@ class Project:
             Compare selected reports side by side.
         """
         records = self.__project.summarize()
-        if records:
-            records = sorted(records, key=lambda record: record["date"])
-        frame = DataFrame(records, copy=False)
+        frame = DataFrame(sorted(records, key=lambda r: r["date"]), copy=False)
         if not frame.empty:
             frame.index = MultiIndex.from_arrays(
                 [
