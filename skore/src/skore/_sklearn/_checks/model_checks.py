@@ -40,7 +40,12 @@ from skore._sklearn._checks.tunable_hyperparameters import (
     INFRASTRUCTURE_PARAMS,
 )
 from skore._sklearn.feature_names import _get_feature_names
-from skore._utils._dataframe import UserDataFrame, UserSeries, UserTarget
+from skore._utils._dataframe import (
+    UserDataFrame,
+    UserSeries,
+    UserTarget,
+    _normalize_X_as_dataframe,
+)
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -64,17 +69,18 @@ def _baseline_estimator_report(
     """
     from skore._sklearn._estimator.report import EstimatorReport
 
+    if report.X_train is None:
+        raise CheckNotApplicable("Train data is unavailable.")
     try:
-        X_train, _ = report.data._retrieve_data_as_frame("train", False, "train")
-    except ValueError:
-        raise CheckNotApplicable("Train data is unavailable.") from None
+        X_train = _normalize_X_as_dataframe(report.X_train)
+        X_test = _normalize_X_as_dataframe(report.X_test)
+    except NotImplementedError:
+        raise CheckNotApplicable("Data is sparse.") from None
 
     y_train = get_report_y(report, data_source="train")
+    y_test = get_report_y(report, data_source="test")
     if y_train is None:
         raise CheckNotApplicable("Train data is unavailable.")
-
-    X_test, _ = report.data._retrieve_data_as_frame("test", False, "test")
-    y_test = get_report_y(report, data_source="test")
 
     is_classification = report.ml_task in (
         "binary-classification",
