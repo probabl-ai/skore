@@ -250,7 +250,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             self._data = data | {"_skrub_X": X, "_skrub_y": y}
             if splitter is None and (cv := X_y_cv.get("cv")) is not None:
                 self._splitter = cv
-                self._split_indices = tuple(cv.split(X, y, **X_y_cv["split_kwargs"]))
+                split_kwargs = X_y_cv["split_kwargs"]
+                if split_kwargs is None:
+                    split_kwargs = {}
+                self._split_indices = tuple(cv.split(X, y, **split_kwargs))
         else:
             self._initialized_with_data_op = False
             if data is not None:
