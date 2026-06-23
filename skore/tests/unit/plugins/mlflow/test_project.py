@@ -111,7 +111,7 @@ class TestProject:
         assert project.name == "<project>"
         assert project.tracking_uri == tracking_uri
         assert repr(project) == (
-            f"Project(mode='mlflow', name='<project>', tracking_uri='{tracking_uri}')"
+            f"Project(name='<project>', mode='mlflow', tracking_uri='{tracking_uri}')"
         )
 
     @pytest.mark.parametrize(

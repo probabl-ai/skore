@@ -221,9 +221,3 @@ class TestHubProjectContract:
             mode="hub",
             workspace="workspace",
         )
-
-    def test_hub_requires_workspace(self, monkeypatch):
-        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
-
-        with pytest.raises(TypeError, match="`workspace` is required"):
-            Project(name="contract-hub", mode="hub")

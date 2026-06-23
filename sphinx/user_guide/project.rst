@@ -27,7 +27,7 @@ mode-specific keyword arguments.
    project_local = Project(name="my-xp", mode="local", workspace=Path("/tmp/skore"))
 
    # Skore Hub (requires skore.login() first)
-   project_hub = Project(name="my-xp", workspace="my-workspace", mode="hub")
+   project_hub = Project(name="my-xp", mode="hub", workspace="my-workspace")
 
    # MLflow experiment
    project_mlflow = Project(

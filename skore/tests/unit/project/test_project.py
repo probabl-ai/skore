@@ -122,7 +122,7 @@ def cv_regression() -> CrossValidationReport:
 
 class TestProject:
     def test_init_local(self, FakeLocalProject):
-        project = Project(mode="local", name="<name>", workspace="<workspace>")
+        project = Project(name="<name>", mode="local", workspace="<workspace>")
 
         assert isinstance(project, Project)
         assert project.mode == "local"
@@ -152,7 +152,7 @@ class TestProject:
                 "You can fix this error by installing `skore[local]`."
             ),
         ):
-            Project(mode="local", name="<name>")
+            Project(name="<name>", mode="local")
 
     def test_init_local_missing_optional_dependency_without_plugin(self, monkeypatch):
         """Non-regression test for missing extras before plugin discovery."""
@@ -175,12 +175,12 @@ class TestProject:
                 "You can fix this error by installing `skore[local]`."
             ),
         ):
-            Project(mode="local", name="<name>")
+            Project(name="<name>", mode="local")
 
     def test_init_hub(self, FakeHubProject, monkeypatch):
         monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
-        project = Project(mode="hub", name="<name>", workspace="<workspace>")
+        project = Project(name="<name>", mode="hub", workspace="<workspace>")
 
         assert isinstance(project, Project)
         assert project.mode == "hub"
@@ -190,26 +190,14 @@ class TestProject:
         assert FakeHubProject.called
         assert not FakeHubProject.call_args.args
         assert FakeHubProject.call_args.kwargs == {
-            "workspace": "<workspace>",
             "name": "<name>",
+            "workspace": "<workspace>",
         }
-
-    def test_init_hub_missing_workspace(self, monkeypatch):
-        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
-
-        with raises(TypeError, match="`workspace` is required"):
-            Project(mode="hub", name="<name>")
-
-    def test_init_hub_name_with_slash(self, monkeypatch):
-        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
-
-        with raises(ValueError, match="must not contain '/'"):
-            Project(mode="hub", name="workspace/name", workspace="workspace")
 
     def test_init_mlflow(self, FakeMlflowProject, monkeypatch):
         monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
-        project = Project(mode="mlflow", name="<name>", tracking_uri="<uri>")
+        project = Project(name="<name>", mode="mlflow", tracking_uri="<uri>")
 
         assert isinstance(project, Project)
         assert project.mode == "mlflow"
@@ -254,21 +242,21 @@ class TestProject:
             "Got ML tasks "
         )
         with raises(RuntimeError, match=err_msg):
-            Project(mode="local", name="<name>", workspace="<workspace>")
+            Project(name="<name>", mode="local", workspace="<workspace>")
 
     def test_mode(self, monkeypatch):
         monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
-        assert Project(mode="local", name="name").mode == "local"
-        assert Project(mode="hub", name="name", workspace="workspace").mode == "hub"
-        assert Project(mode="mlflow", name="name").mode == "mlflow"
+        assert Project(name="name", mode="local").mode == "local"
+        assert Project(name="name", mode="hub", workspace="workspace").mode == "hub"
+        assert Project(name="name", mode="mlflow").mode == "mlflow"
 
     def test_name(self, monkeypatch):
         monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
 
-        assert Project(mode="local", name="name").name == "name"
-        assert Project(mode="hub", name="name", workspace="workspace").name == "name"
-        assert Project(mode="mlflow", name="name").name == "name"
+        assert Project(name="name", mode="local").name == "name"
+        assert Project(name="name", mode="hub", workspace="workspace").name == "name"
+        assert Project(name="name", mode="mlflow").name == "name"
 
     @mark.parametrize(
         "report",
@@ -279,7 +267,7 @@ class TestProject:
     )
     def test_put(self, report, FakeLocalProject, request):
         report = request.getfixturevalue(report)
-        project = Project(mode="local", name="<name>")
+        project = Project(name="<name>", mode="local")
 
         project.put("<key>", report)
 
@@ -293,13 +281,13 @@ class TestProject:
 
     def test_put_exception(self):
         with raises(TypeError, match="Key must be a string"):
-            Project(mode="local", name="<name>").put(None, "<value>")
+            Project(name="<name>", mode="local").put(None, "<value>")
 
         with raises(TypeError, match="Report must be `EstimatorReport` or"):
-            Project(mode="local", name="<name>").put("<key>", "<value>")
+            Project(name="<name>", mode="local").put("<key>", "<value>")
 
     def test_put_exception_wrong_ml_task(self, regression, classification):
-        project = Project(mode="local", name="<name>", workspace="<workspace>")
+        project = Project(name="<name>", mode="local", workspace="<workspace>")
         project.put("classification", classification)
         assert project.ml_task == "binary-classification"
 
@@ -312,7 +300,7 @@ class TestProject:
             project.put("regression", regression)
 
     def test_get(self, FakeLocalProject):
-        project = Project(mode="local", name="<name>")
+        project = Project(name="<name>", mode="local")
 
         project.get("<id>")
 
@@ -322,7 +310,7 @@ class TestProject:
         assert not project._Project__project.get.call_args.kwargs
 
     def test_summarize_sorts_by_date(self):
-        project = Project(mode="local", name="<name>")
+        project = Project(name="<name>", mode="local")
         project._Project__project.summarize.return_value = [
             {
                 "id": "<id-2>",
@@ -352,7 +340,7 @@ class TestProject:
         ]
 
     def test_summarize(self):
-        project = Project(mode="local", name="<name>")
+        project = Project(name="<name>", mode="local")
         project._Project__project.summarize.return_value = [
             {
                 "id": "<id>",
@@ -420,7 +408,7 @@ class TestProject:
             y_test=y_test,
         )
 
-        project = Project(mode="local", name="<project>", workspace=Path(r"{tmpdir}"))
+        project = Project(name="<project>", mode="local", workspace=Path(r"{tmpdir}"))
         project.put("<report>", regression)
         summary = project.summarize()
         summary._repr_mimebundle_()
@@ -433,11 +421,11 @@ class TestProject:
         execution_result.raise_error()
 
     def test_repr(self):
-        project = Project(mode="local", name="<name>")
+        project = Project(name="<name>", mode="local")
         assert repr(project) == repr(project._Project__project)
 
     def test_delete_local(self, FakeLocalProject):
-        Project.delete(mode="local", name="<name>", workspace="<workspace>")
+        Project.delete(name="<name>", mode="local", workspace="<workspace>")
 
         assert not FakeLocalProject.called
         assert FakeLocalProject.delete.called
@@ -448,18 +436,18 @@ class TestProject:
         }
 
     def test_delete_hub(self, FakeHubProject):
-        Project.delete(mode="hub", name="<name>", workspace="<workspace>")
+        Project.delete(name="<name>", mode="hub", workspace="<workspace>")
 
         assert not FakeHubProject.called
         assert FakeHubProject.delete.called
         assert not FakeHubProject.delete.call_args.args
         assert FakeHubProject.delete.call_args.kwargs == {
-            "workspace": "<workspace>",
             "name": "<name>",
+            "workspace": "<workspace>",
         }
 
     def test_delete_mlflow(self, FakeMlflowProject):
-        Project.delete(mode="mlflow", name="<name>", tracking_uri="<uri>")
+        Project.delete(name="<name>", mode="mlflow", tracking_uri="<uri>")
 
         assert not FakeMlflowProject.called
         assert FakeMlflowProject.delete.called
@@ -471,8 +459,8 @@ class TestProject:
 
     def test_delete_mlflow_forwards_kwargs(self, FakeMlflowProject):
         Project.delete(
-            mode="mlflow",
             name="<name>",
+            mode="mlflow",
             tracking_uri="<uri>",
             workspace="<workspace>",
         )

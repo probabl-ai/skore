@@ -69,7 +69,7 @@ from httpx import HTTPStatusError, codes
 from skore import Project
 
 try:
-    Project.delete(name=PROJECT, workspace=WORKSPACE, mode="hub")
+    Project.delete(name=PROJECT, mode="hub", workspace=WORKSPACE)
 except HTTPStatusError as e:
     if e.response.status_code != codes.NOT_FOUND:
         raise
@@ -102,7 +102,7 @@ from numpy import logspace
 from sklearn.linear_model import LogisticRegression
 from skore import Project, evaluate
 
-project = Project(name=PROJECT, workspace=WORKSPACE, mode="hub")
+project = Project(name=PROJECT, mode="hub", workspace=WORKSPACE)
 
 for regularization in logspace(-3, 3, 5):
     project.put(

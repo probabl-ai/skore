@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, get_args
 
 from pandas import DataFrame, Index, MultiIndex, RangeIndex
 
@@ -14,6 +14,9 @@ from skore._project.types import ProjectMode
 
 if TYPE_CHECKING:
     from skore import CrossValidationReport, EstimatorReport
+
+
+MODES = get_args(ProjectMode)
 
 
 class Project:
@@ -117,7 +120,7 @@ class Project:
     >>> from skore import Project
     >>>
     >>> tmpdir = TemporaryDirectory().name
-    >>> local_project = Project(mode="local", name="my-xp", workspace=Path(tmpdir))
+    >>> local_project = Project(name="my-xp", mode="local", workspace=Path(tmpdir))
 
     Put reports in the project.
 
@@ -143,38 +146,15 @@ class Project:
     def __setup_plugin(
         mode: ProjectMode, name: str, **kwargs: Any
     ) -> tuple[Any, dict[str, Any]]:
-        if mode == "hub":
-            if "/" in name:
-                raise ValueError(
-                    f"In hub mode, `name` must not contain '/' (found {name!r}). "
-                    "Pass `workspace` separately instead, e.g. "
-                    'Project(name="my-xp", workspace="acme", mode="hub").'
-                )
-
-            workspace = kwargs.get("workspace")
-            if workspace is None:
-                raise TypeError(
-                    "In hub mode, `workspace` is required. "
-                    'Use Project(name="...", workspace="...", mode="hub").'
-                )
-
-            parameters = {"workspace": workspace, "name": name}
-        elif mode == "local":
-            parameters = {"name": name}
-            if "workspace" in kwargs:
-                parameters["workspace"] = kwargs["workspace"]
-        elif mode == "mlflow":
-            parameters = {"name": name}
-            if "tracking_uri" in kwargs:
-                parameters["tracking_uri"] = kwargs["tracking_uri"]
-        else:
-            raise ValueError(
-                f'`mode` must be "hub", "local" or "mlflow" (found {mode})'
-            )
+        if mode not in MODES:
+            raise ValueError(f"`mode` must be included in {MODES} (found {mode})")
 
         assert_optional_dependencies_installed(mode)
 
-        return plugin.get(group="skore.plugins.project", mode=mode), parameters
+        return (
+            plugin.get(group="skore.plugins.project", mode=mode),
+            {"name": name} | kwargs,
+        )
 
     def __init__(self, name: str, *, mode: ProjectMode = "local", **kwargs):
         r"""
@@ -216,7 +196,7 @@ class Project:
         >>> from tempfile import TemporaryDirectory
         >>> from skore import Project
         >>> tmpdir = TemporaryDirectory()
-        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
+        >>> project = Project(name="my-xp", mode="local", workspace=Path(tmpdir.name))
         >>> project.name
         'my-xp'
         >>> project.mode
@@ -226,7 +206,7 @@ class Project:
         plugin, parameters = Project.__setup_plugin(mode, name, **kwargs)
 
         self.__mode = mode
-        self.__project = plugin(**(kwargs | parameters))
+        self.__project = plugin(**parameters)
 
         ml_tasks = {report["ml_task"] for report in self.__project.summarize()}
 
@@ -292,7 +272,7 @@ class Project:
         >>> X, y = make_regression(random_state=42)
         >>> report = evaluate(LinearRegression(), X, y, splitter=0.2)
         >>> tmpdir = TemporaryDirectory()
-        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
+        >>> project = Project(name="my-xp", mode="local", workspace=Path(tmpdir.name))
         >>> project.put("my-regression", report)
         >>> tmpdir.cleanup()
         """
@@ -348,7 +328,7 @@ class Project:
         >>> X, y = make_regression(random_state=42)
         >>> report = evaluate(LinearRegression(), X, y, splitter=0.2)
         >>> tmpdir = TemporaryDirectory()
-        >>> project = Project(mode="local", name="my-xp", workspace=Path(tmpdir.name))
+        >>> project = Project(name="my-xp", mode="local", workspace=Path(tmpdir.name))
         >>> project.put("my-regression", report)
         >>> summary = project.summarize()
         >>> report_id = summary.frame().index.get_level_values("id")[0]
@@ -414,4 +394,4 @@ class Project:
         """
         plugin, parameters = Project.__setup_plugin(mode, name, **kwargs)
 
-        return plugin.delete(**(kwargs | parameters))
+        return plugin.delete(**parameters)

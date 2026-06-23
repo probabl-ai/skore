@@ -169,6 +169,8 @@ class Project:
 
     Parameters
     ----------
+    name : str
+        The name of the project.
     workspace : str
         The workspace of the project.
 
@@ -176,8 +178,6 @@ class Project:
         ``skore hub`` interface. It represents an isolated entity managing users,
         projects, and resources. It can be a company, organization, or team that
         operates independently within the system.
-    name : str
-        The name of the project.
 
     Attributes
     ----------
@@ -193,7 +193,7 @@ class Project:
 
     @ensure_workspace_is_valid
     @ensure_name_is_valid
-    def __init__(self, *, workspace: str, name: str):
+    def __init__(self, *, name: str, workspace: str):
         """
         Initialize a hub project.
 
@@ -411,17 +411,19 @@ class Project:
         return sorted(map(dto, responses), key=itemgetter("date"))
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(mode='hub', name='{self.name}', workspace='{self.workspace}')"
+        return f"Project(name='{self.name}', mode='hub', workspace='{self.workspace}')"
 
     @staticmethod
     @ensure_workspace_is_valid
     @ensure_name_is_valid
-    def delete(*, workspace: str, name: str) -> None:
+    def delete(*, name: str, workspace: str) -> None:
         """
         Delete a hub project.
 
         Parameters
         ----------
+        name : str
+            The name of the project.
         workspace : Path
             The workspace of the project.
 
@@ -429,8 +431,6 @@ class Project:
             ``skore hub`` interface. It represents an isolated entity managing users,
             projects, and resources. It can be a company, organization, or team that
             operates independently within the system.
-        name : str
-            The name of the project.
         """
         with HUBClient() as hub_client:
             try:

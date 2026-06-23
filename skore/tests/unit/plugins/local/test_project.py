@@ -193,7 +193,7 @@ class TestProject:
             RuntimeError,
             match=re.escape(
                 f"Skore could not proceed because "
-                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"Project(name='<project>', mode='local', workspace='{tmp_path}') "
                 f"does not exist anymore."
             ),
         ):
@@ -307,7 +307,7 @@ class TestProject:
             RuntimeError,
             match=re.escape(
                 f"Skore could not proceed because "
-                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"Project(name='<project>', mode='local', workspace='{tmp_path}') "
                 f"does not exist anymore."
             ),
         ):
@@ -407,7 +407,7 @@ class TestProject:
             RuntimeError,
             match=re.escape(
                 f"Skore could not proceed because "
-                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"Project(name='<project>', mode='local', workspace='{tmp_path}') "
                 f"does not exist anymore."
             ),
         ):
@@ -435,7 +435,7 @@ class TestProject:
         with raises(
             LookupError,
             match=re.escape(
-                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"Project(name='<project>', mode='local', workspace='{tmp_path}') "
                 f"does not exist."
             ),
         ):

@@ -276,7 +276,7 @@ class Project:
 
     def __repr__(self) -> str:  # noqa: D105
         return (
-            f"Project(mode='local', name='{self.name}', workspace='{self.workspace}')"
+            f"Project(name='{self.name}', mode='local', workspace='{self.workspace}')"
         )
 
     @staticmethod
@@ -305,7 +305,7 @@ class Project:
 
         if name not in projects:
             raise LookupError(
-                f"Project(mode='local', name='{name}', workspace='{workspace}') "
+                f"Project(name='{name}', mode='local', workspace='{workspace}') "
                 f"does not exist."
             )
 
