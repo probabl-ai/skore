@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import numpy as np
 import pandas as pd
 import pytest
+import skrub
 from sklearn.compose import ColumnTransformer
 from sklearn.datasets import make_classification, make_regression
 from sklearn.decomposition import PCA
@@ -40,6 +41,16 @@ from skore._sklearn._checks.model_checks import (
     CheckSearchParamsToTune,
 )
 from skore._utils._testing import MockEstimator
+
+
+def _make_skrub_regression_report(X, y, estimator, *, splitter=0.2):
+    """Build an EstimatorReport from a SkrubLearner backed by ``X`` and ``y``."""
+    if not isinstance(X, pd.DataFrame):
+        X = pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])])
+    if not isinstance(y, pd.Series):
+        y = pd.Series(y)
+    learner = skrub.X().skb.apply(estimator, y=skrub.y()).skb.make_learner()
+    return evaluate(learner, data={"X": X, "y": y}, splitter=splitter)
 
 
 @pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
@@ -191,6 +202,16 @@ def test_skd006_tabular_pipeline_with_numpy_X(regression_data):
     assert "SKD006" in tips.index
 
 
+def test_skd006_skrub_learner_with_tabular_pipeline(regression_data):
+    """SKD006 runs when a tabular_pipeline is fitted inside a SkrubLearner."""
+    X, y = regression_data
+    report = _make_skrub_regression_report(
+        X, y, tabular_pipeline(LinearRegression()), splitter=0.2
+    )
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD006" in tips.index
+
+
 @pytest.mark.parametrize(
     "pipeline, expected_message",
     [
@@ -232,6 +253,16 @@ def test_skd007_mdi_bias_with_high_cardinality(regression_data, estimator):
         "High-cardinality features detected: Feature 0, Feature 1, Feature 2 "
         "(and 1 more)" in tips.loc["SKD007", "explanation"]
     )
+
+
+def test_skd007_skrub_learner_random_forest(regression_data):
+    """SKD007 runs when a tabular_pipeline forest is fitted inside a SkrubLearner."""
+    X, y = regression_data
+    estimator = tabular_pipeline(RandomForestRegressor(n_estimators=5, random_state=0))
+    report = _make_skrub_regression_report(X, y, estimator)
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD007" in tips.index
+    assert "High-cardinality features detected" in tips.loc["SKD007", "explanation"]
 
 
 def test_skd007_not_emitted_for_binary_features():
@@ -323,6 +354,26 @@ def test_skd011_detects_golden_feature(estimator):
     assert "Feature 1" in explanation
     assert "Feature 2" not in explanation
     assert "Feature 3" not in explanation
+
+
+def test_skd011_skrub_learner_golden_feature():
+    """Golden features are detected when the model is a SkrubLearner."""
+    rng = np.random.RandomState(0)
+    n_samples = 200
+    X = rng.normal(size=(n_samples, 4))
+    y = X[:, 0] * 10
+    X[:, 1] = y + rng.normal(scale=0.01, size=n_samples)
+    report = _make_skrub_regression_report(
+        pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])]),
+        pd.Series(y),
+        tabular_pipeline(LinearRegression()),
+        splitter=0.2,
+    )
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD011" in tips.index
+    explanation = tips.loc["SKD011", "explanation"]
+    assert "Feature 0" in explanation
+    assert "Feature 1" in explanation
 
 
 def test_skd012_detects_useless_features():
@@ -743,6 +794,19 @@ def test_skd016_pipeline_walks_steps(regression_data):
     assert "PCA" in explanation
     assert "n_components" in explanation
     assert "Ridge" not in explanation
+
+
+def test_skd016_skrub_learner_default_rf(regression_data):
+    """SKD016 inspects default hyperparameters inside a SkrubLearner pipeline."""
+    X, y = regression_data
+    report = _make_skrub_regression_report(
+        X, y, tabular_pipeline(RandomForestRegressor(random_state=0))
+    )
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD016" in tips.index
+    explanation = tips.loc["SKD016", "explanation"]
+    assert "RandomForestRegressor" in explanation
+    assert "max_features" in explanation
 
 
 def test_ignore_checks(monkeypatch, regression_report):

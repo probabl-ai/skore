@@ -6,6 +6,8 @@ from typing import TypeGuard
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import NotFittedError, check_is_fitted
 from skrub import DataOp, SkrubLearner
+from skrub._data_ops._data_ops import Apply
+from skrub._data_ops._evaluation import find_first_apply
 
 from skore._sklearn.types import EstimatorLike
 
@@ -43,6 +45,34 @@ def get_data_op(estimator: EstimatorLike) -> DataOp | None:
 def data_op_has_explicit_cv(data_op: DataOp) -> bool:
     """Return whether ``mark_as_X`` was called with an explicit ``cv`` argument."""
     return data_op.skb.find_X_y().get("cv") is not None
+
+
+def resolve_fitted_sklearn_estimator(estimator: EstimatorLike) -> BaseEstimator:
+    """Return the fitted scikit-learn estimator behind a skrub learner.
+
+    For plain scikit-learn estimators, returns ``estimator`` unchanged.
+    For :class:`~skrub.SkrubLearner`, returns the fitted estimator from the
+    supervised ``.skb.apply()`` step (e.g. a :class:`~sklearn.pipeline.Pipeline`
+    when using :func:`~skrub.tabular_pipeline`).
+    """
+    if not is_skrub_learner(estimator):
+        return estimator
+
+    apply_node = find_first_apply(estimator.data_op)
+    if apply_node is None:
+        raise NotFittedError("No supervised apply step found in the skrub learner.")
+    impl = apply_node._skrub_impl
+    if not isinstance(impl, Apply):
+        raise TypeError(
+            f"The supervised step does not represent an estimator application: "
+            f"{apply_node!r}"
+        )
+    if not hasattr(impl, "estimator_"):
+        raise NotFittedError(
+            "The skrub learner has not been fitted. Call fit() before inspecting "
+            "fitted sub-estimators."
+        )
+    return impl.estimator_
 
 
 class _LearnerAdapter(BaseEstimator):

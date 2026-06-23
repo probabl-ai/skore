@@ -17,6 +17,7 @@ from skore._utils._dataframe import (
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
+from skore._utils._skrub import resolve_fitted_sklearn_estimator
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
@@ -162,8 +163,10 @@ def split_preprocessor_estimator(estimator):
     """Return ``(preprocessor, predictor)`` from a possibly wrapped estimator.
 
     Splits sklearn :class:`~sklearn.pipeline.Pipeline` into its preprocessing
-    steps and final predictor.
+    steps and final predictor. Unwraps :class:`~skrub.SkrubLearner` to the
+    fitted estimator from its supervised apply step first.
     """
+    estimator = resolve_fitted_sklearn_estimator(estimator)
     if isinstance(estimator, Pipeline):
         if len(estimator.steps) > 1:
             return estimator[:-1], estimator[-1]

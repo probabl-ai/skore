@@ -18,6 +18,7 @@ from sklearn.model_selection._search import BaseSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.utils._param_validation import Interval
 from sklearn.utils._pprint import _changed_params
+from sklearn.utils.validation import NotFittedError
 from skrub import tabular_pipeline
 
 from skore._sklearn._checks._utils import (
@@ -46,6 +47,7 @@ from skore._utils._dataframe import (
     UserTarget,
     _normalize_X_as_dataframe,
 )
+from skore._utils._skrub import resolve_fitted_sklearn_estimator
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -963,7 +965,10 @@ class CheckEstimatorNotTuned(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        estimator = report.estimator_
+        try:
+            estimator = resolve_fitted_sklearn_estimator(report.estimator_)
+        except (NotFittedError, TypeError) as exc:
+            raise CheckNotApplicable("Could not resolve the fitted estimator.") from exc
         if isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable("Estimator is a BaseSearchCV instance.")
 
