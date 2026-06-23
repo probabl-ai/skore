@@ -87,6 +87,11 @@ def _check_estimator_and_data(
                 "`data` can only be provided when estimator "
                 "is a SkrubLearner. Provide X and y instead."
             )
+        if X is None or y is None:
+            raise TypeError(
+                "X and y must be provided (unless estimator is a "
+                "SkrubLearner and data is provided instead)."
+            )
         estimator = to_learner(estimator)
         data = {"_skrub_X": X, "_skrub_y": y}
     return initialized_with_data_op, estimator, data
