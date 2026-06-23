@@ -10,9 +10,8 @@ import pytest
 from httpx import Client, Response
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.model_selection import train_test_split
 
-from skore import EstimatorReport, Project
+from skore import EstimatorReport, Project, evaluate
 from skore._project._summary import Summary
 
 
@@ -36,6 +35,7 @@ def regression_report() -> EstimatorReport:
 def second_regression_report() -> EstimatorReport:
     X, y = make_regression(random_state=7)
     return evaluate(LinearRegression(), X, y)
+
 
 class TestLocalProjectContract:
     def test_api_contract(self, tmp_path, regression_report, second_regression_report):
