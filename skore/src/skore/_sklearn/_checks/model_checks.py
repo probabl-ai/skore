@@ -41,12 +41,7 @@ from skore._sklearn._checks.tunable_hyperparameters import (
     INFRASTRUCTURE_PARAMS,
 )
 from skore._sklearn.feature_names import _get_feature_names
-from skore._utils._dataframe import (
-    UserDataFrame,
-    UserSeries,
-    UserTarget,
-    _normalize_y_as_dataframe,
-)
+from skore._utils._dataframe import UserSeries
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -76,8 +71,6 @@ def _baseline_estimator_report(
         raise CheckNotApplicable("Train data is unavailable.") from None
 
     y_train = get_report_y(report, data_source="train")
-    if y_train is None:
-        raise CheckNotApplicable("Train data is unavailable.")
 
     X_test, _ = report.data._retrieve_data_as_frame("test", False, "test")
     y_test = get_report_y(report, data_source="test")
@@ -279,20 +272,7 @@ class CheckHighClassImbalance(Check):
             raise CheckNotApplicable(
                 f"ML task is not binary classification. Got {report.ml_task}."
             )
-        if report._report_type == "cross-validation":
-            if report.y is None:
-                y = None
-            else:
-                y_nw = nw.from_native(_normalize_y_as_dataframe(report.y))
-                y = (
-                    y_nw.get_column(y_nw.columns[0]).to_native()
-                    if y_nw.shape[1] == 1
-                    else y_nw.to_native()
-                )
-        else:
-            y = get_report_y(report, data_source="both")
-        if y is None:
-            raise CheckNotApplicable("Target train data is unavailable.")
+        y = get_report_y(report, data_source="both")
 
         y = nw.from_native(cast(UserSeries, y), series_only=True)
         counts = y.value_counts()
@@ -333,8 +313,6 @@ class CheckUnderrepresentedClasses(Check):
             )
 
         y = get_report_y(report, data_source="both")
-        if y is None:
-            raise CheckNotApplicable("Target train data is unavailable.")
 
         y = nw.from_native(cast(UserSeries, y), series_only=True)
         counts = y.value_counts()
@@ -377,8 +355,6 @@ class CheckCoefficientsInterpretation(Check):
             )
 
         X = get_preprocessed_X(report, data_source="both")
-        if X is None:
-            raise CheckNotApplicable("Train data is unavailable.")
 
         std_values = nw.from_native(X).select(nw.all().std()).to_numpy().ravel()
         if not np.allclose(std_values, std_values[0], atol=0.05):
@@ -420,8 +396,6 @@ class CheckMDIHighCardinalityBias(Check):
             )
 
         X = get_preprocessed_X(report, data_source="train")
-        if X is None:
-            raise CheckNotApplicable("Train data is unavailable.")
 
         X = nw.from_native(X)
         n_samples = X.shape[0]
@@ -474,8 +448,6 @@ class CheckCorrelatedFeatures(Check):
         report = cast("EstimatorReport", report)
         X = get_preprocessed_X(report, data_source="train")
 
-        if X is None:
-            raise CheckNotApplicable("Train data is unavailable.")
         X = nw.from_native(X).select(nw.selectors.numeric())
         if X.shape[1] < 2 or X.shape[1] > 1000:
             raise CheckNotApplicable(
@@ -485,7 +457,7 @@ class CheckCorrelatedFeatures(Check):
 
         corr = np.abs(spearmanr(X.to_numpy()).statistic)
         if corr.ndim < 2:
-            return None
+            raise CheckNotApplicable("Less than 2 numeric features are present.")
         np.fill_diagonal(corr, 0)
         n_pairs = int(np.count_nonzero(corr >= 0.9) // 2)
 
@@ -614,11 +586,9 @@ class CheckGoldenFeature(Check):
 
         report = cast("EstimatorReport", report)
         X_train = get_preprocessed_X(report, data_source="train")
-        X_test = cast("UserDataFrame", get_preprocessed_X(report, data_source="test"))
+        X_test = get_preprocessed_X(report, data_source="test")
         y_train = get_report_y(report, data_source="train")
-        y_test = cast("UserTarget", get_report_y(report, data_source="test"))
-        if X_train is None or y_train is None:
-            raise CheckNotApplicable("Train data is unavailable.")
+        y_test = get_report_y(report, data_source="test")
         if X_train.shape[1] < 2:
             raise CheckNotApplicable("Train data has only one feature.")
 

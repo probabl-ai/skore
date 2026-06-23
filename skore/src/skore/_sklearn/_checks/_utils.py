@@ -180,15 +180,26 @@ def cast_report(report: _BaseReport) -> EstimatorReport | CrossValidationReport:
 
 
 def get_report_y(
-    report: EstimatorReport,
+    report: EstimatorReport | CrossValidationReport,
     *,
     data_source: Literal["train", "test", "both"],
-) -> UserTarget | None:
-    """Return the target as a 1d Series or multi-output DataFrame."""
+) -> UserTarget:
+    """Return the target as a 1d Series or multi-output DataFrame.
+
+    For cross-validation reports, returns the full dataset target and
+    ``data_source`` is ignored.
+    """
     try:
+        if report._report_type == "cross-validation":
+            if report.y is None:
+                raise CheckNotApplicable("Target data is unavailable.")
+            y = nw.from_native(_normalize_y_as_dataframe(report.y))
+            if y.shape[1] == 1:
+                return y.get_column(y.columns[0]).to_native()
+            return y.to_native()
         if data_source == "both":
             if report.y_train is None:
-                return None
+                raise CheckNotApplicable("Target train data is unavailable.")
             y = nw.concat(
                 [
                     nw.from_native(_normalize_y_as_dataframe(report.y_train)),
@@ -198,35 +209,35 @@ def get_report_y(
             )
         elif data_source == "train":
             if report.y_train is None:
-                return None
+                raise CheckNotApplicable("Target train data is unavailable.")
             y = nw.from_native(_normalize_y_as_dataframe(report.y_train))
         else:
             y = nw.from_native(_normalize_y_as_dataframe(report.y_test))
         if y.shape[1] == 1:
             return y.get_column(y.columns[0]).to_native()
         return y.to_native()
-    except NotImplementedError:
-        return None
+    except NotImplementedError as err:
+        raise CheckNotApplicable("Target data is sparse.") from err
 
 
 def get_preprocessed_X(
     report: EstimatorReport,
     *,
     data_source: Literal["train", "test", "both"],
-) -> UserDataFrame | None:
+) -> UserDataFrame:
     """Return the feature matrix seen by the predictor.
 
     When the report's estimator is a :class:`~sklearn.pipeline.Pipeline`, the
     raw feature matrix is passed through the fitted preprocessor (all steps
     except the last) before being returned.
 
-    Returns ``None`` when no data is available or when the preprocessor
-    produces an unsupported type (e.g. sparse matrices).
+    Raises `CheckNotApplicable` when no data is available or when
+    the preprocessor produces an unsupported type (e.g. sparse matrices).
     """
     try:
         if data_source == "both":
             if report.X_train is None:
-                return None
+                raise CheckNotApplicable("Train data is unavailable.")
             data = nw.concat(
                 [
                     nw.from_native(_normalize_X_as_dataframe(report.X_train)),
@@ -236,12 +247,12 @@ def get_preprocessed_X(
             ).to_native()
         elif data_source == "train":
             if report.X_train is None:
-                return None
+                raise CheckNotApplicable("Train data is unavailable.")
             data = _normalize_X_as_dataframe(report.X_train)
         else:
             data = _normalize_X_as_dataframe(report.X_test)
-    except NotImplementedError:
-        return None
+    except NotImplementedError as err:
+        raise CheckNotApplicable("Feature data is sparse.") from err
 
     preprocessor, _ = split_preprocessor_estimator(report.estimator_)
     if preprocessor is not None and len(preprocessor.steps) > 0:
@@ -249,5 +260,5 @@ def get_preprocessed_X(
 
     try:
         return _normalize_X_as_dataframe(data)
-    except NotImplementedError:
-        return None
+    except NotImplementedError as err:
+        raise CheckNotApplicable("Feature data is sparse.") from err

@@ -256,7 +256,7 @@ class Check(Protocol):
 
     code: CheckCode
     title: str
-    report_type: list[ReportType] | tuple[ReportType, ...]
+    report_type: list[ReportType] | tuple[ReportType]
     docs_url: str | None = None
     severity: Literal["issue", "tip"]
     slow: bool = False
