@@ -23,6 +23,14 @@
     margin-bottom: 0.35em;
 }
 
+.report-hint-note-line {
+    display: block;
+}
+
+.report-hint-note-line + .report-hint-note-line {
+    margin-top: 0.35em;
+}
+
 .report-hint-note-link {
     color: var(--color-blue);
     font-style: normal;
@@ -311,6 +319,28 @@
 
 .report-data {
     padding-top: 0.5em;
+}
+
+.report-checks-nested {
+    margin-left: 1.5em;
+}
+
+.report-checks-summary-list {
+    margin: 0;
+    padding-left: 1.2em;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.report-checks-summary-list li + li {
+    margin-top: 0.35em;
+}
+
+.report-checks-summary-empty {
+    margin: 0;
+    font-size: 12px;
+    font-style: italic;
+    opacity: 0.85;
 }
 
 .comparison-report-select-row {

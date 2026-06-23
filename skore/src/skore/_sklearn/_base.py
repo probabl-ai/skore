@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from importlib.metadata import version
-from typing import Generic, Literal, TypeVar
+from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from uuid import uuid4
 
 from skore._project.git import git_commit
@@ -15,6 +15,9 @@ from skore._utils.repr.base import (
     ReportHelpMixin,
     render_panel_to_plain_text,
 )
+
+if TYPE_CHECKING:
+    from skore._sklearn._checks.accessor import _ChecksAccessor
 
 
 class _BaseReport(ReportHelpMixin):
@@ -32,6 +35,8 @@ class _BaseReport(ReportHelpMixin):
         "comparison-estimator",
         "comparison-cross-validation",
     ]
+
+    checks: _ChecksAccessor
 
     def _aggregate_checks(
         self,
@@ -119,6 +124,10 @@ class _BaseReport(ReportHelpMixin):
             self._applicable_codes,
             self._not_applicable_codes,
         )
+
+    def _checks_summary_html_fragment(self) -> str:
+        """HTML snippet for the checks summary tab in report reprs."""
+        return self.checks.summarize(fast_mode=True)._embedded_repr_html()
 
     def __init__(self) -> None:
         self._metadata = {
