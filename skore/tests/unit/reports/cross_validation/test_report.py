@@ -495,3 +495,12 @@ def test_state_has_no_unexpected_data_copy(estimator, splitter):
     # However, this is a heuristic; if this test fails, it may also be because the state
     # size is no longer dominated by the size of X.
     assert state_nbytes_without_data(report) < X.nbytes
+
+
+def test_no_data_error():
+    X, y = make_classification()
+    estimator = DummyClassifier()
+    with pytest.raises(TypeError, match="X and y must be provided"):
+        CrossValidationReport(estimator, splitter=2)
+        CrossValidationReport(estimator, X=X, splitter=2)
+        CrossValidationReport(estimator, y=y, splitter=2)

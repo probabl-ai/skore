@@ -192,8 +192,6 @@ def get_report_y(
     """
     try:
         if report._report_type == "cross-validation":
-            if report.y is None:
-                raise CheckNotApplicable("Target data is unavailable.")
             y = nw.from_native(_normalize_y_as_dataframe(report.y))
         else:
             if data_source == "both":
