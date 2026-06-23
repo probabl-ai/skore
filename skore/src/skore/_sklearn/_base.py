@@ -80,7 +80,7 @@ class _BaseReport(ReportHelpMixin):
         checks_to_run = [
             check
             for check in self._checks_registry
-            if check.report_type == self._report_type
+            if self._report_type in check.report_type
             and check.code not in self._check_results_cache
             and check.code not in ignored_codes
             and not (fast_mode and getattr(check, "slow", False))
@@ -104,7 +104,7 @@ class _BaseReport(ReportHelpMixin):
                 "severity": getattr(check, "severity", "issue"),
             }
 
-        if "cross-validation" in self._report_type or "comparison" in self._report_type:
+        if "comparison" in self._report_type:
             agg_check_results, agg_applicable, agg_not_applicable = (
                 self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
             )

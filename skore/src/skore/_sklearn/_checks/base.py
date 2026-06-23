@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections.abc import Sequence
 from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 from uuid import uuid4
@@ -218,7 +219,7 @@ class Check(Protocol):
     Each check wraps a callable that inspects a report. If the callable returns a
     non-empty string, that text is recorded as a finding under :attr:`code` with the
     given :attr:`title` and :attr:`severity`. Checks are scoped to a single report
-    type via :attr:`report_type` so they only run on matching reports.
+    types via :attr:`report_type` so they only run on matching reports.
 
     Attributes
     ----------
@@ -234,9 +235,11 @@ class Check(Protocol):
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
         the automated checks user guide.
 
-    report_type : str
-        Must be one of ``"cross-validation"``, ``"estimator"``,
-        ``"comparison-estimator"``, or ``"comparison-cross-validation"``.
+    report_type : list of str
+        Report types this check applies to. Each element must be one of
+        ``"cross-validation"``, ``"estimator"``, ``"comparison-estimator"``,
+        or ``"comparison-cross-validation"``. Most checks use
+        ``["estimator", "cross-validation"]``.
 
     severity : {"issue", "tip"}
         Severity of the finding. ``"issue"`` flags a modeling problem to fix;
@@ -253,7 +256,7 @@ class Check(Protocol):
 
     code: CheckCode
     title: str
-    report_type: ReportType
+    report_type: Sequence[ReportType]
     docs_url: str | None = None
     severity: Literal["issue", "tip"]
     slow: bool = False

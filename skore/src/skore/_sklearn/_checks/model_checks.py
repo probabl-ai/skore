@@ -25,6 +25,7 @@ from skore._sklearn._checks._utils import (
     ClassName,
     ParameterName,
     StepName,
+    cast_report,
     check_score_gap_to_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
@@ -40,7 +41,7 @@ from skore._sklearn._checks.tunable_hyperparameters import (
     INFRASTRUCTURE_PARAMS,
 )
 from skore._sklearn.feature_names import _get_feature_names
-from skore._utils._dataframe import UserSeries
+from skore._utils._dataframe import UserSeries, _normalize_y_as_dataframe
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -122,7 +123,7 @@ class CheckOverfitting(Check):
 
     code = "SKD001"
     title = "Potential overfitting"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd001-overfitting"
     severity = "issue"
 
@@ -170,7 +171,7 @@ class CheckUnderfitting(Check):
 
     code = "SKD002"
     title = "Potential underfitting"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd002-underfitting"
     severity = "issue"
 
@@ -225,7 +226,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
 
     code = "SKD003"
     title = "Inconsistent performance across splits"
-    report_type = "cross-validation"
+    report_type = ["cross-validation"]
     docs_url = "skd003-inconsistent-performance"
     severity = "issue"
 
@@ -262,14 +263,25 @@ class CheckHighClassImbalance(Check):
 
     code = "SKD004"
     title = "High class imbalance"
-    report_type = "estimator"
+    report_type = ["estimator", "cross-validation"]
     docs_url = "skd004-high-class-imbalance"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect when the majority class exceeds 80% of samples."""
-        report = cast("EstimatorReport", report)
-        y = get_report_y(report, data_source="both")
+        report = cast_report(report)
+        if report._report_type == "cross-validation":
+            if report.y is None:
+                y = None
+            else:
+                y_nw = nw.from_native(_normalize_y_as_dataframe(report.y))
+                y = (
+                    y_nw.get_column(y_nw.columns[0]).to_native()
+                    if y_nw.shape[1] == 1
+                    else y_nw.to_native()
+                )
+        else:
+            y = get_report_y(report, data_source="both")
         if report.ml_task != "binary-classification" or y is None:
             raise CheckNotApplicable()
 
@@ -299,7 +311,7 @@ class CheckUnderrepresentedClasses(Check):
 
     code = "SKD005"
     title = "Underrepresented classes"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd005-underrepresented-classes"
     severity = "issue"
 
@@ -336,7 +348,7 @@ class CheckCoefficientsInterpretation(Check):
 
     code = "SKD006"
     title = "Coefficient interpretation"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd006-unscaled-coefficients"
     severity = "tip"
 
@@ -373,7 +385,7 @@ class CheckMDIHighCardinalityBias(Check):
 
     code = "SKD007"
     title = "MDI biased for high-cardinality features"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd007-mdi-cardinality-bias"
     severity = "tip"
 
@@ -419,7 +431,7 @@ class CheckCorrelatedFeatures(Check):
 
     code = "SKD008"
     title = "Highly correlated input features"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd008-correlated-features"
     severity = "issue"
 
@@ -469,7 +481,7 @@ class CheckWorseThanBaseline(Check):
 
     code = "SKD009"
     title = "Model worse than baseline"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd009-worse-than-baseline"
     severity = "issue"
     slow = True
@@ -515,7 +527,7 @@ class CheckSlowerThanBaseline(Check):
 
     code = "SKD010"
     title = "Model slower than baseline"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd010-slower-than-baseline"
     severity = "issue"
     slow = True
@@ -564,7 +576,7 @@ class CheckGoldenFeature(Check):
 
     code = "SKD011"
     title = "Golden feature"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd011-golden-feature"
     severity = "tip"
     slow = True
@@ -651,7 +663,7 @@ class CheckUselessFeatures(Check):
 
     code = "SKD012"
     title = "Useless features"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd012-useless-features"
     severity = "tip"
     slow = True
@@ -700,7 +712,7 @@ class CheckTrainTestTimeOverlap(Check):
 
     code = "SKD013"
     title = "Train-test overlap in time series"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd013-train-test-time-overlap"
     severity = "issue"
 
@@ -744,7 +756,7 @@ class CheckHyperparamsAtSearchEdge(Check):
 
     code = "SKD014"
     title = "Hyperparameters at search edge"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd014-hyperparams-at-search-edge"
     severity = "issue"
 
@@ -854,7 +866,7 @@ class CheckSearchParamsToTune(Check):
 
     code = "SKD015"
     title = "Hyperparameters worth tuning"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd015-hyperparameters-worth-tuning"
     severity = "tip"
 
@@ -919,7 +931,7 @@ class CheckEstimatorNotTuned(Check):
 
     code = "SKD016"
     title = "Estimator not tuned"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "skd016-estimator-not-tuned"
     severity = "tip"
 

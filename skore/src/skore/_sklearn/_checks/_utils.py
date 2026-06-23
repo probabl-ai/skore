@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 import narwhals as nw
 import numpy as np
@@ -18,6 +18,8 @@ from skore._utils._dataframe import (
 )
 
 if TYPE_CHECKING:
+    from skore._sklearn._base import _BaseReport
+    from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
     from skore._sklearn._plot.metrics.metrics_summary_display import (
         MetricsSummaryRow,
@@ -142,7 +144,7 @@ class CheckNotApplicable(Exception):
     >>> class MyCheck(Check):
     ...     code = "TST001"
     ...     title = "My check"
-    ...     report_type = "estimator"
+    ...     report_type = ["estimator"]
     ...     docs_url = None
     ...     severity = "issue"
     ...     def check_function(self, report):
@@ -164,6 +166,12 @@ def split_preprocessor_estimator(estimator):
         else:
             return None, estimator[0]
     return None, estimator
+
+
+def cast_report(report: _BaseReport) -> EstimatorReport | CrossValidationReport:
+    if report._report_type == "estimator":
+        return cast("EstimatorReport", report)
+    return cast("CrossValidationReport", report)
 
 
 def get_report_y(

@@ -70,15 +70,13 @@ def mock_issue(report, ignored_codes, *, fast_mode=False):
 class MockCheck(Check):
     code = "TST001"
     title = "Test issue"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "tst001"
 
-    def __init__(
-        self, has_issue: bool = True, docs_url="tst001", report_type="estimator"
-    ):
+    def __init__(self, has_issue: bool = True, docs_url="tst001", report_type=None):
         self.has_issue = has_issue
         self.docs_url = docs_url
-        self.report_type = report_type
+        self.report_type = report_type if report_type is not None else ["estimator"]
 
     def check_function(self, report):
         return "Something was found." if self.has_issue else None
@@ -932,9 +930,14 @@ def test_remove_is_case_insensitive(regression_report):
 
 def test_check_invalid_report_type(regression_report):
     """Check that Check raises ValueError for unsupported report_type."""
-    check = MockCheck(has_issue=False, report_type="invalid")
-    with pytest.raises(ValueError, match="report_type should be one of"):
-        regression_report.checks.add([check])
+    with pytest.raises(ValueError, match="must be a non-empty list"):
+        regression_report.checks.add(
+            [MockCheck(has_issue=False, report_type="invalid")]
+        )
+    with pytest.raises(ValueError, match="unsupported values"):
+        regression_report.checks.add(
+            [MockCheck(has_issue=False, report_type=["invalid"])]
+        )
 
 
 def test_check_invalid_protocol(regression_report):
@@ -943,7 +946,7 @@ def test_check_invalid_protocol(regression_report):
     class InvalidCheck:
         code = "INVALID001"
         title = "Invalid issue"
-        report_type = "estimator"
+        report_type = ["estimator"]
         docs_url = "invalid001"
 
     with pytest.raises(ValueError, match="does not implement the Check protocol."):
@@ -967,7 +970,7 @@ def test_custom_metric(binary_classification_data):
 class TipCheck(Check):
     code = "TST002"
     title = "Tip check"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "tst_tip"
     severity = "tip"
 
@@ -1046,7 +1049,7 @@ def test_html_tabs(regression_report):
 class NotApplicableMockCheck(Check):
     code = "TSTNA"
     title = "Not applicable check"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "tstna"
 
     def check_function(self, report):
@@ -1066,7 +1069,7 @@ def test_not_applicable_goes_to_not_applicable_section(regression_report):
 class SlowMockCheck(Check):
     code = "TSTSLOW"
     title = "Slow mock check"
-    report_type = "estimator"
+    report_type = ["estimator"]
     docs_url = "tstslow"
     slow = True
 
@@ -1127,7 +1130,7 @@ def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):
     class CheckNoSlowAttr(Check):
         code = "TSTFAST"
         title = "No slow attr"
-        report_type = "estimator"
+        report_type = ["estimator"]
         docs_url = "tstfast"
         severity = "issue"
 

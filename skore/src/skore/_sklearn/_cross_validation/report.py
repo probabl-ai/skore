@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import html
 import uuid
-from collections import defaultdict
 from collections.abc import Generator
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
@@ -18,7 +17,6 @@ from skrub._reporting._summarize import summarize_dataframe
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._checks.base import CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
@@ -569,63 +567,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 pos_label=self._pos_label,
             )
         return report
-
-    def _aggregate_checks(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
-        total_splits = len(self.reports_)
-        all_applicable_codes: set[CheckCode] = set()
-        all_not_applicable_codes: set[CheckCode] = set()
-        positives_by_code: defaultdict[CheckCode, list[dict]] = defaultdict(list)
-        ref_by_code: dict[CheckCode, dict] = {}
-
-        for estimator_report in self.reports_:
-            estimator_report.checks.add(self._checks_registry)
-            results, applicable_codes, not_applicable_codes = (
-                estimator_report._get_results(ignored_codes, fast_mode=fast_mode)
-            )
-            all_applicable_codes |= applicable_codes
-            all_not_applicable_codes |= not_applicable_codes
-            for code, check_result in results.items():
-                ref_by_code.setdefault(code, check_result)
-                if check_result["explanation"] is not None:
-                    positives_by_code[code].append(check_result)
-
-        all_not_applicable_codes -= all_applicable_codes
-
-        aggregated: dict[CheckCode, dict] = {}
-        for code in all_applicable_codes:
-            positives = positives_by_code[code]
-            if len(positives) > total_splits / 2:
-                ref = positives[0]
-                aggregated[code] = {
-                    "title": ref["title"],
-                    "docs_url": ref.get("docs_url"),
-                    "explanation": (
-                        f"Detected in {len(positives)}/{total_splits} evaluated splits."
-                    ),
-                    "severity": ref.get("severity"),
-                }
-            else:
-                ref = ref_by_code[code]
-                aggregated[code] = {
-                    "title": ref["title"],
-                    "docs_url": ref.get("docs_url"),
-                    "explanation": None,
-                    "severity": ref.get("severity"),
-                }
-        for code in all_not_applicable_codes:
-            ref = ref_by_code[code]
-            aggregated[code] = {
-                "title": ref["title"],
-                "docs_url": ref.get("docs_url"),
-                "explanation": None,
-                "severity": ref.get("severity"),
-            }
-        return aggregated, all_applicable_codes, all_not_applicable_codes
 
     @property
     def ml_task(self) -> str:
