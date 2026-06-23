@@ -260,6 +260,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     "`data` can only be provided when estimator "
                     "is a SkrubLearner. Provide X and y instead."
                 )
+            if X is None or y is None:
+                raise TypeError(
+                    "X and y must be provided (unless estimator is a "
+                    "SkrubLearner and data is provided instead)."
+                )
             self.learner_ = to_learner(estimator)
             self._data = {"_skrub_X": X, "_skrub_y": y}
         if getattr(self, "_splitter", None) is None:
@@ -668,8 +673,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._data["_skrub_X"]
 
     @property
-    def y(self) -> ArrayLike | None:
-        return self._data.get("_skrub_y")
+    def y(self) -> ArrayLike:
+        return self._data["_skrub_y"]
 
     @property
     def input_data(self) -> dict:
