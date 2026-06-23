@@ -656,8 +656,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         return self._data["_skrub_X"]
 
     @property
-    def y(self) -> ArrayLike | None:
-        return self._data.get("_skrub_y")
+    def y(self) -> ArrayLike:
+        return self._data["_skrub_y"]
 
     @property
     def input_data(self) -> dict:
