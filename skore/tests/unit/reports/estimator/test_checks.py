@@ -181,6 +181,14 @@ def test_skd006_detects_coefficient_interpretation(regression_data):
     assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
 
 
+def test_skd006_tabular_pipeline_with_numpy_X(regression_data):
+    """SKD006 runs when tabular_pipeline is evaluated on raw numpy features."""
+    X, y = regression_data
+    report = evaluate(tabular_pipeline(LinearRegression()), X, y, splitter=0.2)
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD006" in tips.index
+
+
 @pytest.mark.parametrize(
     "pipeline, expected_message",
     [

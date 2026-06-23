@@ -13,6 +13,7 @@ from skore._sklearn.types import EstimatorLike, PositiveLabel
 from skore._utils._dataframe import (
     UserDataFrame,
     UserTarget,
+    _concat_vertical,
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
@@ -194,25 +195,23 @@ def get_report_y(
             if report.y is None:
                 raise CheckNotApplicable("Target data is unavailable.")
             y = nw.from_native(_normalize_y_as_dataframe(report.y))
-            if y.shape[1] == 1:
-                return y.get_column(y.columns[0]).to_native()
-            return y.to_native()
-        if data_source == "both":
-            if report.y_train is None:
-                raise CheckNotApplicable("Target train data is unavailable.")
-            y = nw.concat(
-                [
-                    nw.from_native(_normalize_y_as_dataframe(report.y_train)),
-                    nw.from_native(_normalize_y_as_dataframe(report.y_test)),
-                ],
-                how="vertical",
-            )
-        elif data_source == "train":
-            if report.y_train is None:
-                raise CheckNotApplicable("Target train data is unavailable.")
-            y = nw.from_native(_normalize_y_as_dataframe(report.y_train))
         else:
-            y = nw.from_native(_normalize_y_as_dataframe(report.y_test))
+            if data_source == "both":
+                if report.y_train is None:
+                    raise CheckNotApplicable("Target train data is unavailable.")
+                y = nw.concat(
+                    [
+                        nw.from_native(_normalize_y_as_dataframe(report.y_train)),
+                        nw.from_native(_normalize_y_as_dataframe(report.y_test)),
+                    ],
+                    how="vertical",
+                )
+            elif data_source == "train":
+                if report.y_train is None:
+                    raise CheckNotApplicable("Target train data is unavailable.")
+                y = nw.from_native(_normalize_y_as_dataframe(report.y_train))
+            else:
+                y = nw.from_native(_normalize_y_as_dataframe(report.y_test))
         if y.shape[1] == 1:
             return y.get_column(y.columns[0]).to_native()
         return y.to_native()
@@ -235,9 +234,8 @@ def get_preprocessed_X(
 ) -> UserDataFrame:
     """Return the feature matrix seen by the predictor.
 
-    When the report's estimator is a :class:`~sklearn.pipeline.Pipeline`, the
-    raw feature matrix is passed through the fitted preprocessor (all steps
-    except the last) before being returned.
+    Features are retrieved in the same format as at fit time, passed through
+    the fitted preprocessor when present, then normalized for analysis.
 
     For cross-validation reports, returns features from the full dataset and
     ``data_source`` is ignored. The preprocessor is taken from the first fold's
@@ -246,33 +244,21 @@ def get_preprocessed_X(
     Raises `CheckNotApplicable` when no data is available or when
     the preprocessor produces an unsupported type (e.g. sparse matrices).
     """
-    try:
-        if report._report_type == "cross-validation":
-            data = _normalize_X_as_dataframe(report.X)
-            preprocessor, _ = split_preprocessor_estimator(
-                report.reports_[0].estimator_
-            )
-            if preprocessor is not None and len(preprocessor.steps) > 0:
-                data = preprocessor.transform(data)
-            return _normalize_X_as_dataframe(data)
+    if report._report_type == "cross-validation":
+        data = report.X
+    else:
         if data_source == "both":
             if report.X_train is None:
                 raise CheckNotApplicable("Train data is unavailable.")
-            data = nw.concat(
-                [
-                    nw.from_native(_normalize_X_as_dataframe(report.X_train)),
-                    nw.from_native(_normalize_X_as_dataframe(report.X_test)),
-                ],
-                how="vertical",
-            ).to_native()
+            data = _concat_vertical(report.X_train, report.X_test)
         elif data_source == "train":
             if report.X_train is None:
                 raise CheckNotApplicable("Train data is unavailable.")
-            data = _normalize_X_as_dataframe(report.X_train)
+            data = report.X_train
         else:
-            data = _normalize_X_as_dataframe(report.X_test)
-    except NotImplementedError as err:
-        raise CheckNotApplicable("Feature data is sparse.") from err
+            data = report.X_test
+    if data is None:
+        raise CheckNotApplicable("Test data is unavailable.")
 
     preprocessor, _ = split_preprocessor_estimator(get_fitted_estimator(report))
     if preprocessor is not None and len(preprocessor.steps) > 0:

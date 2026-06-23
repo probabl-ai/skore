@@ -89,11 +89,7 @@ else:
 # example page focuses on skore usage rather than backend startup details.
 with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
     # This creates an MLflow experiment with name `PROJECT`:
-    project = Project(
-        PROJECT,
-        mode="mlflow",
-        tracking_uri=TRACKING_URI,
-    )
+    project = Project(name=PROJECT, mode="mlflow", tracking_uri=TRACKING_URI)
 
 # %%
 # Once the project created, the same API used to store a report locally or on Skore Hub
