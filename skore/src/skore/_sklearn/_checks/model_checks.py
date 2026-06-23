@@ -78,11 +78,9 @@ def _baseline_estimator_report(
         raise CheckNotApplicable("Data is sparse.") from None
 
     y_train = get_report_y(report, data_source="train")
+    y_test = get_report_y(report, data_source="test")
     if y_train is None:
         raise CheckNotApplicable("Train data is unavailable.")
-
-    X_test, _ = report.data._retrieve_data_as_frame("test", False, "test")
-    y_test = get_report_y(report, data_source="test")
 
     is_classification = report.ml_task in (
         "binary-classification",
