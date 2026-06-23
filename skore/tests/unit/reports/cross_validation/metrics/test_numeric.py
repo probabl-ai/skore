@@ -215,8 +215,10 @@ def test_precision_recall_pos_label_overwrite(
 
 def test_get(forest_binary_classification_data):
     """``get`` works."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
+    _, X, y = forest_binary_classification_data
+    report = CrossValidationReport(
+        DummyClassifier(strategy="uniform"), X, y, splitter=2
+    )
 
     assert isinstance(report.metrics.get("precision"), pd.DataFrame)
     with pytest.raises(KeyError):
@@ -225,8 +227,10 @@ def test_get(forest_binary_classification_data):
 
 def test_get_custom(forest_binary_classification_data):
     """``get`` works for custom metrics."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
+    _, X, y = forest_binary_classification_data
+    report = CrossValidationReport(
+        DummyClassifier(strategy="uniform"), X, y, splitter=2
+    )
 
     with pytest.raises(KeyError):
         report.metrics.get("hello")
@@ -234,8 +238,8 @@ def test_get_custom(forest_binary_classification_data):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.get("hello").to_dict() == {
-        ("RandomForestClassifier", "mean"): {"Hello": 1.0},
-        ("RandomForestClassifier", "std"): {"Hello": 0.0},
+        ("DummyClassifier", "mean"): {"Hello": 1.0},
+        ("DummyClassifier", "std"): {"Hello": 0.0},
     }
 
 

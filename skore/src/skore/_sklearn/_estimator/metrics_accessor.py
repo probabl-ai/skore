@@ -156,7 +156,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
     ) -> MetricsSummaryDisplay:
-        """Compute a single metric, forwarding *kwargs* to the score function."""
+        """Compute a single metric, forwarding ``kwargs`` to the score function."""
         metric = self._parent._metric_registry[metric_name]
         rows = [
             cast(
@@ -242,7 +242,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
+        >>> report = evaluate(classifier, X, y, pos_label=1)
         >>> report.metrics.add(
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
