@@ -83,23 +83,12 @@ def test_multiple_estimators_cv(regression_data):
     assert isinstance(report, ComparisonReport)
 
 
-def test_multiple_estimators_multiple_X(regression_data):
-    """A list of estimators with a list of X returns a ComparisonReport."""
+def test_list_or_dict_X_raises(regression_data):
+    """Passing list or dict X raises TypeError."""
     X, y = regression_data
-    report = evaluate([LinearRegression(), LinearRegression()], [X, X], y, splitter=0.2)
-    assert isinstance(report, ComparisonReport)
-
-
-def test_list_estimator_dict_X_raises(regression_data):
-    """List estimators with a dict X raises TypeError."""
-    X, y = regression_data
-    with pytest.raises(TypeError, match="cannot be a dict"):
-        evaluate(
-            [LinearRegression(), LinearRegression()],
-            {"a": X, "b": X},
-            y,
-            splitter=0.2,
-        )
+    for invalid_x in ([X], {"a": X}):
+        with pytest.raises(TypeError, match="single array-like or None"):
+            evaluate(LinearRegression(), invalid_x, y)
 
 
 def test_multiple_estimators_dict(regression_data):
@@ -130,44 +119,6 @@ def test_multiple_estimators_dict_cv(regression_data):
     assert set(report.reports_) == {"a", "b"}
 
 
-def test_multiple_estimators_dict_per_estimator_X(regression_data):
-    """A dict of estimators with a dict of X (same keys) returns a ComparisonReport."""
-    X, y = regression_data
-    report = evaluate(
-        {"a": LinearRegression(), "b": LinearRegression()},
-        {"a": X, "b": X},
-        y,
-        splitter=0.2,
-    )
-    assert isinstance(report, ComparisonReport)
-    assert set(report.reports_) == {"a", "b"}
-
-
-def test_dict_estimator_list_X_raises(regression_data):
-    """Dict estimators with a list X raises TypeError."""
-    X, y = regression_data
-    with pytest.raises(TypeError, match="X cannot be a list"):
-        evaluate(
-            {"a": LinearRegression(), "b": LinearRegression()},
-            [X, X],
-            y,
-            splitter=0.2,
-        )
-
-
-def test_dict_estimator_mismatched_X_keys_raises(regression_data):
-    """Dict estimators with dict X whose keys differ from estimator raises
-    ValueError."""
-    X, y = regression_data
-    with pytest.raises(ValueError, match="same keys"):
-        evaluate(
-            {"a": LinearRegression(), "b": LinearRegression()},
-            {"a": X, "c": X},
-            y,
-            splitter=0.2,
-        )
-
-
 def test_dict_estimators_prefit(regression_data):
     """A dict of fitted estimators with splitter='prefit' returns ComparisonReport."""
     X, y = regression_data
@@ -183,20 +134,6 @@ def test_empty_dict_raises(regression_data):
     X, y = regression_data
     with pytest.raises(ValueError, match="Expected.*reports to compare"):
         evaluate({}, X, y)
-
-
-def test_single_estimator_list_X_raises(regression_data):
-    """A single estimator with list X raises TypeError."""
-    X, y = regression_data
-    with pytest.raises(TypeError, match="single array-like"):
-        evaluate(LinearRegression(), [X], y)
-
-
-def test_single_estimator_dict_X_raises(regression_data):
-    """A single estimator with dict X raises TypeError."""
-    X, y = regression_data
-    with pytest.raises(TypeError, match="single array-like"):
-        evaluate(LinearRegression(), {"a": X}, y)
 
 
 def test_invalid_splitter_string(regression_data):
