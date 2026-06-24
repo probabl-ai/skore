@@ -1,142 +1,172 @@
 """Global configuration state and functions for management."""
 
-import threading
-import time
-from collections.abc import Generator
+from __future__ import annotations
+
 from contextlib import contextmanager
-from typing import Any, Union
-
-_global_config: dict[str, Any] = {
-    "show_progress": True,
-}
-_threadlocal = threading.local()
+from threading import current_thread, main_thread
+from threading import local as Local
 
 
-def _get_threadlocal_config() -> dict[str, Any]:
-    """Get a threadlocal **mutable** configuration.
-
-    If the configuration does not exist, copy the default global configuration.
-    """
-    if not hasattr(_threadlocal, "global_config"):
-        _threadlocal.global_config = _global_config.copy()
-    return _threadlocal.global_config
-
-
-def get_config() -> dict[str, Any]:
-    """Retrieve current values for configuration set by :func:`set_config`.
-
-    Returns
-    -------
-    config : dict
-        Keys are parameter names that can be passed to :func:`set_config`.
-
-    See Also
-    --------
-    config_context : Context manager for skore configuration.
-    set_config : Set skore configuration.
-
-    Examples
-    --------
-    >>> import skore
-    >>> config = skore.get_config()
-    >>> config.keys()
-    dict_keys([...])
-    """
-    # Return a copy of the threadlocal configuration so that users will
-    # not be able to modify the configuration with the returned dict.
-    return _get_threadlocal_config().copy()
+class LocalConfiguration(Local):
+    def __init__(
+        self,
+        *,
+        show_progress=True,
+        plot_backend="matplotlib",
+        ignore_checks: list[str] | tuple[str, ...] | None = None,
+    ):
+        self.show_progress = show_progress
+        self.plot_backend = plot_backend
+        self.ignore_checks = ignore_checks
 
 
-def set_config(
-    show_progress: Union[bool, None] = None,
-) -> None:
-    """Set skore configuration.
+class Configuration:
+    """Configuration for `skore` behavior.
 
-    Setting the configuration affects global settings meaning that it will be used
-    by all skore functions and classes, even in the processes and threads spawned by
-    skore.
+    You can read and set options via attribute access. In parallel processing (e.g.
+    ``joblib.Parallel``), each thread receives its own copy of the configuration;
+    changing attributes inside a worker thread only affects that thread and does not
+    modify the global configuration in the main thread.
 
-    Parameters
+    Attributes
     ----------
-    show_progress : bool, default=None
-        If True, show progress bars. Otherwise, do not show them.
+    show_progress : bool
+        Whether to show progress bars for long-running operations.
+        Default is ``True`` (or ``False`` when joblib < 1.4).
 
-    See Also
-    --------
-    config_context : Context manager for skore configuration.
-    get_config : Retrieve current values of the configuration.
+    plot_backend : str
+        Backend used for rendering plots (e.g. ``"matplotlib"``).
+        Default is ``"matplotlib"``.
+
+    ignore_checks : list of str or tuple of str or None
+        Global check codes ignored by ``report.checks.summarize(...)``.
+        Default is ``None``.
 
     Examples
     --------
+    **Global configuration** using the ``configuration`` instance from skore:
+
     >>> # xdoctest: +SKIP
-    >>> from skore import set_config
-    >>> set_config(show_progress=False)
+    >>> from skore import configuration
+    >>> configuration.show_progress = False
+    >>> configuration.plot_backend = "matplotlib"
+    >>> configuration.ignore_checks = ["SKD001"]
+
+    **Temporary overrides** using the context manager (previous values are
+    restored on exit):
+
+    >>> original = configuration.show_progress
+    >>> with configuration(show_progress=False):
+    ...     configuration.show_progress
+    False
+    >>> configuration.show_progress == original
+    True
     """
-    local_config = _get_threadlocal_config()
 
-    if show_progress is not None:
-        local_config["show_progress"] = show_progress
+    def __init__(self):
+        self.local = LocalConfiguration()
+
+    def __repr__(self):
+        return (
+            f"Configuration("
+            f"show_progress={self.local.show_progress}, "
+            f"plot_backend={self.local.plot_backend!r}, "
+            f"ignore_checks={self.local.ignore_checks}"
+            ")"
+        )
+
+    @property
+    def show_progress(self):
+        return self.local.show_progress
+
+    @show_progress.setter
+    def show_progress(self, value):
+        if current_thread().ident != main_thread().ident:
+            self.local.show_progress = value
+            return
+
+        self.local = LocalConfiguration(
+            show_progress=value,
+            plot_backend=self.local.plot_backend,
+            ignore_checks=self.local.ignore_checks,
+        )
+
+    @property
+    def plot_backend(self):
+        return self.local.plot_backend
+
+    @plot_backend.setter
+    def plot_backend(self, value):
+        if current_thread().ident != main_thread().ident:
+            self.local.plot_backend = value
+            return
+
+        self.local = LocalConfiguration(
+            show_progress=self.local.show_progress,
+            plot_backend=value,
+            ignore_checks=self.local.ignore_checks,
+        )
+
+    @property
+    def ignore_checks(self):
+        return self.local.ignore_checks
+
+    @ignore_checks.setter
+    def ignore_checks(self, value):
+        if current_thread().ident != main_thread().ident:
+            self.local.ignore_checks = value
+            return
+
+        self.local = LocalConfiguration(
+            show_progress=self.local.show_progress,
+            plot_backend=self.local.plot_backend,
+            ignore_checks=value,
+        )
+
+    @contextmanager
+    def __call__(
+        self,
+        *,
+        show_progress=...,
+        plot_backend=...,
+        ignore_checks=...,
+    ):
+        """Context manager to temporarily override configuration options.
+
+        Parameters
+        ----------
+        show_progress : bool, default=unchanged
+            Whether to show progress bars for long-running operations.
+        plot_backend : str, default=unchanged
+            Backend used for rendering plots (e.g. ``"matplotlib"``).
+        ignore_checks : list of str, tuple of str, or None, default=unchanged
+            Global check codes ignored by
+            :meth:`~skore.EstimatorReport.checks.summarize`.
+
+        Notes
+        -----
+        On exit, every option passed to the context manager is restored to its
+        previous value, even if an exception is raised inside the block.
+        """
+        show_progress_copy = self.show_progress
+        plot_backend_copy = self.plot_backend
+        ignore_checks_copy = self.ignore_checks
+
+        if show_progress is not ...:
+            self.show_progress = show_progress
+
+        if plot_backend is not ...:
+            self.plot_backend = plot_backend
+
+        if ignore_checks is not ...:
+            self.ignore_checks = ignore_checks
+
+        try:
+            yield
+        finally:
+            self.show_progress = show_progress_copy
+            self.plot_backend = plot_backend_copy
+            self.ignore_checks = ignore_checks_copy
 
 
-@contextmanager
-def config_context(
-    *,
-    show_progress: Union[bool, None] = None,
-) -> Generator[None, None, None]:
-    """Context manager for skore configuration.
-
-    Setting the configuration affects global settings meaning that it will be used
-    by all skore functions and classes, even in the processes and threads spawned by
-    skore.
-
-    Parameters
-    ----------
-    show_progress : bool, default=None
-        If True, show progress bars. Otherwise, do not show them.
-
-    Yields
-    ------
-    None.
-
-    See Also
-    --------
-    set_config : Set skore configuration.
-    get_config : Retrieve current values of the configuration.
-
-    Notes
-    -----
-    All settings, not just those presently modified, will be returned to
-    their previous values when the context manager is exited.
-
-    Examples
-    --------
-    >>> import skore
-    >>> from skore import train_test_split
-    >>> from sklearn.datasets import make_classification
-    >>> from sklearn.linear_model import LogisticRegression
-    >>> from skore import CrossValidationReport
-    >>> with skore.config_context(show_progress=False):
-    ...     X, y = make_classification(random_state=42)
-    ...     estimator = LogisticRegression()
-    ...     report = CrossValidationReport(estimator, X=X, y=y, cv_splitter=2)
-    """
-    old_config = get_config()
-    set_config(
-        show_progress=show_progress,
-    )
-
-    try:
-        yield
-    finally:
-        set_config(**old_config)
-
-
-def _set_show_progress_for_testing(show_progress: bool, sleep_duration: float) -> bool:
-    """Set the value of show_progress for testing purposes after some waiting.
-
-    This function should exist in a Python module rather than in tests, otherwise
-    joblib will not be able to pickle it.
-    """
-    with config_context(show_progress=show_progress):
-        time.sleep(sleep_duration)
-        return get_config()["show_progress"]
+configuration = Configuration()

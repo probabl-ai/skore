@@ -1,0 +1,409 @@
+from __future__ import annotations
+
+from typing import Literal
+
+from sklearn.utils.metaestimators import available_if
+
+from skore._externals._pandas_accessors import DirNamesMixin
+from skore._sklearn._base import _BaseAccessor
+from skore._sklearn._estimator.report import EstimatorReport
+from skore._sklearn._plot.inspection.calibration_curve import CalibrationDisplay
+from skore._sklearn._plot.inspection.coefficients import CoefficientsDisplay
+from skore._sklearn._plot.inspection.impurity_decrease import ImpurityDecreaseDisplay
+from skore._sklearn._plot.inspection.permutation_importance import (
+    PermutationImportanceDisplay,
+)
+from skore._sklearn.metrics import MetricLike
+from skore._sklearn.types import DataSource
+from skore._utils._accessor import (
+    _check_all_checks,
+    _check_estimator_has_coef,
+    _check_estimator_has_feature_importances,
+    _check_estimator_has_method,
+    _check_supported_ml_task,
+)
+from skore._utils._cache_key import make_cache_key
+
+
+class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
+    """Accessor for model inspection related operations.
+
+    You can access this accessor using the `inspection` attribute.
+    """
+
+    def __init__(self, parent: EstimatorReport) -> None:
+        super().__init__(parent)
+
+    @available_if(_check_estimator_has_coef())
+    def coefficients(self) -> CoefficientsDisplay:
+        """Retrieve the coefficients of a linear model, including the intercept.
+
+        Returns
+        -------
+        :class:`CoefficientsDisplay`
+            The feature importance display containing model coefficients and
+            intercept.
+
+        See Also
+        --------
+        :class:`CoefficientsDisplay` : Display class for coefficient plots.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_diabetes
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = load_diabetes(return_X_y=True)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
+        >>> display = report.inspection.coefficients()
+        >>> display.frame()
+               feature  coefficient
+        0    Intercept      151.9...
+        1   Feature #0       21.3...
+        2   Feature #1      -72.9...
+        3   Feature #2      301.3...
+        4   Feature #3      177.4...
+        5   Feature #4        2.8...
+        6   Feature #5      -35.2...
+        7   Feature #6     -155.5...
+        8   Feature #7      118.3...
+        9   Feature #8      257.3...
+        10  Feature #9      102.2...
+        >>> display.plot() # shows plot
+        """
+        return CoefficientsDisplay._compute_data_for_display(
+            estimator=self._parent.estimator_,
+            name=self._parent.estimator_name_,
+            report_type=self._parent._report_type,
+        )
+
+    @available_if(_check_estimator_has_feature_importances())
+    def impurity_decrease(self) -> ImpurityDecreaseDisplay:
+        """Retrieve the Mean Decrease in Impurity (MDI) of a tree-based model.
+
+        This method is available for estimators that expose a `feature_importances_`
+        attribute. See for example
+        :attr:`sklearn.ensemble.GradientBoostingClassifier.feature_importances_`.
+
+        In particular, note that the MDI is computed at fit time, i.e. using the
+        training data.
+
+        Returns
+        -------
+        :class:`ImpurityDecreaseDisplay`
+            The feature importance display containing the mean decrease in impurity.
+
+        See Also
+        --------
+        :class:`ImpurityDecreaseDisplay` : Display class for impurity decrease plots.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from skore import evaluate
+        >>> X, y = make_classification(n_features=5, random_state=42)
+        >>> forest = RandomForestClassifier(n_estimators=5, random_state=0)
+        >>> report = evaluate(forest, X, y, splitter=0.2)
+        >>> display = report.inspection.impurity_decrease()
+        >>> display.frame()
+              feature  importance
+        0  Feature #0     0.10...
+        1  Feature #1     0.32...
+        2  Feature #2     0.08...
+        3  Feature #3     0.48...
+        4  Feature #4     0.00...
+        """
+        return ImpurityDecreaseDisplay._compute_data_for_display(
+            estimator=self._parent.estimator_,
+            name=self._parent.estimator_name_,
+            report_type=self._parent._report_type,
+        )
+
+    def permutation_importance(
+        self,
+        *,
+        data_source: DataSource = "test",
+        at_step: int | str = 0,
+        metric: MetricLike | list[MetricLike] | dict[str, MetricLike] | None = None,
+        n_repeats: int = 5,
+        max_samples: float = 1.0,
+        n_jobs: int | None = None,
+        seed: int | None = None,
+    ) -> PermutationImportanceDisplay:
+        """Display the permutation feature importance.
+
+        This computes the permutation importance using sklearn's
+        :func:`~sklearn.inspection.permutation_importance` function,
+        which consists in permuting the values of one feature and comparing
+        the value of `metric` between with and without the permutation, which gives an
+        indication on the impact of the feature.
+
+        By default, `seed` is set to `None`, which means the function will
+        return a different result at every call. In that case, the results are not
+        cached. If you wish to take advantage of skore's caching capabilities, make
+        sure you set the `seed` parameter.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        at_step : int or str, default=0
+            If the estimator is a :class:`~sklearn.pipeline.Pipeline`, at which step of
+            the pipeline the importance is computed. If `n`, then the features that
+            are evaluated are the ones *right before* the `n`-th step of the pipeline.
+            For instance,
+
+            - If 0, compute the importance just before the start of the pipeline (i.e.
+              the importance of the raw input features).
+            - If -1, compute the importance just before the end of the pipeline (i.e.
+              the importance of the fully engineered features, just before the actual
+              prediction step).
+
+            If a string, will be searched among the pipeline's `named_steps`.
+
+            Has no effect if the estimator is not a :class:`~sklearn.pipeline.Pipeline`.
+
+        metric : str, callable, scorer, or list of such instances or dict of such \
+                instances, default=None
+            The metric to pass to :func:`sklearn.inspection.permutation_importance`.
+
+            - if ``None``, a suitable default will be used.
+            - if a string, must be a scikit-learn scorer name. You can get the list of
+              available scorers with :func:`sklearn.metrics.get_scorer_names`.
+            - if a callable, must be a function with signature
+              ``scorer(estimator, X, y)``.
+
+            For more details on the accepted types, see the `scoring` argument of
+            :func:`sklearn.inspection.permutation_importance`.
+
+        n_repeats : int, default=5
+            Number of times to permute a feature.
+
+        max_samples : int or float, default=1.0
+            The number of samples to draw from `X` to compute feature importance
+            in each repeat (without replacement).
+
+            - If int, then draw max_samples samples.
+            - If float, then draw max_samples * X.shape[0] samples.
+            - If max_samples is equal to 1.0 or X.shape[0], all samples will be used.
+
+            While using this option may provide less accurate importance estimates,
+            it keeps the method tractable when evaluating feature importance on
+            large datasets. In combination with n_repeats, this allows to control
+            the computational speed vs statistical accuracy trade-off of this method.
+
+        n_jobs : int or None, default=None
+            Number of jobs to run in parallel. -1 means using all processors.
+
+        seed : int or None, default=None
+            The seed used to initialize the random number generator used for the
+            permutations.
+
+        Returns
+        -------
+        :class:`PermutationImportanceDisplay`
+            The permutation importance display.
+
+        See Also
+        --------
+        :class:`PermutationImportanceDisplay`
+            Display class for permutation importance plots.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_regression
+        >>> from sklearn.linear_model import Ridge
+        >>> from skore import evaluate
+        >>> X, y = make_regression(n_features=3, random_state=0)
+        >>> regressor = Ridge()
+        >>> report = evaluate(regressor, X, y, splitter=0.2)
+
+        >>> report.inspection.permutation_importance(
+        ...    n_repeats=2,
+        ...    seed=0,
+        ... ).frame(aggregate=None)
+          data_source metric     feature  repetition     value
+        0        test     r2  Feature #0           1  0.76...
+        1        test     r2  Feature #1           1  1.39...
+        2        test     r2  Feature #2           1  0.01...
+        3        test     r2  Feature #0           2  0.80...
+        4        test     r2  Feature #1           2  1.72...
+        5        test     r2  Feature #2           2  0.02...
+
+        >>> report.inspection.permutation_importance(
+        ...    metric=["r2", "neg_mean_squared_error"],
+        ...    n_repeats=2,
+        ...    seed=0,
+        ... ).frame(aggregate=None)
+            data_source                  metric     feature  repetition      value
+        0         test                      r2  Feature #0           1     0.76...
+        1         test                      r2  Feature #1           1     1.39...
+        2         test                      r2  Feature #2           1     0.01...
+        3         test                      r2  Feature #0           2     0.80...
+        4         test                      r2  Feature #1           2     1.72...
+        5         test                      r2  Feature #2           2     0.02...
+        6         test  neg_mean_squared_error  Feature #0           1  2561.20...
+        7         test  neg_mean_squared_error  Feature #1           1  4686.07...
+        8         test  neg_mean_squared_error  Feature #2           1    66.77...
+        9         test  neg_mean_squared_error  Feature #0           2  2695.93...
+        10        test  neg_mean_squared_error  Feature #1           2  5802.57...
+        11        test  neg_mean_squared_error  Feature #2           2    93.41...
+
+        >>> report.inspection.permutation_importance(
+        ...    n_repeats=2,
+        ...    seed=0,
+        ... ).frame()
+          data_source metric     feature  value_mean  value_std
+        0        test     r2  Feature #0     0.78...    0.02...
+        1        test     r2  Feature #1     1.56...    0.23...
+        2        test     r2  Feature #2     0.02...    0.00...
+
+        >>> # Compute the importance at the end of feature engineering pipeline
+        >>> from sklearn.pipeline import make_pipeline
+        >>> from sklearn.preprocessing import StandardScaler
+        >>> pipeline = make_pipeline(StandardScaler(), Ridge())
+        >>> pipeline_report = evaluate(pipeline, X, y, splitter=0.2)
+        >>> pipeline_report.inspection.permutation_importance(
+        ...    n_repeats=2,
+        ...    seed=0,
+        ...    at_step=-1,
+        ... ).frame()
+          data_source metric feature  value_mean  value_std
+        0        test     r2      x0     0.78...    0.02...
+        1        test     r2      x1     1.55...    0.23...
+        2        test     r2      x2     0.02...    0.00...
+
+        >>> pipeline_report.inspection.permutation_importance(
+        ...    n_repeats=2,
+        ...    seed=0,
+        ...    at_step="ridge",
+        ... ).frame()
+          data_source metric feature  value_mean  value_std
+        0        test     r2      x0     0.78...    0.02...
+        1        test     r2      x1     1.55...    0.23...
+        2        test     r2      x2     0.02...    0.00...
+
+        Notes
+        -----
+        Even if pipeline components output sparse arrays, these will be made dense.
+        """
+        if self._parent._initialized_with_data_op:
+            raise TypeError(
+                "Permutation importance is not yet supported for skrub dataops."
+            )
+        data_, y_true = self._parent._get_data_and_y_true(data_source=data_source)
+
+        # NOTE: to temporary improve the `project.put` UX, we always store the
+        # permutation importance into the cache dictionary even when seed is None.
+        # Be aware that if seed is None, we still trigger the computation for all cases.
+        # We only store it such that when we serialize to send to the hub, we only
+        # fetch for the cache store instead of recomputing it because it is expensive.
+        # FIXME: the workaround above should be removed once we are able to trigger
+        # computation on the server side of skore-hub.
+
+        if seed is not None and not isinstance(seed, int):
+            raise ValueError(f"seed must be an integer or None; got {type(seed)}")
+
+        # n_jobs should not be in cache
+        kwargs = {
+            "at_step": at_step,
+            "metric": metric,
+            "n_repeats": n_repeats,
+            "max_samples": max_samples,
+            "seed": seed,
+        }
+        cache_key = make_cache_key(data_source, "permutation_importance", kwargs)
+
+        # NOTE: avoid to fetch from the cache if the seed is None because we want
+        # to trigger the computation in this case. We only have the permutation
+        # stored as a workaround for the serialization for skore-hub as explained
+        # earlier.
+        display = None if seed is None else self._parent._cache.get(cache_key)
+        if display is None:
+            display = PermutationImportanceDisplay._compute_data_for_display(
+                data_source=data_source,
+                estimator=self._parent.estimator_,
+                name=self._parent.estimator_name_,
+                X=data_["_skrub_X"],
+                y=y_true,
+                at_step=at_step,
+                metric=metric,
+                n_repeats=n_repeats,
+                max_samples=max_samples,
+                n_jobs=n_jobs,
+                seed=seed,
+                report_type=self._parent._report_type,
+            )
+
+            if cache_key is not None:
+                # NOTE: for the moment, we will always store the permutation importance
+                self._parent._cache[cache_key] = display
+
+        return display
+
+    @available_if(
+        _check_all_checks(
+            [
+                _check_supported_ml_task(
+                    supported_ml_tasks=[
+                        "binary-classification",
+                        "multiclass-classification",
+                    ]
+                ),
+                _check_estimator_has_method("predict_proba"),
+            ]
+        )
+    )
+    @available_if(_check_estimator_has_method("predict_proba"))
+    def calibration_curve(
+        self,
+        *,
+        data_source: DataSource = "test",
+        n_bins: int = 5,
+        strategy: Literal["uniform", "quantile"] = "quantile",
+    ) -> CalibrationDisplay:
+        """Display the calibration curve.
+
+        This method is available for binary classification reports. It computes
+        the calibration curve data for each report and returns a display that
+        can be plotted with :meth:`CalibrationDisplay.plot`.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}, default="test"
+            The data source for the calibration curve. If None, the default data
+            source is used.
+
+        n_bins : int, default=5
+            The number of bins to use for the calibration curve. Default is 5.
+
+        strategy : {"uniform", "quantile"}, default="quantile"
+            The strategy to use for binning. Default is "uniform".
+
+        Returns
+        -------
+        :class:`CalibrationDisplay`
+            The calibration curve display. :meth:`CalibrationDisplay.plot` for
+            more details.
+
+        """
+        y_pred = self._parent._get_predictions(
+            data_source=data_source,
+            response_method="predict_proba",
+        )
+        return CalibrationDisplay._compute_data_for_display(
+            name=self._parent.estimator_name_,
+            report_type=self._parent._report_type,
+            data_source=data_source,
+            y_pred=y_pred,
+            y=self._parent.y_test if data_source == "test" else self._parent.y_train,
+            n_bins=n_bins,
+            strategy=strategy,
+            report_pos_label=self._parent.pos_label,
+        )

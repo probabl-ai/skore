@@ -1,0 +1,42 @@
+name: Deploy sphinx documentation
+
+inputs:
+  BUCKET:
+    required: true
+  SOURCE:
+    required: true
+  DESTINATION:
+    required: true
+  ROLE_TO_ASSUME:
+    description: "IAM Role ARN to assume (Required for OIDC)"
+    required: true
+  AWS_REGION:
+    description: "AWS Region"
+    required: true
+    default: "eu-west-3"
+  ACL:
+    description: "Canned ACL to apply. Defaults to private."
+    required: false
+    default: "private"
+  DELETE:
+    description: "Files that exist in the destination but not in the source are deleted during sync."
+    required: false
+    default: true
+
+runs:
+  using: composite
+  steps:
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@8df5847569e6427dd6c4fb1cf565c83acfa8afa7 # v6.0.0
+      with:
+        role-to-assume: ${{ inputs.ROLE_TO_ASSUME }}
+        aws-region: ${{ inputs.AWS_REGION }}
+
+    - name: Run AWS S3 Command
+      shell: bash
+      run: |
+        DELETE_FLAG=""
+        if [ "${{ inputs.DELETE }}" == "true" ]; then
+          DELETE_FLAG="--delete"
+        fi
+        aws s3 sync "${{ inputs.SOURCE }}" "s3://${{ inputs.BUCKET }}/${{ inputs.DESTINATION }}" --acl ${{ inputs.ACL }} $DELETE_FLAG

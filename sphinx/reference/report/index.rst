@@ -15,7 +15,9 @@ These functions and classes build upon scikit-learn's functionality.
     :toctree: ../api/
     :template: base.rst
 
-    train_test_split
+    evaluate
+    compare
+    TrainTestSplit
 
 Single Estimator Report
 -----------------------
@@ -66,3 +68,16 @@ the API of each display.
    :hidden:
 
    displays
+
+Checks
+------
+
+Checks classes used by the ``checks`` accessor on reports.
+
+.. autosummary::
+    :toctree: ../api/
+    :template: base.rst
+
+    ChecksSummaryDisplay
+    Check
+    CheckNotApplicable

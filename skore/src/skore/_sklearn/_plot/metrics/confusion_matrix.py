@@ -1,0 +1,778 @@
+from collections.abc import Sequence
+from typing import Literal
+
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from matplotlib.figure import Figure
+from numpy.typing import ArrayLike, NDArray
+from sklearn.base import BaseEstimator
+from sklearn.metrics import confusion_matrix as sklearn_confusion_matrix
+
+from skore._externals._sklearn_compat import confusion_matrix_at_thresholds
+from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn._plot.utils import (
+    _check_label,
+    _ClassifierDisplayMixin,
+    _concat_frames_with_column_data,
+    _downsample_thresholds_indices,
+    _one_hot_encode,
+    _validate_style_kwargs,
+)
+from skore._sklearn.types import (
+    _DEFAULT,
+    DataSource,
+    MLTask,
+    PositiveLabel,
+    ReportType,
+)
+
+
+class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
+    """Display the confusion matrix.
+
+    Parameters
+    ----------
+    confusion_matrix_predict : pd.DataFrame
+        Predict-based n x n confusion matrix in long format. It always contains
+        "true_label", "predicted_label", "count", "normalized_by_true",
+        "normalized_by_pred", and "normalized_by_all"; it can also contain "split"
+        and "estimator" when those dimensions are meaningful for the report.
+
+    confusion_matrix_ovr : pd.DataFrame or None
+        Predict-based one-vs-rest 2x2 confusion matrix in long format for
+        multiclass classification. It has the same columns as
+        `confusion_matrix_predict`, plus "label". None for binary classification.
+
+    confusion_matrix_thresholded : pd.DataFrame or None
+        Per-class one-vs-rest thresholded 2x2 confusion matrix in long format.
+        It has the same columns as `confusion_matrix_predict`, plus "threshold" and
+        "label". None when the estimator only supports predict.
+
+    report_type : {"comparison-cross-validation", "comparison-estimator", \
+            "cross-validation", "estimator"}
+        The type of report.
+
+    ml_task : {"binary-classification", "multiclass-classification"}
+        The machine learning task.
+
+    data_source : {"test", "train"}
+        The data source to use.
+
+    report_pos_label : int, float, bool, str or None
+        The default positive label for display.
+
+    Attributes
+    ----------
+    confusion_matrix_predict : pd.DataFrame
+        Predict-based confusion matrix data in long format.
+    confusion_matrix_ovr : pd.DataFrame or None
+        One-vs-rest confusion matrix data for multiclass classification.
+    confusion_matrix_thresholded : pd.DataFrame or None
+        Thresholded one-vs-rest confusion matrix data.
+    report_type : ReportType
+        The type of report.
+    ml_task : MLTask
+        The machine learning task.
+    data_source : DataSource
+        The data source used to compute the matrix.
+    report_pos_label : PositiveLabel
+        The default positive label for display.
+    labels : list
+        Available class labels.
+
+    See Also
+    --------
+    EstimatorReport.metrics.confusion_matrix : Create this display from a report.
+    RocCurveDisplay : Plot ROC curves for the same classifier.
+    PrecisionRecallCurveDisplay : Plot precision-recall curves.
+
+    Notes
+    -----
+    For multiclass problems, thresholded views use a one-vs-rest (OvR)
+    binary reformulation for each class label.
+
+    When ``threshold_value`` is a float, the display snaps to the closest
+    threshold available in the stored thresholded data.
+
+    For cross-validation reports, plotting with ``subplot_by`` other than
+    ``"split"`` aggregates counts across folds (mean and standard deviation).
+
+    Examples
+    --------
+    >>> from sklearn.datasets import load_breast_cancer
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import evaluate
+    >>> X, y = load_breast_cancer(return_X_y=True)
+    >>> classifier = LogisticRegression(max_iter=10_000)
+    >>> report = evaluate(classifier, X, y, splitter=0.2)
+    >>> display = report.metrics.confusion_matrix()
+    >>> display.plot()
+    """
+
+    _default_heatmap_kwargs: dict = {
+        "cmap": "Blues",
+        "cbar": False,
+        "annot": True,
+    }
+
+    _default_facet_grid_kwargs: dict = {
+        "height": 6,
+        "aspect": 1,
+    }
+
+    def __init__(
+        self,
+        *,
+        confusion_matrix_predict: pd.DataFrame,
+        confusion_matrix_ovr: pd.DataFrame | None,
+        confusion_matrix_thresholded: pd.DataFrame | None,
+        report_type: ReportType,
+        ml_task: MLTask,
+        data_source: DataSource,
+        report_pos_label: PositiveLabel,
+    ):
+        self.confusion_matrix_predict = confusion_matrix_predict
+        self.confusion_matrix_ovr = confusion_matrix_ovr
+        self.confusion_matrix_thresholded = confusion_matrix_thresholded
+        self.report_type = report_type
+        self.ml_task = ml_task
+        self.data_source = data_source
+        self.report_pos_label = report_pos_label
+
+    @property
+    def labels(self):
+        return self.confusion_matrix_predict["predicted_label"].cat.categories.to_list()
+
+    @classmethod
+    def _concatenate(
+        cls,
+        child_displays: Sequence["ConfusionMatrixDisplay"],
+        *,
+        do_thresholds: bool = True,
+        report_type: ReportType,
+        column_data: dict[str, list] | None = None,
+        **kwargs,  # for compatibility
+    ) -> "ConfusionMatrixDisplay":
+        """Build a confusion-matrix display by concatenating child displays."""
+        first_display = child_displays[0]
+        confusion_matrix_predict = _concat_frames_with_column_data(
+            [d.confusion_matrix_predict for d in child_displays],
+            column_data,
+        )
+
+        if first_display.confusion_matrix_ovr is None:
+            confusion_matrix_ovr = None
+        else:
+            confusion_matrix_ovr = _concat_frames_with_column_data(
+                [d.confusion_matrix_ovr for d in child_displays],
+                column_data,
+            )
+
+        if not do_thresholds or all(
+            d.confusion_matrix_thresholded is None for d in child_displays
+        ):
+            confusion_matrix_thresholded = None
+        else:
+            confusion_matrix_thresholded = _concat_frames_with_column_data(
+                [d.confusion_matrix_thresholded for d in child_displays],
+                column_data,
+            )
+
+        return cls(
+            confusion_matrix_predict=confusion_matrix_predict,
+            confusion_matrix_ovr=confusion_matrix_ovr,
+            confusion_matrix_thresholded=confusion_matrix_thresholded,
+            report_type=report_type,
+            ml_task=first_display.ml_task,
+            data_source=first_display.data_source,
+            report_pos_label=first_display.report_pos_label,
+        )
+
+    @DisplayMixin.style_plot
+    def plot(
+        self,
+        *,
+        normalize: Literal["true", "pred", "all"] | None = None,
+        threshold_value: float | None = None,
+        subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
+        label: PositiveLabel = _DEFAULT,
+    ) -> Figure:
+        """Plot the confusion matrix.
+
+        When the inspected classifier has a `predict_proba` or `decision_function`
+        method, the confusion matrix can be displayed at various decision thresholds.
+        This is useful for understanding how the model's predictions change as the
+        decision threshold varies. In multiclass, this view is obtained by creating a
+        binary problem for each label in a one-vs-rest fashion.
+
+        Parameters
+        ----------
+        normalize : {'true', 'pred', 'all'}, default=None
+            Normalizes confusion matrix over the true (rows), predicted (columns)
+            conditions or all the population. If None, the confusion matrix will not be
+            normalized.
+
+        threshold_value : float or None, default=None
+            When None, plots the predict-based n x n confusion matrix.
+            When a float, plots the thresholded 2x2 confusion matrix at the closest
+            available threshold for `label`. This is obtained in multiclass by creating
+            a binary problem for the label in a one-vs-rest fashion.
+
+        subplot_by : {"split", "estimator", "auto"} or None, default="auto"
+            The variable to use for subplotting. If None, the confusion matrix will not
+            be subplotted. If "auto", the variable will be automatically determined
+            based on the report type.
+
+        label : int, float, bool, str or None, default=report pos_label
+            The class to consider as positive. In multiclass, the predict-based and
+            thresholded views are shown in a one-vs-rest fashion for this label.
+
+        Returns
+        -------
+        matplotlib.figure.Figure
+            Figure containing the confusion matrix.
+        """
+        label = _check_label(self.labels, label, self.report_pos_label)
+        if threshold_value == "all":
+            raise ValueError(
+                "threshold_value='all' is not supported for the plot method."
+            )
+        if label is None and threshold_value is not None:
+            raise ValueError(
+                "Please indicate the class to consider as positive to show the "
+                "thresholded confusion matrix."
+            )
+
+        return self._plot(
+            normalize=normalize,
+            threshold_value=threshold_value,
+            subplot_by=subplot_by,
+            label=label,
+        )
+
+    def _plot_matplotlib(
+        self,
+        *,
+        normalize: Literal["true", "pred", "all"] | None = None,
+        threshold_value: float | None = None,
+        subplot_by: Literal["split", "estimator", "auto"] | None = "auto",
+        label: PositiveLabel,
+    ) -> Figure:
+        """Matplotlib implementation of the `plot` method."""
+        subplot_by_validated = self._validate_subplot_by(subplot_by, self.report_type)
+
+        if "cross-validation" in self.report_type and subplot_by_validated != "split":
+            # Aggregate the data across splits and create custom annotations.
+            default_fmt = ".3f" if normalize else ".1f"
+            annot_fmt = self._default_heatmap_kwargs.get("fmt", default_fmt)
+            frame = self.frame(
+                normalize=normalize,
+                threshold_value=threshold_value,
+                label=label,
+            )
+            groupby_cols = frame.columns.intersection(
+                ["true_label", "predicted_label", "estimator"]
+            ).to_list()
+            aggregated = (
+                frame.groupby(
+                    groupby_cols,
+                    observed=True,
+                )["value"]
+                .agg(["mean", "std"])
+                .reset_index()
+            )
+            aggregated["annot"] = aggregated.apply(
+                lambda row: f"{row['mean']:{annot_fmt}}\n(± {row['std']:{annot_fmt}})",
+                axis=1,
+            )
+
+            frame = aggregated.rename(columns={"mean": "value"})
+            default_fmt = ""
+        else:
+            frame = self.frame(
+                normalize=normalize, threshold_value=threshold_value, label=label
+            )
+            default_fmt = ".2f" if normalize else "d"
+
+        heatmap_kwargs_validated = _validate_style_kwargs(
+            {"fmt": default_fmt, **self._default_heatmap_kwargs}, {}
+        )
+
+        facet_grid_kwargs_validated = _validate_style_kwargs(
+            {"col": subplot_by_validated, **self._default_facet_grid_kwargs}, {}
+        )
+        facet = sns.FacetGrid(
+            data=frame,
+            **facet_grid_kwargs_validated,
+        )
+        figure, axes = facet.figure, facet.axes.flatten()
+
+        display_labels = self.labels
+        # The positive label is set in second position (which
+        # means true-positive counts is the bottom-right cell in the matrix).
+        # Usually, TP is the top-left cell, but we align with sklearn.
+        if label is not None:
+            display_labels = self._get_ovr_labels(self.ml_task, self.labels, label)
+
+        def plot_heatmap(data, **kwargs):
+            """Plot heatmap for each facet."""
+            heatmap_data = data.pivot(
+                index="true_label", columns="predicted_label", values="value"
+            ).reindex(index=display_labels, columns=display_labels)
+            if "cross-validation" in self.report_type and "annot" in data.columns:
+                annot_data = data.pivot(
+                    index="true_label", columns="predicted_label", values="annot"
+                ).reindex(index=display_labels, columns=display_labels)
+                if "annot" in kwargs and kwargs["annot"]:
+                    kwargs["annot"] = annot_data
+                kwargs["fmt"] = ""
+
+            sns.heatmap(heatmap_data, **kwargs)
+
+        facet.map_dataframe(plot_heatmap, **heatmap_kwargs_validated)
+
+        info_data_source = (
+            f"Data source: {self.data_source.capitalize()} set"
+            if self.data_source in ("train", "test")
+            else None
+        )
+
+        title = "Confusion Matrix"
+        info_threshold = None
+        if threshold_value is not None:
+            info_threshold = f"Decision threshold: {threshold_value:.2f}"
+
+        info_label = None
+        if threshold_value is not None and label is not None:
+            info_label = (
+                f"Positive label: {label}"
+                if self.ml_task == "binary-classification"
+                else f"Label: {label}"
+            )
+
+        figure.suptitle(
+            "\n".join(
+                filter(None, [title, info_threshold, info_label, info_data_source])
+            )
+        )
+        if len(axes[0].get_xticklabels()) == 2 and label is not None:
+            ticklabels = [
+                axes[0].get_xticklabels()[0].get_text(),
+                f"{axes[0].get_xticklabels()[1].get_text()}*",
+            ]
+        else:
+            ticklabels = None
+        for ax in axes:
+            ax.set(
+                xlabel="Predicted label",
+                ylabel="True label",
+            )
+            if ticklabels is not None:
+                ax.set(
+                    xticklabels=ticklabels,
+                    yticklabels=ticklabels,
+                )
+
+                ax.text(
+                    -0.15,
+                    -0.15,
+                    "*: the positive class",
+                    fontsize=9,
+                    style="italic",
+                    verticalalignment="bottom",
+                    horizontalalignment="left",
+                    transform=ax.transAxes,
+                    bbox={
+                        "boxstyle": "round",
+                        "facecolor": "white",
+                        "alpha": 0.8,
+                        "edgecolor": "gray",
+                    },
+                )
+
+        return figure
+
+    def _validate_subplot_by(
+        self,
+        subplot_by: Literal["split", "estimator", "auto"] | None,
+        report_type: ReportType,
+    ) -> Literal["split", "estimator"] | None:
+        """Validate the `subplot_by` parameter.
+
+        Parameters
+        ----------
+        subplot_by : {"split", "estimator", "auto"} or None
+            The variable to use for subplotting.
+
+        report_type : {"comparison-cross-validation", "comparison-estimator", \
+                "cross-validation", "estimator"}
+            The type of report.
+
+        Returns
+        -------
+        {"split", "estimator"} or None
+            The validated `subplot_by` parameter.
+        """
+        if subplot_by == "auto":
+            if "comparison" in report_type:
+                return "estimator"
+            else:
+                return None
+
+        valid_subplot_by: list[Literal["split", "estimator"] | None]
+        match report_type:
+            case "estimator":
+                valid_subplot_by = [None]
+            case "cross-validation":
+                valid_subplot_by = [None, "split"]
+            case "comparison-estimator" | "comparison-cross-validation":
+                valid_subplot_by = ["estimator"]
+
+        if subplot_by not in valid_subplot_by:
+            raise ValueError(
+                f"Invalid `subplot_by` parameter. Valid options are: "
+                f"{', '.join(str(s) for s in valid_subplot_by)} or auto. "
+                f"Got '{subplot_by}' instead."
+            )
+
+        return subplot_by
+
+    @classmethod
+    def _compute_data_for_display(
+        cls,
+        y_true: NDArray | ArrayLike,
+        y_pred: NDArray | ArrayLike,
+        *,
+        report_type: ReportType,
+        estimator: BaseEstimator,
+        ml_task: MLTask,
+        data_source: DataSource | Literal["both"],
+        report_pos_label: PositiveLabel | None = None,
+        y_scores: NDArray | None = None,
+        max_n_thresholds: int | None = 500,
+        **kwargs,
+    ) -> "ConfusionMatrixDisplay":
+        """Compute the confusion matrix data for display.
+
+        Parameters
+        ----------
+        y_true : array-like of shape (n_samples,)
+            True labels.
+
+        y_pred : array-like of shape (n_samples,)
+            Predicted labels from the estimator's predict method.
+
+        report_type : {"comparison-cross-validation", "comparison-estimator", \
+                "cross-validation", "estimator"}
+            The type of report.
+
+        estimator : BaseEstimator
+            The estimator.
+
+        ml_task : {"binary-classification", "multiclass-classification"}
+            The machine learning task.
+
+        data_source : {"test", "train"}
+            The data source to use in the display title.
+
+        report_pos_label : int, float, bool, str or None
+            The default positive label for display.
+
+
+        y_scores : ndarray of shape (n_samples, n_classes) or None
+            Probability estimates or decision function values. None when the
+            estimator only supports predict.
+
+        max_n_thresholds : int or None, default=500
+            Cap on the number of thresholds kept per class in the thresholded confusion
+            matrices. When the number of thresholds returned by scikit-learn exceeds
+            ``max_n_thresholds``, the thresholded view is downsampled by picking
+            evenly-spaced indices from the sorted thresholds (quantile-based sampling
+            that preserves the empirical threshold distribution). Endpoints are always
+            kept and no interpolation is performed. ``None`` disables downsampling. Must
+            be at least 2. Only affects the thresholded matrices; the predict-based
+            matrices are unchanged.
+
+        **kwargs : dict
+            Additional keyword arguments ignored for compatibility.
+
+        Returns
+        -------
+        display : ConfusionMatrixDisplay
+            The confusion matrix display.
+        """
+        if data_source == "both":
+            raise NotImplementedError(
+                "Displaying both data sources is not supported yet."
+            )
+
+        classes = estimator.classes_
+
+        confusion_matrix_predict = cls._build_confusion_frame(
+            sklearn_confusion_matrix(y_true=y_true, y_pred=y_pred, labels=classes)[
+                np.newaxis, ...
+            ],
+            thresholds=np.array([np.nan]),
+            labels=classes,
+        ).drop(columns=["threshold"])
+
+        if ml_task != "binary-classification":
+            ovr_dfs = []
+            for label in classes:
+                cm_ovr = sklearn_confusion_matrix(
+                    y_true=y_true == label, y_pred=y_pred == label, labels=[0, 1]
+                )
+                ovr_dfs.append(
+                    cls._build_confusion_frame(
+                        cm_ovr[np.newaxis, ...],
+                        thresholds=np.array([np.nan]),
+                        labels=cls._get_ovr_labels(ml_task, classes, label),
+                    ).drop(columns=["threshold"])
+                )
+            confusion_matrix_ovr = _concat_frames_with_column_data(
+                ovr_dfs, {"label": classes}
+            )
+        else:
+            confusion_matrix_ovr = None
+
+        confusion_matrix_thresholded = None
+        if y_scores is not None:
+            y_true_onehot = _one_hot_encode(y_true, classes.tolist())
+            y_scores_arr = np.asarray(y_scores)
+
+            ovr_dfs = []
+            for class_idx, label in enumerate(classes):
+                tns, fps, fns, tps, thresholds = confusion_matrix_at_thresholds(
+                    y_true=y_true_onehot[:, class_idx],
+                    y_score=y_scores_arr[:, class_idx],
+                    pos_label=1,
+                )
+                indices = _downsample_thresholds_indices(
+                    thresholds.size, max_n_thresholds
+                )
+                tns, fps, fns, tps, thresholds = (
+                    tns[indices],
+                    fps[indices],
+                    fns[indices],
+                    tps[indices],
+                    thresholds[indices],
+                )
+
+                cm = np.column_stack([tns, fps, fns, tps]).reshape(-1, 2, 2).astype(int)
+                df = cls._build_confusion_frame(
+                    cm=cm,
+                    thresholds=thresholds,
+                    labels=cls._get_ovr_labels(ml_task, classes, label),
+                )
+                ovr_dfs.append(df)
+            confusion_matrix_thresholded = _concat_frames_with_column_data(
+                ovr_dfs, {"label": classes}
+            )
+
+        return cls(
+            confusion_matrix_predict=confusion_matrix_predict,
+            confusion_matrix_ovr=confusion_matrix_ovr,
+            confusion_matrix_thresholded=confusion_matrix_thresholded,
+            report_type=report_type,
+            ml_task=ml_task,
+            data_source=data_source,
+            report_pos_label=report_pos_label,
+        )
+
+    @staticmethod
+    def _get_ovr_labels(ml_task, labels, label):
+        if ml_task == "multiclass-classification":
+            return [f"not {label}", str(label)]
+        else:
+            return [next(clss for clss in labels if clss != label), label]
+
+    @staticmethod
+    def _build_confusion_frame(cm, thresholds, labels):
+        """Build a long-format confusion matrix with cached normalized values."""
+        counts = cm.reshape(-1)
+        labels = np.asarray(labels, dtype=object)
+
+        row_sums = cm.sum(axis=2, keepdims=True)
+        cm_true = np.zeros_like(cm, dtype=float)
+        np.divide(cm, row_sums, out=cm_true, where=row_sums != 0)
+
+        col_sums = cm.sum(axis=1, keepdims=True)
+        cm_pred = np.zeros_like(cm, dtype=float)
+        np.divide(cm, col_sums, out=cm_pred, where=col_sums != 0)
+
+        total_sums = cm.sum(axis=(1, 2), keepdims=True)
+        cm_all = np.zeros_like(cm, dtype=float)
+        np.divide(cm, total_sums, out=cm_all, where=total_sums != 0)
+
+        data = {
+            "true_label": pd.Series(
+                np.tile(np.repeat(labels, len(labels)), len(thresholds)),
+                dtype="category",
+            ),
+            "predicted_label": pd.Series(
+                np.tile(np.tile(labels, len(labels)), len(thresholds)),
+                dtype="category",
+            ),
+            "count": counts,
+            "normalized_by_true": cm_true.reshape(-1),
+            "normalized_by_pred": cm_pred.reshape(-1),
+            "normalized_by_all": cm_all.reshape(-1),
+            "threshold": np.repeat(thresholds, len(labels) ** 2),
+        }
+
+        return pd.DataFrame(data)
+
+    @staticmethod
+    def _select_normalized_col(
+        df: pd.DataFrame,
+        normalize: Literal["true", "pred", "all"] | None,
+    ) -> pd.DataFrame:
+        """Select count or cached normalized values as the public value column."""
+        value = df[f"normalized_by_{normalize}" if normalize else "count"]
+        df = df.drop(
+            columns=[
+                "count",
+                "normalized_by_true",
+                "normalized_by_pred",
+                "normalized_by_all",
+            ]
+        )
+        df["value"] = value
+        return df
+
+    def frame(
+        self,
+        *,
+        normalize: Literal["true", "pred", "all"] | None = None,
+        threshold_value: float | Literal["all"] | None = None,
+        label: PositiveLabel = _DEFAULT,
+    ):
+        """Return the confusion matrix as a long format dataframe.
+
+        When the inspected classifier has a `predict_proba` or `decision_function`
+        method, the confusion matrix can be displayed at various decision thresholds.
+        This is useful for understanding how the model's predictions change as the
+        decision threshold varies. In multiclass, this view is obtained by creating a
+        binary problem for each label in a one-vs-rest fashion. Use
+        `threshold_value="all"` to return all available thresholds without filtering.
+
+        Parameters
+        ----------
+        normalize : {'true', 'pred', 'all'}, default=None
+            Normalizes confusion matrix over the true (rows), predicted (columns)
+            conditions or all the population. If None, raw counts are returned as
+            the "value" column.
+
+        threshold_value : float, "all", or None, default=None
+            When None, returns the predict-based n x n confusion matrix.
+            When "all", returns the thresholded OvR data at all thresholds.
+            When a float, returns the thresholded OvR data at the closest
+            available threshold.
+
+        label : int, float, bool, str or None, default=report pos_label
+            The class to select. Use None to select all classes.
+
+        Returns
+        -------
+        frame : pandas.DataFrame
+            The confusion matrix as a dataframe with a "value" column and optional
+            metadata columns such as "threshold", "label", "split", and "estimator".
+        """
+        label = _check_label(self.labels, label, self.report_pos_label)
+
+        if threshold_value is None:
+            if label is not None and self.ml_task != "binary-classification":
+                df = self.confusion_matrix_ovr
+                assert df is not None
+                df = df.query("label == @label").reset_index(drop=True)
+                df = df.drop(columns=["label"])
+            else:
+                df = self.confusion_matrix_predict
+
+            return self._select_normalized_col(df, normalize)
+
+        # Thresholded view
+        if self.confusion_matrix_thresholded is None:
+            raise ValueError(
+                "Thresholded confusion matrices are not available. "
+                "The estimator does not support predict_proba or "
+                "decision_function."
+            )
+
+        df = self.confusion_matrix_thresholded
+        if label is not None:
+            df = df.query("label == @label").reset_index(drop=True)
+            df = df.drop(columns=["label"])
+
+        if threshold_value == "all":
+            return self._select_normalized_col(df, normalize)
+
+        # Snap to closest threshold per group
+        def select_threshold(group):
+            thresholds = np.sort(group["threshold"].unique())
+            index_right = int(np.searchsorted(thresholds, threshold_value))
+            if index_right == len(thresholds):
+                index_right -= 1
+            elif index_right == 0 and len(thresholds) > 1:
+                index_right = 1
+            index_left = index_right - 1
+            diff_right = abs(thresholds[index_right] - threshold_value)
+            diff_left = abs(thresholds[index_left] - threshold_value)
+            closest_threshold_value = thresholds[
+                index_right if diff_right < diff_left else index_left
+            ]
+            return group.query(f"threshold == {closest_threshold_value}")
+
+        groupby_cols = df.columns.intersection(
+            ["split", "estimator", "label"]
+        ).to_list()
+        frames = []
+        if groupby_cols:
+            for _, group in df.groupby(groupby_cols, observed=True):
+                frames.append(select_threshold(group))
+        else:
+            frames.append(select_threshold(df))
+
+        df = pd.concat(frames)
+        return self._select_normalized_col(df, normalize)
+
+    # ignore the type signature because we override kwargs by specifying the name of
+    # the parameters for the user.
+    def set_style(  # type: ignore[override]
+        self,
+        *,
+        policy: Literal["override", "update"] = "update",
+        heatmap_kwargs: dict | None = None,
+        facet_grid_kwargs: dict | None = None,
+    ):
+        """Set the style parameters for the display.
+
+        Parameters
+        ----------
+        policy : Literal["override", "update"], default="update"
+            Policy to use when setting the style parameters.
+            If "override", existing settings are set to the provided values.
+            If "update", existing settings are not changed; only settings that were
+            previously unset are changed.
+
+        heatmap_kwargs : dict, default=None
+            Additional keyword arguments to be passed to :func:`seaborn.heatmap`.
+
+        facet_grid_kwargs : dict, default=None
+            Additional keyword arguments to be passed to :class:`seaborn.FacetGrid`.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If a style parameter is unknown.
+        """
+        return super().set_style(
+            policy=policy,
+            heatmap_kwargs=heatmap_kwargs or {},
+            facet_grid_kwargs=facet_grid_kwargs or {},
+        )

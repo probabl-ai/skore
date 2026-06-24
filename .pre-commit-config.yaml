@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
       - id: check-toml
@@ -11,27 +11,27 @@ repos:
       - id: trailing-whitespace
 
   - repo: https://github.com/crate-ci/typos
-    rev: v1.30.2
+    rev: v1.46.0
     hooks:
       - id: typos
 
-  - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
-    hooks:
-      - id: nbstripout
-        args: [--keep-id]
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.10
+    rev: v0.15.12
     hooks:
-      - id: ruff
-        files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
-        args: [--fix]
-      - id: ruff-format
-        files: ^((skore|skore-hub-project|skore-local-project)/(hatch|src|tests))|(examples)/
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
+      - id: ruff-check
+        files: ^(skore/(hatch|src|tests))|(examples)/
+        args: [--fix, --extend-select, I]
+
+      - id: ruff-format
+        files: ^(skore/(hatch|src|tests))|(examples)/
+
+  - repo: local
     hooks:
+
       - id: mypy
-        files: ^(skore|skore-hub-project|skore-local-project)/src/
+        name: mypy
+        entry: mypy --config-file=skore/pyproject.toml skore/
+        language: unsupported
+        pass_filenames: false
+        files: ^skore/

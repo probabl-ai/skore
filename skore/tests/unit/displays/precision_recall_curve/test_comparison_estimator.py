@@ -1,0 +1,163 @@
+import matplotlib as mpl
+import pytest
+
+
+def test_legend_binary_classification(
+    pyplot,
+    comparison_estimator_reports_binary_classification,
+    comparison_estimator_reports_binary_classification_figure_axes,
+):
+    """
+    Check the legend of the precision-recall curve plot with binary data.
+    """
+    report = comparison_estimator_reports_binary_classification
+    display = report.metrics.precision_recall()
+    _, axes = comparison_estimator_reports_binary_classification_figure_axes
+    for ax, estimator in zip(axes, report.reports_, strict=True):
+        assert isinstance(ax, mpl.axes.Axes)
+        legend = ax.get_legend()
+        assert legend is not None
+        legend_texts = [text.get_text() for text in legend.get_texts()]
+
+        labels = display.precision_recall["label"].cat.categories
+        for label_idx, label in enumerate(labels):
+            plot_data = display.frame(with_average_precision=True)
+            average_precision = plot_data.query(
+                f"label == {label} & estimator == '{estimator}'"
+            )["average_precision"].iloc[0]
+            assert legend_texts[label_idx] == f"{label} (AP={average_precision:.2f})"
+        assert len(legend_texts) == len(labels)
+
+
+def test_legend_multiclass_classification(
+    pyplot,
+    comparison_estimator_reports_multiclass_classification,
+    comparison_estimator_reports_multiclass_classification_figure_axes,
+):
+    """
+    Check the legend of the precision-recall curve plot with multiclass data.
+    """
+    report = comparison_estimator_reports_multiclass_classification
+    display = report.metrics.precision_recall()
+    _, axes = comparison_estimator_reports_multiclass_classification_figure_axes
+
+    labels = display.precision_recall["label"].cat.categories
+
+    for ax, estimator in zip(axes, report.reports_, strict=True):
+        assert isinstance(ax, mpl.axes.Axes)
+        legend = ax.get_legend()
+        assert legend is not None
+        legend_texts = [text.get_text() for text in legend.get_texts()]
+
+        for label_idx, label in enumerate(labels):
+            plot_data = display.frame(with_average_precision=True)
+            average_precision = plot_data.query(
+                f"label == {label} & estimator == '{estimator}'"
+            )["average_precision"].iloc[0]
+            assert legend_texts[label_idx] == f"{label} (AP={average_precision:.2f})"
+
+
+@pytest.mark.parametrize(
+    "fixture_name, valid_values",
+    [
+        (
+            "comparison_estimator_reports_binary_classification",
+            ["auto", "estimator", "label"],
+        ),
+        (
+            "comparison_estimator_reports_multiclass_classification",
+            ["auto", "estimator", "label"],
+        ),
+    ],
+)
+def test_invalid_subplot_by(fixture_name, valid_values, request):
+    """Check that we raise a proper error message when passing an inappropriate
+    value for the `subplot_by` argument.
+    """
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.precision_recall()
+    err_msg = (
+        f"subplot_by must be one of {', '.join(valid_values)}. Got 'invalid' instead."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="invalid")
+
+
+@pytest.mark.parametrize(
+    "fixture_name, subplot_by_tuples",
+    [
+        (
+            "comparison_estimator_reports_binary_classification",
+            [("label", 2), ("estimator", 2)],
+        ),
+        (
+            "comparison_estimator_reports_multiclass_classification",
+            [("label", 3), ("estimator", 2)],
+        ),
+    ],
+)
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
+    """Check that we can pass non default values to `subplot_by`."""
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.precision_recall()
+    for subplot_by, expected_len in subplot_by_tuples:
+        fig = display.plot(subplot_by=subplot_by)
+        axes = fig.axes
+        if subplot_by is None:
+            assert len(axes) == 1
+            assert isinstance(axes[0], mpl.axes.Axes)
+        else:
+            assert len(axes) == expected_len
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_estimator_reports_multiclass_classification",
+    ],
+)
+def test_subplot_by_data_source(fixture_name, request):
+    """Check the behaviour when `subplot_by` is `data_source`."""
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.precision_recall(data_source="both")
+    err_msg = (
+        "subplot_by must be one of auto, estimator, label. Got 'data_source' instead."
+    )
+    with pytest.raises(ValueError, match=err_msg):
+        display.plot(subplot_by="data_source")
+
+
+@pytest.mark.parametrize(
+    "fixture_name",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_estimator_reports_multiclass_classification",
+    ],
+)
+def test_source_both(pyplot, fixture_name, request):
+    """Check the behaviour of the plot when data_source='both'."""
+    report = request.getfixturevalue(fixture_name)
+    display = report.metrics.precision_recall(data_source="both")
+    fig = display.plot()
+    axes = fig.axes
+    plot_data = display.frame(with_average_precision=True)
+    assert "data_source" in plot_data.columns
+    assert set(plot_data["data_source"]) == {"train", "test"}
+    labels = display.precision_recall["label"].cat.categories
+    for ax, estimator in zip(axes, report.reports_, strict=True):
+        assert isinstance(ax, mpl.axes.Axes)
+        assert len(ax.get_lines()) == 4 if "binary" in fixture_name else 6
+        legend = ax.get_legend()
+        assert legend is not None
+        legend_texts = [text.get_text() for text in legend.get_texts()]
+        subplot_data = plot_data.query(f"estimator == '{estimator}'")
+        expected = []
+        for label in labels:
+            for data_src in ("train", "test"):
+                row = subplot_data.query(
+                    f"label == {label} & data_source == '{data_src}'"
+                )
+                ap = row["average_precision"].iloc[0]
+                expected.append(f"{label} - {data_src.title()} set (AP={ap:.2f})")
+        assert legend_texts == expected

@@ -1,0 +1,479 @@
+from __future__ import annotations
+
+from collections import defaultdict
+from typing import Any, Literal, NotRequired, TypedDict, cast
+
+import pandas as pd
+from matplotlib.figure import Figure
+
+from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn.types import (
+    Aggregate,
+    DataSource,
+    PositiveLabel,
+    ReportType,
+)
+from skore._utils._index import flatten_multi_index
+
+
+class MetricsSummaryRow(TypedDict):
+    """A single row rendered by ``MetricsSummaryDisplay``.
+
+    Parameters
+    ----------
+    metric_name : str
+        Technical metric name (e.g. ``"accuracy"``); matches the key under which
+        the metric is registered in :attr:`EstimatorReport._metric_registry`.
+    metric_verbose_name : str
+        Human-readable metric name shown in the display.
+    estimator_name : str
+        Name shown in the display.
+    data_source : {"train", "test"}
+        Dataset split used to compute the metric.
+    greater_is_better : bool or None
+        Whether higher or lower values are better.
+    fingerprint : str or None
+        Identifier disambiguating distinct custom metrics that share
+        ``metric_verbose_name``. ``None`` for built-in metrics.
+    score : Any
+        Scalar metric value stored in the row.
+    label : label, default=None
+        Class label for per-class classification metrics.
+    average : str, default=None
+        Averaging mode when a metric is aggregated across labels or outputs.
+    output : int, default=None
+        Output index for multioutput regression metrics.
+    split : int, optional
+        Cross-validation split index.
+    """
+
+    metric_name: str
+    metric_verbose_name: str
+    estimator_name: str
+    data_source: DataSource
+    greater_is_better: bool | None
+    fingerprint: str | None
+    score: Any
+    label: PositiveLabel | None
+    average: str | None
+    output: int | None
+    split: NotRequired[int]
+
+
+class MetricsSummaryDisplay(DisplayMixin):
+    """Summarize evaluation metrics in a table.
+
+    Parameters
+    ----------
+    rows : list of MetricsSummaryRow
+        The rows to display.
+
+    report_type : {"estimator", "comparison-estimator", "cross-validation", \
+            "comparison-cross-validation"}
+        The type of report.
+
+    Attributes
+    ----------
+    rows : list of MetricsSummaryRow
+        Metric scores and metadata for each row of the summary.
+    report_type : ReportType
+        The type of report.
+    data : pandas.DataFrame
+        Rows as a DataFrame (read-only property).
+
+    See Also
+    --------
+    EstimatorReport.metrics.summarize : Create this display from a report.
+    RocCurveDisplay : Plot ROC curves.
+    PrecisionRecallCurveDisplay : Plot precision-recall curves.
+    ConfusionMatrixDisplay : Display the confusion matrix.
+    PredictionErrorDisplay : Plot regression prediction error.
+
+    Notes
+    -----
+    For cross-validation and comparison reports, :meth:`frame` can aggregate
+    scores across splits or estimators using the ``aggregate`` parameter.
+    """
+
+    def __init__(
+        self,
+        rows: list[MetricsSummaryRow],
+        report_type: ReportType,
+    ):
+        self.rows = rows
+        self.report_type = report_type
+
+    @property
+    def data(self):
+        """Return rows as a DataFrame, preserving nullable dtypes."""
+        data = pd.DataFrame(self.rows)
+
+        if any(isinstance(r["label"], bool) for r in self.rows):
+            data["label"] = data["label"].astype(pd.BooleanDtype())
+        elif any(isinstance(r["label"], int) for r in self.rows):
+            data["label"] = data["label"].astype(pd.Int64Dtype())
+
+        if any(isinstance(r["output"], int) for r in self.rows):
+            data["output"] = data["output"].astype(pd.Int64Dtype())
+
+        data = MetricsSummaryDisplay._resolve_fingerprints(data)
+        return data.drop(columns="fingerprint")
+
+    @staticmethod
+    def _resolve_fingerprints(data: pd.DataFrame) -> pd.DataFrame:
+        """Disambiguate ``metric_verbose_name`` across distinct fingerprints.
+
+        When several rows share a ``metric_verbose_name`` but come from metrics
+        with different fingerprints, they are renamed ``{name}_1``, ``{name}_2``,
+        ... in the order they first appear. ``None`` counts as a regular
+        fingerprint value, so a custom metric reusing a built-in's display name
+        will still get disambiguated against the built-in.
+
+        Suffixes skip over any name already present in the column, so we don't
+        produce a collision if a metric happens to already be called e.g.
+        ``"Metric_1"``.
+        """
+        data = data.copy()
+
+        # Fingerprint = str | np.nan
+        # fingerprints_per_name: dict[MetricName, list[Fingerprint]]
+        fingerprints_per_name = defaultdict(list)
+        for name, fingerprint in (
+            data[["metric_verbose_name", "fingerprint"]]
+            .drop_duplicates()
+            .itertuples(index=False, name=None)
+        ):
+            fingerprints_per_name[name].append(fingerprint)
+
+        # Decide the new name for each (name, fingerprint) pair
+        #
+        # Suffixes skip over names already in the column
+
+        # renaming: dict[(MetricName, Fingerprint), NewMetricName]
+        renaming = {}
+        metric_names = set(data["metric_verbose_name"])
+        for name, fingerprints in fingerprints_per_name.items():
+            if len(fingerprints) < 2:
+                continue
+            i = 0
+            for fingerprint in fingerprints:
+                while True:
+                    i += 1
+                    candidate = f"{name}_{i}"
+                    if candidate not in metric_names:
+                        break
+                metric_names.add(candidate)
+                renaming[(name, fingerprint)] = candidate
+
+        for (name, fingerprint), new_name in renaming.items():
+            fp_match = (
+                data["fingerprint"].isna()
+                if pd.isna(fingerprint)
+                else data["fingerprint"] == fingerprint
+            )
+            data.loc[
+                (data["metric_verbose_name"] == name) & fp_match, "metric_verbose_name"
+            ] = new_name
+
+        return data
+
+    @staticmethod
+    def _concatenate(
+        child_displays: list[MetricsSummaryDisplay],
+        *,
+        report_type: ReportType,
+        extra_rows_data: list[dict[str, Any]],
+    ) -> MetricsSummaryDisplay:
+        rows = []
+        for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
+            rows.extend(
+                [cast(MetricsSummaryRow, row | extra_data) for row in display.rows]
+            )
+
+        return MetricsSummaryDisplay(rows, report_type=report_type)
+
+    @staticmethod
+    def _flatten_index(df: pd.DataFrame) -> pd.DataFrame:
+        df = df.copy()
+
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = flatten_multi_index(df.columns)
+        if isinstance(df.index, pd.MultiIndex):
+            df.index = flatten_multi_index(df.index)
+        if isinstance(df.index, pd.Index):
+            df.index = df.index.str.replace(r"\((.*)\)$", r"\1", regex=True)
+
+        return df
+
+    @staticmethod
+    def _frame_estimator(
+        data: pd.DataFrame,
+        *,
+        favorability: bool = False,
+        flat_index: bool = False,
+    ) -> pd.DataFrame:
+        """Process estimator report data into a formatted dataframe."""
+        df = data.copy()
+        df = df.dropna(axis="columns", how="all")
+        df = df.drop(columns="metric_name", errors="ignore")
+
+        for col in df.columns.intersection(["label", "output", "average"]):
+            df[col] = df[col].astype("string").fillna("")
+
+        estimator_name = df.pop("estimator_name").iloc[0]
+        index = df.columns.intersection(
+            ["metric_verbose_name", "label", "output", "average"]
+        ).to_list()
+        df = df.set_index(index)
+
+        # Rename columns as well as index names
+        new_columns = {
+            "metric_verbose_name": "Metric",
+            "label": "Label",
+            "output": "Output",
+            "average": "Average",
+            "score": estimator_name,
+        }
+        df = df.rename(columns=new_columns)
+
+        if favorability:
+            df["Favorability"] = (
+                df["greater_is_better"]
+                .map({True: "(↗︎)", False: "(↘︎)"})
+                .fillna("")
+                .astype("string")
+            )
+        df = df.drop(columns="greater_is_better")
+
+        df.index = df.index.set_names(
+            [new_columns.get(name, name) for name in df.index.names]
+        )
+
+        if df["data_source"].nunique() == 1:
+            df = df.drop(columns="data_source")
+        else:
+            # Show metrics one column per data source
+            df_pivoted = df.reset_index().pivot_table(
+                index=df.index.names,
+                columns="data_source",
+                values=estimator_name,
+                sort=False,
+            )
+            df_pivoted.columns = [
+                f"{estimator_name} ({col})" for col in df_pivoted.columns
+            ]
+
+            if favorability:
+                df_pivoted["Favorability"] = df.loc[
+                    df["data_source"] == "test", "Favorability"
+                ]
+
+            df = df_pivoted.copy()
+
+        if flat_index:
+            df = MetricsSummaryDisplay._flatten_index(df)
+
+        return df
+
+    @staticmethod
+    def _frame_cross_validation(
+        data: pd.DataFrame,
+        *,
+        aggregate: Aggregate | None = ("mean", "std"),
+        favorability: bool = False,
+        flat_index: bool = False,
+    ) -> pd.DataFrame:
+        """Process cross-validation report data into a formatted dataframe."""
+        df = data.copy()
+
+        if df["data_source"].nunique() > 1:
+            grouped = list(df.groupby("data_source", sort=False))
+            frames = []
+            favorability_col = None
+
+            for data_source, source_df in grouped:
+                source_frame = MetricsSummaryDisplay._frame_cross_validation(
+                    source_df,
+                    aggregate=aggregate,
+                    favorability=True,
+                    flat_index=False,
+                )
+                if favorability_col is None and "Favorability" in source_frame.columns:
+                    favorability_col = source_frame.pop("Favorability")
+                else:
+                    source_frame = source_frame.drop(
+                        columns="Favorability", errors="ignore"
+                    )
+                if isinstance(source_frame.columns, pd.MultiIndex):
+                    source_frame.columns = pd.MultiIndex.from_tuples(
+                        [
+                            (f"{col[0]} ({data_source})",) + col[1:]
+                            for col in source_frame.columns
+                        ]
+                    )
+                else:
+                    source_frame.columns = [
+                        f"{col} ({data_source})" for col in source_frame.columns
+                    ]
+                frames.append(source_frame)
+
+            df = pd.concat(frames, axis="columns")
+
+            if favorability_col is not None and favorability:
+                df["Favorability"] = favorability_col
+
+            if flat_index:
+                df = MetricsSummaryDisplay._flatten_index(df)
+
+            return df
+
+        estimator_name = df["estimator_name"].iloc[0]
+
+        df = MetricsSummaryDisplay._frame_estimator(
+            df, favorability=True, flat_index=False
+        )
+        favorability_col = df.pop("Favorability")
+
+        if isinstance(aggregate, (list, tuple)):
+            aggregate = list(aggregate)
+        elif aggregate is not None:
+            aggregate = cast(Literal["mean", "std"], aggregate)
+            aggregate = [aggregate]
+
+        df = df.reset_index().pivot_table(
+            index=df.index.names,
+            columns="split" if aggregate is None else None,
+            values=estimator_name,
+            aggfunc="first" if aggregate is None else aggregate,
+            sort=False,
+        )
+
+        if aggregate is None:
+            df.columns = pd.MultiIndex.from_product(
+                [[estimator_name], [f"Split #{i}" for i in df.columns]]
+            )
+        else:
+            df.columns = df.columns.swaplevel(0, 1)
+
+        if favorability:
+            df["Favorability"] = favorability_col[~favorability_col.index.duplicated()]
+
+        if flat_index:
+            df = MetricsSummaryDisplay._flatten_index(df)
+
+        return df
+
+    def frame(
+        self,
+        *,
+        aggregate: Aggregate | None = ("mean", "std"),
+        favorability: bool = False,
+        flat_index: bool = False,
+    ):
+        """Return the summarize as a dataframe.
+
+        Parameters
+        ----------
+        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
+            Only used when `report_type` includes `"cross-validation"`.
+            Functions to aggregate the scores across the cross-validation splits.
+            None will return the scores for each split.
+
+        favorability : bool, default=False
+            Whether or not to add an indicator of the favorability of the metric as
+            an extra column in the returned DataFrame.
+
+        flat_index : bool, default=False
+            Whether to return a flat index or a multi-index.
+
+        Returns
+        -------
+        frame : pandas.DataFrame
+            The report metrics as a dataframe.
+        """
+        if self.report_type == "estimator":
+            return MetricsSummaryDisplay._frame_estimator(
+                self.data,
+                favorability=favorability,
+                flat_index=flat_index,
+            )
+        elif self.report_type == "cross-validation":
+            return MetricsSummaryDisplay._frame_cross_validation(
+                self.data,
+                aggregate=aggregate,
+                favorability=favorability,
+                flat_index=flat_index,
+            )
+
+        elif self.report_type == "comparison-estimator":
+            df = self.data.copy()
+
+            df = pd.concat(
+                [
+                    MetricsSummaryDisplay._frame_estimator(
+                        est, favorability=True, flat_index=False
+                    )
+                    for _, est in df.groupby("estimator_name", sort=False)
+                ],
+                axis="columns",
+            )
+
+            # Extract favorability columns and use first non-NaN value for each row
+            favorability_col = df.pop("Favorability").bfill(axis=1).iloc[:, 0]
+
+            df.columns.name = "Estimator"
+
+            if favorability:
+                df["Favorability"] = favorability_col
+
+            if flat_index:
+                df = MetricsSummaryDisplay._flatten_index(df)
+
+            return df
+
+        else:  # self.report_type == "comparison-cross-validation"
+            df = self.data.copy()
+
+            df = pd.concat(
+                [
+                    MetricsSummaryDisplay._frame_cross_validation(
+                        est, aggregate=aggregate, favorability=True, flat_index=False
+                    )
+                    for _, est in df.groupby("estimator_name", sort=False)
+                ],
+                axis="columns",
+            )
+
+            # Sort columns to avoid lexsort warning when accessing specific columns
+            df = df.sort_index(axis=1)
+            favorability_col = df.pop(("Favorability", "")).bfill(axis=1).iloc[:, 0]
+
+            if aggregate is None:
+                df.columns.names = ["Estimator", "Split"]
+            else:
+                df.columns = df.columns.swaplevel(0, 1)
+                df = df.sort_index(axis=1, level=[0, 1])
+                df.columns.names = [None, "Estimator"]
+
+            if favorability:
+                df[("Favorability", "")] = favorability_col
+
+            if flat_index:
+                df = MetricsSummaryDisplay._flatten_index(df)
+
+            return df
+
+    def _repr_html_(self) -> str:
+        return (
+            f"{self.frame()._repr_html_()}"
+            '<p role="note">Use <code>.frame()</code> to control the format'
+            " of the output.</p>"
+        )
+
+    def __repr__(self) -> str:
+        return f"{self.frame()!r}\nUse .frame() to control the format of the output."
+
+    @DisplayMixin.style_plot
+    def plot(self) -> Figure:
+        """Plot the metrics summary (not implemented)."""
+        raise NotImplementedError

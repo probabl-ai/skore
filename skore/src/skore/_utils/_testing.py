@@ -1,0 +1,293 @@
+import contextlib
+import copy
+from typing import Any, Literal
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.figure import Figure
+from matplotlib.legend import Legend
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.metrics import r2_score
+
+from skore import configuration
+from skore._sklearn._base import _BaseAccessor, _BaseReport
+from skore._sklearn._plot.metrics.precision_recall_curve import (
+    PrecisionRecallCurveDisplay,
+)
+from skore._sklearn._plot.metrics.roc_curve import RocCurveDisplay
+from skore._utils._skrub import to_learner
+
+
+def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDisplay):
+    """Check the structure of the display's internal data."""
+    assert list(display.precision_recall.columns) == [
+        "estimator",
+        "data_source",
+        "split",
+        "label",
+        "threshold",
+        "precision",
+        "recall",
+    ]
+    assert list(display.average_precision.columns) == [
+        "estimator",
+        "data_source",
+        "split",
+        "label",
+        "average_precision",
+    ]
+
+
+@contextlib.contextmanager
+def check_cache_changed(value):
+    """Assert that `value` has changed during context execution."""
+    initial_value = copy.copy(value)
+    yield
+    assert value != initial_value
+
+
+@contextlib.contextmanager
+def check_cache_unchanged(value):
+    """Assert that `value` has not changed during context execution."""
+    initial_value = copy.copy(value)
+    yield
+    assert value == initial_value
+
+
+class MockEstimator(ClassifierMixin, BaseEstimator):
+    def __init__(self, *, error, n_call=0, fail_after_n_clone=3):
+        self.error = error
+        self.n_call = n_call
+        self.fail_after_n_clone = fail_after_n_clone
+
+    def fit(self, X, y):
+        if self.n_call > self.fail_after_n_clone:
+            raise self.error
+        self.classes_ = np.unique(y)
+        return self
+
+    def set_params(self, **params):
+        params["n_call"] = params.get("n_call", self.n_call) + 1
+        return self
+
+    def __sklearn_clone__(self):
+        self.n_call += 1
+        return self
+
+    def predict(self, X):
+        return np.ones(X.shape[0])
+
+
+class MockReport(_BaseReport):
+    """Minimal report for testing.
+
+    Attributes
+    ----------
+    no_private : object
+        Public attribute for tests.
+    """
+
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {}
+
+    def _run_checks(self):
+        return {}, set()
+
+    def __init__(
+        self,
+        estimator,
+        X_train=None,
+        y_train=None,
+        X_test=None,
+        y_test=None,
+    ):
+        super().__init__()
+        self.estimator = estimator
+        self.learner_ = to_learner(estimator)
+        if X_train is not None:
+            self._train_data = {
+                "X": X_train,
+                "_skrub_X": X_train,
+                "y": y_train,
+                "_skrub_y": y_train,
+            }
+        else:
+            self._train_data = None
+
+        if X_test is not None:
+            self._test_data = {
+                "X": X_test,
+                "_skrub_X": X_test,
+                "y": y_test,
+                "_skrub_y": y_test,
+            }
+        else:
+            self._test_data = None
+        self.no_private = "no_private"
+        self.attr_without_description = "attr_without_description"
+
+    @property
+    def estimator_(self):
+        return self.estimator
+
+    @property
+    def X_train(self):
+        return (self._train_data or {}).get("X")
+
+    @property
+    def y_train(self):
+        return (self._train_data or {}).get("y")
+
+    @property
+    def X_test(self):
+        return (self._test_data or {}).get("X")
+
+    @property
+    def y_test(self):
+        return (self._test_data or {}).get("y")
+
+    @property
+    def train_data(self):
+        return self._train_data
+
+    @property
+    def test_data(self):
+        return self._test_data
+
+    def _get_help_title(self) -> str:
+        return "Mock report"
+
+
+class MockAccessor(_BaseAccessor):
+    """Minimal accessor for testing."""
+
+    _accessor_name = "mock_accessor"  # registering an accessor will set this attribute
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+    def _get_help_tree_title(self) -> str:
+        return "Mock accessor"
+
+
+class MockDisplay:
+    """Minimal display for testing, following the Display protocol."""
+
+    def plot(self, **kwargs: Any) -> Figure:
+        return plt.figure()
+
+    def set_style(
+        self, *, policy: Literal["override", "update"] = "update", **kwargs: Any
+    ) -> None:
+        pass
+
+    def frame(self, **kwargs: Any) -> pd.DataFrame:
+        return pd.DataFrame()
+
+    def help(self) -> None:
+        pass
+
+
+def check_roc_curve_display_data(display: RocCurveDisplay):
+    """Check the structure of the display's internal data."""
+    assert list(display.roc_curve.columns) == [
+        "estimator",
+        "data_source",
+        "split",
+        "label",
+        "threshold",
+        "fpr",
+        "tpr",
+    ]
+    assert list(display.roc_auc.columns) == [
+        "estimator",
+        "data_source",
+        "split",
+        "label",
+        "roc_auc",
+    ]
+
+
+def check_legend_position(ax, *, loc: str, position: Literal["inside", "outside"]):
+    """Check the position of the legend in the axes."""
+    legend = ax.get_legend()
+    assert legend._loc == Legend.codes[loc]
+    bbox = legend.get_window_extent().transformed(ax.transAxes.inverted())
+    tol = 1e-6
+    if position == "inside":
+        assert -tol <= bbox.x0 <= 1 + tol
+    else:
+        assert bbox.x0 >= 1 - tol
+
+
+def check_frame_structure(df, expected_index, expected_data_columns):
+    """Check the structure of ROC, precision-recall, and prediction error DataFrames.
+
+    Parameters
+    ----------
+    df : DataFrame
+        The DataFrame to check.
+    expected_index : list of str
+        The expected index column names (e.g., `estimator_name`, `split`,
+        `label`).
+        These columns should be of categorical type.
+    expected_data_columns : list of str
+        The expected data column names (e.g., `threshold`, `fpr`, `tpr`,
+        `precision`, `recall`).
+        These columns should be of `np.float64` type.
+    """
+    assert isinstance(df, pd.DataFrame)
+    assert sorted(df.columns.tolist()) == sorted(expected_index + expected_data_columns)
+
+    for col in df.columns:
+        if col in expected_index:
+            assert df[col].dtype.name == "category"
+        else:
+            assert col in expected_data_columns
+            assert df[col].dtype == np.float64
+
+
+def custom_r2_score(estimator, X, y):
+    """Compute the R^2 score.
+
+    This is a custom callable scorer for testing permutation importance with callable
+    metrics.
+
+    This function has the signature required by sklearn's permutation_importance:
+    (estimator, X, y) -> score.
+
+    Parameters
+    ----------
+    estimator : object
+        The fitted estimator.
+    X : array-like
+        The input data.
+    y : array-like
+        The target values.
+
+    Returns
+    -------
+    float
+        The R2 score.
+    """
+    y_pred = estimator.predict(X)
+    return r2_score(y, y_pred)
+
+
+def _change_configuration_for_testing():
+    """
+    Change configuration for testing purposes, especially on ``joblib.Parallel``.
+
+    This function should exist in a Python module rather than in tests, otherwise joblib
+    will not be able to pickle it.
+    """
+    show_progress_copy = configuration.show_progress
+    plot_backend_copy = configuration.plot_backend
+
+    configuration.show_progress = "show_progress_thread"
+    configuration.plot_backend = "plot_backend_thread"
+
+    return (
+        (show_progress_copy, plot_backend_copy),
+        (configuration.show_progress, configuration.plot_backend),
+    )

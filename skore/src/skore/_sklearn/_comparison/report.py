@@ -1,0 +1,678 @@
+from __future__ import annotations
+
+import uuid
+from collections import Counter, defaultdict
+from collections.abc import Iterable
+from dataclasses import asdict
+from typing import TYPE_CHECKING, Literal, cast
+
+import joblib
+from numpy.typing import ArrayLike
+
+from skore._externals._pandas_accessors import DirNamesMixin
+from skore._sklearn._base import _BaseReport
+from skore._sklearn._checks.base import CheckCode
+from skore._sklearn._cross_validation.report import CrossValidationReport
+from skore._sklearn._estimator.report import EstimatorReport
+from skore._sklearn.types import PositiveLabel
+from skore._utils._dataframe import _concat_vertical
+from skore._utils.repr.data import get_documentation_url
+from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.markdown import (
+    comparison_data_markdown_context,
+    comparison_estimator_markdown_context,
+)
+
+if TYPE_CHECKING:
+    from skore._sklearn._checks.accessor import _ChecksAccessor
+    from skore._sklearn._comparison.inspection_accessor import _InspectionAccessor
+    from skore._sklearn._comparison.metrics_accessor import _MetricsAccessor
+
+    ComparisonReportType = Literal[
+        "comparison-estimator",
+        "comparison-cross-validation",
+    ]
+
+
+class ComparisonReport(_BaseReport, DirNamesMixin):
+    """Compare several estimator or cross-validation reports.
+
+    Refer to the :ref:`comparison_report` section of the user guide for more details.
+
+    Parameters
+    ----------
+    reports : list of reports or dict
+        Reports to compare. If a dict, keys will be used to label the estimators;
+        if a list, the labels are computed from the estimator class names.
+        Expects at least two reports to compare, with the same test target.
+
+    n_jobs : int, default=None
+        Number of jobs to run in parallel. Training the estimators and computing
+        the scores are parallelized.
+        When accessing some methods of the `ComparisonReport`, the `n_jobs`
+        parameter is used to parallelize the computation.
+        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
+        ``-1`` means using all processors.
+
+    Attributes
+    ----------
+    reports_ : dict mapping names to reports
+        The compared reports.
+
+    metrics : MetricsAccessor
+        Accessor for computing and plotting metrics across compared reports.
+
+    inspection : InspectionAccessor
+        Accessor for model inspection across compared reports.
+
+    checks : ChecksAccessor
+        Accessor for running diagnostic checks.
+
+    See Also
+    --------
+    skore.EstimatorReport
+        Report for a fitted estimator.
+
+    skore.CrossValidationReport
+        Report for the cross-validation of an estimator.
+
+    Notes
+    -----
+    Reports passed to :class:`~skore.ComparisonReport` are not copied. If you pass
+    a report to :class:`~skore.ComparisonReport`, and then modify the report outside
+    later, it will affect the report stored inside the :class:`~skore.ComparisonReport`
+    as well, which can lead to inconsistent results. For this reason, modifying
+    reports after creation is strongly discouraged.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.model_selection import train_test_split
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import ComparisonReport, EstimatorReport
+    >>> X, y = make_classification(random_state=42)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    >>> estimator_1 = LogisticRegression()
+    >>> estimator_report_1 = EstimatorReport(
+    ...     estimator_1, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    ... )
+    >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
+    >>> estimator_report_2 = EstimatorReport(
+    ...     estimator_2, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    ... )
+    >>> report = ComparisonReport([estimator_report_1, estimator_report_2])
+    >>> report.reports_
+    {'LogisticRegression_1': ..., 'LogisticRegression_2': ...}
+    >>> report = ComparisonReport(
+    ...     {"model1": estimator_report_1, "model2": estimator_report_2}
+    ... )
+    >>> report.reports_
+    {'model1': ..., 'model2': ...}
+
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> from skore import ComparisonReport, CrossValidationReport
+    >>> X, y = make_classification(random_state=42)
+    >>> estimator_1 = LogisticRegression()
+    >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
+    >>> report_1 = CrossValidationReport(estimator_1, X, y)
+    >>> report_2 = CrossValidationReport(estimator_2, X, y)
+    >>> report = ComparisonReport([report_1, report_2])
+    >>> report = ComparisonReport({"model1": report_1, "model2": report_2})
+    """
+
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
+        "metrics": {"name": "metrics"},
+        "inspection": {"name": "inspection"},
+        "checks": {"name": "checks"},
+    }
+    metrics: _MetricsAccessor
+    inspection: _InspectionAccessor
+    checks: _ChecksAccessor
+
+    _report_type: ComparisonReportType
+
+    @staticmethod
+    def _validate_reports(
+        reports: (
+            list[EstimatorReport]
+            | dict[str, EstimatorReport]
+            | list[CrossValidationReport]
+            | dict[str, CrossValidationReport]
+        ),
+    ) -> tuple[
+        dict[str, EstimatorReport] | dict[str, CrossValidationReport],
+        ComparisonReportType,
+        PositiveLabel,
+    ]:
+        """Validate that reports are in the right format for comparison.
+
+        Parameters
+        ----------
+        reports : list of reports or dict
+            The reports to be validated.
+
+        Returns
+        -------
+        dict
+            The validated reports.
+        {"comparison-estimator", "comparison-cross-validation"}
+            The report type for the comparison.
+        int, float, bool, str or None
+            The positive label used in the different reports.
+        """
+        if not isinstance(reports, Iterable):
+            raise TypeError(
+                f"Expected reports to be a list or dict; got {type(reports)}"
+            )
+
+        if len(reports) < 2:
+            raise ValueError(
+                f"Expected at least 2 reports to compare; got {len(reports)}"
+            )
+
+        if isinstance(reports, list):
+            report_names = None
+            reports_list = reports
+        else:  # dict
+            report_names = list(reports.keys())
+            for key in report_names:
+                if not isinstance(key, str):
+                    raise TypeError(
+                        f"Expected all report names to be strings; got {type(key)}"
+                    )
+            reports_list = cast(
+                list[EstimatorReport] | list[CrossValidationReport],
+                list(reports.values()),
+            )
+
+        report_type: ComparisonReportType
+        if all(isinstance(report, EstimatorReport) for report in reports_list):
+            reports_list = cast(list[EstimatorReport], reports_list)
+            report_type = "comparison-estimator"
+
+            test_dataset_hashes = {
+                joblib.hash(report.y_test)
+                for report in reports_list
+                if report.y_test is not None
+            }
+            if len(test_dataset_hashes) > 1:
+                raise ValueError(
+                    "Expected all estimators to share the same test targets."
+                )
+
+        elif all(isinstance(report, CrossValidationReport) for report in reports_list):
+            reports_list = cast(list[CrossValidationReport], reports_list)
+            report_type = "comparison-cross-validation"
+        else:
+            raise TypeError(
+                f"Expected list or dict of {EstimatorReport.__name__} "
+                f"or list of dict of {CrossValidationReport.__name__}"
+            )
+
+        if len({id(report) for report in reports_list}) < len(reports_list):
+            raise ValueError("Expected reports to be distinct objects")
+
+        ml_tasks = {report._ml_task for report in reports_list}
+        if len(ml_tasks) > 1:
+            raise ValueError(
+                f"Expected all estimators to have the same ML usecase; got {ml_tasks}"
+            )
+
+        if ml_tasks == {"binary-classification"}:
+            pos_labels = {report.pos_label for report in reports_list}
+            if len(pos_labels) > 1:
+                raise ValueError(
+                    "Expected all estimators to have the same positive label. "
+                    f"Got {pos_labels}."
+                )
+            pos_label = pos_labels.pop()
+        else:
+            pos_label = None
+
+        if report_names is None:
+            deduped_report_names = _deduplicate_report_names(
+                [report.estimator_name_ for report in reports_list]
+            )
+        else:
+            deduped_report_names = report_names
+
+        reports_dict = cast(
+            dict[str, EstimatorReport] | dict[str, CrossValidationReport],
+            dict(zip(deduped_report_names, reports_list, strict=True)),
+        )
+
+        return reports_dict, report_type, pos_label
+
+    def __init__(
+        self,
+        reports: (
+            list[EstimatorReport]
+            | dict[str, EstimatorReport]
+            | list[CrossValidationReport]
+            | dict[str, CrossValidationReport]
+        ),
+        *,
+        n_jobs: int | None = None,
+    ) -> None:
+        super().__init__()
+        self.reports_, self._report_type, self._pos_label = (
+            ComparisonReport._validate_reports(reports)
+        )
+
+        self.n_jobs = n_jobs
+        self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
+
+    def _clear_cache(self) -> None:
+        """Clear the cache."""
+        for report in self.reports_.values():
+            report._clear_cache()
+
+    def _cache_predictions(self) -> None:
+        """Cache the predictions for sub-estimators reports."""
+        for report in self.reports_.values():
+            report._cache_predictions()
+
+    def get_predictions(
+        self,
+        *,
+        data_source: Literal["train", "test"],
+        response_method: Literal[
+            "predict", "predict_proba", "decision_function"
+        ] = "predict",
+    ) -> list[ArrayLike] | list[list[ArrayLike]]:
+        """Get predictions from the underlying reports.
+
+        This method has the advantage to reload from the cache if the predictions
+        were already computed in a previous call.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        response_method : {"predict", "predict_proba", "decision_function"}, \
+                default="predict"
+            The response method to use to get the predictions.
+
+        Returns
+        -------
+        list of np.ndarray of shape (n_samples,) or (n_samples, n_classes) or list of \
+                such lists
+            The predictions for each :class:`~skore.EstimatorReport` or
+            :class:`~skore.CrossValidationReport`.
+
+        Raises
+        ------
+        ValueError
+            If the data source is invalid.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import compare, evaluate
+        >>> X, y = make_classification(random_state=42)
+        >>> estimator_1 = LogisticRegression()
+        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
+        >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
+        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
+        >>> report = compare([estimator_report_1, estimator_report_2])
+        >>> predictions = report.get_predictions(data_source="test")
+        >>> print([split_predictions.shape for split_predictions in predictions])
+        [(20,), (20,)]
+        """
+        return [  # type: ignore
+            report.get_predictions(
+                data_source=data_source,
+                response_method=response_method,
+            )
+            for report in self.reports_.values()
+        ]
+
+    def create_estimator_report(
+        self,
+        *,
+        report_key: str,
+        X_test: ArrayLike | None = None,
+        y_test: ArrayLike | None = None,
+        test_data: dict | None = None,
+        concatenate_train_and_test: bool = False,
+    ) -> EstimatorReport:
+        """Create an estimator report from one of the reports in the comparison.
+
+        This method creates a new :class:`~skore.EstimatorReport` with the same
+        estimator and the same data as the chosen report. It is useful to evaluate and
+        deploy a model that was deemed optimal during the comparison. Provide a held out
+        test set to properly evaluate the performance of the model.
+
+        Parameters
+        ----------
+        report_key : str
+            The key associated with the estimator to create a report for, as stored in
+            the :attr:`reports_` attribute of the :class:`~skore.ComparisonReport`.
+            List the available keys with `reports_.keys()`.
+
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+            Testing data when the chosen report uses tabular scikit-learn ``X``/``y``.
+            Must be provided together with ``y_test`` unless only ``test_data`` is
+            used for a skrub-backed report.
+
+        y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
+            Testing target for tabular scikit-learn data.
+
+        test_data : dict or None
+            When the chosen report is skrub-backed, bindings for variables contained in
+            the DataOp (e.g. ``{"X": X_df, ...}``) for the held-out evaluation set.
+            Required in that case; ``X_test`` and ``y_test`` must then be omitted.
+
+        concatenate_train_and_test : bool, default=False
+            When the chosen entry is an :class:`~skore.EstimatorReport` backed by
+            tabular scikit-learn data, controls whether to concatenate that report's
+            train and test splits into a single training set before fitting on the
+            held-out ``X_test`` / ``y_test`` you provide. If ``False`` (default), the
+            new report is fit on the report's original ``X_train``.
+
+            This option must be ``False`` if
+
+            - ``report_key`` refers to a :class:`~skore.CrossValidationReport` or
+            - the estimator is a skrub :class:`~skrub.SkrubLearner` or
+            - the estimator was built from a skrub :class:`~skrub.DataOp`.
+
+        Returns
+        -------
+        :class:`~skore.EstimatorReport`
+            The estimator report.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import compare, evaluate
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> linear_report = evaluate(
+        ...     LogisticRegression(random_state=42), X_train, y_train, splitter=5
+        ... )
+        >>> forest_report = evaluate(
+        ...     RandomForestClassifier(random_state=42), X_train, y_train, splitter=5
+        ... )
+        >>> comparison_report = compare([linear_report, forest_report])
+        >>> summary = comparison_report.metrics.summarize().frame()
+        >>> final_report = comparison_report.create_estimator_report(
+        ...     report_key="RandomForestClassifier", X_test=X_test, y_test=y_test
+        ... )
+        >>> final_report.metrics.summarize().frame()
+        """
+        if report_key not in self.reports_:
+            raise ValueError(
+                f"Estimator with key {report_key} not found in the comparison report. "
+                f"Available keys are: {list(self.reports_.keys())}."
+            )
+
+        if isinstance(self.reports_[report_key], CrossValidationReport):
+            if concatenate_train_and_test:
+                raise ValueError(
+                    "`concatenate_train_and_test=True` is not supported when "
+                    "`report_key` refers to a CrossValidationReport. "
+                    "Set `concatenate_train_and_test=False` or select an "
+                    "EstimatorReport entry."
+                )
+            return cast(
+                CrossValidationReport, self.reports_[report_key]
+            ).create_estimator_report(X_test=X_test, y_test=y_test, test_data=test_data)
+
+        estimator_report = cast(EstimatorReport, self.reports_[report_key])
+
+        if estimator_report._initialized_with_data_op:
+            if test_data is None:
+                raise ValueError(
+                    "test_data is required when creating an estimator report from a "
+                    "skrub-backed EstimatorReport."
+                )
+            if X_test is not None or y_test is not None:
+                raise ValueError(
+                    "X_test and y_test must be omitted when the source report is "
+                    "skrub-backed; provide test_data instead."
+                )
+            if concatenate_train_and_test:
+                raise ValueError(
+                    "Cannot concatenate train and test data when using a skrub "
+                    "estimator. Set `concatenate_train_and_test=False` instead."
+                )
+            return EstimatorReport(
+                estimator_report.estimator_,
+                train_data=estimator_report.train_data,
+                test_data=test_data,
+                pos_label=self._pos_label,
+            )
+
+        if X_test is None or y_test is None:
+            raise ValueError(
+                "X_test and y_test are required when the source report uses "
+                "tabular scikit-learn data."
+            )
+        if test_data is not None:
+            raise ValueError(
+                "test_data must be omitted when the source report uses tabular "
+                "scikit-learn data."
+            )
+
+        if concatenate_train_and_test:
+            if (
+                estimator_report.X_train is None
+                or estimator_report.y_train is None
+                or estimator_report.X_test is None
+                or estimator_report.y_test is None
+            ):
+                raise ValueError(
+                    "The source report must provide X_train, y_train, X_test, and "
+                    "y_test when concatenate_train_and_test=True."
+                )
+            X_train = _concat_vertical(
+                estimator_report.X_train, estimator_report.X_test
+            )
+            y_train = _concat_vertical(
+                estimator_report.y_train, estimator_report.y_test
+            )
+        else:
+            X_train, y_train = estimator_report.X_train, estimator_report.y_train
+
+        return EstimatorReport(
+            estimator_report.estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+            pos_label=self._pos_label,
+        )
+
+    @property
+    def pos_label(self) -> PositiveLabel | None:
+        return self._pos_label
+
+    ####################################################################################
+    # Methods related to the help and repr
+    ####################################################################################
+
+    def _aggregate_checks(
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
+        comparison_results: dict[CheckCode, dict] = {}
+        reports_by_code: defaultdict[CheckCode, list[str]] = defaultdict(list)
+        ref_by_code: dict[CheckCode, dict] = {}
+        all_applicable_codes: set[CheckCode] = set()
+        all_not_applicable_codes: set[CheckCode] = set()
+        for report_name, report in self.reports_.items():
+            report.checks.add(self._checks_registry)
+            report_results, applicable_codes, not_applicable_codes = (
+                report._get_results(ignored_codes, fast_mode=fast_mode)
+            )
+            all_applicable_codes |= applicable_codes
+            all_not_applicable_codes |= not_applicable_codes
+
+            for code, result in report_results.items():
+                ref_by_code.setdefault(code, result)
+                comparison_results.setdefault(
+                    code,
+                    {
+                        "title": result["title"],
+                        "docs_url": result.get("docs_url"),
+                        "explanation": None,
+                        "severity": result.get("severity"),
+                    },
+                )
+                if code in applicable_codes and result["explanation"] is not None:
+                    reports_by_code[code].append(report_name)
+
+        all_not_applicable_codes -= all_applicable_codes
+
+        for code, reports in reports_by_code.items():
+            comparison_results[code]["explanation"] = (
+                f"Detected in: {', '.join(f'[{r}]' for r in reports)}."
+            )
+        for code in all_not_applicable_codes:
+            comparison_results[code]["explanation"] = ref_by_code[code]["explanation"]
+        return comparison_results, all_applicable_codes, all_not_applicable_codes
+
+    def _get_help_title(self) -> str:
+        return "Tools to compare estimators"
+
+    def _get_help_legend(self) -> str:
+        return (
+            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
+        )
+
+    def __repr__(self) -> str:
+        """Return a string representation."""
+        return f"""{self.__class__.__name__}:
+        {list(self.reports_.keys())!r}
+
+        {self.metrics._formatted_summary_frame(data_source="test")}
+        Call `report.to_markdown()` for a markdown summary of the report's contents."""
+
+    def to_markdown(self) -> str:
+        """Return a markdown summary of the report.
+
+        The summary contains four sections (Estimators, Metrics, Checks, Data) that
+        mirror the tabs of the HTML representation. Metrics and Checks sections end
+        with a pointer to the corresponding accessor for full details.
+
+        Returns
+        -------
+        str
+            The markdown summary of the report.
+        """
+        metrics_frame = self.metrics._formatted_summary_frame(data_source="test")
+        return render_template(
+            "report/comparison_report_markdown.j2",
+            {
+                **comparison_estimator_markdown_context(self),
+                **comparison_data_markdown_context(self),
+                "metrics_text": repr(metrics_frame),
+                "checks_text": repr(self.checks.summarize(fast_mode=True)),
+            },
+        )
+
+    def _repr_html_(self) -> str:
+        """HTML representation with a selector to inspect one compared report."""
+        metrics_frame = self.metrics._formatted_summary_frame(data_source="test")
+        metrics_html = metrics_frame.reset_index().to_html(index=False)
+
+        comparison_reports = []
+        for label, report in self.reports_.items():
+            fragments = report._html_repr_fragments()
+            comparison_reports.append(
+                {
+                    "label": label,
+                    "estimator_display": fragments["estimator_display"],
+                    "table_report": fragments["table_report"],
+                    "checks_summary": fragments["checks_summary"],
+                }
+            )
+
+        container_id = f"skore-comparison-report-{uuid.uuid4().hex[:8]}"
+        report_class_name = self.__class__.__name__
+        metrics_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="metrics"
+        )
+        inspection_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="inspection"
+        )
+        checks_documentation_url = get_documentation_url(
+            obj=self, accessor_name="checks"
+        )
+        help_ctx = asdict(self._build_help_data())
+        help_ctx["is_report"] = True
+        return render_template(
+            "report/comparison_report.html.j2",
+            {
+                "container_id": container_id,
+                "metrics_summary": metrics_html,
+                "comparison_reports": comparison_reports,
+                "report_class_name": report_class_name,
+                "report_title": "Model comparison",
+                "metrics_accessor_doc_url": metrics_accessor_doc_url,
+                "inspection_accessor_doc_url": inspection_accessor_doc_url,
+                "checks_documentation_url": checks_documentation_url,
+                **help_ctx,
+            },
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by Jupyter kernels to display the report."""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output
+
+
+def _deduplicate_report_names(report_names: list[str]) -> list[str]:
+    """De-duplicate report names that appear several times.
+
+    Leave the other report names alone.
+
+    Parameters
+    ----------
+    report_names : list of str
+        The list of report names to be checked.
+
+    Returns
+    -------
+    list of str
+        The de-duplicated list of report names.
+
+    Examples
+    --------
+    >>> _deduplicate_report_names(['a', 'b'])
+    ['a', 'b']
+    >>> _deduplicate_report_names(['a', 'a'])
+    ['a_1', 'a_2']
+    >>> _deduplicate_report_names(['a', 'b', 'a'])
+    ['a_1', 'b', 'a_2']
+    >>> _deduplicate_report_names(['a', 'b', 'a', 'b'])
+    ['a_1', 'b_1', 'a_2', 'b_2']
+    >>> _deduplicate_report_names([])
+    []
+    >>> _deduplicate_report_names(['a'])
+    ['a']
+    """
+    counts = Counter(report_names)
+    if len(report_names) == len(counts):
+        return report_names
+
+    names = report_names.copy()
+    seen: Counter = Counter()
+    for i in range(len(names)):
+        name = names[i]
+        seen[name] += 1
+        if counts[name] > 1:
+            names[i] = f"{name}_{seen[name]}"
+    return names

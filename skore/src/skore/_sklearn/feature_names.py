@@ -1,0 +1,60 @@
+from __future__ import annotations
+
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
+import narwhals as nw
+from numpy.typing import ArrayLike
+from sklearn.base import BaseEstimator
+from sklearn.utils.validation import _num_features
+
+if TYPE_CHECKING:
+    from .._utils._dataframe import UserDataFrame
+
+
+def _function_call_succeeds(func: Callable) -> bool:
+    try:
+        func()
+        return True
+    except AttributeError:
+        return False
+
+
+def _get_feature_names(
+    estimator: BaseEstimator,
+    *,
+    transformer: BaseEstimator | None = None,
+    X: ArrayLike | UserDataFrame | None = None,
+    n_features: int | None = None,
+) -> list[str]:
+    """Get the names of an estimator's input features.
+
+    The estimator may or may not be inside a sklearn.Pipeline.
+    """
+    if hasattr(estimator, "feature_names_in_"):
+        feature_names = estimator.feature_names_in_
+        # skrub is not implementing rigorously the scikit-learn API and returns a
+        # list and so we need to check if we have an array-like before to make any
+        # conversion
+        if hasattr(feature_names, "tolist"):
+            feature_names = feature_names.tolist()
+        return feature_names
+
+    elif (
+        transformer is not None
+        and hasattr(transformer, "get_feature_names_out")
+        and _function_call_succeeds(transformer.get_feature_names_out)
+    ):
+        return transformer.get_feature_names_out().tolist()
+    elif X is not None:
+        if nw.dependencies.is_into_dataframe(X):
+            return nw.from_native(X).columns
+        else:
+            return [f"Feature #{i}" for i in range(_num_features(X))]
+
+    if n_features is None:
+        raise ValueError(
+            "Feature names cannot be inferred from the estimator or transformer. "
+            "At least one of X or n_features must be provided to infer feature names."
+        )
+    return [f"Feature #{i}" for i in range(n_features)]

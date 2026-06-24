@@ -12,9 +12,9 @@ permissions:
 jobs:
   pr-lint-title:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'pull_request' }}
+    if: ${{ (github.repository == 'probabl-ai/skore') && (github.event_name == 'pull_request') }}
     steps:
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6.4.0
         with:
           node-version: "20"
       - name: Install commitlint
@@ -28,7 +28,11 @@ jobs:
           tee -a .commitlintrc.yml << END
           extends: ["@commitlint/config-conventional"]
           rules:
-            "subject-case": [2, "always", ["sentence-case"]]
+            type-enum:
+              - 2
+              - "always"
+              - ["build", "chore", "ci", "docs", "feat", "fix", "perf", "refactor", "release", "revert", "style", "test"]
+            subject-case: [2, "always", ["sentence-case"]]
           END
       - name: Lint PR title
         # Use an environment variable to avoid a security vulnerability

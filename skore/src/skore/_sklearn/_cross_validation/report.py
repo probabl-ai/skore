@@ -1,0 +1,808 @@
+from __future__ import annotations
+
+import html
+import uuid
+from collections import defaultdict
+from collections.abc import Generator
+from dataclasses import asdict
+from typing import TYPE_CHECKING, Any, Literal
+
+import skrub
+from joblib import Parallel
+from numpy.typing import ArrayLike
+from sklearn.base import clone, is_classifier
+from sklearn.model_selection import check_cv
+from sklearn.pipeline import Pipeline
+from skrub._reporting._summarize import summarize_dataframe
+
+from skore._externals._pandas_accessors import DirNamesMixin
+from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
+from skore._sklearn._base import _BaseReport
+from skore._sklearn._checks.base import CheckCode
+from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
+from skore._sklearn._estimator.report import EstimatorReport
+from skore._sklearn.types import (
+    PositiveLabel,
+    SKLearnCrossValidator,
+)
+from skore._utils._fixes import _validate_joblib_parallel_params
+from skore._utils._parallel import delayed
+from skore._utils._progress_bar import track
+from skore._utils._skrub import (
+    is_skrub_learner,
+    to_estimator,
+    to_learner,
+)
+from skore._utils.repr.data import get_documentation_url
+from skore._utils.repr.html_repr import render_template
+from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
+from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
+
+if TYPE_CHECKING:
+    from skore._sklearn._checks.accessor import _ChecksAccessor
+    from skore._sklearn._cross_validation.data_accessor import _DataAccessor
+    from skore._sklearn._cross_validation.inspection_accessor import (
+        _InspectionAccessor,
+    )
+    from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
+    from skore._sklearn.types import EstimatorLike
+
+
+_STATE_VERSION = 1
+
+
+def _generate_estimator_report(
+    estimator: EstimatorLike,
+    X: ArrayLike,
+    y: ArrayLike,
+    pos_label: PositiveLabel | None,
+    train_indices: ArrayLike,
+    test_indices: ArrayLike,
+) -> EstimatorReport:
+    return EstimatorReport(
+        estimator,
+        X_train=_safe_indexing(X, train_indices),
+        y_train=_safe_indexing(y, train_indices),
+        X_test=_safe_indexing(X, test_indices),
+        y_test=_safe_indexing(y, test_indices),
+        pos_label=pos_label,
+    )
+
+
+class CrossValidationReport(_BaseReport, DirNamesMixin):
+    """Provide a report of cross-validation results.
+
+    Upon initialization, clones ``estimator`` according to ``splitter`` and fits each
+    fold in parallel.
+
+    Refer to the :ref:`cross_validation_report` section of the user guide for more
+    details.
+
+    Parameters
+    ----------
+    estimator : estimator object
+        Estimator to make the cross-validation report from. An estimator can
+        be one of the following:
+
+        - a scikit-learn compatible estimator as a :class:`~sklearn.base.BaseEstimator`;
+        - a skrub :class:`~skrub.DataOp` to preprocess the data;
+        - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
+          by calling :meth:`~skrub.DataOp.skb.make_learner`.
+
+    X : {array-like, sparse matrix} of shape (n_samples, n_features) or None
+        The data to fit. Can be for example a list, or an array.
+
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
+        The target variable to try to predict in the case of supervised learning.
+
+    data : dict or None
+        When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
+        variables contained in the DataOp that was used to create this learner
+        (e.g. ``{"X": X_df, "other_table": df, ...}``).
+
+    pos_label : int, float, bool or str, default=None
+        For binary classification, the positive class to use for metrics and displays
+        that need one. If `None`, skore does not infer a default positive class.
+        Binary metrics and displays that support it will expose all classes instead.
+        This parameter is rejected for non-binary tasks.
+
+    splitter : int, cross-validation generator or an iterable, default=5
+        Determines the cross-validation splitting strategy.
+        Possible inputs for `splitter` are:
+
+        - int, to specify the number of splits in a `(Stratified)KFold`,
+        - a scikit-learn :term:`CV splitter`,
+        - An iterable yielding (train, test) splits as arrays of indices.
+
+        For int/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, :class:`StratifiedKFold` is used. In all
+        other cases, :class:`KFold` is used. These splitters are instantiated
+        with `shuffle=False` so the splits will be the same across calls.
+
+        Refer to scikit-learn's :ref:`User Guide <cross_validation>` for the various
+        cross-validation strategies that can be used here.
+
+    n_jobs : int, default=None
+        Number of jobs to run in parallel. Training the estimator and computing
+        the score are parallelized over the cross-validation splits.
+        When accessing some methods of the `CrossValidationReport`, the `n_jobs`
+        parameter is used to parallelize the computation.
+        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
+        ``-1`` means using all processors.
+
+    Attributes
+    ----------
+    estimator_ : estimator object
+        The fitted estimator.
+
+    estimator : estimator object
+        The estimator that was given as input.
+
+    learner_ : skrub.SkrubLearner
+        The estimator wrapped in a skrub Learner.
+
+    estimator_name_ : str
+        The name of the estimator.
+
+    reports_ : list of EstimatorReport
+        The estimator reports for each split.
+
+    ml_task : str
+        The machine learning task inferred from the data and estimator.
+
+    metrics : MetricsAccessor
+        Accessor for computing and plotting metrics aggregated over folds.
+
+    inspection : InspectionAccessor
+        Accessor for model inspection aggregated over folds.
+
+    data : DataAccessor
+        Accessor for dataset analysis.
+
+    checks : ChecksAccessor
+        Accessor for running diagnostic checks.
+
+    See Also
+    --------
+    skore.EstimatorReport
+        Report for a fitted estimator.
+
+    skore.ComparisonReport
+        Report of comparison between estimators.
+
+    Examples
+    --------
+    >>> from sklearn.datasets import make_classification
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> X, y = make_classification(random_state=42)
+    >>> estimator = LogisticRegression()
+    >>> from skore import CrossValidationReport
+    >>> report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    """
+
+    _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
+        "data": {"name": "data"},
+        "metrics": {"name": "metrics"},
+        "inspection": {"name": "inspection"},
+        "checks": {"name": "checks"},
+    }
+
+    _report_type: Literal["cross-validation"] = "cross-validation"
+
+    metrics: _MetricsAccessor
+    inspection: _InspectionAccessor
+    data: _DataAccessor
+    checks: _ChecksAccessor
+
+    def __init__(
+        self,
+        estimator: EstimatorLike,
+        X: ArrayLike | None = None,
+        y: ArrayLike | None = None,
+        data: dict | None = None,
+        pos_label: PositiveLabel | None = None,
+        splitter: int | SKLearnCrossValidator | Generator | None = None,
+        n_jobs: int | None = None,
+    ) -> None:
+        super().__init__()
+        self._check_estimator_and_data(estimator, X, y, data, splitter)
+        self._pos_label = pos_label
+        self.n_jobs = n_jobs
+
+        self.reports_: list[EstimatorReport] = self._fit_estimator_reports()
+
+        self._ml_task = self.reports_[0].ml_task
+
+    def _check_estimator_and_data(
+        self,
+        estimator,
+        X: ArrayLike | None,
+        y: ArrayLike | None,
+        data: dict | None,
+        splitter: int | SKLearnCrossValidator | Generator | None,
+    ) -> None:
+        self.estimator = estimator
+        if isinstance(estimator, skrub.DataOp):
+            if data is None:
+                data = estimator.skb.get_data()
+            estimator = estimator.skb.make_learner()
+        if is_clusterer(estimator):
+            raise ValueError(
+                "Clustering models are not supported yet. Please use a"
+                " classification or regression model instead."
+            )
+        estimator = clone(estimator)
+        if is_skrub_learner(estimator):
+            self._initialized_with_data_op = True
+            if X is not None or y is not None:
+                raise TypeError(
+                    "X and y cannot be provided when estimator is a SkrubLearner. "
+                    "Provide `data` instead."
+                )
+            if data is None:
+                raise TypeError(
+                    "data must be provided when estimator is a SkrubLearner"
+                )
+            self.learner_ = estimator
+            X_y_cv = skrub.as_data_op(estimator.data_op.skb.find_X_y()).skb.eval(data)
+            X, y = X_y_cv["X"], X_y_cv["y"]
+            self._data = data | {"_skrub_X": X, "_skrub_y": y}
+            if splitter is None and (cv := X_y_cv.get("cv")) is not None:
+                self._splitter = cv
+                split_kwargs = X_y_cv["split_kwargs"]
+                if split_kwargs is None:
+                    split_kwargs = {}
+                self._split_indices = tuple(cv.split(X, y, **split_kwargs))
+        else:
+            self._initialized_with_data_op = False
+            if data is not None:
+                raise TypeError(
+                    "`data` can only be provided when estimator "
+                    "is a SkrubLearner. Provide X and y instead."
+                )
+            if X is None or y is None:
+                raise TypeError(
+                    "X and y must be provided (unless estimator is a "
+                    "SkrubLearner and data is provided instead)."
+                )
+            self.learner_ = to_learner(estimator)
+            self._data = {"_skrub_X": X, "_skrub_y": y}
+        if getattr(self, "_splitter", None) is None:
+            self._splitter = check_cv(splitter, y, classifier=is_classifier(estimator))
+            self._split_indices = tuple(self._splitter.split(X, y))
+
+    def _fit_estimator_reports(self) -> list[EstimatorReport]:
+        """Fit the estimator reports.
+
+        Returns
+        -------
+        estimator_reports : list of EstimatorReport
+            The estimator reports.
+        """
+        parallel = Parallel(
+            **_validate_joblib_parallel_params(
+                n_jobs=self.n_jobs, return_as="generator"
+            )
+        )
+
+        if self._initialized_with_data_op:
+            subreports = (
+                delayed(EstimatorReport)(
+                    clone(self.learner_),
+                    train_data=split["train"],
+                    test_data=split["test"],
+                    pos_label=self._pos_label,
+                )
+                for split in self.learner_.data_op.skb.iter_cv_splits(
+                    environment=self._data, cv=self.split_indices
+                )
+            )
+
+        else:
+            # do not split the data to take advantage of the memory mapping
+            subreports = (
+                delayed(_generate_estimator_report)(
+                    clone(self.estimator),
+                    self.X,
+                    self.y,
+                    self.pos_label,
+                    train_indices,
+                    test_indices,
+                )
+                for train_indices, test_indices in self.split_indices
+            )
+
+        return list(
+            track(
+                parallel(subreports),
+                description=(
+                    f"Processing cross-validation\nfor {self.estimator_name_}"
+                ),
+                total=len(self.split_indices),
+            )
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a serializable representation of the report state.
+
+        This state is meant to ease serialization/deserialization of
+        reports while preserving some backward compatibility across skore
+        versions. In particular, this is more stable than pickling a report
+        object directly, which can break when internal implementations change.
+        """
+        sub_states = [report.to_dict() for report in self.reports_]
+        for state in sub_states:
+            # data can be reconstructed from X, y and split_indices
+            state.pop("data")
+
+        return {
+            "version": _STATE_VERSION,
+            "metadata": self._metadata,
+            "initialized_with_data_op": self._initialized_with_data_op,
+            "estimator": self.estimator,
+            "ml_task": self.ml_task,
+            "pos_label": self.pos_label,
+            "learner": self.learner_,
+            "data": self._data,
+            "split_indices": self._split_indices,
+            "estimator_reports": sub_states,
+        }
+
+    @classmethod
+    def from_dict(cls, state: dict[str, Any]) -> CrossValidationReport:
+        """Rebuild a report from :meth:`to_dict` output."""
+        version = state.get("version", 0)
+        if version != _STATE_VERSION:
+            # in the future, we could support some BW compatibility instead of crashing
+            raise ValueError(f"Unexpected state version: {version!r}")
+
+        report_type = state["metadata"]["report_type"]
+        if report_type != cls._report_type:
+            raise ValueError(f"Unexpected report_type in state: {report_type}")
+
+        report = cls.__new__(cls)
+
+        report._metadata = state["metadata"]
+        report._initialized_with_data_op = state["initialized_with_data_op"]
+        report._ml_task = state["ml_task"]
+        report._pos_label = state["pos_label"]
+        report.learner_ = state["learner"]
+        report.estimator = state["estimator"]
+        report._data = state["data"]
+        report._split_indices = state["split_indices"]
+        report._checks_registry = list(_BUILTIN_CHECKS)
+        # TODO? Include splitter in state?
+        report._splitter = None
+        report.n_jobs = None
+
+        report.reports_ = []
+        if report._initialized_with_data_op:
+            split_data_iterator = report.learner_.data_op.skb.iter_cv_splits(
+                environment=report._data,
+                cv=report._split_indices,
+            )
+        else:
+            split_data_iterator = (
+                {
+                    "train": {
+                        "_skrub_X": _safe_indexing(report.X, train_indices),
+                        "_skrub_y": (
+                            None
+                            if report.y is None
+                            else _safe_indexing(report.y, train_indices)
+                        ),
+                    },
+                    "test": {
+                        "_skrub_X": _safe_indexing(report.X, test_indices),
+                        "_skrub_y": (
+                            None
+                            if report.y is None
+                            else _safe_indexing(report.y, test_indices)
+                        ),
+                    },
+                }
+                for train_indices, test_indices in report._split_indices
+            )
+
+        for sub_state, split_data in zip(
+            state["estimator_reports"], split_data_iterator, strict=True
+        ):
+            sub_state_with_data = sub_state | {
+                "initialized_with_data_op": report._initialized_with_data_op,
+                "data": {
+                    "train_data": split_data["train"],
+                    "test_data": split_data["test"],
+                },
+            }
+            sub_report = EstimatorReport.from_dict(sub_state_with_data)
+            report.reports_.append(sub_report)
+
+        return report
+
+    def _clear_cache(self) -> None:
+        """Clear the cache."""
+        for report in self.reports_:
+            report._clear_cache()
+
+    def _cache_predictions(self) -> None:
+        """Cache the predictions for sub-estimators reports."""
+        for estimator_report in self.reports_:
+            estimator_report._cache_predictions()
+
+    def get_predictions(
+        self,
+        *,
+        data_source: Literal["train", "test"],
+        response_method: Literal[
+            "predict", "predict_proba", "decision_function"
+        ] = "predict",
+    ) -> list[ArrayLike]:
+        """Get estimator's predictions.
+
+        This method has the advantage to reload from the cache if the predictions
+        were already computed in a previous call.
+
+        Parameters
+        ----------
+        data_source : {"test", "train"}
+            The data source to use.
+
+            - "test" : use the test set provided when creating the report.
+            - "train" : use the train set provided when creating the report.
+
+        response_method : {"predict", "predict_proba", "decision_function"}, \
+                default="predict"
+            The response method to use to get the predictions.
+
+        Returns
+        -------
+        list of np.ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predictions for each cross-validation split.
+
+        Raises
+        ------
+        ValueError
+            If the data source is invalid.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> X, y = make_classification(random_state=42)
+        >>> estimator = LogisticRegression()
+        >>> from skore import CrossValidationReport
+        >>> report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+        >>> predictions = report.get_predictions(data_source="test")
+        >>> print([split_predictions.shape for split_predictions in predictions])
+        [(50,), (50,)]
+        """
+        if data_source not in ("train", "test"):
+            raise ValueError(
+                f"Invalid data source: {data_source}. Valid data sources are "
+                "'train' and 'test'."
+            )
+        return [
+            report.get_predictions(
+                data_source=data_source,
+                response_method=response_method,
+            )
+            for report in self.reports_
+        ]
+
+    def create_estimator_report(
+        self,
+        *,
+        X_test: ArrayLike | None = None,
+        y_test: ArrayLike | None = None,
+        test_data: dict | None = None,
+    ) -> EstimatorReport:
+        """Create an estimator report from the cross-validation report.
+
+        This method creates a new :class:`~skore.EstimatorReport` with the same
+        estimator and the same data as the cross-validation report. It is useful to
+        evaluate and deploy a model that was deemed optimal with cross-validation.
+        Provide a held-out test set to properly evaluate the performance of the model.
+
+        Parameters
+        ----------
+        X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
+            Testing data. It should have the same structure as the training data.
+
+        y_test : array-like of shape (n_samples,) or (n_samples, n_outputs)
+            Testing target.
+
+        test_data : dict or None
+            When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
+            variables contained in the DataOp that was used to create this learner
+            (e.g. ``{"X": X_df, "other_table": df, ...}``).
+
+        Returns
+        -------
+        :class:`~skore.EstimatorReport`
+            The estimator report.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import make_classification
+        >>> from sklearn.ensemble import RandomForestClassifier
+        >>> from sklearn.model_selection import train_test_split
+        >>> from skore import evaluate
+        >>> X, y = make_classification(random_state=42)
+        >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+        >>> forest_report = evaluate(
+        ...     RandomForestClassifier(random_state=42), X_train, y_train, splitter=5
+        ... )
+        >>> final_report = forest_report.create_estimator_report(
+        ...     X_test=X_test, y_test=y_test
+        ... )
+        >>> final_report.metrics.summarize().frame()
+        """
+        if self._initialized_with_data_op:
+            report = EstimatorReport(
+                self.learner_,
+                train_data=self._data,
+                test_data=test_data,
+                pos_label=self._pos_label,
+            )
+        else:
+            report = EstimatorReport(
+                self.estimator,
+                X_train=self.X,
+                y_train=self.y,
+                X_test=X_test,
+                y_test=y_test,
+                pos_label=self._pos_label,
+            )
+        return report
+
+    def _aggregate_checks(
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
+        total_splits = len(self.reports_)
+        all_applicable_codes: set[CheckCode] = set()
+        all_not_applicable_codes: set[CheckCode] = set()
+        positives_by_code: defaultdict[CheckCode, list[dict]] = defaultdict(list)
+        ref_by_code: dict[CheckCode, dict] = {}
+
+        for estimator_report in self.reports_:
+            estimator_report.checks.add(self._checks_registry)
+            results, applicable_codes, not_applicable_codes = (
+                estimator_report._get_results(ignored_codes, fast_mode=fast_mode)
+            )
+            all_applicable_codes |= applicable_codes
+            all_not_applicable_codes |= not_applicable_codes
+            for code, check_result in results.items():
+                ref_by_code.setdefault(code, check_result)
+                if code in applicable_codes and check_result["explanation"] is not None:
+                    positives_by_code[code].append(check_result)
+
+        all_not_applicable_codes -= all_applicable_codes
+
+        aggregated: dict[CheckCode, dict] = {}
+        for code in all_applicable_codes:
+            positives = positives_by_code[code]
+            if len(positives) > total_splits / 2:
+                ref = positives[0]
+                aggregated[code] = {
+                    "title": ref["title"],
+                    "docs_url": ref.get("docs_url"),
+                    "explanation": (
+                        f"Detected in {len(positives)}/{total_splits} evaluated splits."
+                    ),
+                    "severity": ref.get("severity"),
+                }
+            else:
+                ref = ref_by_code[code]
+                aggregated[code] = {
+                    "title": ref["title"],
+                    "docs_url": ref.get("docs_url"),
+                    "explanation": None,
+                    "severity": ref.get("severity"),
+                }
+        for code in all_not_applicable_codes:
+            ref = ref_by_code[code]
+            aggregated[code] = {
+                "title": ref["title"],
+                "docs_url": ref.get("docs_url"),
+                "explanation": ref["explanation"],
+                "severity": ref.get("severity"),
+            }
+        return aggregated, all_applicable_codes, all_not_applicable_codes
+
+    @property
+    def ml_task(self) -> str:
+        return self._ml_task
+
+    @property
+    def estimator_(self) -> EstimatorLike:
+        """The report's fitted estimator."""
+        if self._initialized_with_data_op:
+            return self.learner_
+        return to_estimator(self.learner_)
+
+    @property
+    def estimator_name_(self) -> str:
+        if isinstance(self.estimator, Pipeline):
+            name = self.estimator[-1].__class__.__name__
+        else:
+            name = self.estimator.__class__.__name__
+        return name
+
+    @property
+    def X(self) -> ArrayLike:
+        return self._data["_skrub_X"]
+
+    @property
+    def y(self) -> ArrayLike:
+        return self._data["_skrub_y"]
+
+    @property
+    def input_data(self) -> dict:
+        # TODO name
+        return self._data.copy()
+
+    @property
+    def splitter(self) -> SKLearnCrossValidator:
+        return self._splitter
+
+    @property
+    def split_indices(self) -> tuple[tuple[ArrayLike, ArrayLike], ...]:
+        return self._split_indices
+
+    @property
+    def pos_label(self) -> PositiveLabel | None:
+        return self._pos_label
+
+    ####################################################################################
+    # Methods related to the help and repr
+    ####################################################################################
+
+    def _get_help_title(self) -> str:
+        return f"Tools to diagnose estimator {self.estimator_name_}"
+
+    def _get_help_legend(self) -> str:
+        return (
+            "[cyan](↗︎)[/cyan] higher is better [orange1](↘︎)[/orange1] lower is better"
+        )
+
+    def __repr__(self) -> str:
+        """Return a string representation."""
+        return f"""{self.__class__.__name__}:
+        {self.estimator_name_!r}
+
+        {
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .droplevel(level=0, axis="columns")
+        }
+        Call `report.to_markdown()` for a markdown summary of the report's contents."""
+
+    def to_markdown(self) -> str:
+        """Return a markdown summary of the report.
+
+        The summary contains four sections (Results, Checks, Estimator, Data) that
+        mirror the tabs of the HTML representation. Each section ends with a pointer
+        to the corresponding accessor for full details.
+
+        Returns
+        -------
+        str
+            The markdown summary of the report.
+        """
+        metrics_text = repr(
+            self.metrics.summarize(data_source="test")
+            .frame()
+            .droplevel(level=0, axis="columns")
+        )
+        timings = self.metrics.timings()
+        summary = summarize_dataframe(
+            self.data._prepare_dataframe_for_display(
+                with_y=True,
+                subsample=None,
+                subsample_strategy="head",
+                seed=None,
+            ),
+            with_plots=False,
+            with_associations=False,
+            verbose=0,
+        )
+        return render_template(
+            "report/cross_validation_report_markdown.j2",
+            {
+                **report_markdown_context(self),
+                "fit_time": (
+                    f"{timings.loc['Fit time (s)', 'mean']:.3f} s"
+                    f" (± {timings.loc['Fit time (s)', 'std']:.3f})"
+                ),
+                "predict_time": (
+                    f"{timings.loc['Predict time test (s)', 'mean']:.3f} s"
+                    f" (± {timings.loc['Predict time test (s)', 'std']:.3f})"
+                ),
+                "n_folds": len(self.reports_),
+                "splitter_repr": (repr(self.splitter)),
+                "metrics_text": metrics_text,
+                **markdown_data_section(summary, data_label="full"),
+            },
+        )
+
+    def _html_repr_fragments(self) -> dict[str, str]:
+        """HTML snippets for the report body (metrics, estimator diagram, data table).
+
+        Used by :meth:`_repr_html_` and by :class:`~skore.ComparisonReport` to embed
+        one report's views in the comparison HTML repr.
+        """
+        metrics_html = (
+            self.metrics.summarize(data_source="test")
+            .frame(aggregate=("mean", "std"), favorability=False)
+            .droplevel(level=0, axis="columns")
+            .reset_index()
+            .to_html(index=False)
+        )
+
+        df = self.data._prepare_dataframe_for_display(
+            with_y=self.ml_task != "clustering"
+        )
+        table_report = skrub.TableReport(
+            df,
+            plot_distributions=False,
+            verbose=False,
+        )
+        table_report._set_minimal_mode()
+        table_report_html = table_report.html_snippet()
+
+        try:
+            estimator_html = repair_estimator_html_for_slotted_host(
+                self.estimator_._repr_html_()
+            )
+        except Exception:
+            estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
+
+        checks_summary_html = self._checks_summary_html_fragment()
+
+        return {
+            "metrics_summary": metrics_html,
+            "estimator_display": estimator_html,
+            "table_report": table_report_html,
+            "checks_summary": checks_summary_html,
+        }
+
+    def _repr_html_(self) -> str:
+        """HTML representation of the cross-validation report."""
+        fragments = self._html_repr_fragments()
+        container_id = f"skore-cross-validation-report-{uuid.uuid4().hex[:8]}"
+        report_class_name = self.__class__.__name__
+        metrics_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="metrics"
+        )
+        inspection_accessor_doc_url = get_documentation_url(
+            obj=self, accessor_name="inspection"
+        )
+        data_accessor_doc_url = get_documentation_url(obj=self, accessor_name="data")
+        checks_documentation_url = get_documentation_url(
+            obj=self, accessor_name="checks"
+        )
+        help_ctx = asdict(self._build_help_data())
+        help_ctx["is_report"] = True
+        return render_template(
+            "report/cross_validation_report.html.j2",
+            {
+                "container_id": container_id,
+                "report_class_name": report_class_name,
+                "report_title": f"Report for {self.estimator_name_}",
+                "metrics_accessor_doc_url": metrics_accessor_doc_url,
+                "inspection_accessor_doc_url": inspection_accessor_doc_url,
+                "data_accessor_doc_url": data_accessor_doc_url,
+                "checks_documentation_url": checks_documentation_url,
+                **fragments,
+                **help_ctx,
+            },
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        """Mime bundle used by Jupyter kernels to display the report."""
+        output = {"text/plain": repr(self)}
+        output["text/html"] = self._repr_html_()
+        return output

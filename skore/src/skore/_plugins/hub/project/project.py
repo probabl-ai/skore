@@ -1,0 +1,444 @@
+"""Class definition of the ``skore`` hub project."""
+
+from __future__ import annotations
+
+import itertools
+import re
+import warnings
+from collections.abc import Callable
+from functools import wraps
+from operator import itemgetter
+from re import sub as substitute
+from tempfile import TemporaryFile
+from typing import TYPE_CHECKING, Any, ParamSpec, TypedDict, TypeVar
+from unicodedata import normalize
+
+from httpx import HTTPStatusError, codes
+from joblib import load as joblib_load
+from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+
+from skore import THREADABLE, CrossValidationReport, EstimatorReport, console
+from skore._plugins import switch_plt_backend
+from skore._plugins.hub.client.client import Client, HUBClient
+from skore._plugins.hub.exception import ForbiddenException, NotFoundException
+from skore._plugins.hub.json import dumps
+
+if TYPE_CHECKING:
+    P = ParamSpec("P")
+    R = TypeVar("R")
+
+    class Metadata(TypedDict):  # noqa: D101
+        id: str
+        key: str
+        date: str
+        learner: str
+        ml_task: str
+        report_type: str
+        dataset: str
+        rmse: float | None
+        log_loss: float | None
+        roc_auc: float | None
+        fit_time: float | None
+        predict_time: float | None
+        rmse_mean: float | None
+        log_loss_mean: float | None
+        roc_auc_mean: float | None
+        fit_time_mean: float | None
+        predict_time_mean: float | None
+        rmse_std: float | None
+        log_loss_std: float | None
+        roc_auc_std: float | None
+        fit_time_std: float | None
+        predict_time_std: float | None
+
+
+def slugify(string: str) -> str:
+    """
+    Slugify string.
+
+    The string must be lower-case and contain only ASCII letters, digits, and characters
+    ``.``, ``-``, and ``_``.
+
+    In order:
+    - convert to ASCII and ignore characters in error,
+    - replace characters that aren't alphanumerics, dots, dashes or underscores by dash,
+    - convert repeated dots to single dots,
+    - convert repeated dashes to single dash,
+    - convert repeated underscores to single underscore,
+    - strip leading and trailing dots, dashes, and underscores.
+    """
+    string = normalize("NFKD", string).encode("ascii", "ignore").decode("ascii")
+
+    string = string.lower()
+    string = substitute(r"[^\w.-]", "-", string)
+    string = substitute(r"[.]+", ".", string)
+    string = substitute(r"[-]+", "-", string)
+    string = substitute(r"[_]+", "_", string)
+
+    return string.strip(".-_")
+
+
+def ensure_workspace_is_valid(method: Callable[P, R]) -> Callable[P, R]:
+    """Ensure workspace is valid before executing any other operation."""
+
+    @wraps(method)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        workspace = kwargs["workspace"]
+
+        if not isinstance(workspace, str):
+            raise ValueError("`workspace` must be a str.")
+
+        # Check the reliability of the workspace prematurely and thus ensure the user is
+        # using the registered workspace name provided by the hub.
+        #
+        # Using this approach, we trust the hub for its slugification of the workspace.
+        #
+        # We don't have to manually espace/slugify the workspace and remove all
+        # characters with specific meaning in the context of URLs (&?#/) that could
+        # break URLs when used as path segment.
+
+        with HUBClient() as hub_client:
+            try:
+                hub_client.get(f"/projects/{workspace}")
+            except HTTPStatusError as e:
+                if e.response.status_code == codes.NOT_FOUND:
+                    raise NotFoundException(
+                        f"Workspace {workspace} not found."
+                    ) from None
+
+                if e.response.status_code == codes.FORBIDDEN:
+                    raise ForbiddenException(
+                        f"You are not member of the workspace {workspace}."
+                    ) from None
+
+                raise
+
+        return method(*args, **kwargs)
+
+    return wrapper
+
+
+def ensure_name_is_valid(method: Callable[P, R]) -> Callable[P, R]:
+    """Ensure name is valid before executing any other operation."""
+
+    @wraps(method)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        name = kwargs.pop("name")
+
+        if not isinstance(name, str):
+            raise ValueError("`name` must be a str.")
+
+        kwargs["name"] = slug = slugify(name)
+
+        if slug != name:
+            warnings.warn(
+                (
+                    f"Your project will be created as '{slug}'. "
+                    "The project name must be lower-case and contain only ASCII letters"
+                    ", digits, and characters '.', '-', and '_'."
+                ),
+                stacklevel=2,
+            )
+
+        if slug == "":
+            raise ValueError(
+                "Project name must not be empty. "
+                "This may happen if the given name contains only non-ASCII characters."
+            )
+
+        if len(slug) > 64:
+            raise ValueError("Project name must be no more than 64 characters long.")
+
+        return method(*args, **kwargs)
+
+    return wrapper
+
+
+class Project:
+    """
+    API to manage a collection of key-report pairs persisted in a hub storage.
+
+    It communicates with the Probabl's ``skore hub`` storage, based on the pickle
+    representation. Its constructor initializes a hub project by creating a new
+    project or by loading an existing one from a defined workspace.
+
+    The class main methods are :func:`~skore._plugins.hub.Project.put`,
+    :func:`~skore._plugins.hub.reports.metadata` and
+    :func:`~skore._plugins.hub.reports.get`, respectively to insert a key-report pair
+    into the Project, to obtain the reports metadata and to get a specific report.
+
+    Parameters
+    ----------
+    name : str
+        The name of the project.
+    workspace : str
+        The workspace of the project.
+
+        A workspace is a ``skore hub`` concept that must be configured on the
+        ``skore hub`` interface. It represents an isolated entity managing users,
+        projects, and resources. It can be a company, organization, or team that
+        operates independently within the system.
+
+    Attributes
+    ----------
+    workspace : str
+        The workspace of the project.
+    name : str
+        The name of the project.
+    """
+
+    __REPORT_URN_PATTERN = re.compile(
+        r"skore:report:(?P<type>(estimator|cross-validation)):(?P<id>.+)"
+    )
+
+    @ensure_workspace_is_valid
+    @ensure_name_is_valid
+    def __init__(self, *, name: str, workspace: str):
+        """
+        Initialize a hub project.
+
+        Initialize a hub project by creating a new project or by loading an existing
+        one from a defined workspace.
+
+        Parameters
+        ----------
+        workspace : Path
+            The workspace of the project.
+
+            A workspace is a ``skore hub`` concept that must be configured on the
+            ``skore hub`` interface. It represents an isolated entity managing users,
+            projects, and resources. It can be a company, organization, or team that
+            operates independently within the system.
+        name : str
+            The name of the project.
+        """
+        with HUBClient() as hub_client:
+            response = hub_client.post(f"projects/{workspace}/{name}")
+
+        self.__workspace = workspace
+        self.__name = name
+        self.__frontend_url = response.json()["url"]
+
+    @property
+    def workspace(self) -> str:
+        """The workspace of the project."""
+        return self.__workspace
+
+    @property
+    def name(self) -> str:
+        """The name of the project."""
+        return self.__name
+
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> None:
+        """
+        Put a key-report pair to the hub project.
+
+        If the key already exists, its last report is modified to point to this new
+        report, while keeping track of the report history.
+
+        Parameters
+        ----------
+        key : str
+            The key to associate with ``report`` in the hub project.
+        report : skore.EstimatorReport | skore.CrossValidationReport
+            The report to associate with ``key`` in the hub project.
+
+        Raises
+        ------
+        TypeError
+            If the combination of parameters are not valid.
+        """
+        import skore
+        from skore._plugins.hub.report import (
+            CrossValidationReportPayload,
+            EstimatorReportPayload,
+        )
+
+        if not isinstance(key, str):
+            raise TypeError(f"Key must be a string (found '{type(key)}').")
+
+        if not isinstance(report, EstimatorReport | CrossValidationReport):
+            raise TypeError(
+                f"Report must be a `skore.EstimatorReport` or "
+                f"`skore.CrossValidationReport` (found '{type(report)}')."
+            )
+
+        payload: EstimatorReportPayload | CrossValidationReportPayload
+
+        if isinstance(report, EstimatorReport):
+            payload = EstimatorReportPayload(project=self, key=key, report=report)
+            endpoint = "estimator-reports"
+            frontend_slug = "estimators"
+        else:  # CrossValidationReport
+            payload = CrossValidationReportPayload(project=self, key=key, report=report)
+            endpoint = "cross-validation-reports"
+            frontend_slug = "cross-validations"
+
+        with (
+            skore.configuration(show_progress=False),
+            switch_plt_backend(),
+            Progress(
+                SpinnerColumn(),
+                TextColumn("{task.description}"),
+                TimeElapsedColumn(),
+                console=console,
+                auto_refresh=THREADABLE,
+            ) as progress,
+        ):
+            task = progress.add_task(
+                description=f"[cyan]Putting [bold bright_white on cyan]{key}",
+                total=1,
+            )
+
+            payload_dict = payload.model_dump()
+            # NOTE: `model_dump()` does more than serializing the payload to a
+            # JSON-like dict. It also evaluates computed fields with side effects:
+            # - `metrics`: computes the metrics
+            # - `medias`: computes and uploads displays/artifacts to artifact storage
+            # - `pickle`: pickles and uploads the report to artifact storage
+            # `payload_dict` does not contain artifact bytes; it contains artifact
+            # metadata including the bytes' checksum, which is used as identifier.
+            payload_json_bytes = dumps(payload_dict)
+
+            with HUBClient() as hub_client:
+                response = hub_client.post(
+                    url=f"projects/{self.workspace}/{self.name}/{endpoint}",
+                    content=payload_json_bytes,
+                    headers={
+                        "Content-Length": str(len(payload_json_bytes)),
+                        "Content-Type": "application/json",
+                    },
+                )
+
+            progress.advance(task)
+            progress.refresh()
+
+        report_url = f"{self.__frontend_url}/{frontend_slug}/{response.json()['id']}"
+        console.print(f"Consult your report at [link={report_url}]{report_url}[/link]")
+
+    def get(self, id: str) -> EstimatorReport | CrossValidationReport:
+        """Get a persisted report by its ID (hub URN)."""
+        if m := re.match(Project.__REPORT_URN_PATTERN, id):
+            workspace = self.workspace
+            name = self.name
+            type = m["type"]
+            report_id = m["id"]
+            url = f"projects/{workspace}/{name}/{type}-reports/{report_id}"
+        else:
+            raise ValueError(
+                f"Report ID '{id}' format does not match "
+                f"'{Project.__REPORT_URN_PATTERN}'."
+            )
+
+        # Retrieve presigned URL
+        with HUBClient() as hub_client:
+            response = hub_client.get(url=url)
+            metadata = response.json()
+            presigned_url = metadata["pickle"]["presigned_url"]
+
+        report: EstimatorReport | CrossValidationReport
+
+        # Download pickled report before unpickling it.
+        #
+        # It uses streaming responses that do not load the entire response body into
+        # memory at once.
+        with (
+            TemporaryFile(mode="w+b") as tmpfile,
+            Client() as client,
+            client.stream(method="GET", url=presigned_url, timeout=30) as response,
+        ):
+            for data in response.iter_bytes():
+                tmpfile.write(data)
+
+            tmpfile.seek(0)
+
+            report = joblib_load(tmpfile)
+
+        return report
+
+    def summarize(self) -> list[Metadata]:
+        """Obtain metadata/metrics for all persisted reports in insertion order."""
+
+        def dto(response: Any) -> Metadata:
+            report_type, summary = response
+            metrics = {
+                metric["name"]: metric["value"]
+                for metric in summary["metrics"]
+                if metric["data_source"] in (None, "test")
+            }
+
+            return {
+                "id": summary["urn"],
+                "key": summary["key"],
+                "date": summary["created_at"],
+                "learner": summary["estimator_class_name"],
+                "ml_task": summary["ml_task"],
+                "report_type": report_type,
+                "dataset": summary["dataset_fingerprint"],
+                "rmse": metrics.get("rmse"),
+                "log_loss": metrics.get("log_loss"),
+                "roc_auc": metrics.get("roc_auc"),
+                "fit_time": metrics.get("fit_time"),
+                "predict_time": metrics.get("predict_time"),
+                "rmse_mean": metrics.get("rmse_mean"),
+                "log_loss_mean": metrics.get("log_loss_mean"),
+                "roc_auc_mean": metrics.get("roc_auc_mean"),
+                "fit_time_mean": metrics.get("fit_time_mean"),
+                "predict_time_mean": metrics.get("predict_time_mean"),
+                "rmse_std": metrics.get("rmse_std"),
+                "log_loss_std": metrics.get("log_loss_std"),
+                "roc_auc_std": metrics.get("roc_auc_std"),
+                "fit_time_std": metrics.get("fit_time_std"),
+                "predict_time_std": metrics.get("predict_time_std"),
+            }
+
+        with HUBClient() as hub_client:
+            responses = itertools.chain(
+                zip(
+                    itertools.repeat("estimator"),
+                    hub_client.get(
+                        f"projects/{self.workspace}/{self.name}/estimator-reports/"
+                    ).json(),
+                ),
+                zip(
+                    itertools.repeat("cross-validation"),
+                    hub_client.get(
+                        f"projects/{self.workspace}/{self.name}/cross-validation-reports/"
+                    ).json(),
+                ),
+            )
+
+        return sorted(map(dto, responses), key=itemgetter("date"))
+
+    def __repr__(self) -> str:  # noqa: D105
+        return f"Project(name='{self.name}', mode='hub', workspace='{self.workspace}')"
+
+    @staticmethod
+    @ensure_workspace_is_valid
+    @ensure_name_is_valid
+    def delete(*, name: str, workspace: str) -> None:
+        """
+        Delete a hub project.
+
+        Parameters
+        ----------
+        name : str
+            The name of the project.
+        workspace : Path
+            The workspace of the project.
+
+            A workspace is a ``skore hub`` concept that must be configured on the
+            ``skore hub`` interface. It represents an isolated entity managing users,
+            projects, and resources. It can be a company, organization, or team that
+            operates independently within the system.
+        """
+        with HUBClient() as hub_client:
+            try:
+                hub_client.delete(f"projects/{workspace}/{name}")
+            except HTTPStatusError as e:
+                if e.response.status_code == codes.FORBIDDEN:
+                    raise ForbiddenException(
+                        f"Failed to delete the project '{name}'; "
+                        f"please contact the '{workspace}' owner"
+                    ) from e
+                raise

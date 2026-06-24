@@ -39,7 +39,7 @@ defaults:
     shell: bash
 
 env:
-  PACKAGES: '["skore","skore-hub-project","skore-local-project"]'
+  PACKAGES: '["skore"]'
 
 jobs:
   pytest-changes:
@@ -51,25 +51,25 @@ jobs:
       pull-requests: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Create dynamically filtering file, based on `env.PACKAGES`
         id: setup
         run: |
-            echo "packages=${PACKAGES}" >> $GITHUB_OUTPUT
-            echo "${PACKAGES}" | jq -r '.[]' | while read package; do
-                >>${FILEPATH} echo "${package}:
-                - '.github/workflows/pytest.yml'
-                - 'ci/requirements/${package}/**'
-                - '${package}/**'"
-            done
+          set -eu
+          echo "packages=${PACKAGES}" >> $GITHUB_OUTPUT
+          echo "${PACKAGES}" | jq -r '.[]' | while read package; do
+              >>${FILEPATH} echo "${package}:
+              - '.github/workflows/pytest.yml'
+              - 'ci/requirements/${package}/**/test-requirements.txt'
+              - '${package}/**'"
+          done
         env:
-          PACKAGES: ${{ env.PACKAGES }}
           FILEPATH: ${{ runner.temp }}/filters.yaml
 
       - name: Define if at least one file has changed
         id: filter
-        uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
         with:
           filters: ${{ runner.temp }}/filters.yaml
 
@@ -85,7 +85,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 2
 
@@ -114,55 +114,90 @@ jobs:
             (echo "${changes}" | (! grep -qE "ci/requirements/${{ matrix.package }}/.*/test-requirements.txt"))
           then
               curl -LsSf https://astral.sh/uv/0.6.16/install.sh | sh
-              bash ci/pip-compile.sh ${{ matrix.package }}
+              bash ci/pip-compile.sh --test-requirements
 
               if (git diff --name-only | grep -qE "ci/requirements/${{ matrix.package }}/.*/test-requirements.txt"); then
-                  echo '::error title=${{ matrix.package }}-lockfiles::Lockfiles obsolete, please execute `$ bash ci/pip-compile.sh ${{ matrix.package }}`'
+                  echo '::error title=${{ matrix.package }}-test-lockfiles::Lockfiles obsolete, please execute `$ bash ci/pip-compile.sh --test-requirements`'
                   exit 1
              fi
           fi
 
-  pytest-test:
+  pytest-matrix:
     needs: [pytest-changes]
+    if: ${{ (github.event_name == 'push') || (needs.pytest-changes.outputs.modified-packages != '[]') }}
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set matrix for pytest-test
+        id: set-matrix
+        shell: python
+        run: |
+          import os
+          import json
+
+          import jsonschema
+
+          schema = {
+              "type": "array",
+              "items": {
+                  "type": "object",
+                  "properties": {
+                      "os": {"type": "string", "description": "Operating system to use."},
+                      "python": {"type": "string", "description": "Python version to use."},
+                      "dependencies": {"type": "array", "items": {"type": "string"}, "description": "Dependencies to override."},
+                      "coverage": {"type": "boolean", "description": "Whether to enable coverage."}
+                  },
+                  "required": ["os", "python", "dependencies", "coverage"],
+                  "additionalProperties": False,
+              }
+          }
+
+          packages = json.loads(os.environ["PACKAGES"])
+          matrix = []
+
+          for package in packages:
+              with open(f"{package}/supported-versions.json") as file:
+                  combinations = json.load(file)
+                  jsonschema.validate(instance=combinations, schema=schema)
+
+                  for combination in combinations:
+                      # Escape dependencies to be used in filename, both in Linux and Windows
+                      # - make a str based on the JSON array
+                      # - replace `==` by `-`
+                      # - remove all `.*`
+                      escaped = "_and_".join(combination["dependencies"])
+                      escaped = escaped.replace("==", "-")
+                      escaped = escaped.replace(".*", "")
+
+                      combination["dependencies"] = escaped
+
+                      matrix.append({"package": package} | combination)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as file:
+              file.write(f"matrix={json.dumps(matrix)}\n")
+        env:
+          PACKAGES: ${{ (github.event_name == 'push') && needs.pytest-changes.outputs.packages || needs.pytest-changes.outputs.modified-packages }}
+
+  pytest-test:
+    needs: [pytest-changes, pytest-matrix]
     if: ${{ (github.event_name == 'push') || (needs.pytest-changes.outputs.modified-packages != '[]') }}
     strategy:
       fail-fast: false
       matrix:
-        package: ${{ (github.event_name == 'push') && fromJSON(needs.pytest-changes.outputs.packages) || fromJSON(needs.pytest-changes.outputs.modified-packages) }}
-        os: ["ubuntu-latest", "windows-latest"]
-        python: ["3.9", "3.10", "3.11", "3.12"]
-        scikit-learn: ["1.4", "1.5", "1.6"]
-        exclude:
-          - python: "3.9"
-            scikit-learn: "1.4"
-          - python: "3.10"
-            scikit-learn: "1.4"
-          - python: "3.11"
-            scikit-learn: "1.4"
-          - os: "windows-latest"
-            scikit-learn: "1.4"
-          - python: "3.9"
-            scikit-learn: "1.5"
-          - python: "3.10"
-            scikit-learn: "1.5"
-          - python: "3.11"
-            scikit-learn: "1.5"
-          - os: "windows-latest"
-            scikit-learn: "1.5"
-        include:
-          - os: "ubuntu-latest"
-            python: "3.12"
-            scikit-learn: "1.6"
-            coverage: true
+        include: ${{ fromJSON(needs.pytest-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Setup Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         id: setup-python
         with:
           python-version: ${{ matrix.python }}
@@ -170,7 +205,7 @@ jobs:
           cache: pip
 
       - name: Restore python-venv
-        uses: actions/cache/restore@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache-python-venv
         with:
           path: ${{ matrix.package }}/venv
@@ -178,7 +213,7 @@ jobs:
             python-venv
             -${{ matrix.os }}
             -${{ steps.setup-python.outputs.python-version }}
-            -${{ hashFiles(format('ci/requirements/{0}/python-{1}/scikit-learn-{2}/test-requirements.txt', matrix.package, matrix.python, matrix.scikit-learn)) }}
+            -${{ hashFiles(format('ci/requirements/{0}/python-{1}/{2}/test-requirements.txt', matrix.package, matrix.python, matrix.dependencies)) }}
 
       - name: Setup python-venv
         working-directory: ${{ matrix.package }}/
@@ -198,14 +233,12 @@ jobs:
           fi
 
       - name: Install dependencies in python-venv
-        working-directory: ${{ format('ci/requirements/{0}/python-{1}/scikit-learn-{2}', matrix.package, matrix.python, matrix.scikit-learn) }}
+        working-directory: ${{ format('ci/requirements/{0}/python-{1}/{2}', matrix.package, matrix.python, matrix.dependencies) }}
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
-        run: |
-          python -m pip install --upgrade pip build
-          python -m pip install --requirement test-requirements.txt
+        run: python -m pip install --requirement test-requirements.txt
 
       - name: Save python-venv
-        uses: actions/cache/save@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         if: steps.cache-python-venv.outputs.cache-hit != 'true'
         with:
           path: ${{ matrix.package }}/venv
@@ -221,21 +254,24 @@ jobs:
 
       - name: Test without coverage
         if: ${{ ! matrix.coverage }}
-        timeout-minutes: 10
+        timeout-minutes: 20
         working-directory: ${{ matrix.package }}/
-        run: python -m pytest -n auto src/ tests/ --no-cov
+        run: python -m pytest src/ tests/ --no-cov
 
       - name: Test with coverage
         if: ${{ matrix.coverage }}
-        timeout-minutes: 10
+        timeout-minutes: 20
         working-directory: ${{ matrix.package }}/
         run: |
           mkdir coverage
-          python -m pytest -n auto src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
+          python -m pytest src/ tests/ --junitxml=coverage/pytest.xml --cov-config=pyproject.toml --cov-report=xml:coverage/pytest-coverage.xml --cov
+          sed -i -E "s/filename=\"venv\/lib\/python[^/]*\/site-packages\/${PACKAGE//-/_}/filename=\"${PACKAGE}\/src\/${PACKAGE//-/_}/g" coverage/pytest-coverage.xml
+        env:
+          PACKAGE: ${{ matrix.package }}
 
       - name: Upload coverage reports
-        if: ${{ matrix.coverage && (github.event_name == 'pull_request') }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: ${{ (github.repository == 'probabl-ai/skore') && matrix.coverage && (github.event_name == 'pull_request') }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ${{ matrix.package }}-coverage
           path: ${{ matrix.package }}/coverage/
@@ -244,6 +280,7 @@ jobs:
     needs:
       - pytest-changes
       - pytest-lockfiles
+      - pytest-matrix
       - pytest-test
     if: ${{ always() }}
     runs-on: ubuntu-latest

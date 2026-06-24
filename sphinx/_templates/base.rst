@@ -14,7 +14,7 @@
    :add-heading: Gallery examples
    :heading-level: -
 
-{%- elif objtype == "class" -%}
+{%- elif objtype in ("class", "exception") -%}
 
 .. currentmodule:: {{ module }}
 
@@ -26,6 +26,12 @@
 .. minigallery:: {{ module }}.{{ objname }} {% for meth in methods %}{{ module }}.{{ objname }}.{{ meth }} {% endfor %}
    :add-heading: Gallery examples
    :heading-level: -
+
+{%- elif objtype in ("data", "attribute") -%}
+
+.. currentmodule:: {{ module }}
+
+.. autodata:: {{ objname }}
 
 {%- else -%}
 

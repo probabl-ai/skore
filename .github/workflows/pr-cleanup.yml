@@ -12,7 +12,7 @@ defaults:
 
 jobs:
   pr-clean-artifacts:
-    if: always()
+    if: ${{ (github.repository == 'probabl-ai/skore') && always() }}
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -56,24 +56,41 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
 
   pr-clean-documentation-preview:
-    if: always()
+    if: ${{ (github.repository == 'probabl-ai/skore') && always() }}
     runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      id-token: write
     steps:
-      - name: Install `rclone`
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y rclone
-
-      - name: Copy configuration
-        shell: bash
-        run: echo "${CONFIGURATION}" > rclone.configuration
-        env:
-          CONFIGURATION: ${{ secrets.RCLONE_CONFIG_DOC_PREVIEW }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@d979d5b3a71173a29b74b5b88418bfda9437d885 # v6.1.1
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Clean documentation preview
-        run: rclone --config rclone.configuration purge "${PROVIDER}:${BUCKET}/${PULL_REQUEST_NUMBER}"
+        run: aws s3 rm "s3://${BUCKET}/${GITHUB_EVENT_NUMBER}/" --recursive
         env:
-          PROVIDER: scaleway
           BUCKET: ${{ vars.DOCUMENTATION_PREVIEW_BUCKET }}
-          PULL_REQUEST_NUMBER: ${{ github.event.number }}
+          GITHUB_EVENT_NUMBER: ${{ github.event.number }}
+
+  pr-clean-documentation-examples:
+    if: ${{ (github.repository == 'probabl-ai/skore') && always() }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        project:
+          - "example-getting-started"
+          - "example-skore-hub-project"
+    steps:
+      - name: Clean documentation examples
+        run: |
+          set -u
+          curl -X DELETE "${API}/projects/${WORKSPACE}/${PROJECT}-pull-${GITHUB_EVENT_NUMBER}" -H "X-API-Key: ${API_KEY}"
+        env:
+          GITHUB_EVENT_NUMBER: ${{ github.event.number }}
+          API: https://api.skore.probabl.ai
+          API_KEY: ${{ secrets.DOCUMENTATION_EXAMPLE_API_KEY }}
+          WORKSPACE: ${{ vars.DOCUMENTATION_EXAMPLE_WORKSPACE }}
+          PROJECT: ${{ matrix.project }}
