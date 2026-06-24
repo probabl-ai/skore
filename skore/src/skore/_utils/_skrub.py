@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from collections.abc import Iterator
 from typing import TypeGuard
 
 from sklearn.base import BaseEstimator
@@ -10,7 +11,7 @@ from skrub import DataOp, SkrubLearner
 from skrub._data_ops._data_ops import Apply
 from skrub._data_ops._evaluation import find_first_apply
 
-from skore._sklearn.types import EstimatorLike
+from skore._sklearn.types import ArrayLike, EstimatorLike
 
 
 def eval_X_y(data_op: DataOp, env: dict) -> dict:
@@ -48,20 +49,43 @@ def data_op_has_explicit_cv(data_op: DataOp) -> bool:
     return data_op.skb.find_X_y().get("cv") is not None
 
 
-def _collect_fitted_apply_steps(
-    data_op: DataOp,
-) -> list[tuple[str | None, BaseEstimator]]:
-    """Return fitted estimators from the supervised apply down to ``X``.
-
-    Skrub chains preprocessing and prediction as nested ``.skb.apply()`` nodes.
-    The supervised apply is the outermost node (closest to the learner root);
-    earlier applies are reached through each step's ``X`` input.
-    """
+def _supervised_apply_node(data_op: DataOp) -> DataOp:
     apply_node = find_first_apply(data_op)
     if apply_node is None:
-        return []
+        raise NotFittedError("No supervised apply step found in the skrub learner.")
+    return apply_node
 
-    chain: list[tuple[str | None, BaseEstimator]] = []
+
+def _supervised_fitted_estimator(learner: SkrubLearner) -> BaseEstimator:
+    impl = _supervised_apply_node(learner.data_op)._skrub_impl
+    if not isinstance(impl, Apply):
+        raise TypeError(
+            f"The supervised step does not represent an estimator application: "
+            f"{learner.data_op!r}"
+        )
+    if not hasattr(impl, "estimator_"):
+        raise NotFittedError(
+            "The skrub learner has not been fitted. Call fit() before inspecting "
+            "fitted sub-estimators."
+        )
+    return impl.estimator_
+
+
+def get_preprocess_apply_node(data_op: DataOp) -> DataOp | None:
+    """Return the preprocessing .skb.apply() node before the supervised step, if any."""
+    supervised_impl = _supervised_apply_node(data_op)._skrub_impl
+    if not isinstance(supervised_impl, Apply):
+        return None
+    x_input = supervised_impl.X
+    if isinstance(x_input, DataOp) and isinstance(x_input._skrub_impl, Apply):
+        return x_input
+    return None
+
+
+def collect_fitted_apply_estimators(data_op: DataOp) -> list[BaseEstimator]:
+    """Return fitted estimators along nested applies from preprocessing to predictor."""
+    apply_node = _supervised_apply_node(data_op)
+    chain: list[BaseEstimator] = []
     node: DataOp | None = apply_node
     while node is not None:
         impl = node._skrub_impl
@@ -72,50 +96,61 @@ def _collect_fitted_apply_steps(
                 "The skrub learner has not been fitted. Call fit() before inspecting "
                 "fitted sub-estimators."
             )
-        chain.append((impl.name, impl.estimator_))
+        chain.append(impl.estimator_)
         x_input = impl.X
         node = x_input if isinstance(x_input, DataOp) else None
-
     chain.reverse()
     return chain
 
 
-def _pipeline_step_name(name: str | None, estimator: BaseEstimator, index: int) -> str:
-    if name:
-        return name
-    base_name = type(estimator).__name__.lower()
-    if isinstance(estimator, Pipeline):
-        return base_name
-    return f"{base_name}_{index}"
+def iter_fitted_estimator_steps(
+    estimator: EstimatorLike,
+) -> Iterator[tuple[str, BaseEstimator]]:
+    """Yield ``(class_name, fitted_estimator)`` from a learner or plain estimator."""
+    if is_skrub_learner(estimator):
+        estimators = collect_fitted_apply_estimators(estimator.data_op)
+    else:
+        estimators = [estimator]
+
+    for fitted in estimators:
+        if isinstance(fitted, Pipeline):
+            for _, step in fitted.steps:
+                yield type(step).__name__, step
+        else:
+            yield type(fitted).__name__, fitted
 
 
-def resolve_fitted_sklearn_estimator(estimator: EstimatorLike) -> BaseEstimator:
-    """Return the fitted scikit-learn estimator behind a skrub learner.
+def resolve_fitted_predictor(estimator: EstimatorLike) -> BaseEstimator:
+    """Return the fitted predictor behind ``estimator``.
 
-    For plain scikit-learn estimators, returns ``estimator`` unchanged.
-    For :class:`~skrub.SkrubLearner`, walks the nested ``.skb.apply()`` chain
-    from the supervised step down to ``X`` and returns either the single fitted
-    estimator or a :class:`~sklearn.pipeline.Pipeline` when multiple applies are
-    chained (e.g. ``StandardScaler`` then ``Ridge``).
+    For :class:`~skrub.SkrubLearner`, returns the estimator fitted in the supervised
+    ``.skb.apply()`` step, or the last step when that object is a
+    :class:`~sklearn.pipeline.Pipeline` (e.g. :func:`~skrub.tabular_pipeline`).
     """
-    if not is_skrub_learner(estimator):
-        return estimator
+    if is_skrub_learner(estimator):
+        fitted = _supervised_fitted_estimator(estimator)
+        if isinstance(fitted, Pipeline):
+            return fitted.steps[-1][1]
+        return fitted
 
-    steps = _collect_fitted_apply_steps(estimator.data_op)
-    if not steps:
-        raise NotFittedError("No supervised apply step found in the skrub learner.")
-    if len(steps) == 1:
-        return steps[0][1]
+    if isinstance(estimator, Pipeline):
+        return estimator.steps[-1][1]
+    return estimator
 
-    used_names: set[str] = set()
-    pipeline_steps: list[tuple[str, BaseEstimator]] = []
-    for index, (name, step_estimator) in enumerate(steps):
-        step_name = _pipeline_step_name(name, step_estimator, index)
-        while step_name in used_names:
-            step_name = f"{step_name}_{index}"
-        used_names.add(step_name)
-        pipeline_steps.append((step_name, step_estimator))
-    return Pipeline(pipeline_steps)
+
+def transform_features(learner: SkrubLearner, data: dict) -> ArrayLike:
+    """Return features transformed by skrub preprocessing applies.
+
+    When the learner has no separate preprocessing ``.skb.apply()`` step, returns
+    ``data["_skrub_X"]`` unchanged.
+    """
+    preprocess_node = get_preprocess_apply_node(learner.data_op)
+    if preprocess_node is None:
+        return data["_skrub_X"]
+
+    target = preprocess_node
+    truncated = learner.truncated_after(lambda node, t=target: node is t)
+    return truncated.transform(data)
 
 
 class _LearnerAdapter(BaseEstimator):

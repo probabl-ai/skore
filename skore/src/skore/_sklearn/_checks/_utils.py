@@ -17,7 +17,13 @@ from skore._utils._dataframe import (
     _normalize_X_as_dataframe,
     _normalize_y_as_dataframe,
 )
-from skore._utils._skrub import resolve_fitted_sklearn_estimator
+from skore._utils._skrub import (
+    _supervised_fitted_estimator,
+    get_preprocess_apply_node,
+    is_skrub_learner,
+    resolve_fitted_predictor,
+    transform_features,
+)
 
 if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
@@ -163,16 +169,46 @@ def split_preprocessor_estimator(estimator):
     """Return ``(preprocessor, predictor)`` from a possibly wrapped estimator.
 
     Splits sklearn :class:`~sklearn.pipeline.Pipeline` into its preprocessing
-    steps and final predictor. Unwraps :class:`~skrub.SkrubLearner` to the
-    fitted estimator from its supervised apply step first.
+    steps and final predictor. For :class:`~skrub.SkrubLearner`, returns the
+    inner :class:`~sklearn.pipeline.Pipeline` preprocessor when the supervised
+    apply wraps one (e.g. :func:`~skrub.tabular_pipeline`); otherwise the
+    skrub graph handles preprocessing separately via :func:`transform_features`.
     """
-    estimator = resolve_fitted_sklearn_estimator(estimator)
+    if is_skrub_learner(estimator):
+        fitted = _supervised_fitted_estimator(estimator)
+        if isinstance(fitted, Pipeline):
+            if len(fitted.steps) > 1:
+                return fitted[:-1], fitted[-1]
+            return None, fitted.steps[0][1]
+        return None, resolve_fitted_predictor(estimator)
+
     if isinstance(estimator, Pipeline):
         if len(estimator.steps) > 1:
             return estimator[:-1], estimator[-1]
-        else:
-            return None, estimator[0]
+        return None, estimator.steps[0][1]
     return None, estimator
+
+
+def _skrub_data_dict(
+    report: EstimatorReport,
+    *,
+    data_source: Literal["train", "test", "both"],
+) -> dict | None:
+    if data_source == "both":
+        if report.X_train is None:
+            return None
+        y = get_report_y(report, data_source="both")
+        if y is None:
+            return None
+        return {
+            "_skrub_X": _concat_vertical(report.X_train, report.X_test),
+            "_skrub_y": y,
+        }
+    if data_source == "train":
+        if report.X_train is None:
+            return None
+        return {"_skrub_X": report.X_train, "_skrub_y": report.y_train}
+    return {"_skrub_X": report.X_test, "_skrub_y": report.y_test}
 
 
 def get_report_y(
@@ -229,9 +265,23 @@ def get_preprocessed_X(
     if data is None:
         return None
 
-    preprocessor, _ = split_preprocessor_estimator(report.estimator_)
-    if preprocessor is not None and len(preprocessor.steps) > 0:
-        data = preprocessor.transform(data)
+    if report._initialized_with_data_op:
+        skrub_data = _skrub_data_dict(report, data_source=data_source)
+        if skrub_data is None:
+            return None
+        learner = report.estimator_
+        if get_preprocess_apply_node(learner.data_op) is not None:
+            data = transform_features(learner, skrub_data)
+        else:
+            fitted = _supervised_fitted_estimator(learner)
+            if isinstance(fitted, Pipeline) and len(fitted.steps) > 1:
+                data = fitted[:-1].transform(skrub_data["_skrub_X"])
+            else:
+                data = skrub_data["_skrub_X"]
+    else:
+        preprocessor, _ = split_preprocessor_estimator(report.estimator_)
+        if preprocessor is not None and len(preprocessor.steps) > 0:
+            data = preprocessor.transform(data)
 
     try:
         return _normalize_X_as_dataframe(data)

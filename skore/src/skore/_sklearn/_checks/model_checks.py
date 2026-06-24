@@ -18,7 +18,6 @@ from sklearn.model_selection._search import BaseSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.utils._param_validation import Interval
 from sklearn.utils._pprint import _changed_params
-from sklearn.utils.validation import NotFittedError
 from skrub import tabular_pipeline
 
 from skore._sklearn._checks._utils import (
@@ -47,7 +46,7 @@ from skore._utils._dataframe import (
     UserTarget,
     _normalize_X_as_dataframe,
 )
-from skore._utils._skrub import resolve_fitted_sklearn_estimator
+from skore._utils._skrub import is_skrub_learner, iter_fitted_estimator_steps
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -965,14 +964,21 @@ class CheckEstimatorNotTuned(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        try:
-            estimator = resolve_fitted_sklearn_estimator(report.estimator_)
-        except (NotFittedError, TypeError) as exc:
-            raise CheckNotApplicable("Could not resolve the fitted estimator.") from exc
+        estimator = report.estimator_
         if isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable("Estimator is a BaseSearchCV instance.")
 
-        if isinstance(estimator, Pipeline):
+        if is_skrub_learner(estimator):
+            candidates = [
+                (class_name, step)
+                for class_name, step in iter_fitted_estimator_steps(estimator)
+                if class_name in HYPERPARAMETERS_TO_TUNE
+            ]
+            if not candidates:
+                raise CheckNotApplicable(
+                    "No parameter to recommend for any of the steps."
+                )
+        elif isinstance(estimator, Pipeline):
             candidates = [
                 (type(step).__name__, step)
                 for _, step in estimator.steps
