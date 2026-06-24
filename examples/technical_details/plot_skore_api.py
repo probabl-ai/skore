@@ -149,7 +149,7 @@ comparison_report = evaluate(
     y,
     splitter=0.2,
 )
-comparison_report.help()
+comparison_report
 
 # %%
 comparison_report.metrics.summarize().frame()
