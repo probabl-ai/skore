@@ -507,8 +507,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         fast_mode: bool = False,
     ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
         comparison_results: dict[CheckCode, dict] = {}
-        reports_by_code: defaultdict[CheckCode, list[str]] = defaultdict(list)
-        ref_by_code: dict[CheckCode, dict] = {}
+        explanation_by_code: defaultdict[CheckCode, dict[str, str]] = defaultdict(dict)
+        na_explanation_by_code: defaultdict[CheckCode, dict[str, str]] = defaultdict(
+            dict
+        )
         all_applicable_codes: set[CheckCode] = set()
         all_not_applicable_codes: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
@@ -520,7 +522,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             all_not_applicable_codes |= not_applicable_codes
 
             for code, result in report_results.items():
-                ref_by_code.setdefault(code, result)
                 comparison_results.setdefault(
                     code,
                     {
@@ -531,16 +532,16 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     },
                 )
                 if code in applicable_codes and result["explanation"] is not None:
-                    reports_by_code[code].append(report_name)
+                    explanation_by_code[code][report_name] = result["explanation"]
+                elif code in not_applicable_codes and result["explanation"] is not None:
+                    na_explanation_by_code[code][report_name] = result["explanation"]
 
         all_not_applicable_codes -= all_applicable_codes
 
-        for code, reports in reports_by_code.items():
-            comparison_results[code]["explanation"] = (
-                f"Detected in: {', '.join(f'[{r}]' for r in reports)}."
-            )
+        for code, per_estimator in explanation_by_code.items():
+            comparison_results[code]["explanation"] = dict(per_estimator)
         for code in all_not_applicable_codes:
-            comparison_results[code]["explanation"] = ref_by_code[code]["explanation"]
+            comparison_results[code]["explanation"] = dict(na_explanation_by_code[code])
         return comparison_results, all_applicable_codes, all_not_applicable_codes
 
     def _get_help_title(self) -> str:

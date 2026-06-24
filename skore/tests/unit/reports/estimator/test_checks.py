@@ -1162,7 +1162,7 @@ def test_html_repr_shows_cached_slow(regression_report):
     regression_report.checks.summarize()
     fragments = regression_report._html_repr_fragments()
     checks_html = fragments["checks_summary"]
-    assert "[TSTSLOW]" in checks_html
+    assert ">TSTSLOW</a>" in checks_html
     assert "Issues (1)" in checks_html
     assert "Fast mode is on" in checks_html
 
@@ -1175,11 +1175,11 @@ def test_html_repr_fragments_includes_checks_detail(monkeypatch, regression_repo
     assert "Issues (1)" in checks_html
     assert "report-checks-nested" in checks_html
     assert "Fast mode is on" in checks_html
-    assert "[SKD001]" in checks_html
+    assert ">SKD001</a>" in checks_html
     assert "Mock title." in checks_html
     assert "Mock overfitting detected." in checks_html
-    assert 'href="' in checks_html
     assert "user_guide/automated_checks.html#" in checks_html
+    assert "Read more about this" not in checks_html
 
 
 def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):

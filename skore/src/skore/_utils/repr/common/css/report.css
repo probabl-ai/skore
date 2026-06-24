@@ -340,6 +340,17 @@
     margin-top: 0.35em;
 }
 
+.report-checks-summary-sublist {
+    margin: 0;
+    padding-left: 1.2em;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+.report-checks-summary-sublist li + li {
+    margin-top: 0em;
+}
+
 .report-checks-summary-empty {
     margin: 0;
     font-size: 12px;
