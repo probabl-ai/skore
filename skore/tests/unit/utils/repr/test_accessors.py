@@ -103,3 +103,5 @@ def test_checks_accessor_repr(report):
         assert row.title in repr_str
         assert row.code in html
         assert row.title in html
+    assert "Fast mode is on" in html
+    assert "Mute a check by passing" in html

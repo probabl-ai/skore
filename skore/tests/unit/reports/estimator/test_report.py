@@ -148,7 +148,7 @@ def test_check_support_plot(
     ],
 )
 def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_keys):
-    """Check that calling cache_predictions fills the cache."""
+    """Check that calling _cache_predictions fills the cache."""
     estimator, X_test, y_test = request.getfixturevalue(fixture_name)
     if pass_train_data:
         report = EstimatorReport(
@@ -160,7 +160,7 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
     before = len(report._cache)
 
     # Default is "test"
-    report.cache_predictions(data_source="both")
+    report._cache_predictions(data_source="both")
     assert len(report._cache) == expected_n_keys
     if pass_train_data:
         assert len(report._cache) > before
@@ -169,13 +169,13 @@ def test_cache_predictions(request, fixture_name, pass_train_data, expected_n_ke
 
 
 def test_cache_predictions_idempotent(forest_binary_classification_with_test):
-    """Calling cache_predictions with its default arguments on an existing report does
+    """Calling _cache_predictions with its default arguments on an existing report does
     not change the report (the predictions are cached at init)."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     stored_cache = deepcopy(report._cache)
-    report.cache_predictions()
+    report._cache_predictions()
     assert report._cache.keys() == stored_cache.keys()
 
 
@@ -209,7 +209,7 @@ def test_pickle(forest_binary_classification_with_test):
     """
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    report.cache_predictions()
+    report._cache_predictions()
 
     with BytesIO() as stream:
         joblib.dump(report, stream)
@@ -516,7 +516,7 @@ def test_from_dict_bypasses_init_and_restores_state(
         pos_label=1,
     )
     expected_accuracy = report.metrics.accuracy()
-    report.cache_predictions()
+    report._cache_predictions()
     report.metrics.add("f1", name="F1")
     state = report.to_dict()
     assert state["metadata"]["report_type"] == report._report_type

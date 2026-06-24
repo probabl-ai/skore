@@ -156,7 +156,7 @@ class ChecksSummaryDisplay(DisplayMixin):
             case _:
                 raise ValueError(f"Invalid section: {section}")
 
-    def _repr_html_(self) -> str:
+    def _build_tabs(self) -> list[dict]:
         tabs = []
         for label, section, empty_message, help_text in _TAB_SPECS:
             df = self.frame(section=section)
@@ -180,13 +180,29 @@ class ChecksSummaryDisplay(DisplayMixin):
                     ],
                 }
             )
+        return tabs
+
+    def _html_context(self, *, show_header: bool, nested: bool) -> dict:
+        return {
+            "container_id": f"skore-checks-summary-{uuid4().hex[:8]}",
+            "header": self._header,
+            "tabs": self._build_tabs(),
+            "show_header": show_header,
+            "nested": nested,
+            "fast_mode": self._fast_mode,
+        }
+
+    def _embedded_repr_html(self) -> str:
+        """HTML for embedding in a report repr (content only, no shadow DOM)."""
+        return render_template(
+            "display/checks_summary_display-content.html.j2",
+            self._html_context(show_header=False, nested=True),
+        )
+
+    def _repr_html_(self) -> str:
         return render_template(
             "display/checks_summary_display.html.j2",
-            {
-                "container_id": f"skore-checks-summary-{uuid4().hex[:8]}",
-                "header": self._header,
-                "tabs": tabs,
-            },
+            self._html_context(show_header=True, nested=False),
         )
 
     def __repr__(self) -> str:
