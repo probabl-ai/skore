@@ -127,15 +127,14 @@ def resolve_fitted_predictor(estimator: EstimatorLike) -> BaseEstimator:
     ``.skb.apply()`` step, or the last step when that object is a
     :class:`~sklearn.pipeline.Pipeline` (e.g. :func:`~skrub.tabular_pipeline`).
     """
-    if is_skrub_learner(estimator):
-        fitted = _supervised_fitted_estimator(estimator)
-        if isinstance(fitted, Pipeline):
-            return fitted.steps[-1][1]
-        return fitted
-
-    if isinstance(estimator, Pipeline):
-        return estimator.steps[-1][1]
-    return estimator
+    fitted = (
+        _supervised_fitted_estimator(estimator)
+        if is_skrub_learner(estimator)
+        else estimator
+    )
+    if isinstance(fitted, Pipeline):
+        return fitted.steps[-1][1]
+    return fitted
 
 
 class _LearnerAdapter(BaseEstimator):
