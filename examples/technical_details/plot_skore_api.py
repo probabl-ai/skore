@@ -152,7 +152,7 @@ comparison_report = evaluate(
 comparison_report.help()
 
 # %%
-_ = comparison_report.metrics.summarize().plot()
+comparison_report.metrics.summarize().frame()
 
 # %%
 # To compare evaluations on different feature matrices, call
@@ -168,7 +168,7 @@ comparison_report = compare([report_logistic, report_forest])
 comparison_report.help()
 
 # %%
-_ = comparison_report.metrics.summarize().plot()
+comparison_report.metrics.summarize().frame()
 
 # %%
 # Summary

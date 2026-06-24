@@ -83,18 +83,12 @@ def test_multiple_estimators_cv(regression_data):
     assert isinstance(report, ComparisonReport)
 
 
-def test_list_X_raises(regression_data):
-    """Passing list X raises TypeError."""
+def test_list_or_dict_X_raises(regression_data):
+    """Passing list or dict X raises TypeError."""
     X, y = regression_data
-    with pytest.raises(TypeError, match="single array-like or None"):
-        evaluate(LinearRegression(), [X], y)
-
-
-def test_dict_X_raises(regression_data):
-    """Passing dict X raises TypeError."""
-    X, y = regression_data
-    with pytest.raises(TypeError, match="single array-like or None"):
-        evaluate(LinearRegression(), {"a": X}, y)
+    for invalid_x in ([X], {"a": X}):
+        with pytest.raises(TypeError, match="single array-like or None"):
+            evaluate(LinearRegression(), invalid_x, y)
 
 
 def test_multiple_estimators_dict(regression_data):
