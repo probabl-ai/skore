@@ -2,6 +2,7 @@ import contextlib
 import json
 import os
 import pickle
+import re
 import shutil
 import warnings
 from pathlib import Path
@@ -15,6 +16,10 @@ from ... import CrossValidationReport, EstimatorReport
 from ..._utils._cache_key import deep_key_sanitize
 
 
+def _check_name(name: Any) -> str:
+    return re.sub(r"[^-_.a-zA-Z0-9]", "_", str(name)) or "_"
+
+
 def init_workspace(workspace_dir: str | Path, project_name: str = "default") -> Path:
     workspace_dir = Path(workspace_dir)
     workspace_dir.mkdir(parents=True, exist_ok=True)
@@ -25,13 +30,13 @@ def init_workspace(workspace_dir: str | Path, project_name: str = "default") -> 
 
 
 def find_workspace() -> Path:
+    if env_workspace := os.environ.get("SKORE_WORKSPACE"):
+        return init_workspace(Path(env_workspace))
     start = Path(".").resolve()
     for candidate in [start, *start.parents[::-1]]:
         workspace = candidate / "skore_data"
         if workspace.is_dir() and (workspace / ".SKORE_WORKSPACE").exists():
             return workspace
-    if env_workspace := os.environ.get("SKORE_WORKSPACE"):
-        return init_workspace(Path(env_workspace))
     return init_workspace(Path.home() / "skore_data")
 
 
@@ -51,7 +56,7 @@ def _init_project_dir(workspace: Path, project_name: str) -> Path:
 
 
 def _dump_report(
-    report: EstimatorReport,
+    report: EstimatorReport | CrossValidationReport,
     *,
     workspace: Path | None = None,
     project_name: str = "default",
@@ -61,9 +66,9 @@ def _dump_report(
     project_dir = _init_project_dir(workspace, project_name)
     reports_dir = project_dir / "reports"
     date_str = str(report._metadata["creation-date"]).replace(":", "-")
-    name_str = "" if name is None else f"__{name}"
+    name_str = "" if name is None else f"__{_check_name(name)}"
     output_dir = (
-        reports_dir / f"{date_str}__{report._metadata['id']:x}__"
+        reports_dir / f"{date_str}__id_{report._metadata['id']:x}__"
         f"{report._metadata['report_type']}{name_str}"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -225,7 +230,8 @@ def _write_permutation_importances(report: EstimatorReport, output_dir: Path) ->
                 kwargs = dict(kwarg_items)
                 display_dir = (
                     importances_dir / "permutation_importance__"
-                    f"{data_source}__{kwargs['at_step']}__{kwargs['metric']}"
+                    f"{data_source}__{_check_name(kwargs['at_step'])}"
+                    f"__{_check_name(kwargs['metric'])}"
                 )
                 display_dir.mkdir(exist_ok=True)
                 display.importances.to_csv(display_dir / "importances.csv", index=False)
@@ -258,6 +264,7 @@ def load_report_metadata(report_dir: Path) -> dict[str, Any]:
     metadata: dict[str, Any] = json.loads(
         (report_dir / "metadata.json").read_text("UTF-8")
     )
+    metadata["local_path"] = str(report_dir)
     metadata["date"] = metadata["creation-date"]
     metadata["key"] = metadata["name"]
     if metadata["report_type"] == "cross-validation":
@@ -343,20 +350,20 @@ def _get_data_ref(value: Any, workspace: Path) -> dict[str, str]:
 
 class Project:
     def __init__(self, name: str, workspace: str | Path | None = None):
-        self.name = name
+        self.name = _check_name(name)
         self.workspace = (
             find_workspace() if workspace is None else init_workspace(workspace)
         )
         self.path = _init_project_dir(self.workspace, self.name)
 
-    def put(self, key: str, report: EstimatorReport) -> Path:
+    def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> Path:
         return _dump_report(
             report, workspace=self.workspace, project_name=self.name, name=key
         )
 
     def get(self, report_id: str) -> EstimatorReport | CrossValidationReport:
         report_path = next(
-            iter((self.path / "reports").glob(f"*{int(report_id):x}*")), None
+            iter((self.path / "reports").glob(f"*__id_{int(report_id):x}__*")), None
         )
         if report_path is None:
             raise KeyError(report_id)
@@ -365,7 +372,9 @@ class Project:
     def summarize(self) -> list[dict[str, Any]]:
         reports_path = self.path / "reports"
         result = []
-        for p in sorted(reports_path.iterdir()):
+        for p in sorted(reports_path.glob("*__id_*")):
+            if p.is_symlink():
+                continue
             try:
                 result.append(load_report_metadata(p))
             except Exception as e:
