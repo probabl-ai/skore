@@ -285,8 +285,13 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
             # warning. See: https://github.com/mwaskom/seaborn/issues/3891
             plot_data["split"] = plot_data["split"].astype(str)
 
+        is_average = (
+            "average" in plot_data.columns and plot_data["average"].notna().any()
+        )
+        sns_data = plot_data[plot_data["average"].isna()] if is_average else plot_data
+
         facet = sns.relplot(
-            data=plot_data,
+            data=sns_data,
             kind="line",
             estimator=None,
             x="fpr",
@@ -315,6 +320,23 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 else None
             )
             subplot_data = plot_data[plot_data[col] == col_value] if col else plot_data
+
+            if is_average:
+                avg_data = subplot_data[subplot_data["average"].notna()]
+                if not avg_data.empty:
+                    sns.lineplot(
+                        data=avg_data,
+                        x="fpr",
+                        y="tpr",
+                        hue=hue,
+                        style=style,
+                        hue_order=relplot_kwargs.get("hue_order"),
+                        style_order=relplot_kwargs.get("style_order"),
+                        ax=ax,
+                        legend=False,
+                        linewidth=2.0,
+                    )
+
             _build_custom_legend_with_stats(
                 ax=ax,
                 subplot_data=subplot_data,
@@ -322,7 +344,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
                 style=style,
                 hue_order=relplot_kwargs["hue_order"],
                 style_order=relplot_kwargs["style_order"],
-                is_cross_validation="cross-validation" in self.report_type,
+                is_cross_validation=(
+                    "cross-validation" in self.report_type and not is_average
+                ),
                 statistic_column_name="roc_auc",
                 statistic_acronym="AUC",
                 chance_level_label="Chance level (AUC = 0.5)",
@@ -344,6 +368,8 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
         )
 
         title = "ROC Curve"
+        if is_average:
+            title = "Threshold-Averaged " + title
         if "comparison" not in self.report_type:
             title += f" for {self.roc_curve['estimator'].cat.categories.item()}"
         figure.suptitle("\n".join(filter(None, [title, info_label, info_data_source])))
@@ -550,6 +576,9 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
 
         if self.data_source == "both":
             indexing_columns += ["data_source"]
+
+        if "average" in df.columns:
+            indexing_columns += ["average"]
 
         if label is not None:
             df = df.query("label == @label").reset_index(drop=True)

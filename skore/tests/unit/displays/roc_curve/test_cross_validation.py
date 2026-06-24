@@ -35,8 +35,8 @@ def test_cross_validation_roc_average(
     display = report.metrics.roc(average=average)
     assert display is not None
     if average == "threshold":
-        # when we do a threshold average, we merge splits so split=None
-        assert display.roc_curve["split"].isna().all()
+        assert "average" in display.roc_curve.columns
+        assert (display.roc_curve["average"] == "threshold").any()
     else:
         # otherwise we retain the splits
         assert not display.roc_curve["split"].isna().all()

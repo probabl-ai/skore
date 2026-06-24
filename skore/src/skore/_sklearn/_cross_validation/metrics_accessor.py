@@ -1109,6 +1109,12 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 column_data={"split": list(split_indices)},
             )
 
+            roc_curve_df = display.roc_curve.copy()
+            roc_auc_df = display.roc_auc.copy()
+
+            roc_curve_df["average"] = None
+            roc_auc_df["average"] = None
+
             roc_curve_records = []
             roc_auc_records = []
 
@@ -1142,6 +1148,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                             "threshold": average_threshold,
                             "fpr": average_fpr,
                             "tpr": average_tpr,
+                            "average": "threshold",
                         }
                     )
                 )
@@ -1153,19 +1160,23 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                         "split": None,
                         "label": label,
                         "roc_auc": average_roc_auc,
+                        "average": "threshold",
                     }
                 )
 
-            roc_curve_df = (
+            avg_curve_df = (
                 pd.concat(roc_curve_records, ignore_index=True)
                 if roc_curve_records
-                else pd.DataFrame(columns=display.roc_curve.columns)
+                else pd.DataFrame(columns=roc_curve_df.columns)
             )
-            roc_auc_df = (
+            roc_curve_df = pd.concat([roc_curve_df, avg_curve_df], ignore_index=True)
+
+            avg_auc_df = (
                 pd.DataFrame(roc_auc_records)
                 if roc_auc_records
-                else pd.DataFrame(columns=display.roc_auc.columns)
+                else pd.DataFrame(columns=roc_auc_df.columns)
             )
+            roc_auc_df = pd.concat([roc_auc_df, avg_auc_df], ignore_index=True)
 
             for col in display.roc_curve.columns:
                 if isinstance(display.roc_curve[col].dtype, pd.CategoricalDtype):
@@ -1177,13 +1188,16 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 if isinstance(display.roc_auc[col].dtype, pd.CategoricalDtype):
                     roc_auc_df[col] = roc_auc_df[col].astype(display.roc_auc[col].dtype)
 
+            roc_curve_df["average"] = roc_curve_df["average"].astype("category")
+            roc_auc_df["average"] = roc_auc_df["average"].astype("category")
+
             average_display = RocCurveDisplay(
                 roc_curve=roc_curve_df,
                 roc_auc=roc_auc_df,
                 report_pos_label=display.report_pos_label,
                 data_source=display.data_source,
                 ml_task=display.ml_task,
-                report_type="estimator",
+                report_type="cross-validation",
             )
             return average_display
         else:
