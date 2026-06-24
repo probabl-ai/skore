@@ -43,24 +43,25 @@ from skore._sklearn._checks.model_checks import (
 from skore._utils._testing import MockEstimator
 
 
+@pytest.fixture
+def regression_pandas_data(regression_data):
+    X, y = regression_data
+    return (
+        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
+        pd.Series(y),
+    )
+
+
 def _make_skrub_regression_report(X, y, estimator, *, splitter=0.2):
     """Build an EstimatorReport from a SkrubLearner backed by ``X`` and ``y``."""
-    if not isinstance(X, pd.DataFrame):
-        X = pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])])
-    if not isinstance(y, pd.Series):
-        y = pd.Series(y)
     learner = skrub.X().skb.apply(estimator, y=skrub.y()).skb.make_learner()
     return evaluate(learner, data={"X": X, "y": y}, splitter=splitter)
 
 
 @pytest.fixture(params=[LinearRegression(), tabular_pipeline(LinearRegression())])
-def regression_report(request, regression_data):
-    X, y = regression_data
-    return evaluate(
-        request.param,
-        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
-        pd.Series(y),
-    )
+def regression_report(request, regression_pandas_data):
+    X, y = regression_pandas_data
+    return evaluate(request.param, X, y)
 
 
 def mock_issue(report, ignored_codes, *, fast_mode=False):
@@ -202,9 +203,9 @@ def test_skd006_tabular_pipeline_with_numpy_X(regression_data):
     assert "SKD006" in tips.index
 
 
-def test_skd006_skrub_learner_with_tabular_pipeline(regression_data):
+def test_skd006_skrub_learner_with_tabular_pipeline(regression_pandas_data):
     """SKD006 runs when a tabular_pipeline is fitted inside a SkrubLearner."""
-    X, y = regression_data
+    X, y = regression_pandas_data
     report = _make_skrub_regression_report(
         X, y, tabular_pipeline(LinearRegression()), splitter=0.2
     )
@@ -271,9 +272,9 @@ def test_skd007_mdi_bias_with_high_cardinality(regression_data, estimator):
     )
 
 
-def test_skd007_skrub_learner_random_forest(regression_data):
+def test_skd007_skrub_learner_random_forest(regression_pandas_data):
     """SKD007 runs when a tabular_pipeline forest is fitted inside a SkrubLearner."""
-    X, y = regression_data
+    X, y = regression_pandas_data
     estimator = tabular_pipeline(RandomForestRegressor(n_estimators=5, random_state=0))
     report = _make_skrub_regression_report(X, y, estimator)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
@@ -812,9 +813,9 @@ def test_skd016_pipeline_walks_steps(regression_data):
     assert "Ridge" not in explanation
 
 
-def test_skd016_skrub_learner_default_rf(regression_data):
+def test_skd016_skrub_learner_default_rf(regression_pandas_data):
     """SKD016 inspects default hyperparameters inside a SkrubLearner pipeline."""
-    X, y = regression_data
+    X, y = regression_pandas_data
     report = _make_skrub_regression_report(
         X, y, tabular_pipeline(RandomForestRegressor(random_state=0))
     )
