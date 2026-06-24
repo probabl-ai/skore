@@ -387,5 +387,7 @@ class Project:
         workspace = Path(workspace)
         if not (workspace / ".SKORE_WORKSPACE").exists():
             raise ValueError(f"Not a skore workspace: {workspace}")
-        path = Project(name, workspace).path
+        path = workspace / "projects" / _check_name(name)
+        if not path.exists():
+            raise LookupError(name)
         shutil.rmtree(path)
