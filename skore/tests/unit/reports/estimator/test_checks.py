@@ -212,6 +212,22 @@ def test_skd006_skrub_learner_with_tabular_pipeline(regression_data):
     assert "SKD006" in tips.index
 
 
+def test_skd006_skrub_learner_chained_apply_steps():
+    """SKD006 sees preprocessing from earlier ``.skb.apply()`` steps."""
+    Xdf = pd.DataFrame({"a": [1.0, 2, 3, 4, 5], "b": [2.0, 3, 4, 5, 6]})
+    y = pd.Series([0.0, 1, 0, 1, 0])
+    learner = (
+        skrub.X()
+        .skb.apply(StandardScaler())
+        .skb.apply(Ridge(), y=skrub.y())
+        .skb.make_learner()
+    )
+    report = evaluate(learner, data={"X": Xdf, "y": y}, splitter=0.2)
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD006" in tips.index
+    assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
+
+
 @pytest.mark.parametrize(
     "pipeline, expected_message",
     [
