@@ -170,7 +170,9 @@ mypy==2.1.0
 mypy-extensions==1.1.0
     # via mypy
 narwhals==2.22.0
-    # via plotly
+    # via
+    #   skore (skore/pyproject.toml)
+    #   plotly
 nodeenv==1.10.0
     # via pre-commit
 numpy==2.4.6

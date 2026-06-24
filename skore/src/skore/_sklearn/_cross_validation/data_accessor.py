@@ -1,7 +1,7 @@
 import warnings
 from typing import Literal
 
-from skrub import _dataframe as sbd
+import narwhals as nw
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
@@ -75,15 +75,21 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             with_y = self._parent.ml_task != "clustering"
 
         X, y = self._retrieve_data_as_frame(with_y)
-        df = sbd.concat(X, y, axis=1) if with_y else X
+        if with_y:
+            df = nw.concat(
+                [nw.from_native(X), nw.from_native(y)],
+                how="horizontal",
+            )
+        else:
+            df = nw.from_native(X)
 
         if subsample:
             if subsample_strategy == "head":
-                df = sbd.head(df, subsample)
+                df = df.head(subsample)
             else:  # subsample_strategy == "random":
-                df = sbd.sample(df, subsample, seed=seed)
+                df = df.sample(subsample, seed=seed)
 
-        return df
+        return df.to_native()
 
     def summarize(
         self,

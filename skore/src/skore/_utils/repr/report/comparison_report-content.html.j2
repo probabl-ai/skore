@@ -1,6 +1,6 @@
 {% set report_tabs = [
     {"label": "Results", "help_variant": "accessor", "help_url": metrics_accessor_doc_url, "accessor_name": "metrics"},
-    {"label": "Checks Summary", "help_variant": "accessor", "help_url": checks_documentation_url, "accessor_name": "checks"},
+    {"label": "Checks", "help_variant": "accessor", "help_url": checks_documentation_url, "accessor_name": "checks"},
     {"label": "Estimator", "help_variant": "accessor", "help_url": inspection_accessor_doc_url, "accessor_name": "inspection"},
     {"label": "Data", "help_variant": "comparison_data"},
     {"label": "Help", "help_variant": "text", "help_text": "Browse accessors, methods, and attributes for this report (same as calling .help())."},
@@ -27,7 +27,15 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <slot name="checks-summary"></slot>
+                    <div class="skore-cmp-checks-summary-panels">
+                        {% for row in comparison_reports %}
+                        <div
+                            class="skore-cmp-checks-summary-panel"
+                            data-comparison-index="{{ loop.index0 }}"
+                            {% if loop.index0 != 0 %}hidden{% endif %}
+                        >{{ row.checks_summary | safe }}</div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
             <div class="report-tab-panel">

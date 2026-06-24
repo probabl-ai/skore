@@ -401,24 +401,6 @@ class TestCacheBehavior:
         # At least the metric value and the model predictions
         assert len(report._cache) >= 2
 
-    def test_callable_predictions_not_cached(self, binary_classification_report):
-        """
-        Test that model predictions are not cached when metric is a plain callable.
-        """
-        report = binary_classification_report
-
-        def my_scorer(estimator, X, y_true):
-            y_pred = estimator.predict(X)
-            return accuracy_score(y_true, y_pred)
-
-        report.metrics.add(my_scorer)
-
-        with check_cache_changed(report._cache):
-            report.metrics.summarize(metric="my_scorer")
-
-        # Just the metric value, not the model predictions
-        assert len(report._cache) == 1
-
     def test_duplicate_add_keeps_existing_cache(self, binary_classification_report):
         """Duplicate add fails and leaves existing metric cache untouched."""
         report = binary_classification_report
@@ -675,9 +657,12 @@ class TestMultiMetric:
         assert list(display.data["label"]) == [pd.NA, np.int64(0), np.int64(1)]
 
     def test_preexisting_metric_name(self, binary_classification_report):
-        """If a multimetric scorer is added and it contains a submetric that has the
-        same name as a metric in the registry, then the metric name will appear more
-        than once."""
+        """A multimetric scorer's submetric clashing with a built-in is renamed.
+
+        The submetric and the built-in have distinct fingerprints (the multimetric
+        scorer's parent fingerprint vs. ``None`` for the built-in), so the display
+        disambiguates them as ``Accuracy_1`` (custom) and ``Accuracy_2`` (built-in).
+        """
         report = binary_classification_report
 
         def multimetric_scorer(y_true, y_pred):
@@ -688,9 +673,16 @@ class TestMultiMetric:
 
         display = report.metrics.summarize()
 
-        results = display.data[display.data["metric_verbose_name"] == "Accuracy"]
-        # Our metric, then the default one
-        assert list(results["score"]) == [1000, 1.0]
+        verbose_names = list(display.data["metric_verbose_name"])
+        assert "Accuracy" not in verbose_names
+        assert "Accuracy_1" in verbose_names
+        assert "Accuracy_2" in verbose_names
+
+        # Our submetric is added first by default, so it gets the _1 suffix.
+        accuracy_1 = display.data[display.data["metric_verbose_name"] == "Accuracy_1"]
+        accuracy_2 = display.data[display.data["metric_verbose_name"] == "Accuracy_2"]
+        assert list(accuracy_1["score"]) == [1000]
+        assert list(accuracy_2["score"]) == [1.0]
 
 
 class TestStringScorerNames:

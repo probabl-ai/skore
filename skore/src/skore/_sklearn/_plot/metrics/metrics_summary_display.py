@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import pandas as pd
@@ -31,6 +32,9 @@ class MetricsSummaryRow(TypedDict):
         Dataset split used to compute the metric.
     greater_is_better : bool or None
         Whether higher or lower values are better.
+    fingerprint : str or None
+        Identifier disambiguating distinct custom metrics that share
+        ``metric_verbose_name``. ``None`` for built-in metrics.
     score : Any
         Scalar metric value stored in the row.
     label : label, default=None
@@ -48,6 +52,7 @@ class MetricsSummaryRow(TypedDict):
     estimator_name: str
     data_source: DataSource
     greater_is_better: bool | None
+    fingerprint: str | None
     score: Any
     label: PositiveLabel | None
     average: str | None
@@ -110,6 +115,65 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         if any(isinstance(r["output"], int) for r in self.rows):
             data["output"] = data["output"].astype(pd.Int64Dtype())
+
+        data = MetricsSummaryDisplay._resolve_fingerprints(data)
+        return data.drop(columns="fingerprint")
+
+    @staticmethod
+    def _resolve_fingerprints(data: pd.DataFrame) -> pd.DataFrame:
+        """Disambiguate ``metric_verbose_name`` across distinct fingerprints.
+
+        When several rows share a ``metric_verbose_name`` but come from metrics
+        with different fingerprints, they are renamed ``{name}_1``, ``{name}_2``,
+        ... in the order they first appear. ``None`` counts as a regular
+        fingerprint value, so a custom metric reusing a built-in's display name
+        will still get disambiguated against the built-in.
+
+        Suffixes skip over any name already present in the column, so we don't
+        produce a collision if a metric happens to already be called e.g.
+        ``"Metric_1"``.
+        """
+        data = data.copy()
+
+        # Fingerprint = str | np.nan
+        # fingerprints_per_name: dict[MetricName, list[Fingerprint]]
+        fingerprints_per_name = defaultdict(list)
+        for name, fingerprint in (
+            data[["metric_verbose_name", "fingerprint"]]
+            .drop_duplicates()
+            .itertuples(index=False, name=None)
+        ):
+            fingerprints_per_name[name].append(fingerprint)
+
+        # Decide the new name for each (name, fingerprint) pair
+        #
+        # Suffixes skip over names already in the column
+
+        # renaming: dict[(MetricName, Fingerprint), NewMetricName]
+        renaming = {}
+        metric_names = set(data["metric_verbose_name"])
+        for name, fingerprints in fingerprints_per_name.items():
+            if len(fingerprints) < 2:
+                continue
+            i = 0
+            for fingerprint in fingerprints:
+                while True:
+                    i += 1
+                    candidate = f"{name}_{i}"
+                    if candidate not in metric_names:
+                        break
+                metric_names.add(candidate)
+                renaming[(name, fingerprint)] = candidate
+
+        for (name, fingerprint), new_name in renaming.items():
+            fp_match = (
+                data["fingerprint"].isna()
+                if pd.isna(fingerprint)
+                else data["fingerprint"] == fingerprint
+            )
+            data.loc[
+                (data["metric_verbose_name"] == name) & fp_match, "metric_verbose_name"
+            ] = new_name
 
         return data
 

@@ -11,6 +11,7 @@ defaults:
 
 jobs:
   pr-commits-verification:
+    if: ${{ github.repository == 'probabl-ai/skore' }}
     runs-on: ubuntu-latest
     steps:
       - name: Acquire commits verification from GitHub

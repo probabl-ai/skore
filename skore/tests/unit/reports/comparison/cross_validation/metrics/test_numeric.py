@@ -21,10 +21,10 @@ expected_columns = pd.MultiIndex.from_tuples(
 
 
 @pytest.fixture
-def case_timings_no_predictions(
+def case_timings(
     comparison_cross_validation_reports_binary_classification,
 ):
-    expected_index = pd.Index(["Fit time (s)"], name="Metric")
+    expected_index = pd.Index(["Fit time (s)", "Predict time test (s)"], name="Metric")
     return (
         comparison_cross_validation_reports_binary_classification,
         "timings",
@@ -34,7 +34,7 @@ def case_timings_no_predictions(
 
 
 @pytest.fixture
-def case_timings_with_predictions(
+def case_timings_with_train_predictions(
     comparison_cross_validation_reports_binary_classification,
 ):
     expected_index = pd.Index(
@@ -43,7 +43,7 @@ def case_timings_with_predictions(
     )
 
     report = comparison_cross_validation_reports_binary_classification
-    report.cache_predictions()
+    report._cache_predictions()
     return (
         report,
         "timings",
@@ -190,8 +190,8 @@ def case(request):
 @pytest.mark.parametrize(
     "case",
     [
-        "case_timings_no_predictions",
-        "case_timings_with_predictions",
+        "case_timings",
+        "case_timings_with_train_predictions",
         "case_score",
         "case_accuracy",
         "case_precision",
@@ -215,8 +215,8 @@ def test_metrics(case):
 @pytest.mark.parametrize(
     "case",
     [
-        "case_timings_no_predictions",
-        "case_timings_with_predictions",
+        "case_timings",
+        "case_timings_with_train_predictions",
         "case_score",
         "case_accuracy",
         "case_precision",

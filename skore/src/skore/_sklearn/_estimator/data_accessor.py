@@ -1,13 +1,16 @@
 import warnings
 from typing import Literal
 
-from skrub import _dataframe as sbd
+import narwhals as nw
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import TableReportDisplay
-from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
+from skore._utils._dataframe import (
+    _normalize_X_as_dataframe,
+    _normalize_y_as_dataframe,
+)
 
 
 class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
@@ -156,8 +159,14 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         if data_source == "train":
             X, y = self._retrieve_data_as_frame("train", with_y_task_aware, data_source)
+            X = nw.from_native(X)
+            if with_y_task_aware:
+                y = nw.from_native(y)
         elif data_source == "test":
             X, y = self._retrieve_data_as_frame("test", with_y_task_aware, data_source)
+            X = nw.from_native(X)
+            if with_y_task_aware:
+                y = nw.from_native(y)
         else:
             X_train, y_train = self._retrieve_data_as_frame(
                 "train", with_y_task_aware, data_source
@@ -165,16 +174,33 @@ class _DataAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             X_test, y_test = self._retrieve_data_as_frame(
                 "test", with_y_task_aware, data_source
             )
-            X = sbd.concat(X_train, X_test, axis=0)
+            X = nw.concat(
+                [nw.from_native(X_train), nw.from_native(X_test)],
+                how="vertical",
+            )
             if with_y_task_aware:
-                y = sbd.concat(y_train, y_test, axis=0)
+                y = nw.concat(
+                    [nw.from_native(y_train), nw.from_native(y_test)],
+                    how="vertical",
+                )
 
-        df = sbd.concat(X, y, axis=1) if with_y_task_aware else X
+        if with_y_task_aware:
+            if data_source == "both":
+                row_index = "__row_index__"
+                df = (
+                    X.with_row_index(row_index)
+                    .join(y.with_row_index(row_index), on=row_index, how="inner")
+                    .drop(row_index)
+                )
+            else:
+                df = nw.concat([X, y], how="horizontal")
+        else:
+            df = X
 
         if subsample:
             if subsample_strategy == "head":
-                df = sbd.head(df, subsample)
+                df = df.head(subsample)
             else:  # subsample_strategy == "random":
-                df = sbd.sample(df, subsample, seed=seed)
+                df = df.sample(subsample, seed=seed)
 
-        return df
+        return df.to_native()

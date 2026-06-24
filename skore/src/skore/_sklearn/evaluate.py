@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from collections.abc import Generator
+from typing import Literal, cast
 
 from numpy.typing import ArrayLike
 
@@ -10,12 +11,14 @@ from skore import configuration
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.train_test_split.train_test_split import TrainTestSplit
-
-if TYPE_CHECKING:
-    from collections.abc import Generator
-
-    from skore._sklearn.types import EstimatorLike, SKLearnCrossValidator
+from skore._sklearn.train_test_split import TrainTestSplit
+from skore._sklearn.types import (
+    _DEFAULT,
+    EstimatorLike,
+    SKLearnCrossValidator,
+    _DefaultType,
+)
+from skore._utils._skrub import data_op_has_explicit_cv, get_data_op
 
 
 def evaluate(
@@ -24,7 +27,12 @@ def evaluate(
     y: ArrayLike | None = None,
     data: dict | None = None,
     *,
-    splitter: float | int | str | SKLearnCrossValidator | Generator = 0.2,
+    splitter: float
+    | int
+    | Literal["prefit"]
+    | SKLearnCrossValidator
+    | Generator
+    | _DefaultType = _DEFAULT,
     pos_label: int | float | bool | str | None = None,
     n_jobs: int | None = None,
 ) -> EstimatorReport | CrossValidationReport | ComparisonReport:
@@ -63,8 +71,12 @@ def evaluate(
         variables contained in the DataOp that was used to create this learner
         (e.g. ``{"X": X_df, "other_table": df, ...}``).
 
-    splitter : float, int, str, or cross-validation object, default=0.2
-        Determines how the data is split:
+    splitter : float, int, "prefit", or cross-validation object, default=0.2
+        Determines how the data is split. When omitted, a skrub learner whose
+        DataOp was configured with an explicit cross-validation splitter via
+        :meth:`~skrub.DataOp.skb.mark_as_X` uses that splitter (including
+        ``split_kwargs`` such as ``groups``). Otherwise, the default is a
+        single 80/20 train-test split:
 
         - ``float``: perform a single train-test split where the data is shuffled before
           splitting with a fixed seed (``random_state=0``) for reproducibility.
@@ -203,6 +215,20 @@ def evaluate(
 
     X = cast(ArrayLike | None, X)
 
+    if splitter is _DEFAULT:
+        data_op = get_data_op(estimator)
+        if data_op is not None and data_op_has_explicit_cv(data_op):
+            return CrossValidationReport(
+                estimator,
+                X,
+                y,
+                data=data,
+                pos_label=pos_label,
+                splitter=None,
+                n_jobs=n_jobs,
+            )
+        splitter = 0.2
+
     if isinstance(splitter, str):
         if splitter != "prefit":
             raise ValueError(
@@ -235,6 +261,8 @@ def evaluate(
                 n_jobs=n_jobs,
             )
         return report.reports_[0]
+
+    splitter = cast(int | SKLearnCrossValidator | Generator, splitter)
 
     return CrossValidationReport(
         estimator,

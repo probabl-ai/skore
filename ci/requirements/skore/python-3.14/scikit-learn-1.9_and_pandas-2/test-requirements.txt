@@ -197,6 +197,7 @@ mypy-extensions==1.1.0
     # via mypy
 narwhals==2.22.0
     # via
+    #   skore (skore/pyproject.toml)
     #   plotly
     #   scikit-learn
 nodeenv==1.10.0

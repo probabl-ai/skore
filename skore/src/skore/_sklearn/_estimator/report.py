@@ -60,7 +60,7 @@ def _check_estimator_and_data(
     y_test: ArrayLike | None,
     train_data: dict | None,
     test_data: dict | None,
-) -> tuple[bool, skrub.SkrubLearner, dict | None, dict | None]:
+) -> tuple[bool, skrub.SkrubLearner, dict | None, dict]:
     """Check and validate the estimator and data."""
     if is_skrub_learner(estimator):
         initialized_with_data_op = True
@@ -87,9 +87,9 @@ def _check_estimator_and_data(
                 "Provide X_train, y_train, X_test, y_test instead."
             )
         estimator = to_learner(estimator)
-        if X_test is None:
+        if X_test is None or y_test is None:
             raise TypeError(
-                "X_test must be provided (unless estimator is a "
+                "Test data must be provided (unless estimator is a "
                 "SkrubLearner and test_data is provided instead)."
             )
         test_data = {"_skrub_X": X_test, "_skrub_y": y_test}
@@ -107,18 +107,16 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     Parameters
     ----------
     estimator : estimator object
-        Estimator to make the report from. When the estimator is not fitted,
-        it is deep-copied to avoid side-effects. If it is fitted, it is cloned instead.
-        An estimator can be one of the following:
+        Estimator to make the report from. An estimator can be one of the following:
 
         - a scikit-learn compatible estimator as a :class:`~sklearn.base.BaseEstimator`;
         - a skrub :class:`~skrub.DataOp` to preprocess the data;
         - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
           by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
-    fit : {"auto", True, False}, default="auto"
-        Whether to fit the estimator on the training data. If "auto", the estimator
-        is fitted only if the training data is provided.
+        The estimator passed will not be modified in-place: it is deep-copied, and if
+        it is not already fitted, the copy is cloned before being fitted on the
+        training data.
 
     X_train : {array-like, sparse matrix} of shape (n_samples, n_features) or \
             None
@@ -198,13 +196,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     Examples
     --------
     >>> from sklearn.datasets import make_classification
-    >>> from skore import train_test_split
+    >>> from sklearn.model_selection import train_test_split
     >>> from sklearn.linear_model import LogisticRegression
     >>> X, y = make_classification(random_state=42)
-    >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
+    >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     >>> estimator = LogisticRegression()
     >>> from skore import EstimatorReport
-    >>> report = EstimatorReport(estimator, **split_data)
+    >>> report = EstimatorReport(
+    ...     estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+    ... )
     """
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {
@@ -226,7 +226,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         estimator: EstimatorLike,
         data: dict | None,
     ) -> tuple[EstimatorLike, float]:
-        """Fit the estimator on the training data."""
+        """Clone then fit the estimator on the training data."""
         if data is None:
             raise ValueError(
                 "The training data is required to fit the estimator. "
@@ -257,7 +257,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self,
         estimator: EstimatorLike,
         *,
-        fit: Literal["auto"] | bool = "auto",
         X_train: ArrayLike | None = None,
         y_train: ArrayLike | None = None,
         X_test: ArrayLike | None = None,
@@ -269,7 +268,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         super().__init__()
         estimator = self._copy_estimator(estimator)
         self.estimator = estimator
-        self._fit = fit
 
         if isinstance(estimator, skrub.DataOp):
             if test_data is None and train_data is None:
@@ -288,27 +286,23 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 estimator, X_train, y_train, X_test, y_test, train_data, test_data
             )
         )
+
         self._fit_time: float | None = None
-        if fit == "auto":
-            try:
-                check_is_fitted(estimator)
-                self.learner_ = estimator
-            except NotFittedError:
-                self.learner_, self._fit_time = self._fit_estimator(
-                    estimator, self._train_data
-                )
-        elif fit is True:
+        try:
+            check_is_fitted(estimator)
+            self.learner_ = estimator
+        except NotFittedError:
             self.learner_, self._fit_time = self._fit_estimator(
                 estimator, self._train_data
             )
-        else:  # fit is False
-            self.learner_ = estimator
 
-        self._predict_time: PredictTime = {}
         self._pos_label = pos_label
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
         self._cache = Cache()
         # NOTE: Reports are immutable so we don't need cache invalidation
+
+        self._predict_time: PredictTime = {}
+        self._cache_predictions(data_source="test")
 
         self._metric_registry = MetricRegistry(self)
 
@@ -359,7 +353,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             "initialized_with_data_op": self._initialized_with_data_op,
             "estimator": self.estimator,
             "ml_task": self._ml_task,
-            "fit": self._fit,
             "fit_time": self._fit_time,
             "predict_time": self._predict_time,
             "pos_label": self._pos_label,
@@ -395,7 +388,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report._metadata = state["metadata"]
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
-        report._fit = state["fit"]
         report._fit_time = state["fit_time"]
         report._predict_time = state["predict_time"]
         report._pos_label = state["pos_label"]
@@ -417,27 +409,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         return report
 
-    def clear_cache(self) -> None:
-        """Clear the cache.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
-        >>> report.cache_predictions()
-        >>> report.clear_cache()
-        >>> report._cache
-        {}
-        """
+    def _clear_cache(self) -> None:
+        """Clear the cache."""
         self._cache = Cache()
 
-    def cache_predictions(
+    def _cache_predictions(
         self,
         *,
         data_source: DataSource | Literal["both"] = "both",
@@ -452,25 +428,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             - "test" : cache predictions for the test set only.
             - "train" : cache predictions for the train set only.
             - "both" : cache predictions for both train and test sets when available.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import train_test_split
-        >>> from skore import EstimatorReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> split_data = train_test_split(X=X, y=y, random_state=0, as_dict=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = EstimatorReport(classifier, **split_data)
-        >>> report.cache_predictions()
-        >>> report._cache
-        {...}
         """
         if data_source == "both":
-            self.cache_predictions(data_source="test")
+            self._cache_predictions(data_source="test")
             if self.X_train is not None:
-                self.cache_predictions(data_source="train")
+                self._cache_predictions(data_source="train")
             return
 
         data = self._test_data if data_source == "test" else self._train_data
@@ -681,17 +643,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Examples
         --------
-        >>> from sklearn.datasets import make_classification
-        >>> from skore import train_test_split
+        >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
-        >>> X, y = make_classification(random_state=42)
-        >>> split_data = train_test_split(X=X, y=y, random_state=42, as_dict=True)
-        >>> estimator = LogisticRegression()
-        >>> from skore import EstimatorReport
-        >>> report = EstimatorReport(estimator, **split_data)
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> classifier = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> predictions = report.get_predictions(data_source="test")
         >>> predictions.shape
-        (25,)
+        (114,)
         """
         pos_label = self.pos_label
         if (
@@ -733,7 +693,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             raise ValueError(f"Cannot specify a `pos_label` for task {self.ml_task}")
 
         method_name = _check_response_method(self.estimator_, response_method).__name__
-        self.cache_predictions(data_source=data_source)
+        self._cache_predictions(data_source=data_source)
         cache_key = make_cache_key(data_source, method_name)
         predictions = self._cache[cache_key]
 
@@ -780,12 +740,12 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return (self._train_data or {}).get("_skrub_y")
 
     @property
-    def X_test(self) -> ArrayLike | None:
-        return (self._test_data or {}).get("_skrub_X")
+    def X_test(self) -> ArrayLike:
+        return self._test_data["_skrub_X"]
 
     @property
-    def y_test(self) -> ArrayLike | None:
-        return (self._test_data or {}).get("_skrub_y")
+    def y_test(self) -> ArrayLike:
+        return self._test_data["_skrub_y"]
 
     @property
     def train_data(self) -> dict | None:
@@ -798,10 +758,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     @property
     def pos_label(self) -> PositiveLabel | None:
         return self._pos_label
-
-    @property
-    def fit(self) -> str | bool:
-        return self._fit
 
     @property
     def estimator_name_(self) -> str:
@@ -863,15 +819,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        checks_summary = self.checks.summarize(fast_mode=True)
-        checks_summary_html = (
-            "<div class='report-checks-summary-details'>"
-            f"{len(checks_summary.frame(severity='issue'))} issue(s), "
-            f"{len(checks_summary.frame(severity='tip'))} tip(s), "
-            f"{len(checks_summary.frame(severity='passed'))} passed, "
-            f"{checks_summary._n_ignored_codes} ignored."
-            "</div>"
-        )
+        checks_summary_html = self._checks_summary_html_fragment()
 
         return {
             "metrics_summary": metrics_html,

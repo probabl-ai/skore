@@ -6,8 +6,6 @@ CrossValidationReports.
 from io import BytesIO
 
 import joblib
-import numpy as np
-import pandas as pd
 import pytest
 import skrub
 from sklearn.datasets import make_classification
@@ -22,6 +20,7 @@ from skore import (
     evaluate,
 )
 from skore._externals._sklearn_compat import convert_container
+from skore._utils._dataframe import _concat_vertical
 
 
 def test_pickle(tmp_path, report):
@@ -116,6 +115,8 @@ def test_comparison_report_pos_label_multiclass_is_none():
         (("pandas", "series"), True),
         (("array", "array"), False),
         (("array", "array"), True),
+        (("polars", "polars_series"), False),
+        (("polars", "polars_series"), True),
     ],
 )
 def test_create_estimator_report_from_estimator_reports(
@@ -161,21 +162,16 @@ def test_create_estimator_report_from_estimator_reports(
         assert joblib.hash(est_report_w_test.X_train) == joblib.hash(X_train)
         assert joblib.hash(est_report_w_test.y_train) == joblib.hash(y_train)
     else:
-        expected_X_train = (
-            pd.concat([X_train, X_test])
-            if isinstance(X_train, pd.DataFrame)
-            else np.concatenate([X_train, X_test])
-        )
-        expected_y_train = (
-            pd.concat([y_train, y_test])
-            if isinstance(y_train, (pd.DataFrame, pd.Series))
-            else np.concatenate([y_train, y_test])
-        )
+        expected_X_train = _concat_vertical(X_train, X_test)
+        expected_y_train = _concat_vertical(y_train, y_test)
         assert joblib.hash(est_report_w_test.X_train) == joblib.hash(expected_X_train)
         assert joblib.hash(est_report_w_test.y_train) == joblib.hash(expected_y_train)
 
 
-@pytest.mark.parametrize("container_types", [("pandas", "series"), ("array", "array")])
+@pytest.mark.parametrize(
+    "container_types",
+    [("pandas", "series"), ("array", "array"), ("polars", "polars_series")],
+)
 def test_create_estimator_report_from_cross_validation_reports(
     container_types, binary_classification_data
 ):
@@ -283,7 +279,7 @@ def test_create_estimator_report_skrub_concatenate_train_and_test_raises():
 
 
 def test_create_estimator_report_skrub_uses_fitted_estimator_without_refit():
-    """Skrub path should pass fit=False and new test_data for held-out evaluation."""
+    """Skrub path should use new test_data for held-out evaluation."""
     X, y = make_classification(n_samples=40, random_state=0)
     data_op_a = skrub.X(X).skb.apply(
         LogisticRegression(C=0.5, random_state=0), y=skrub.y(y)
@@ -297,21 +293,16 @@ def test_create_estimator_report_skrub_uses_fitted_estimator_without_refit():
     source_a = EstimatorReport(
         learner_a, train_data=split["train"], test_data=split["test"]
     )
-    comparison = ComparisonReport(
-        {
-            "model_a": source_a,
-            "model_b": EstimatorReport(
-                learner_b, train_data=split["train"], test_data=split["test"]
-            ),
-        }
+    source_b = EstimatorReport(
+        learner_b, train_data=split["train"], test_data=split["test"]
     )
+    comparison = ComparisonReport({"model_a": source_a, "model_b": source_b})
     final_report = comparison.create_estimator_report(
         report_key="model_a",
         test_data=split["test"],
         concatenate_train_and_test=False,
     )
     assert isinstance(final_report, EstimatorReport)
-    assert final_report.fit is False
     assert joblib.hash(final_report.X_train) == joblib.hash(source_a.X_train)
     assert joblib.hash(final_report.X_test) == joblib.hash(source_a.X_test)
 

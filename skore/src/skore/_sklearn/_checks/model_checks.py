@@ -4,8 +4,8 @@ import numbers
 from collections import defaultdict
 from typing import TYPE_CHECKING, Literal, cast
 
+import narwhals as nw
 import numpy as np
-import pandas as pd
 from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -16,9 +16,10 @@ from sklearn.ensemble import (
 from sklearn.linear_model import LogisticRegression, RidgeCV
 from sklearn.model_selection._search import BaseSearchCV
 from sklearn.pipeline import Pipeline
+from sklearn.utils._param_validation import Interval
 from sklearn.utils._pprint import _changed_params
+from skrub import tabular_pipeline
 
-from skore._externals._skrub_compat import tabular_pipeline
 from skore._sklearn._checks._utils import (
     CheckNotApplicable,
     ClassName,
@@ -39,6 +40,12 @@ from skore._sklearn._checks.tunable_hyperparameters import (
     INFRASTRUCTURE_PARAMS,
 )
 from skore._sklearn.feature_names import _get_feature_names
+from skore._utils._dataframe import (
+    UserDataFrame,
+    UserSeries,
+    UserTarget,
+    _normalize_X_as_dataframe,
+)
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -62,22 +69,28 @@ def _baseline_estimator_report(
     """
     from skore._sklearn._estimator.report import EstimatorReport
 
+    if report.X_train is None:
+        raise CheckNotApplicable("Train data is unavailable.")
     try:
-        X_train, _ = report.data._retrieve_data_as_frame("train", False, "train")
-        X_test, _ = report.data._retrieve_data_as_frame("test", False, "test")
-    except ValueError:
-        raise CheckNotApplicable() from None
+        X_train = _normalize_X_as_dataframe(report.X_train)
+        X_test = _normalize_X_as_dataframe(report.X_test)
+    except NotImplementedError:
+        raise CheckNotApplicable("Data is sparse.") from None
+
     y_train = get_report_y(report, data_source="train")
     y_test = get_report_y(report, data_source="test")
-    if y_train is None or y_test is None:
-        raise CheckNotApplicable()
+    if y_train is None:
+        raise CheckNotApplicable("Train data is unavailable.")
 
     is_classification = report.ml_task in (
         "binary-classification",
         "multiclass-classification",
     )
     if not (is_classification or report.ml_task == "regression"):
-        raise CheckNotApplicable()
+        raise CheckNotApplicable(
+            "Unsupported ML task. Supported tasks are: binary-classification, "
+            f"multiclass-classification, regression. Got {report.ml_task}."
+        )
     if kind == "dummy":
         estimator = (
             DummyClassifier(strategy="prior")
@@ -105,7 +118,7 @@ def _baseline_estimator_report(
             pos_label=report.pos_label,
         )
     except Exception as exc:
-        raise CheckNotApplicable() from exc
+        raise CheckNotApplicable("Failed to create baseline report.") from exc
     baseline_report._metric_registry = report._metric_registry
     return baseline_report
 
@@ -127,13 +140,8 @@ class CheckOverfitting(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect significant gaps between train and test scores."""
         report = cast("EstimatorReport", report)
-        if (
-            report.X_train is None
-            or report.y_train is None
-            or report.X_test is None
-            or report.y_test is None
-        ):
-            raise CheckNotApplicable()
+        if report.X_train is None or report.y_train is None:
+            raise CheckNotApplicable("Train data is unavailable.")
 
         report_train = collect_scores(report, data_source="train")
         report_test = collect_scores(report, data_source="test")
@@ -267,12 +275,22 @@ class CheckHighClassImbalance(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect when the majority class exceeds 80% of samples."""
         report = cast("EstimatorReport", report)
-        y = get_report_y(report, data_source="both")
-        if report.ml_task != "binary-classification" or y is None:
-            raise CheckNotApplicable()
+        if report.ml_task != "binary-classification":
+            raise CheckNotApplicable(
+                f"ML task is not binary classification. Got {report.ml_task}."
+            )
 
+        y = get_report_y(report, data_source="both")
+        if y is None:
+            raise CheckNotApplicable("Target train data is unavailable.")
+
+        y = nw.from_native(cast(UserSeries, y), series_only=True)
         counts = y.value_counts()
-        overrepresented_class = counts[counts >= 0.8 * counts.sum()].index
+        value_col = counts.columns[0]
+        total = counts["count"].sum()
+        overrepresented_class = counts.filter(nw.col("count") >= 0.8 * total)[
+            value_col
+        ].to_list()
 
         if len(overrepresented_class) > 0:
             return (
@@ -299,12 +317,22 @@ class CheckUnderrepresentedClasses(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect classes that each represent less than 10% of samples."""
         report = cast("EstimatorReport", report)
-        y = get_report_y(report, data_source="both")
-        if report.ml_task != "multiclass-classification" or y is None:
-            raise CheckNotApplicable()
+        if report.ml_task != "multiclass-classification":
+            raise CheckNotApplicable(
+                f"ML task is not multiclass classification. Got {report.ml_task}."
+            )
 
+        y = get_report_y(report, data_source="both")
+        if y is None:
+            raise CheckNotApplicable("Target train data is unavailable.")
+
+        y = nw.from_native(cast(UserSeries, y), series_only=True)
         counts = y.value_counts()
-        underrepresented_classes = counts[counts <= 0.1 * counts.sum()].index
+        value_col = counts.columns[0]
+        total = counts["count"].sum()
+        underrepresented_classes = counts.filter(nw.col("count") <= 0.1 * total)[
+            value_col
+        ].to_list()
         if len(underrepresented_classes) > 0:
             return (
                 f"Classes {underrepresented_classes} each represent less than 10% of "
@@ -331,14 +359,19 @@ class CheckCoefficientsInterpretation(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         """Assess whether linear-model coefficients are comparable and interpretable."""
         report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.learner_)
+        _, predictor = split_preprocessor_estimator(report.estimator_)
+
+        if not hasattr(predictor, "coef_"):
+            raise CheckNotApplicable(
+                "Estimator is not a linear model: it does not have a `coef_` attribute."
+            )
+
         X = get_preprocessed_X(report, data_source="both")
+        if X is None:
+            raise CheckNotApplicable("Train data is unavailable.")
 
-        if X is None or not hasattr(predictor, "coef_"):
-            raise CheckNotApplicable()
-
-        stds = X.std(axis=0)
-        if not np.allclose(stds, stds.iloc[0]):
+        std_values = nw.from_native(X).select(nw.all().std()).to_numpy().ravel()
+        if not np.allclose(std_values, std_values[0], atol=0.05):
             return (
                 "Features are not on the same scale: coefficient magnitudes "
                 "are not directly comparable as feature importance."
@@ -368,14 +401,24 @@ class CheckMDIHighCardinalityBias(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect high-cardinality features that may bias MDI importances."""
         report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.learner_)
+        _, predictor = split_preprocessor_estimator(report.estimator_)
+
+        if not hasattr(predictor, "feature_importances_"):
+            raise CheckNotApplicable(
+                "Estimator is not a tree-based model: it does not have a "
+                "`feature_importances_` attribute."
+            )
+
         X = get_preprocessed_X(report, data_source="train")
+        if X is None:
+            raise CheckNotApplicable("Train data is unavailable.")
 
-        if X is None or not hasattr(predictor, "feature_importances_"):
-            raise CheckNotApplicable()
-
+        X = nw.from_native(X)
+        n_samples = X.shape[0]
         high_cardinality_features = [
-            c for c in X.columns if X[c].nunique() > 0.5 * len(X)
+            column
+            for column in X.columns
+            if X.select(nw.col(column).n_unique()).item(0, 0) > 0.5 * n_samples
         ]
 
         if high_cardinality_features:
@@ -422,12 +465,15 @@ class CheckCorrelatedFeatures(Check):
         X = get_preprocessed_X(report, data_source="train")
 
         if X is None:
-            raise CheckNotApplicable()
-        X = X.select_dtypes(include="number")
+            raise CheckNotApplicable("Train data is unavailable.")
+        X = nw.from_native(X).select(nw.selectors.numeric())
         if X.shape[1] < 2 or X.shape[1] > 1000:
-            raise CheckNotApplicable()
+            raise CheckNotApplicable(
+                "Expected train data to have between 2 and 1000 features; "
+                f"got {X.shape[1]}."
+            )
 
-        corr = np.abs(spearmanr(X).statistic)
+        corr = np.abs(spearmanr(X.to_numpy()).statistic)
         if corr.ndim < 2:
             return None
         np.fill_diagonal(corr, 0)
@@ -439,6 +485,7 @@ class CheckCorrelatedFeatures(Check):
                 "above 0.9. Highly correlated features can destabilize "
                 "linear model coefficients and feature-importance estimates, "
                 "and may cause collinearity-induced numerical issues."
+                "Dropping redundant features may also improve model performance."
             )
         return None
 
@@ -508,7 +555,7 @@ class CheckSlowerThanBaseline(Check):
         baseline = _baseline_estimator_report(report, kind="fast")
 
         if report._fit_time is None or baseline._fit_time is None:
-            raise CheckNotApplicable()
+            raise CheckNotApplicable("Fit time is unavailable.")
 
         slowness_ratio = report._fit_time / baseline._fit_time
         if slowness_ratio < 2.0 or report._fit_time - baseline._fit_time < 0.05:
@@ -557,17 +604,13 @@ class CheckGoldenFeature(Check):
 
         report = cast("EstimatorReport", report)
         X_train = get_preprocessed_X(report, data_source="train")
-        X_test = get_preprocessed_X(report, data_source="test")
+        X_test = cast("UserDataFrame", get_preprocessed_X(report, data_source="test"))
         y_train = get_report_y(report, data_source="train")
-        y_test = get_report_y(report, data_source="test")
-        if (
-            X_train is None
-            or X_test is None
-            or y_train is None
-            or y_test is None
-            or X_train.shape[1] < 2
-        ):
-            raise CheckNotApplicable()
+        y_test = cast("UserTarget", get_report_y(report, data_source="test"))
+        if X_train is None or y_train is None:
+            raise CheckNotApplicable("Train data is unavailable.")
+        if X_train.shape[1] < 2:
+            raise CheckNotApplicable("Train data has only one feature.")
 
         preprocessor_, predictor_ = split_preprocessor_estimator(report.estimator_)
         feature_names = _get_feature_names(
@@ -578,19 +621,23 @@ class CheckGoldenFeature(Check):
         )
         full_test = collect_scores(report, data_source="test")
 
+        X_train, X_test = nw.from_native(X_train), nw.from_native(X_test)
         golden_features: list[str] = []
         for i in range(X_train.shape[1]):
+            column = X_train.columns[i]
             try:
                 single_report = EstimatorReport(
                     clone(predictor_),
-                    X_train=X_train.iloc[:, [i]],
+                    X_train=X_train.select(nw.col(column)).to_native(),
                     y_train=y_train,
-                    X_test=X_test.iloc[:, [i]],
+                    X_test=X_test.select(nw.col(column)).to_native(),
                     y_test=y_test,
                     pos_label=report.pos_label,
                 )
             except Exception as exc:
-                raise CheckNotApplicable() from exc
+                raise CheckNotApplicable(
+                    "Failed to create report from single feature."
+                ) from exc
             single_report._metric_registry = report._metric_registry
             single_test = collect_scores(single_report, data_source="test")
 
@@ -645,7 +692,9 @@ class CheckUselessFeatures(Check):
                 data_source="test", seed=0, n_repeats=5
             ).frame()
         except (ValueError, TypeError) as err:
-            raise CheckNotApplicable() from err
+            raise CheckNotApplicable(
+                "Failed to compute permutation importance."
+            ) from err
 
         # group by feature and take the mean over metric/label/output
         per_feature = (
@@ -662,6 +711,7 @@ class CheckUselessFeatures(Check):
             return (
                 f"Feature(s) {useless} have permutation importance overlapping "
                 "with zero and could likely be dropped without degrading "
+                "performance. Dropping redundant features may also improve model "
                 "performance."
             )
         return None
@@ -686,25 +736,25 @@ class CheckTrainTestTimeOverlap(Check):
 
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
-        if not isinstance(report.X_train, pd.DataFrame) or not isinstance(
-            report.X_test, pd.DataFrame
-        ):
-            raise CheckNotApplicable()
+        if report.X_train is None:
+            raise CheckNotApplicable("Train data is unavailable.")
+        if not nw.dependencies.is_into_dataframe(
+            report.X_train
+        ) or not nw.dependencies.is_into_dataframe(report.X_test):
+            raise CheckNotApplicable(
+                "Input data is not a narwhals compatible DataFrame. "
+                f"Got {type(report.X_train)}."
+            )
 
-        datetime_columns = [
-            col
-            for col in report.X_train.columns
-            if col in report.X_test.columns
-            and pd.api.types.is_datetime64_any_dtype(report.X_train[col])
-            and pd.api.types.is_datetime64_any_dtype(report.X_test[col])
-        ]
+        X_train, X_test = nw.from_native(report.X_train), nw.from_native(report.X_test)
+        train_datetime_columns = set(X_train.select(nw.selectors.datetime()).columns)
+        test_datetime_columns = set(X_test.select(nw.selectors.datetime()).columns)
+        datetime_columns = sorted(train_datetime_columns & test_datetime_columns)
         if not datetime_columns:
-            raise CheckNotApplicable()
+            raise CheckNotApplicable("No datetime column found.")
 
         overlapping = [
-            col
-            for col in datetime_columns
-            if report.X_train[col].max() >= report.X_test[col].min()
+            col for col in datetime_columns if X_train[col].max() >= X_test[col].min()
         ]
         if overlapping:
             return (
@@ -731,15 +781,31 @@ class CheckHyperparamsAtSearchEdge(Check):
     docs_url = "skd014-hyperparams-at-search-edge"
     severity = "issue"
 
+    @staticmethod
+    def _get_space_bound(
+        estimator, *, param_name: str, side: Literal["left", "right"]
+    ) -> float | None:
+        """Fetch the closed parameter-space boundary for `side` if it exists."""
+        *step_names, leaf_param = param_name.split("__")
+        owner = estimator
+        for step_name in step_names:
+            owner = owner.get_params(deep=True)[step_name]
+        if not hasattr(owner, "_parameter_constraints"):
+            return None
+        for constraint in owner._parameter_constraints[leaf_param]:
+            if isinstance(constraint, Interval) and constraint.closed in [side, "both"]:
+                return float(getattr(constraint, side))
+        return None
+
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
         estimator = report.estimator_
         if not isinstance(estimator, BaseSearchCV):
-            raise CheckNotApplicable()
+            raise CheckNotApplicable(
+                f"Estimator is not a BaseSearchCV instance. Got {type(estimator)}."
+            )
 
-        param_combinations = estimator.cv_results_.get("params")
-        if param_combinations is None:
-            raise CheckNotApplicable()
+        param_combinations = estimator.cv_results_["params"]
 
         edge_params = []
         for param_name, best_value in estimator.best_params_.items():
@@ -759,17 +825,19 @@ class CheckHyperparamsAtSearchEdge(Check):
                 best_value, bool | np.bool_
             ):
                 continue
-            if np.isclose(
-                float(best_value), float(search_low), rtol=0.0, atol=0.0, equal_nan=True
-            ):
+            if float(best_value) == float(search_low):
+                space_low = self._get_space_bound(
+                    estimator.estimator, param_name=param_name, side="left"
+                )
+                if space_low is not None and float(search_low) == space_low:
+                    continue
                 edge_params.append((param_name, "minimum"))
-            elif np.isclose(
-                float(best_value),
-                float(search_high),
-                rtol=0.0,
-                atol=0.0,
-                equal_nan=True,
-            ):
+            elif float(best_value) == float(search_high):
+                space_high = self._get_space_bound(
+                    estimator.estimator, param_name=param_name, side="right"
+                )
+                if space_high is not None and float(search_high) == space_high:
+                    continue
                 edge_params.append((param_name, "maximum"))
 
         if not edge_params:
@@ -826,7 +894,10 @@ class CheckSearchParamsToTune(Check):
     def check_function(self, report: _BaseReport) -> str | None:
         report = cast("EstimatorReport", report)
         if not isinstance(report.estimator_, BaseSearchCV):
-            raise CheckNotApplicable()
+            raise CheckNotApplicable(
+                "Estimator is not a BaseSearchCV instance. "
+                f"Got {type(report.estimator_)}."
+            )
 
         searched_keys = {
             key for params in report.estimator_.cv_results_["params"] for key in params
@@ -846,11 +917,13 @@ class CheckSearchParamsToTune(Check):
                 if type(step).__name__ in HYPERPARAMETERS_TO_TUNE
             ]
             if not searched_by_estimator:
-                raise CheckNotApplicable()
+                raise CheckNotApplicable(
+                    "No parameter to recommend for any of the steps."
+                )
         else:
             class_name = type(estimator).__name__
             if class_name not in HYPERPARAMETERS_TO_TUNE:
-                raise CheckNotApplicable()
+                raise CheckNotApplicable("No parameter to recommend for the estimator.")
             searched_by_estimator = [(class_name, searched_keys)]
 
         messages: list[str] = []
@@ -892,7 +965,7 @@ class CheckEstimatorNotTuned(Check):
         report = cast("EstimatorReport", report)
         estimator = report.estimator_
         if isinstance(estimator, BaseSearchCV):
-            raise CheckNotApplicable()
+            raise CheckNotApplicable("Estimator is a BaseSearchCV instance.")
 
         if isinstance(estimator, Pipeline):
             candidates = [
@@ -901,11 +974,13 @@ class CheckEstimatorNotTuned(Check):
                 if type(step).__name__ in HYPERPARAMETERS_TO_TUNE
             ]
             if not candidates:
-                raise CheckNotApplicable()
+                raise CheckNotApplicable(
+                    "No parameter to recommend for any of the steps."
+                )
         else:
             class_name = type(estimator).__name__
             if class_name not in HYPERPARAMETERS_TO_TUNE:
-                raise CheckNotApplicable()
+                raise CheckNotApplicable("No parameter to recommend for the estimator.")
             candidates = [(class_name, estimator)]
 
         messages: list[str] = []
