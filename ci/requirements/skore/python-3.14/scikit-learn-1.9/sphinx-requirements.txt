@@ -73,8 +73,6 @@ databricks-sdk==0.114.0
     #   mlflow-tracing
 decorator==5.3.1
     # via ipython
-diskcache==5.6.3
-    # via skore (skore/pyproject.toml)
 docker==7.1.0
     # via mlflow
 docutils==0.21.2
@@ -269,9 +267,7 @@ pillow==12.2.0
     #   matplotlib
     #   sphinx-gallery
 platformdirs==4.10.0
-    # via
-    #   skore (skore/pyproject.toml)
-    #   choreographer
+    # via choreographer
 plotly==6.8.0
     # via skore (skore/pyproject.toml)
 polars==1.41.2
