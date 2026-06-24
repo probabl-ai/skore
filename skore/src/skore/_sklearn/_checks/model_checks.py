@@ -46,7 +46,7 @@ from skore._utils._dataframe import (
     UserTarget,
     _normalize_X_as_dataframe,
 )
-from skore._utils._skrub import is_skrub_learner, iter_fitted_estimator_steps
+from skore._utils._skrub import iter_fitted_estimator_steps
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -968,31 +968,19 @@ class CheckEstimatorNotTuned(Check):
         if isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable("Estimator is a BaseSearchCV instance.")
 
-        if is_skrub_learner(estimator):
-            candidates = [
-                (class_name, step)
-                for class_name, step in iter_fitted_estimator_steps(estimator)
-                if class_name in HYPERPARAMETERS_TO_TUNE
-            ]
-            if not candidates:
-                raise CheckNotApplicable(
-                    "No parameter to recommend for any of the steps."
-                )
-        elif isinstance(estimator, Pipeline):
-            candidates = [
-                (type(step).__name__, step)
-                for _, step in estimator.steps
-                if type(step).__name__ in HYPERPARAMETERS_TO_TUNE
-            ]
-            if not candidates:
-                raise CheckNotApplicable(
-                    "No parameter to recommend for any of the steps."
-                )
-        else:
-            class_name = type(estimator).__name__
-            if class_name not in HYPERPARAMETERS_TO_TUNE:
-                raise CheckNotApplicable("No parameter to recommend for the estimator.")
-            candidates = [(class_name, estimator)]
+        steps = list(iter_fitted_estimator_steps(estimator))
+        candidates = [
+            (class_name, step)
+            for class_name, step in steps
+            if class_name in HYPERPARAMETERS_TO_TUNE
+        ]
+        if not candidates:
+            message = (
+                "No parameter to recommend for the estimator."
+                if len(steps) == 1
+                else "No parameter to recommend for any of the steps."
+            )
+            raise CheckNotApplicable(message)
 
         messages: list[str] = []
         for class_name, step in candidates:
