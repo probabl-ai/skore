@@ -21,7 +21,6 @@ from skore._utils._skrub import (
     _supervised_fitted_estimator,
     get_preprocess_apply_node,
     is_skrub_learner,
-    resolve_fitted_predictor,
     transform_features,
 )
 
@@ -174,19 +173,17 @@ def split_preprocessor_estimator(estimator):
     apply wraps one (e.g. :func:`~skrub.tabular_pipeline`); otherwise the
     skrub graph handles preprocessing separately via :func:`transform_features`.
     """
-    if is_skrub_learner(estimator):
-        fitted = _supervised_fitted_estimator(estimator)
-        if isinstance(fitted, Pipeline):
-            if len(fitted.steps) > 1:
-                return fitted[:-1], fitted[-1]
-            return None, fitted.steps[0][1]
-        return None, resolve_fitted_predictor(estimator)
+    fitted = (
+        _supervised_fitted_estimator(estimator)
+        if is_skrub_learner(estimator)
+        else estimator
+    )
 
-    if isinstance(estimator, Pipeline):
-        if len(estimator.steps) > 1:
-            return estimator[:-1], estimator[-1]
-        return None, estimator.steps[0][1]
-    return None, estimator
+    if isinstance(fitted, Pipeline):
+        if len(fitted.steps) > 1:
+            return fitted[:-1], fitted[-1]
+        return None, fitted.steps[0][1]
+    return None, fitted
 
 
 def _skrub_data_dict(
