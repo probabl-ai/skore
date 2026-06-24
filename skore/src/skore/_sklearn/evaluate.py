@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from typing import cast
+from typing import Literal, cast
 
 from numpy.typing import ArrayLike
 
@@ -29,7 +29,7 @@ def evaluate(
     *,
     splitter: float
     | int
-    | str
+    | Literal["prefit"]
     | SKLearnCrossValidator
     | Generator
     | _DefaultType = _DEFAULT,
@@ -71,7 +71,7 @@ def evaluate(
         variables contained in the DataOp that was used to create this learner
         (e.g. ``{"X": X_df, "other_table": df, ...}``).
 
-    splitter : float, int, str, or cross-validation object, default=0.2
+    splitter : float, int, "prefit", or cross-validation object, default=0.2
         Determines how the data is split. When omitted, a skrub learner whose
         DataOp was configured with an explicit cross-validation splitter via
         :meth:`~skrub.DataOp.skb.mark_as_X` uses that splitter (including
