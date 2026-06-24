@@ -279,8 +279,6 @@ def get_preprocessed_X(
             data = report.X_train
         else:
             data = report.X_test
-    if data is None:
-        raise CheckNotApplicable("Test data is unavailable.")
 
     preprocessor, _ = split_preprocessor_estimator(get_fitted_estimator(report))
     if preprocessor is not None and len(preprocessor.steps) > 0:

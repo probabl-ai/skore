@@ -92,9 +92,9 @@ def _baseline_estimator_report(
         )
 
     if report._report_type == "cross-validation":
-        try:
-            from skore._sklearn._cross_validation.report import CrossValidationReport
+        from skore._sklearn._cross_validation.report import CrossValidationReport
 
+        try:
             baseline = CrossValidationReport(
                 estimator,
                 X=report.X,
@@ -120,10 +120,9 @@ def _baseline_estimator_report(
 
     y_train = get_report_y(report, data_source="train")
     y_test = get_report_y(report, data_source="test")
+    from skore._sklearn._estimator.report import EstimatorReport
 
     try:
-        from skore._sklearn._estimator.report import EstimatorReport
-
         baseline_report = EstimatorReport(
             estimator,
             X_train=X_train,
@@ -616,6 +615,7 @@ class CheckGoldenFeature(Check):
                 raise CheckNotApplicable("Train data has only one feature.")
             n_features = X.shape[1]
             metric_registry = cv_report.reports_[0]._metric_registry.copy()
+            from skore._sklearn._cross_validation.report import CrossValidationReport
         else:
             estimator_report = cast("EstimatorReport", report)
             X_train = nw.from_native(
@@ -630,6 +630,7 @@ class CheckGoldenFeature(Check):
                 raise CheckNotApplicable("Train data has only one feature.")
             n_features = X_train.shape[1]
             metric_registry = estimator_report._metric_registry
+            from skore._sklearn._estimator.report import EstimatorReport
 
         preprocessor_, predictor_ = split_preprocessor_estimator(
             get_fitted_estimator(report)
@@ -647,10 +648,6 @@ class CheckGoldenFeature(Check):
         for i in range(n_features):
             try:
                 if is_cv:
-                    from skore._sklearn._cross_validation.report import (
-                        CrossValidationReport,
-                    )
-
                     single_feature_report = CrossValidationReport(
                         clone(predictor_),
                         X=X.select(nw.col(feature_names[i])).to_native(),
@@ -662,8 +659,6 @@ class CheckGoldenFeature(Check):
                     for report in single_feature_report.reports_:
                         report._metric_registry = metric_registry
                 else:
-                    from skore._sklearn._estimator.report import EstimatorReport
-
                     single_feature_report = EstimatorReport(
                         clone(predictor_),
                         X_train=X_train.select(nw.col(feature_names[i])).to_native(),
