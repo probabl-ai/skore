@@ -286,44 +286,41 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
 
         if self._initialized_with_data_op:
-            return list(
-                track(
-                    parallel(
-                        delayed(EstimatorReport)(
-                            clone(self.learner_),
-                            train_data=split["train"],
-                            test_data=split["test"],
-                            pos_label=self._pos_label,
-                        )
-                        for split in self.learner_.data_op.skb.iter_cv_splits(
-                            environment=self._data, cv=self.split_indices
-                        )
-                    ),
-                    description="Processing cross-validation\n"
-                    f"for {self.estimator_name_}",
-                    total=len(self.split_indices),
+            subreports = (
+                delayed(EstimatorReport)(
+                    clone(self.learner_),
+                    train_data=split["train"],
+                    test_data=split["test"],
+                    pos_label=self._pos_label,
+                )
+                for split in self.learner_.data_op.skb.iter_cv_splits(
+                    environment=self._data, cv=self.split_indices
                 )
             )
+
         else:
             # do not split the data to take advantage of the memory mapping
-            return list(
-                track(
-                    parallel(
-                        delayed(_generate_estimator_report)(
-                            clone(self.estimator),
-                            self.X,
-                            self.y,
-                            self.pos_label,
-                            train_indices,
-                            test_indices,
-                        )
-                        for (train_indices, test_indices) in self.split_indices
-                    ),
-                    description="Processing cross-validation\n"
-                    f"for {self.estimator_name_}",
-                    total=len(self.split_indices),
+            subreports = (
+                delayed(_generate_estimator_report)(
+                    clone(self.estimator),
+                    self.X,
+                    self.y,
+                    self.pos_label,
+                    train_indices,
+                    test_indices,
                 )
+                for train_indices, test_indices in self.split_indices
             )
+
+        return list(
+            track(
+                parallel(subreports),
+                description=(
+                    f"Processing cross-validation\nfor {self.estimator_name_}"
+                ),
+                total=len(self.split_indices),
+            )
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Return a serializable representation of the report state.
@@ -422,49 +419,15 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         return report
 
-    def clear_cache(self) -> None:
-        """Clear the cache.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
-        >>> report.reports_[0]._cache
-        {...}
-        >>> report.clear_cache()
-        >>> report.reports_[0]._cache
-        {}
-        """
+    def _clear_cache(self) -> None:
+        """Clear the cache."""
         for report in self.reports_:
-            report.clear_cache()
+            report._clear_cache()
 
-    def cache_predictions(self) -> None:
-        """Cache the predictions for sub-estimators reports.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
-        >>> report.clear_cache()
-        >>> report.reports_[0]._cache
-        {}
-        >>> report.cache_predictions()
-        >>> report.reports_[0]._cache
-        {...}
-        """
-        for estimator_report in track(
-            self.reports_,
-            description="Cross-validation predictions for split",
-        ):
-            estimator_report.cache_predictions()
+    def _cache_predictions(self) -> None:
+        """Cache the predictions for sub-estimators reports."""
+        for estimator_report in self.reports_:
+            estimator_report._cache_predictions()
 
     def get_predictions(
         self,

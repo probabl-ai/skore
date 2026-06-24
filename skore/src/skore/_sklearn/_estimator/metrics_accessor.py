@@ -411,9 +411,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report = evaluate(estimator, X, y, splitter=0.2)
         >>> report.metrics.timings()
         {'fit_time': ..., 'predict_time_test': ...}
-        >>> report.cache_predictions()
-        >>> report.metrics.timings()
-        {'fit_time': ..., 'predict_time_train': ..., 'predict_time_test': ...}
         """
         times = {
             "fit_time": self.fit_time(cast=False),

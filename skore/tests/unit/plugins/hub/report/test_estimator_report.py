@@ -35,7 +35,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
     reports_with_cache = [
         (report, report._cache) for report in reports if hasattr(report, "_cache")
     ]
-    object.clear_cache()
+    object._clear_cache()
 
     try:
         with io.BytesIO() as stream:
@@ -244,7 +244,7 @@ class TestEstimatorReportPayload:
 
     @mark.respx()
     def test_model_dump(self, binary_classification, payload):
-        binary_classification.cache_predictions()
+        binary_classification._cache_predictions()
 
         _, checksum = serialize(binary_classification)
 
