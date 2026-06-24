@@ -21,7 +21,6 @@ from skore._utils._skrub import (
     _supervised_fitted_estimator,
     get_preprocess_apply_node,
     is_skrub_learner,
-    transform_features,
 )
 
 if TYPE_CHECKING:
@@ -170,8 +169,7 @@ def split_preprocessor_estimator(estimator):
     Splits sklearn :class:`~sklearn.pipeline.Pipeline` into its preprocessing
     steps and final predictor. For :class:`~skrub.SkrubLearner`, returns the
     inner :class:`~sklearn.pipeline.Pipeline` preprocessor when the supervised
-    apply wraps one (e.g. :func:`~skrub.tabular_pipeline`); otherwise the
-    skrub graph handles preprocessing separately via :func:`transform_features`.
+    apply wraps one (e.g. :func:`~skrub.tabular_pipeline`).
     """
     fitted = (
         _supervised_fitted_estimator(estimator)
@@ -184,28 +182,6 @@ def split_preprocessor_estimator(estimator):
             return fitted[:-1], fitted[-1]
         return None, fitted.steps[0][1]
     return None, fitted
-
-
-def _skrub_data_dict(
-    report: EstimatorReport,
-    *,
-    data_source: Literal["train", "test", "both"],
-) -> dict | None:
-    if data_source == "both":
-        if report.X_train is None:
-            return None
-        y = get_report_y(report, data_source="both")
-        if y is None:
-            return None
-        return {
-            "_skrub_X": _concat_vertical(report.X_train, report.X_test),
-            "_skrub_y": y,
-        }
-    if data_source == "train":
-        if report.X_train is None:
-            return None
-        return {"_skrub_X": report.X_train, "_skrub_y": report.y_train}
-    return {"_skrub_X": report.X_test, "_skrub_y": report.y_test}
 
 
 def get_report_y(
@@ -248,37 +224,44 @@ def get_preprocessed_X(
     Features are retrieved in the same format as at fit time, passed through
     the fitted preprocessor when present, then normalized for analysis.
 
-    Returns ``None`` when no data is available or when the preprocessor
+    Returns ``None`` when train data is unavailable, or when the preprocessor
     produces an unsupported type (e.g. sparse matrices).
     """
-    if data_source == "both":
+    if data_source in ("train", "both"):
         if report.X_train is None:
             return None
-        data = _concat_vertical(report.X_train, report.X_test)
-    elif data_source == "train":
-        data = report.X_train
+        if data_source == "both":
+            data = _concat_vertical(report.X_train, report.X_test)
+        else:
+            data = report.X_train
     else:
         data = report.X_test
-    if data is None:
-        return None
 
     if report._initialized_with_data_op:
-        skrub_data = _skrub_data_dict(report, data_source=data_source)
-        if skrub_data is None:
-            return None
         learner = report.estimator_
-        if get_preprocess_apply_node(learner.data_op) is not None:
-            data = transform_features(learner, skrub_data)
+        if data_source == "both":
+            y = get_report_y(report, data_source="both")
+            if y is None:
+                return None
+            skrub_env = {"_skrub_X": data, "_skrub_y": y}
+        elif data_source == "train":
+            skrub_env = {"_skrub_X": data, "_skrub_y": report.y_train}
         else:
-            fitted = _supervised_fitted_estimator(learner)
-            if isinstance(fitted, Pipeline) and len(fitted.steps) > 1:
-                data = fitted[:-1].transform(skrub_data["_skrub_X"])
-            else:
-                data = skrub_data["_skrub_X"]
+            skrub_env = {"_skrub_X": data, "_skrub_y": report.y_test}
+        preprocess_node = get_preprocess_apply_node(learner.data_op)
+        if preprocess_node is not None:
+            data = learner.truncated_after(
+                lambda node, t=preprocess_node: node is t
+            ).transform(skrub_env)
+        else:
+            data = skrub_env["_skrub_X"]
+        estimator = learner
     else:
-        preprocessor, _ = split_preprocessor_estimator(report.estimator_)
-        if preprocessor is not None and len(preprocessor.steps) > 0:
-            data = preprocessor.transform(data)
+        estimator = report.estimator_
+
+    preprocessor, _ = split_preprocessor_estimator(estimator)
+    if preprocessor is not None and len(preprocessor.steps) > 0:
+        data = preprocessor.transform(data)
 
     try:
         return _normalize_X_as_dataframe(data)

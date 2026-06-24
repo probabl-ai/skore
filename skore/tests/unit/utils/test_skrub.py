@@ -9,11 +9,8 @@ from sklearn.preprocessing import StandardScaler
 from skrub import tabular_pipeline
 
 from skore import evaluate
-from skore._utils._skrub import (
-    get_preprocess_apply_node,
-    resolve_fitted_predictor,
-    transform_features,
-)
+from skore._sklearn._checks._utils import get_preprocessed_X
+from skore._utils._skrub import get_preprocess_apply_node, resolve_fitted_predictor
 
 
 @pytest.fixture
@@ -57,7 +54,7 @@ def test_resolve_fitted_predictor_returns_inner_pipeline_last_step_for_tabular(
     assert type(predictor).__name__ == "Ridge"
 
 
-def test_transform_features_matches_sklearn_pipeline_preprocessing(regression_xy):
+def test_get_preprocessed_X_matches_sklearn_pipeline_preprocessing(regression_xy):
     """Skrub-native transform matches sklearn Pipeline preprocessing."""
     Xdf, y = regression_xy
     learner = (
@@ -71,7 +68,7 @@ def test_transform_features_matches_sklearn_pipeline_preprocessing(regression_xy
         report = evaluate(learner, data={"X": Xdf, "y": y})
 
     assert get_preprocess_apply_node(report.estimator_.data_op) is not None
-    skrub_X = transform_features(report.estimator_, report.train_data)
+    skrub_X = get_preprocessed_X(report, data_source="train")
     train_X = report.train_data["_skrub_X"]
     train_y = report.train_data["_skrub_y"]
     sklearn_pipe = Pipeline([("scaler", StandardScaler()), ("ridge", Ridge())])

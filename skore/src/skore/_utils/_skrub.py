@@ -11,7 +11,7 @@ from skrub import DataOp, SkrubLearner
 from skrub._data_ops._data_ops import Apply
 from skrub._data_ops._evaluation import find_first_apply
 
-from skore._sklearn.types import ArrayLike, EstimatorLike
+from skore._sklearn.types import EstimatorLike
 
 
 def eval_X_y(data_op: DataOp, env: dict) -> dict:
@@ -136,21 +136,6 @@ def resolve_fitted_predictor(estimator: EstimatorLike) -> BaseEstimator:
     if isinstance(estimator, Pipeline):
         return estimator.steps[-1][1]
     return estimator
-
-
-def transform_features(learner: SkrubLearner, data: dict) -> ArrayLike:
-    """Return features transformed by skrub preprocessing applies.
-
-    When the learner has no separate preprocessing ``.skb.apply()`` step, returns
-    ``data["_skrub_X"]`` unchanged.
-    """
-    preprocess_node = get_preprocess_apply_node(learner.data_op)
-    if preprocess_node is None:
-        return data["_skrub_X"]
-
-    target = preprocess_node
-    truncated = learner.truncated_after(lambda node, t=target: node is t)
-    return truncated.transform(data)
 
 
 class _LearnerAdapter(BaseEstimator):
