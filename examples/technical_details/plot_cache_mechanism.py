@@ -81,24 +81,6 @@ report._cache
 # metrics that use the same type of predictions will be faster.
 
 # %%
-# Caching plots
-# =============
-#
-# The cache also speeds up plot generation. For instance, this is how long it takes
-# to plot the ROC curve:
-start = time.time()
-report.metrics.roc().plot()
-end = time.time()
-print(f"Time taken: {end - start:.2f} seconds")
-
-# %%
-# Now do it a second time:
-start = time.time()
-report.metrics.roc().plot()
-end = time.time()
-print(f"Time taken: {end - start:.2f} seconds")
-
-# %%
 # Caching with :class:`~skore.CrossValidationReport`
 # ==================================================
 #
