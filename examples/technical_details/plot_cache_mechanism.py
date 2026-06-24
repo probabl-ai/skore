@@ -10,11 +10,11 @@ This example shows how :class:`~skore.EstimatorReport` and
 """
 
 # %%
-# Loading some data
-# =================
+# Generating some data
+# ====================
 #
 # In this toy example, we create a large synthetic classification dataset that will let
-# us see speed improvements more easily.
+# us see speed improvements easily.
 import pandas as pd
 from sklearn.datasets import make_classification
 
@@ -58,7 +58,7 @@ import time
 start = time.time()
 report.metrics.accuracy()
 end = time.time()
-print(f"Time taken: {end - start:.2f} seconds")
+print(f"Time taken: {end - start:.3f} seconds")
 
 # %%
 #
@@ -97,13 +97,6 @@ start = time.time()
 report.metrics.roc().plot()
 end = time.time()
 print(f"Time taken: {end - start:.2f} seconds")
-
-# %%
-# The cache stores the Display object rather than the matplotlib Figure.
-# This allows us to customize the cached plot before displaying it:
-display = report.metrics.roc()
-display.set_style(relplot_kwargs={"color": "tab:orange"})
-_ = display.plot()
 
 # %%
 # Caching with :class:`~skore.CrossValidationReport`

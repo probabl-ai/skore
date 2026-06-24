@@ -84,8 +84,8 @@ report.metrics.help()
 
 # %%
 #
-# Metrics computation with aggressive caching
-# ===========================================
+# Measuring model performance
+# ===========================
 #
 # Let's have a first look at the statistical performance of our model. skore knows
 # that we are doing classification, and can give us an array of classic ML metrics,

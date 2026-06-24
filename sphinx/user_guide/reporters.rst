@@ -90,7 +90,7 @@ types of metric:
    ``neg_mean_squared_error``) can also be passed without it (e.g.
    ``mean_squared_error``); the alias is resolved automatically.
 
-3. A scorer callable, that takes `estimator`, `X` and `y` and returns a score; this
+2. A scorer callable, that takes `estimator`, `X` and `y` and returns a score; this
    includes scorers constructed with :func:`sklearn.metrics.make_scorer`.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
