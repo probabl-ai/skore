@@ -65,9 +65,6 @@ def _baseline_estimator_report(
 
     Raises :class:`CheckNotApplicable` for unsupported ml tasks.
     """
-    from skore._sklearn._cross_validation.report import CrossValidationReport
-    from skore._sklearn._estimator.report import EstimatorReport
-
     is_classification = report.ml_task in (
         "binary-classification",
         "multiclass-classification",
@@ -96,6 +93,8 @@ def _baseline_estimator_report(
 
     if report._report_type == "cross-validation":
         try:
+            from skore._sklearn._cross_validation.report import CrossValidationReport
+
             baseline = CrossValidationReport(
                 estimator,
                 X=report.X,
@@ -123,6 +122,8 @@ def _baseline_estimator_report(
     y_test = get_report_y(report, data_source="test")
 
     try:
+        from skore._sklearn._estimator.report import EstimatorReport
+
         baseline_report = EstimatorReport(
             estimator,
             X_train=X_train,
@@ -605,29 +606,29 @@ class CheckGoldenFeature(Check):
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._cross_validation.report import CrossValidationReport
-        from skore._sklearn._estimator.report import EstimatorReport
-
         report = cast_report(report)
         is_cv = report._report_type == "cross-validation"
         if is_cv:
             cv_report = cast("CrossValidationReport", report)
-            X = get_preprocessed_X(cv_report, data_source="test")
-            y = get_report_y(cv_report, data_source="test")
+            X = nw.from_native(get_preprocessed_X(cv_report))
+            y = get_report_y(cv_report)
             if X.shape[1] < 2:
                 raise CheckNotApplicable("Train data has only one feature.")
-            X_nw = nw.from_native(X)
+            n_features = X.shape[1]
             metric_registry = cv_report.reports_[0]._metric_registry.copy()
         else:
             estimator_report = cast("EstimatorReport", report)
-            X_train = get_preprocessed_X(estimator_report, data_source="train")
-            X_test = get_preprocessed_X(estimator_report, data_source="test")
+            X_train = nw.from_native(
+                get_preprocessed_X(estimator_report, data_source="train")
+            )
+            X_test = nw.from_native(
+                get_preprocessed_X(estimator_report, data_source="test")
+            )
             y_train = get_report_y(estimator_report, data_source="train")
             y_test = get_report_y(estimator_report, data_source="test")
             if X_train.shape[1] < 2:
                 raise CheckNotApplicable("Train data has only one feature.")
-            X_nw = nw.from_native(X_train)
-            X_test_nw = nw.from_native(X_test)
+            n_features = X_train.shape[1]
             metric_registry = estimator_report._metric_registry
 
         preprocessor_, predictor_ = split_preprocessor_estimator(
@@ -637,50 +638,57 @@ class CheckGoldenFeature(Check):
             predictor_,
             transformer=preprocessor_,
             X=X if is_cv else X_train,
-            n_features=X_nw.shape[1],
+            n_features=n_features,
         )
-        full_test = collect_scores(report, data_source="test")
+        full_feature_scores = collect_scores(report, data_source="test")
 
         golden_features: list[str] = []
-        for i in range(X_nw.shape[1]):
-            column = X_nw.columns[i]
+        single_feature_report: EstimatorReport | CrossValidationReport
+        for i in range(n_features):
             try:
                 if is_cv:
-                    single_cv = CrossValidationReport(
+                    from skore._sklearn._cross_validation.report import (
+                        CrossValidationReport,
+                    )
+
+                    single_feature_report = CrossValidationReport(
                         clone(predictor_),
-                        X=X_nw.select(nw.col(column)).to_native(),
+                        X=X.select(nw.col(feature_names[i])).to_native(),
                         y=y,
                         splitter=cv_report.splitter,
                         pos_label=cv_report.pos_label,
                         n_jobs=cv_report.n_jobs,
                     )
-                    for split in single_cv.reports_:
-                        split._metric_registry = metric_registry
-                    single_test = collect_scores(single_cv, data_source="test")
+                    for report in single_feature_report.reports_:
+                        report._metric_registry = metric_registry
                 else:
-                    single_estimator = EstimatorReport(
+                    from skore._sklearn._estimator.report import EstimatorReport
+
+                    single_feature_report = EstimatorReport(
                         clone(predictor_),
-                        X_train=X_nw.select(nw.col(column)).to_native(),
+                        X_train=X_train.select(nw.col(feature_names[i])).to_native(),
                         y_train=y_train,
-                        X_test=X_test_nw.select(nw.col(column)).to_native(),
+                        X_test=X_test.select(nw.col(feature_names[i])).to_native(),
                         y_test=y_test,
                         pos_label=estimator_report.pos_label,
                     )
-                    single_estimator._metric_registry = metric_registry
-                    single_test = collect_scores(single_estimator, data_source="test")
+                    single_feature_report._metric_registry = metric_registry
+                single_feature_scores = collect_scores(
+                    single_feature_report, data_source="test"
+                )
             except Exception as exc:
                 raise CheckNotApplicable(
                     "Failed to create report from single feature."
                 ) from exc
             votes = [
                 not check_score_gap_to_baseline(
-                    score=full_test[key]["score"],
-                    baseline=single_test[key]["score"],
-                    greater_is_better=full_test[key]["greater_is_better"],
+                    score=full_feature_scores[key]["score"],
+                    baseline=single_feature_scores[key]["score"],
+                    greater_is_better=full_feature_scores[key]["greater_is_better"],
                     floor=0.03,
                     fraction=0.10,
                 )
-                for key in full_test.keys() & single_test.keys()
+                for key in full_feature_scores.keys() & single_feature_scores.keys()
             ]
             if majority_vote(votes)[0]:
                 golden_features.append(str(feature_names[i]))
@@ -747,16 +755,6 @@ class CheckUselessFeatures(Check):
         return None
 
 
-def _datetime_overlap_columns(X_train, X_test) -> list[str]:
-    X_train_nw, X_test_nw = nw.from_native(X_train), nw.from_native(X_test)
-    train_datetime_columns = set(X_train_nw.select(nw.selectors.datetime()).columns)
-    test_datetime_columns = set(X_test_nw.select(nw.selectors.datetime()).columns)
-    datetime_columns = sorted(train_datetime_columns & test_datetime_columns)
-    return [
-        col for col in datetime_columns if X_train_nw[col].max() >= X_test_nw[col].min()
-    ]
-
-
 class CheckTrainTestTimeOverlap(Check):
     """Check for train/test temporal overlap (SKD013).
 
@@ -775,41 +773,37 @@ class CheckTrainTestTimeOverlap(Check):
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast_report(report)
-        is_cv = report._report_type == "cross-validation"
-        if is_cv:
-            splits = cast("CrossValidationReport", report).reports_
-        else:
-            splits = [cast("EstimatorReport", report)]
+        input_report = cast_report(report)
 
         overlapping: set[str] = set()
         found_datetime = False
-        for split_report in splits:
-            if split_report.X_train is None:
-                if is_cv:
-                    continue
+        for report in (
+            input_report.reports_
+            if input_report._report_type == "cross-validation"
+            else [input_report]
+        ):
+            if report.X_train is None:
                 raise CheckNotApplicable("Train data is unavailable.")
             if not nw.dependencies.is_into_dataframe(
-                split_report.X_train
-            ) or not nw.dependencies.is_into_dataframe(split_report.X_test):
-                if is_cv:
-                    continue
+                report.X_train
+            ) or not nw.dependencies.is_into_dataframe(report.X_test):
                 raise CheckNotApplicable(
                     "Input data is not a narwhals compatible DataFrame. "
-                    f"Got {type(split_report.X_train)}."
+                    f"Got {type(report.X_train)}."
                 )
-            X_train, X_test = (
-                nw.from_native(split_report.X_train),
-                nw.from_native(split_report.X_test),
+            X_train_nw = nw.from_native(report.X_train)
+            X_test_nw = nw.from_native(report.X_test)
+
+            datetime_columns = sorted(
+                set(X_train_nw.select(nw.selectors.datetime()).columns)
+                & set(X_test_nw.select(nw.selectors.datetime()).columns)
             )
-            train_datetime_columns = set(
-                X_train.select(nw.selectors.datetime()).columns
-            )
-            test_datetime_columns = set(X_test.select(nw.selectors.datetime()).columns)
-            if train_datetime_columns & test_datetime_columns:
+            if datetime_columns:
                 found_datetime = True
                 overlapping.update(
-                    _datetime_overlap_columns(split_report.X_train, split_report.X_test)
+                    col
+                    for col in datetime_columns
+                    if X_train_nw[col].max() >= X_test_nw[col].min()
                 )
 
         if not found_datetime:

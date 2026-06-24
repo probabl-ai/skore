@@ -64,6 +64,7 @@ def collect_scores(
         return {_metric_key(row): row for row in filtered_rows}
 
     grouped: dict[MetricKey, list[MetricsSummaryRow]] = defaultdict(list)
+    # There is one row per split for each metric, so we group them before averaging
     for row in filtered_rows:
         grouped[_metric_key(row)].append(row)
     return {
@@ -196,7 +197,7 @@ def cast_report(report: _BaseReport) -> EstimatorReport | CrossValidationReport:
 def get_report_y(
     report: EstimatorReport | CrossValidationReport,
     *,
-    data_source: Literal["train", "test", "both"],
+    data_source: Literal["train", "test", "both"] = "both",
 ) -> UserTarget:
     """Return the target as a 1d Series or multi-output DataFrame.
 
@@ -251,7 +252,7 @@ def get_fit_time(report: EstimatorReport | CrossValidationReport) -> float:
 def get_preprocessed_X(
     report: EstimatorReport | CrossValidationReport,
     *,
-    data_source: Literal["train", "test", "both"],
+    data_source: Literal["train", "test", "both"] = "both",
 ) -> UserDataFrame:
     """Return the feature matrix seen by the predictor.
 
