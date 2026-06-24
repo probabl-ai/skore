@@ -15,14 +15,14 @@ from skore._utils._skrub import get_preprocess_apply_node, resolve_fitted_predic
 
 @pytest.fixture
 def regression_xy():
-    Xdf = pd.DataFrame({"a": [1.0, 2, 3, 4, 5], "b": [2.0, 3, 4, 5, 6]})
+    df = pd.DataFrame({"a": [1.0, 2, 3, 4, 5], "b": [2.0, 3, 4, 5, 6]})
     y = pd.Series([0.0, 1, 0, 1, 0])
-    return Xdf, y
+    return df, y
 
 
 def test_resolve_fitted_predictor_returns_ridge_for_chained_applies(regression_xy):
     """Chained applies resolve to the supervised predictor, not a stitched Pipeline."""
-    Xdf, y = regression_xy
+    df, y = regression_xy
     learner = (
         skrub.X()
         .skb.apply(StandardScaler())
@@ -31,7 +31,7 @@ def test_resolve_fitted_predictor_returns_ridge_for_chained_applies(regression_x
     )
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        report = evaluate(learner, data={"X": Xdf, "y": y})
+        report = evaluate(learner, data={"X": df, "y": y})
 
     predictor = resolve_fitted_predictor(report.estimator_)
     assert type(predictor).__name__ == "Ridge"
@@ -42,13 +42,13 @@ def test_resolve_fitted_predictor_returns_inner_pipeline_last_step_for_tabular(
     regression_xy,
 ):
     """A single apply wrapping tabular_pipeline resolves to the inner predictor."""
-    Xdf, y = regression_xy
+    df, y = regression_xy
     learner = (
         skrub.X().skb.apply(tabular_pipeline(Ridge()), y=skrub.y()).skb.make_learner()
     )
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        report = evaluate(learner, data={"X": Xdf, "y": y})
+        report = evaluate(learner, data={"X": df, "y": y})
 
     predictor = resolve_fitted_predictor(report.estimator_)
     assert type(predictor).__name__ == "Ridge"
@@ -56,7 +56,7 @@ def test_resolve_fitted_predictor_returns_inner_pipeline_last_step_for_tabular(
 
 def test_get_preprocessed_X_matches_sklearn_pipeline_preprocessing(regression_xy):
     """Skrub-native transform matches sklearn Pipeline preprocessing."""
-    Xdf, y = regression_xy
+    df, y = regression_xy
     learner = (
         skrub.X()
         .skb.apply(StandardScaler())
@@ -65,7 +65,7 @@ def test_get_preprocessed_X_matches_sklearn_pipeline_preprocessing(regression_xy
     )
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        report = evaluate(learner, data={"X": Xdf, "y": y})
+        report = evaluate(learner, data={"X": df, "y": y})
 
     assert get_preprocess_apply_node(report.estimator_.data_op) is not None
     skrub_X = get_preprocessed_X(report, data_source="train")

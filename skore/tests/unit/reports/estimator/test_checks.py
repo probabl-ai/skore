@@ -213,17 +213,16 @@ def test_skd006_skrub_learner_with_tabular_pipeline(regression_pandas_data):
     assert "SKD006" in tips.index
 
 
-def test_skd006_skrub_learner_chained_apply_steps():
+def test_skd006_skrub_learner_chained_apply_steps(regression_pandas_data):
     """SKD006 sees preprocessing from earlier ``.skb.apply()`` steps."""
-    Xdf = pd.DataFrame({"a": [1.0, 2, 3, 4, 5], "b": [2.0, 3, 4, 5, 6]})
-    y = pd.Series([0.0, 1, 0, 1, 0])
+    X, y = regression_pandas_data
     learner = (
         skrub.X()
         .skb.apply(StandardScaler())
         .skb.apply(Ridge(), y=skrub.y())
         .skb.make_learner()
     )
-    report = evaluate(learner, data={"X": Xdf, "y": y}, splitter=0.2)
+    report = evaluate(learner, data={"X": X, "y": y}, splitter=0.2)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD006" in tips.index
     assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
@@ -301,11 +300,9 @@ def test_skd008_correlated_features(estimator):
     X = rng.standard_normal((20, 4))
     X[:, 1] = X[:, 0] + rng.standard_normal(20) * 1e-4
     y = rng.standard_normal(20)
-    report = evaluate(
-        estimator,
-        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
-        pd.Series(y),
-    )
+    X = pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])])
+    y = pd.Series(y)
+    report = evaluate(estimator, X, y)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD008" in issues.index
     assert "1 pair(s) of features" in issues.loc["SKD008", "explanation"]
