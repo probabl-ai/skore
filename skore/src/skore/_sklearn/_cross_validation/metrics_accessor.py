@@ -6,6 +6,7 @@ from typing import Any, Literal, cast
 import pandas as pd
 from joblib import Parallel
 from numpy.typing import ArrayLike
+from sklearn.metrics import auc
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -1107,9 +1108,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 report_type=self._parent._report_type,
                 column_data={"split": list(split_indices)},
             )
-
-            import pandas as pd
-            from sklearn.metrics import auc
 
             roc_curve_records = []
             roc_auc_records = []
