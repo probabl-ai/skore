@@ -823,6 +823,8 @@ def test_checks_summary_repr(monkeypatch, regression_report):
     assert "text/html" in bundle
     assert 'href="' in bundle["text/html"]
     assert "user_guide/automated_checks.html#" in bundle["text/html"]
+    assert "Mute a check by passing" in bundle["text/html"]
+    assert "report-hint-note-line" in bundle["text/html"]
 
 
 def test_global_ignore(monkeypatch, regression_report):
@@ -1061,6 +1063,22 @@ def test_html_tabs(regression_report):
     assert "Not Applicable (" in html
 
 
+def test_checks_summary_html_note_lines(monkeypatch, regression_report):
+    """HTML note shows fast-mode info and mute hint on separate lines."""
+    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
+    html_fast = regression_report.checks.summarize(fast_mode=True)._repr_html_()
+    assert "Fast mode is on" in html_fast
+    assert "Mute a check by passing" in html_fast
+    assert "report-hint-note-line" in html_fast
+    assert "Checks summary (fast mode):" in html_fast
+
+    html_full = regression_report.checks.summarize(fast_mode=False)._repr_html_()
+    assert "Fast mode is on" not in html_full
+    assert "Mute a check by passing" in html_full
+    assert "Checks summary:" in html_full
+    assert "Checks summary (fast mode):" not in html_full
+
+
 class NotApplicableMockCheck(Check):
     code = "TSTNA"
     title = "Not applicable check"
@@ -1130,6 +1148,11 @@ def test_html_repr_does_not_compute_slow(regression_report):
     regression_report.checks.add([SlowMockCheck(fail=True)])
     fragments = regression_report._html_repr_fragments()
     assert "checks_summary" in fragments
+    assert "report-checks-summary-list" in fragments["checks_summary"]
+    assert "Issues (" in fragments["checks_summary"]
+    assert "report-checks-nested" in fragments["checks_summary"]
+    assert "Fast mode is on" in fragments["checks_summary"]
+    assert "Checks summary" not in fragments["checks_summary"]
 
 
 def test_html_repr_shows_cached_slow(regression_report):
@@ -1138,7 +1161,25 @@ def test_html_repr_shows_cached_slow(regression_report):
     regression_report.checks.add([slow_check])
     regression_report.checks.summarize()
     fragments = regression_report._html_repr_fragments()
-    assert "1 issue(s)" in fragments["checks_summary"]
+    checks_html = fragments["checks_summary"]
+    assert "[TSTSLOW]" in checks_html
+    assert "Issues (1)" in checks_html
+    assert "Fast mode is on" in checks_html
+
+
+def test_html_repr_fragments_includes_checks_detail(monkeypatch, regression_report):
+    """The HTML repr fragments include per-check detail from fast-mode summary."""
+    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
+    checks_html = regression_report._html_repr_fragments()["checks_summary"]
+    assert "report-checks-summary-list" in checks_html
+    assert "Issues (1)" in checks_html
+    assert "report-checks-nested" in checks_html
+    assert "Fast mode is on" in checks_html
+    assert "[SKD001]" in checks_html
+    assert "Mock title." in checks_html
+    assert "Mock overfitting detected." in checks_html
+    assert 'href="' in checks_html
+    assert "user_guide/automated_checks.html#" in checks_html
 
 
 def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):

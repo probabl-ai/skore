@@ -847,16 +847,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        checks_summary = self.checks.summarize(fast_mode=True)
-        checks_summary_html = (
-            "<div class='report-checks-summary-details'>"
-            f"{len(checks_summary.frame(section='issue'))} issue(s), "
-            f"{len(checks_summary.frame(section='tip'))} tip(s), "
-            f"{len(checks_summary.frame(section='passed'))} passed, "
-            f"{len(checks_summary.frame(section='not_applicable'))} not applicable, "
-            f"{checks_summary._n_ignored_codes} ignored."
-            "</div>"
-        )
+        checks_summary_html = self._checks_summary_html_fragment()
 
         return {
             "metrics_summary": metrics_html,
