@@ -26,6 +26,22 @@ def test_legend_binary_classification(
     assert legend_texts[-1] == "Chance level (AUC = 0.5)"
 
 
+@pytest.mark.parametrize("average", [None, "threshold"])
+def test_cross_validation_roc_average(
+    cross_validation_reports_binary_classification, average
+):
+    """Check that we can compute the ROC average over cross validation."""
+    report = cross_validation_reports_binary_classification[0]
+    display = report.metrics.roc(average=average)
+    assert display is not None
+    if average == "threshold":
+        # when we do a threshold average, we merge splits so split=None
+        assert display.roc_curve["split"].isna().all()
+    else:
+        # otherwise we retain the splits
+        assert not display.roc_curve["split"].isna().all()
+
+
 def test_legend_multiclass_classification(
     pyplot,
     cross_validation_reports_multiclass_classification,
