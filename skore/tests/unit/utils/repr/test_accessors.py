@@ -66,7 +66,7 @@ def test_data_accessor_repr(report_with_data):
 def _metrics_summary_frame(metrics_accessor):
     if hasattr(metrics_accessor, "_formatted_summary_frame"):
         return metrics_accessor._formatted_summary_frame()
-    return metrics_accessor.summarize().frame()
+    return metrics_accessor.summarize()._to_pivoted_frame()
 
 
 def test_metrics_accessor_repr(report):
