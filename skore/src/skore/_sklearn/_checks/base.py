@@ -71,8 +71,7 @@ def _check_section(
 ) -> Literal["issue", "tip", "passed", "not_applicable"]:
     if code in not_applicable_codes:
         return "not_applicable"
-    explanation = check_result["explanation"]
-    if pd.notna(explanation):
+    if pd.notna(check_result.get("explanation")):
         return check_result["severity"]
     return "passed"
 
