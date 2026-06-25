@@ -102,17 +102,17 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         }
         for check in checks:
             if not isinstance(check, Check):
-                raise ValueError(
+                raise TypeError(
                     f"{check.__class__.__name__} is not a subclass of Check."
                 )
             if not isinstance(check.report_types, list) or not check.report_types:
-                raise ValueError(
+                raise TypeError(
                     "The check's report_types must be a non-empty list of report "
                     f"types. Got {type(check.report_types)}."
                 )
             invalid_types = set(check.report_types) - valid_report_types
             if invalid_types:
-                raise ValueError(
+                raise TypeError(
                     f"Supported values for report_types are: {valid_report_types}. "
                     f"The check's report_types contains unsupported values: "
                     f"{invalid_types}. "
