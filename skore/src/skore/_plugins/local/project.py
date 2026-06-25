@@ -42,16 +42,7 @@ def find_workspace() -> Path:
 
 def _init_project_dir(workspace: Path, project_name: str) -> Path:
     project_dir = workspace / "projects" / project_name
-    if (
-        not project_dir.expanduser()
-        .resolve()
-        .is_relative_to(workspace.expanduser().resolve() / "projects")
-    ):
-        raise ValueError(project_name)
-    if project_dir.is_dir():
-        return project_dir
-    project_dir.mkdir(parents=True)
-    (project_dir / "reports").mkdir()
+    (project_dir / "reports").mkdir(parents=True, exist_ok=True)
     return project_dir
 
 
@@ -163,11 +154,10 @@ def _write_datasets(
     for subset_name in ["_data", "_train_data", "_test_data"]:
         if (subset := getattr(report, subset_name, None)) is not None:
             subset_refs = {}
-            if subset is not None:
-                for key, val in subset.items():
-                    subset_refs[key] = _get_data_ref(val, workspace)
-                refs_file = dataset_refs_dir / f"{subset_name.removeprefix('_')}.json"
-                refs_file.write_text(json.dumps(subset_refs), "UTF-8")
+            for key, val in subset.items():
+                subset_refs[key] = _get_data_ref(val, workspace)
+            refs_file = dataset_refs_dir / f"{subset_name.removeprefix('_')}.json"
+            refs_file.write_text(json.dumps(subset_refs), "UTF-8")
 
 
 def _write_estimators(

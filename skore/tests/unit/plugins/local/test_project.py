@@ -102,6 +102,17 @@ def test_put_get_summarize(tmp_path, regression, regression_dummy, cv_regression
     assert Path(next(iter(summary))["local_path"]).is_relative_to(tmp_path)
 
 
+def test_permutation_importances(tmp_path, regression_dummy):
+    project = Project(name="regression", workspace=tmp_path)
+    importances = regression_dummy.inspection.permutation_importance().frame()
+    project.put("regression", regression_dummy)
+    fetched = project.get(regression_dummy.id)
+    assert any(k[:2] == ("test", "permutation_importance") for k in fetched._cache)
+    pd.testing.assert_frame_equal(
+        fetched.inspection.permutation_importance().frame(), importances
+    )
+
+
 def test_init_with_envar(monkeypatch, tmp_path):
     monkeypatch.setenv("SKORE_WORKSPACE", str(tmp_path))
     project = Project("<project>")
@@ -113,3 +124,27 @@ def test_init_with_envar(monkeypatch, tmp_path):
 def test_init_with_workspace(tmp_path, type):
     project = Project("<project>", workspace=type(tmp_path))
     assert project.path == tmp_path / "projects" / "_project_"
+
+
+def test_find_workspace(tmp_path, monkeypatch):
+    home = tmp_path / "home"
+    env = tmp_path / "env"
+    local = tmp_path / "repo"
+    pwd = local / "a" / "b"
+    for d in (home, env, pwd):
+        d.mkdir(parents=True)
+    monkeypatch.setattr(Path, "home", lambda: home)
+    monkeypatch.chdir(pwd)
+    assert Project("regression").path == home / "skore_data" / "projects" / "regression"
+    Project("abc", workspace=local / "skore_data")
+    assert (
+        Project("regression").path == local / "skore_data" / "projects" / "regression"
+    )
+    monkeypatch.setenv("SKORE_WORKSPACE", str(env))
+    assert Project("regression").path == env / "projects" / "regression"
+
+
+def test_get_missing(tmp_path):
+    p = Project("regression", workspace=tmp_path)
+    with pytest.raises(KeyError, match="17"):
+        p.get(17)
