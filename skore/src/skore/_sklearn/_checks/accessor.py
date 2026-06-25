@@ -94,19 +94,28 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         checks : list of Check
             Additional checks to register.
         """
-        report_types = [
+        valid_report_types = {
             "cross-validation",
             "estimator",
             "comparison-estimator",
             "comparison-cross-validation",
-        ]
+        }
         for check in checks:
             if not isinstance(check, Check):
-                raise ValueError(f"{check} does not implement the Check protocol.")
-            if check.report_type not in report_types:
-                raise ValueError(
-                    f"Check report_type should be one of: {', '.join(report_types)}. "
-                    f"Got {check.report_type} instead."
+                raise TypeError(
+                    f"{check.__class__.__name__} is not a subclass of Check."
+                )
+            if not isinstance(check.report_types, list) or not check.report_types:
+                raise TypeError(
+                    "The check's report_types must be a non-empty list of report "
+                    f"types. Got {type(check.report_types)}."
+                )
+            invalid_types = set(check.report_types) - valid_report_types
+            if invalid_types:
+                raise TypeError(
+                    f"Supported values for report_types are: {valid_report_types}. "
+                    f"The check's report_types contains unsupported values: "
+                    f"{invalid_types}. "
                 )
         self._parent._checks_registry.extend(checks)
 
