@@ -34,8 +34,7 @@ def test_resolve_fitted_predictor_returns_ridge_for_chained_applies(regression_x
         report = evaluate(learner, data={"X": df, "y": y})
 
     predictor = resolve_fitted_predictor(report.estimator_)
-    assert type(predictor).__name__ == "Ridge"
-    assert not isinstance(predictor, Pipeline)
+    assert isinstance(predictor, Ridge)
 
 
 def test_resolve_fitted_predictor_returns_inner_pipeline_last_step_for_tabular(
@@ -51,7 +50,7 @@ def test_resolve_fitted_predictor_returns_inner_pipeline_last_step_for_tabular(
         report = evaluate(learner, data={"X": df, "y": y})
 
     predictor = resolve_fitted_predictor(report.estimator_)
-    assert type(predictor).__name__ == "Ridge"
+    assert isinstance(predictor, Ridge)
 
 
 def test_get_preprocessed_X_matches_sklearn_pipeline_preprocessing(regression_xy):

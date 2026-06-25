@@ -58,11 +58,6 @@ def _supervised_apply_node(data_op: DataOp) -> Apply:
 
 def _supervised_fitted_estimator(learner: SkrubLearner) -> BaseEstimator:
     impl = _supervised_apply_node(learner.data_op)._skrub_impl
-    if not isinstance(impl, Apply):
-        raise TypeError(
-            f"The supervised step does not represent an estimator application: "
-            f"{learner.data_op!r}"
-        )
     if not hasattr(impl, "estimator_"):
         raise NotFittedError(
             "The skrub learner has not been fitted. Call fit() before inspecting "

@@ -968,19 +968,13 @@ class CheckEstimatorNotTuned(Check):
         if isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable("Estimator is a BaseSearchCV instance.")
 
-        steps = list(iter_fitted_estimator_steps(estimator))
         candidates = [
             (class_name, step)
-            for class_name, step in steps
+            for class_name, step in iter_fitted_estimator_steps(estimator)
             if class_name in HYPERPARAMETERS_TO_TUNE
         ]
         if not candidates:
-            message = (
-                "No parameter to recommend for the estimator."
-                if len(steps) == 1
-                else "No parameter to recommend for any of the steps."
-            )
-            raise CheckNotApplicable(message)
+            raise CheckNotApplicable("No parameter to recommend.")
 
         messages: list[str] = []
         for class_name, step in candidates:
