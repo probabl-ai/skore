@@ -147,7 +147,7 @@ class CheckOverfitting(Check):
 
     code = "SKD001"
     title = "Potential overfitting"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd001-overfitting"
     severity = "issue"
 
@@ -192,7 +192,7 @@ class CheckUnderfitting(Check):
 
     code = "SKD002"
     title = "Potential underfitting"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd002-underfitting"
     severity = "issue"
 
@@ -247,7 +247,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
 
     code = "SKD003"
     title = "Inconsistent performance across splits"
-    report_type = ["cross-validation"]
+    report_types = ["cross-validation"]
     docs_url = "skd003-inconsistent-performance"
     severity = "issue"
 
@@ -284,7 +284,7 @@ class CheckHighClassImbalance(Check):
 
     code = "SKD004"
     title = "High class imbalance"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd004-high-class-imbalance"
     severity = "issue"
 
@@ -323,7 +323,7 @@ class CheckUnderrepresentedClasses(Check):
 
     code = "SKD005"
     title = "Underrepresented classes"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd005-underrepresented-classes"
     severity = "issue"
 
@@ -363,7 +363,7 @@ class CheckCoefficientsInterpretation(Check):
 
     code = "SKD006"
     title = "Coefficient interpretation"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd006-unscaled-coefficients"
     severity = "tip"
 
@@ -403,7 +403,7 @@ class CheckMDIHighCardinalityBias(Check):
 
     code = "SKD007"
     title = "MDI biased for high-cardinality features"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd007-mdi-cardinality-bias"
     severity = "tip"
 
@@ -453,7 +453,7 @@ class CheckCorrelatedFeatures(Check):
 
     code = "SKD008"
     title = "Highly correlated input features"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd008-correlated-features"
     severity = "issue"
 
@@ -504,7 +504,7 @@ class CheckWorseThanBaseline(Check):
 
     code = "SKD009"
     title = "Model worse than baseline"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd009-worse-than-baseline"
     severity = "issue"
     slow = True
@@ -550,7 +550,7 @@ class CheckSlowerThanBaseline(Check):
 
     code = "SKD010"
     title = "Model slower than baseline"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd010-slower-than-baseline"
     severity = "issue"
     slow = True
@@ -599,37 +599,31 @@ class CheckGoldenFeature(Check):
 
     code = "SKD011"
     title = "Golden feature"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd011-golden-feature"
     severity = "tip"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast_report(report)
-        is_cv = report._report_type == "cross-validation"
-        if is_cv:
-            cv_report = cast("CrossValidationReport", report)
-            X = nw.from_native(get_preprocessed_X(cv_report))
-            y = get_report_y(cv_report)
+        if report._report_type == "cross-validation":
+            report = cast("CrossValidationReport", report)
+            X = nw.from_native(get_preprocessed_X(report))
+            y = get_report_y(report)
             if X.shape[1] < 2:
                 raise CheckNotApplicable("Train data has only one feature.")
             n_features = X.shape[1]
-            metric_registry = cv_report.reports_[0]._metric_registry.copy()
+            metric_registry = report.reports_[0]._metric_registry.copy()
             from skore._sklearn._cross_validation.report import CrossValidationReport
         else:
-            estimator_report = cast("EstimatorReport", report)
-            X_train = nw.from_native(
-                get_preprocessed_X(estimator_report, data_source="train")
-            )
-            X_test = nw.from_native(
-                get_preprocessed_X(estimator_report, data_source="test")
-            )
-            y_train = get_report_y(estimator_report, data_source="train")
-            y_test = get_report_y(estimator_report, data_source="test")
+            report = cast("EstimatorReport", report)
+            X_train = nw.from_native(get_preprocessed_X(report, data_source="train"))
+            X_test = nw.from_native(get_preprocessed_X(report, data_source="test"))
+            y_train = get_report_y(report, data_source="train")
+            y_test = get_report_y(report, data_source="test")
             if X_train.shape[1] < 2:
                 raise CheckNotApplicable("Train data has only one feature.")
             n_features = X_train.shape[1]
-            metric_registry = estimator_report._metric_registry
+            metric_registry = report._metric_registry
             from skore._sklearn._estimator.report import EstimatorReport
 
         preprocessor_, predictor_ = split_preprocessor_estimator(
@@ -638,7 +632,7 @@ class CheckGoldenFeature(Check):
         feature_names = _get_feature_names(
             predictor_,
             transformer=preprocessor_,
-            X=X if is_cv else X_train,
+            X=X if report._report_type == "cross-validation" else X_train,
             n_features=n_features,
         )
         full_feature_scores = collect_scores(report, data_source="test")
@@ -647,17 +641,17 @@ class CheckGoldenFeature(Check):
         single_feature_report: EstimatorReport | CrossValidationReport
         for i in range(n_features):
             try:
-                if is_cv:
+                if report._report_type == "cross-validation":
                     single_feature_report = CrossValidationReport(
                         clone(predictor_),
                         X=X.select(nw.col(feature_names[i])).to_native(),
                         y=y,
-                        splitter=cv_report.splitter,
-                        pos_label=cv_report.pos_label,
-                        n_jobs=cv_report.n_jobs,
+                        splitter=report.splitter,
+                        pos_label=report.pos_label,
+                        n_jobs=report.n_jobs,
                     )
-                    for report in single_feature_report.reports_:
-                        report._metric_registry = metric_registry
+                    for sub_report in single_feature_report.reports_:
+                        sub_report._metric_registry = metric_registry
                 else:
                     single_feature_report = EstimatorReport(
                         clone(predictor_),
@@ -665,7 +659,7 @@ class CheckGoldenFeature(Check):
                         y_train=y_train,
                         X_test=X_test.select(nw.col(feature_names[i])).to_native(),
                         y_test=y_test,
-                        pos_label=estimator_report.pos_label,
+                        pos_label=report.pos_label,
                     )
                     single_feature_report._metric_registry = metric_registry
                 single_feature_scores = collect_scores(
@@ -712,7 +706,7 @@ class CheckUselessFeatures(Check):
 
     code = "SKD012"
     title = "Useless features"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd012-useless-features"
     severity = "tip"
     slow = True
@@ -763,7 +757,7 @@ class CheckTrainTestTimeOverlap(Check):
 
     code = "SKD013"
     title = "Train-test overlap in time series"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd013-train-test-time-overlap"
     severity = "issue"
 
@@ -779,12 +773,15 @@ class CheckTrainTestTimeOverlap(Check):
         ):
             if report.X_train is None:
                 raise CheckNotApplicable("Train data is unavailable.")
-            if not nw.dependencies.is_into_dataframe(
-                report.X_train
-            ) or not nw.dependencies.is_into_dataframe(report.X_test):
+            if not nw.dependencies.is_into_dataframe(report.X_train):
                 raise CheckNotApplicable(
                     "Input data is not a narwhals compatible DataFrame. "
                     f"Got {type(report.X_train)}."
+                )
+            if not nw.dependencies.is_into_dataframe(report.X_test):
+                raise CheckNotApplicable(
+                    "Input data is not a narwhals compatible DataFrame. "
+                    f"Got {type(report.X_test)}."
                 )
             X_train_nw = nw.from_native(report.X_train)
             X_test_nw = nw.from_native(report.X_test)
@@ -824,7 +821,7 @@ class CheckHyperparamsAtSearchEdge(Check):
 
     code = "SKD014"
     title = "Hyperparameters at search edge"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd014-hyperparams-at-search-edge"
     severity = "issue"
 
@@ -934,7 +931,7 @@ class CheckSearchParamsToTune(Check):
 
     code = "SKD015"
     title = "Hyperparameters worth tuning"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd015-hyperparameters-worth-tuning"
     severity = "tip"
 
@@ -1004,7 +1001,7 @@ class CheckEstimatorNotTuned(Check):
 
     code = "SKD016"
     title = "Estimator not tuned"
-    report_type = ["estimator", "cross-validation"]
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd016-estimator-not-tuned"
     severity = "tip"
 

@@ -252,10 +252,9 @@ class Check(Protocol):
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
         the automated checks user guide.
 
-    report_type : list of str
-        Report types this check applies to. Each element must be one of
-        ``"cross-validation"``, ``"estimator"``, ``"comparison-estimator"``,
-        or ``"comparison-cross-validation"``.
+    report_type : list of {"estimator", "cross-validation", \
+            "comparison-estimator", "comparison-cross-validation"}
+        Report types this check applies to.
 
     severity : {"issue", "tip"}
         Severity of the finding. ``"issue"`` flags a modeling problem to fix;
@@ -272,7 +271,7 @@ class Check(Protocol):
 
     code: CheckCode
     title: str
-    report_type: list[ReportType] | tuple[ReportType]
+    report_types: list[ReportType]
     docs_url: str | None = None
     severity: Literal["issue", "tip"]
     slow: bool = False

@@ -36,7 +36,7 @@ from skore import Check, CheckNotApplicable
 class CustomCheck1(Check):
     code = "CSTM001"
     title = "High feature count"
-    report_type = ["estimator"]
+    report_types = ["estimator"]
     severity = "tip"
     docs_url = "https://scikit-learn.org/stable/modules/feature_selection.html#feature-selection"
 
@@ -85,7 +85,7 @@ report.checks.summarize()
 # :class:`~skore.CrossValidationReport` and :class:`~skore.ComparisonReport` can also
 # receive custom checks scoped to their report type.
 #
-# The `report_type` argument of :class:`~skore.Check` is a list that controls which
+# The `report_types` attribute of :class:`~skore.Check` is a list that controls which
 # reports the check runs on. Let's write a check that is specific to cross-validation
 # reports: it flags metrics with high variance across splits. We set the severity to
 # "issue" to indicate that this is an issue to fix.
@@ -104,7 +104,7 @@ cv_report = evaluate(LinearRegression(), X, y_noisy, splitter=5)
 class CustomCheck2(Check):
     code = "CSTM002"
     title = "High score variance across CV splits"
-    report_type = ["cross-validation"]
+    report_types = ["cross-validation"]
     docs_url = None
     severity = "issue"
 
@@ -134,10 +134,10 @@ cv_report.checks.summarize()
 # Estimator-scoped checks on cross-validation and comparison reports
 # ==================================================================
 #
-# Estimator-scoped checks such as ``CustomCheck1`` run only on
-# :class:`~skore.EstimatorReport` instances. They are not executed on
-# :class:`~skore.CrossValidationReport`. To run the same logic on both report types,
-# set ``report_type = ["estimator", "cross-validation"]`` and adapt the check function
+# Estimator-scoped checks such as ``CustomCheck1`` are only executed on
+# :class:`~skore.EstimatorReport` instances, not on
+# :class:`~skore.CrossValidationReport` instances. To run the same logic on both report types,
+# set ``report_types = ["estimator", "cross-validation"]`` and adapt the check function
 # to handle each report type.
 
 # %%

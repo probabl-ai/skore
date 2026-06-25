@@ -102,20 +102,19 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         }
         for check in checks:
             if not isinstance(check, Check):
-                raise ValueError(f"{check} does not implement the Check protocol.")
-            if (
-                not isinstance(check.report_type, (list, tuple))
-                or not check.report_type
-            ):
                 raise ValueError(
-                    "Check report_type must be a non-empty list or tuple of report "
-                    f"types. Got {type(check.report_type)}."
+                    f"{check.__class__.__name__} is not a subclass of Check."
                 )
-            invalid_types = set(check.report_type) - valid_report_types
+            if not isinstance(check.report_types, list) or not check.report_types:
+                raise ValueError(
+                    "The check's report_types must be a non-empty list of report "
+                    f"types. Got {type(check.report_types)}."
+                )
+            invalid_types = set(check.report_types) - valid_report_types
             if invalid_types:
                 raise ValueError(
-                    f"Supported values for report_type are: {valid_report_types}. "
-                    f"{check.code}'s report_type contains unsupported values: "
+                    f"Supported values for report_types are: {valid_report_types}. "
+                    f"The check's report_types contains unsupported values: "
                     f"{invalid_types}. "
                 )
         self._parent._checks_registry.extend(checks)

@@ -68,13 +68,10 @@ def collect_scores(
     for row in filtered_rows:
         grouped[_metric_key(row)].append(row)
     return {
-        key: cast(
-            MetricsSummaryRow,
-            {
-                **split_rows[0],
-                "score": float(np.mean([row["score"] for row in split_rows])),
-            },
-        )
+        key: split_rows[0]
+        | {
+            "score": float(np.mean([row["score"] for row in split_rows])),
+        }
         for key, split_rows in grouped.items()
     }
 
@@ -164,7 +161,7 @@ class CheckNotApplicable(Exception):
     >>> class MyCheck(Check):
     ...     code = "TST001"
     ...     title = "My check"
-    ...     report_type = ["estimator"]
+    ...     report_types = ["estimator"]
     ...     docs_url = None
     ...     severity = "issue"
     ...     def check_function(self, report):

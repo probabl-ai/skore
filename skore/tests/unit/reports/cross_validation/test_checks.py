@@ -29,7 +29,7 @@ def regression_report(regression_data):
 class CVCheck(Check):
     code = "CVCUSTOM"
     title = "CV-level check"
-    report_type = ["cross-validation"]
+    report_types = ["cross-validation"]
     docs_url = "cvcustom"
 
     def check_function(self, report):
@@ -39,7 +39,7 @@ class CVCheck(Check):
 class EstimatorCheck(Check):
     code = "ESTCUSTOM"
     title = "Estimator-level check"
-    report_type = ["estimator"]
+    report_types = ["estimator"]
     docs_url = "estcustom"
 
     def check_function(self, report):

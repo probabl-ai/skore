@@ -85,10 +85,10 @@ class _BaseReport(ReportHelpMixin):
         checks_to_run = [
             check
             for check in self._checks_registry
-            if self._report_type in check.report_type
+            if self._report_type in check.report_types
             and check.code not in self._check_results_cache
             and check.code not in ignored_codes
-            and not (fast_mode and getattr(check, "slow", False))
+            and not (fast_mode and check.slow)
         ]
         for check in track(
             checks_to_run,
