@@ -42,7 +42,8 @@ class CustomCheck1(Check):
 
     def check_function(self, report):
         """Flag when the number of features exceeds a threshold."""
-        raise CheckNotApplicable()
+        if report.X_test is None:
+            raise CheckNotApplicable()
 
         n_features = report.X_test.shape[1]
         if n_features > 50:
@@ -68,7 +69,9 @@ from sklearn.linear_model import LinearRegression
 from skore import evaluate
 
 rng = np.random.default_rng(42)
-X = pd.DataFrame(rng.normal(size=(200, 2)), columns=[f"feature_{i}" for i in range(2)])
+X = pd.DataFrame(
+    rng.normal(size=(200, 80)), columns=[f"feature_{i}" for i in range(80)]
+)
 y = pd.Series(X.iloc[:, 0] + rng.normal(scale=0.1, size=200))
 
 report = evaluate(LinearRegression(), X, y)
