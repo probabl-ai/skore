@@ -11,7 +11,7 @@ from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._checks.base import CheckCode
+from skore._sklearn._checks.base import CheckCode, CheckExplanation, CheckSource
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
@@ -507,9 +507,11 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         fast_mode: bool = False,
     ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
         comparison_results: dict[CheckCode, dict] = {}
-        explanation_by_code: defaultdict[CheckCode, dict[str, str]] = defaultdict(dict)
-        na_explanation_by_code: defaultdict[CheckCode, dict[str, str]] = defaultdict(
-            dict
+        explanation_by_code: dict[CheckCode, dict[CheckSource, CheckExplanation]] = (
+            defaultdict(dict)
+        )
+        na_explanation_by_code: dict[CheckCode, dict[CheckSource, CheckExplanation]] = (
+            defaultdict(dict)
         )
         all_applicable_codes: set[CheckCode] = set()
         all_not_applicable_codes: set[CheckCode] = set()

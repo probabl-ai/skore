@@ -49,9 +49,9 @@ at report level through :meth:`~skore.CrossValidationReport.checks.summarize`. A
 reported only when it appears in a strict majority of evaluated splits.
 
 For comparison reports, :meth:`~skore.ComparisonReport.checks.summarize` builds a global
-summary from each component report in the comparison. Results are grouped by
-check code; the HTML summary lists each check once with per-estimator sub-entries
-for issues, tips, and not-applicable reasons.
+summary from each compared report. Results are grouped by check code; the HTML summary
+lists each check once with per-estimator sub-entries for issues, tips, and not-applicable
+reasons.
 
 
 .. _skd001-overfitting:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from collections import defaultdict
 from importlib.metadata import PackageNotFoundError, version
-from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, TypedDict, runtime_checkable
 from uuid import uuid4
 
 import pandas as pd
@@ -18,6 +18,14 @@ if TYPE_CHECKING:
 
 
 CheckCode = str
+CheckSource = str
+CheckSources = str
+CheckExplanation = str
+
+
+class GroupedExplanation(TypedDict):
+    source: CheckSources
+    explanation: CheckExplanation
 
 
 _TAB_SPECS: list[
@@ -53,9 +61,11 @@ _TAB_SPECS: list[
 ]
 
 
-def _group_explanations(explanation: dict[str, str]) -> list[dict[str, str]]:
+def _group_explanations(
+    explanation: dict[CheckSource, CheckExplanation],
+) -> list[GroupedExplanation]:
     """Merge estimators that share the same explanation for display."""
-    grouped: defaultdict[str, list[str]] = defaultdict(list)
+    grouped: defaultdict[CheckExplanation, list[CheckSource]] = defaultdict(list)
     for source, text in explanation.items():
         grouped[text].append(source)
     return [
@@ -187,16 +197,22 @@ class ChecksSummaryDisplay(DisplayMixin):
                         {
                             "code": row.code,
                             "title": row.title,
-                            "explanation": row.explanation
-                            if pd.notna(row.explanation)
-                            and isinstance(row.explanation, str)
-                            else None,
-                            "grouped_explanations": _group_explanations(row.explanation)
-                            if isinstance(row.explanation, dict)
-                            else None,
-                            "documentation_url": row.documentation_url
-                            if pd.notna(row.documentation_url)
-                            else None,
+                            "explanation": (
+                                row.explanation
+                                if pd.notna(row.explanation)
+                                and isinstance(row.explanation, str)
+                                else None
+                            ),
+                            "grouped_explanations": (
+                                _group_explanations(row.explanation)
+                                if isinstance(row.explanation, dict)
+                                else None
+                            ),
+                            "documentation_url": (
+                                row.documentation_url
+                                if pd.notna(row.documentation_url)
+                                else None
+                            ),
                         }
                         for row in df.itertuples()
                     ],
