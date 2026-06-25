@@ -1059,7 +1059,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         average : {"threshold"} or None, default=None
             If "threshold", computes the threshold-averaged ROC curve across the
-            cross-validation folds instead of returning individual fold curves.
+            cross-validation folds. The resulting plot will display the individual
+            cross-validation splits as faded lines in the background, with the bold
+            threshold-averaged curve overlaid on top.
             Only valid for binary classification.
 
         Returns
@@ -1076,6 +1078,10 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         To keep the stored display lightweight, the ROC curve is downsampled to at most
         500 points per class and per split. Sampling is performed by picking
         evenly-spaced indices on the sorted thresholds.
+
+        When `average="threshold"` is used, the individual fold lines can be visually
+        suppressed from the plot by passing `relplot_kwargs={"alpha": 0.0}` to the
+        `set_style()` method before calling `plot()`.
 
         Examples
         --------

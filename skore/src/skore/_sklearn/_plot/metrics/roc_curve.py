@@ -98,6 +98,11 @@ class RocCurveDisplay(_ClassifierDisplayMixin, DisplayMixin):
     For multiclass classification, curves are computed in a one-vs-rest
     fashion for each class label.
 
+    When generated from a :class:`~skore.CrossValidationReport` with
+    `average="threshold"`, the plot displays the individual folds as transparent
+    lines behind the bold averaged curve. You can hide the individual fold lines
+    by setting `relplot_kwargs={"alpha": 0.0}` via :meth:`set_style`.
+
     Examples
     --------
     >>> from sklearn.datasets import load_breast_cancer
