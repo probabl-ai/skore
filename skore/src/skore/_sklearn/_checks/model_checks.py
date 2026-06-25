@@ -239,7 +239,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
         """Detect outlier performance across cross-validation splits."""
         report = cast("CrossValidationReport", report)
 
-        report_data = report.metrics.summarize(data_source="test").frame(
+        report_data = report.metrics.summarize(data_source="test")._to_pivoted_frame(
             aggregate=None, flat_index=True
         )
         votes = np.array(

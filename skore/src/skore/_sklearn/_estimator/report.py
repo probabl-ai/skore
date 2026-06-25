@@ -784,7 +784,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return f"""{self.__class__.__name__}:
         {self.estimator_name_!r}
 
-        {self.metrics.summarize(data_source="test").frame()}
+        {self.metrics.summarize(data_source="test")._to_pivoted_frame()}
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
     def _html_repr_fragments(self) -> dict[str, str]:
@@ -808,7 +808,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         table_report_html = table_report.html_snippet()
         metrics_html = (
             self.metrics.summarize(data_source="test")
-            .frame()
+            ._to_pivoted_frame()
             .reset_index()
             .to_html(index=False)
         )
@@ -883,7 +883,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         str
             The markdown summary of the report.
         """
-        metrics_text = repr(self.metrics.summarize(data_source="test").frame())
+        metrics_text = repr(
+            self.metrics.summarize(data_source="test")._to_pivoted_frame()
+        )
         timings = self.metrics.timings()
         summary = summarize_dataframe(
             self.data._prepare_dataframe_for_display(

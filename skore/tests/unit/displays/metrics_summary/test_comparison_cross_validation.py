@@ -10,7 +10,7 @@ from skore import ComparisonReport, CrossValidationReport
 def test_aggregate_none(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with `aggregate=None`."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize().frame(aggregate=None)
+    result = report.metrics.summarize()._to_pivoted_frame(aggregate=None)
 
     assert result.columns.to_list() == [
         ("DummyClassifier_1", "Split #0"),
@@ -30,7 +30,9 @@ def test_aggregate_none_flat_index(
     `flat_index=True`.
     """
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize().frame(aggregate=None, flat_index=True)
+    result = report.metrics.summarize()._to_pivoted_frame(
+        aggregate=None, flat_index=True
+    )
 
     assert result.columns.to_list() == [
         "dummyclassifier_1_split_0",
@@ -44,7 +46,7 @@ def test_aggregate_none_flat_index(
 def test_default(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with its default attributes."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize().frame()
+    result = report.metrics.summarize()._to_pivoted_frame()
 
     assert_index_equal(
         result.columns,
@@ -67,7 +69,7 @@ def test_default_regression(comparison_cross_validation_reports_regression):
     models.
     """
     report = comparison_cross_validation_reports_regression
-    result = report.metrics.summarize().frame()
+    result = report.metrics.summarize()._to_pivoted_frame()
 
     assert_index_equal(
         result.columns,
@@ -94,7 +96,7 @@ def test_aggregate_none_regression(comparison_cross_validation_reports_regressio
     """`MetricsSummaryDisplay` works as it should with `aggregate=None` for
     regression."""
     report = comparison_cross_validation_reports_regression
-    result = report.metrics.summarize().frame(aggregate=None)
+    result = report.metrics.summarize()._to_pivoted_frame(aggregate=None)
 
     assert result.columns.names == ["Estimator", "Split"]
     assert isinstance(result.columns, pd.MultiIndex)
@@ -104,7 +106,9 @@ def test_aggregate_none_regression(comparison_cross_validation_reports_regressio
 def test_metric(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with the `metric` parameter."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(metric=["accuracy"]).frame(aggregate=None)
+    result = report.metrics.summarize(metric=["accuracy"])._to_pivoted_frame(
+        aggregate=None
+    )
 
     assert_index_equal(
         result.columns,
@@ -124,7 +128,7 @@ def test_metric(comparison_cross_validation_reports_binary_classification):
 def test_favorability(comparison_cross_validation_reports_binary_classification):
     """`MetricsSummaryDisplay` works as intended with `favorability=True`."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize().frame(favorability=True)
+    result = report.metrics.summarize()._to_pivoted_frame(favorability=True)
 
     assert_index_equal(
         result.columns,
@@ -158,7 +162,7 @@ def test_init_with_report_names(binary_classification_data):
 
     estimator_names = set(
         report.metrics.summarize()
-        .frame(aggregate=None)
+        ._to_pivoted_frame(aggregate=None)
         .columns.get_level_values("Estimator")
     )
     assert estimator_names == {"model_1", "model_2"}
@@ -180,8 +184,10 @@ def test_cache_poisoning(binary_classification_data):
         DummyClassifier(strategy="uniform", random_state=2), X=X, y=y
     )
     report = ComparisonReport({"model_1": report_1, "model_2": report_2})
-    report.metrics.summarize().frame(favorability=True)
-    result = report_1.metrics.summarize().frame(aggregate=None, favorability=True)
+    report.metrics.summarize()._to_pivoted_frame(favorability=True)
+    result = report_1.metrics.summarize()._to_pivoted_frame(
+        aggregate=None, favorability=True
+    )
 
     assert "Favorability" in result.columns
 
@@ -192,6 +198,19 @@ def test_aggregate_sequence_of_one_element(
     """Passing a list of one string is the same as passing the string itself."""
     report = comparison_cross_validation_reports_binary_classification
     assert_frame_equal(
-        report.metrics.summarize().frame(aggregate="mean"),
-        report.metrics.summarize().frame(aggregate=["mean"]),
+        report.metrics.summarize()._to_pivoted_frame(aggregate="mean"),
+        report.metrics.summarize()._to_pivoted_frame(aggregate=["mean"]),
     )
+
+
+def test_frame_has_estimator_and_split_columns(
+    comparison_cross_validation_reports_binary_classification,
+):
+    """The tidy frame exposes both ``estimator`` and ``split`` columns."""
+    report = comparison_cross_validation_reports_binary_classification
+    frame = report.metrics.summarize().frame()
+
+    assert isinstance(frame.index, pd.RangeIndex)
+    assert {"estimator", "split"}.issubset(frame.columns)
+    assert frame["estimator"].nunique() == 2
+    assert set(frame["split"]) == {0, 1}

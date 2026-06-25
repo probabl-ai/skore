@@ -294,10 +294,11 @@ _ = final_report.metrics.confusion_matrix().plot()
 # %%
 import pandas as pd
 
-pd.concat(
-    [final_metrics.frame(), logreg_cv_report.metrics.summarize().frame()],
-    axis="columns",
+final_frame = final_metrics.frame().assign(source="held-out")
+cv_frame = (
+    logreg_cv_report.metrics.summarize().frame().assign(source="cross-validation")
 )
+pd.concat([final_frame, cv_frame], ignore_index=True)
 
 # %%
 # As expected, our final model gets better performance, likely thanks to the

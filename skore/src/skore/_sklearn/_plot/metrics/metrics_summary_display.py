@@ -65,8 +65,11 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     Parameters
     ----------
-    rows : list of MetricsSummaryRow
-        The rows to display.
+    summary : pandas.DataFrame
+        Long-format dataframe storing one row per metric observation, with the
+        metric scores and their metadata (e.g. ``metric_verbose_name``,
+        ``estimator_name``, ``data_source``, ``label``, ``output``, ``average``,
+        ``split``, ``score``).
 
     report_type : {"estimator", "comparison-estimator", "cross-validation", \
             "comparison-cross-validation"}
@@ -74,12 +77,12 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     Attributes
     ----------
-    rows : list of MetricsSummaryRow
-        Metric scores and metadata for each row of the summary.
+    summary : pandas.DataFrame
+        The long-format dataframe storing the metric scores and metadata.
     report_type : ReportType
         The type of report.
     data : pandas.DataFrame
-        Rows as a DataFrame (read-only property).
+        The long-format summary with fingerprints resolved (read-only property).
 
     See Also
     --------
@@ -88,35 +91,39 @@ class MetricsSummaryDisplay(DisplayMixin):
     PrecisionRecallCurveDisplay : Plot precision-recall curves.
     ConfusionMatrixDisplay : Display the confusion matrix.
     PredictionErrorDisplay : Plot regression prediction error.
-
-    Notes
-    -----
-    For cross-validation and comparison reports, :meth:`frame` can aggregate
-    scores across splits or estimators using the ``aggregate`` parameter.
     """
 
     def __init__(
         self,
-        rows: list[MetricsSummaryRow],
+        summary: pd.DataFrame,
         report_type: ReportType,
     ):
-        self.rows = rows
+        self.summary = summary
         self.report_type = report_type
+
+    @classmethod
+    def _from_rows(
+        cls,
+        rows: list[MetricsSummaryRow],
+        report_type: ReportType,
+    ) -> MetricsSummaryDisplay:
+        """Build a display from metric rows, stored as a long-format DataFrame."""
+        summary = pd.DataFrame(rows)
+
+        if any(isinstance(r["label"], bool) for r in rows):
+            summary["label"] = summary["label"].astype(pd.BooleanDtype())
+        elif any(isinstance(r["label"], int) for r in rows):
+            summary["label"] = summary["label"].astype(pd.Int64Dtype())
+
+        if any(isinstance(r["output"], int) for r in rows):
+            summary["output"] = summary["output"].astype(pd.Int64Dtype())
+
+        return cls(summary, report_type=report_type)
 
     @property
     def data(self):
-        """Return rows as a DataFrame, preserving nullable dtypes."""
-        data = pd.DataFrame(self.rows)
-
-        if any(isinstance(r["label"], bool) for r in self.rows):
-            data["label"] = data["label"].astype(pd.BooleanDtype())
-        elif any(isinstance(r["label"], int) for r in self.rows):
-            data["label"] = data["label"].astype(pd.Int64Dtype())
-
-        if any(isinstance(r["output"], int) for r in self.rows):
-            data["output"] = data["output"].astype(pd.Int64Dtype())
-
-        data = MetricsSummaryDisplay._resolve_fingerprints(data)
+        """Return the long-format summary with fingerprints resolved."""
+        data = MetricsSummaryDisplay._resolve_fingerprints(self.summary)
         return data.drop(columns="fingerprint")
 
     @staticmethod
@@ -184,13 +191,16 @@ class MetricsSummaryDisplay(DisplayMixin):
         report_type: ReportType,
         extra_rows_data: list[dict[str, Any]],
     ) -> MetricsSummaryDisplay:
-        rows = []
-        for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
-            rows.extend(
-                [cast(MetricsSummaryRow, row | extra_data) for row in display.rows]
-            )
-
-        return MetricsSummaryDisplay(rows, report_type=report_type)
+        summary = pd.concat(
+            [
+                display.summary.assign(**extra_data)
+                for display, extra_data in zip(
+                    child_displays, extra_rows_data, strict=True
+                )
+            ],
+            ignore_index=True,
+        )
+        return MetricsSummaryDisplay(summary, report_type=report_type)
 
     @staticmethod
     def _flatten_index(df: pd.DataFrame) -> pd.DataFrame:
@@ -363,14 +373,72 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         return df
 
-    def frame(
+    def frame(self, *, favorability: bool = False) -> pd.DataFrame:
+        """Return the summary as a tidy long-format dataframe.
+
+        Parameters
+        ----------
+        favorability : bool, default=False
+            Whether or not to add a ``favorability`` column indicating whether
+            higher or lower values are better for each metric.
+
+        Returns
+        -------
+        frame : pandas.DataFrame
+            The report metrics in long format with a flat index. Columns are
+            included depending on the report type and the available data:
+
+            - ``estimator``: estimator name (comparison reports only)
+            - ``split``: cross-validation split index (cross-validation reports only)
+            - ``data_source``: data source (when more than one is present)
+            - ``metric``: metric name
+            - ``label``: class label (classification, when relevant)
+            - ``output``: output index (multioutput regression, when relevant)
+            - ``average``: averaging mode (when relevant)
+            - ``value``: the metric value
+            - ``favorability``: favorability indicator (when ``favorability=True``)
+        """
+        data = self.data
+
+        columns: list[str] = []
+        if "comparison" in self.report_type:
+            columns.append("estimator_name")
+        if "cross-validation" in self.report_type:
+            columns.append("split")
+        if data["data_source"].nunique() > 1:
+            columns.append("data_source")
+        columns.append("metric_verbose_name")
+        columns.extend(
+            col for col in ("label", "output", "average") if data[col].notna().any()
+        )
+        columns.append("score")
+
+        frame = data[columns].copy()
+        if favorability:
+            frame["favorability"] = (
+                data["greater_is_better"]
+                .map({True: "(↗︎)", False: "(↘︎)"})
+                .astype("string")
+                .fillna("")
+            )
+
+        frame = frame.rename(
+            columns={
+                "estimator_name": "estimator",
+                "metric_verbose_name": "metric",
+                "score": "value",
+            }
+        )
+        return frame.reset_index(drop=True)
+
+    def _to_pivoted_frame(
         self,
         *,
         aggregate: Aggregate | None = ("mean", "std"),
         favorability: bool = False,
         flat_index: bool = False,
     ):
-        """Return the summarize as a dataframe.
+        """Return the summary as a pivoted, human-readable dataframe.
 
         Parameters
         ----------
@@ -389,7 +457,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         Returns
         -------
         frame : pandas.DataFrame
-            The report metrics as a dataframe.
+            The report metrics as a pivoted dataframe.
         """
         if self.report_type == "estimator":
             return MetricsSummaryDisplay._frame_estimator(
@@ -465,13 +533,16 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     def _repr_html_(self) -> str:
         return (
-            f"{self.frame()._repr_html_()}"
+            f"{self._to_pivoted_frame()._repr_html_()}"
             '<p role="note">Use <code>.frame()</code> to control the format'
             " of the output.</p>"
         )
 
     def __repr__(self) -> str:
-        return f"{self.frame()!r}\nUse .frame() to control the format of the output."
+        return (
+            f"{self._to_pivoted_frame()!r}"
+            "\nUse .frame() to control the format of the output."
+        )
 
     @DisplayMixin.style_plot
     def plot(self) -> Figure:

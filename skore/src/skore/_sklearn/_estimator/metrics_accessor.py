@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any, Literal, cast
 
+import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.utils.metaestimators import available_if
@@ -102,40 +103,45 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> report.metrics.summarize().frame(favorability=True).drop(
-        ...    ["Fit time (s)", "Predict time (s)"]
-        ... )
-                    LogisticRegression Favorability
-        Metric
-        Accuracy               0.94...         (↗︎)
-        Precision              0.98...         (↗︎)
-        Recall                 0.92...         (↗︎)
-        ROC AUC                0.99...         (↗︎)
-        Log loss               0.11...         (↘︎)
-        Brier score            0.03...         (↘︎)
+        >>> summary = report.metrics.summarize().frame(favorability=True)
+        >>> summary[~summary["metric"].isin(["Fit time (s)", "Predict time (s)"])]
+                metric     value favorability
+        0     Accuracy  0.94...         (↗︎)
+        1    Precision  0.98...         (↗︎)
+        2       Recall  0.92...         (↗︎)
+        3      ROC AUC  0.99...         (↗︎)
+        4     Log loss  0.11...         (↘︎)
+        5  Brier score  0.03...         (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(metric="log_loss").frame(favorability=True)
-                  LogisticRegression Favorability
-        Metric
-        Log loss             0.11...          (↘︎)
-        >>> report.metrics.summarize(
+             metric     value favorability
+        0  Log loss  0.11...         (↘︎)
+        >>> summary = report.metrics.summarize(
         ...    data_source="both"
-        ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
-                     LogisticRegression (train)  LogisticRegression (test)  Favorability
-        Metric
-        Accuracy                        0.96...                     0.94...          (↗︎)
-        Precision                       0.96...                     0.98...          (↗︎)
-        Recall                          0.97...                     0.92...          (↗︎)
-        ROC AUC                         0.99...                     0.99...          (↗︎)
-        Log loss                        0.08...                     0.11...          (↘︎)
-        Brier score                     0.02...                     0.03...          (↘︎)
+        ... ).frame(favorability=True)
+        >>> summary[~summary["metric"].isin(["Fit time (s)", "Predict time (s)"])]
+           data_source       metric     value favorability
+        0        train     Accuracy  0.96...         (↗︎)
+        1        train    Precision  0.96...         (↗︎)
+        2        train       Recall  0.97...         (↗︎)
+        3        train      ROC AUC  0.99...         (↗︎)
+        4        train     Log loss  0.08...         (↘︎)
+        5        train  Brier score  0.02...         (↘︎)
+        8         test     Accuracy  0.94...         (↗︎)
+        9         test    Precision  0.98...         (↗︎)
+        10        test       Recall  0.92...         (↗︎)
+        11        test      ROC AUC  0.99...         (↗︎)
+        12        test     Log loss  0.11...         (↘︎)
+        13        test  Brier score  0.03...         (↘︎)
         """
         if data_source == "both":
             train_summary = self.summarize(data_source="train", metric=metric)
             test_summary = self.summarize(data_source="test", metric=metric)
 
-            combined = train_summary.rows + test_summary.rows
-            return MetricsSummaryDisplay(rows=combined, report_type="estimator")
+            combined = pd.concat(
+                [train_summary.summary, test_summary.summary], ignore_index=True
+            )
+            return MetricsSummaryDisplay(summary=combined, report_type="estimator")
 
         registry = self._parent._metric_registry
         if isinstance(metric, str):
@@ -168,7 +174,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 for row in metric_rows
             )
 
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        return MetricsSummaryDisplay._from_rows(rows, report_type="estimator")
 
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
@@ -189,7 +195,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 report=self._parent, data_source=data_source, **kwargs
             )
         ]
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        return MetricsSummaryDisplay._from_rows(rows, report_type="estimator")
 
     def available(self) -> list[str]:
         """List available metric names in the registry.
@@ -264,10 +270,16 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
         >>> report.metrics.summarize().frame()
-                            LogisticRegression
-        Metric
-                                           ...
-        Mean Absolute Error                ...
+                        metric     value
+        0  Mean Absolute Error  0.05...
+        1             Accuracy  0.94...
+        2            Precision  0.98...
+        3               Recall  0.92...
+        4              ROC AUC  0.99...
+        5             Log loss  0.11...
+        6          Brier score  0.03...
+        7         Fit time (s)      ...
+        8     Predict time (s)      ...
         """
         try:
             self._parent._metric_registry.add(
@@ -950,14 +962,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __repr__(self) -> str:
         return (
             "Metrics summary:\n"
-            f"{self.summarize().frame()!r}\n"
+            f"{self.summarize()._to_pivoted_frame()!r}\n"
             "Explore available methods with .help()."
         )
 
     def _repr_html_(self) -> str:
         return (
             "<p>Metrics summary:</p>"
-            f"{self.summarize().frame()._repr_html_()}"
+            f"{self.summarize()._to_pivoted_frame()._repr_html_()}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

@@ -78,11 +78,14 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> comparison_report = evaluate(
         ...     [estimator_1, estimator_2], X, y, splitter=0.2, pos_label=1
         ... )
-        >>> comparison_report.metrics.summarize(metric=["precision", "recall"]).frame()
-        Estimator       LogisticRegression_1  LogisticRegression_2
-        Metric
-        Precision                    0.98...               0.98...
-        Recall                       0.92...               0.92...
+        >>> comparison_report.metrics.summarize(
+        ...     metric=["precision", "recall"]
+        ... ).frame()
+                      estimator     metric     value
+        0  LogisticRegression_1  Precision  0.98...
+        1  LogisticRegression_1     Recall  0.92...
+        2  LogisticRegression_2  Precision  0.98...
+        3  LogisticRegression_2     Recall  0.92...
         """
         parallel = joblib.Parallel(
             **_validate_joblib_parallel_params(
@@ -119,7 +122,9 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
     ) -> pd.DataFrame:
-        frame = self.summarize(data_source=data_source, metric=metric).frame()
+        frame = self.summarize(
+            data_source=data_source, metric=metric
+        )._to_pivoted_frame()
         frame = frame.rename_axis(
             None
             if self._parent._report_type == "comparison-estimator"
@@ -241,11 +246,11 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> report.metrics.add(
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
-        >>> report.metrics.summarize().frame()
-        Estimator                  LogisticRegression_1  LogisticRegression_2
-        Metric              Label
-        ...
-        Mean Absolute Error                    ...                   ...
+        >>> summary = report.metrics.summarize().frame()
+        >>> summary[summary["metric"] == "Mean Absolute Error"]
+                       estimator               metric  label     value
+        0   LogisticRegression_1  Mean Absolute Error   <NA>  0.05...
+        11  LogisticRegression_2  Mean Absolute Error   <NA>  0.05...
         """
         for report in self._parent.reports_.values():
             report.metrics.add(
@@ -321,9 +326,9 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         Precision 0                  0.901961              0.901961
                   1                  0.984127              0.984127
         """
-        return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
-            aggregate=aggregate, flat_index=flat_index
-        )
+        return self._metric(
+            metric_name=name, data_source=data_source, **kwargs
+        )._to_pivoted_frame(aggregate=aggregate, flat_index=flat_index)
 
     def timings(
         self,
@@ -440,7 +445,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         Metric
         Score                       0.94...               0.94...
         """
-        return self._metric("score", data_source=data_source).frame(
+        return self._metric("score", data_source=data_source)._to_pivoted_frame(
             aggregate=aggregate,
         )
 
@@ -485,7 +490,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         Metric
         Accuracy                    0.94...               0.94...
         """
-        return self._metric("accuracy", data_source=data_source).frame(
+        return self._metric("accuracy", data_source=data_source)._to_pivoted_frame(
             aggregate=aggregate,
         )
 
@@ -562,7 +567,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "precision", data_source=data_source, average=average
-        ).frame(
+        )._to_pivoted_frame(
             aggregate=aggregate,
         )
 
@@ -638,7 +643,9 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         Recall 0                  0.978...              0.978...
                1                  0.925...              0.925...
         """
-        return self._metric("recall", data_source=data_source, average=average).frame(
+        return self._metric(
+            "recall", data_source=data_source, average=average
+        )._to_pivoted_frame(
             aggregate=aggregate,
         )
 
@@ -683,7 +690,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         Metric
         Brier score                   0.036...              0.036...
         """
-        return self._metric("brier_score", data_source=data_source).frame(
+        return self._metric("brier_score", data_source=data_source)._to_pivoted_frame(
             aggregate=aggregate,
         )
 
@@ -766,7 +773,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "roc_auc", data_source=data_source, average=average, multi_class=multi_class
-        ).frame(
+        )._to_pivoted_frame(
             aggregate=aggregate,
         )
 
@@ -811,7 +818,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         Metric
         Log loss                   0.110...              0.110...
         """
-        return self._metric("log_loss", data_source=data_source).frame(
+        return self._metric("log_loss", data_source=data_source)._to_pivoted_frame(
             aggregate=aggregate,
         )
 
@@ -869,7 +876,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "r2", data_source=data_source, multioutput=multioutput
-        ).frame(
+        )._to_pivoted_frame(
             aggregate=aggregate,
         )
 
@@ -927,7 +934,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "rmse", data_source=data_source, multioutput=multioutput
-        ).frame(
+        )._to_pivoted_frame(
             aggregate=aggregate,
         )
 
@@ -986,7 +993,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "mae", data_source=data_source, multioutput=multioutput
-        ).frame(
+        )._to_pivoted_frame(
             aggregate=aggregate,
         )
 
@@ -1045,7 +1052,7 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "mape", data_source=data_source, multioutput=multioutput
-        ).frame(
+        )._to_pivoted_frame(
             aggregate=aggregate,
         )
 

@@ -12,7 +12,7 @@ def test_data_source_both(estimator_reports_binary_classification):
     """Check that `MetricsSummaryDisplay` works with `data_source="both"`."""
     estimator_report_1, estimator_report_2 = estimator_reports_binary_classification
     report = ComparisonReport([estimator_report_1, estimator_report_2])
-    result = report.metrics.summarize(data_source="both").frame()
+    result = report.metrics.summarize(data_source="both")._to_pivoted_frame()
 
     assert result.index.to_list() == [
         ("Score", ""),
@@ -45,7 +45,7 @@ def test_flat_index(estimator_reports_binary_classification):
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result = report.metrics.summarize()
     assert isinstance(result, MetricsSummaryDisplay)
-    result_df = result.frame(flat_index=True)
+    result_df = result._to_pivoted_frame(flat_index=True)
     assert isinstance(result_df.index, pd.Index)
     assert result_df.index.tolist() == [
         "score",
@@ -67,8 +67,21 @@ def test_favorability(comparison_estimator_reports_binary_classification):
     """Check that the behaviour of `favorability` is correct."""
     report = comparison_estimator_reports_binary_classification
     display = report.metrics.summarize()
-    result = display.frame(favorability=True)
+    result = display._to_pivoted_frame(favorability=True)
     assert set(result["Favorability"]) == {"(↗︎)", "(↘︎)"}
+
+
+def test_frame_has_estimator_column(
+    comparison_estimator_reports_binary_classification,
+):
+    """The tidy frame exposes an ``estimator`` column with each estimator name."""
+    report = comparison_estimator_reports_binary_classification
+    frame = report.metrics.summarize().frame()
+
+    assert isinstance(frame.index, pd.RangeIndex)
+    assert "estimator" in frame.columns
+    assert "split" not in frame.columns
+    assert frame["estimator"].nunique() == 2
 
 
 def test_aggregate(comparison_estimator_reports_binary_classification):
@@ -76,8 +89,8 @@ def test_aggregate(comparison_estimator_reports_binary_classification):
     when comparing `CrossValidationReport`s."""
     report = comparison_estimator_reports_binary_classification
     np.testing.assert_allclose(
-        report.metrics.summarize().frame(aggregate="mean"),
-        report.metrics.summarize().frame(),
+        report.metrics.summarize()._to_pivoted_frame(aggregate="mean"),
+        report.metrics.summarize()._to_pivoted_frame(),
     )
 
 
@@ -103,7 +116,7 @@ class TestDisambiguateMetrics:
 
         report = evaluate([A(), B()], X, y, splitter=0.2)
 
-        result = report.metrics.summarize().frame()
+        result = report.metrics.summarize()._to_pivoted_frame()
 
         metric_names = result.index.tolist()
         assert metric_names[0] == "Score_1"
@@ -131,7 +144,7 @@ class TestDisambiguateMetrics:
         report_2.metrics.add(metric)
 
         report = ComparisonReport([report_1, report_2])
-        result = report.metrics.summarize().frame()
+        result = report.metrics.summarize()._to_pivoted_frame()
 
         metric_names = result.index.tolist()
         assert metric_names[0] == "Metric_1"
@@ -170,7 +183,7 @@ class TestDisambiguateMetrics:
         report_1.metrics.add(metric_already_suffixed, verbose_name="Metric_1")
 
         report = ComparisonReport([report_1, report_2])
-        result = report.metrics.summarize().frame()
+        result = report.metrics.summarize()._to_pivoted_frame()
 
         # so the renaming must skip _1 and use _2 / _3.
         metric_names = result.index.tolist()
@@ -202,7 +215,7 @@ class TestDisambiguateMetrics:
         report_1.metrics.add(custom_r2, verbose_name="R²")
 
         report = ComparisonReport([report_1, report_2])
-        result = report.metrics.summarize().frame()
+        result = report.metrics.summarize()._to_pivoted_frame()
 
         assert result.loc["R²_1", "DummyRegressor_1"] == 1000
         assert np.isnan(result.loc["R²_1", "DummyRegressor_2"])
@@ -227,7 +240,7 @@ class TestDisambiguateMetrics:
         report_1.metrics.add(multimetric_scorer)
 
         report = ComparisonReport([report_1, report_2])
-        result = report.metrics.summarize().frame()
+        result = report.metrics.summarize()._to_pivoted_frame()
 
         # Custom metric, only computed for report 1
         assert result.loc["R²_1", "DummyRegressor_1"] == 999

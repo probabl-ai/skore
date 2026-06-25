@@ -55,7 +55,15 @@ def collect_scores(
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-        rows = report.metrics.summarize(data_source=data_source).rows
+        summary = report.metrics.summarize(data_source=data_source).summary
+
+    rows = []
+    for record in summary.to_dict("records"):
+        for col in ("label", "average", "output"):
+            if pd.isna(record[col]):
+                record[col] = None
+        rows.append(record)
+
     return {
         _metric_key(row): row
         for row in rows

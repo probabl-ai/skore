@@ -278,9 +278,8 @@ def test_pos_label_default(metric):
     report_1 = CrossValidationReport(LogisticRegression(), X, y)
     report_2 = CrossValidationReport(LogisticRegression(), X, y)
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert result_both_labels["Label"].to_list() == ["A", "B"]
-    result_both_labels = result_both_labels.set_index(["Metric", "Label"])
+    result_both_labels = report.metrics.summarize(metric=metric).frame()
+    assert result_both_labels["label"].drop_duplicates().to_list() == ["A", "B"]
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])

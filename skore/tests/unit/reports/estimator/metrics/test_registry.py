@@ -232,8 +232,8 @@ class TestSummarizeIntegration:
         display = report.metrics.summarize()
 
         # Should include both built-in and custom metrics
-        assert "Accuracy" in display.frame().index
-        assert "Business Loss" in display.frame().index
+        assert "Accuracy" in display.frame()["metric"].to_numpy()
+        assert "Business Loss" in display.frame()["metric"].to_numpy()
 
     def test_summarize_with_explicit_custom_metric(self, binary_classification_report):
         """Test calling summarize with explicit custom metric name."""

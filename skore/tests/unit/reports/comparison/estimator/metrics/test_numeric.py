@@ -291,8 +291,8 @@ def test_summarize_pos_label_default(
         y_test=y_test,
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert result_both_labels["Label"].to_list() == ["A", "B"]
+    result_both_labels = report.metrics.summarize(metric=metric).frame()
+    assert result_both_labels["label"].drop_duplicates().to_list() == ["A", "B"]
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])

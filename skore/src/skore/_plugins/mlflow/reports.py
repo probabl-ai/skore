@@ -146,8 +146,10 @@ def iter_cv_metrics(
     yield Metric("predict_time_std", predict_time_std)
     # NOTE: we could use flat_index=True in summarize, but we have to flatten
     # other frames anyway, so we don't do it here.
-    yield Artifact("metrics_details/per_split", summary.frame(aggregate=None))
-    yield Artifact("metrics", summary.frame())
+    yield Artifact(
+        "metrics_details/per_split", summary._to_pivoted_frame(aggregate=None)
+    )
+    yield Artifact("metrics", summary._to_pivoted_frame())
 
 
 def iter_estimator_metrics(
@@ -181,7 +183,7 @@ def iter_estimator_metrics(
     timings = report_any.metrics.timings()
     yield Metric("fit_time", timings["fit_time"])
     yield Metric("predict_time", timings["predict_time_test"])
-    yield Artifact("metrics", report_any.metrics.summarize().frame())
+    yield Artifact("metrics", report_any.metrics.summarize()._to_pivoted_frame())
 
 
 def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, None]:

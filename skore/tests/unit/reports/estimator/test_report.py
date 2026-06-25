@@ -539,7 +539,7 @@ def test_from_dict_bypasses_init_and_restores_state(
     # check new metrics can be computed, including custom metrics:
     restored.metrics.roc_auc()
     df = restored.metrics.summarize().frame()
-    assert "F1" in df.index
+    assert "F1" in df["metric"].to_numpy()
 
 
 def test_from_dict_rejects_unknown_version(logistic_binary_classification_with_test):

@@ -66,7 +66,7 @@ def test_skd003_detects_inconsistent_splits():
     assert "split #0" in issues.loc["SKD003", "explanation"]
     n_metrics = (
         len(
-            report.metrics.summarize(data_source="test").frame(
+            report.metrics.summarize(data_source="test")._to_pivoted_frame(
                 aggregate=None, flat_index=True
             )
         )
