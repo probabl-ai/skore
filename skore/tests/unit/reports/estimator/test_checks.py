@@ -107,10 +107,8 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     """Check that the underfitting issue is detected."""
     X, y = regression_data
     feature_columns = [str(i) for i in range(X.shape[1])]
-    X = convert_container(
-        X, x_container, column_names=feature_columns, minversion="0.20.23"
-    )
-    y = convert_container(y, y_container, minversion="0.20.23")
+    X = convert_container(X, x_container, column_names=feature_columns)
+    y = convert_container(y, y_container)
     report = evaluate(DummyRegressor(), X, y)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
@@ -156,10 +154,8 @@ def test_skd004_skd005_detects_high_class_imbalance(
         random_state=0,
     )
     feature_columns = [str(i) for i in range(X.shape[1])]
-    X = convert_container(
-        X, x_container, column_names=feature_columns, minversion="0.20.23"
-    )
-    y = convert_container(y, y_container, minversion="0.20.23")
+    X = convert_container(X, x_container, column_names=feature_columns)
+    y = convert_container(y, y_container)
     report = evaluate(LogisticRegression(), X, y, splitter=0.2)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert code in issues.index

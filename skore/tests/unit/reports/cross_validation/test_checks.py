@@ -85,10 +85,8 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     """Check that the underfitting issue is detected."""
     X, y = regression_data
     feature_columns = [str(i) for i in range(X.shape[1])]
-    X = convert_container(
-        X, x_container, column_names=feature_columns, minversion="0.20.23"
-    )
-    y = convert_container(y, y_container, minversion="0.20.23")
+    X = convert_container(X, x_container, column_names=feature_columns)
+    y = convert_container(y, y_container)
     report = evaluate(DummyRegressor(), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     n_metrics = len(
@@ -148,11 +146,9 @@ def test_skd004_detects_high_class_imbalance(x_container, y_container):
         random_state=0,
     )
     feature_columns = [str(i) for i in range(X.shape[1])]
-    X = convert_container(
-        X, x_container, column_names=feature_columns, minversion="0.20.23"
-    )
-    y = convert_container(y, y_container, minversion="0.20.23")
-    report = evaluate(LogisticRegression(), X, y, splitter=0.2)
+    X = convert_container(X, x_container, column_names=feature_columns)
+    y = convert_container(y, y_container)
+    report = evaluate(LogisticRegression(), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD004" in issues.index
     assert "Accuracy should not be used alone" in issues.loc["SKD004", "explanation"]
@@ -179,11 +175,9 @@ def test_skd005_detects_underrepresented_classes(x_container, y_container):
         random_state=0,
     )
     feature_columns = [str(i) for i in range(X.shape[1])]
-    X = convert_container(
-        X, x_container, column_names=feature_columns, minversion="0.20.23"
-    )
-    y = convert_container(y, y_container, minversion="0.20.23")
-    report = evaluate(LogisticRegression(max_iter=1000), X, y, splitter=0.2)
+    X = convert_container(X, x_container, column_names=feature_columns)
+    y = convert_container(y, y_container)
+    report = evaluate(LogisticRegression(max_iter=1000), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD005" in issues.index
     assert "Accuracy should not be used alone" in issues.loc["SKD005", "explanation"]
@@ -360,7 +354,7 @@ def test_skd014_not_applicable_for_plain_estimator_on_cv_report(regression_data)
     """SKD014 raises CheckNotApplicable with a plain estimator."""
     X, y = regression_data
     report = evaluate(LinearRegression(), X, y, splitter=3)
-    with pytest.raises(CheckNotApplicable):
+    with pytest.raises(CheckNotApplicable, match="not a BaseSearchCV"):
         CheckHyperparamsAtSearchEdge().check_function(report)
 
 
@@ -382,7 +376,7 @@ def test_skd015_not_applicable_plain_estimator_on_cv_report(regression_data):
     """SKD015 raises CheckNotApplicable with a plain estimator."""
     X, y = regression_data
     report = evaluate(Ridge(), X, y, splitter=3)
-    with pytest.raises(CheckNotApplicable):
+    with pytest.raises(CheckNotApplicable, match="not a BaseSearchCV"):
         CheckSearchParamsToTune().check_function(report)
 
 
