@@ -194,7 +194,10 @@ def _write_checks(
 ) -> None:
     checks_dir = output_dir / "checks"
     checks_dir.mkdir(exist_ok=True)
-    report.checks.summarize(fast_mode=True).frame().to_csv(
+    ignore = {c.code for c in report._checks_registry} - set(
+        getattr(report, "_check_results_cache", ())
+    )
+    report.checks.summarize(ignore=list(ignore)).frame().to_csv(
         checks_dir / "summarize.csv", index=False
     )
     with open(checks_dir / "_check_results_cache.json", "w", encoding="UTF-8") as f:

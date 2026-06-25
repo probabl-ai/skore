@@ -83,6 +83,7 @@ def test_init_delete(tmp_path):
 
 def test_put_get_summarize(tmp_path, regression, regression_dummy, cv_regression):
     project = Project(name="regression", workspace=tmp_path)
+    regression.checks.summarize()
     project.put("ridge", regression)
     project.put("dummy", regression_dummy)
     project.put("cv", cv_regression)
@@ -97,6 +98,8 @@ def test_put_get_summarize(tmp_path, regression, regression_dummy, cv_regression
     ) in fetched_regression._cache
     assert fetched_regression.metrics.get("r2") == regression.metrics.get("r2")
     assert (fetched_regression.X_train == regression.X_train).all()
+    assert len(fetched_regression._check_results_cache) > 0
+    assert len(fetched_dummy._check_results_cache) == 0
     assert fetched_dummy.metrics.get("r2") == regression_dummy.metrics.get("r2")
     pd.testing.assert_frame_equal(
         fetched_cv.metrics.summarize().frame(),
