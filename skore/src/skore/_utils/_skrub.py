@@ -91,8 +91,9 @@ def collect_fitted_apply_estimators(data_op: DataOp) -> list[BaseEstimator]:
                 "fitted sub-estimators."
             )
         chain.append(impl.estimator_)
-        x_input = impl.X
-        node = x_input if isinstance(x_input, DataOp) else None
+        if not isinstance(impl.X, DataOp):
+            break
+        node = impl.X
     chain.reverse()
     return chain
 
