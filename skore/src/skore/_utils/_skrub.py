@@ -79,10 +79,9 @@ def get_preprocess_apply_node(data_op: DataOp) -> DataOp | None:
 
 def collect_fitted_apply_estimators(data_op: DataOp) -> list[BaseEstimator]:
     """Return fitted estimators along nested applies from preprocessing to predictor."""
-    apply_node = _supervised_apply_node(data_op)
     chain: list[BaseEstimator] = []
-    node: DataOp | None = apply_node
-    while node is not None:
+    node: Apply = _supervised_apply_node(data_op)
+    while True:
         impl = node._skrub_impl
         if not isinstance(impl, Apply):
             break
