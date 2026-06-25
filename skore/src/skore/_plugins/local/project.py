@@ -145,9 +145,13 @@ def _write_metrics(
     metrics_dir = output_dir / "metrics"
     metrics_dir.mkdir(exist_ok=True)
     report.metrics.summarize().data.to_csv(metrics_dir / "summarize.csv", index=False)
-    if hasattr(report, "_metric_registry"):
+    if isinstance(report, EstimatorReport):
         with open(metrics_dir / "registry.pickle", "wb") as f:
             pickle.dump(report._metric_registry, f)
+        available = set(report.metrics.available())
+        metrics_cache = {k: v for k, v in report._cache.items() if k[1] in available}
+        with open(metrics_dir / "cache.pickle", "wb") as f:
+            pickle.dump(metrics_cache, f)
 
 
 def _write_datasets(
@@ -319,7 +323,9 @@ def load_report(report_dir: Path) -> EstimatorReport | CrossValidationReport:
             state["predictions"][tuple(pred_file.stem.split("__"))] = joblib.load(f)
     with open(report_dir / "metrics" / "registry.pickle", "rb") as f:
         state["metric_registry"] = pickle.load(f)
-    state["optional"] = {"cache": {}}
+    with open(report_dir / "metrics" / "cache.pickle", "rb") as f:
+        metrics_cache = pickle.load(f)
+    state["optional"] = {"cache": metrics_cache}
     for importances_dir in (report_dir / "inspection" / "permutation_importance").glob(
         "permutation_importance__*"
     ):

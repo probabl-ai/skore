@@ -90,6 +90,11 @@ def test_put_get_summarize(tmp_path, regression, regression_dummy, cv_regression
     fetched_dummy = project.get(regression_dummy.id)
     fetched_cv = project.get(cv_regression.id)
     assert ("test", "predict", None) in fetched_regression._cache
+    assert (
+        "test",
+        "r2",
+        ("mapping", (("multioutput", "raw_values"),)),
+    ) in fetched_regression._cache
     assert fetched_regression.metrics.get("r2") == regression.metrics.get("r2")
     assert (fetched_regression.X_train == regression.X_train).all()
     assert fetched_dummy.metrics.get("r2") == regression_dummy.metrics.get("r2")
