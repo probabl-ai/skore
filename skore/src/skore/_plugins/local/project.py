@@ -20,9 +20,14 @@ def _check_name(name: Any) -> str:
     return re.sub(r"[^-_.a-zA-Z0-9]", "_", str(name)) or "_"
 
 
-def init_workspace(workspace_dir: str | Path, project_name: str = "default") -> Path:
-    workspace_dir = Path(workspace_dir)
+def init_workspace(workspace_dir: str | Path | None = None) -> Path:
+    workspace_dir = (
+        Path(".") / "skore_data" if workspace_dir is None else Path(workspace_dir)
+    )
+    new_workspace = not workspace_dir.exists()
     workspace_dir.mkdir(parents=True, exist_ok=True)
+    if new_workspace:
+        (workspace_dir / ".gitignore").write_text("*\n")
     (workspace_dir / ".SKORE_WORKSPACE").touch()
     (workspace_dir / "projects").mkdir(exist_ok=True)
     (workspace_dir / "datasets").mkdir(exist_ok=True)
