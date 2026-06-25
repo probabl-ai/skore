@@ -235,8 +235,8 @@ class Check(Protocol):
 
     Each check wraps a callable that inspects a report. If the callable returns a
     non-empty string, that text is recorded as a finding under :attr:`code` with the
-    given :attr:`title` and :attr:`severity`. Checks are scoped to a single report
-    type via :attr:`report_type` so they only run on matching reports.
+    given :attr:`title` and :attr:`severity`. Checks are scoped to report types via
+    :attr:`report_type` so they only run on matching reports.
 
     Attributes
     ----------
@@ -252,9 +252,9 @@ class Check(Protocol):
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
         the automated checks user guide.
 
-    report_type : str
-        Must be one of ``"cross-validation"``, ``"estimator"``,
-        ``"comparison-estimator"``, or ``"comparison-cross-validation"``.
+    report_type : list of {"estimator", "cross-validation", \
+            "comparison-estimator", "comparison-cross-validation"}
+        Report types this check applies to.
 
     severity : {"issue", "tip"}
         Severity of the finding. ``"issue"`` flags a modeling problem to fix;
@@ -271,7 +271,7 @@ class Check(Protocol):
 
     code: CheckCode
     title: str
-    report_type: ReportType
+    report_types: list[ReportType]
     docs_url: str | None = None
     severity: Literal["issue", "tip"]
     slow: bool = False
