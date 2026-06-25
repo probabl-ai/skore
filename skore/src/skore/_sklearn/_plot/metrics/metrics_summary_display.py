@@ -121,6 +121,28 @@ class MetricsSummaryDisplay(DisplayMixin):
         return cls(summary, report_type=report_type)
 
     @property
+    def rows(self) -> list[MetricsSummaryRow]:
+        """Reconstruct metric rows from the stored summary dataframe."""
+        nullable_cols = {
+            "label",
+            "average",
+            "output",
+            "greater_is_better",
+            "fingerprint",
+            "split",
+        }
+        rows: list[MetricsSummaryRow] = []
+        for record in self.summary.to_dict("records"):
+            row: dict[str, Any] = {}
+            for key, value in record.items():
+                if key in nullable_cols and pd.isna(value):
+                    row[key] = None
+                else:
+                    row[key] = value
+            rows.append(cast("MetricsSummaryRow", row))
+        return rows
+
+    @property
     def data(self):
         """Return the long-format summary with fingerprints resolved."""
         data = MetricsSummaryDisplay._resolve_fingerprints(self.summary)

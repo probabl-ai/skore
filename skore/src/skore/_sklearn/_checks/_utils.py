@@ -56,14 +56,7 @@ def collect_scores(
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-        summary = report.metrics.summarize(data_source=data_source).summary
-
-    rows = []
-    for record in summary.to_dict("records"):
-        for col in ("label", "average", "output"):
-            if pd.isna(record[col]):
-                record[col] = None
-        rows.append(record)
+        rows = report.metrics.summarize(data_source=data_source).rows
 
     filtered_rows = [
         row for row in rows if row["metric_verbose_name"] not in _TIMING_METRICS

@@ -32,7 +32,7 @@ report_ridge = skore.evaluate(model, df, y, splitter=5)
 report_ridge"""
 
 SUMMARIZE_FRAME_CODE = """\
-report_ridge.metrics.summarize().frame(
+report_ridge.metrics.summarize()._to_pivoted_frame(
     aggregate=None
 )"""
 

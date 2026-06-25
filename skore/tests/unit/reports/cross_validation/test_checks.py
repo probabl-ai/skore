@@ -253,8 +253,18 @@ def test_skd009_not_detected_on_strong_model():
     assert "SKD009" not in codes
 
 
-def test_skd010_detects_slower_than_baseline(regression_data):
+def test_skd010_detects_slower_than_baseline(regression_data, monkeypatch):
     """Check that SKD010 is detected when the model is slower with similar scores."""
+    from skore._sklearn._checks import model_checks
+    from skore._sklearn._checks._utils import get_fitted_estimator
+
+    def mock_get_fit_time(report):
+        if isinstance(get_fitted_estimator(report), RandomForestRegressor):
+            return 0.20
+        return 0.05
+
+    monkeypatch.setattr(model_checks, "get_fit_time", mock_get_fit_time)
+
     X, y = regression_data
     report = evaluate(
         RandomForestRegressor(n_estimators=200, random_state=0), X, y, splitter=3
