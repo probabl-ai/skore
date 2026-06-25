@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import html
 import uuid
-from collections import defaultdict
 from collections.abc import Generator
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
@@ -18,7 +17,6 @@ from skrub._reporting._summarize import summarize_dataframe
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._checks.base import CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import (
@@ -286,44 +284,41 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         )
 
         if self._initialized_with_data_op:
-            return list(
-                track(
-                    parallel(
-                        delayed(EstimatorReport)(
-                            clone(self.learner_),
-                            train_data=split["train"],
-                            test_data=split["test"],
-                            pos_label=self._pos_label,
-                        )
-                        for split in self.learner_.data_op.skb.iter_cv_splits(
-                            environment=self._data, cv=self.split_indices
-                        )
-                    ),
-                    description="Processing cross-validation\n"
-                    f"for {self.estimator_name_}",
-                    total=len(self.split_indices),
+            subreports = (
+                delayed(EstimatorReport)(
+                    clone(self.learner_),
+                    train_data=split["train"],
+                    test_data=split["test"],
+                    pos_label=self._pos_label,
+                )
+                for split in self.learner_.data_op.skb.iter_cv_splits(
+                    environment=self._data, cv=self.split_indices
                 )
             )
+
         else:
             # do not split the data to take advantage of the memory mapping
-            return list(
-                track(
-                    parallel(
-                        delayed(_generate_estimator_report)(
-                            clone(self.estimator),
-                            self.X,
-                            self.y,
-                            self.pos_label,
-                            train_indices,
-                            test_indices,
-                        )
-                        for (train_indices, test_indices) in self.split_indices
-                    ),
-                    description="Processing cross-validation\n"
-                    f"for {self.estimator_name_}",
-                    total=len(self.split_indices),
+            subreports = (
+                delayed(_generate_estimator_report)(
+                    clone(self.estimator),
+                    self.X,
+                    self.y,
+                    self.pos_label,
+                    train_indices,
+                    test_indices,
                 )
+                for train_indices, test_indices in self.split_indices
             )
+
+        return list(
+            track(
+                parallel(subreports),
+                description=(
+                    f"Processing cross-validation\nfor {self.estimator_name_}"
+                ),
+                total=len(self.split_indices),
+            )
+        )
 
     def to_dict(self) -> dict[str, Any]:
         """Return a serializable representation of the report state.
@@ -422,49 +417,15 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         return report
 
-    def clear_cache(self) -> None:
-        """Clear the cache.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
-        >>> report.reports_[0]._cache
-        {...}
-        >>> report.clear_cache()
-        >>> report.reports_[0]._cache
-        {}
-        """
+    def _clear_cache(self) -> None:
+        """Clear the cache."""
         for report in self.reports_:
-            report.clear_cache()
+            report._clear_cache()
 
-    def cache_predictions(self) -> None:
-        """Cache the predictions for sub-estimators reports.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import CrossValidationReport
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = CrossValidationReport(classifier, X=X, y=y, splitter=2)
-        >>> report.clear_cache()
-        >>> report.reports_[0]._cache
-        {}
-        >>> report.cache_predictions()
-        >>> report.reports_[0]._cache
-        {...}
-        """
-        for estimator_report in track(
-            self.reports_,
-            description="Cross-validation predictions for split",
-        ):
-            estimator_report.cache_predictions()
+    def _cache_predictions(self) -> None:
+        """Cache the predictions for sub-estimators reports."""
+        for estimator_report in self.reports_:
+            estimator_report._cache_predictions()
 
     def get_predictions(
         self,
@@ -591,63 +552,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 pos_label=self._pos_label,
             )
         return report
-
-    def _aggregate_checks(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
-        total_splits = len(self.reports_)
-        all_applicable_codes: set[CheckCode] = set()
-        all_not_applicable_codes: set[CheckCode] = set()
-        positives_by_code: defaultdict[CheckCode, list[dict]] = defaultdict(list)
-        ref_by_code: dict[CheckCode, dict] = {}
-
-        for estimator_report in self.reports_:
-            estimator_report.checks.add(self._checks_registry)
-            results, applicable_codes, not_applicable_codes = (
-                estimator_report._get_results(ignored_codes, fast_mode=fast_mode)
-            )
-            all_applicable_codes |= applicable_codes
-            all_not_applicable_codes |= not_applicable_codes
-            for code, check_result in results.items():
-                ref_by_code.setdefault(code, check_result)
-                if code in applicable_codes and check_result["explanation"] is not None:
-                    positives_by_code[code].append(check_result)
-
-        all_not_applicable_codes -= all_applicable_codes
-
-        aggregated: dict[CheckCode, dict] = {}
-        for code in all_applicable_codes:
-            positives = positives_by_code[code]
-            if len(positives) > total_splits / 2:
-                ref = positives[0]
-                aggregated[code] = {
-                    "title": ref["title"],
-                    "docs_url": ref.get("docs_url"),
-                    "explanation": (
-                        f"Detected in {len(positives)}/{total_splits} evaluated splits."
-                    ),
-                    "severity": ref.get("severity"),
-                }
-            else:
-                ref = ref_by_code[code]
-                aggregated[code] = {
-                    "title": ref["title"],
-                    "docs_url": ref.get("docs_url"),
-                    "explanation": None,
-                    "severity": ref.get("severity"),
-                }
-        for code in all_not_applicable_codes:
-            ref = ref_by_code[code]
-            aggregated[code] = {
-                "title": ref["title"],
-                "docs_url": ref.get("docs_url"),
-                "explanation": ref["explanation"],
-                "severity": ref.get("severity"),
-            }
-        return aggregated, all_applicable_codes, all_not_applicable_codes
 
     @property
     def ml_task(self) -> str:
@@ -797,16 +701,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        checks_summary = self.checks.summarize(fast_mode=True)
-        checks_summary_html = (
-            "<div class='report-checks-summary-details'>"
-            f"{len(checks_summary.frame(section='issue'))} issue(s), "
-            f"{len(checks_summary.frame(section='tip'))} tip(s), "
-            f"{len(checks_summary.frame(section='passed'))} passed, "
-            f"{len(checks_summary.frame(section='not_applicable'))} not applicable, "
-            f"{checks_summary._n_ignored_codes} ignored."
-            "</div>"
-        )
+        checks_summary_html = self._checks_summary_html_fragment()
 
         return {
             "metrics_summary": metrics_html,

@@ -156,7 +156,7 @@ class ChecksSummaryDisplay(DisplayMixin):
             case _:
                 raise ValueError(f"Invalid section: {section}")
 
-    def _repr_html_(self) -> str:
+    def _build_tabs(self) -> list[dict]:
         tabs = []
         for label, section, empty_message, help_text in _TAB_SPECS:
             df = self.frame(section=section)
@@ -180,13 +180,29 @@ class ChecksSummaryDisplay(DisplayMixin):
                     ],
                 }
             )
+        return tabs
+
+    def _html_context(self, *, show_header: bool, nested: bool) -> dict:
+        return {
+            "container_id": f"skore-checks-summary-{uuid4().hex[:8]}",
+            "header": self._header,
+            "tabs": self._build_tabs(),
+            "show_header": show_header,
+            "nested": nested,
+            "fast_mode": self._fast_mode,
+        }
+
+    def _embedded_repr_html(self) -> str:
+        """HTML for embedding in a report repr (content only, no shadow DOM)."""
+        return render_template(
+            "display/checks_summary_display-content.html.j2",
+            self._html_context(show_header=False, nested=True),
+        )
+
+    def _repr_html_(self) -> str:
         return render_template(
             "display/checks_summary_display.html.j2",
-            {
-                "container_id": f"skore-checks-summary-{uuid4().hex[:8]}",
-                "header": self._header,
-                "tabs": tabs,
-            },
+            self._html_context(show_header=True, nested=False),
         )
 
     def __repr__(self) -> str:
@@ -219,8 +235,8 @@ class Check(Protocol):
 
     Each check wraps a callable that inspects a report. If the callable returns a
     non-empty string, that text is recorded as a finding under :attr:`code` with the
-    given :attr:`title` and :attr:`severity`. Checks are scoped to a single report
-    type via :attr:`report_type` so they only run on matching reports.
+    given :attr:`title` and :attr:`severity`. Checks are scoped to report types via
+    :attr:`report_type` so they only run on matching reports.
 
     Attributes
     ----------
@@ -236,9 +252,9 @@ class Check(Protocol):
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
         the automated checks user guide.
 
-    report_type : str
-        Must be one of ``"cross-validation"``, ``"estimator"``,
-        ``"comparison-estimator"``, or ``"comparison-cross-validation"``.
+    report_type : list of {"estimator", "cross-validation", \
+            "comparison-estimator", "comparison-cross-validation"}
+        Report types this check applies to.
 
     severity : {"issue", "tip"}
         Severity of the finding. ``"issue"`` flags a modeling problem to fix;
@@ -255,7 +271,7 @@ class Check(Protocol):
 
     code: CheckCode
     title: str
-    report_type: ReportType
+    report_types: list[ReportType]
     docs_url: str | None = None
     severity: Literal["issue", "tip"]
     slow: bool = False

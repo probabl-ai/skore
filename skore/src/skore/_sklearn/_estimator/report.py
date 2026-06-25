@@ -302,7 +302,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         # NOTE: Reports are immutable so we don't need cache invalidation
 
         self._predict_time: PredictTime = {}
-        self.cache_predictions(data_source="test")
+        self._cache_predictions(data_source="test")
 
         self._metric_registry = MetricRegistry(self)
 
@@ -409,26 +409,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         return report
 
-    def clear_cache(self) -> None:
-        """Clear the cache.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report._cache
-        {...}
-        >>> report.clear_cache()
-        >>> report._cache
-        {}
-        """
+    def _clear_cache(self) -> None:
+        """Clear the cache."""
         self._cache = Cache()
 
-    def cache_predictions(
+    def _cache_predictions(
         self,
         *,
         data_source: DataSource | Literal["both"] = "both",
@@ -443,24 +428,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             - "test" : cache predictions for the test set only.
             - "train" : cache predictions for the train set only.
             - "both" : cache predictions for both train and test sets when available.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.clear_cache()
-        >>> report.cache_predictions()
-        >>> report._cache
-        {...}
         """
         if data_source == "both":
-            self.cache_predictions(data_source="test")
+            self._cache_predictions(data_source="test")
             if self.X_train is not None:
-                self.cache_predictions(data_source="train")
+                self._cache_predictions(data_source="train")
             return
 
         data = self._test_data if data_source == "test" else self._train_data
@@ -721,7 +693,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             raise ValueError(f"Cannot specify a `pos_label` for task {self.ml_task}")
 
         method_name = _check_response_method(self.estimator_, response_method).__name__
-        self.cache_predictions(data_source=data_source)
+        self._cache_predictions(data_source=data_source)
         cache_key = make_cache_key(data_source, method_name)
         predictions = self._cache[cache_key]
 
@@ -847,16 +819,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         except Exception:
             estimator_html = f"<p>{html.escape(repr(self.estimator_))}</p>"
 
-        checks_summary = self.checks.summarize(fast_mode=True)
-        checks_summary_html = (
-            "<div class='report-checks-summary-details'>"
-            f"{len(checks_summary.frame(section='issue'))} issue(s), "
-            f"{len(checks_summary.frame(section='tip'))} tip(s), "
-            f"{len(checks_summary.frame(section='passed'))} passed, "
-            f"{len(checks_summary.frame(section='not_applicable'))} not applicable, "
-            f"{checks_summary._n_ignored_codes} ignored."
-            "</div>"
-        )
+        checks_summary_html = self._checks_summary_html_fragment()
 
         return {
             "metrics_summary": metrics_html,

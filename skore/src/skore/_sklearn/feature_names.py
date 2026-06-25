@@ -1,9 +1,15 @@
-from collections.abc import Callable
+from __future__ import annotations
 
-import pandas as pd
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
+import narwhals as nw
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import _num_features
+
+if TYPE_CHECKING:
+    from .._utils._dataframe import UserDataFrame
 
 
 def _function_call_succeeds(func: Callable) -> bool:
@@ -18,7 +24,7 @@ def _get_feature_names(
     estimator: BaseEstimator,
     *,
     transformer: BaseEstimator | None = None,
-    X: ArrayLike | pd.DataFrame | None = None,
+    X: ArrayLike | UserDataFrame | None = None,
     n_features: int | None = None,
 ) -> list[str]:
     """Get the names of an estimator's input features.
@@ -41,8 +47,8 @@ def _get_feature_names(
     ):
         return transformer.get_feature_names_out().tolist()
     elif X is not None:
-        if hasattr(X, "columns"):
-            return X.columns.tolist()
+        if nw.dependencies.is_into_dataframe(X):
+            return nw.from_native(X).columns
         else:
             return [f"Feature #{i}" for i in range(_num_features(X))]
 

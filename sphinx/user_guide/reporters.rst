@@ -78,20 +78,20 @@ three methods:
    display.
 
 We provide the :meth:`EstimatorReport.metrics.summarize` method that aggregates metrics
-in a single dataframe, available through a :class:`~skore.Display`. By default, a set of
-metrics is computed based on the type of target variable (e.g. classification or
-regression). Non-default metrics can be computed by registering them with
-:meth:`~skore.EstimatorReport.metrics.add` followed by :meth:`~skore.EstimatorReport.metrics.summarize`. We accept different metric types:
+in a single dataframe, available through a :class:`~skore.Display`. By default, skore
+computes some built-in metrics based on the ML task (classification or regression).
+
+Users can register their own metrics with :meth:`~skore.EstimatorReport.metrics.add`
+followed by :meth:`~skore.EstimatorReport.metrics.summarize`. We accept different
+types of metric:
 
 1. A string that corresponds to a scikit-learn scorer name or a built-in `skore`
    metric name. Scikit-learn metrics that require a ``neg_`` prefix (e.g.
    ``neg_mean_squared_error``) can also be passed without it (e.g.
    ``mean_squared_error``); the alias is resolved automatically.
 
-2. A scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`,
-
-3. A metric callable, that takes `y_true` and `y_pred` as its first two arguments
-   and returns a numeric score.
+2. A scorer callable, that takes `estimator`, `X` and `y` and returns a score; this
+   includes scorers constructed with :func:`sklearn.metrics.make_scorer`.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
 API. Refer to the :ref:`estimator_metrics` section for more details on all the
@@ -105,31 +105,19 @@ predictive model. This accessor provides methods that return a :class:`skore.Dis
 object. As with other display objects, they expose three methods: `plot`, `set_style`
 and `frame`.
 
-Caching mechanism
-^^^^^^^^^^^^^^^^^
+Caching
+^^^^^^^
 
-:class:`EstimatorReport` comes together with a caching mechanism that stores
-intermediate information that is expensive to compute, such as predictions. It
-efficiently re-uses this information when recomputing the same metric or a metric
-requiring the same intermediate information.
-
-We expose three methods to interact with the cache:
-
-- :meth:`EstimatorReport.cache_predictions` to cache the predictions of the estimator
-  without awaiting the computation when calling the evaluation metrics.
-- :meth:`EstimatorReport.clear_cache` to clear the cache.
-- :meth:`EstimatorReport.get_predictions` to get the predictions from the cache or
-  compute them if they are not in the cache.
+Reports are equipped with caching machinery to avoid re-computing information more
+than once, e.g. model predictions.
 
 .. note::
-    The current implementation of the caching mechanism happens in-memory. It is
-    therefore not persisted between sessions, apart from loading an
-    :class:`EstimatorReport` from a :class:`Project`. Refer to the following
-    section :ref:`project` for more details.
+    The current implementation of the caching mechanism happens in-memory: it is
+    not persisted between sessions, apart from loading an :class:`EstimatorReport` from
+    a :class:`Project`. Refer to the :ref:`project` section for more details.
 
-Refer to the example entitled
-:ref:`sphx_glr_auto_examples_technical_details_plot_cache_mechanism.py` to get a
-detailed view of the caching mechanism.
+Refer to the :ref:`sphx_glr_auto_examples_technical_details_plot_cache_mechanism.py`
+example for a detailed view of the caching mechanism.
 
 .. _cross_validation_report:
 

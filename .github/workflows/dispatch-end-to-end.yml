@@ -1,0 +1,80 @@
+name: dispatch-end-to-end
+
+on:
+  issue_comment:
+    types: [created]
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  dispatch:
+    if: >-
+      ${{
+        (github.repository == 'probabl-ai/skore') &&
+        (
+          (github.event_name == 'push') ||
+          (
+            github.event.issue.pull_request &&
+            contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+            (
+              startsWith(github.event.comment.body, '/e2e') ||
+              startsWith(github.event.comment.body, '/end-to-end')
+            )
+          )
+        )
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: React to command
+        if: ${{ github.event_name == 'issue_comment' }}
+        run: gh api --method POST "/repos/${GITHUB_REPOSITORY}/issues/comments/${COMMENT_ID}/reactions" -f content=rocket
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+
+      - name: Resolve sha
+        id: resolve-sha
+        shell: bash
+        run: |
+          set -eu
+
+          if [ "${EVENT_NAME}" = "issue_comment" ]; then
+            sha=$(gh api "${URL}" --jq .head.sha)
+          else
+            sha="${SHA}"
+          fi
+
+          echo "sha=${sha}" >> "${GITHUB_OUTPUT}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          URL: ${{ github.event.issue.pull_request.url }}
+          SHA: ${{ github.sha }}
+
+      - name: Generate end-to-end-dispatcher-app token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: create-end-to-end-dispatcher-app-token
+        with:
+          client-id: ${{ secrets.END_TO_END_DISPATCHER_APP_CLIENT_ID }}
+          private-key: ${{ secrets.END_TO_END_DISPATCHER_APP_PRIVATE_KEY }}
+          owner: probabl-ai
+          repositories: skore-end-to-end-ci
+
+      - name: Dispatch end-to-end event
+        uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4.0.1
+        with:
+          token: ${{ steps.create-end-to-end-dispatcher-app-token.outputs.token }}
+          repository: probabl-ai/skore-end-to-end-ci
+          event-type: test
+          client-payload: |
+            {
+              "repository": "${{ github.event.repository.name }}",
+              "ref": "${{ steps.resolve-sha.outputs.sha }}"
+            }

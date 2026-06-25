@@ -160,7 +160,7 @@ def test_pickle(tmp_path, logistic_binary_classification_data):
     """
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    report.cache_predictions()
+    report._cache_predictions()
     joblib.dump(report, tmp_path / "report.joblib")
 
 
@@ -357,7 +357,7 @@ def test_get_from_dict_with_grouped_data_op_cv():
     state = report.to_dict()
 
     restored = CrossValidationReport.from_dict(state)
-    restored.clear_cache()
+    restored._clear_cache()
     assert restored.metrics.accuracy().equals(expected_accuracy)
     preds = restored.get_predictions(data_source="test")
     for pred_fold, expected_pred in zip(preds, expected_preds, strict=True):
@@ -384,7 +384,7 @@ def test_from_dict_bypasses_init_and_restores_state(
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_accuracy = report.metrics.accuracy()
-    report.cache_predictions()
+    report._cache_predictions()
     state = report.to_dict()
 
     def _unexpected_init(self, *args, **kwargs):
@@ -409,7 +409,7 @@ def test_from_dict_bypasses_init_and_restores_state(
     # check new metrics/predictions can be computed:
     restored.metrics.roc_auc()
     _ = report.get_predictions(data_source="test")
-    report.cache_predictions()
+    report._cache_predictions()
 
     # check repr doesn't crash:
     restored._repr_html_()
@@ -449,7 +449,7 @@ def test_get_from_dict_with_complex_data_op():
     restored = CrossValidationReport.from_dict(state)
 
     # check fresh computations still work after restoring from state:
-    restored.clear_cache()
+    restored._clear_cache()
     assert restored.metrics.accuracy().equals(expected_accuracy)
     preds = restored.get_predictions(data_source="test")
     for pred, expected_pred in zip(preds, expected_preds, strict=True):
