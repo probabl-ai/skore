@@ -49,7 +49,7 @@ def data_op_has_explicit_cv(data_op: DataOp) -> bool:
     return data_op.skb.find_X_y().get("cv") is not None
 
 
-def _supervised_apply_node(data_op: DataOp) -> DataOp:
+def _supervised_apply_node(data_op: DataOp) -> Apply:
     apply_node = find_first_apply(data_op)
     if apply_node is None:
         raise NotFittedError("No supervised apply step found in the skrub learner.")
