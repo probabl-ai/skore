@@ -950,19 +950,19 @@ def test_remove_is_case_insensitive(regression_report):
 
 
 def test_check_invalid_report_type(regression_report):
-    """Check that Check raises ValueError for unsupported report_type."""
-    with pytest.raises(ValueError, match="must be a non-empty list"):
+    """Check that Check raises TypeError for unsupported report_type."""
+    with pytest.raises(TypeError, match="must be a non-empty list"):
         regression_report.checks.add(
             [MockCheck(has_issue=False, report_type="invalid")]
         )
-    with pytest.raises(ValueError, match="unsupported values"):
+    with pytest.raises(TypeError, match="unsupported values"):
         regression_report.checks.add(
             [MockCheck(has_issue=False, report_type=["invalid"])]
         )
 
 
 def test_check_invalid_protocol(regression_report):
-    """Check that Check raises ValueError for unsupported protocol."""
+    """Check that Check raises TypeError for unsupported protocol."""
 
     class InvalidCheck:
         code = "INVALID001"
@@ -970,7 +970,7 @@ def test_check_invalid_protocol(regression_report):
         report_types = ["estimator"]
         docs_url = "invalid001"
 
-    with pytest.raises(ValueError, match="is not a subclass of Check."):
+    with pytest.raises(TypeError, match="is not a subclass of Check."):
         regression_report.checks.add([InvalidCheck()])
 
 
