@@ -1,5 +1,3 @@
-import warnings
-
 import pandas as pd
 import pytest
 import skrub
@@ -15,11 +13,15 @@ from skore._utils._skrub import get_preprocess_apply_node, resolve_fitted_predic
 
 @pytest.fixture
 def regression_xy():
+    """Small regression set as pandas objects (skrub expects DataFrames)."""
     df = pd.DataFrame({"a": [1.0, 2, 3, 4, 5], "b": [2.0, 3, 4, 5, 6]})
     y = pd.Series([0.0, 1, 0, 1, 0])
     return df, y
 
 
+@pytest.mark.filterwarnings(
+    "ignore:R\\^2 score is not well-defined:sklearn.exceptions.UndefinedMetricWarning"
+)
 def test_resolve_fitted_predictor_returns_ridge_for_chained_applies(regression_xy):
     """Chained applies resolve to the supervised predictor, not a stitched Pipeline."""
     df, y = regression_xy
@@ -29,14 +31,15 @@ def test_resolve_fitted_predictor_returns_ridge_for_chained_applies(regression_x
         .skb.apply(Ridge(), y=skrub.y())
         .skb.make_learner()
     )
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        report = evaluate(learner, data={"X": df, "y": y})
+    report = evaluate(learner, data={"X": df, "y": y})
 
     predictor = resolve_fitted_predictor(report.estimator_)
     assert isinstance(predictor, Ridge)
 
 
+@pytest.mark.filterwarnings(
+    "ignore:R\\^2 score is not well-defined:sklearn.exceptions.UndefinedMetricWarning"
+)
 def test_resolve_fitted_predictor_returns_inner_pipeline_last_step_for_tabular(
     regression_xy,
 ):
@@ -45,14 +48,15 @@ def test_resolve_fitted_predictor_returns_inner_pipeline_last_step_for_tabular(
     learner = (
         skrub.X().skb.apply(tabular_pipeline(Ridge()), y=skrub.y()).skb.make_learner()
     )
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        report = evaluate(learner, data={"X": df, "y": y})
+    report = evaluate(learner, data={"X": df, "y": y})
 
     predictor = resolve_fitted_predictor(report.estimator_)
     assert isinstance(predictor, Ridge)
 
 
+@pytest.mark.filterwarnings(
+    "ignore:R\\^2 score is not well-defined:sklearn.exceptions.UndefinedMetricWarning"
+)
 def test_get_preprocessed_X_matches_sklearn_pipeline_preprocessing(regression_xy):
     """Skrub-native transform matches sklearn Pipeline preprocessing."""
     df, y = regression_xy
@@ -62,9 +66,7 @@ def test_get_preprocessed_X_matches_sklearn_pipeline_preprocessing(regression_xy
         .skb.apply(Ridge(), y=skrub.y())
         .skb.make_learner()
     )
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        report = evaluate(learner, data={"X": df, "y": y})
+    report = evaluate(learner, data={"X": df, "y": y})
 
     assert get_preprocess_apply_node(report.estimator_.data_op) is not None
     skrub_X = get_preprocessed_X(report, data_source="train")
