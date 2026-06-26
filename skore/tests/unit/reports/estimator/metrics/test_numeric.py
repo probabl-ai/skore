@@ -257,3 +257,34 @@ def test_get_custom(binary_classification_report):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.get("hello") == 1
+
+
+# report.metrics.<custom>
+
+
+def test_custom_metric_as_method(binary_classification_report):
+    """Custom metrics are accessible as methods."""
+    report = binary_classification_report
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.hello() == 1
+
+    report.metrics.remove("hello")
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()
+
+
+def test_custom_metric_as_method_neg(binary_classification_report):
+    """Custom metrics which are `neg_` sklearn methods are accessible as methods."""
+    report = binary_classification_report
+
+    report.metrics.add("neg_mean_squared_error")
+    assert report.metrics.neg_mean_squared_error() == 0
+
+    report.metrics.add("mean_squared_error")
+    assert report.metrics.mean_squared_error() == 0

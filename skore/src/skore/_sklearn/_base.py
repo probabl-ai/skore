@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from functools import partial
 from importlib.metadata import version
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from uuid import uuid4
@@ -172,3 +173,23 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 
     def _repr_mimebundle_(self, **kwargs):
         return {"text/plain": repr(self), "text/html": self._repr_html_()}
+
+
+class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
+    """Base class for metrics accessor."""
+
+    def __getattr__(self, name):
+        """Define custom metric methods dynamically.
+
+        If attribute ``name`` is defined statically, this method will not be called.
+        """
+        if name in self.available():
+            return partial(lambda *args, **kwargs: self.get(name, *args, **kwargs))
+
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
+
+    def __dir__(self) -> list[str]:
+        """Add custom metrics to __dir__ for tab-completion."""
+        return list(set(super().__dir__()).union(self.available()))

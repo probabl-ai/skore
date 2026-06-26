@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
+from sklearn.dummy import DummyClassifier
 from sklearn.svm import SVC
 
 from skore import CrossValidationReport
@@ -236,3 +237,29 @@ def test_get_custom(forest_binary_classification_data):
         ("RandomForestClassifier", "mean"): {"Hello": 1.0},
         ("RandomForestClassifier", "std"): {"Hello": 0.0},
     }
+
+
+# report.metrics.<custom>
+
+
+def test_custom_metric_as_method(forest_binary_classification_data):
+    """Custom metrics are accessible as methods."""
+    _, X, y = forest_binary_classification_data
+    report = CrossValidationReport(
+        DummyClassifier(strategy="uniform"), X, y, splitter=2
+    )
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.hello().to_dict() == {
+        ("DummyClassifier", "mean"): {"Hello": 1.0},
+        ("DummyClassifier", "std"): {"Hello": 0.0},
+    }
+
+    report.metrics.remove("hello")
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()

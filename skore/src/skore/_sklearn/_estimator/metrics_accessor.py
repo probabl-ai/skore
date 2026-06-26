@@ -8,7 +8,7 @@ from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor
+from skore._sklearn._base import BaseMetricsAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -19,7 +19,6 @@ from skore._sklearn._plot import (
 )
 from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._sklearn.metrics import (
-    BUILTIN_METRICS,
     R2,
     Accuracy,
     Brier,
@@ -42,27 +41,11 @@ from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
 
 
-class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
+class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
-
-    def __getattribute__(self, name):
-        """Hide some metric methods conditionally.
-
-        When the registry is initialized, the report is analyzed to filter metrics
-        depending on the report's characteristics (e.g. the ML task and the estimator's
-        prediction methods).
-        """
-        if (
-            name in {m.name for m in BUILTIN_METRICS}
-            and name not in self._parent._metric_registry
-        ):
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{name}'"
-            )
-        return super().__getattribute__(name)
 
     def summarize(
         self,
@@ -268,6 +251,8 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         Metric
                                            ...
         Mean Absolute Error                ...
+        >>> report.metrics.mean_absolute_error()
+        0.05...
         """
         try:
             self._parent._metric_registry.add(
@@ -419,6 +404,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         }
         return {k: v for k, v in times.items() if v is not None}
 
+    @available_if(lambda self: Score.available(self._parent))
     def score(
         self,
         *,
@@ -455,6 +441,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         return Score().pretty(report=self._parent, data_source=data_source)
 
+    @available_if(lambda self: Accuracy.available(self._parent))
     def accuracy(
         self,
         *,
@@ -488,6 +475,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         return Accuracy().pretty(report=self._parent, data_source=data_source)
 
+    @available_if(lambda self: Precision.available(self._parent))
     def precision(
         self,
         *,
@@ -547,6 +535,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, average=average
         )
 
+    @available_if(lambda self: Recall.available(self._parent))
     def recall(
         self,
         *,
@@ -612,6 +601,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, average=average
         )
 
+    @available_if(lambda self: Brier.available(self._parent))
     def brier_score(
         self,
         *,
@@ -645,6 +635,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         return Brier().pretty(report=self._parent, data_source=data_source)
 
+    @available_if(lambda self: RocAuc.available(self._parent))
     def roc_auc(
         self,
         *,
@@ -718,6 +709,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             multi_class=multi_class,
         )
 
+    @available_if(lambda self: LogLoss.available(self._parent))
     def log_loss(
         self,
         *,
@@ -751,6 +743,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         return LogLoss().pretty(report=self._parent, data_source=data_source)
 
+    @available_if(lambda self: R2.available(self._parent))
     def r2(
         self,
         *,
@@ -799,6 +792,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
+    @available_if(lambda self: Rmse.available(self._parent))
     def rmse(
         self,
         *,
@@ -847,6 +841,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
+    @available_if(lambda self: Mae.available(self._parent))
     def mae(
         self,
         *,
@@ -895,6 +890,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
+    @available_if(lambda self: Mape.available(self._parent))
     def mape(
         self,
         *,

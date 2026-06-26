@@ -10,7 +10,7 @@ from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor
+from skore._sklearn._base import BaseMetricsAccessor
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._plot.metrics import (
     ConfusionMatrixDisplay,
@@ -31,7 +31,7 @@ from skore._utils._progress_bar import track
 DataSource = Literal["test", "train", "both"]
 
 
-class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
+class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -246,6 +246,10 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         Metric              Label
         ...
         Mean Absolute Error                    ...                   ...
+        >>> report.metrics.mean_absolute_error()
+        Estimator             LogisticRegression_1  LogisticRegression_2
+        Metric
+        Mean Absolute Error                   ...                   ...
         """
         for report in self._parent.reports_.values():
             report.metrics.add(
