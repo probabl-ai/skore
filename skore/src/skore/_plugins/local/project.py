@@ -63,15 +63,17 @@ def _write_report(
     reports_dir = project_dir / "reports"
     date_str = str(report._metadata["creation-date"]).replace(":", "-")
     name_str = "" if name is None else _check_name(name)
-    filename = "__".join([
-        date_str,
-        f"id_{report._metadata['id']:x}",
-        report._metadata['report_type'],
-        name_str,
-    ])
+    filename = "__".join(
+        [
+            date_str,
+            f"id_{report._metadata['id']:x}",
+            str(report._metadata["report_type"]),
+            name_str,
+        ]
+    )
     output_dir = reports_dir / filename
     output_dir.mkdir(parents=True, exist_ok=True)
-    symlink = reports_dir / ("__".join("latest", name_str))
+    symlink = reports_dir / ("__".join(["latest", name_str]))
     with contextlib.suppress(FileNotFoundError):
         symlink.unlink()
     with contextlib.suppress(OSError):
@@ -233,13 +235,15 @@ def _write_permutation_importances(report: EstimatorReport, output_dir: Path) ->
                 ("mapping", kwarg_items),
             ), display:
                 kwargs = dict(kwarg_items)
-                display_dir = (
-                    importances_dir / ("__".join([
-						"permutation_importance",
-	                    data_source,
-						_check_name(kwargs['at_step']),
-						_check_name(kwargs['metric']),
-					]))
+                display_dir = importances_dir / (
+                    "__".join(
+                        [
+                            "permutation_importance",
+                            data_source,
+                            _check_name(kwargs["at_step"]),
+                            _check_name(kwargs["metric"]),
+                        ]
+                    )
                 )
                 display_dir.mkdir(exist_ok=True)
                 display.importances.to_csv(display_dir / "importances.csv", index=False)
