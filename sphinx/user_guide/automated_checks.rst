@@ -45,8 +45,9 @@ slow results from a previous call are still surfaced. The HTML representation
 of a report uses fast mode so it never triggers an expensive computation.
 
 For comparison reports, :meth:`~skore.ComparisonReport.checks.summarize` builds a global
-summary from each component report in the comparison. Issues are grouped by
-component report and emitted as a single message.
+summary from each compared report. Results are grouped by check code; the HTML summary
+lists each check once with per-estimator sub-entries for issues, tips, and not-applicable
+reasons.
 
 
 .. _skd001-overfitting:

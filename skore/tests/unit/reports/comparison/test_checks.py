@@ -39,7 +39,7 @@ def test_collects_component_issues(report, monkeypatch):
     for name, per_issues in zip(report_names, per_report_issues, strict=True):
         for code in per_issues:
             assert code in issues.index
-            assert f"[{name}]" in issues.loc[code, "explanation"]
+            assert name in issues.loc[code, "explanation"]
 
 
 def test_reuses_component_cached_results(report, monkeypatch):

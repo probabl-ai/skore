@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections import defaultdict
 from importlib.metadata import PackageNotFoundError, version
-from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, TypedDict, runtime_checkable
 from uuid import uuid4
 
 import pandas as pd
@@ -17,6 +18,14 @@ if TYPE_CHECKING:
 
 
 CheckCode = str
+CheckSource = str
+CheckSources = str
+CheckExplanation = str
+
+
+class GroupedExplanation(TypedDict):
+    source: CheckSources
+    explanation: CheckExplanation
 
 
 _TAB_SPECS: list[
@@ -52,6 +61,19 @@ _TAB_SPECS: list[
 ]
 
 
+def _group_explanations(
+    explanation: dict[CheckSource, CheckExplanation],
+) -> list[GroupedExplanation]:
+    """Merge estimators that share the same explanation for display."""
+    grouped: defaultdict[CheckExplanation, list[CheckSource]] = defaultdict(list)
+    for source, text in explanation.items():
+        grouped[text].append(source)
+    return [
+        {"source": ", ".join(sources), "explanation": text}
+        for text, sources in grouped.items()
+    ]
+
+
 def _check_section(
     code: CheckCode,
     check_result: dict,
@@ -59,7 +81,7 @@ def _check_section(
 ) -> Literal["issue", "tip", "passed", "not_applicable"]:
     if code in not_applicable_codes:
         return "not_applicable"
-    if check_result["explanation"] is not None:
+    if pd.notna(check_result.get("explanation")):
         return check_result["severity"]
     return "passed"
 
@@ -82,7 +104,9 @@ class ChecksSummaryDisplay(DisplayMixin):
         Results of applicable checks keyed by check code
         (e.g. ``"SKD001"``). Each value is a dict with keys ``"title"``,
         ``"explanation"``, ``"severity"`` (``"issue"`` or ``"tip"``), and
-        optionally ``"docs_url"``.
+        optionally ``"docs_url"``. ``"explanation"`` is a string for single-report
+        summaries, or a dict mapping source names to messages for aggregated
+        comparison summaries.
 
     not_applicable_codes : set of str
         Check codes that raised :class:`~skore.CheckNotApplicable`.
@@ -146,7 +170,11 @@ class ChecksSummaryDisplay(DisplayMixin):
             A DataFrame with one row per check and columns ``"code"``,
             ``"title"``, ``"section"``, ``"explanation"``, and
             ``"documentation_url"``. The ``"explanation"`` column is ``None``
-            for checks that passed without reporting anything.
+            for checks that passed without reporting anything. For
+            issue/tip/not-applicable rows it is a string for single-report
+            results, or a dict mapping source names to messages for aggregated
+            comparison results (entries with a ``None`` explanation are
+            omitted from the dict).
         """
         match section:
             case "issue" | "tip" | "passed" | "not_applicable":
@@ -169,12 +197,22 @@ class ChecksSummaryDisplay(DisplayMixin):
                         {
                             "code": row.code,
                             "title": row.title,
-                            "explanation": row.explanation
-                            if pd.notna(row.explanation)
-                            else None,
-                            "documentation_url": row.documentation_url
-                            if pd.notna(row.documentation_url)
-                            else None,
+                            "explanation": (
+                                row.explanation
+                                if pd.notna(row.explanation)
+                                and isinstance(row.explanation, str)
+                                else None
+                            ),
+                            "grouped_explanations": (
+                                _group_explanations(row.explanation)
+                                if isinstance(row.explanation, dict)
+                                else None
+                            ),
+                            "documentation_url": (
+                                row.documentation_url
+                                if pd.notna(row.documentation_url)
+                                else None
+                            ),
                         }
                         for row in df.itertuples()
                     ],
@@ -220,11 +258,27 @@ class ChecksSummaryDisplay(DisplayMixin):
             else:
                 for row in df.itertuples():
                     msg = f"- [{row.code}] {row.title}"
-                    if pd.notna(row.explanation):
-                        msg += f". {row.explanation}"
-                    if pd.notna(row.documentation_url):
-                        msg += f" Read more about this here: {row.documentation_url}."
-                    lines.append(msg)
+                    explanation = row.explanation
+                    if isinstance(explanation, dict):
+                        if pd.notna(row.documentation_url):
+                            msg += (
+                                f". Read more about this here: {row.documentation_url}."
+                            )
+                        else:
+                            msg += "."
+                        lines.append(msg)
+                        lines.extend(
+                            f"  - [{entry['source']}] {entry['explanation']}"
+                            for entry in _group_explanations(explanation)
+                        )
+                    else:
+                        if pd.notna(explanation):
+                            msg += f". {explanation}"
+                        if pd.notna(row.documentation_url):
+                            msg += (
+                                f" Read more about this here: {row.documentation_url}."
+                            )
+                        lines.append(msg)
         lines.append("Mute a check with .checks.summarize(ignore=['<code>']).")
         return "\n".join(lines)
 
