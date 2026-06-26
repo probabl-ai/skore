@@ -388,7 +388,7 @@ class TestEstimatorReportPayload:
                 and m.label is None
                 and m.average is not None
             ]
-            assert {m.average for m in aggregates} == {"macro", "micro", "weighted"}
+            assert {m.average for m in aggregates} == {"macro"}
 
     @mark.respx(assert_all_called=False)
     def test_metrics_custom(self, project):

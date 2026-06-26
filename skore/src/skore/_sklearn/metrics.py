@@ -114,7 +114,7 @@ class MissingKwargsError(Exception):
         return self.msg
 
 
-_MULTICLASS_AGGREGATE_AVERAGE_MODES = ("macro", "micro", "weighted")
+_MULTICLASS_AGGREGATE_AVERAGE_MODES = ("macro",)
 _MULTICLASS_AGGREGATE_METRIC_NAMES = frozenset({"precision", "recall", "roc_auc"})
 
 
@@ -465,7 +465,7 @@ class Metric:
         data_source: DataSource,
         **kwargs: Any,
     ) -> list[MetricRow]:
-        """Append macro/micro/weighted rows for built-in multiclass classifiers."""
+        """Append macro aggregate rows for built-in multiclass classifiers."""
         rows: list[MetricRow] = []
         for average_mode in _MULTICLASS_AGGREGATE_AVERAGE_MODES:
             agg_kwargs = kwargs | {"average": average_mode}

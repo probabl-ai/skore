@@ -972,7 +972,7 @@ class TestCrossValidationReportPayload:
                 and m.label is None
                 and m.average is not None
             ]
-            assert {m.average for m in aggregates} == {"macro", "micro", "weighted"}
+            assert {m.average for m in aggregates} == {"macro"}
 
     @mark.filterwarnings(
         # `small_cv_binary_classification` has too few labels

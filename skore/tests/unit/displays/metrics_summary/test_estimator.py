@@ -239,7 +239,7 @@ def test_frame_multiclass_has_label_column(forest_multiclass_classification_with
 def test_frame_multiclass_includes_aggregate_average_rows(
     forest_multiclass_classification_with_test,
 ):
-    """Built-in precision/recall/roc_auc expose macro/micro/weighted aggregate rows."""
+    """Built-in precision/recall/roc_auc expose a macro aggregate row."""
     estimator, X_test, y_test = forest_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     data = report.metrics.summarize().data
@@ -250,7 +250,7 @@ def test_frame_multiclass_includes_aggregate_average_rows(
             & data["label"].isna()
             & data["average"].notna()
         ]
-        assert set(aggregate["average"].tolist()) == {"macro", "micro", "weighted"}
+        assert set(aggregate["average"].tolist()) == {"macro"}
 
 
 def test_frame_multioutput_has_output_column(linear_regression_multioutput_with_test):
