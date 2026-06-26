@@ -96,6 +96,8 @@ class Project:
     workspace : Path or str or None
         The workspace for ``local`` (``Path``) and ``hub`` (``str``) modes; ``None``
         otherwise.
+    local_path : Path or None
+        The path of local projects, None for other modes than 'local'.
     tracking_uri : str or None
         The MLflow tracking URI for ``mlflow`` mode; ``None`` otherwise.
     ml_task : MLTask
@@ -207,6 +209,7 @@ class Project:
 
         self.__mode = mode
         self.__project = plugin(**parameters)
+        self.local_path = self.__project.path if self.__mode == "local" else None
 
         ml_tasks = {report["ml_task"] for report in self.__project.summarize()}
 
