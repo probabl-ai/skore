@@ -35,13 +35,27 @@ def init_workspace(workspace_dir: str | Path | None = None) -> Path:
 
 
 def find_workspace() -> Path:
+    """
+    Find and initialize a local skore workspace.
+
+    - if the SKORE_WORKSPACE environment variable is set, use that.
+    - otherwise look in the current working directory and its parent for a
+      skore workspace: a directory named 'skore_data' containing a file named
+      '.SKORE_WORKSPACE'. If found, use that.
+    - otherwise use a global default location: ~/skore_data/
+
+    Returns
+    -------
+    Path
+        The path to the found or created workspace.
+    """
     if env_workspace := os.environ.get("SKORE_WORKSPACE"):
         return init_workspace(Path(env_workspace))
     start = Path(".").resolve()
     for candidate in [start, *start.parents[::-1]]:
         workspace = candidate / "skore_data"
         if workspace.is_dir() and (workspace / ".SKORE_WORKSPACE").exists():
-            return workspace
+            return init_workspace(workspace)
     return init_workspace(Path.home() / "skore_data")
 
 
@@ -363,6 +377,33 @@ def _get_data_ref(value: Any, workspace: Path) -> dict[str, str]:
 
 
 class Project:
+    """
+    Project (collection of reports) in local storage.
+
+    Parameters
+    ----------
+    name : str
+        Project name.
+
+    workspace : directory path or None
+        The skore workspace (collection of projects) where this project
+        resides. The project is in <workspace>/projects/<project.name>.
+
+        If not provided, a workspace is found or created according to those
+        rules (see find_workspace() in this module):
+
+        - if the SKORE_WORKSPACE environment variable is set, use that.
+        - otherwise look in the current working directory and its parent for a
+          skore workspace: a directory named 'skore_data' containing a file named
+          '.SKORE_WORKSPACE'. If found, use that.
+        - otherwise use a global default location: ~/skore_data/
+
+    Attributes
+    ----------
+    path : Path
+        The path to the project's directory
+    """
+
     def __init__(self, name: str, workspace: str | Path | None = None):
         self.name = _check_name(name)
         self.workspace = (
@@ -371,11 +412,25 @@ class Project:
         self.path = _init_project_dir(self.workspace, self.name)
 
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> Path:
+        """
+        Put a key-report pair to the local project.
+
+        If the key already exists, its last report is modified to point to this new
+        report, while keeping track of the report history.
+
+        Parameters
+        ----------
+        key : str
+            The key to associate with ``report`` in the local project.
+        report : skore.EstimatorReport | skore.CrossValidationReport
+            The report to associate with ``key`` in the local project.
+        """
         return _write_report(
             report, workspace=self.workspace, project_name=self.name, name=key
         )
 
     def get(self, report_id: str) -> EstimatorReport | CrossValidationReport:
+        """Get a persisted report by its id."""
         report_path = next(
             iter((self.path / "reports").glob(f"*__id_{int(report_id):x}__*")), None
         )
@@ -384,6 +439,7 @@ class Project:
         return read_report(report_path)
 
     def summarize(self) -> list[dict[str, Any]]:
+        """Obtain metadata/metrics for all persisted reports."""
         reports_path = self.path / "reports"
         result = []
         for p in sorted(reports_path.glob("*__id_*")):
@@ -397,6 +453,16 @@ class Project:
 
     @staticmethod
     def delete(*, name: str, workspace: str | Path) -> None:
+        """
+        Delete a local project.
+
+        Parameters
+        ----------
+        name : str
+            The name of the project.
+        workspace : Path-like
+            The workspace containing the project.
+        """
         workspace = Path(workspace)
         if not (workspace / ".SKORE_WORKSPACE").exists():
             raise ValueError(f"Not a skore workspace: {workspace}")
