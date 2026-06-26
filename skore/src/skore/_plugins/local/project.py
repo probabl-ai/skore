@@ -383,7 +383,6 @@ class Project:
                 result.append(read_report_metadata(p))
             except Exception as e:
                 warnings.warn(f"Failed to load report at {p}: {e!r}", stacklevel=2)
-                raise
         return result
 
     @staticmethod
