@@ -12,8 +12,8 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from ... import CrossValidationReport, EstimatorReport
-from ..._utils._cache_key import deep_key_sanitize
+from skore import CrossValidationReport, EstimatorReport
+from skore._utils._cache_key import deep_key_sanitize
 
 
 def _check_name(name: Any) -> str:
