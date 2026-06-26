@@ -22,7 +22,9 @@ def _check_name(name: Any) -> str:
 
 def init_workspace(workspace_dir: str | Path | None = None) -> Path:
     workspace_dir = (
-        Path(".") / "skore_data" if workspace_dir is None else Path(workspace_dir)
+        (Path(".") / "skore_data" if workspace_dir is None else Path(workspace_dir))
+        .expanduser()
+        .resolve()
     )
     new_workspace = not workspace_dir.exists()
     workspace_dir.mkdir(parents=True, exist_ok=True)
@@ -50,7 +52,7 @@ def find_workspace() -> Path:
         The path to the found or created workspace.
     """
     if env_workspace := os.environ.get("SKORE_WORKSPACE"):
-        return init_workspace(Path(env_workspace))
+        return init_workspace(Path(env_workspace).expanduser().resolve())
     start = Path(".").resolve()
     for candidate in [start, *start.parents[::-1]]:
         workspace = candidate / "skore_data"
@@ -286,7 +288,8 @@ def _write_estimator_report(
     return output_dir
 
 
-def read_report_metadata(report_dir: Path) -> dict[str, Any]:
+def read_report_metadata(report_dir: Path | str) -> dict[str, Any]:
+    report_dir = Path(report_dir).expanduser().resolve()
     metadata: dict[str, Any] = json.loads(
         (report_dir / "metadata.json").read_text("UTF-8")
     )
@@ -305,7 +308,8 @@ def read_report_metadata(report_dir: Path) -> dict[str, Any]:
     return metadata
 
 
-def read_report(report_dir: Path) -> EstimatorReport | CrossValidationReport:
+def read_report(report_dir: Path | str) -> EstimatorReport | CrossValidationReport:
+    report_dir = Path(report_dir).expanduser().resolve()
     metadata = json.loads((report_dir / "metadata.json").read_text("UTF-8"))
     state = json.loads((report_dir / "state.json").read_text("UTF-8"))
     with open(report_dir / "estimator.pickle", "rb") as f:
@@ -463,7 +467,7 @@ class Project:
         workspace : Path-like
             The workspace containing the project.
         """
-        workspace = Path(workspace)
+        workspace = Path(workspace).expanduser().resolve()
         if not (workspace / ".SKORE_WORKSPACE").exists():
             raise ValueError(f"Not a skore workspace: {workspace}")
         path = workspace / "projects" / _check_name(name)
