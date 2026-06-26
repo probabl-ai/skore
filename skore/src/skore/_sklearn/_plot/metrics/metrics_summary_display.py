@@ -7,6 +7,7 @@ import pandas as pd
 from matplotlib.figure import Figure
 
 from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn.metrics import Metric
 from skore._sklearn.types import (
     Aggregate,
     DataSource,
@@ -99,9 +100,12 @@ class MetricsSummaryDisplay(DisplayMixin):
         self,
         rows: list[MetricsSummaryRow],
         report_type: ReportType,
+        errors: list[tuple[Metric, Exception]],
     ):
         self.rows = rows
         self.report_type = report_type
+        # Remove duplicates while preserving order
+        self.errors = list(dict.fromkeys(errors))
 
     @property
     def data(self):
@@ -190,7 +194,11 @@ class MetricsSummaryDisplay(DisplayMixin):
                 [cast(MetricsSummaryRow, row | extra_data) for row in display.rows]
             )
 
-        return MetricsSummaryDisplay(rows, report_type=report_type)
+        return MetricsSummaryDisplay(
+            rows,
+            report_type=report_type,
+            errors=sum([display.errors for display in child_displays], start=[]),
+        )
 
     @staticmethod
     def _flatten_index(df: pd.DataFrame) -> pd.DataFrame:
@@ -334,23 +342,39 @@ class MetricsSummaryDisplay(DisplayMixin):
         )
         favorability_col = df.pop("Favorability")
 
+        # TODO: Have one `if aggregate is None` block
         if isinstance(aggregate, (list, tuple)):
             aggregate = list(aggregate)
         elif aggregate is not None:
             aggregate = cast(Literal["mean", "std"], aggregate)
             aggregate = [aggregate]
 
-        df = df.reset_index().pivot_table(
-            index=df.index.names,
-            columns="split" if aggregate is None else None,
-            values=estimator_name,
-            aggfunc="first" if aggregate is None else aggregate,
-            sort=False,
-        )
+        if aggregate is None:
+            metric_order = df.index.get_level_values("Metric").unique()
+            df = (
+                df.set_index("split", append=True)
+                .unstack("split")
+                .reindex(metric_order, level="Metric")
+            )
+        else:
+            df = df.reset_index().pivot_table(
+                index=df.index.names,
+                columns=None,
+                aggfunc=aggregate,
+                sort=False,
+            )
+
+        if aggregate is not None:
+            df = df.drop(
+                [col for col in df.columns if col[1] == "split"], axis="columns"
+            )
 
         if aggregate is None:
             df.columns = pd.MultiIndex.from_product(
-                [[estimator_name], [f"Split #{i}" for i in df.columns]]
+                [
+                    [estimator_name],
+                    [f"Split #{i}" for i in df.columns.get_level_values("split")],
+                ]
             )
         else:
             df.columns = df.columns.swaplevel(0, 1)
@@ -464,16 +488,32 @@ class MetricsSummaryDisplay(DisplayMixin):
             return df
 
     def _repr_html_(self) -> str:
-        return (
-            f"{self.frame()._repr_html_()}"
-            '<p role="note">Use <code>.frame()</code> to control the format'
-            " of the output.</p>"
+        lines = [
+            self.frame()._repr_html_(),
+            (
+                '<p role="note">Use <code>.frame()</code> to control the format'
+                " of the output.</p>"
+            ),
+        ]
+        lines.extend(
+            f'<p role="note">Metric {metric.name!r} has failed: {error!r}</p>'
+            for metric, error in self.errors
         )
+        return "".join(lines)
 
     def __repr__(self) -> str:
-        return f"{self.frame()!r}\nUse .frame() to control the format of the output."
+        lines = [
+            f"{self.frame()!r}",
+            "Use .frame() to control the format of the output.",
+        ]
+        lines.extend(
+            f"Metric {metric.name!r} has failed: {error!r}"
+            for metric, error in self.errors
+        )
+
+        return "\n".join(lines)
 
     @DisplayMixin.style_plot
     def plot(self) -> Figure:
         """Plot the metrics summary (not implemented)."""
-        raise NotImplementedError
+        raise NotImplementedError()

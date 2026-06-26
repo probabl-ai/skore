@@ -29,6 +29,7 @@ from skore._sklearn.metrics import (
     Mape,
     Metric,
     MetricLike,
+    MetricRow,
     MissingKwargsError,
     Precision,
     PredictTime,
@@ -118,8 +119,11 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             train_summary = self.summarize(data_source="train", metric=metric)
             test_summary = self.summarize(data_source="test", metric=metric)
 
-            combined = train_summary.rows + test_summary.rows
-            return MetricsSummaryDisplay(rows=combined, report_type="estimator")
+            return MetricsSummaryDisplay(
+                rows=train_summary.rows + test_summary.rows,
+                report_type="estimator",
+                errors=train_summary.errors + test_summary.errors,
+            )
 
         registry = self._parent._metric_registry
         if isinstance(metric, str):
@@ -140,12 +144,28 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                 parsed_metrics = list(registry.values())
 
         rows: list[MetricsSummaryRow] = []
+        errors = []
         for parsed_metric in parsed_metrics:
-            metric_rows = parsed_metric.rows(
-                report=self._parent,
-                data_source=data_source,
-                **parsed_metric.kwargs,
-            )
+            try:
+                metric_rows = parsed_metric.rows(
+                    report=self._parent,
+                    data_source=data_source,
+                    **parsed_metric.kwargs,
+                )
+            except Exception as exception:
+                metric_rows = [
+                    MetricRow(
+                        metric_verbose_name=parsed_metric.verbose_name,
+                        fingerprint=None,
+                        greater_is_better=parsed_metric.greater_is_better,
+                        label=None,
+                        average=None,
+                        output=None,
+                        score=float("nan"),
+                    )
+                ]
+                errors.append((parsed_metric, exception))
+
             rows.extend(
                 row
                 | {
@@ -156,7 +176,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                 for row in metric_rows
             )
 
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        return MetricsSummaryDisplay(rows=rows, report_type="estimator", errors=errors)
 
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
@@ -177,7 +197,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                 report=self._parent, data_source=data_source, **kwargs
             )
         ]
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        return MetricsSummaryDisplay(rows=rows, report_type="estimator", errors=[])
 
     def available(self) -> list[str]:
         """List available metric names in the registry.

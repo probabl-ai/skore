@@ -62,3 +62,22 @@ def test_metrics_add_scorer(report):
 
     display = report.metrics.summarize()
     assert "Mean Squared Error" in display.data["metric_verbose_name"].values
+
+
+def test_metrics_failure(report):
+    """If a metric fails, `summarize` still returns."""
+
+    def fail(estimator, X, y):
+        raise Exception()
+
+    report.metrics.add(fail)
+
+    display = report.metrics.summarize()
+
+    assert "Fail" in set(display.data["metric_verbose_name"])
+    assert (
+        display.data[display.data["metric_verbose_name"] == "Fail"]["score"]
+        .isna()
+        .all()
+    )
+    assert "Fail" in repr(display.frame())

@@ -88,7 +88,11 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             test_summary = self.summarize(data_source="test", metric=metric)
 
             combined = train_summary.rows + test_summary.rows
-            return MetricsSummaryDisplay(rows=combined, report_type="cross-validation")
+            return MetricsSummaryDisplay(
+                rows=combined,
+                report_type="cross-validation",
+                errors=train_summary.errors + test_summary.errors,
+            )
 
         parallel = Parallel(
             **_validate_joblib_parallel_params(
@@ -347,7 +351,9 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                 for row in metric_rows
             )
 
-        return MetricsSummaryDisplay(rows=rows, report_type="cross-validation")
+        return MetricsSummaryDisplay(
+            rows=rows, report_type="cross-validation", errors=[]
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "score"))
     def score(
