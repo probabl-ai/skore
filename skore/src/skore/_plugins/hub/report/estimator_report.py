@@ -3,6 +3,7 @@
 from functools import cached_property
 from typing import ClassVar
 
+import pandas as pd
 from pydantic import computed_field
 
 from skore import EstimatorReport
@@ -76,16 +77,13 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         -----
         Unavailable metrics have been filtered out.
 
-        All metrics whose value is not a scalar are currently ignored:
-        - ignore ``NaN``,
-        - ignore ``list[float]`` for multi-output ML task,
-        - ignore ``dict[str: float]`` for multi-classes ML task.
+        Per-label (per-class) and per-output (multioutput regression) metrics are
+        sent with their ``label``/``output`` dimension so the UI can expose a
+        toggle. Metrics aggregated across labels or outputs (``average`` set) and
+        non-scalar values (``NaN``) are still ignored.
         """
         data = self.report.metrics.summarize(data_source="both").data
-        scalar = data[
-            (data["label"].isna() & data["output"].isna() & data["average"].isna())
-            & data["score"].notna()
-        ]
+        selected = data[data["average"].isna() & data["score"].notna()]
 
         return [
             Metric(
@@ -94,6 +92,8 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
                 data_source=row["data_source"],
                 greater_is_better=row["greater_is_better"],
                 value=row["score"],
+                label=None if pd.isna(row["label"]) else row["label"],
+                output=None if pd.isna(row["output"]) else int(row["output"]),
             )
-            for row in scalar.to_dict("records")
+            for row in selected.to_dict("records")
         ]

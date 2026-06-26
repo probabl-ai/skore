@@ -27,6 +27,10 @@ class Metric(BaseModel, Generic[Report]):
         Indicator of "greater value is better", default None.
     value : float
         Value of the metric.
+    label : bool | int | float | str | None, optional
+        Class label for per-class classification metrics, default None.
+    output : int | None, optional
+        Output index for multioutput regression metrics, default None.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -36,5 +40,7 @@ class Metric(BaseModel, Generic[Report]):
     data_source: Literal["train", "test"] | None
     greater_is_better: bool | None
     value: float
+    label: bool | int | float | str | None = None
+    output: int | None = None
     # See https://github.com/probabl-ai/skore/issues/3025
     position: None = Field(default=None)

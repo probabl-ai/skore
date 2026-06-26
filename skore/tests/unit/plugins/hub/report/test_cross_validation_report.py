@@ -237,11 +237,11 @@ class TestCrossValidationReportPayload:
 
         assert payload.ml_task == "multioutput-regression"
         assert payload.target_names == ["Target 0", "Target 1"]
-        assert payload.target_ranges == [
+        assert payload.target_range == [
             [float(y[:, 0].min()), float(y[:, 0].max())],
             [float(y[:, 1].min()), float(y[:, 1].max())],
         ]
-        assert payload.target_range == [float(y.min()), float(y.max())]
+        assert len(payload.target_range) == len(payload.target_names)
 
     @mark.filterwarnings(
         # ignore deprecation warning due to `scikit-learn` misusing `scipy` arguments,
@@ -461,6 +461,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": True,
                 "value": approx(0.4, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -469,6 +471,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -477,6 +481,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -485,6 +491,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -493,6 +501,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.32946, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -501,6 +511,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.03320, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -509,6 +521,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.02895, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -517,6 +531,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.00128, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -525,6 +541,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -533,6 +551,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -541,6 +561,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -549,6 +571,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -557,6 +581,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.90003, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -565,6 +591,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.04497, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -573,6 +601,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.17775, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -581,6 +611,88 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.00232, abs=1e-4),
+                "label": None,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "precision_mean",
+                "verbose_name": "Precision - MEAN",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.2, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "precision_std",
+                "verbose_name": "Precision - STD",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.28284, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "precision_mean",
+                "verbose_name": "Precision - MEAN",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.2, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "precision_std",
+                "verbose_name": "Precision - STD",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.28284, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "precision_mean",
+                "verbose_name": "Precision - MEAN",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "precision_std",
+                "verbose_name": "Precision - STD",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "precision_mean",
+                "verbose_name": "Precision - MEAN",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "precision_std",
+                "verbose_name": "Precision - STD",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=1e-4),
+                "label": 1,
+                "output": None,
                 "position": None,
             },
             {
@@ -589,6 +701,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -597,6 +711,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -605,6 +721,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -613,6 +731,88 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "recall_mean",
+                "verbose_name": "Recall - MEAN",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.5, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "recall_std",
+                "verbose_name": "Recall - STD",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.70711, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "recall_mean",
+                "verbose_name": "Recall - MEAN",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.5, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "recall_std",
+                "verbose_name": "Recall - STD",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.70711, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "recall_mean",
+                "verbose_name": "Recall - MEAN",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "recall_std",
+                "verbose_name": "Recall - STD",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "recall_mean",
+                "verbose_name": "Recall - MEAN",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "position": None,
+            },
+            {
+                "name": "recall_std",
+                "verbose_name": "Recall - STD",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=1e-4),
+                "label": 1,
+                "output": None,
                 "position": None,
             },
             {
@@ -621,6 +821,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": True,
                 "value": approx(0.45833, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -629,6 +831,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.29462, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -637,6 +841,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
             {
@@ -645,6 +851,8 @@ class TestCrossValidationReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=1e-4),
+                "label": None,
+                "output": None,
                 "position": None,
             },
         ]
@@ -758,7 +966,6 @@ class TestCrossValidationReportPayload:
             "groups": None,
             "target_range": None,
             "target_names": None,
-            "target_ranges": None,
         }
 
     @mark.respx(assert_all_called=False)
