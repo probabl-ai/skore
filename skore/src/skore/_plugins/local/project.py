@@ -51,7 +51,7 @@ def _init_project_dir(workspace: Path, project_name: str) -> Path:
     return project_dir
 
 
-def _dump_report(
+def _write_report(
     report: EstimatorReport | CrossValidationReport,
     *,
     workspace: Path | None = None,
@@ -75,7 +75,7 @@ def _dump_report(
         symlink.symlink_to(output_dir)
 
     if isinstance(report, EstimatorReport):
-        _dump_estimator_report(report, workspace, output_dir, name=name)
+        _write_estimator_report(report, workspace, output_dir, name=name)
     else:
         _write_report_contents(report, output_dir, workspace, name)
         _write_cv_split_reports(report, output_dir, workspace)
@@ -93,7 +93,7 @@ def _write_cv_split_reports(
     ):
         split_dir = split_reports_dir / f"split_{{:0>{n_digits}}}".format(split)
         split_dir.mkdir()
-        _dump_estimator_report(sub_report, workspace, split_dir)
+        _write_estimator_report(sub_report, workspace, split_dir)
         np.savetxt(split_dir / "train_indices.txt", train_idx, fmt="%d")
         np.savetxt(split_dir / "test_indices.txt", test_idx, fmt="%d")
 
@@ -245,7 +245,7 @@ def _write_permutation_importances(report: EstimatorReport, output_dir: Path) ->
                 pass
 
 
-def _dump_estimator_report(
+def _write_estimator_report(
     report: EstimatorReport,
     workspace: Path,
     output_dir: Path,
@@ -262,7 +262,7 @@ def _dump_estimator_report(
     return output_dir
 
 
-def load_report_metadata(report_dir: Path) -> dict[str, Any]:
+def read_report_metadata(report_dir: Path) -> dict[str, Any]:
     metadata: dict[str, Any] = json.loads(
         (report_dir / "metadata.json").read_text("UTF-8")
     )
@@ -281,7 +281,7 @@ def load_report_metadata(report_dir: Path) -> dict[str, Any]:
     return metadata
 
 
-def load_report(report_dir: Path) -> EstimatorReport | CrossValidationReport:
+def read_report(report_dir: Path) -> EstimatorReport | CrossValidationReport:
     metadata = json.loads((report_dir / "metadata.json").read_text("UTF-8"))
     state = json.loads((report_dir / "state.json").read_text("UTF-8"))
     with open(report_dir / "estimator.pickle", "rb") as f:
@@ -308,7 +308,7 @@ def load_report(report_dir: Path) -> EstimatorReport | CrossValidationReport:
         sub_reports = []
         split_indices = []
         for p in sorted((report_dir / "reports").glob("split_*")):
-            sub_reports.append(load_report(p).to_dict())
+            sub_reports.append(read_report(p).to_dict())
             split_indices.append(
                 (
                     np.loadtxt(p / "train_indices.txt", dtype=int),
@@ -361,7 +361,7 @@ class Project:
         self.path = _init_project_dir(self.workspace, self.name)
 
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> Path:
-        return _dump_report(
+        return _write_report(
             report, workspace=self.workspace, project_name=self.name, name=key
         )
 
@@ -371,7 +371,7 @@ class Project:
         )
         if report_path is None:
             raise KeyError(report_id)
-        return load_report(report_path)
+        return read_report(report_path)
 
     def summarize(self) -> list[dict[str, Any]]:
         reports_path = self.path / "reports"
@@ -380,7 +380,7 @@ class Project:
             if p.is_symlink():
                 continue
             try:
-                result.append(load_report_metadata(p))
+                result.append(read_report_metadata(p))
             except Exception as e:
                 warnings.warn(f"Failed to load report at {p}: {e!r}", stacklevel=2)
                 raise
