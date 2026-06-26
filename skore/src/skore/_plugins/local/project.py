@@ -434,7 +434,7 @@ class Project:
         )
 
     def get(self, report_id: str) -> EstimatorReport | CrossValidationReport:
-        """Get a persisted report by its id."""
+        """Get a persisted report by its ID."""
         report_path = next(
             iter((self.path / "reports").glob(f"*__id_{int(report_id):x}__*")), None
         )
