@@ -463,6 +463,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.4, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -473,6 +474,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -483,6 +485,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -493,6 +496,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -503,6 +507,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.32946, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -513,6 +518,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.03320, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -523,6 +529,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.02895, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -533,6 +540,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.00128, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -543,6 +551,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -553,6 +562,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -563,6 +573,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -573,6 +584,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -583,6 +595,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.90003, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -593,6 +606,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.04497, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -603,6 +617,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.17775, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -613,6 +628,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.00232, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -623,6 +639,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.2, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -633,6 +650,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.28284, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -643,6 +661,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.2, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -653,6 +672,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.28284, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -663,6 +683,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -673,6 +694,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -683,6 +705,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -693,6 +716,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -703,6 +727,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -713,6 +738,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -723,6 +749,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -733,6 +760,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -743,6 +771,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.5, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -753,6 +782,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.70711, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -763,6 +793,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.5, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -773,6 +804,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.70711, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -783,6 +815,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -793,6 +826,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -803,6 +837,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -813,6 +848,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -823,6 +859,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.45833, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -833,6 +870,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.29462, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -843,6 +881,7 @@ class TestCrossValidationReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -853,9 +892,87 @@ class TestCrossValidationReportPayload:
                 "value": approx(0.0, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
         ]
+
+    @mark.filterwarnings(
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
+    @mark.respx(assert_all_called=False)
+    def test_binary_metrics_excludes_averaged_rows(
+        self, project, small_cv_binary_classification, monkeypatch
+    ):
+        from unittest.mock import MagicMock
+
+        import pandas as pd
+
+        from skore._plugins.hub.report import CrossValidationReportPayload
+
+        display = small_cv_binary_classification.metrics.summarize(data_source="both")
+        data = display.data.copy()
+        macro_row = (
+            data.loc[
+                (data["metric_name"] == "precision") & (data["data_source"] == "test")
+            ]
+            .iloc[0]
+            .copy()
+        )
+        macro_row["label"] = pd.NA
+        macro_row["average"] = "macro"
+        macro_row["score"] = 0.55
+        data = pd.concat([data, pd.DataFrame([macro_row])], ignore_index=True)
+
+        mock_display = MagicMock()
+        mock_display.data = data
+        monkeypatch.setattr(
+            small_cv_binary_classification.metrics,
+            "summarize",
+            lambda **kwargs: mock_display,
+        )
+
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=small_cv_binary_classification,
+            key="<key>",
+        )
+
+        assert not any(m.average == "macro" for m in payload.metrics)
+        precision = [
+            m
+            for m in payload.metrics
+            if m.name == "precision_mean" and m.data_source == "test"
+        ]
+        assert len(precision) >= 1
+        assert all(m.average is None for m in precision)
+        assert all(m.label is not None for m in precision)
+
+    @mark.filterwarnings(
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
+    @mark.respx(assert_all_called=False)
+    def test_multiclass_metrics_includes_aggregate_averages(
+        self, project, cross_validation_report_multiclass_classification
+    ):
+        from skore._plugins.hub.report import CrossValidationReportPayload
+
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=cross_validation_report_multiclass_classification,
+            key="<key>",
+        )
+
+        for metric_name in ("precision_mean", "recall_mean", "roc_auc_mean"):
+            aggregates = [
+                m
+                for m in payload.metrics
+                if m.name == metric_name
+                and m.data_source == "test"
+                and m.label is None
+                and m.average is not None
+            ]
+            assert {m.average for m in aggregates} == {"macro", "micro", "weighted"}
 
     @mark.filterwarnings(
         # `small_cv_binary_classification` has too few labels

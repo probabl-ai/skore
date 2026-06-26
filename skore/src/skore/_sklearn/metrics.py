@@ -114,6 +114,10 @@ class MissingKwargsError(Exception):
         return self.msg
 
 
+_MULTICLASS_AGGREGATE_AVERAGE_MODES = ("macro", "micro", "weighted")
+_MULTICLASS_AGGREGATE_METRIC_NAMES = frozenset({"precision", "recall", "roc_auc"})
+
+
 class Metric:
     """A metric that can compute a score from a report.
 
@@ -454,11 +458,35 @@ class Metric:
             output=output,
         )
 
+    def _multiclass_aggregate_rows(
+        self,
+        *,
+        report: EstimatorReport,
+        data_source: DataSource,
+        **kwargs: Any,
+    ) -> list[MetricRow]:
+        """Append macro/micro/weighted rows for built-in multiclass classifiers."""
+        rows: list[MetricRow] = []
+        for average_mode in _MULTICLASS_AGGREGATE_AVERAGE_MODES:
+            agg_kwargs = kwargs | {"average": average_mode}
+            agg_score = self._raw_cached(
+                report=report, data_source=data_source, **agg_kwargs
+            )
+            if isinstance(agg_score, np.ndarray):
+                continue
+            if hasattr(agg_score, "item"):
+                agg_score = agg_score.item()
+            if not isinstance(agg_score, (int, float)) or np.isnan(agg_score):
+                continue
+            rows.append(self._row(score=agg_score, average=average_mode))
+        return rows
+
     def _to_rows(
         self,
         score,
         *,
         report: EstimatorReport,
+        data_source: DataSource = "test",
         **kwargs: Any,
     ) -> list[MetricRow]:
         """Convert a score into one or more rows."""
@@ -466,7 +494,12 @@ class Metric:
             # Multimetric scorer
             result = []
             for submetric_name, submetric_value in score.items():
-                rows = self._to_rows(submetric_value, report=report, kwargs=kwargs)
+                rows = self._to_rows(
+                    submetric_value,
+                    report=report,
+                    data_source=data_source,
+                    **kwargs,
+                )
                 for r in rows:
                     r["metric_verbose_name"] = submetric_name
                 result.extend(rows)
@@ -481,7 +514,7 @@ class Metric:
             ]
         if report._ml_task in ("binary-classification", "multiclass-classification"):
             if isinstance(score, np.ndarray):
-                return [
+                rows = [
                     self._row(score=s, label=label)
                     for label, s in zip(
                         report.learner_.classes_.tolist(),
@@ -489,6 +522,17 @@ class Metric:
                         strict=False,
                     )
                 ]
+                if (
+                    report._ml_task == "multiclass-classification"
+                    and kwargs.get("average") is None
+                    and self.name in _MULTICLASS_AGGREGATE_METRIC_NAMES
+                ):
+                    rows.extend(
+                        self._multiclass_aggregate_rows(
+                            report=report, data_source=data_source, **kwargs
+                        )
+                    )
+                return rows
             return [self._row(score=score, average=kwargs.get("average"))]
         if report._ml_task == "multioutput-regression":
             if isinstance(score, np.ndarray):
@@ -528,7 +572,9 @@ class Metric:
         score = self._raw_cached(
             report=report, data_source=data_source, **merged_kwargs
         )
-        return self._to_rows(score, report=report, **merged_kwargs)
+        return self._to_rows(
+            score, report=report, data_source=data_source, **merged_kwargs
+        )
 
     def _to_pretty(self, rows: list[MetricRow]) -> Any:
         """Convert rows into a human-readable metric output."""

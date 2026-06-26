@@ -31,6 +31,8 @@ class Metric(BaseModel, Generic[Report]):
         Class label for per-class classification metrics, default None.
     output : int | None, optional
         Output index for multioutput regression metrics, default None.
+    average : str | None, optional
+        Averaging mode for metrics aggregated across labels or outputs, default None.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -42,5 +44,6 @@ class Metric(BaseModel, Generic[Report]):
     value: float
     label: bool | int | float | str | None = None
     output: int | None = None
+    average: str | None = None
     # See https://github.com/probabl-ai/skore/issues/3025
     position: None = Field(default=None)

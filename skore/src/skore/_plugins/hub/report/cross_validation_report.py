@@ -348,10 +348,16 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         Per-label (per-class) and per-output (multioutput regression) metrics are
         aggregated independently for each label/output and sent with their
         dimension so the UI can expose a toggle. Metrics aggregated across labels
-        or outputs (``average`` set) and non-scalar values (``NaN``) are ignored.
+        or outputs are aggregated independently for each ``average`` mode and sent
+        with their ``average`` dimension so the UI can show them as the aggregate
+        variant, except for binary classification where only per-label rows are
+        sent (``average`` is always ``None``). Only non-scalar values (``NaN``)
+        are ignored.
         """
         data = self.report.metrics.summarize(data_source="both").data
-        selected = data[data["average"].isna() & data["score"].notna()]
+        selected = data[data["score"].notna()]
+        if self.report._ml_task == "binary-classification":
+            selected = selected[selected["average"].isna()]
 
         aggregated = (
             selected.groupby(
@@ -362,6 +368,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                     "greater_is_better",
                     "label",
                     "output",
+                    "average",
                 ],
                 dropna=False,
             )
@@ -383,6 +390,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 value=row[suffix],
                 label=None if pd.isna(row["label"]) else row["label"],
                 output=None if pd.isna(row["output"]) else int(row["output"]),
+                average=None if pd.isna(row["average"]) else row["average"],
             )
             for row in aggregated.to_dict("records")
             for suffix in ("mean", "std")

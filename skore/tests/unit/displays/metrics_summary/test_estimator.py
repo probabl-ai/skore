@@ -236,6 +236,23 @@ def test_frame_multiclass_has_label_column(forest_multiclass_classification_with
     assert precision["label"].to_list() == [0, 1, 2]
 
 
+def test_frame_multiclass_includes_aggregate_average_rows(
+    forest_multiclass_classification_with_test,
+):
+    """Built-in precision/recall/roc_auc expose macro/micro/weighted aggregate rows."""
+    estimator, X_test, y_test = forest_multiclass_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    data = report.metrics.summarize().data
+
+    for metric_name in ("precision", "recall", "roc_auc"):
+        aggregate = data[
+            (data["metric_name"] == metric_name)
+            & data["label"].isna()
+            & data["average"].notna()
+        ]
+        assert set(aggregate["average"].tolist()) == {"macro", "micro", "weighted"}
+
+
 def test_frame_multioutput_has_output_column(linear_regression_multioutput_with_test):
     """Multioutput regression metrics expose an ``output`` column."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test

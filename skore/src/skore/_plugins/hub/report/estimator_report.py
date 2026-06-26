@@ -78,12 +78,14 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         Unavailable metrics have been filtered out.
 
         Per-label (per-class) and per-output (multioutput regression) metrics are
-        sent with their ``label``/``output`` dimension so the UI can expose a
-        toggle. Metrics aggregated across labels or outputs (``average`` set) and
-        non-scalar values (``NaN``) are still ignored.
+        sent with their ``label``/``output``/``average`` dimension so the UI can
+        expose a toggle. For binary classification, only per-label rows are sent
+        (``average`` is always ``None``). Non-scalar values (``NaN``) are ignored.
         """
         data = self.report.metrics.summarize(data_source="both").data
-        selected = data[data["average"].isna() & data["score"].notna()]
+        selected = data[data["score"].notna()]
+        if self.report._ml_task == "binary-classification":
+            selected = selected[selected["average"].isna()]
 
         return [
             Metric(
@@ -94,6 +96,7 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
                 value=row["score"],
                 label=None if pd.isna(row["label"]) else row["label"],
                 output=None if pd.isna(row["output"]) else int(row["output"]),
+                average=None if pd.isna(row["average"]) else row["average"],
             )
             for row in selected.to_dict("records")
         ]

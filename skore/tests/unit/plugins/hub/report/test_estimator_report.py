@@ -99,6 +99,7 @@ class TestEstimatorReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -109,6 +110,7 @@ class TestEstimatorReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -119,6 +121,7 @@ class TestEstimatorReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -129,6 +132,7 @@ class TestEstimatorReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -139,6 +143,7 @@ class TestEstimatorReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -149,6 +154,7 @@ class TestEstimatorReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -159,6 +165,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.06911, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -169,6 +176,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.00727, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -179,6 +187,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -189,6 +198,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -199,6 +209,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.9, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -209,6 +220,7 @@ class TestEstimatorReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -219,6 +231,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.77778, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -229,6 +242,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.84615, abs=1e-4),
                 "label": 0,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -239,6 +253,7 @@ class TestEstimatorReportPayload:
                 "value": approx(1.0, abs=1e-4),
                 "label": 1,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -249,6 +264,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.98901, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -259,6 +275,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.31686, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -269,6 +286,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.09025, abs=1e-4),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -279,6 +297,7 @@ class TestEstimatorReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -289,9 +308,87 @@ class TestEstimatorReportPayload:
                 "value": approx(0.0, abs=float("inf")),
                 "label": None,
                 "output": None,
+                "average": None,
                 "position": None,
             },
         ]
+
+    @mark.respx(assert_all_called=False)
+    def test_binary_metrics_excludes_averaged_rows(
+        self, project, binary_classification, monkeypatch
+    ):
+        from unittest.mock import MagicMock
+
+        import pandas as pd
+
+        display = binary_classification.metrics.summarize(data_source="both")
+        data = display.data.copy()
+        macro_row = (
+            data.loc[
+                (data["metric_name"] == "precision") & (data["data_source"] == "test")
+            ]
+            .iloc[0]
+            .copy()
+        )
+        macro_row["label"] = pd.NA
+        macro_row["average"] = "macro"
+        macro_row["score"] = 0.55
+        data = pd.concat([data, pd.DataFrame([macro_row])], ignore_index=True)
+
+        mock_display = MagicMock()
+        mock_display.data = data
+        monkeypatch.setattr(
+            binary_classification.metrics,
+            "summarize",
+            lambda **kwargs: mock_display,
+        )
+
+        payload = EstimatorReportPayload(
+            project=project,
+            report=binary_classification,
+            key="<key>",
+        )
+
+        assert not any(m.average == "macro" for m in payload.metrics)
+        precision = [
+            m
+            for m in payload.metrics
+            if m.name == "precision" and m.data_source == "test"
+        ]
+        assert len(precision) == 2
+        assert {m.label for m in precision} == {0, 1}
+        assert all(m.average is None for m in precision)
+
+    @mark.respx(assert_all_called=False)
+    def test_multiclass_metrics_includes_aggregate_averages(
+        self, project, forest_multiclass_classification_with_train_test
+    ):
+        estimator, X_train, X_test, y_train, y_test = (
+            forest_multiclass_classification_with_train_test
+        )
+        report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+        payload = EstimatorReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        for metric_name in ("precision", "recall", "roc_auc"):
+            aggregates = [
+                m
+                for m in payload.metrics
+                if m.name == metric_name
+                and m.data_source == "test"
+                and m.label is None
+                and m.average is not None
+            ]
+            assert {m.average for m in aggregates} == {"macro", "micro", "weighted"}
 
     @mark.respx(assert_all_called=False)
     def test_metrics_custom(self, project):
