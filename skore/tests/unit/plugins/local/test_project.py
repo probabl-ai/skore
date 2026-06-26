@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -179,3 +180,14 @@ def test_get_missing(tmp_path):
     p = Project("regression", workspace=tmp_path)
     with pytest.raises(KeyError, match="17"):
         p.get(17)
+
+
+def test_project_with_broken_report(tmp_path, regression_dummy):
+    project = Project("regression", workspace=tmp_path)
+    project.put("dummy", regression_dummy)
+    project.put("dummy_1", regression_dummy)
+    bad_report = next(iter((project.path / "reports").glob("*estimator__dummy_1")))
+    shutil.rmtree(str(bad_report))
+    bad_report.mkdir()
+    with pytest.warns(match="Failed to load report"):
+        assert len(project.summarize()) == 1
