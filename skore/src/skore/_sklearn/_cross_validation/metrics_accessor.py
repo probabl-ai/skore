@@ -1099,114 +1099,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             report.metrics.roc(data_source=data_source)
             for report in self._parent.reports_
         ]
-
-        if average is not None:
-            if average != "threshold":
-                raise ValueError('average must be "threshold" or None.')
-            if self._parent._ml_task != "binary-classification":
-                raise ValueError(
-                    "Averaging is not implemented for multi class classification"
-                )
-
-            split_indices = range(len(self._parent.reports_))
-            display = RocCurveDisplay._concatenate(
-                child_displays,
-                report_type=self._parent._report_type,
-                column_data={"split": list(split_indices)},
-            )
-
-            roc_curve_df = display.roc_curve.copy()
-            roc_auc_df = display.roc_auc.copy()
-
-            roc_curve_df["average"] = None
-            roc_auc_df["average"] = None
-
-            roc_curve_records = []
-            roc_auc_records = []
-
-            for (label, ds), group in display.roc_curve.groupby(
-                ["label", "data_source"], observed=True
-            ):
-                all_thresholds = []
-                all_fprs = []
-                all_tprs = []
-
-                for _, split_group in group.groupby("split", observed=True):
-                    sorted_group = split_group.sort_values("threshold", ascending=False)
-                    all_thresholds.append(sorted_group["threshold"].values)
-                    all_fprs.append(sorted_group["fpr"].values)
-                    all_tprs.append(sorted_group["tpr"].values)
-
-                average_fpr, average_tpr, average_threshold = (
-                    RocCurveDisplay._threshold_average(
-                        all_fprs, all_tprs, all_thresholds
-                    )
-                )
-                average_roc_auc = auc(average_fpr, average_tpr)
-
-                roc_curve_records.append(
-                    pd.DataFrame(
-                        {
-                            "estimator": display.roc_curve["estimator"].iloc[0],
-                            "data_source": ds,
-                            "split": None,
-                            "label": label,
-                            "threshold": average_threshold,
-                            "fpr": average_fpr,
-                            "tpr": average_tpr,
-                            "average": "threshold",
-                        }
-                    )
-                )
-
-                roc_auc_records.append(
-                    {
-                        "estimator": display.roc_auc["estimator"].iloc[0],
-                        "data_source": ds,
-                        "split": None,
-                        "label": label,
-                        "roc_auc": average_roc_auc,
-                        "average": "threshold",
-                    }
-                )
-
-            avg_curve_df = (
-                pd.concat(roc_curve_records, ignore_index=True)
-                if roc_curve_records
-                else pd.DataFrame(columns=roc_curve_df.columns)
-            )
-            roc_curve_df = pd.concat([roc_curve_df, avg_curve_df], ignore_index=True)
-
-            avg_auc_df = (
-                pd.DataFrame(roc_auc_records)
-                if roc_auc_records
-                else pd.DataFrame(columns=roc_auc_df.columns)
-            )
-            roc_auc_df = pd.concat([roc_auc_df, avg_auc_df], ignore_index=True)
-
-            for col in display.roc_curve.columns:
-                if isinstance(display.roc_curve[col].dtype, pd.CategoricalDtype):
-                    roc_curve_df[col] = roc_curve_df[col].astype(
-                        display.roc_curve[col].dtype
-                    )
-
-            for col in display.roc_auc.columns:
-                if isinstance(display.roc_auc[col].dtype, pd.CategoricalDtype):
-                    roc_auc_df[col] = roc_auc_df[col].astype(display.roc_auc[col].dtype)
-
-            roc_curve_df["average"] = roc_curve_df["average"].astype("category")
-            roc_auc_df["average"] = roc_auc_df["average"].astype("category")
-
-            average_display = RocCurveDisplay(
-                roc_curve=roc_curve_df,
-                roc_auc=roc_auc_df,
-                report_pos_label=display.report_pos_label,
-                data_source=display.data_source,
-                ml_task=display.ml_task,
-                report_type="cross-validation",
-            )
-            return average_display
-        else:
+        if average is None:
             split_indices = range(len(self._parent.reports_))
             display = RocCurveDisplay._concatenate(
                 child_displays,
@@ -1214,6 +1107,110 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 column_data={"split": list(split_indices)},
             )
             return display
+
+        if average != "threshold":
+            raise ValueError('average must be "threshold" or None.')
+        if self._parent._ml_task != "binary-classification":
+            raise ValueError(
+                "Averaging is not implemented for multi class classification"
+            )
+
+        split_indices = range(len(self._parent.reports_))
+        display = RocCurveDisplay._concatenate(
+            child_displays,
+            report_type=self._parent._report_type,
+            column_data={"split": list(split_indices)},
+        )
+
+        roc_curve_df = display.roc_curve.copy()
+        roc_auc_df = display.roc_auc.copy()
+
+        roc_curve_df["average"] = None
+        roc_auc_df["average"] = None
+
+        roc_curve_records = []
+        roc_auc_records = []
+
+        for (label, ds), group in display.roc_curve.groupby(
+            ["label", "data_source"], observed=True
+        ):
+            all_thresholds = []
+            all_fprs = []
+            all_tprs = []
+
+            for _, split_group in group.groupby("split", observed=True):
+                sorted_group = split_group.sort_values("threshold", ascending=False)
+                all_thresholds.append(sorted_group["threshold"].values)
+                all_fprs.append(sorted_group["fpr"].values)
+                all_tprs.append(sorted_group["tpr"].values)
+
+            average_fpr, average_tpr, average_threshold = (
+                RocCurveDisplay._threshold_average(all_fprs, all_tprs, all_thresholds)
+            )
+            average_roc_auc = auc(average_fpr, average_tpr)
+
+            roc_curve_records.append(
+                pd.DataFrame(
+                    {
+                        "estimator": display.roc_curve["estimator"].iloc[0],
+                        "data_source": ds,
+                        "split": None,
+                        "label": label,
+                        "threshold": average_threshold,
+                        "fpr": average_fpr,
+                        "tpr": average_tpr,
+                        "average": "threshold",
+                    }
+                )
+            )
+
+            roc_auc_records.append(
+                {
+                    "estimator": display.roc_auc["estimator"].iloc[0],
+                    "data_source": ds,
+                    "split": None,
+                    "label": label,
+                    "roc_auc": average_roc_auc,
+                    "average": "threshold",
+                }
+            )
+
+        avg_curve_df = (
+            pd.concat(roc_curve_records, ignore_index=True)
+            if roc_curve_records
+            else pd.DataFrame(columns=roc_curve_df.columns)
+        )
+        roc_curve_df = pd.concat([roc_curve_df, avg_curve_df], ignore_index=True)
+
+        avg_auc_df = (
+            pd.DataFrame(roc_auc_records)
+            if roc_auc_records
+            else pd.DataFrame(columns=roc_auc_df.columns)
+        )
+        roc_auc_df = pd.concat([roc_auc_df, avg_auc_df], ignore_index=True)
+
+        for col in display.roc_curve.columns:
+            if isinstance(display.roc_curve[col].dtype, pd.CategoricalDtype):
+                roc_curve_df[col] = roc_curve_df[col].astype(
+                    display.roc_curve[col].dtype
+                )
+
+        for col in display.roc_auc.columns:
+            if isinstance(display.roc_auc[col].dtype, pd.CategoricalDtype):
+                roc_auc_df[col] = roc_auc_df[col].astype(display.roc_auc[col].dtype)
+
+        roc_curve_df["average"] = roc_curve_df["average"].astype("category")
+        roc_auc_df["average"] = roc_auc_df["average"].astype("category")
+
+        average_display = RocCurveDisplay(
+            roc_curve=roc_curve_df,
+            roc_auc=roc_auc_df,
+            report_pos_label=display.report_pos_label,
+            data_source=display.data_source,
+            ml_task=display.ml_task,
+            report_type="cross-validation",
+        )
+        return average_display
 
     @available_if(_check_estimator_report_has_method("metrics", "precision_recall"))
     def precision_recall(
