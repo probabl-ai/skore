@@ -13,6 +13,11 @@ from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.local import Project
 
 
+@fixture(autouse=True)
+def delenv_workspace(monkeypatch):
+    monkeypatch.delenv("SKORE_WORKSPACE", raising=False)
+
+
 @fixture(scope="module")
 def regression() -> EstimatorReport:
     X, y = make_regression(random_state=42)
@@ -135,21 +140,39 @@ def test_init_with_workspace(tmp_path, type):
 
 
 def test_find_workspace(tmp_path, monkeypatch):
+    """Check the priority order of workspace lookup"""
     home = tmp_path / "home"
     env = tmp_path / "env"
     local = tmp_path / "repo"
     pwd = local / "a" / "b"
-    for d in (home, env, pwd):
+
+    for d in (home, pwd):
         d.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", lambda: home)
     monkeypatch.chdir(pwd)
+
+    # When there is no local workspace and no env variable, use the global default one
     assert Project("regression").path == home / "skore_data" / "projects" / "regression"
+
+    # Create a local workspace in a parent directory of pwd
     Project("abc", workspace=local / "skore_data")
+
+    # When there is a workspace in a parent of the current directory, prefer
+    # that to the global one
     assert (
         Project("regression").path == local / "skore_data" / "projects" / "regression"
     )
+
     monkeypatch.setenv("SKORE_WORKSPACE", str(env))
+
+    # When the env variable is set, prefer that to any auto-discovered workspace
     assert Project("regression").path == env / "projects" / "regression"
+
+    # When an explicit workspace parameter is passed, prefer that to the env variable
+    assert (
+        Project("regression", workspace=tmp_path / "other_dir").path
+        == tmp_path / "other_dir" / "projects" / "regression"
+    )
 
 
 def test_get_missing(tmp_path):
