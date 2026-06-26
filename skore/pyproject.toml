@@ -102,6 +102,7 @@ mlflow = "skore._plugins.mlflow:Project"
 
 [project.scripts]
 skore-init-workspace = "skore._plugins.local.project:init_workspace"
+skore = "skore._cli:main"
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -176,7 +177,7 @@ select = [
     "UP",
     "RUF010", "RUF015",
 ]
-ignore = ["PERF203"]
+ignore = ["PERF203", "T201"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
