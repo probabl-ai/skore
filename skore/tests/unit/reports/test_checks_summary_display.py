@@ -1,18 +1,25 @@
 from skore._sklearn._checks.base import ChecksSummaryDisplay
 
 
-def display_html(
+def display(
     check_results,
     *,
     not_applicable_codes=frozenset(),
+    skipped_checks=None,
+    ignored_checks=None,
     fast_mode=False,
 ):
     return ChecksSummaryDisplay(
         check_results=check_results,
         not_applicable_codes=set(not_applicable_codes),
-        n_ignored_codes=0,
+        skipped_checks={} if skipped_checks is None else skipped_checks,
+        ignored_checks={} if ignored_checks is None else ignored_checks,
         fast_mode=fast_mode,
-    )._repr_html_()
+    )
+
+
+def display_html(*args, **kwargs):
+    return display(*args, **kwargs)._repr_html_()
 
 
 _MOCK_ISSUE = {
@@ -78,3 +85,60 @@ def test_repr_html_merges_estimators_with_same_explanation():
     assert ">SKD001</a>] <strong>Mock issue.</strong>" in html
     assert "<li>[Ridge, Lasso] Same reason.</li>" in html
     assert html.count("Same reason.") == 1
+
+
+def test_repr_html_skipped_and_ignored_blocks():
+    """HTML repr shows skipped and ignored checks in separate blocks."""
+    html = display_html(
+        {},
+        skipped_checks={
+            "SKDSLOW": {
+                "title": "Slow check",
+                "docs_url": "skdslow",
+                "explanation": "Skipped in fast mode (not cached).",
+                "severity": "issue",
+            }
+        },
+        ignored_checks={
+            "SKDIGN": {
+                "title": "Ignored check",
+                "docs_url": "skdign",
+                "explanation": "Muted via ignore or ignore_checks.",
+                "severity": "issue",
+            }
+        },
+        fast_mode=True,
+    )
+    assert "Skipped &amp; Ignored (2)" in html or "Skipped & Ignored (2)" in html
+    assert "report-checks-summary-block-title" in html
+    assert "<strong>Skipped</strong>" in html
+    assert "<strong>Ignored</strong>" in html
+    assert ">SKDSLOW</a>" in html
+    assert "Skipped in fast mode (not cached)." in html
+    assert ">SKDIGN</a>" in html
+    assert "Muted via ignore or ignore_checks." in html
+
+
+def test_frame_skipped_and_ignored_sections():
+    """frame(section=...) exposes skipped and ignored rows."""
+    summary = display(
+        {},
+        skipped_checks={
+            "SKDSLOW": {
+                "title": "Slow check",
+                "docs_url": "skdslow",
+                "explanation": "Skipped in fast mode (not cached).",
+                "severity": "issue",
+            }
+        },
+        ignored_checks={
+            "SKDIGN": {
+                "title": "Ignored check",
+                "docs_url": "skdign",
+                "explanation": "Muted via ignore or ignore_checks.",
+                "severity": "issue",
+            }
+        },
+    )
+    assert set(summary.frame(section="skipped")["code"]) == {"SKDSLOW"}
+    assert set(summary.frame(section="ignored")["code"]) == {"SKDIGN"}

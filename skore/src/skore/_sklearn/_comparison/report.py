@@ -505,7 +505,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
+    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode], set[CheckCode]]:
         comparison_results: dict[CheckCode, dict] = {}
         explanation_by_code: dict[CheckCode, dict[CheckSource, CheckExplanation]] = (
             defaultdict(dict)
@@ -513,15 +513,24 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         na_explanation_by_code: dict[CheckCode, dict[CheckSource, CheckExplanation]] = (
             defaultdict(dict)
         )
+        skipped_explanation_by_code: dict[
+            CheckCode, dict[CheckSource, CheckExplanation]
+        ] = defaultdict(dict)
         all_applicable_codes: set[CheckCode] = set()
         all_not_applicable_codes: set[CheckCode] = set()
+        all_skipped_codes: set[CheckCode] = set()
+        skipped_message = "Skipped in fast mode (not cached)."
         for report_name, report in self.reports_.items():
             report.checks.add(self._checks_registry)
-            report_results, applicable_codes, not_applicable_codes = (
-                report._get_results(ignored_codes, fast_mode=fast_mode)
-            )
+            (
+                report_results,
+                applicable_codes,
+                not_applicable_codes,
+                skipped_codes,
+            ) = report._get_results(ignored_codes, fast_mode=fast_mode)
             all_applicable_codes |= applicable_codes
             all_not_applicable_codes |= not_applicable_codes
+            all_skipped_codes |= skipped_codes
 
             for code, result in report_results.items():
                 comparison_results.setdefault(
@@ -538,13 +547,36 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 elif code in not_applicable_codes and result["explanation"] is not None:
                     na_explanation_by_code[code][report_name] = result["explanation"]
 
+            for code in skipped_codes:
+                check = next(c for c in report._checks_registry if c.code == code)
+                comparison_results.setdefault(
+                    code,
+                    {
+                        "title": check.title,
+                        "docs_url": check.docs_url,
+                        "explanation": None,
+                        "severity": getattr(check, "severity", "issue"),
+                    },
+                )
+                skipped_explanation_by_code[code][report_name] = skipped_message
+
         all_not_applicable_codes -= all_applicable_codes
+        all_skipped_codes -= all_applicable_codes
 
         for code, per_estimator in explanation_by_code.items():
             comparison_results[code]["explanation"] = dict(per_estimator)
         for code in all_not_applicable_codes:
             comparison_results[code]["explanation"] = dict(na_explanation_by_code[code])
-        return comparison_results, all_applicable_codes, all_not_applicable_codes
+        for code in all_skipped_codes:
+            comparison_results[code]["explanation"] = dict(
+                skipped_explanation_by_code[code]
+            )
+        return (
+            comparison_results,
+            all_applicable_codes,
+            all_not_applicable_codes,
+            all_skipped_codes,
+        )
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

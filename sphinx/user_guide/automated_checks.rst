@@ -41,13 +41,18 @@ can be skipped with `fast_mode=True`:
     report.checks.summarize(fast_mode=True)
 
 In fast mode, slow checks that are not yet in the cache are not run; cached
-slow results from a previous call are still surfaced. The HTML representation
-of a report uses fast mode so it never triggers an expensive computation.
+slow results from a previous call are still surfaced. Skipped checks appear in
+the ``Skipped & Ignored`` tab of the summary. The HTML representation of a
+report uses fast mode so it never triggers an expensive computation.
+
+Muted checks appear in the same tab under ``Ignored``. You can also query them
+with :meth:`~skore.ChecksSummaryDisplay.frame` using ``section="ignored"`` or
+``section="skipped"``.
 
 For comparison reports, :meth:`~skore.ComparisonReport.checks.summarize` builds a global
 summary from each compared report. Results are grouped by check code; the HTML summary
-lists each check once with per-estimator sub-entries for issues, tips, and not-applicable
-reasons.
+lists each check once with per-estimator sub-entries for issues, tips, not-applicable
+reasons, and fast-mode skips.
 
 
 .. _skd001-overfitting:

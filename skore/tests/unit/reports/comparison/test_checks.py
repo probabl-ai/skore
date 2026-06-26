@@ -27,6 +27,7 @@ def test_collects_component_issues(report, monkeypatch):
                 iss,
                 set(iss),
                 set(),
+                set(),
             ),
         )
     for attr in ("_check_results_cache", "_applicable_codes", "_not_applicable_codes"):

@@ -64,6 +64,7 @@ def mock_issue(report, ignored_codes, *, fast_mode=False):
         },
         {"SKD001"},
         set(),
+        set(),
     )
 
 
@@ -799,6 +800,7 @@ def test_no_issues(monkeypatch, regression_report):
             {},
             {"SKD001", "SKD002"},
             set(),
+            set(),
         ),
     )
     assert regression_report.checks.summarize().frame(section="issue").empty
@@ -1018,10 +1020,13 @@ def test_passed_contains_applicable_checks_with_no_finding(regression_report):
     assert "TST001" not in set(result.frame(section="tip")["code"])
 
 
-def test_passed_excludes_ignored(regression_report):
-    """Ignored codes are not listed as passed."""
+def test_ignored_checks_appear_in_ignored_section(regression_report):
+    """Ignored codes appear under the ignored section."""
     regression_report.checks.add([MockCheck(has_issue=False)])
     result = regression_report.checks.summarize(ignore=["TST001"])
+    ignored = result.frame(section="ignored").set_index("code")
+    assert "TST001" in ignored.index
+    assert ignored.loc["TST001", "explanation"] == "Muted via ignore or ignore_checks."
     assert "TST001" not in set(result.frame(section="passed")["code"])
     assert "TST001" not in set(result.frame(section="issue")["code"])
 
@@ -1047,13 +1052,14 @@ def test_frame_section_filter(regression_report):
 
 
 def test_header_reports_all_counts(regression_report):
-    """The header reports issue, tip, passed, not applicable and ignored counts."""
+    """The header reports issue, tip, passed, NA, skipped and ignored counts."""
     regression_report.checks.add([MockCheck(has_issue=True), TipCheck()])
     result = regression_report.checks.summarize(ignore=["SKD001"])
     assert "issue(s)" in result._header
     assert "tip(s)" in result._header
     assert "passed" in result._header
     assert "not applicable" in result._header
+    assert "skipped" in result._header
     assert "1 ignored" in result._header
 
 
@@ -1065,6 +1071,7 @@ def test_html_tabs(regression_report):
     assert "Tips (" in html
     assert "Passed (" in html
     assert "Not Applicable (" in html
+    assert "Skipped &amp; Ignored (" in html
 
 
 def test_checks_summary_html_note_lines(monkeypatch, regression_report):
@@ -1127,8 +1134,11 @@ def test_summarize_fast_mode_skips_uncached_slow_checks(regression_report):
     """fast_mode=True skips slow checks that are not cached."""
     slow_check = SlowMockCheck()
     regression_report.checks.add([slow_check])
-    codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
-    assert "TSTSLOW" not in codes
+    result = regression_report.checks.summarize(fast_mode=True)
+    assert "TSTSLOW" not in set(result.frame(section="issue")["code"])
+    skipped = result.frame(section="skipped").set_index("code")
+    assert "TSTSLOW" in skipped.index
+    assert skipped.loc["TSTSLOW", "explanation"] == "Skipped in fast mode (not cached)."
     assert slow_check.calls == 0
 
 

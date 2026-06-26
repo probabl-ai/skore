@@ -355,6 +355,16 @@
     margin: 0;
     font-size: 12px;
     font-style: italic;
+}
+
+.report-checks-summary-block + .report-checks-summary-block {
+    margin-top: 0.75em;
+}
+
+.report-checks-summary-block-title {
+    margin: 0 0 0.35em;
+    font-size: 12px;
+}
     opacity: 0.85;
 }
 

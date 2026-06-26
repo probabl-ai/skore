@@ -36,9 +36,9 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         Returns
         -------
         ChecksSummaryDisplay
-            A display object with an HTML representation organized as four
-            tabs (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``). The
-            full list of results is accessible via the
+            A display object with an HTML representation organized as five
+            tabs (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``,
+            ``Skipped & Ignored``). The full list of results is accessible via the
             :meth:`~ChecksSummaryDisplay.frame` method.
 
         Examples
@@ -52,8 +52,8 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         >>> "SKD002" in summary.frame()["code"].values
         True
         >>> filtered = report.checks.summarize(ignore=["SKD002"])
-        >>> "SKD002" in filtered.frame()["code"].values
-        False
+        >>> "SKD002" in filtered.frame(section="ignored")["code"].values
+        True
         """
         ignored_codes: set[CheckCode] = set()
         if ignore:
@@ -66,18 +66,48 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 for code in configuration.ignore_checks
                 if code.strip()
             )
-        check_results, applicable_codes, not_applicable_codes = (
+        check_results, applicable_codes, not_applicable_codes, skipped_codes = (
             self._parent._get_results(ignored_codes, fast_mode=fast_mode)
         )
+        registry_checks = [
+            check
+            for check in self._parent._checks_registry
+            if self._parent._report_type in check.report_types
+        ]
+        skipped_message = "Skipped in fast mode (not cached)."
+        ignored_message = "Muted via ignore or ignore_checks."
+        skipped_checks = {
+            code: check_results.get(code)
+            or {
+                "title": check.title,
+                "docs_url": check.docs_url,
+                "explanation": skipped_message,
+                "severity": getattr(check, "severity", "issue"),
+            }
+            for check in registry_checks
+            if (code := check.code) in skipped_codes
+        }
+        ignored_checks = {
+            check.code: {
+                "title": check.title,
+                "docs_url": check.docs_url,
+                "explanation": ignored_message,
+                "severity": getattr(check, "severity", "issue"),
+            }
+            for check in registry_checks
+            if check.code in ignored_codes
+        }
         return ChecksSummaryDisplay(
             check_results={
                 code: check_result
                 for code, check_result in check_results.items()
                 if (code in applicable_codes or code in not_applicable_codes)
                 and code not in ignored_codes
+                and code not in skipped_codes
             },
             not_applicable_codes=not_applicable_codes,
-            n_ignored_codes=len(ignored_codes),
+            skipped_checks=skipped_checks,
+            ignored_checks=ignored_checks,
             fast_mode=fast_mode,
         )
 

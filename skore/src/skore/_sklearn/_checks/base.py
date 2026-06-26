@@ -28,6 +28,9 @@ class GroupedExplanation(TypedDict):
     explanation: CheckExplanation
 
 
+_SKIPPED_EXPLANATION = "Skipped in fast mode (not cached)."
+_IGNORED_EXPLANATION = "Muted via ignore or ignore_checks."
+
 _TAB_SPECS: list[
     tuple[str, Literal["issue", "tip", "passed", "not_applicable"], str, str]
 ] = [
@@ -59,6 +62,39 @@ _TAB_SPECS: list[
         ),
     ),
 ]
+
+_SKIPPED_IGNORED_TAB_LABEL = "Skipped & Ignored"
+_SKIPPED_IGNORED_TAB_HELP = (
+    "Checks that were not run because of fast mode or were muted by the user."
+)
+_SKIPPED_IGNORED_TAB_EMPTY = "No checks were skipped or ignored."
+_SKIPPED_IGNORED_BLOCKS: list[tuple[str, Literal["skipped", "ignored"], str]] = [
+    ("Skipped", "skipped", "No checks were skipped in fast mode."),
+    ("Ignored", "ignored", "No checks were muted."),
+]
+
+
+def _rows_from_frame(df: pd.DataFrame) -> list[dict]:
+    return [
+        {
+            "code": row.code,
+            "title": row.title,
+            "explanation": (
+                row.explanation
+                if pd.notna(row.explanation) and isinstance(row.explanation, str)
+                else None
+            ),
+            "grouped_explanations": (
+                _group_explanations(row.explanation)
+                if isinstance(row.explanation, dict)
+                else None
+            ),
+            "documentation_url": (
+                row.documentation_url if pd.notna(row.documentation_url) else None
+            ),
+        }
+        for row in df.itertuples()
+    ]
 
 
 def _group_explanations(
@@ -93,10 +129,10 @@ class ChecksSummaryDisplay(DisplayMixin):
     :meth:`~skore.EstimatorReport.checks.summarize`. This class should not be
     instantiated directly.
 
-    The display object has an HTML representation organized in four tabs
-    (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``). The full list of
-    check results is accessible via the :meth:`~ChecksSummaryDisplay.frame`
-    method.
+    The display object has an HTML representation organized in five tabs
+    (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``, ``Skipped & Ignored``).
+    The full list of check results is accessible via the
+    :meth:`~ChecksSummaryDisplay.frame` method.
 
     Parameters
     ----------
@@ -111,32 +147,55 @@ class ChecksSummaryDisplay(DisplayMixin):
     not_applicable_codes : set of str
         Check codes that raised :class:`~skore.CheckNotApplicable`.
 
-    n_ignored_codes : int
-        Number of the checks that were muted via ``ignore=`` or the global
-        ``ignore_checks`` configuration.
+    skipped_checks : dict of str to dict
+        Check metadata for checks skipped in fast mode, keyed by check code.
+
+    ignored_checks : dict of str to dict
+        Check metadata for checks muted via ``ignore=`` or ``ignore_checks``.
     """
 
     def __init__(
         self,
         check_results: dict[CheckCode, dict],
         not_applicable_codes: set[CheckCode],
-        n_ignored_codes: int,
+        skipped_checks: dict[CheckCode, dict],
+        ignored_checks: dict[CheckCode, dict],
         fast_mode: bool,
     ) -> None:
+        rows = [
+            {
+                "code": code,
+                "title": check_result["title"],
+                "section": _check_section(code, check_result, not_applicable_codes),
+                "explanation": check_result["explanation"],
+                "documentation_url": _get_issue_documentation_url(check_result),
+            }
+            for code, check_result in check_results.items()
+        ]
+        rows.extend(
+            {
+                "code": code,
+                "title": check_result["title"],
+                "section": "skipped",
+                "explanation": check_result.get("explanation", _SKIPPED_EXPLANATION),
+                "documentation_url": _get_issue_documentation_url(check_result),
+            }
+            for code, check_result in skipped_checks.items()
+        )
+        rows.extend(
+            {
+                "code": code,
+                "title": check_result["title"],
+                "section": "ignored",
+                "explanation": check_result.get("explanation", _IGNORED_EXPLANATION),
+                "documentation_url": _get_issue_documentation_url(check_result),
+            }
+            for code, check_result in ignored_checks.items()
+        )
         self._check_results = pd.DataFrame(
-            [
-                {
-                    "code": code,
-                    "title": check_result["title"],
-                    "section": _check_section(code, check_result, not_applicable_codes),
-                    "explanation": check_result["explanation"],
-                    "documentation_url": _get_issue_documentation_url(check_result),
-                }
-                for code, check_result in check_results.items()
-            ],
+            rows,
             columns=["code", "title", "section", "explanation", "documentation_url"],
         )
-        self._n_ignored_codes = n_ignored_codes
         self._fast_mode = fast_mode
 
     @property
@@ -147,22 +206,34 @@ class ChecksSummaryDisplay(DisplayMixin):
             f"{len(self.frame(section='tip'))} tip(s), "
             f"{len(self.frame(section='passed'))} passed, "
             f"{len(self.frame(section='not_applicable'))} not applicable, "
-            f"{self._n_ignored_codes} ignored."
+            f"{len(self.frame(section='skipped'))} skipped, "
+            f"{len(self.frame(section='ignored'))} ignored."
         )
 
     def frame(
         self,
-        section: Literal["issue", "tip", "passed", "not_applicable", "all"] = "all",
+        section: Literal[
+            "issue",
+            "tip",
+            "passed",
+            "not_applicable",
+            "skipped",
+            "ignored",
+            "all",
+        ] = "all",
     ) -> pd.DataFrame:
         """Return check results as a DataFrame.
 
         Parameters
         ----------
-        section : {"issue", "tip", "passed", "not_applicable", "all"}, default="all"
+        section : {"issue", "tip", "passed", "not_applicable", "skipped", \
+                "ignored", "all"}, default="all"
             Which results to include. ``"issue"`` / ``"tip"`` return only
             the matching findings; ``"passed"`` returns the checks that ran
             without reporting anything; ``"not_applicable"`` returns checks
-            that could not run; ``"all"`` returns every check result.
+            that could not run; ``"skipped"`` returns checks not run in fast
+            mode; ``"ignored"`` returns muted checks; ``"all"`` returns every
+            check result.
 
         Returns
         -------
@@ -177,15 +248,15 @@ class ChecksSummaryDisplay(DisplayMixin):
             omitted from the dict).
         """
         match section:
-            case "issue" | "tip" | "passed" | "not_applicable":
+            case "issue" | "tip" | "passed" | "not_applicable" | "skipped" | "ignored":
                 return self._check_results.query("section == @section")
             case "all":
                 return self._check_results.copy()
             case _:
                 raise ValueError(f"Invalid section: {section}")
 
-    def _build_tabs(self) -> list[dict]:
-        tabs = []
+    def _build_tabs(self) -> list[dict[str, object]]:
+        tabs: list[dict[str, object]] = []
         for label, section, empty_message, help_text in _TAB_SPECS:
             df = self.frame(section=section)
             tabs.append(
@@ -193,31 +264,27 @@ class ChecksSummaryDisplay(DisplayMixin):
                     "label": label,
                     "empty_message": empty_message,
                     "help_text": help_text,
-                    "rows": [
-                        {
-                            "code": row.code,
-                            "title": row.title,
-                            "explanation": (
-                                row.explanation
-                                if pd.notna(row.explanation)
-                                and isinstance(row.explanation, str)
-                                else None
-                            ),
-                            "grouped_explanations": (
-                                _group_explanations(row.explanation)
-                                if isinstance(row.explanation, dict)
-                                else None
-                            ),
-                            "documentation_url": (
-                                row.documentation_url
-                                if pd.notna(row.documentation_url)
-                                else None
-                            ),
-                        }
-                        for row in df.itertuples()
-                    ],
+                    "rows": _rows_from_frame(df),
                 }
             )
+        skipped_df = self.frame(section="skipped")
+        ignored_df = self.frame(section="ignored")
+        tabs.append(
+            {
+                "label": _SKIPPED_IGNORED_TAB_LABEL,
+                "empty_message": _SKIPPED_IGNORED_TAB_EMPTY,
+                "help_text": _SKIPPED_IGNORED_TAB_HELP,
+                "row_count": len(skipped_df) + len(ignored_df),
+                "blocks": [
+                    {
+                        "label": label,
+                        "empty_message": empty_message,
+                        "rows": _rows_from_frame(self.frame(section=section)),
+                    }
+                    for label, section, empty_message in _SKIPPED_IGNORED_BLOCKS
+                ],
+            }
+        )
         return tabs
 
     def _html_context(self, *, show_header: bool, nested: bool) -> dict:
@@ -245,42 +312,56 @@ class ChecksSummaryDisplay(DisplayMixin):
 
     def __repr__(self) -> str:
         """Return a plain-text summary of check results."""
-        if self._check_results.empty:
-            return self._header + "\nAll checks were ignored."
         lines = [self._header]
         for label, section, _, _ in _TAB_SPECS:
             df = self.frame(section=section)
             if df.empty:
                 continue
             lines.append(f"{label}:")
-            if section == "passed":
-                lines.extend(f"- [{row.code}] {row.title}" for row in df.itertuples())
-            else:
-                for row in df.itertuples():
-                    msg = f"- [{row.code}] {row.title}"
-                    explanation = row.explanation
-                    if isinstance(explanation, dict):
-                        if pd.notna(row.documentation_url):
-                            msg += (
-                                f". Read more about this here: {row.documentation_url}."
-                            )
-                        else:
-                            msg += "."
-                        lines.append(msg)
-                        lines.extend(
-                            f"  - [{entry['source']}] {entry['explanation']}"
-                            for entry in _group_explanations(explanation)
-                        )
-                    else:
-                        if pd.notna(explanation):
-                            msg += f". {explanation}"
-                        if pd.notna(row.documentation_url):
-                            msg += (
-                                f" Read more about this here: {row.documentation_url}."
-                            )
-                        lines.append(msg)
+            lines.extend(self._repr_section_lines(df, section))
+        skipped_df = self.frame(section="skipped")
+        ignored_df = self.frame(section="ignored")
+        if not skipped_df.empty or not ignored_df.empty:
+            lines.append(f"{_SKIPPED_IGNORED_TAB_LABEL}:")
+            if not skipped_df.empty:
+                lines.append("Skipped:")
+                lines.extend(self._repr_section_lines(skipped_df, "skipped"))
+            if not ignored_df.empty:
+                lines.append("Ignored:")
+                lines.extend(self._repr_section_lines(ignored_df, "ignored"))
         lines.append("Mute a check with .checks.summarize(ignore=['<code>']).")
         return "\n".join(lines)
+
+    def _repr_section_lines(
+        self,
+        df: pd.DataFrame,
+        section: Literal[
+            "issue", "tip", "passed", "skipped", "ignored", "not_applicable"
+        ],
+    ) -> list[str]:
+        if section == "passed":
+            return [f"- [{row.code}] {row.title}" for row in df.itertuples()]
+        lines = []
+        for row in df.itertuples():
+            msg = f"- [{row.code}] {row.title}"
+            explanation = row.explanation
+            if isinstance(explanation, dict):
+                if pd.notna(row.documentation_url):
+                    msg += f". Read more about this here: {row.documentation_url}."
+                else:
+                    msg += "."
+                lines.append(msg)
+                lines.extend(
+                    f"  - [{entry['source']}] {entry['explanation']}"
+                    for entry in _group_explanations(explanation)
+                )
+            else:
+                if pd.notna(explanation):
+                    msg += f". {explanation}"
+                if pd.notna(row.documentation_url):
+                    msg += f" Read more about this here: {row.documentation_url}."
+                lines.append(msg)
+        return lines
 
 
 @runtime_checkable
