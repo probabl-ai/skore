@@ -213,9 +213,9 @@ def test_precision_recall_pos_label_overwrite(
 # report.metrics.get
 
 
-def test_get(forest_binary_classification_data):
+def test_get(binary_classification_data):
     """``get`` works."""
-    _, X, y = forest_binary_classification_data
+    X, y = binary_classification_data
     report = CrossValidationReport(
         DummyClassifier(strategy="uniform"), X, y, splitter=2
     )
@@ -225,9 +225,9 @@ def test_get(forest_binary_classification_data):
         report.metrics.get("non-existing metric")
 
 
-def test_get_custom(forest_binary_classification_data):
+def test_get_custom(binary_classification_data):
     """``get`` works for custom metrics."""
-    _, X, y = forest_binary_classification_data
+    X, y = binary_classification_data
     report = CrossValidationReport(
         DummyClassifier(strategy="uniform"), X, y, splitter=2
     )
@@ -243,12 +243,9 @@ def test_get_custom(forest_binary_classification_data):
     }
 
 
-# report.metrics.<custom>
-
-
-def test_custom_metric_as_method(forest_binary_classification_data):
+def test_custom_metric_as_method(binary_classification_data):
     """Custom metrics are accessible as methods."""
-    _, X, y = forest_binary_classification_data
+    X, y = binary_classification_data
     report = CrossValidationReport(
         DummyClassifier(strategy="uniform"), X, y, splitter=2
     )

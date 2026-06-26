@@ -259,9 +259,6 @@ def test_get_custom(binary_classification_report):
     assert report.metrics.get("hello") == 1
 
 
-# report.metrics.<custom>
-
-
 def test_custom_metric_as_method(binary_classification_report):
     """Custom metrics are accessible as methods."""
     report = binary_classification_report
@@ -285,6 +282,9 @@ def test_custom_metric_as_method_neg(binary_classification_report):
 
     report.metrics.add("neg_mean_squared_error")
     assert report.metrics.neg_mean_squared_error() == 0
+
+    with pytest.raises(AttributeError):
+        report.metrics.mean_squared_error()
 
     report.metrics.add("mean_squared_error")
     assert report.metrics.mean_squared_error() == 0

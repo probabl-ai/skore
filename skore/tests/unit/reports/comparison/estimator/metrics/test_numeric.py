@@ -353,9 +353,6 @@ def test_get_custom(comparison_estimator_reports_binary_classification):
     }
 
 
-# report.metrics.<custom>
-
-
 def test_custom_metric_as_method(comparison_estimator_reports_binary_classification):
     """Custom metrics are accessible as methods."""
     report = comparison_estimator_reports_binary_classification

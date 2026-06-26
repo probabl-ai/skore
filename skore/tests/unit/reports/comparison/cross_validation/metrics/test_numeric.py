@@ -327,9 +327,6 @@ def test_get_custom(comparison_cross_validation_reports_binary_classification):
     }
 
 
-# report.metrics.<custom>
-
-
 def test_custom_metric_as_method(
     comparison_cross_validation_reports_binary_classification,
 ):
