@@ -1,11 +1,12 @@
 import argparse
 
+from skore import console
 from skore._plugins.local.project import init_workspace
 
 
 def init_workspace_command(args):
     workspace = init_workspace().resolve()
-    print(f"Skore workspace created: {workspace}")
+    console.print(f"Skore workspace created: {workspace}")
 
 
 def main():

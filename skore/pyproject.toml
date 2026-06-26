@@ -177,7 +177,7 @@ select = [
     "UP",
     "RUF010", "RUF015",
 ]
-ignore = ["PERF203", "T201"]
+ignore = ["PERF203"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
