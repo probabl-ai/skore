@@ -7,6 +7,7 @@ from skore import CalibrationDisplay
     "fixture_prefix",
     [
         "estimator_reports",
+        "cross_validation_reports",
     ],
 )
 @pytest.mark.parametrize("task", ["binary_classification", "multiclass_classification"])
@@ -31,13 +32,49 @@ class TestCalibrationDisplay:
             report = report[0]
         display = report.inspection.calibration_curve()
         frame = display.frame()
-        expected = {
-            "predicted_probability",
-            "fraction_of_positives",
-            "data_source",
-            "label",
-        }
+        if "cross_validation" in fixture_prefix:
+            expected = {
+                "predicted_probability_mean",
+                "predicted_probability_std",
+                "fraction_of_positives_mean",
+                "fraction_of_positives_std",
+                "data_source",
+                "label",
+            }
+        else:
+            expected = {
+                "predicted_probability",
+                "fraction_of_positives",
+                "data_source",
+                "label",
+            }
         assert set(frame.columns) == expected
+
+    def test_frame_aggregate(self, fixture_prefix, task, request):
+        report = request.getfixturevalue(f"{fixture_prefix}_{task}")
+        if isinstance(report, tuple):
+            report = report[0]
+        display = report.inspection.calibration_curve()
+
+        if "cross_validation" not in fixture_prefix:
+            # aggregate is a no-op for non-CV report types
+            assert set(display.frame().columns) == set(
+                display.frame(aggregate=None).columns
+            )
+        else:
+            # aggregate=None returns one curve per split with raw column names
+            frame_none = display.frame(aggregate=None)
+            assert "split" in frame_none.columns
+            assert "predicted_probability" in frame_none.columns
+            assert "fraction_of_positives" in frame_none.columns
+            assert "predicted_probability_mean" not in frame_none.columns
+
+            # default aggregate=("mean", "std") collapses splits
+            frame_agg = display.frame()
+            assert "split" not in frame_agg.columns
+            assert "predicted_probability_mean" in frame_agg.columns
+            assert "fraction_of_positives_std" in frame_agg.columns
+            assert "predicted_probability" not in frame_agg.columns
 
     def test_internal_data_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
@@ -45,12 +82,14 @@ class TestCalibrationDisplay:
             report = report[0]
         display = report.inspection.calibration_curve()
         expected = {
+            "estimator",
+            "data_source",
+            "split",
+            "label",
             "predicted_probability",
             "fraction_of_positives",
-            "data_source",
-            "label",
         }
-        assert set(display.frame().columns) == expected
+        assert set(display.calibration_report.columns) == expected
 
     def test_plot_structure(self, pyplot, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
