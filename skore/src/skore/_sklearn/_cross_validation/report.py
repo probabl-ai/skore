@@ -615,9 +615,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         {self.estimator_name_!r}
 
         {
-            self.metrics.summarize(data_source="test")
-            ._to_pivoted_frame()
-            .droplevel(level=0, axis="columns")
+            self.metrics.summarize(data_source="test").frame(
+                format="auto", verbose_name=True
+            )
         }
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
@@ -634,9 +634,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             The markdown summary of the report.
         """
         metrics_text = repr(
-            self.metrics.summarize(data_source="test")
-            ._to_pivoted_frame()
-            .droplevel(level=0, axis="columns")
+            self.metrics.summarize(data_source="test").frame(
+                format="auto", verbose_name=True
+            )
         )
         timings = self.metrics.timings()
         summary = summarize_dataframe(
@@ -677,8 +677,12 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         """
         metrics_html = (
             self.metrics.summarize(data_source="test")
-            ._to_pivoted_frame(aggregate=("mean", "std"), favorability=False)
-            .droplevel(level=0, axis="columns")
+            .frame(
+                format="auto",
+                aggregate=("mean", "std"),
+                favorability=False,
+                verbose_name=True,
+            )
             .reset_index()
             .to_html(index=False)
         )

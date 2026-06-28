@@ -11,12 +11,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeRegressor
 from skrub import DatetimeEncoder, tabular_pipeline
 
-from skore import Check, evaluate
+from skore import Check, CrossValidationReport, evaluate
 from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.model_checks import (
     CheckHyperparamsAtSearchEdge,
     CheckSearchParamsToTune,
+    _per_split_metrics_matrix,
 )
 
 
@@ -62,9 +63,9 @@ def test_skd001_detects_overfitting(regression_data):
     summary = report.metrics.summarize(data_source="test").summary
     n_metrics = len(
         {
-            (row["metric_verbose_name"], row["label"], row["average"], row["output"])
+            (row["verbose_name"], row["label"], row["average"], row["output"])
             for row in summary.to_dict("records")
-            if row["metric_verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
+            if row["verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
         }
     )
     assert "SKD001" in issues.index
@@ -93,15 +94,28 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     summary = report.metrics.summarize(data_source="test").summary
     n_metrics = len(
         {
-            (row["metric_verbose_name"], row["label"], row["average"], row["output"])
+            (row["verbose_name"], row["label"], row["average"], row["output"])
             for row in summary.to_dict("records")
-            if row["metric_verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
+            if row["verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
         }
     )
     assert "SKD002" in issues.index
     assert (
         f"for {n_metrics}/{n_metrics} comparable metrics"
         in issues.loc["SKD002", "explanation"]
+    )
+
+
+def test_skd003_excludes_timing_metrics(forest_binary_classification_data):
+    """Timing metrics must not participate in split consistency detection."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    matrix = _per_split_metrics_matrix(
+        report.metrics.summarize(data_source="test").summary
+    )
+
+    assert not any(
+        idx[0] in {"Fit time (s)", "Predict time (s)"} for idx in matrix.index
     )
 
 
@@ -117,13 +131,8 @@ def test_skd003_detects_inconsistent_splits():
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD003" in issues.index
     assert "split #0" in issues.loc["SKD003", "explanation"]
-    n_metrics = (
-        len(
-            report.metrics.summarize(data_source="test")._to_pivoted_frame(
-                aggregate=None, flat_index=True
-            )
-        )
-        - 2  # -2 for the timing metrics
+    n_metrics = len(
+        _per_split_metrics_matrix(report.metrics.summarize(data_source="test").summary)
     )
     assert f"for {n_metrics}/{n_metrics} metrics" in issues.loc["SKD003", "explanation"]
 

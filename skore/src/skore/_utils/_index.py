@@ -2,7 +2,7 @@ import pandas as pd
 
 
 def flatten_multi_index(
-    index: pd.MultiIndex | pd.Index, join_str: str = "_"
+    index: pd.MultiIndex | pd.Index, join_str: str = "_", *, lowercase: bool = True
 ) -> pd.Index:
     """Flatten a pandas MultiIndex into a single-level Index.
 
@@ -44,10 +44,17 @@ def flatten_multi_index(
 
     return pd.Index(
         [
-            join_str.join(filter(bool, map(str, values)))
-            .replace(" ", join_str)
-            .replace("#", "")
-            .lower()
+            (
+                join_str.join(filter(bool, map(str, values)))
+                .replace(" ", join_str)
+                .replace("#", "")
+            ).lower()
+            if lowercase
+            else (
+                join_str.join(filter(bool, map(str, values)))
+                .replace(" ", join_str)
+                .replace("#", "")
+            )
             for values in index
         ]
     )

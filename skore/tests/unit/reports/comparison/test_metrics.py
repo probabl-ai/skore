@@ -39,7 +39,7 @@ def test_favorability_undefined_metrics(report):
     comparison_report = ComparisonReport(reports)
     metrics = comparison_report.metrics.summarize()
     assert isinstance(metrics, MetricsSummaryDisplay)
-    metrics_df = metrics.frame(favorability=True)
+    metrics_df = metrics.frame(format="long", favorability=True, verbose_name=True)
 
     assert "Brier score" in metrics_df["metric"].to_numpy()
     assert "favorability" in metrics_df.columns

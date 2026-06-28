@@ -33,7 +33,7 @@ def test_summarize_single_list_equivalence(report):
     """Passing a single string is equivalent to passing a list with one element."""
     display_single = report.metrics.summarize(metric="r2")
     display_list = report.metrics.summarize(metric=["r2"])
-    assert_frame_equal(display_single.data, display_list.data)
+    assert_frame_equal(display_single.summary, display_list.summary)
 
 
 def test_metrics_available_returns_metric_keys(report):
@@ -61,4 +61,4 @@ def test_metrics_add_scorer(report):
     report.metrics.add(scorer)
 
     display = report.metrics.summarize()
-    assert "Mean Squared Error" in display.data["metric_verbose_name"].values
+    assert "Mean Squared Error" in display.summary["verbose_name"].values

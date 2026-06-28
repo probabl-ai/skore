@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import warnings
 from collections import defaultdict
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import narwhals as nw
 import numpy as np
@@ -41,7 +41,28 @@ StepName = str
 
 def _metric_key(row: MetricsSummaryRow) -> MetricKey:
     """Identity tuple for a metric row (verbose name + label/average/output)."""
-    return (row["metric_verbose_name"], row["label"], row["average"], row["output"])
+    return (row["verbose_name"], row["label"], row["average"], row["output"])
+
+
+def _summary_to_rows(summary: pd.DataFrame) -> list[MetricsSummaryRow]:
+    """Convert a display summary dataframe back to metric rows."""
+    nullable_cols = {
+        "label",
+        "average",
+        "output",
+        "greater_is_better",
+        "split",
+    }
+    rows: list[MetricsSummaryRow] = []
+    for record in summary.to_dict("records"):
+        row: dict[str, Any] = {}
+        for key, value in record.items():
+            if key in nullable_cols and pd.isna(value):
+                row[key] = None
+            else:
+                row[key] = value
+        rows.append(cast("MetricsSummaryRow", row))
+    return rows
 
 
 def collect_scores(
@@ -56,11 +77,11 @@ def collect_scores(
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-        rows = report.metrics.summarize(data_source=data_source).rows
+        rows = _summary_to_rows(
+            report.metrics.summarize(data_source=data_source).summary
+        )
 
-    filtered_rows = [
-        row for row in rows if row["metric_verbose_name"] not in _TIMING_METRICS
-    ]
+    filtered_rows = [row for row in rows if row["verbose_name"] not in _TIMING_METRICS]
     if report._report_type == "estimator":
         return {_metric_key(row): row for row in filtered_rows}
 

@@ -82,15 +82,15 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         expose a toggle. For binary classification, only per-label rows are sent
         (``average`` is always ``None``). Non-scalar values (``NaN``) are ignored.
         """
-        data = self.report.metrics.summarize(data_source="both").data
+        data = self.report.metrics.summarize(data_source="both").summary
         selected = data[data["score"].notna()]
         if self.report._ml_task == "binary-classification":
             selected = selected[selected["average"].isna()]
 
         return [
             Metric(
-                name=row["metric_name"],
-                verbose_name=row["metric_verbose_name"],
+                name=row["name"],
+                verbose_name=row["verbose_name"],
                 data_source=row["data_source"],
                 greater_is_better=row["greater_is_better"],
                 value=row["score"],

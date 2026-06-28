@@ -354,7 +354,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         sent (``average`` is always ``None``). Only non-scalar values (``NaN``)
         are ignored.
         """
-        data = self.report.metrics.summarize(data_source="both").data
+        data = self.report.metrics.summarize(data_source="both").summary
         selected = data[data["score"].notna()]
         if self.report._ml_task == "binary-classification":
             selected = selected[selected["average"].isna()]
@@ -362,8 +362,8 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         aggregated = (
             selected.groupby(
                 [
-                    "metric_name",
-                    "metric_verbose_name",
+                    "name",
+                    "verbose_name",
                     "data_source",
                     "greater_is_better",
                     "label",
@@ -381,8 +381,8 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
         return [
             Metric(
-                name=f"{row['metric_name']}_{suffix}",
-                verbose_name=f"{row['metric_verbose_name']} - {suffix.upper()}",
+                name=f"{row['name']}_{suffix}",
+                verbose_name=f"{row['verbose_name']} - {suffix.upper()}",
                 data_source=row["data_source"],
                 greater_is_better=row["greater_is_better"]
                 if suffix == "mean"

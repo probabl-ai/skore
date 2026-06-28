@@ -135,8 +135,36 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         13        test  Brier score  0.03...         (↘︎)
         """
         if data_source == "both":
-            train_summary = self.summarize(data_source="train", metric=metric)
-            test_summary = self.summarize(data_source="test", metric=metric)
+            train_summary = self._summarize_display(
+                data_source="train", metric=metric, finalize=True
+            )
+            test_summary = self._summarize_display(
+                data_source="test", metric=metric, finalize=True
+            )
+
+            combined = pd.concat(
+                [train_summary.summary, test_summary.summary], ignore_index=True
+            )
+            return MetricsSummaryDisplay(summary=combined, report_type="estimator")
+
+        return self._summarize_display(
+            data_source=data_source, metric=metric, finalize=True
+        )
+
+    def _summarize_display(
+        self,
+        *,
+        data_source: DataSource | Literal["both"],
+        metric: str | list[str] | None = None,
+        finalize: bool = True,
+    ) -> MetricsSummaryDisplay:
+        if data_source == "both":
+            train_summary = self._summarize_display(
+                data_source="train", metric=metric, finalize=finalize
+            )
+            test_summary = self._summarize_display(
+                data_source="test", metric=metric, finalize=finalize
+            )
 
             combined = pd.concat(
                 [train_summary.summary, test_summary.summary], ignore_index=True
@@ -165,37 +193,64 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
                 **parsed_metric.kwargs,
             )
             rows.extend(
-                row
-                | {
-                    "metric_name": parsed_metric.name,
+                {
+                    "name": parsed_metric.name,
+                    "verbose_name": row["metric_verbose_name"],
                     "estimator_name": self._parent.estimator_name_,
                     "data_source": data_source,
+                    "greater_is_better": row["greater_is_better"],
+                    "fingerprint": row["fingerprint"],
+                    "score": row["score"],
+                    "label": row["label"],
+                    "average": row["average"],
+                    "output": row["output"],
                 }
                 for row in metric_rows
             )
 
-        return MetricsSummaryDisplay._from_rows(rows, report_type="estimator")
+        display = MetricsSummaryDisplay._compute_data_for_display(
+            rows, report_type="estimator"
+        )
+        if finalize:
+            display = MetricsSummaryDisplay._finalize(display)
+        return display
 
     def _metric(
-        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+        self,
+        metric_name: str,
+        *,
+        data_source: DataSource,
+        finalize: bool = True,
+        **kwargs: Any,
     ) -> MetricsSummaryDisplay:
         """Compute a single metric, forwarding *kwargs* to the score function."""
         metric = self._parent._metric_registry[metric_name]
         rows = [
             cast(
                 MetricsSummaryRow,
-                row
-                | {
-                    "metric_name": metric.name,
+                {
+                    "name": metric.name,
+                    "verbose_name": row["metric_verbose_name"],
                     "estimator_name": self._parent.estimator_name_,
                     "data_source": data_source,
+                    "greater_is_better": row["greater_is_better"],
+                    "fingerprint": row["fingerprint"],
+                    "score": row["score"],
+                    "label": row["label"],
+                    "average": row["average"],
+                    "output": row["output"],
                 },
             )
             for row in metric.rows(
                 report=self._parent, data_source=data_source, **kwargs
             )
         ]
-        return MetricsSummaryDisplay._from_rows(rows, report_type="estimator")
+        display = MetricsSummaryDisplay._compute_data_for_display(
+            rows, report_type="estimator"
+        )
+        if finalize:
+            display = MetricsSummaryDisplay._finalize(display)
+        return display
 
     def available(self) -> list[str]:
         """List available metric names in the registry.
@@ -962,14 +1017,14 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
     def __repr__(self) -> str:
         return (
             "Metrics summary:\n"
-            f"{self.summarize()._to_pivoted_frame()!r}\n"
+            f"{self.summarize()._repr_frame()!r}\n"
             "Explore available methods with .help()."
         )
 
     def _repr_html_(self) -> str:
         return (
             "<p>Metrics summary:</p>"
-            f"{self.summarize()._to_pivoted_frame()._repr_html_()}"
+            f"{self.summarize()._repr_frame(for_html=True)._repr_html_()}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

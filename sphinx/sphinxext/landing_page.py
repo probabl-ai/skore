@@ -32,9 +32,7 @@ report_ridge = skore.evaluate(model, df, y, splitter=5)
 report_ridge"""
 
 SUMMARIZE_FRAME_CODE = """\
-report_ridge.metrics.summarize()._to_pivoted_frame(
-    aggregate=None
-)"""
+report_ridge.metrics.summarize().frame(format="wide", aggregate=None)"""
 
 PLOT_CODE = """\
 error = report_ridge.metrics.prediction_error()

@@ -87,7 +87,7 @@ def test_skd001_detects_overfitting(regression_data):
     X, y = regression_data
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
-    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+    n_metrics = report.metrics.summarize(data_source="test").summary.shape[0] - 2
     assert "SKD001" in issues.index
     assert (
         f"for {n_metrics}/{n_metrics} default predictive metrics"
@@ -111,7 +111,7 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     y = convert_container(y, y_container)
     report = evaluate(DummyRegressor(), X, y)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
-    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+    n_metrics = report.metrics.summarize(data_source="test").summary.shape[0] - 2
     assert "SKD002" in issues.index
     assert (
         f"for {n_metrics}/{n_metrics} comparable metrics"
@@ -990,7 +990,7 @@ def test_custom_metric(binary_classification_data):
     report = evaluate(DummyClassifier(), X, y, pos_label=1)
     report.metrics.add("f1")
     issues = report.checks.summarize().frame(section="issue").set_index("code")
-    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+    n_metrics = report.metrics.summarize(data_source="test").summary.shape[0] - 2
     assert "SKD002" in issues.index
     assert (
         f"for {n_metrics}/{n_metrics} comparable metrics"

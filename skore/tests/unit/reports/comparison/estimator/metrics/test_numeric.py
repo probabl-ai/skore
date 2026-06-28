@@ -291,7 +291,7 @@ def test_summarize_pos_label_default(
         y_test=y_test,
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(metric=metric).frame()
+    result_both_labels = report.metrics.summarize(metric=metric).frame(format="long")
     assert result_both_labels["label"].drop_duplicates().to_list() == ["A", "B"]
 
 

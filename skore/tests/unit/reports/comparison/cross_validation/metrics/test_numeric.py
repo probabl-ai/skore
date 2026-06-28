@@ -278,7 +278,7 @@ def test_pos_label_default(metric):
     report_1 = CrossValidationReport(LogisticRegression(), X, y)
     report_2 = CrossValidationReport(LogisticRegression(), X, y)
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(metric=metric).frame()
+    result_both_labels = report.metrics.summarize(metric=metric).frame(format="long")
     assert result_both_labels["label"].drop_duplicates().to_list() == ["A", "B"]
 
 

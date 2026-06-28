@@ -27,10 +27,33 @@ def _check_metrics_names(result, expected_metrics, expected_nb_stats):
     }
     for idx in result.index:
         normalized_idx = _normalize_metric_name(idx)
-        matches = [metric for metric in normalized_expected if metric == normalized_idx]
-        assert len(matches) == 1, (
+        matches = [
+            metric
+            for metric in normalized_expected
+            if normalized_idx == _normalize_metric_name(metric)
+            or normalized_idx.startswith(_normalize_metric_name(metric))
+        ]
+        assert matches, (
             f"No match found for index '{idx}' in expected metrics:  {expected_metrics}"
         )
+
+
+def _stat_suffixes(columns):
+    if isinstance(columns, pd.MultiIndex):
+        return list(columns.get_level_values(1))
+    return [col.rsplit("_", 1)[-1] for col in columns]
+
+
+def _split_indices(columns):
+    if isinstance(columns, pd.MultiIndex):
+        return sorted(
+            int(str(col[1]).replace("Split #", ""))
+            for col in columns
+            if str(col[1]).startswith("Split #")
+        )
+    return sorted(
+        int(col.rsplit("_split_", 1)[1]) for col in columns if "_split_" in col
+    )
 
 
 def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_stats):
@@ -42,10 +65,7 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     result_with_cache = getattr(report.metrics, metric)(aggregate=None)
     pd.testing.assert_frame_equal(result, result_with_cache)
 
-    # check that the columns contains the expected split names
-    split_names = result.columns.get_level_values(1).unique()
-    expected_split_names = [f"Split #{i}" for i in range(expected_n_splits)]
-    assert list(split_names) == expected_split_names
+    assert _split_indices(result.columns) == list(range(expected_n_splits))
 
     # check that something was written to the children's cache
     assert all(report._cache != {} for report in report.reports_)
@@ -56,15 +76,11 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     # check the aggregate parameter
     stats = ["mean", "std"]
     result = getattr(report.metrics, metric)(aggregate=stats)
-    # check that the columns contains the expected split names
-    split_names = result.columns.get_level_values(1).unique()
-    assert list(split_names) == stats
+    assert _stat_suffixes(result.columns) == stats
 
     stats = "mean"
     result = getattr(report.metrics, metric)(aggregate=stats)
-    # check that the columns contains the expected split names
-    split_names = result.columns.get_level_values(1).unique()
-    assert list(split_names) == [stats]
+    assert _stat_suffixes(result.columns) == [stats]
 
 
 @pytest.mark.parametrize(
@@ -92,9 +108,9 @@ def test_binary_classification(forest_binary_classification_data, metric, nb_sta
     "metric, nb_stats",
     [
         ("accuracy", 1),
-        ("precision", 3),
-        ("recall", 3),
-        ("roc_auc", 3),
+        ("precision", 4),
+        ("recall", 4),
+        ("roc_auc", 4),
         ("log_loss", 1),
         ("score", 1),
     ],
@@ -182,31 +198,28 @@ def test_precision_recall_pos_label_overwrite(
     y = labels[y]
 
     report = CrossValidationReport(classifier, X, y)
-    result_both_labels = getattr(report.metrics, metric)().reset_index()
-    assert result_both_labels["Label"].to_list() == ["A", "B"]
-    result_both_labels = result_both_labels.set_index(["Metric", "Label"])
+    result_both_labels = getattr(report.metrics, metric)()
+    mean_col = next(
+        col
+        for col in result_both_labels.columns
+        if (col[1] if isinstance(col, tuple) else col).endswith("mean")
+        or (isinstance(col, tuple) and col[1] == "mean")
+    )
+    label_rows = {
+        str(label).lower(): index
+        for index in result_both_labels.index
+        for label in [index[1] if isinstance(index, tuple) else index]
+    }
 
     report = CrossValidationReport(classifier, X, y, pos_label="B")
-    result = getattr(report.metrics, metric)().reset_index()
-    assert "Label" not in result.columns
-    result = result.set_index("Metric")
-    assert (
-        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
-        == result_both_labels.loc[
-            (metric.capitalize(), "B"), (report.estimator_name_, "mean")
-        ]
-    )
+    result = getattr(report.metrics, metric)()
+    assert result.shape[0] == 1
+    assert result.iloc[0][mean_col] == result_both_labels.loc[label_rows["b"], mean_col]
 
     report = CrossValidationReport(classifier, X, y, pos_label="A")
-    result = getattr(report.metrics, metric)().reset_index()
-    assert "Label" not in result.columns
-    result = result.set_index("Metric")
-    assert (
-        result.loc[metric.capitalize(), (report.estimator_name_, "mean")]
-        == result_both_labels.loc[
-            (metric.capitalize(), "A"), (report.estimator_name_, "mean")
-        ]
-    )
+    result = getattr(report.metrics, metric)()
+    assert result.shape[0] == 1
+    assert result.iloc[0][mean_col] == result_both_labels.loc[label_rows["a"], mean_col]
 
 
 # report.metrics.get

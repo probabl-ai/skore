@@ -84,8 +84,38 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         3      1     Recall  0.94...         (↗︎)
         """
         if data_source == "both":
-            train_summary = self.summarize(data_source="train", metric=metric)
-            test_summary = self.summarize(data_source="test", metric=metric)
+            train_summary = self._summarize_display(
+                data_source="train", metric=metric, finalize=True
+            )
+            test_summary = self._summarize_display(
+                data_source="test", metric=metric, finalize=True
+            )
+
+            combined = pd.concat(
+                [train_summary.summary, test_summary.summary], ignore_index=True
+            )
+            return MetricsSummaryDisplay(
+                summary=combined, report_type="cross-validation"
+            )
+
+        return self._summarize_display(
+            data_source=data_source, metric=metric, finalize=True
+        )
+
+    def _summarize_display(
+        self,
+        *,
+        data_source: DataSource | Literal["both"],
+        metric: str | list[str] | None = None,
+        finalize: bool = True,
+    ) -> MetricsSummaryDisplay:
+        if data_source == "both":
+            train_summary = self._summarize_display(
+                data_source="train", metric=metric, finalize=finalize
+            )
+            test_summary = self._summarize_display(
+                data_source="test", metric=metric, finalize=finalize
+            )
 
             combined = pd.concat(
                 [train_summary.summary, test_summary.summary], ignore_index=True
@@ -103,9 +133,10 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         summaries = list(
             track(
                 parallel(
-                    delayed(report.metrics.summarize)(
+                    delayed(report.metrics._summarize_display)(
                         data_source=data_source,
                         metric=metric,
+                        finalize=False,
                     )
                     for report in self._parent.reports_
                 ),
@@ -114,11 +145,13 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             )
         )
 
-        return MetricsSummaryDisplay._concatenate(
+        display = MetricsSummaryDisplay._concatenate(
             summaries,
             report_type="cross-validation",
             extra_rows_data=[{"split": i} for i in range(len(summaries))],
+            finalize=finalize,
         )
+        return display
 
     def available(self) -> list[str]:
         """List available metric names in the registry.
@@ -223,7 +256,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         name: str,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
         **kwargs,
     ) -> pd.DataFrame | None:
         """Get a metric value.
@@ -244,8 +277,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -260,16 +293,16 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
-        >>> report.metrics.get("precision", flat_index=False)
+        >>> report.metrics.get("precision", format="long")
                         LogisticRegression
                                       mean       std
         Metric    Label
         Precision 0                0.93...   0.04...
                   1                0.94...   0.02...
         """
-        return self._metric(
-            metric_name=name, data_source=data_source, **kwargs
-        )._to_pivoted_frame(aggregate=aggregate, flat_index=flat_index)
+        return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+        )
 
     def timings(
         self,
@@ -321,7 +354,12 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         return timings
 
     def _metric(
-        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+        self,
+        metric_name: str,
+        *,
+        data_source: DataSource,
+        finalize: bool = True,
+        **kwargs: Any,
     ) -> MetricsSummaryDisplay:
         """Compute a single metric across cross-validation splits.
 
@@ -334,18 +372,29 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             rows.extend(
                 cast(
                     MetricsSummaryRow,
-                    row
-                    | {
-                        "metric_name": metric.name,
+                    {
+                        "name": metric.name,
+                        "verbose_name": row["metric_verbose_name"],
                         "estimator_name": report.estimator_name_,
                         "data_source": data_source,
                         "split": split_idx,
+                        "greater_is_better": row["greater_is_better"],
+                        "fingerprint": row["fingerprint"],
+                        "score": row["score"],
+                        "label": row["label"],
+                        "average": row["average"],
+                        "output": row["output"],
                     },
                 )
                 for row in metric_rows
             )
 
-        return MetricsSummaryDisplay._from_rows(rows, report_type="cross-validation")
+        display = MetricsSummaryDisplay._compute_data_for_display(
+            rows, report_type="cross-validation"
+        )
+        if finalize:
+            display = MetricsSummaryDisplay._finalize(display)
+        return display
 
     @available_if(_check_estimator_report_has_method("metrics", "score"))
     def score(
@@ -353,7 +402,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the estimator's default score.
 
@@ -373,8 +422,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -389,14 +438,14 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
-        >>> report.metrics.score(flat_index=False)
+        >>> report.metrics.score(format="long")
                 LogisticRegression
                             mean      std
         Metric
         Score              0.94...  0.00...
         """
-        return self._metric("score", data_source=data_source)._to_pivoted_frame(
-            aggregate=aggregate, flat_index=flat_index
+        return self._metric("score", data_source=data_source).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
         )
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
@@ -405,7 +454,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the accuracy score.
 
@@ -421,8 +470,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -437,14 +486,14 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
-        >>> report.metrics.accuracy(flat_index=False)
+        >>> report.metrics.accuracy(format="long")
                 LogisticRegression
                             mean      std
         Metric
         Accuracy           0.94...  0.00...
         """
-        return self._metric("accuracy", data_source=data_source)._to_pivoted_frame(
-            aggregate=aggregate, flat_index=flat_index
+        return self._metric("accuracy", data_source=data_source).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
         )
 
     @available_if(_check_estimator_report_has_method("metrics", "precision"))
@@ -456,7 +505,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the precision score.
 
@@ -498,8 +547,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -523,7 +572,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         return self._metric(
             "precision", data_source=data_source, average=average
-        )._to_pivoted_frame(aggregate=aggregate, flat_index=flat_index)
+        ).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "recall"))
     def recall(
@@ -534,7 +585,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the recall score.
 
@@ -577,8 +628,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -600,9 +651,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Recall 0               0.91...  0.04...
                1               0.96...  0.02...
         """
-        return self._metric(
-            "recall", data_source=data_source, average=average
-        )._to_pivoted_frame(aggregate=aggregate, flat_index=flat_index)
+        return self._metric("recall", data_source=data_source, average=average).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
     def brier_score(
@@ -610,7 +661,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the Brier score.
 
@@ -626,8 +677,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -648,8 +699,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         Metric
         Brier score            0.04...  0.00...
         """
-        return self._metric("brier_score", data_source=data_source)._to_pivoted_frame(
-            aggregate=aggregate, flat_index=flat_index
+        return self._metric("brier_score", data_source=data_source).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
         )
 
     @available_if(_check_estimator_report_has_method("metrics", "roc_auc"))
@@ -660,7 +711,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         average: Literal["macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the ROC AUC score.
 
@@ -709,8 +760,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -733,7 +784,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         return self._metric(
             "roc_auc", data_source=data_source, average=average, multi_class=multi_class
-        )._to_pivoted_frame(aggregate=aggregate, flat_index=flat_index)
+        ).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
     def log_loss(
@@ -741,7 +794,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the log loss.
 
@@ -757,8 +810,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -782,7 +835,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         return self._metric(
             "log_loss",
             data_source=data_source,
-        )._to_pivoted_frame(aggregate=aggregate, flat_index=flat_index)
+        ).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "r2"))
     def r2(
@@ -791,7 +846,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the R² score.
 
@@ -817,8 +872,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -841,7 +896,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         return self._metric(
             "r2", data_source=data_source, multioutput=multioutput
-        )._to_pivoted_frame(aggregate=aggregate, flat_index=flat_index)
+        ).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "rmse"))
     def rmse(
@@ -850,7 +907,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the root mean squared error.
 
@@ -876,8 +933,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -900,7 +957,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         return self._metric(
             "rmse", data_source=data_source, multioutput=multioutput
-        )._to_pivoted_frame(aggregate=aggregate, flat_index=flat_index)
+        ).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "mae"))
     def mae(
@@ -910,7 +969,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         multioutput: Literal["raw_values", "uniform_average"]
         | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the mean absolute error.
 
@@ -936,8 +995,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -960,7 +1019,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         return self._metric(
             "mae", data_source=data_source, multioutput=multioutput
-        )._to_pivoted_frame(aggregate=aggregate, flat_index=flat_index)
+        ).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "mape"))
     def mape(
@@ -970,7 +1031,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         multioutput: Literal["raw_values", "uniform_average"]
         | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "auto",
     ) -> pd.DataFrame:
         """Compute the mean absolute percentage error.
 
@@ -996,8 +1057,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="auto"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -1020,7 +1081,9 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         return self._metric(
             "mape", data_source=data_source, multioutput=multioutput
-        )._to_pivoted_frame(aggregate=aggregate, flat_index=flat_index)
+        ).frame(
+            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+        )
 
     ####################################################################################
     # Methods related to the help tree
@@ -1029,14 +1092,14 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
     def __repr__(self) -> str:
         return (
             "Metrics summary:\n"
-            f"{self.summarize()._to_pivoted_frame()!r}\n"
+            f"{self.summarize()._repr_frame()!r}\n"
             "Explore available methods with .help()."
         )
 
     def _repr_html_(self) -> str:
         return (
             "<p>Metrics summary:</p>"
-            f"{self.summarize()._to_pivoted_frame()._repr_html_()}"
+            f"{self.summarize()._repr_frame(for_html=True)._repr_html_()}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

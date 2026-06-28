@@ -911,11 +911,9 @@ class TestCrossValidationReportPayload:
         from skore._plugins.hub.report import CrossValidationReportPayload
 
         display = small_cv_binary_classification.metrics.summarize(data_source="both")
-        data = display.data.copy()
+        data = display.summary.copy()
         macro_row = (
-            data.loc[
-                (data["metric_name"] == "precision") & (data["data_source"] == "test")
-            ]
+            data.loc[(data["name"] == "precision") & (data["data_source"] == "test")]
             .iloc[0]
             .copy()
         )
@@ -925,7 +923,7 @@ class TestCrossValidationReportPayload:
         data = pd.concat([data, pd.DataFrame([macro_row])], ignore_index=True)
 
         mock_display = MagicMock()
-        mock_display.data = data
+        mock_display.summary = data
         monkeypatch.setattr(
             small_cv_binary_classification.metrics,
             "summarize",
