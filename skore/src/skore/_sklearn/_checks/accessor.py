@@ -36,7 +36,7 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         Returns
         -------
         ChecksSummaryDisplay
-            A display object with an HTML representation organized as six
+            A display object with an HTML representation organized in
             tabs (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``,
             ``Skipped``, ``Ignored``). The full list of results is
             accessible via the :meth:`~ChecksSummaryDisplay.frame` method.

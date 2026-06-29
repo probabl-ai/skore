@@ -100,7 +100,7 @@ class ChecksSummaryDisplay(DisplayMixin):
     :meth:`~skore.EstimatorReport.checks.summarize`. This class should not be
     instantiated directly.
 
-    The display object has an HTML representation organized in six tabs
+    The display object has an HTML representation organized in tabs
     (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``, ``Skipped``,
     ``Ignored``).
     The full list of check results is accessible via the
@@ -148,18 +148,7 @@ class ChecksSummaryDisplay(DisplayMixin):
             f"{len(self.frame(section='ignored'))} ignored."
         )
 
-    def frame(
-        self,
-        section: Literal[
-            "issue",
-            "tip",
-            "passed",
-            "not_applicable",
-            "skipped",
-            "ignored",
-            "all",
-        ] = "all",
-    ) -> pd.DataFrame:
+    def frame(self, section: CheckSection | Literal["all"] = "all") -> pd.DataFrame:
         """Return check results as a DataFrame.
 
         Parameters
@@ -260,7 +249,7 @@ class ChecksSummaryDisplay(DisplayMixin):
             if df.empty:
                 continue
             lines.append(f"{label}:")
-            if section == ("passed", "skipped", "ignored"):
+            if section in ("passed", "skipped", "ignored"):
                 lines.extend(f"- [{row.code}] {row.title}" for row in df.itertuples())
             else:
                 for row in df.itertuples():
