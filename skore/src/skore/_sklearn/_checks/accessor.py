@@ -69,33 +69,31 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         check_results, applicable_codes, not_applicable_codes, skipped_codes = (
             self._parent._get_results(ignored_codes, fast_mode=fast_mode)
         )
-        registry_checks = [
-            check
-            for check in self._parent._checks_registry
-            if self._parent._report_type in check.report_types
-        ]
+        registry_by_code = {
+            check.code: check for check in self._parent._checks_registry
+        }
         skipped_message = "Skipped in fast mode (not cached)."
         ignored_message = "Muted via ignore or ignore_checks."
-        skipped_checks = {
-            code: check_results.get(code)
-            or {
-                "title": check.title,
-                "docs_url": check.docs_url,
-                "explanation": skipped_message,
-                "severity": getattr(check, "severity", "issue"),
-            }
-            for check in registry_checks
-            if (code := check.code) in skipped_codes
-        }
+        skipped_checks = {}
+        for code in skipped_codes:
+            if code in check_results:
+                skipped_checks[code] = check_results[code]
+            elif check := registry_by_code.get(code):
+                skipped_checks[code] = {
+                    "title": check.title,
+                    "docs_url": check.docs_url,
+                    "explanation": skipped_message,
+                    "severity": getattr(check, "severity", "issue"),
+                }
         ignored_checks = {
-            check.code: {
+            code: {
                 "title": check.title,
                 "docs_url": check.docs_url,
                 "explanation": ignored_message,
                 "severity": getattr(check, "severity", "issue"),
             }
-            for check in registry_checks
-            if check.code in ignored_codes
+            for code in ignored_codes
+            if (check := registry_by_code.get(code))
         }
         return ChecksSummaryDisplay(
             check_results={

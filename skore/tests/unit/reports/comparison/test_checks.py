@@ -57,3 +57,29 @@ def test_reuses_component_cached_results(report, monkeypatch):
                 )
 
     report.checks.summarize()
+
+
+def test_fast_mode_surfaces_skipped_slow_checks(
+    comparison_estimator_reports_regression,
+):
+    """fast_mode surfaces slow checks skipped on all estimators."""
+    summary = comparison_estimator_reports_regression.checks.summarize(fast_mode=True)
+    skipped = summary.frame(section="skipped").set_index("code")
+    slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
+    assert slow_codes <= set(skipped.index)
+    for code in slow_codes:
+        assert isinstance(skipped.loc[code, "explanation"], dict)
+        assert set(skipped.loc[code, "explanation"]) == set(
+            comparison_estimator_reports_regression.reports_
+        )
+
+
+def test_ignore_surfaces_muted_checks(comparison_estimator_reports_regression):
+    """Ignored checks appear in the ignored section for comparison reports."""
+    summary = comparison_estimator_reports_regression.checks.summarize(
+        ignore=["SKD001"], fast_mode=True
+    )
+    ignored = summary.frame(section="ignored").set_index("code")
+    assert "SKD001" in ignored.index
+    assert ignored.loc["SKD001", "explanation"] == "Muted via ignore or ignore_checks."
+    assert "SKD001" not in set(summary.frame(section="issue")["code"])
