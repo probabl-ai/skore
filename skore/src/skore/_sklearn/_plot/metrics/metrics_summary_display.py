@@ -219,23 +219,10 @@ class MetricsSummaryDisplay(DisplayMixin):
                 pivot_df[col] = pivot_df[col].astype(object).fillna("")
         return pivot_df, index_cols
 
-    def _favorability_column(self, prepared: pd.DataFrame) -> pd.Series:
-        """Derive the favorability arrows once, indexed by the metric dimensions.
-
-        ``greater_is_better`` is constant per metric row (it does not vary with
-        ``data_source``, ``split``, ``aggregate`` or ``estimator``), so a single
-        ``groupby(index_cols).first()`` over the long frame yields the value for
-        every wide layout. The index matches the pivoted row index because it is
-        built from the same :meth:`_prepare_pivot_df` keys.
-        """
-        pivot_df, index_cols = self._prepare_pivot_df(prepared)
-        return (
-            pivot_df.groupby(index_cols, dropna=False)["greater_is_better"]
-            .first()
-            .map(_FAVORABILITY_SYMBOLS)
-            .fillna("")
-            .astype("string")
-        )
+    @staticmethod
+    def _to_favorability(greater_is_better: pd.Series) -> pd.Series:
+        """Map ``greater_is_better`` flags to favorability arrow symbols."""
+        return greater_is_better.map(_FAVORABILITY_SYMBOLS).fillna("").astype("string")
 
     def _prepare_long(
         self,
@@ -245,21 +232,22 @@ class MetricsSummaryDisplay(DisplayMixin):
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
         """Normalize ``summary`` into a long table for export or pivoting."""
-        data = summary
         metric_col = "verbose_name" if verbose_name else "name"
 
         if "cross-validation" in self.report_type and aggregate is not None:
             group_cols: list[str] = []
             if "comparison" in self.report_type:
                 group_cols.append("estimator_name")
-            if data["data_source"].nunique() > 1:
+            if summary["data_source"].nunique() > 1:
                 group_cols.append("data_source")
             group_cols.append(metric_col)
             group_cols.extend(
-                col for col in ("label", "output", "average") if data[col].notna().any()
+                col
+                for col in ("label", "output", "average")
+                if summary[col].notna().any()
             )
 
-            aggregated = data.groupby(group_cols, dropna=False, sort=False)[
+            aggregated = summary.groupby(group_cols, dropna=False, sort=False)[
                 "score"
             ].agg(aggregate)
             if isinstance(aggregated, pd.Series):
@@ -272,7 +260,7 @@ class MetricsSummaryDisplay(DisplayMixin):
                 frame = frame.rename(columns={frame.columns[-2]: "aggregate"})
 
             frame["greater_is_better"] = frame.merge(
-                data.groupby(group_cols, dropna=False, sort=False)[
+                summary.groupby(group_cols, dropna=False, sort=False)[
                     "greater_is_better"
                 ].first(),
                 on=group_cols,
@@ -288,15 +276,15 @@ class MetricsSummaryDisplay(DisplayMixin):
             columns.append("estimator_name")
         if "cross-validation" in self.report_type:
             columns.append("split")
-        if data["data_source"].nunique() > 1:
+        if summary["data_source"].nunique() > 1:
             columns.append("data_source")
         columns.append(metric_col)
         columns.extend(
-            col for col in ("label", "output", "average") if data[col].notna().any()
+            col for col in ("label", "output", "average") if summary[col].notna().any()
         )
         columns.extend(["score", "greater_is_better"])
 
-        frame = data[columns].copy()
+        frame = summary[columns].copy()
         return frame.rename(
             columns={
                 "estimator_name": "estimator",
@@ -315,13 +303,11 @@ class MetricsSummaryDisplay(DisplayMixin):
         with_multiindex: bool = False,
     ) -> pd.DataFrame:
         """Pivot a prepared long table into wide layout."""
-        report_type = self.report_type
-
-        if report_type == "estimator":
+        if self.report_type == "estimator":
             df = self._pivot_estimator_wide(prepared)
-        elif report_type == "cross-validation":
+        elif self.report_type == "cross-validation":
             df = self._pivot_cross_validation_wide(prepared, aggregate=aggregate)
-        elif report_type == "comparison-estimator":
+        elif self.report_type == "comparison-estimator":
             df = self._pivot_comparison_estimator_wide(prepared)
         else:
             df = self._pivot_comparison_cross_validation_wide(
@@ -329,7 +315,14 @@ class MetricsSummaryDisplay(DisplayMixin):
             )
 
         if favorability:
-            favorability_col = self._favorability_column(prepared)
+            # ``greater_is_better`` is constant per metric row (it does not vary
+            # with ``data_source``, ``split``, ``aggregate`` or ``estimator``), so
+            # a single ``groupby(index_cols).first()`` yields the value for every
+            # wide layout.
+            pivot_df, index_cols = self._prepare_pivot_df(prepared)
+            favorability_col = self._to_favorability(
+                pivot_df.groupby(index_cols, dropna=False)["greater_is_better"].first()
+            )
             favorability_col.index = favorability_col.index.set_names(df.index.names)
             df["Favorability"] = favorability_col
 
@@ -364,6 +357,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         *,
         estimator_name: str | None = None,
     ) -> pd.DataFrame:
+        """Pivot an estimator report into wide layout (one value column)."""
         pivot_df, index_cols = self._prepare_pivot_df(prepared)
         if estimator_name is None:
             estimator_name = self.summary["estimator_name"].iloc[0]
@@ -382,8 +376,7 @@ class MetricsSummaryDisplay(DisplayMixin):
                 aggfunc="first",
                 sort=False,
             )
-            if set(df.columns) >= {"train", "test"}:
-                df = df[["train", "test"]]
+            df = df[["train", "test"]]
             df.columns = [f"{estimator_name} ({col})" for col in df.columns]
 
         df.index = df.index.set_names(
@@ -398,14 +391,10 @@ class MetricsSummaryDisplay(DisplayMixin):
         aggregate: Aggregate | None,
         estimator_name: str | None = None,
     ) -> pd.DataFrame:
+        """Pivot a cross-validation report into wide layout (split/aggregate cols)."""
         if "data_source" in prepared.columns and prepared["data_source"].nunique() > 1:
             frames = []
-            data_sources = [
-                source
-                for source in ("train", "test")
-                if source in prepared["data_source"].values
-            ]
-            for data_source in data_sources:
+            for data_source in ("train", "test"):
                 source_df = prepared[prepared["data_source"] == data_source]
                 source_frame = self._pivot_cross_validation_wide(
                     source_df,
@@ -468,6 +457,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         self,
         prepared: pd.DataFrame,
     ) -> pd.DataFrame:
+        """Pivot a comparison-estimator report into wide layout (one col per est.)."""
         df = pd.concat(
             [
                 self._pivot_estimator_wide(
@@ -489,6 +479,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         *,
         aggregate: Aggregate | None,
     ) -> pd.DataFrame:
+        """Pivot a comparison-cross-validation report into wide layout."""
         estimators: list[str] = []
         frames = []
         for estimator_key, estimator_df in prepared.groupby("estimator", sort=False):
@@ -540,7 +531,58 @@ class MetricsSummaryDisplay(DisplayMixin):
         with_multiindex: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame:
-        """Return the metrics summary as a dataframe."""
+        """Return the metrics summary as a dataframe.
+
+        Parameters
+        ----------
+        format : {"auto", "long", "wide"}, default="auto"
+            The shape of the returned dataframe. ``"auto"`` resolves to
+            ``"wide"`` for estimator and cross-validation reports, and to
+            ``"long"`` for comparison reports. ``"long"`` returns one row per
+            metric observation, while ``"wide"`` pivots the metrics into a
+            tabular layout.
+
+        favorability : bool, default=False
+            Whether to add a column indicating whether higher ``(↗︎)`` or lower
+            ``(↘︎)`` values are better for each metric.
+
+        verbose_name : bool, default=False
+            Whether to use the human-readable metric names instead of the
+            technical names (e.g. ``"Accuracy"`` instead of ``"accuracy"``).
+
+        with_multiindex : bool, default=False
+            Whether to keep the row and column MultiIndex in the ``"wide"``
+            layout. When ``False``, the index and columns are flattened into a
+            single level. Has no effect on the ``"long"`` layout.
+
+        aggregate : {"mean", "std"}, list of such str or None, \
+                default=("mean", "std")
+            Only used for cross-validation reports. Functions to aggregate the
+            scores across the cross-validation splits. ``None`` returns the
+            scores for each split.
+
+        Returns
+        -------
+        pandas.DataFrame
+            The metrics summary. The shape depends on ``format``: ``"long"``
+            yields one row per metric observation, whereas ``"wide"`` pivots the
+            metrics into a table whose columns depend on the report type.
+
+        Raises
+        ------
+        ValueError
+            If ``format`` is not one of ``"long"``, ``"wide"``, or ``"auto"``.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> clf = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(clf, X, y, splitter=0.2)
+        >>> df = report.metrics.summarize().frame()
+        """
         if format not in {"long", "wide", "auto"}:
             raise ValueError(
                 f"Invalid format: {format!r}. Expected 'long', 'wide', or 'auto'."
@@ -557,11 +599,8 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         if resolved == "long":
             if favorability:
-                prepared["favorability"] = (
+                prepared["favorability"] = self._to_favorability(
                     prepared["greater_is_better"]
-                    .map(_FAVORABILITY_SYMBOLS)
-                    .fillna("")
-                    .astype("string")
                 )
             return prepared.drop(columns="greater_is_better", errors="ignore")
 
