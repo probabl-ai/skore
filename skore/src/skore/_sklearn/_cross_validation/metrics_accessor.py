@@ -77,11 +77,10 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> report.metrics.summarize(
         ...     metric=["precision", "recall"],
         ... ).frame(favorability=True)
-           split     metric     value favorability
-        0      0  Precision  0.93...         (↗︎)
-        1      0     Recall  0.98...         (↗︎)
-        2      1  Precision  0.96...         (↗︎)
-        3      1     Recall  0.94...         (↗︎)
+                   logisticregression_mean  logisticregression_std favorability
+        Metric
+        precision                  0.94...                 0.02...          (↗︎)
+        recall                     0.96...                 0.02...          (↗︎)
         """
         if data_source == "both":
             train_summary = self._summarize_display(data_source="train", metric=metric)
@@ -215,10 +214,10 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
         >>> summary = report.metrics.summarize().frame()
-        >>> summary[summary["metric"] == "Mean Absolute Error"]
-            split               metric     value
-        0       0  Mean Absolute Error  0.05...
-        9       1  Mean Absolute Error  0.05...
+        >>> summary[summary.index == "mean_absolute_error"]
+                             logisticregression_mean  logisticregression_std
+        Metric
+        mean_absolute_error                  0.05...                 0.00...
         """
         for report in self._parent.reports_:
             report.metrics.add(
@@ -283,7 +282,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
-        >>> report.metrics.get("precision", format="long")
+        >>> report.metrics.get("precision")
                         LogisticRegression
                                       mean       std
         Metric    Label
@@ -425,7 +424,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
-        >>> report.metrics.score(format="long")
+        >>> report.metrics.score()
                 LogisticRegression
                             mean      std
         Metric
@@ -473,7 +472,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
-        >>> report.metrics.accuracy(format="long")
+        >>> report.metrics.accuracy()
                 LogisticRegression
                             mean      std
         Metric

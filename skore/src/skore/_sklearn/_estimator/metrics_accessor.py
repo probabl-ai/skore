@@ -104,35 +104,32 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
         >>> summary = report.metrics.summarize().frame(favorability=True)
-        >>> summary[~summary["metric"].isin(["Fit time (s)", "Predict time (s)"])]
-                metric     value favorability
-        0     Accuracy  0.94...         (↗︎)
-        1    Precision  0.98...         (↗︎)
-        2       Recall  0.92...         (↗︎)
-        3      ROC AUC  0.99...         (↗︎)
-        4     Log loss  0.11...         (↘︎)
-        5  Brier score  0.03...         (↘︎)
+        >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
+                    LogisticRegression Favorability
+        Metric
+        accuracy              0.94...          (↗︎)
+        precision             0.98...          (↗︎)
+        recall                0.92...          (↗︎)
+        roc_auc               0.99...          (↗︎)
+        log_loss              0.11...          (↘︎)
+        brier_score           0.03...          (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(metric="log_loss").frame(favorability=True)
-             metric     value favorability
-        0  Log loss  0.11...         (↘︎)
+                 LogisticRegression Favorability
+        Metric
+        log_loss           0.11...          (↘︎)
         >>> summary = report.metrics.summarize(
         ...    data_source="both"
         ... ).frame(favorability=True)
-        >>> summary[~summary["metric"].isin(["Fit time (s)", "Predict time (s)"])]
-           data_source       metric     value favorability
-        0        train     Accuracy  0.96...         (↗︎)
-        1        train    Precision  0.96...         (↗︎)
-        2        train       Recall  0.97...         (↗︎)
-        3        train      ROC AUC  0.99...         (↗︎)
-        4        train     Log loss  0.08...         (↘︎)
-        5        train  Brier score  0.02...         (↘︎)
-        8         test     Accuracy  0.94...         (↗︎)
-        9         test    Precision  0.98...         (↗︎)
-        10        test       Recall  0.92...         (↗︎)
-        11        test      ROC AUC  0.99...         (↗︎)
-        12        test     Log loss  0.11...         (↘︎)
-        13        test  Brier score  0.03...         (↘︎)
+        >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
+                    LogisticRegression (train)  LogisticRegression (test) Favorability
+        Metric
+        accuracy                      0.96...                    0.94...          (↗︎)
+        precision                     0.96...                    0.98...          (↗︎)
+        recall                        0.97...                    0.92...          (↗︎)
+        roc_auc                       0.99...                    0.99...          (↗︎)
+        log_loss                      0.08...                    0.11...          (↘︎)
+        brier_score                   0.02...                    0.03...          (↘︎)
         """
         if data_source == "both":
             train_summary = self._summarize_display(data_source="train", metric=metric)
@@ -309,16 +306,17 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
         >>> report.metrics.summarize().frame()
-                        metric     value
-        0  Mean Absolute Error  0.05...
-        1             Accuracy  0.94...
-        2            Precision  0.98...
-        3               Recall  0.92...
-        4              ROC AUC  0.99...
-        5             Log loss  0.11...
-        6          Brier score  0.03...
-        7         Fit time (s)      ...
-        8     Predict time (s)      ...
+                             LogisticRegression
+        Metric
+        mean_absolute_error             0.05...
+        accuracy                        0.94...
+        precision                       0.98...
+        recall                          0.92...
+        roc_auc                         0.99...
+        log_loss                        0.11...
+        brier_score                     0.03...
+        fit_time                            ...
+        predict_time                        ...
         """
         try:
             self._parent._metric_registry.add(
