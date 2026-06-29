@@ -1026,7 +1026,7 @@ def test_ignored_checks_appear_in_ignored_section(regression_report):
     result = regression_report.checks.summarize(ignore=["TST001"])
     ignored = result.frame(section="ignored").set_index("code")
     assert "TST001" in ignored.index
-    assert ignored.loc["TST001", "explanation"] == "Muted via ignore or ignore_checks."
+    assert pd.isna(ignored.loc["TST001", "explanation"])
     assert "TST001" not in set(result.frame(section="passed")["code"])
     assert "TST001" not in set(result.frame(section="issue")["code"])
 
@@ -1138,7 +1138,7 @@ def test_summarize_fast_mode_skips_uncached_slow_checks(regression_report):
     assert "TSTSLOW" not in set(result.frame(section="issue")["code"])
     skipped = result.frame(section="skipped").set_index("code")
     assert "TSTSLOW" in skipped.index
-    assert skipped.loc["TSTSLOW", "explanation"] == "Skipped in fast mode (not cached)."
+    assert pd.isna(skipped.loc["TSTSLOW", "explanation"])
     assert slow_check.calls == 0
 
 

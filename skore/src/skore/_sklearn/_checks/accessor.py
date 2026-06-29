@@ -72,24 +72,21 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         registry_by_code = {
             check.code: check for check in self._parent._checks_registry
         }
-        skipped_message = "Skipped in fast mode (not cached)."
-        ignored_message = "Muted via ignore or ignore_checks."
         skipped_checks = {}
         for code in skipped_codes:
-            if code in check_results:
-                skipped_checks[code] = check_results[code]
-            elif check := registry_by_code.get(code):
-                skipped_checks[code] = {
-                    "title": check.title,
-                    "docs_url": check.docs_url,
-                    "explanation": skipped_message,
-                    "severity": getattr(check, "severity", "issue"),
-                }
+            result = check_results.get(code, {})
+            check = registry_by_code.get(code)
+            skipped_checks[code] = {
+                "title": result.get("title") or (check.title if check else code),
+                "docs_url": result.get("docs_url")
+                or (check.docs_url if check else None),
+                "severity": result.get("severity")
+                or (getattr(check, "severity", "issue") if check else "issue"),
+            }
         ignored_checks = {
             code: {
                 "title": check.title,
                 "docs_url": check.docs_url,
-                "explanation": ignored_message,
                 "severity": getattr(check, "severity", "issue"),
             }
             for code in ignored_codes

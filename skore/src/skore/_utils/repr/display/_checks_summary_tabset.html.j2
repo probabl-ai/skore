@@ -23,13 +23,6 @@
                             {% for row in block.rows %}
                             <li>
                                 {% if row.documentation_url %}[<a href="{{ row.documentation_url }}" target="_blank" rel="noopener noreferrer" class="report-hint-note-link">{{ row.code }}</a>]{% else %}[{{ row.code }}]{% endif %} <strong>{{ row.title }}.</strong>
-                                {%- if row.grouped_explanations %}
-                                <ul class="report-checks-summary-sublist">
-                                    {% for entry in row.grouped_explanations %}
-                                    <li>[{{ entry.source }}] {{ entry.explanation }}</li>
-                                    {% endfor %}
-                                </ul>
-                                {%- elif row.explanation %} {{ row.explanation }}{% endif %}
                             </li>
                             {% endfor %}
                         </ul>

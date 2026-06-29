@@ -513,13 +513,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         na_explanation_by_code: dict[CheckCode, dict[CheckSource, CheckExplanation]] = (
             defaultdict(dict)
         )
-        skipped_explanation_by_code: dict[
-            CheckCode, dict[CheckSource, CheckExplanation]
-        ] = defaultdict(dict)
         all_applicable_codes: set[CheckCode] = set()
         all_not_applicable_codes: set[CheckCode] = set()
         all_skipped_codes: set[CheckCode] = set()
-        skipped_message = "Skipped in fast mode (not cached)."
         for report_name, report in self.reports_.items():
             report.checks.add(self._checks_registry)
             (
@@ -558,7 +554,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                         "severity": getattr(check, "severity", "issue"),
                     },
                 )
-                skipped_explanation_by_code[code][report_name] = skipped_message
 
         all_not_applicable_codes -= all_applicable_codes
         all_skipped_codes -= all_applicable_codes
@@ -567,10 +562,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             comparison_results[code]["explanation"] = dict(per_estimator)
         for code in all_not_applicable_codes:
             comparison_results[code]["explanation"] = dict(na_explanation_by_code[code])
-        for code in all_skipped_codes:
-            comparison_results[code]["explanation"] = dict(
-                skipped_explanation_by_code[code]
-            )
         return (
             comparison_results,
             all_applicable_codes,

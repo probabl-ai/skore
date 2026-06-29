@@ -28,9 +28,6 @@ class GroupedExplanation(TypedDict):
     explanation: CheckExplanation
 
 
-_SKIPPED_EXPLANATION = "Skipped in fast mode (not cached)."
-_IGNORED_EXPLANATION = "Muted via ignore or ignore_checks."
-
 _TAB_SPECS: list[
     tuple[str, Literal["issue", "tip", "passed", "not_applicable"], str, str]
 ] = [
@@ -69,9 +66,22 @@ _SKIPPED_IGNORED_TAB_HELP = (
 )
 _SKIPPED_IGNORED_TAB_EMPTY = "No checks were skipped or ignored."
 _SKIPPED_IGNORED_BLOCKS: list[tuple[str, Literal["skipped", "ignored"], str]] = [
-    ("Skipped", "skipped", "No checks were skipped in fast mode."),
+    ("Skipped (fast mode)", "skipped", "No checks were skipped in fast mode."),
     ("Ignored", "ignored", "No checks were muted."),
 ]
+
+
+def _rows_title_only_from_frame(df: pd.DataFrame) -> list[dict]:
+    return [
+        {
+            "code": row.code,
+            "title": row.title,
+            "documentation_url": (
+                row.documentation_url if pd.notna(row.documentation_url) else None
+            ),
+        }
+        for row in df.itertuples()
+    ]
 
 
 def _rows_from_frame(df: pd.DataFrame) -> list[dict]:
@@ -177,7 +187,7 @@ class ChecksSummaryDisplay(DisplayMixin):
                 "code": code,
                 "title": check_result["title"],
                 "section": "skipped",
-                "explanation": check_result.get("explanation", _SKIPPED_EXPLANATION),
+                "explanation": None,
                 "documentation_url": _get_issue_documentation_url(check_result),
             }
             for code, check_result in skipped_checks.items()
@@ -187,7 +197,7 @@ class ChecksSummaryDisplay(DisplayMixin):
                 "code": code,
                 "title": check_result["title"],
                 "section": "ignored",
-                "explanation": check_result.get("explanation", _IGNORED_EXPLANATION),
+                "explanation": None,
                 "documentation_url": _get_issue_documentation_url(check_result),
             }
             for code, check_result in ignored_checks.items()
@@ -241,7 +251,7 @@ class ChecksSummaryDisplay(DisplayMixin):
             A DataFrame with one row per check and columns ``"code"``,
             ``"title"``, ``"section"``, ``"explanation"``, and
             ``"documentation_url"``. The ``"explanation"`` column is ``None``
-            for checks that passed without reporting anything. For
+            for checks that passed, were skipped, or were ignored. For
             issue/tip/not-applicable rows it is a string for single-report
             results, or a dict mapping source names to messages for aggregated
             comparison results (entries with a ``None`` explanation are
@@ -279,7 +289,9 @@ class ChecksSummaryDisplay(DisplayMixin):
                     {
                         "label": label,
                         "empty_message": empty_message,
-                        "rows": _rows_from_frame(self.frame(section=section)),
+                        "rows": _rows_title_only_from_frame(
+                            self.frame(section=section)
+                        ),
                     }
                     for label, section, empty_message in _SKIPPED_IGNORED_BLOCKS
                 ],
@@ -323,12 +335,12 @@ class ChecksSummaryDisplay(DisplayMixin):
         ignored_df = self.frame(section="ignored")
         if not skipped_df.empty or not ignored_df.empty:
             lines.append(f"{_SKIPPED_IGNORED_TAB_LABEL}:")
-            if not skipped_df.empty:
-                lines.append("Skipped:")
-                lines.extend(self._repr_section_lines(skipped_df, "skipped"))
-            if not ignored_df.empty:
-                lines.append("Ignored:")
-                lines.extend(self._repr_section_lines(ignored_df, "ignored"))
+            for block_label, block_section, _ in _SKIPPED_IGNORED_BLOCKS:
+                df = self.frame(section=block_section)
+                if df.empty:
+                    continue
+                lines.append(f"{block_label}:")
+                lines.extend(f"- [{row.code}] {row.title}" for row in df.itertuples())
         lines.append("Mute a check with .checks.summarize(ignore=['<code>']).")
         return "\n".join(lines)
 

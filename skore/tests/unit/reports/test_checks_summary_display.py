@@ -88,14 +88,13 @@ def test_repr_html_merges_estimators_with_same_explanation():
 
 
 def test_repr_html_skipped_and_ignored_blocks():
-    """HTML repr shows skipped and ignored checks in separate blocks."""
+    """HTML repr shows skipped and ignored checks as code and title only."""
     html = display_html(
         {},
         skipped_checks={
             "SKDSLOW": {
                 "title": "Slow check",
                 "docs_url": "skdslow",
-                "explanation": "Skipped in fast mode (not cached).",
                 "severity": "issue",
             }
         },
@@ -103,7 +102,6 @@ def test_repr_html_skipped_and_ignored_blocks():
             "SKDIGN": {
                 "title": "Ignored check",
                 "docs_url": "skdign",
-                "explanation": "Muted via ignore or ignore_checks.",
                 "severity": "issue",
             }
         },
@@ -111,12 +109,12 @@ def test_repr_html_skipped_and_ignored_blocks():
     )
     assert "Skipped &amp; Ignored (2)" in html or "Skipped & Ignored (2)" in html
     assert "report-checks-summary-block-title" in html
-    assert "<strong>Skipped</strong>" in html
+    assert "<strong>Skipped (fast mode)</strong>" in html
     assert "<strong>Ignored</strong>" in html
-    assert ">SKDSLOW</a>" in html
-    assert "Skipped in fast mode (not cached)." in html
-    assert ">SKDIGN</a>" in html
-    assert "Muted via ignore or ignore_checks." in html
+    assert ">SKDSLOW</a>] <strong>Slow check.</strong>" in html
+    assert ">SKDIGN</a>] <strong>Ignored check.</strong>" in html
+    assert "Skipped in fast mode" not in html
+    assert "Muted via ignore" not in html
 
 
 def test_frame_skipped_and_ignored_sections():
@@ -127,7 +125,6 @@ def test_frame_skipped_and_ignored_sections():
             "SKDSLOW": {
                 "title": "Slow check",
                 "docs_url": "skdslow",
-                "explanation": "Skipped in fast mode (not cached).",
                 "severity": "issue",
             }
         },
@@ -135,10 +132,11 @@ def test_frame_skipped_and_ignored_sections():
             "SKDIGN": {
                 "title": "Ignored check",
                 "docs_url": "skdign",
-                "explanation": "Muted via ignore or ignore_checks.",
                 "severity": "issue",
             }
         },
     )
     assert set(summary.frame(section="skipped")["code"]) == {"SKDSLOW"}
     assert set(summary.frame(section="ignored")["code"]) == {"SKDIGN"}
+    assert summary.frame(section="skipped")["explanation"].isna().all()
+    assert summary.frame(section="ignored")["explanation"].isna().all()

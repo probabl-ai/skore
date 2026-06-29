@@ -1,3 +1,4 @@
+import pandas as pd
 import pytest
 
 from skore._sklearn._checks.base import ChecksSummaryDisplay
@@ -67,11 +68,7 @@ def test_fast_mode_surfaces_skipped_slow_checks(
     skipped = summary.frame(section="skipped").set_index("code")
     slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
     assert slow_codes <= set(skipped.index)
-    for code in slow_codes:
-        assert isinstance(skipped.loc[code, "explanation"], dict)
-        assert set(skipped.loc[code, "explanation"]) == set(
-            comparison_estimator_reports_regression.reports_
-        )
+    assert skipped["explanation"].isna().all()
 
 
 def test_ignore_surfaces_muted_checks(comparison_estimator_reports_regression):
@@ -81,5 +78,5 @@ def test_ignore_surfaces_muted_checks(comparison_estimator_reports_regression):
     )
     ignored = summary.frame(section="ignored").set_index("code")
     assert "SKD001" in ignored.index
-    assert ignored.loc["SKD001", "explanation"] == "Muted via ignore or ignore_checks."
+    assert pd.isna(ignored.loc["SKD001", "explanation"])
     assert "SKD001" not in set(summary.frame(section="issue")["code"])
