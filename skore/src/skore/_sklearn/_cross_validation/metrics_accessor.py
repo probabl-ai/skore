@@ -84,12 +84,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         3      1     Recall  0.94...         (↗︎)
         """
         if data_source == "both":
-            train_summary = self._summarize_display(
-                data_source="train", metric=metric, finalize=True
-            )
-            test_summary = self._summarize_display(
-                data_source="test", metric=metric, finalize=True
-            )
+            train_summary = self._summarize_display(data_source="train", metric=metric)
+            test_summary = self._summarize_display(data_source="test", metric=metric)
 
             combined = pd.concat(
                 [train_summary.summary, test_summary.summary], ignore_index=True
@@ -98,24 +94,17 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 summary=combined, report_type="cross-validation"
             )
 
-        return self._summarize_display(
-            data_source=data_source, metric=metric, finalize=True
-        )
+        return self._summarize_display(data_source=data_source, metric=metric)
 
     def _summarize_display(
         self,
         *,
         data_source: DataSource | Literal["both"],
         metric: str | list[str] | None = None,
-        finalize: bool = True,
     ) -> MetricsSummaryDisplay:
         if data_source == "both":
-            train_summary = self._summarize_display(
-                data_source="train", metric=metric, finalize=finalize
-            )
-            test_summary = self._summarize_display(
-                data_source="test", metric=metric, finalize=finalize
-            )
+            train_summary = self._summarize_display(data_source="train", metric=metric)
+            test_summary = self._summarize_display(data_source="test", metric=metric)
 
             combined = pd.concat(
                 [train_summary.summary, test_summary.summary], ignore_index=True
@@ -136,7 +125,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                     delayed(report.metrics._summarize_display)(
                         data_source=data_source,
                         metric=metric,
-                        finalize=False,
                     )
                     for report in self._parent.reports_
                 ),
@@ -145,13 +133,15 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             )
         )
 
-        display = MetricsSummaryDisplay._concatenate(
-            summaries,
-            report_type="cross-validation",
-            extra_rows_data=[{"split": i} for i in range(len(summaries))],
-            finalize=finalize,
+        extra_rows_data = [{"split": i} for i in range(len(summaries))]
+        summary = pd.concat(
+            [
+                display.summary.assign(**extra_data)
+                for display, extra_data in zip(summaries, extra_rows_data, strict=True)
+            ],
+            ignore_index=True,
         )
-        return display
+        return MetricsSummaryDisplay(summary, report_type="cross-validation")
 
     def available(self) -> list[str]:
         """List available metric names in the registry.
@@ -358,7 +348,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         metric_name: str,
         *,
         data_source: DataSource,
-        finalize: bool = True,
         **kwargs: Any,
     ) -> MetricsSummaryDisplay:
         """Compute a single metric across cross-validation splits.
@@ -392,8 +381,6 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         display = MetricsSummaryDisplay._compute_data_for_display(
             rows, report_type="cross-validation"
         )
-        if finalize:
-            display = MetricsSummaryDisplay._finalize(display)
         return display
 
     @available_if(_check_estimator_report_has_method("metrics", "score"))

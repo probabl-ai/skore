@@ -163,6 +163,37 @@ class TestDisambiguateMetrics:
         assert np.isnan(result.loc["Metric_1", "DummyRegressor_2"])
         assert np.isnan(result.loc["Metric_2", "DummyRegressor_1"])
 
+    def test_custom_metric_technical_name(self, estimator_reports_regression):
+        """The technical name is disambiguated too, not only the verbose name.
+
+        Two custom metrics sharing a technical ``name`` but with different source
+        code (hence different fingerprints) render as ``metric_1`` and ``metric_2``
+        in the default frame (``verbose_name=False``)."""
+        report_1, report_2 = estimator_reports_regression
+
+        def metric(estimator, X, y):
+            return 1
+
+        report_1.metrics.add(metric)
+
+        def metric(estimator, X, y):
+            return 2
+
+        report_2.metrics.add(metric)
+
+        report = ComparisonReport([report_1, report_2])
+        result = report.metrics.summarize().frame(format="wide")
+
+        metric_names = result.index.tolist()
+        assert "metric_1" in metric_names
+        assert "metric_2" in metric_names
+        assert "metric" not in metric_names
+
+        assert result.loc["metric_1", "DummyRegressor_1"] == 1
+        assert result.loc["metric_2", "DummyRegressor_2"] == 2
+        assert np.isnan(result.loc["metric_1", "DummyRegressor_2"])
+        assert np.isnan(result.loc["metric_2", "DummyRegressor_1"])
+
     def test_avoids_existing_suffix(self, estimator_reports_regression):
         """Disambiguation suffixes skip over verbose names that are already taken.
 

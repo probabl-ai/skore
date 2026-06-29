@@ -47,6 +47,7 @@ def check_display_structure(
         "output",
         "score",
         "greater_is_better",
+        "fingerprint",
     }
     assert pd.api.types.is_numeric_dtype(data["score"])
     assert set(data["verbose_name"]) == expected_metrics

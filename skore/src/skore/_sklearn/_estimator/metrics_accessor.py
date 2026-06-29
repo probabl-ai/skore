@@ -135,36 +135,25 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         13        test  Brier score  0.03...         (↘︎)
         """
         if data_source == "both":
-            train_summary = self._summarize_display(
-                data_source="train", metric=metric, finalize=True
-            )
-            test_summary = self._summarize_display(
-                data_source="test", metric=metric, finalize=True
-            )
+            train_summary = self._summarize_display(data_source="train", metric=metric)
+            test_summary = self._summarize_display(data_source="test", metric=metric)
 
             combined = pd.concat(
                 [train_summary.summary, test_summary.summary], ignore_index=True
             )
             return MetricsSummaryDisplay(summary=combined, report_type="estimator")
 
-        return self._summarize_display(
-            data_source=data_source, metric=metric, finalize=True
-        )
+        return self._summarize_display(data_source=data_source, metric=metric)
 
     def _summarize_display(
         self,
         *,
         data_source: DataSource | Literal["both"],
         metric: str | list[str] | None = None,
-        finalize: bool = True,
     ) -> MetricsSummaryDisplay:
         if data_source == "both":
-            train_summary = self._summarize_display(
-                data_source="train", metric=metric, finalize=finalize
-            )
-            test_summary = self._summarize_display(
-                data_source="test", metric=metric, finalize=finalize
-            )
+            train_summary = self._summarize_display(data_source="train", metric=metric)
+            test_summary = self._summarize_display(data_source="test", metric=metric)
 
             combined = pd.concat(
                 [train_summary.summary, test_summary.summary], ignore_index=True
@@ -211,8 +200,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         display = MetricsSummaryDisplay._compute_data_for_display(
             rows, report_type="estimator"
         )
-        if finalize:
-            display = MetricsSummaryDisplay._finalize(display)
         return display
 
     def _metric(
@@ -220,7 +207,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         metric_name: str,
         *,
         data_source: DataSource,
-        finalize: bool = True,
         **kwargs: Any,
     ) -> MetricsSummaryDisplay:
         """Compute a single metric, forwarding *kwargs* to the score function."""
@@ -248,8 +234,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         display = MetricsSummaryDisplay._compute_data_for_display(
             rows, report_type="estimator"
         )
-        if finalize:
-            display = MetricsSummaryDisplay._finalize(display)
         return display
 
     def available(self) -> list[str]:

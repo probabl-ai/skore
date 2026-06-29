@@ -679,16 +679,18 @@ class TestMultiMetric:
 
         display = report.metrics.summarize()
 
-        verbose_names = list(display.summary["verbose_name"])
-        assert "Accuracy" not in verbose_names
-        assert "Accuracy_1" in verbose_names
-        assert "Accuracy_2" in verbose_names
+        assert "fingerprint" in display.summary.columns
+        assert display.summary["verbose_name"].tolist().count("Accuracy") == 2
 
-        # Our submetric is added first by default, so it gets the _1 suffix.
-        accuracy_1 = display.summary[display.summary["verbose_name"] == "Accuracy_1"]
-        accuracy_2 = display.summary[display.summary["verbose_name"] == "Accuracy_2"]
-        assert list(accuracy_1["score"]) == [1000]
-        assert list(accuracy_2["score"]) == [1.0]
+        result = display.frame(format="long", verbose_name=True)
+        assert "Accuracy" not in result["metric"].tolist()
+        assert "Accuracy_1" in result["metric"].tolist()
+        assert "Accuracy_2" in result["metric"].tolist()
+
+        accuracy_1 = result[result["metric"] == "Accuracy_1"]
+        accuracy_2 = result[result["metric"] == "Accuracy_2"]
+        assert list(accuracy_1["value"]) == [1000]
+        assert list(accuracy_2["value"]) == [1.0]
 
 
 class TestStringScorerNames:

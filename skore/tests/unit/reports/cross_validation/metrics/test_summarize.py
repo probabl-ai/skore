@@ -51,6 +51,7 @@ def check_display_structure(
         "output",
         "score",
         "greater_is_better",
+        "fingerprint",
     }
     assert set(data["verbose_name"]) == expected_metrics
     assert set(data["estimator_name"]) == {expected_estimator_name}

@@ -99,7 +99,6 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
                     joblib.delayed(report.metrics._summarize_display)(
                         data_source=data_source,
                         metric=metric,
-                        finalize=False,
                     )
                     for report in self._parent.reports_.values()
                 ),
@@ -108,14 +107,18 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
             )
         )
 
-        return MetricsSummaryDisplay._concatenate(
-            summaries,
-            report_type=self._parent._report_type,
-            extra_rows_data=[
-                {"estimator_name": estimator_name}
-                for estimator_name in self._parent.reports_
+        extra_rows_data = [
+            {"estimator_name": estimator_name}
+            for estimator_name in self._parent.reports_
+        ]
+        summary = pd.concat(
+            [
+                display.summary.assign(**extra_data)
+                for display, extra_data in zip(summaries, extra_rows_data, strict=True)
             ],
+            ignore_index=True,
         )
+        return MetricsSummaryDisplay(summary, report_type=self._parent._report_type)
 
     def _formatted_summary_frame(
         self,
@@ -132,20 +135,22 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
     ) -> MetricsSummaryDisplay:
         """Compute a single metric across compared reports, forwarding *kwargs*."""
         summaries = [
-            report.metrics._metric(
-                metric_name, data_source=data_source, finalize=False, **kwargs
-            )
+            report.metrics._metric(metric_name, data_source=data_source, **kwargs)
             for report in self._parent.reports_.values()
         ]
 
-        return MetricsSummaryDisplay._concatenate(
-            summaries,
-            report_type=self._parent._report_type,
-            extra_rows_data=[
-                {"estimator_name": estimator_name}
-                for estimator_name in self._parent.reports_
+        extra_rows_data = [
+            {"estimator_name": estimator_name}
+            for estimator_name in self._parent.reports_
+        ]
+        summary = pd.concat(
+            [
+                display.summary.assign(**extra_data)
+                for display, extra_data in zip(summaries, extra_rows_data, strict=True)
             ],
+            ignore_index=True,
         )
+        return MetricsSummaryDisplay(summary, report_type=self._parent._report_type)
 
     def available(self, *, report_name: str | None = None) -> list[str]:
         """List available metric names in the registry.
