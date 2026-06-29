@@ -66,43 +66,8 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 for code in configuration.ignore_checks
                 if code.strip()
             )
-        check_results, applicable_codes, not_applicable_codes, skipped_codes = (
-            self._parent._get_results(ignored_codes, fast_mode=fast_mode)
-        )
-        registry_by_code = {
-            check.code: check for check in self._parent._checks_registry
-        }
-        skipped_checks = {}
-        for code in skipped_codes:
-            result = check_results.get(code, {})
-            check = registry_by_code.get(code)
-            skipped_checks[code] = {
-                "title": result.get("title") or (check.title if check else code),
-                "docs_url": result.get("docs_url")
-                or (check.docs_url if check else None),
-                "severity": result.get("severity")
-                or (getattr(check, "severity", "issue") if check else "issue"),
-            }
-        ignored_checks = {
-            code: {
-                "title": check.title,
-                "docs_url": check.docs_url,
-                "severity": getattr(check, "severity", "issue"),
-            }
-            for code in ignored_codes
-            if (check := registry_by_code.get(code))
-        }
         return ChecksSummaryDisplay(
-            check_results={
-                code: check_result
-                for code, check_result in check_results.items()
-                if (code in applicable_codes or code in not_applicable_codes)
-                and code not in ignored_codes
-                and code not in skipped_codes
-            },
-            not_applicable_codes=not_applicable_codes,
-            skipped_checks=skipped_checks,
-            ignored_checks=ignored_checks,
+            self._parent._get_results(ignored_codes, fast_mode=fast_mode),
             fast_mode=fast_mode,
         )
 
@@ -172,10 +137,6 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         ]
         if hasattr(self._parent, "_check_results_cache"):
             self._parent._check_results_cache.pop(code, None)
-        if hasattr(self._parent, "_applicable_codes"):
-            self._parent._applicable_codes.discard(code)
-        if hasattr(self._parent, "_not_applicable_codes"):
-            self._parent._not_applicable_codes.discard(code)
 
     def __repr__(self) -> str:
         return (

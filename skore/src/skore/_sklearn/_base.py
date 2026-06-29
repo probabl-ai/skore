@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.base import Check, CheckCode
+from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._utils._progress_bar import track
 from skore._utils.repr.base import (
@@ -43,57 +43,22 @@ class _BaseReport(ReportHelpMixin):
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode], set[CheckCode]]:
+    ) -> dict[CheckCode, CheckResult]:
         """Aggregate EstimatorReport checks.
 
         Overwritten in CrossValidation and Comparison reports.
-
-        Returns ``(check_results, applicable_codes, not_applicable_codes,
-        skipped_codes)``.
         """
-        return {}, set(), set(), set()
+        return {}
 
-    def _get_results(
+    def _run_checks(
         self,
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode], set[CheckCode]]:
-        """Get the check results from the cache or compute them.
-
-        Parameters
-        ----------
-        ignored_codes : set of CheckCode
-            Check codes to exclude from the results, e.g. ``{"SKD001"}``.
-
-        fast_mode : bool, default=False
-            When True, skip slow checks that are not already in the cache
-            (their `check_function` is never invoked). Cached slow results
-            are still surfaced.
-
-        Returns ``(check_results, applicable_codes, not_applicable_codes,
-        skipped_codes)``
-        where ``applicable_codes`` contains the codes of the checks that ran
-        without raising :class:`CheckNotApplicable`, ``not_applicable_codes``
-        contains those that raised it, and ``skipped_codes`` contains slow checks
-        not run because of ``fast_mode``.
-        """
+    ) -> None:
+        """Run uncached checks and store results in ``_check_results_cache``."""
         if not hasattr(self, "_check_results_cache"):
-            self._check_results_cache: dict[CheckCode, dict] = {}
-        if not hasattr(self, "_applicable_codes"):
-            self._applicable_codes: set[CheckCode] = set()
-        if not hasattr(self, "_not_applicable_codes"):
-            self._not_applicable_codes: set[CheckCode] = set()
-
-        skipped_codes = {
-            check.code
-            for check in self._checks_registry
-            if self._report_type in check.report_types
-            and check.code not in ignored_codes
-            and fast_mode
-            and check.slow
-            and check.code not in self._check_results_cache
-        }
+            self._check_results_cache: dict[CheckCode, CheckResult] = {}
 
         checks_to_run = [
             check
@@ -111,34 +76,75 @@ class _BaseReport(ReportHelpMixin):
         ):
             try:
                 explanation = check.check_function(self)
-                self._applicable_codes.add(check.code)
+                section: CheckSection = (
+                    getattr(check, "severity", "issue") if explanation else "passed"
+                )
             except CheckNotApplicable as exc:
                 explanation = exc.args[0] if exc.args else None
-                self._not_applicable_codes.add(check.code)
+                section = "not_applicable"
             self._check_results_cache[check.code] = {
                 "title": check.title,
                 "docs_url": check.docs_url,
                 "explanation": explanation,
-                "severity": getattr(check, "severity", "issue"),
+                "section": section,
             }
 
-        if "comparison" in self._report_type:
-            agg_check_results, agg_applicable, agg_not_applicable, agg_skipped = (
-                self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
-            )
-            return (
-                self._check_results_cache | agg_check_results,
-                self._applicable_codes | agg_applicable,
-                self._not_applicable_codes | agg_not_applicable,
-                skipped_codes | agg_skipped,
-            )
+    def _build_checks_summary(
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
+    ) -> dict[CheckCode, CheckResult]:
+        summary: dict[CheckCode, CheckResult] = {}
+        for check in self._checks_registry:
+            if self._report_type not in check.report_types:
+                continue
+            code = check.code
+            if code in ignored_codes:
+                summary[code] = {
+                    "title": check.title,
+                    "docs_url": check.docs_url,
+                    "explanation": None,
+                    "section": "ignored",
+                }
+            elif fast_mode and check.slow and code not in self._check_results_cache:
+                summary[code] = {
+                    "title": check.title,
+                    "docs_url": check.docs_url,
+                    "explanation": None,
+                    "section": "skipped",
+                }
+            elif code in self._check_results_cache:
+                summary[code] = self._check_results_cache[code]
+        return summary
 
-        return (
-            self._check_results_cache,
-            self._applicable_codes,
-            self._not_applicable_codes,
-            skipped_codes,
-        )
+    def _get_results(
+        self,
+        ignored_codes: set[CheckCode],
+        *,
+        fast_mode: bool = False,
+    ) -> dict[CheckCode, CheckResult]:
+        """Build the per-call checks summary.
+
+        Parameters
+        ----------
+        ignored_codes : set of CheckCode
+            Check codes to exclude from execution, e.g. ``{"SKD001"}``.
+
+        fast_mode : bool, default=False
+            When True, skip slow checks that are not already in the cache
+            (their `check_function` is never invoked). Cached slow results
+            are still surfaced.
+
+        Returns
+        -------
+        dict of CheckCode to CheckResult
+            Summary of every applicable check with its display section.
+        """
+        self._run_checks(ignored_codes, fast_mode=fast_mode)
+        if "comparison" in self._report_type:
+            return self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
+        return self._build_checks_summary(ignored_codes, fast_mode=fast_mode)
 
     def _checks_summary_html_fragment(self) -> str:
         """HTML snippet for the checks summary tab in report reprs."""

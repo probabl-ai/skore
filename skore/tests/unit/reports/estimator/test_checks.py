@@ -53,19 +53,23 @@ def regression_report(request, regression_data):
 
 
 def mock_issue(report, ignored_codes, *, fast_mode=False):
-    return (
-        {
+    if "SKD001" in ignored_codes:
+        return {
             "SKD001": {
                 "title": "Mock title",
                 "docs_url": "skd001-overfitting",
-                "explanation": "Mock overfitting detected.",
-                "severity": "issue",
+                "explanation": None,
+                "section": "ignored",
             }
-        },
-        {"SKD001"},
-        set(),
-        set(),
-    )
+        }
+    return {
+        "SKD001": {
+            "title": "Mock title",
+            "docs_url": "skd001-overfitting",
+            "explanation": "Mock overfitting detected.",
+            "section": "issue",
+        }
+    }
 
 
 class MockCheck(Check):
@@ -796,12 +800,7 @@ def test_no_issues(monkeypatch, regression_report):
     monkeypatch.setattr(
         EstimatorReport,
         "_get_results",
-        lambda report, ignored_codes, *, fast_mode=False: (
-            {},
-            {"SKD001", "SKD002"},
-            set(),
-            set(),
-        ),
+        lambda report, ignored_codes, *, fast_mode=False: {},
     )
     assert regression_report.checks.summarize().frame(section="issue").empty
 
@@ -835,14 +834,14 @@ def test_global_ignore(monkeypatch, regression_report):
         regression_report.checks.summarize().frame(section="issue")["code"]
     )
     with configuration(ignore_checks=["SKD001"]):
-        assert "SKD001" not in set(
-            regression_report.checks.summarize().frame(section="issue")["code"]
-        )
+        summary = regression_report.checks.summarize()
+        assert "SKD001" not in set(summary.frame(section="issue")["code"])
+        assert "SKD001" in set(summary.frame(section="ignored")["code"])
 
 
 def test_documentation_url_points_to_existing_rst():
     """Check that the URL in _get_issue_documentation_url maps to a real RST file."""
-    url = urlparse(_get_issue_documentation_url(mock_issue(None, set())[0]["SKD001"]))
+    url = urlparse(_get_issue_documentation_url(mock_issue(None, set())["SKD001"]))
     # url.path is e.g. "/dev/user_guide/automated_checks.html"
     # strip version prefix and convert .html -> .rst
     rst_rel_path = "/".join(url.path.split("/")[2:]).replace(".html", ".rst")
@@ -935,12 +934,10 @@ def test_remove_clears_cache(regression_report):
     regression_report.checks.add([MockCheck(has_issue=True)])
     regression_report.checks.summarize()
     assert "TST001" in regression_report._check_results_cache
-    assert "TST001" in regression_report._applicable_codes
+    assert regression_report._check_results_cache["TST001"]["section"] == "issue"
 
     regression_report.checks.remove("TST001")
     assert "TST001" not in regression_report._check_results_cache
-    assert "TST001" not in regression_report._applicable_codes
-    assert "TST001" not in regression_report._not_applicable_codes
 
 
 def test_remove_is_case_insensitive(regression_report):

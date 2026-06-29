@@ -22,6 +22,15 @@ CheckSource = str
 CheckSources = str
 CheckExplanation = str
 
+CheckSection = Literal["issue", "tip", "passed", "not_applicable", "skipped", "ignored"]
+
+
+class CheckResult(TypedDict):
+    title: str
+    docs_url: str | None
+    explanation: str | dict[CheckSource, CheckExplanation] | None
+    section: CheckSection
+
 
 class GroupedExplanation(TypedDict):
     source: CheckSources
@@ -120,18 +129,6 @@ def _group_explanations(
     ]
 
 
-def _check_section(
-    code: CheckCode,
-    check_result: dict,
-    not_applicable_codes: set[CheckCode],
-) -> Literal["issue", "tip", "passed", "not_applicable"]:
-    if code in not_applicable_codes:
-        return "not_applicable"
-    if pd.notna(check_result.get("explanation")):
-        return check_result["severity"]
-    return "passed"
-
-
 class ChecksSummaryDisplay(DisplayMixin):
     """Display for the checks summary.
 
@@ -146,64 +143,30 @@ class ChecksSummaryDisplay(DisplayMixin):
 
     Parameters
     ----------
-    check_results : dict of str to dict
-        Results of applicable checks keyed by check code
-        (e.g. ``"SKD001"``). Each value is a dict with keys ``"title"``,
-        ``"explanation"``, ``"severity"`` (``"issue"`` or ``"tip"``), and
-        optionally ``"docs_url"``. ``"explanation"`` is a string for single-report
-        summaries, or a dict mapping source names to messages for aggregated
-        comparison summaries.
-
-    not_applicable_codes : set of str
-        Check codes that raised :class:`~skore.CheckNotApplicable`.
-
-    skipped_checks : dict of str to dict
-        Check metadata for checks skipped in fast mode, keyed by check code.
-
-    ignored_checks : dict of str to dict
-        Check metadata for checks muted via ``ignore=`` or ``ignore_checks``.
+    check_results : dict of str to CheckResult
+        Summary of all checks keyed by check code (e.g. ``"SKD001"``).
+        Each value has keys ``"title"``, ``"explanation"``, ``"section"``,
+        and optionally ``"docs_url"``. The ``"section"`` value is one of
+        ``"issue"``, ``"tip"``, ``"passed"``, ``"not_applicable"``,
+        ``"skipped"``, or ``"ignored"``.
     """
 
     def __init__(
         self,
-        check_results: dict[CheckCode, dict],
-        not_applicable_codes: set[CheckCode],
-        skipped_checks: dict[CheckCode, dict],
-        ignored_checks: dict[CheckCode, dict],
+        check_results: dict[CheckCode, CheckResult],
         fast_mode: bool,
     ) -> None:
-        rows = [
-            {
-                "code": code,
-                "title": check_result["title"],
-                "section": _check_section(code, check_result, not_applicable_codes),
-                "explanation": check_result["explanation"],
-                "documentation_url": _get_issue_documentation_url(check_result),
-            }
-            for code, check_result in check_results.items()
-        ]
-        rows.extend(
-            {
-                "code": code,
-                "title": check_result["title"],
-                "section": "skipped",
-                "explanation": None,
-                "documentation_url": _get_issue_documentation_url(check_result),
-            }
-            for code, check_result in skipped_checks.items()
-        )
-        rows.extend(
-            {
-                "code": code,
-                "title": check_result["title"],
-                "section": "ignored",
-                "explanation": None,
-                "documentation_url": _get_issue_documentation_url(check_result),
-            }
-            for code, check_result in ignored_checks.items()
-        )
         self._check_results = pd.DataFrame(
-            rows,
+            [
+                {
+                    "code": code,
+                    "title": check_result["title"],
+                    "section": check_result["section"],
+                    "explanation": check_result["explanation"],
+                    "documentation_url": _get_issue_documentation_url(check_result),
+                }
+                for code, check_result in check_results.items()
+            ],
             columns=["code", "title", "section", "explanation", "documentation_url"],
         )
         self._fast_mode = fast_mode
@@ -439,7 +402,7 @@ class Check(Protocol):
         """
 
 
-def _get_issue_documentation_url(issue: dict) -> str | None:
+def _get_issue_documentation_url(issue: CheckResult | dict) -> str | None:
     docs_url = issue.get("docs_url")
     if docs_url is None:
         return None

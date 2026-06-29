@@ -11,7 +11,12 @@ from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._checks.base import CheckCode, CheckExplanation, CheckSource
+from skore._sklearn._checks.base import (
+    CheckCode,
+    CheckExplanation,
+    CheckResult,
+    CheckSource,
+)
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
@@ -505,69 +510,85 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode], set[CheckCode]]:
-        comparison_results: dict[CheckCode, dict] = {}
+    ) -> dict[CheckCode, CheckResult]:
+        comparison_summary: dict[CheckCode, CheckResult] = {}
         explanation_by_code: dict[CheckCode, dict[CheckSource, CheckExplanation]] = (
             defaultdict(dict)
         )
         na_explanation_by_code: dict[CheckCode, dict[CheckSource, CheckExplanation]] = (
             defaultdict(dict)
         )
-        all_applicable_codes: set[CheckCode] = set()
-        all_not_applicable_codes: set[CheckCode] = set()
-        all_skipped_codes: set[CheckCode] = set()
+        finding_section_by_code: dict[CheckCode, Literal["issue", "tip"]] = {}
+        ran_on_any: set[CheckCode] = set()
+        na_on_any: set[CheckCode] = set()
+        skipped_on_any: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
             report.checks.add(self._checks_registry)
-            (
-                report_results,
-                applicable_codes,
-                not_applicable_codes,
-                skipped_codes,
-            ) = report._get_results(ignored_codes, fast_mode=fast_mode)
-            all_applicable_codes |= applicable_codes
-            all_not_applicable_codes |= not_applicable_codes
-            all_skipped_codes |= skipped_codes
+            sub_summary = report._get_results(ignored_codes, fast_mode=fast_mode)
 
-            for code, result in report_results.items():
-                comparison_results.setdefault(
+            for code, result in sub_summary.items():
+                comparison_summary.setdefault(
                     code,
                     {
                         "title": result["title"],
                         "docs_url": result.get("docs_url"),
                         "explanation": None,
-                        "severity": result.get("severity"),
+                        "section": result["section"],
                     },
                 )
-                if code in applicable_codes and result["explanation"] is not None:
-                    explanation_by_code[code][report_name] = result["explanation"]
-                elif code in not_applicable_codes and result["explanation"] is not None:
-                    na_explanation_by_code[code][report_name] = result["explanation"]
+                section = result["section"]
+                if section in ("issue", "tip"):
+                    ran_on_any.add(code)
+                    finding_section_by_code[code] = section
+                    explanation = result["explanation"]
+                    if isinstance(explanation, str):
+                        explanation_by_code[code][report_name] = explanation
+                elif section == "passed":
+                    ran_on_any.add(code)
+                elif section == "not_applicable":
+                    na_on_any.add(code)
+                    explanation = result["explanation"]
+                    if isinstance(explanation, str):
+                        na_explanation_by_code[code][report_name] = explanation
+                elif section == "skipped":
+                    skipped_on_any.add(code)
 
-            for code in skipped_codes:
-                check = next(c for c in report._checks_registry if c.code == code)
-                comparison_results.setdefault(
-                    code,
-                    {
-                        "title": check.title,
-                        "docs_url": check.docs_url,
-                        "explanation": None,
-                        "severity": getattr(check, "severity", "issue"),
-                    },
-                )
-
-        all_not_applicable_codes -= all_applicable_codes
-        all_skipped_codes -= all_applicable_codes
+        global_na_codes = na_on_any - ran_on_any
+        global_skipped_codes = skipped_on_any - ran_on_any
 
         for code, per_estimator in explanation_by_code.items():
-            comparison_results[code]["explanation"] = dict(per_estimator)
-        for code in all_not_applicable_codes:
-            comparison_results[code]["explanation"] = dict(na_explanation_by_code[code])
-        return (
-            comparison_results,
-            all_applicable_codes,
-            all_not_applicable_codes,
-            all_skipped_codes,
-        )
+            comparison_summary[code] = {
+                **comparison_summary[code],
+                "explanation": dict(per_estimator),
+                "section": finding_section_by_code[code],
+            }
+        for code in global_na_codes:
+            comparison_summary[code] = {
+                **comparison_summary[code],
+                "explanation": dict(na_explanation_by_code[code]),
+                "section": "not_applicable",
+            }
+        for code in global_skipped_codes:
+            comparison_summary[code] = {
+                **comparison_summary[code],
+                "explanation": None,
+                "section": "skipped",
+            }
+        for code in ran_on_any:
+            if code not in explanation_by_code:
+                comparison_summary[code] = {
+                    **comparison_summary[code],
+                    "explanation": None,
+                    "section": "passed",
+                }
+        for code in ignored_codes:
+            if code in comparison_summary:
+                comparison_summary[code] = {
+                    **comparison_summary[code],
+                    "explanation": None,
+                    "section": "ignored",
+                }
+        return comparison_summary
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

@@ -1,31 +1,18 @@
 from skore._sklearn._checks.base import ChecksSummaryDisplay
 
 
-def display(
-    check_results,
-    *,
-    not_applicable_codes=frozenset(),
-    skipped_checks=None,
-    ignored_checks=None,
-    fast_mode=False,
-):
-    return ChecksSummaryDisplay(
-        check_results=check_results,
-        not_applicable_codes=set(not_applicable_codes),
-        skipped_checks={} if skipped_checks is None else skipped_checks,
-        ignored_checks={} if ignored_checks is None else ignored_checks,
-        fast_mode=fast_mode,
-    )
+def display(check_results, *, fast_mode=False):
+    return ChecksSummaryDisplay(check_results, fast_mode=fast_mode)
 
 
-def display_html(*args, **kwargs):
-    return display(*args, **kwargs)._repr_html_()
+def display_html(check_results, *, fast_mode=False):
+    return display(check_results, fast_mode=fast_mode)._repr_html_()
 
 
 _MOCK_ISSUE = {
     "title": "Mock issue",
     "docs_url": "skd001-mock",
-    "severity": "issue",
+    "section": "issue",
 }
 
 
@@ -58,11 +45,10 @@ def test_repr_html_groups_not_applicable_explanations():
             "SKDNA": {
                 "title": "Not applicable check",
                 "docs_url": "skdna-mock",
-                "severity": "issue",
+                "section": "not_applicable",
                 "explanation": {"Ridge": "Reason A.", "Lasso": "Reason B."},
             }
-        },
-        not_applicable_codes={"SKDNA"},
+        }
     )
     assert "Not Applicable (1)" in html
     assert ">SKDNA</a>] <strong>Not applicable check.</strong>" in html
@@ -90,20 +76,19 @@ def test_repr_html_merges_estimators_with_same_explanation():
 def test_repr_html_skipped_and_ignored_blocks():
     """HTML repr shows skipped and ignored checks as code and title only."""
     html = display_html(
-        {},
-        skipped_checks={
+        {
             "SKDSLOW": {
                 "title": "Slow check",
                 "docs_url": "skdslow",
-                "severity": "issue",
-            }
-        },
-        ignored_checks={
+                "section": "skipped",
+                "explanation": None,
+            },
             "SKDIGN": {
                 "title": "Ignored check",
                 "docs_url": "skdign",
-                "severity": "issue",
-            }
+                "section": "ignored",
+                "explanation": None,
+            },
         },
         fast_mode=True,
     )
@@ -120,21 +105,20 @@ def test_repr_html_skipped_and_ignored_blocks():
 def test_frame_skipped_and_ignored_sections():
     """frame(section=...) exposes skipped and ignored rows."""
     summary = display(
-        {},
-        skipped_checks={
+        {
             "SKDSLOW": {
                 "title": "Slow check",
                 "docs_url": "skdslow",
-                "severity": "issue",
-            }
-        },
-        ignored_checks={
+                "section": "skipped",
+                "explanation": None,
+            },
             "SKDIGN": {
                 "title": "Ignored check",
                 "docs_url": "skdign",
-                "severity": "issue",
-            }
-        },
+                "section": "ignored",
+                "explanation": None,
+            },
+        }
     )
     assert set(summary.frame(section="skipped")["code"]) == {"SKDSLOW"}
     assert set(summary.frame(section="ignored")["code"]) == {"SKDIGN"}
