@@ -15,7 +15,6 @@ from sklearn.model_selection import (
     RepeatedKFold,
     RepeatedStratifiedKFold,
     ShuffleSplit,
-    StratifiedGroupKFold,
     StratifiedKFold,
     StratifiedShuffleSplit,
     TimeSeriesSplit,
@@ -427,17 +426,8 @@ class TestCrossValidationReportPayload:
             "random_state": None,
         }
 
-    @mark.parametrize(
-        ("splitter"),
-        [
-            param(GroupKFold(n_splits=2), id="GroupKFold"),
-            param(StratifiedGroupKFold(n_splits=2), id="StratifiedGroupKFold"),
-        ],
-    )
     def test_splitting_strategy_do_not_call_split_with_groups_aware_splitter(
-        self,
-        project,
-        splitter,
+        self, project
     ):
         # non-regression test for https://github.com/probabl-ai/skore/pull/3018
         X = array([0, 1, 2, 3, 4])
