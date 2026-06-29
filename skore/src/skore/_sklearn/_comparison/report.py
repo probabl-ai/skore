@@ -524,7 +524,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         skipped_on_any: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
             report.checks.add(self._checks_registry)
-            sub_summary = report._get_results(ignored_codes, fast_mode=fast_mode)
+            sub_summary = report._get_checks_results(ignored_codes, fast_mode=fast_mode)
 
             for code, result in sub_summary.items():
                 comparison_summary.setdefault(

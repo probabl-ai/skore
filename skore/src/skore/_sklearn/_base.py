@@ -46,17 +46,34 @@ class _BaseReport(ReportHelpMixin):
     ) -> dict[CheckCode, CheckResult]:
         """Aggregate EstimatorReport checks.
 
-        Overwritten in CrossValidation and Comparison reports.
+        Overwritten in Comparison reports.
         """
         return {}
 
-    def _run_checks(
+    def _get_checks_results(
         self,
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> None:
-        """Run uncached checks and store results in ``_check_results_cache``."""
+    ) -> dict[CheckCode, CheckResult]:
+        """Run uncached checks and return the checks summary.
+
+        Parameters
+        ----------
+        ignored_codes : set of CheckCode
+            Check codes to exclude from execution, e.g. ``{"SKD001"}``.
+
+        fast_mode : bool, default=False
+            When True, skip slow checks that are not already in the cache
+            (their `check_function` is never invoked). Cached slow results
+            are still surfaced.
+
+        Returns
+        -------
+        dict of CheckCode to CheckResult
+            Summary of every check applicable to the report type with its display
+            section.
+        """
         if not hasattr(self, "_check_results_cache"):
             self._check_results_cache: dict[CheckCode, CheckResult] = {}
 
@@ -89,12 +106,9 @@ class _BaseReport(ReportHelpMixin):
                 "section": section,
             }
 
-    def _build_checks_summary(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
-    ) -> dict[CheckCode, CheckResult]:
+        if "comparison" in self._report_type:
+            return self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
+
         summary: dict[CheckCode, CheckResult] = {}
         for check in self._checks_registry:
             if self._report_type not in check.report_types:
@@ -117,34 +131,6 @@ class _BaseReport(ReportHelpMixin):
             elif code in self._check_results_cache:
                 summary[code] = self._check_results_cache[code]
         return summary
-
-    def _get_results(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
-    ) -> dict[CheckCode, CheckResult]:
-        """Build the per-call checks summary.
-
-        Parameters
-        ----------
-        ignored_codes : set of CheckCode
-            Check codes to exclude from execution, e.g. ``{"SKD001"}``.
-
-        fast_mode : bool, default=False
-            When True, skip slow checks that are not already in the cache
-            (their `check_function` is never invoked). Cached slow results
-            are still surfaced.
-
-        Returns
-        -------
-        dict of CheckCode to CheckResult
-            Summary of every applicable check with its display section.
-        """
-        self._run_checks(ignored_codes, fast_mode=fast_mode)
-        if "comparison" in self._report_type:
-            return self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
-        return self._build_checks_summary(ignored_codes, fast_mode=fast_mode)
 
     def _checks_summary_html_fragment(self) -> str:
         """HTML snippet for the checks summary tab in report reprs."""

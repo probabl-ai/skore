@@ -38,7 +38,7 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         ChecksSummaryDisplay
             A display object with an HTML representation organized as six
             tabs (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``,
-            ``Skipped (fast mode)``, ``Ignored``). The full list of results is
+            ``Skipped``, ``Ignored``). The full list of results is
             accessible via the :meth:`~ChecksSummaryDisplay.frame` method.
 
         Examples
@@ -67,7 +67,7 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 if code.strip()
             )
         return ChecksSummaryDisplay(
-            self._parent._get_results(ignored_codes, fast_mode=fast_mode),
+            self._parent._get_checks_results(ignored_codes, fast_mode=fast_mode),
             fast_mode=fast_mode,
         )
 

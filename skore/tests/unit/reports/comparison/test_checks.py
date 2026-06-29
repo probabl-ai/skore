@@ -23,7 +23,7 @@ def test_collects_component_issues(report, monkeypatch):
     ):
         monkeypatch.setattr(
             sub_report,
-            "_get_results",
+            "_get_checks_results",
             lambda ignored_codes, *, fast_mode=False, iss=issues: {
                 code: {**result, "section": "issue"} for code, result in iss.items()
             },

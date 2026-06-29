@@ -53,15 +53,6 @@ def regression_report(request, regression_data):
 
 
 def mock_issue(report, ignored_codes, *, fast_mode=False):
-    if "SKD001" in ignored_codes:
-        return {
-            "SKD001": {
-                "title": "Mock title",
-                "docs_url": "skd001-overfitting",
-                "explanation": None,
-                "section": "ignored",
-            }
-        }
     return {
         "SKD001": {
             "title": "Mock title",
@@ -744,14 +735,11 @@ def test_skd016_pipeline_walks_steps(regression_data):
     assert "Ridge" not in explanation
 
 
-def test_ignore_checks(monkeypatch, regression_report):
+def test_ignore_checks(regression_report):
     """Check that checks are ignored when ignore is passed."""
-    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
-    assert (
-        regression_report.checks.summarize(ignore=["SKD001"])
-        .frame(section="issue")
-        .empty
-    )
+    result = regression_report.checks.summarize(ignore=["SKD001"])
+    assert "SKD001" in set(result.frame(section="ignored")["code"])
+    assert "SKD001" not in set(result.frame(section="issue")["code"])
 
 
 def test_exception_when_train_data_missing(regression_train_test_split):
@@ -799,7 +787,7 @@ def test_no_issues(monkeypatch, regression_report):
     """Check that no issues are detected when checks pass."""
     monkeypatch.setattr(
         EstimatorReport,
-        "_get_results",
+        "_get_checks_results",
         lambda report, ignored_codes, *, fast_mode=False: {},
     )
     assert regression_report.checks.summarize().frame(section="issue").empty
@@ -807,7 +795,7 @@ def test_no_issues(monkeypatch, regression_report):
 
 def test_checks_summary_repr(monkeypatch, regression_report):
     """Check that the checks summary has a repr."""
-    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
+    monkeypatch.setattr(EstimatorReport, "_get_checks_results", mock_issue)
     results = regression_report.checks.summarize()
     assert isinstance(results, ChecksSummaryDisplay)
     elements = [
@@ -827,11 +815,10 @@ def test_checks_summary_repr(monkeypatch, regression_report):
     assert "report-hint-note-line" in bundle["text/html"]
 
 
-def test_global_ignore(monkeypatch, regression_report):
+def test_global_ignore(regression_report):
     """Check that checks are ignored when global ignore is set."""
-    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
-    assert "SKD001" in set(
-        regression_report.checks.summarize().frame(section="issue")["code"]
+    assert "SKD001" not in set(
+        regression_report.checks.summarize().frame(section="ignored")["code"]
     )
     with configuration(ignore_checks=["SKD001"]):
         summary = regression_report.checks.summarize()
@@ -1074,7 +1061,7 @@ def test_html_tabs(regression_report):
 
 def test_checks_summary_html_note_lines(monkeypatch, regression_report):
     """HTML note shows fast-mode info and mute hint on separate lines."""
-    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
+    monkeypatch.setattr(EstimatorReport, "_get_checks_results", mock_issue)
     html_fast = regression_report.checks.summarize(fast_mode=True)._repr_html_()
     assert "Fast mode is on" in html_fast
     assert "Mute a check by passing" in html_fast
@@ -1181,7 +1168,7 @@ def test_html_repr_shows_cached_slow(regression_report):
 
 def test_html_repr_fragments_includes_checks_detail(monkeypatch, regression_report):
     """The HTML repr fragments include per-check detail from fast-mode summary."""
-    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
+    monkeypatch.setattr(EstimatorReport, "_get_checks_results", mock_issue)
     checks_html = regression_report._html_repr_fragments()["checks_summary"]
     assert "report-checks-summary-list" in checks_html
     assert "Issues (1)" in checks_html

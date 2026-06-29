@@ -438,4 +438,4 @@ def test_fast_mode_skips_slow_checks(regression_report):
     slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
     assert slow_codes.isdisjoint(set(summary.frame(section="issue")["code"]))
     assert slow_codes.isdisjoint(set(summary.frame(section="passed")["code"]))
-    assert slow_codes <= set(summary.frame(section="skipped")["code"])
+    assert slow_codes == set(summary.frame(section="skipped")["code"])

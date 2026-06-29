@@ -355,6 +355,7 @@
     margin: 0;
     font-size: 12px;
     font-style: italic;
+    opacity: 0.85;
 }
 
 .comparison-report-select-row {
