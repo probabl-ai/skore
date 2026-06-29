@@ -28,7 +28,7 @@ CheckSection = Literal["issue", "tip", "passed", "not_applicable", "skipped", "i
 class CheckResult(TypedDict):
     title: str
     docs_url: str | None
-    explanation: str | dict[CheckSource, CheckExplanation] | None
+    explanation: CheckExplanation | dict[CheckSource, CheckExplanation] | None
     section: CheckSection
 
 
