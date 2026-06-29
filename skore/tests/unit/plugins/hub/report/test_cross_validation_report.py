@@ -40,6 +40,9 @@ from skore._plugins.hub.report import (
     CrossValidationReportPayload,
     EstimatorReportPayload,
 )
+from skore._plugins.hub.report.cross_validation_report import (
+    SPLITTING_STRATEGY_MAX_INDEX_COUNT,
+)
 
 
 def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, str]:
@@ -390,6 +393,29 @@ class TestCrossValidationReportPayload:
         assert calls_before_put > 0
         assert calls_before_put == calls
         assert payload.splitting_strategy["splits"] == [[0, 0, 1, 1, 1]]
+        assert payload.splitting_strategy["splitter"] == {
+            "type": "Splitter",
+            "n_splits": 1,
+            "n_repeats": None,
+            "shuffle": False,
+            "random_state": None,
+        }
+
+    def test_splitting_strategy_do_not_send_more_than_10_000_samples(self, project):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3018
+        assert SPLITTING_STRATEGY_MAX_INDEX_COUNT < 10_001
+
+        X = array(range(10_001))
+        y = array(range(10_001, 20_002))
+
+        class Splitter:
+            def split(self, X, y=None, groups=None):
+                yield array(X[: (len(X) // 2)]), array(X[(len(X) // 2) :])
+
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
+
+        assert payload.splitting_strategy["splits"] == [None]
         assert payload.splitting_strategy["splitter"] == {
             "type": "Splitter",
             "n_splits": 1,

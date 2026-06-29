@@ -4,6 +4,7 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable, Sized
 from functools import cached_property
 from inspect import signature
+from itertools import chain
 from typing import Any, ClassVar, cast
 
 import numpy as np
@@ -42,6 +43,7 @@ from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
 
+SPLITTING_STRATEGY_MAX_INDEX_COUNT = 10_000
 SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
 TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT = 100
 SPLITTERS = {
@@ -175,6 +177,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         if self.report.y is None:
             return {}
 
+        splits: list[list[int] | None] = []
         splitter = self.report.splitter
         target = cast(Sized, self.report.y)
         is_classifier = "classification" in self.ml_task
@@ -239,12 +242,19 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 target_repr,
             )
         else:
-            split_generator = self.report.split_indices
+            total_index_count = sum(
+                len(cast(Sized, indices))
+                for indices in chain.from_iterable(self.report.split_indices)
+            )
+
+            if total_index_count > SPLITTING_STRATEGY_MAX_INDEX_COUNT:
+                splits = [None] * len(self.report.split_indices)
+                split_generator = []
+            else:
+                split_generator = self.report.split_indices
 
         # Per split: one list of length N_SAMPLES_REPR, ordered by sample index,
         # with 0 = train fold and 1 = test fold for that split.
-        splits: list[list[int]] = []
-
         for train_idx, test_idx in split_generator:
             split_flags = np.full(len(target), -1, dtype=int)
             split_flags[train_idx] = 0
