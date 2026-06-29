@@ -73,7 +73,7 @@ def test_repr_html_merges_estimators_with_same_explanation():
     assert html.count("Same reason.") == 1
 
 
-def test_repr_html_skipped_and_ignored_blocks():
+def test_repr_html_skipped_and_ignored_tabs():
     """HTML repr shows skipped and ignored checks as code and title only."""
     html = display_html(
         {
@@ -92,10 +92,8 @@ def test_repr_html_skipped_and_ignored_blocks():
         },
         fast_mode=True,
     )
-    assert "Skipped &amp; Ignored (2)" in html or "Skipped & Ignored (2)" in html
-    assert "report-checks-summary-block-title" in html
-    assert "<strong>Skipped (fast mode)</strong>" in html
-    assert "<strong>Ignored</strong>" in html
+    assert "Skipped (1)" in html
+    assert "Ignored (1)" in html
     assert ">SKDSLOW</a>] <strong>Slow check.</strong>" in html
     assert ">SKDIGN</a>] <strong>Ignored check.</strong>" in html
     assert "Skipped in fast mode" not in html

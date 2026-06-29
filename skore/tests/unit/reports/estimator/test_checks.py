@@ -1068,7 +1068,8 @@ def test_html_tabs(regression_report):
     assert "Tips (" in html
     assert "Passed (" in html
     assert "Not Applicable (" in html
-    assert "Skipped &amp; Ignored (" in html
+    assert "Skipped (" in html
+    assert "Ignored (" in html
 
 
 def test_checks_summary_html_note_lines(monkeypatch, regression_report):

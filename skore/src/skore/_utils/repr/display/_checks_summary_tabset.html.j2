@@ -1,11 +1,7 @@
-{# Issues / Tips / Passed / Not Applicable / Skipped & Ignored tabset. Expects: container_id, tabs. #}
+{# Issues / Tips / Passed / Not Applicable / Skipped / Ignored tabset. Expects: container_id, tabs. #}
 {% set report_tabs = [] %}
 {% for tab in tabs %}
-    {% if tab.blocks is defined %}
-        {% set _ = report_tabs.append({"label": tab.label ~ " (" ~ tab.row_count ~ ")", "help_variant": "text", "help_text": tab.help_text}) %}
-    {% else %}
-        {% set _ = report_tabs.append({"label": tab.label ~ " (" ~ tab.rows|length ~ ")", "help_variant": "text", "help_text": tab.help_text}) %}
-    {% endif %}
+    {% set _ = report_tabs.append({"label": tab.label ~ " (" ~ tab.rows|length ~ ")", "help_variant": "text", "help_text": tab.help_text}) %}
 {% endfor %}
 <div class="report-tabset">
     {% include "common/_report_tabset_chrome.html.j2" %}
@@ -13,28 +9,7 @@
         {% for tab in tabs %}
         <div class="report-tab-panel">
             <div class="report-section report-checks-summary-detail">
-                {% if tab.blocks is defined %}
-                    {% if tab.row_count %}
-                    {% for block in tab.blocks %}
-                    <div class="report-checks-summary-block">
-                        <p class="report-checks-summary-block-title"><strong>{{ block.label }}</strong></p>
-                        {% if block.rows %}
-                        <ul class="report-checks-summary-list">
-                            {% for row in block.rows %}
-                            <li>
-                                {% if row.documentation_url %}[<a href="{{ row.documentation_url }}" target="_blank" rel="noopener noreferrer" class="report-hint-note-link">{{ row.code }}</a>]{% else %}[{{ row.code }}]{% endif %} <strong>{{ row.title }}.</strong>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                        {% else %}
-                        <p class="report-checks-summary-empty">{{ block.empty_message }}</p>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                    {% else %}
-                    <p class="report-checks-summary-empty">{{ tab.empty_message }}</p>
-                    {% endif %}
-                {% elif tab.rows %}
+                {% if tab.rows %}
                 <ul class="report-checks-summary-list">
                     {% for row in tab.rows %}
                     <li>

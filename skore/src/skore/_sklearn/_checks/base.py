@@ -37,9 +37,7 @@ class GroupedExplanation(TypedDict):
     explanation: CheckExplanation
 
 
-_TAB_SPECS: list[
-    tuple[str, Literal["issue", "tip", "passed", "not_applicable"], str, str]
-] = [
+_TAB_SPECS: list[tuple[str, CheckSection, str, str]] = [
     (
         "Issues",  # Title of the tab
         "issue",  # Severity of the checks collected in the tab
@@ -67,53 +65,19 @@ _TAB_SPECS: list[
             "or model capabilities were missing."
         ),
     ),
+    (
+        "Skipped",
+        "skipped",
+        "No checks were skipped in fast mode.",
+        "Slow checks not run because fast mode is on.",
+    ),
+    (
+        "Ignored",
+        "ignored",
+        "No checks were muted.",
+        "Checks excluded via ignore.",
+    ),
 ]
-
-_SKIPPED_IGNORED_TAB_LABEL = "Skipped & Ignored"
-_SKIPPED_IGNORED_TAB_HELP = (
-    "Checks that were not run because of fast mode or were muted by the user."
-)
-_SKIPPED_IGNORED_TAB_EMPTY = "No checks were skipped or ignored."
-_SKIPPED_IGNORED_BLOCKS: list[tuple[str, Literal["skipped", "ignored"], str]] = [
-    ("Skipped (fast mode)", "skipped", "No checks were skipped in fast mode."),
-    ("Ignored", "ignored", "No checks were muted."),
-]
-
-
-def _rows_title_only_from_frame(df: pd.DataFrame) -> list[dict]:
-    return [
-        {
-            "code": row.code,
-            "title": row.title,
-            "documentation_url": (
-                row.documentation_url if pd.notna(row.documentation_url) else None
-            ),
-        }
-        for row in df.itertuples()
-    ]
-
-
-def _rows_from_frame(df: pd.DataFrame) -> list[dict]:
-    return [
-        {
-            "code": row.code,
-            "title": row.title,
-            "explanation": (
-                row.explanation
-                if pd.notna(row.explanation) and isinstance(row.explanation, str)
-                else None
-            ),
-            "grouped_explanations": (
-                _group_explanations(row.explanation)
-                if isinstance(row.explanation, dict)
-                else None
-            ),
-            "documentation_url": (
-                row.documentation_url if pd.notna(row.documentation_url) else None
-            ),
-        }
-        for row in df.itertuples()
-    ]
 
 
 def _group_explanations(
@@ -136,14 +100,15 @@ class ChecksSummaryDisplay(DisplayMixin):
     :meth:`~skore.EstimatorReport.checks.summarize`. This class should not be
     instantiated directly.
 
-    The display object has an HTML representation organized in five tabs
-    (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``, ``Skipped & Ignored``).
+    The display object has an HTML representation organized in six tabs
+    (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``, ``Skipped``,
+    ``Ignored``).
     The full list of check results is accessible via the
     :meth:`~ChecksSummaryDisplay.frame` method.
 
     Parameters
     ----------
-    check_results : dict of str to CheckResult
+    check_results : dict of CheckCode to CheckResult
         Summary of all checks keyed by check code (e.g. ``"SKD001"``).
         Each value has keys ``"title"``, ``"explanation"``, ``"section"``,
         and optionally ``"docs_url"``. The ``"section"`` value is one of
@@ -237,29 +202,31 @@ class ChecksSummaryDisplay(DisplayMixin):
                     "label": label,
                     "empty_message": empty_message,
                     "help_text": help_text,
-                    "rows": _rows_from_frame(df),
+                    "rows": [
+                        {
+                            "code": row.code,
+                            "title": row.title,
+                            "explanation": (
+                                row.explanation
+                                if pd.notna(row.explanation)
+                                and isinstance(row.explanation, str)
+                                else None
+                            ),
+                            "grouped_explanations": (
+                                _group_explanations(row.explanation)
+                                if isinstance(row.explanation, dict)
+                                else None
+                            ),
+                            "documentation_url": (
+                                row.documentation_url
+                                if pd.notna(row.documentation_url)
+                                else None
+                            ),
+                        }
+                        for row in df.itertuples()
+                    ],
                 }
             )
-        skipped_df = self.frame(section="skipped")
-        ignored_df = self.frame(section="ignored")
-        tabs.append(
-            {
-                "label": _SKIPPED_IGNORED_TAB_LABEL,
-                "empty_message": _SKIPPED_IGNORED_TAB_EMPTY,
-                "help_text": _SKIPPED_IGNORED_TAB_HELP,
-                "row_count": len(skipped_df) + len(ignored_df),
-                "blocks": [
-                    {
-                        "label": label,
-                        "empty_message": empty_message,
-                        "rows": _rows_title_only_from_frame(
-                            self.frame(section=section)
-                        ),
-                    }
-                    for label, section, empty_message in _SKIPPED_IGNORED_BLOCKS
-                ],
-            }
-        )
         return tabs
 
     def _html_context(self, *, show_header: bool, nested: bool) -> dict:
@@ -293,50 +260,34 @@ class ChecksSummaryDisplay(DisplayMixin):
             if df.empty:
                 continue
             lines.append(f"{label}:")
-            lines.extend(self._repr_section_lines(df, section))
-        skipped_df = self.frame(section="skipped")
-        ignored_df = self.frame(section="ignored")
-        if not skipped_df.empty or not ignored_df.empty:
-            lines.append(f"{_SKIPPED_IGNORED_TAB_LABEL}:")
-            for block_label, block_section, _ in _SKIPPED_IGNORED_BLOCKS:
-                df = self.frame(section=block_section)
-                if df.empty:
-                    continue
-                lines.append(f"{block_label}:")
+            if section == ("passed", "skipped", "ignored"):
                 lines.extend(f"- [{row.code}] {row.title}" for row in df.itertuples())
+            else:
+                for row in df.itertuples():
+                    msg = f"- [{row.code}] {row.title}"
+                    explanation = row.explanation
+                    if isinstance(explanation, dict):
+                        if pd.notna(row.documentation_url):
+                            msg += (
+                                f". Read more about this here: {row.documentation_url}."
+                            )
+                        else:
+                            msg += "."
+                        lines.append(msg)
+                        lines.extend(
+                            f"  - [{entry['source']}] {entry['explanation']}"
+                            for entry in _group_explanations(explanation)
+                        )
+                    else:
+                        if pd.notna(explanation):
+                            msg += f". {explanation}"
+                        if pd.notna(row.documentation_url):
+                            msg += (
+                                f" Read more about this here: {row.documentation_url}."
+                            )
+                        lines.append(msg)
         lines.append("Mute a check with .checks.summarize(ignore=['<code>']).")
         return "\n".join(lines)
-
-    def _repr_section_lines(
-        self,
-        df: pd.DataFrame,
-        section: Literal[
-            "issue", "tip", "passed", "skipped", "ignored", "not_applicable"
-        ],
-    ) -> list[str]:
-        if section == "passed":
-            return [f"- [{row.code}] {row.title}" for row in df.itertuples()]
-        lines = []
-        for row in df.itertuples():
-            msg = f"- [{row.code}] {row.title}"
-            explanation = row.explanation
-            if isinstance(explanation, dict):
-                if pd.notna(row.documentation_url):
-                    msg += f". Read more about this here: {row.documentation_url}."
-                else:
-                    msg += "."
-                lines.append(msg)
-                lines.extend(
-                    f"  - [{entry['source']}] {entry['explanation']}"
-                    for entry in _group_explanations(explanation)
-                )
-            else:
-                if pd.notna(explanation):
-                    msg += f". {explanation}"
-                if pd.notna(row.documentation_url):
-                    msg += f" Read more about this here: {row.documentation_url}."
-                lines.append(msg)
-        return lines
 
 
 @runtime_checkable
@@ -402,7 +353,7 @@ class Check(Protocol):
         """
 
 
-def _get_issue_documentation_url(issue: CheckResult | dict) -> str | None:
+def _get_issue_documentation_url(issue: CheckResult) -> str | None:
     docs_url = issue.get("docs_url")
     if docs_url is None:
         return None
