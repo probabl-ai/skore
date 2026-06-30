@@ -203,6 +203,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
                 position=position,
                 **kwargs,
             )
+        self._parent._clear_checks_cache()
 
     def remove(self, name: str) -> None:
         """Remove a metric from each underlying estimator report.
@@ -214,6 +215,7 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         """
         for report in self._parent.reports_:
             report.metrics.remove(name)
+        self._parent._clear_checks_cache()
 
     def get(
         self,

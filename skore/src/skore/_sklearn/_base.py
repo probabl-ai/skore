@@ -125,6 +125,14 @@ class _BaseReport(ReportHelpMixin):
             self._not_applicable_codes,
         )
 
+    def _clear_checks_cache(self) -> None:
+        if hasattr(self, "_check_results_cache"):
+            self._check_results_cache.clear()
+        if hasattr(self, "_applicable_codes"):
+            self._applicable_codes.clear()
+        if hasattr(self, "_not_applicable_codes"):
+            self._not_applicable_codes.clear()
+
     def _checks_summary_html_fragment(self) -> str:
         """HTML snippet for the checks summary tab in report reprs."""
         return self.checks.summarize(fast_mode=True)._embedded_repr_html()

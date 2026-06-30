@@ -285,6 +285,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             raise ValueError(
                 f"{error.msg} Pass those kwargs to add: add({error.metric}, {args_msg})"
             ) from error
+        self._parent._clear_checks_cache()
 
     def remove(self, name: str) -> None:
         """Remove a metric from the registry.
@@ -297,6 +298,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         # `remove` takes the report as input so that the MetricRegistry does not
         # need to have the report as an attribute, which would be a circular reference
         self._parent._metric_registry.remove(report=self._parent, name=name)
+        self._parent._clear_checks_cache()
 
     def get(
         self,
