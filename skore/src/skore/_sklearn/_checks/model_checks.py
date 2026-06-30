@@ -44,6 +44,12 @@ from skore._sklearn._checks.tunable_hyperparameters import (
 )
 from skore._sklearn.feature_names import _get_feature_names
 from skore._utils._dataframe import UserSeries, _normalize_X_as_dataframe
+from skore._utils._skrub import (
+    find_estimators,
+    is_skrub_learner,
+    is_tunable,
+    iter_fitted_estimator_steps,
+)
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
@@ -51,6 +57,27 @@ if TYPE_CHECKING:
     from skore._sklearn._estimator.report import EstimatorReport
 
 _TIMING_METRICS_FLAT = {"fit_time_s", "predict_time_s"}
+
+
+def _skrub_classes_with_tunable_recommended_params(estimator) -> set[ClassName]:
+    """Return estimator class names with skrub choices on recommended params."""
+    tuned_classes: set[ClassName] = set()
+    for unfitted in find_estimators(estimator.data_op, include_nested=False):
+        estimators = (
+            [step for _, step in unfitted.steps]
+            if isinstance(unfitted, Pipeline)
+            else [unfitted]
+        )
+        for est in estimators:
+            class_name = type(est).__name__
+            if class_name not in HYPERPARAMETERS_TO_TUNE:
+                continue
+            for param_name in HYPERPARAMETERS_TO_TUNE[class_name]:
+                if param_name in INFRASTRUCTURE_PARAMS:
+                    continue
+                if is_tunable(getattr(est, param_name, None)):
+                    tuned_classes.add(class_name)
+    return tuned_classes
 
 
 def _baseline_estimator_report(
@@ -595,6 +622,10 @@ class CheckGoldenFeature(Check):
     Detects a single feature that, used alone to refit the estimator, reaches
     scores close to the full model on the report's default predictive metrics.
     This often signals data leakage or excessive reliance on one feature.
+
+    Note: for skrub learners whose preprocessing vectorizes columns (e.g.
+    :class:`~skrub.TableVectorizer`), a raw "golden column" may not appear as a
+    single preprocessed feature dimension.
     """
 
     code = "SKD011"
@@ -1013,24 +1044,24 @@ class CheckEstimatorNotTuned(Check):
         if isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable("Estimator is a BaseSearchCV instance.")
 
-        if isinstance(estimator, Pipeline):
-            candidates = [
-                (type(step).__name__, step)
-                for _, step in estimator.steps
-                if type(step).__name__ in HYPERPARAMETERS_TO_TUNE
-            ]
-            if not candidates:
-                raise CheckNotApplicable(
-                    "No parameter to recommend for any of the steps."
-                )
-        else:
-            class_name = type(estimator).__name__
-            if class_name not in HYPERPARAMETERS_TO_TUNE:
-                raise CheckNotApplicable("No parameter to recommend for the estimator.")
-            candidates = [(class_name, estimator)]
+        candidates = [
+            (class_name, step)
+            for class_name, step in iter_fitted_estimator_steps(estimator)
+            if class_name in HYPERPARAMETERS_TO_TUNE
+        ]
+        if not candidates:
+            raise CheckNotApplicable("No parameter to recommend.")
+
+        skrub_tuned_classes = (
+            _skrub_classes_with_tunable_recommended_params(estimator)
+            if is_skrub_learner(estimator)
+            else set()
+        )
 
         messages: list[str] = []
         for class_name, step in candidates:
+            if class_name in skrub_tuned_classes:
+                continue
             if set(_changed_params(step)) - INFRASTRUCTURE_PARAMS:
                 continue
             recommended = _collapse_equivalents(
