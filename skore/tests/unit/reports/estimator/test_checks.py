@@ -427,7 +427,7 @@ def test_get_space_bound(estimator, param_name, side, expected):
 
 def _prefit_grid_search_report(X, y, search):
     search.fit(X, y)
-    return evaluate(search, X, y, splitter="prefit")
+    return EstimatorReport(search, X_test=X, y_test=y, run_fast_checks=False)
 
 
 @pytest.mark.parametrize(
@@ -1204,3 +1204,49 @@ def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):
     regression_report.checks.add([check])
     codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
     assert "TSTFAST" in codes
+
+
+def test_fast_checks_run_at_init(regression_data):
+    """Fast-mode checks populate the cache during report initialization."""
+    X, y = regression_data
+    report = evaluate(
+        LinearRegression(),
+        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
+        pd.Series(y),
+    )
+    assert report._check_results_cache
+    slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
+    assert slow_codes.isdisjoint(report._check_results_cache)
+
+
+def test_run_fast_checks_false_skips_init(regression_data):
+    """run_fast_checks=False defers checks until summarize is called."""
+    X, y = regression_data
+    X_df = pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])])
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_df, pd.Series(y), random_state=42
+    )
+    report = EstimatorReport(
+        LinearRegression(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+        run_fast_checks=False,
+    )
+    assert not hasattr(report, "_check_results_cache")
+    report.checks.summarize(fast_mode=True)
+    assert report._check_results_cache
+
+
+def test_init_fast_checks_not_rerun_on_summarize(regression_report, monkeypatch):
+    """Cached init fast checks are not recomputed on summarize(fast_mode=True)."""
+    assert regression_report._check_results_cache
+    for check in regression_report._checks_registry:
+        if check.code in regression_report._check_results_cache:
+            monkeypatch.setattr(
+                check,
+                "check_function",
+                lambda report: pytest.fail("re-ran cached check"),
+            )
+    regression_report.checks.summarize(fast_mode=True)

@@ -102,6 +102,7 @@ def _baseline_estimator_report(
                 splitter=report.splitter,
                 pos_label=report.pos_label,
                 n_jobs=report.n_jobs,
+                run_fast_checks=False,
             )
         except Exception as exc:
             raise CheckNotApplicable("Failed to create baseline report.") from exc
@@ -130,6 +131,7 @@ def _baseline_estimator_report(
             X_test=X_test,
             y_test=y_test,
             pos_label=report.pos_label,
+            run_fast_checks=False,
         )
     except Exception as exc:
         raise CheckNotApplicable("Failed to create baseline report.") from exc
@@ -649,6 +651,7 @@ class CheckGoldenFeature(Check):
                         splitter=report.splitter,
                         pos_label=report.pos_label,
                         n_jobs=report.n_jobs,
+                        run_fast_checks=False,
                     )
                     for sub_report in single_feature_report.reports_:
                         sub_report._metric_registry = metric_registry
@@ -660,6 +663,7 @@ class CheckGoldenFeature(Check):
                         X_test=X_test.select(nw.col(feature_names[i])).to_native(),
                         y_test=y_test,
                         pos_label=report.pos_label,
+                        run_fast_checks=False,
                     )
                     single_feature_report._metric_registry = metric_registry
                 single_feature_scores = collect_scores(

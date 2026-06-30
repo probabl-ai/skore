@@ -3,6 +3,16 @@ import pytest
 from skore._sklearn._checks.base import ChecksSummaryDisplay
 
 
+def test_fast_checks_run_at_init(report):
+    """Fast-mode checks populate sub-report caches during comparison init."""
+    for sub_report in report.reports_.values():
+        assert sub_report._check_results_cache
+    codes = set(report.checks.summarize(fast_mode=True).frame()["code"])
+    assert codes
+    slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
+    assert slow_codes.isdisjoint(codes)
+
+
 def test_collects_component_issues(report, monkeypatch):
     """Check that issues from all component reports are collected."""
     report_names = list(report.reports_)

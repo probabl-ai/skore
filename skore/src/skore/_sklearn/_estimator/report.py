@@ -23,6 +23,7 @@ from skrub._reporting._summarize import summarize_dataframe
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._checks.accessor import collect_ignored_codes
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn.find_ml_task import _find_ml_task
 from skore._sklearn.metrics import MetricRegistry
@@ -147,6 +148,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         Binary metrics and displays that support it will expose all classes instead.
         This parameter is rejected for non-binary tasks.
 
+    run_fast_checks : bool, default=True
+        When `True`, fast checks run at the end of initialization to
+        pre-populate the checks cache.
+
     Attributes
     ----------
     estimator_ : estimator object
@@ -264,6 +269,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         train_data: dict | None = None,
         test_data: dict | None = None,
         pos_label: PositiveLabel | None = None,
+        run_fast_checks: bool = True,
     ) -> None:
         super().__init__()
         estimator = self._copy_estimator(estimator)
@@ -305,6 +311,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._cache_predictions(data_source="test")
 
         self._metric_registry = MetricRegistry(self)
+
+        if run_fast_checks:
+            self._get_results(collect_ignored_codes(), fast_mode=True)
 
         if pos_label is None:
             return
