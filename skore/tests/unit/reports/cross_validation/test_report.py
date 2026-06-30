@@ -102,8 +102,8 @@ def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
     for estimator_report in report.reports_:
-        assert ("test", "predict", None) in estimator_report._cache
-        assert ("train", "predict", None) not in estimator_report._cache
+        assert ("report", "test", "predict", None) in estimator_report._cache
+        assert ("report", "train", "predict", None) not in estimator_report._cache
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])

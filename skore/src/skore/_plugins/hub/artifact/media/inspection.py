@@ -103,14 +103,12 @@ class PermutationImportance(Inspection[Report], ABC):  # noqa: D101
             report: EstimatorReport,
         ) -> Display | None:
             for key, display in reversed(list(report._cache.items())):
-                if len(key) != 3:
-                    continue
-
-                key_data_source, key_name, key_kwargs = key
+                key_scope, key_data_source, key_name, key_kwargs = key
                 key_kwargs = str(key_kwargs)
 
                 if (
-                    key_data_source == data_source
+                    key_scope == "inspection"
+                    and key_data_source == data_source
                     and key_name == "permutation_importance"
                     and "('at_step', 0)" in key_kwargs
                     and "('metric', None)" in key_kwargs

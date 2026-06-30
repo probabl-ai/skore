@@ -215,8 +215,8 @@ class TestRemove:
 
         report.metrics.remove("metric1")
 
-        assert not any(k[1] == "metric1" for k in report._cache)
-        assert any(k[1] == "metric2" for k in report._cache)
+        assert not any(k[2] == "metric1" for k in report._cache)
+        assert any(k[2] == "metric2" for k in report._cache)
 
 
 class TestSummarizeIntegration:
