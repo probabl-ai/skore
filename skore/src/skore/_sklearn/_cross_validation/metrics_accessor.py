@@ -1025,23 +1025,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         ).frame(aggregate=aggregate, flat_index=flat_index)
 
     ####################################################################################
-    # Methods related to the help tree
+    # Methods related to displays
     ####################################################################################
-
-    def __repr__(self) -> str:
-        return (
-            "Metrics summary:\n"
-            f"{self.summarize().frame()!r}\n"
-            "Explore available methods with .help()."
-        )
-
-    def _repr_html_(self) -> str:
-        return (
-            "<p>Metrics summary:</p>"
-            f"{self.summarize().frame()._repr_html_()}"
-            '<p role="note">Explore available methods with '
-            "<code>.help()</code>.</p>"
-        )
 
     @available_if(_check_estimator_report_has_method("metrics", "roc"))
     def roc(

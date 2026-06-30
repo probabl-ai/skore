@@ -119,6 +119,10 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
     ) -> pd.DataFrame:
+        """Metric summary.
+
+        Used for displaying the report.
+        """
         frame = self.summarize(data_source=data_source, metric=metric).frame()
         frame = frame.rename_axis(
             None
@@ -1054,23 +1058,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         )
 
     ####################################################################################
-    # Methods related to the help tree
+    # Methods related to displays
     ####################################################################################
-
-    def __repr__(self) -> str:
-        return (
-            "Metrics summary:\n"
-            f"{self._formatted_summary_frame()!r}\n"
-            "Explore available methods with .help()."
-        )
-
-    def _repr_html_(self) -> str:
-        return (
-            "<p>Metrics summary:</p>"
-            f"{self._formatted_summary_frame()._repr_html_()}"
-            '<p role="note">Explore available methods with '
-            "<code>.help()</code>.</p>"
-        )
 
     @available_if(
         _check_supported_ml_task(
