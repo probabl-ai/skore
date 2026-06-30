@@ -274,12 +274,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The metric values, or None if the metric is not available.
+        pandas.DataFrame or pandas.Series or None
+            The metric values, or None if the metric is not available. For wide
+            layouts with a single value column, a :class:`pandas.Series` is
+            returned with its name set to that column label.
 
         Examples
         --------
@@ -307,7 +311,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
     ) -> pd.DataFrame | pd.Series:
         """Get all measured processing times related to the estimator.
 
-        The index of the returned dataframe is the name of the processing time. When
+        The index of the returned table is the name of the processing time. When
         the estimators were not used to predict, no timings regarding the prediction
         will be present.
 
@@ -318,9 +322,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
         Returns
         -------
-        pd.DataFrame or pd.Series
-            A dataframe or series with the processing times. When aggregation
-            yields a single column, a :class:`pandas.Series` is returned.
+        pandas.DataFrame or pandas.Series
+            The processing times. When aggregation yields a single column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -417,12 +422,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The estimator's default score.
+        pandas.DataFrame or pandas.Series
+            The estimator's default score. For wide layouts with a single value
+            column, a :class:`pandas.Series` is returned with its name set to
+            that column label.
 
         Examples
         --------
@@ -465,12 +474,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The accuracy score.
+        pandas.DataFrame or pandas.Series
+            The accuracy score. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -542,12 +555,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The precision score.
+        pandas.DataFrame or pandas.Series
+            The precision score. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -623,12 +640,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The recall score.
+        pandas.DataFrame or pandas.Series
+            The recall score. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -672,12 +693,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The Brier score.
+        pandas.DataFrame or pandas.Series
+            The Brier score. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -755,12 +780,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The ROC AUC score.
+        pandas.DataFrame or pandas.Series
+            The ROC AUC score. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -805,12 +834,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The log-loss.
+        pandas.DataFrame or pandas.Series
+            The log-loss. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -867,12 +900,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The R² score.
+        pandas.DataFrame or pandas.Series
+            The R² score. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -928,12 +965,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The root mean squared error.
+        pandas.DataFrame or pandas.Series
+            The root mean squared error. For wide layouts with a single value
+            column, a :class:`pandas.Series` is returned with its name set to
+            that column label.
 
         Examples
         --------
@@ -990,12 +1031,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The mean absolute error.
+        pandas.DataFrame or pandas.Series
+            The mean absolute error. For wide layouts with a single value
+            column, a :class:`pandas.Series` is returned with its name set to
+            that column label.
 
         Examples
         --------
@@ -1052,12 +1097,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             None will return the scores for each split.
 
         format : {"long", "wide", "auto"}, default="auto"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`. Wide
+            layouts with a single value column are returned as a
+            :class:`pandas.Series`.
 
         Returns
         -------
-        pd.DataFrame
-            The mean absolute percentage error.
+        pandas.DataFrame or pandas.Series
+            The mean absolute percentage error. For wide layouts with a single
+            value column, a :class:`pandas.Series` is returned with its name
+            set to that column label.
 
         Examples
         --------

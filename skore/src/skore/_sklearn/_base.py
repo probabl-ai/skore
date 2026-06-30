@@ -211,10 +211,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
     ) -> pd.DataFrame | pd.Series:
-        """Metric summary.
-
-        Used for displaying the accessor.
-        """
+        """Metric summary frame used for accessor display."""
         return self.summarize()._repr_frame(for_html=False)
 
     def __repr__(self) -> str:

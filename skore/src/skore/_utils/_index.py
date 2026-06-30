@@ -60,10 +60,8 @@ def flatten_multi_index(
     )
 
 
-def maybe_squeeze_single_column(
-    df: pd.DataFrame,
-) -> pd.DataFrame | pd.Series:
-    """Return a Series when ``df`` has a single column, otherwise return ``df``."""
+def maybe_squeeze_single_column(df: pd.DataFrame) -> pd.DataFrame | pd.Series:
+    """Return a named series if a single column DataFrame."""
     if df.shape[1] != 1:
         return df
     name = (

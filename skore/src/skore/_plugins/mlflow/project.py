@@ -547,8 +547,10 @@ def _log_figure(figure: Any, artifact_file: str) -> None:
             )
 
 
-def _flatten_df_index(df: pd.DataFrame) -> pd.DataFrame:
+def _flatten_df_index(df: pd.DataFrame | pd.Series) -> pd.DataFrame:
     """Normalize a dataframe-like object before CSV logging."""
+    if isinstance(df, pd.Series):
+        df = df.to_frame(name=df.name)
     df = df.copy(deep=False)
     columns = df.columns
     if columns is not None and columns.nlevels > 1:

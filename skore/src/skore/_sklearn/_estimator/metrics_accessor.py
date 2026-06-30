@@ -78,6 +78,11 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         :class:`MetricsSummaryDisplay`
             A display containing the statistics for the metrics.
 
+        See Also
+        --------
+        MetricsSummaryDisplay.frame : Export the summary; wide single-column
+            layouts return a named :class:`pandas.Series`.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer

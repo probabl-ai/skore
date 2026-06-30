@@ -23,7 +23,7 @@ _FAVORABILITY_SYMBOLS = {True: "(↗︎)", False: "(↘︎)"}
 
 
 def frame_repr_html(frame: pd.DataFrame | pd.Series) -> str:
-    """Return the HTML representation of a metrics summary frame."""
+    """Return the HTML representation of a metrics summary frame or series."""
     if isinstance(frame, pd.Series):
         return frame.to_frame()._repr_html_()
     return frame._repr_html_()
@@ -75,6 +75,10 @@ class MetricsSummaryRow(TypedDict):
 
 class MetricsSummaryDisplay(DisplayMixin):
     """Summarize evaluation metrics in a table.
+
+    Use :meth:`frame` to export the summary as a :class:`pandas.DataFrame` or,
+    for wide layouts with a single value column, as a named
+    :class:`pandas.Series`.
 
     Parameters
     ----------
@@ -538,12 +542,12 @@ class MetricsSummaryDisplay(DisplayMixin):
         with_multiindex: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame | pd.Series:
-        """Return the metrics summary as a dataframe or series.
+        """Return the metrics summary as a table.
 
         Parameters
         ----------
         format : {"auto", "long", "wide"}, default="auto"
-            The shape of the returned dataframe. ``"auto"`` resolves to
+            The shape of the returned object. ``"auto"`` resolves to
             ``"wide"`` for estimator and cross-validation reports, and to
             ``"long"`` for comparison reports. ``"long"`` returns one row per
             metric observation, while ``"wide"`` pivots the metrics into a
@@ -590,7 +594,8 @@ class MetricsSummaryDisplay(DisplayMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> clf = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(clf, X, y, splitter=0.2)
-        >>> df = report.metrics.summarize().frame()
+        >>> metrics = report.metrics.summarize().frame()
+        >>> metrics.loc["accuracy"]  # Series for single-estimator wide layout
         """
         if format not in {"long", "wide", "auto"}:
             raise ValueError(
