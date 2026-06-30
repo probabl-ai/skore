@@ -205,7 +205,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     ) -> pd.DataFrame:
         """Metric summary.
 
-        Used for displaying the report.
+        Used for displaying the accessor.
         """
         return self.summarize().frame()
 
