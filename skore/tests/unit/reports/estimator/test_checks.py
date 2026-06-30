@@ -797,6 +797,40 @@ def test_skd016_pipeline_walks_steps(regression_data):
     assert "Ridge" not in explanation
 
 
+@pytest.mark.filterwarnings(
+    "ignore:R\\^2 score is not well-defined:sklearn.exceptions.UndefinedMetricWarning"
+)
+def test_skd016_skrub_table_vectorizer_chain(regression_pandas_data):
+    """SKD016 walks fitted estimators from a non-linear skrub apply graph."""
+    X, y = regression_pandas_data
+    learner = (
+        skrub.X()
+        .skb.apply(skrub.TableVectorizer())
+        .skb.apply(Ridge(), y=skrub.y())
+        .skb.make_learner()
+    )
+    report = evaluate(learner, data={"X": X, "y": y})
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD016" in tips.index
+    assert "Ridge" in tips.loc["SKD016", "explanation"]
+
+
+@pytest.mark.filterwarnings(
+    "ignore:R\\^2 score is not well-defined:sklearn.exceptions.UndefinedMetricWarning"
+)
+def test_skd016_passes_when_skrub_param_is_tunable(regression_pandas_data):
+    """SKD016 passes when a recommended param is a skrub choice in the DataOp."""
+    X, y = regression_pandas_data
+    learner = (
+        skrub.X()
+        .skb.apply(Ridge(alpha=skrub.choose_from([0.1, 1.0])), y=skrub.y())
+        .skb.make_learner()
+    )
+    report = evaluate(learner, data={"X": X, "y": y})
+    summary = report.checks.summarize()
+    assert "SKD016" in set(summary.frame(section="passed")["code"])
+
+
 def test_ignore_checks(monkeypatch, regression_report):
     """Check that checks are ignored when ignore is passed."""
     monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)

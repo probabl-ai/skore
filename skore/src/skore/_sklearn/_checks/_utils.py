@@ -20,9 +20,9 @@ from skore._utils._dataframe import (
     _normalize_y_as_dataframe,
 )
 from skore._utils._skrub import (
-    _supervised_fitted_estimator,
-    get_preprocess_apply_node,
+    get_predictor_and_input,
     is_skrub_learner,
+    resolve_fitted_predictor,
 )
 
 if TYPE_CHECKING:
@@ -180,21 +180,44 @@ def split_preprocessor_estimator(estimator):
     """Return ``(preprocessor, predictor)`` from a possibly wrapped estimator.
 
     Splits sklearn :class:`~sklearn.pipeline.Pipeline` into its preprocessing
-    steps and final predictor. For :class:`~skrub.SkrubLearner`, returns the
-    inner :class:`~sklearn.pipeline.Pipeline` preprocessor when the supervised
-    apply wraps one (e.g. :func:`~skrub.tabular_pipeline`).
-    """
-    fitted = (
-        _supervised_fitted_estimator(estimator)
-        if is_skrub_learner(estimator)
-        else estimator
-    )
+    steps and final predictor.
 
-    if isinstance(fitted, Pipeline):
-        if len(fitted.steps) > 1:
-            return fitted[:-1], fitted[-1]
-        return None, fitted.steps[0][1]
-    return None, fitted
+    For :class:`~skrub.SkrubLearner`, returns ``(None, fitted_predictor)`` from the
+    supervised ``.skb.apply(estimator, y=...)`` step. Preprocessing lives in the
+    DataOp graph upstream of that step; use :func:`get_preprocessed_X` when checks
+    need the feature matrix seen by the predictor.
+    """
+    if is_skrub_learner(estimator):
+        return None, resolve_fitted_predictor(estimator)
+
+    if isinstance(estimator, Pipeline):
+        if len(estimator.steps) > 1:
+            return estimator[:-1], estimator[-1]
+        return None, estimator.steps[0][1]
+    return None, estimator
+
+
+def _skrub_env_for_report(
+    report: EstimatorReport | CrossValidationReport,
+    *,
+    data_source: Literal["train", "test", "both"],
+) -> dict | tuple[dict, dict]:
+    if report._report_type == "cross-validation":
+        return report.input_data
+
+    if data_source == "train":
+        if report.train_data is None:
+            raise CheckNotApplicable("Train data is unavailable.")
+        return report.train_data
+    if data_source == "test":
+        if report.test_data is None:
+            raise CheckNotApplicable("Test data is unavailable.")
+        return report.test_data
+    if report.train_data is None:
+        raise CheckNotApplicable("Train data is unavailable.")
+    if report.test_data is None:
+        raise CheckNotApplicable("Test data is unavailable.")
+    return report.train_data, report.test_data
 
 
 def cast_report(report: _BaseReport) -> EstimatorReport | CrossValidationReport:
@@ -293,28 +316,23 @@ def get_preprocessed_X(
 
     if report._initialized_with_data_op:
         learner = estimator
-        if report._report_type == "cross-validation":
-            skrub_env = {"_skrub_X": data, "_skrub_y": get_report_y(report)}
-        elif data_source == "both":
-            skrub_env = {
-                "_skrub_X": data,
-                "_skrub_y": get_report_y(report, data_source="both"),
-            }
-        elif data_source == "train":
-            skrub_env = {"_skrub_X": data, "_skrub_y": report.y_train}
-        else:
-            skrub_env = {"_skrub_X": data, "_skrub_y": report.y_test}
-        preprocess_node = get_preprocess_apply_node(learner.data_op)
-        if preprocess_node is not None:
-            data = learner.truncated_after(
-                lambda node, t=preprocess_node: node is t
-            ).transform(skrub_env)
-        else:
-            data = skrub_env["_skrub_X"]
-
-    preprocessor, _ = split_preprocessor_estimator(estimator)
-    if preprocessor is not None and len(preprocessor.steps) > 0:
-        data = preprocessor.transform(data)
+        try:
+            env_or_envs = _skrub_env_for_report(report, data_source=data_source)
+            if isinstance(env_or_envs, tuple):
+                train_env, test_env = env_or_envs
+                train_X, _ = get_predictor_and_input(learner, train_env)
+                test_X, _ = get_predictor_and_input(learner, test_env)
+                data = _concat_vertical(train_X, test_X)
+            else:
+                data, _ = get_predictor_and_input(learner, env_or_envs)
+        except ValueError as err:
+            if "multiple supervised apply" not in str(err):
+                raise
+            raise CheckNotApplicable(str(err)) from err
+    else:
+        preprocessor, _ = split_preprocessor_estimator(estimator)
+        if preprocessor is not None and len(preprocessor.steps) > 0:
+            data = preprocessor.transform(data)
 
     try:
         return _normalize_X_as_dataframe(data)
