@@ -437,3 +437,19 @@ def test_fast_mode_skips_slow_checks(regression_report):
     codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
     slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
     assert slow_codes.isdisjoint(codes)
+
+
+def test_fast_checks_run_at_init(regression_data):
+    """Fast-mode checks populate the CV report cache at initialization."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y, splitter=3)
+    assert report._check_results_cache
+    slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
+    assert slow_codes.isdisjoint(report._check_results_cache)
+
+
+def test_cv_fold_subreports_skip_init_fast_checks(regression_report):
+    """Fold EstimatorReports do not run fast checks at initialization."""
+    assert regression_report._check_results_cache
+    for fold_report in regression_report.reports_:
+        assert not hasattr(fold_report, "_check_results_cache")

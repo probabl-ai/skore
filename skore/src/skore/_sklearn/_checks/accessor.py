@@ -6,6 +6,19 @@ from skore._sklearn._base import _BaseAccessor, _BaseReport
 from skore._sklearn._checks.base import Check, CheckCode, ChecksSummaryDisplay
 
 
+def collect_ignored_codes(
+    ignore: list[CheckCode] | tuple[CheckCode, ...] | None = None,
+) -> set[CheckCode]:
+    ignored_codes: set[CheckCode] = set()
+    if ignore:
+        ignored_codes.update(code.strip().upper() for code in ignore if code.strip())
+    if configuration.ignore_checks:
+        ignored_codes.update(
+            code.strip().upper() for code in configuration.ignore_checks if code.strip()
+        )
+    return ignored_codes
+
+
 class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
     """Accessor for checks-related operations.
 
@@ -55,17 +68,7 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         >>> "SKD002" in filtered.frame()["code"].values
         False
         """
-        ignored_codes: set[CheckCode] = set()
-        if ignore:
-            ignored_codes.update(
-                code.strip().upper() for code in ignore if code.strip()
-            )
-        if configuration.ignore_checks:
-            ignored_codes.update(
-                code.strip().upper()
-                for code in configuration.ignore_checks
-                if code.strip()
-            )
+        ignored_codes = collect_ignored_codes(ignore)
         check_results, applicable_codes, not_applicable_codes = (
             self._parent._get_results(ignored_codes, fast_mode=fast_mode)
         )

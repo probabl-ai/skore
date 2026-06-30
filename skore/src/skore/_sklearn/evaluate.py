@@ -8,6 +8,7 @@ from typing import Literal, cast
 from numpy.typing import ArrayLike
 
 from skore import configuration
+from skore._sklearn._checks.accessor import collect_ignored_codes
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
@@ -234,6 +235,7 @@ def evaluate(
                 splitter=splitter,
                 n_jobs=n_jobs,
             )
+        report.reports_[0]._get_results(collect_ignored_codes(), fast_mode=True)
         return report.reports_[0]
 
     splitter = cast(int | SKLearnCrossValidator | Generator, splitter)

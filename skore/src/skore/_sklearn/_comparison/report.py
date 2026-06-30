@@ -11,6 +11,7 @@ from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._checks.accessor import collect_ignored_codes
 from skore._sklearn._checks.base import CheckCode, CheckExplanation, CheckSource
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
@@ -53,6 +54,10 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         parameter is used to parallelize the computation.
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
+
+    run_fast_checks : bool, default=True
+        When `True`, fast checks run at the end of initialization to
+        pre-populate the checks cache.
 
     Attributes
     ----------
@@ -254,6 +259,7 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ),
         *,
         n_jobs: int | None = None,
+        run_fast_checks: bool = True,
     ) -> None:
         super().__init__()
         self.reports_, self._report_type, self._pos_label = (
@@ -262,6 +268,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
         self.n_jobs = n_jobs
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
+
+        if run_fast_checks:
+            self._get_results(collect_ignored_codes(), fast_mode=True)
 
     def _clear_cache(self) -> None:
         """Clear the cache."""

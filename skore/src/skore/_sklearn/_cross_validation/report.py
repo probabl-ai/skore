@@ -17,6 +17,7 @@ from skrub._reporting._summarize import summarize_dataframe
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
+from skore._sklearn._checks.accessor import collect_ignored_codes
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import (
@@ -64,6 +65,7 @@ def _generate_estimator_report(
         X_test=_safe_indexing(X, test_indices),
         y_test=_safe_indexing(y, test_indices),
         pos_label=pos_label,
+        run_fast_checks=False,
     )
 
 
@@ -127,6 +129,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         parameter is used to parallelize the computation.
         ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
         ``-1`` means using all processors.
+
+    run_fast_checks : bool, default=True
+        When `True`, fast checks run at the end of initialization to
+        pre-populate the checks cache.
 
     Attributes
     ----------
@@ -201,6 +207,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         pos_label: PositiveLabel | None = None,
         splitter: int | SKLearnCrossValidator | Generator | None = None,
         n_jobs: int | None = None,
+        run_fast_checks: bool = True,
     ) -> None:
         super().__init__()
         self._check_estimator_and_data(estimator, X, y, data, splitter)
@@ -210,6 +217,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         self.reports_: list[EstimatorReport] = self._fit_estimator_reports()
 
         self._ml_task = self.reports_[0].ml_task
+
+        if run_fast_checks:
+            self._get_results(collect_ignored_codes(), fast_mode=True)
 
     def _check_estimator_and_data(
         self,
@@ -290,6 +300,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                     train_data=split["train"],
                     test_data=split["test"],
                     pos_label=self._pos_label,
+                    run_fast_checks=False,
                 )
                 for split in self.learner_.data_op.skb.iter_cv_splits(
                     environment=self._data, cv=self.split_indices
