@@ -351,3 +351,23 @@ def test_get_custom(comparison_estimator_reports_binary_classification):
         "DummyClassifier_1": {"Hello": 1},
         "DummyClassifier_2": {"Hello": 1},
     }
+
+
+def test_custom_metric_as_method(comparison_estimator_reports_binary_classification):
+    """Custom metrics are accessible as methods."""
+    report = comparison_estimator_reports_binary_classification
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.hello().to_dict() == {
+        "DummyClassifier_1": {"Hello": 1},
+        "DummyClassifier_2": {"Hello": 1},
+    }
+
+    report.metrics.remove("hello")
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()

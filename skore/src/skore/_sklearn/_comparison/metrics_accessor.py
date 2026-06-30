@@ -10,7 +10,7 @@ from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor
+from skore._sklearn._base import BaseMetricsAccessor
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._plot.metrics import (
     ConfusionMatrixDisplay,
@@ -31,7 +31,7 @@ from skore._utils._progress_bar import track
 DataSource = Literal["test", "train", "both"]
 
 
-class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
+class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -126,9 +126,22 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
     ) -> pd.DataFrame:
-        return self.summarize(data_source=data_source, metric=metric).frame(
+        """Metric summary.
+
+        Used for displaying the report.
+        """
+        frame = self.summarize(data_source=data_source, metric=metric).frame(
             format="auto", verbose_name=True, with_multiindex=True
         )
+        frame = frame.rename_axis(
+            None
+            if self._parent._report_type == "comparison-estimator"
+            else [None, None],
+            axis="columns",
+        )
+        if self._parent._report_type == "comparison-cross-validation":
+            frame = frame.swaplevel(axis="columns")
+        return frame
 
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
@@ -245,11 +258,15 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         >>> report.metrics.add(
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
-        >>> summary = report.metrics.summarize().frame()
-        >>> summary[summary["metric"] == "mean_absolute_error"]
-                       estimator               metric  label     value
-        0   LogisticRegression_1  mean_absolute_error   <NA>  0.05...
-        11  LogisticRegression_2  mean_absolute_error   <NA>  0.05...
+        >>> report.metrics.summarize().frame()
+        Estimator                  LogisticRegression_1  LogisticRegression_2
+        Metric              Label
+        ...
+        Mean Absolute Error                    ...                   ...
+        >>> report.metrics.mean_absolute_error()
+        Estimator             LogisticRegression_1  LogisticRegression_2
+        Metric
+        Mean Absolute Error                   ...                   ...
         """
         for report in self._parent.reports_.values():
             report.metrics.add(
@@ -1065,23 +1082,8 @@ class _MetricsAccessor(_BaseAccessor[ComparisonReport], DirNamesMixin):
         )
 
     ####################################################################################
-    # Methods related to the help tree
+    # Methods related to displays
     ####################################################################################
-
-    def __repr__(self) -> str:
-        return (
-            "Metrics summary:\n"
-            f"{self.summarize()._repr_frame()!r}\n"
-            "Explore available methods with .help()."
-        )
-
-    def _repr_html_(self) -> str:
-        return (
-            "<p>Metrics summary:</p>"
-            f"{self.summarize()._repr_frame(for_html=True)._repr_html_()}"
-            '<p role="note">Explore available methods with '
-            "<code>.help()</code>.</p>"
-        )
 
     @available_if(
         _check_supported_ml_task(

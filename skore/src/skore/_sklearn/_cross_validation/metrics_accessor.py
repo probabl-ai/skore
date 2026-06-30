@@ -9,7 +9,7 @@ from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor
+from skore._sklearn._base import BaseMetricsAccessor
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -29,7 +29,7 @@ from skore._utils._progress_bar import track
 DataSource = Literal["test", "train"]
 
 
-class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
+class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
@@ -213,11 +213,17 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         >>> report.metrics.add(
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
-        >>> summary = report.metrics.summarize().frame()
-        >>> summary[summary.index == "mean_absolute_error"]
-                             logisticregression_mean  logisticregression_std
+        >>> report.metrics.summarize().frame()
+                            LogisticRegression
+                                mean       std
         Metric
-        mean_absolute_error                  0.05...                 0.00...
+        ...
+        Mean Absolute Error      ...       ...
+        >>> report.metrics.mean_absolute_error()
+                             LogisticRegression
+                                          mean   std
+        Metric
+        Mean Absolute Error            0.05...   ...
         """
         for report in self._parent.reports_:
             report.metrics.add(
@@ -1072,23 +1078,8 @@ class _MetricsAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         )
 
     ####################################################################################
-    # Methods related to the help tree
+    # Methods related to displays
     ####################################################################################
-
-    def __repr__(self) -> str:
-        return (
-            "Metrics summary:\n"
-            f"{self.summarize()._repr_frame()!r}\n"
-            "Explore available methods with .help()."
-        )
-
-    def _repr_html_(self) -> str:
-        return (
-            "<p>Metrics summary:</p>"
-            f"{self.summarize()._repr_frame(for_html=True)._repr_html_()}"
-            '<p role="note">Explore available methods with '
-            "<code>.help()</code>.</p>"
-        )
 
     @available_if(_check_estimator_report_has_method("metrics", "roc"))
     def roc(

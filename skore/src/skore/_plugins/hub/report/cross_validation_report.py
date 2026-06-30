@@ -61,23 +61,28 @@ def _regression_target_kdes(
     y: np.ndarray,
 ) -> tuple[list[list[float]], list[tuple[float, float]]]:
     """Estimate per-target density curves for regression splitting strategy."""
-    sample_count = TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT
-    y = np.asarray(y)
-    if y.ndim == 1:
-        lo, hi = float(y.min()), float(y.max())
-        linspace = np.linspace(lo, hi, num=sample_count)
-        kde = gaussian_kde(y)
-        return [[float(x) for x in kde(linspace)]], [(lo, hi)]
 
-    curves: list[list[float]] = []
-    ranges: list[tuple[float, float]] = []
-    for col in y.T:
-        col_arr = np.asarray(col).ravel()
+    def _target_distribution(
+        col_arr: np.ndarray,
+    ) -> tuple[list[float], tuple[float, float]]:
+        col_arr = np.asarray(col_arr).ravel()
         lo, hi = float(col_arr.min()), float(col_arr.max())
-        linspace = np.linspace(lo, hi, num=sample_count)
-        curves.append([float(x) for x in gaussian_kde(col_arr).evaluate(linspace)])
-        ranges.append((lo, hi))
-    return curves, ranges
+        linspace = np.linspace(lo, hi, num=TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT)
+
+        if len(col_arr) > 1:
+            curve = [float(x) for x in gaussian_kde(col_arr).evaluate(linspace)]
+        else:
+            # Fallback when `y` is not compatible with `gaussian_kde`
+            distribution = np.zeros(TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT, dtype=float)
+            distribution[np.abs(linspace - col_arr[0]).argmin()] = 1.0
+            curve = [float(x) for x in distribution]
+
+        return curve, (lo, hi)
+
+    y = np.asarray(y)
+    columns: Iterable[np.ndarray] = [y] if y.ndim == 1 else y.T
+    curves, ranges = zip(*map(_target_distribution, columns), strict=True)
+    return list(curves), list(ranges)
 
 
 def _flatten_regression_target_kdes(curves: list[list[float]]) -> list[float]:
@@ -400,9 +405,9 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 name=f"{row['name']}_{suffix}",
                 verbose_name=f"{row['verbose_name']} - {suffix.upper()}",
                 data_source=row["data_source"],
-                greater_is_better=row["greater_is_better"]
-                if suffix == "mean"
-                else False,
+                greater_is_better=(
+                    row["greater_is_better"] if suffix == "mean" else False
+                ),
                 value=row[suffix],
                 label=None if pd.isna(row["label"]) else row["label"],
                 output=None if pd.isna(row["output"]) else int(row["output"]),

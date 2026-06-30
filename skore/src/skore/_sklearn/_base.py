@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from functools import partial
 from importlib.metadata import version
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from uuid import uuid4
@@ -9,6 +10,7 @@ from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
+from skore._sklearn.types import DataSource
 from skore._utils._progress_bar import track
 from skore._utils.repr.base import (
     AccessorHelpMixin,
@@ -17,6 +19,8 @@ from skore._utils.repr.base import (
 )
 
 if TYPE_CHECKING:
+    import pandas as pd
+
     from skore._sklearn._checks.accessor import _ChecksAccessor
 
 
@@ -179,3 +183,50 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 
     def _repr_mimebundle_(self, **kwargs):
         return {"text/plain": repr(self), "text/html": self._repr_html_()}
+
+
+class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
+    """Base class for metrics accessor."""
+
+    def __getattr__(self, name):
+        """Define custom metric methods dynamically.
+
+        If attribute ``name`` is defined statically, this method will not be called.
+        """
+        if name in self.available():
+            return partial(lambda *args, **kwargs: self.get(name, *args, **kwargs))
+
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
+
+    def __dir__(self) -> list[str]:
+        """Add custom metrics to __dir__ for tab-completion."""
+        return list(set(super().__dir__()).union(self.available()))
+
+    def _formatted_summary_frame(
+        self,
+        *,
+        data_source: DataSource = "test",
+        metric: str | list[str] | None = None,
+    ) -> pd.DataFrame:
+        """Metric summary.
+
+        Used for displaying the accessor.
+        """
+        return self.summarize().frame()
+
+    def __repr__(self) -> str:
+        return (
+            "Metrics summary:\n"
+            f"{self._formatted_summary_frame()!r}\n"
+            "Explore available methods with .help()."
+        )
+
+    def _repr_html_(self) -> str:
+        return (
+            "<p>Metrics summary:</p>"
+            f"{self._formatted_summary_frame()._repr_html_()}"
+            '<p role="note">Explore available methods with '
+            "<code>.help()</code>.</p>"
+        )
