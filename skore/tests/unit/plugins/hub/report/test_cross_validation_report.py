@@ -470,6 +470,36 @@ class TestCrossValidationReportPayload:
             "random_state": None,
         }
 
+    def test_splitting_strategy_with_singleton_split(self, project):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3017
+        X = array([0, 1, 2, 3, 4])
+        y = array([5, 6, 7, 8, 9])
+
+        class Splitter:
+            def split(self, X, y=None, groups=None):
+                yield array([0]), array([1, 2, 3, 4])
+
+            def get_n_splits(self, X, y=None, groups=None):
+                return 1
+
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
+        payload = CrossValidationReportPayload(
+            project=project, report=report, key="<key>"
+        )
+
+        splitting_strategy = payload.splitting_strategy
+
+        assert splitting_strategy["test_target_distributions_sample_counts"] == [4]
+        assert splitting_strategy["train_target_distributions_sample_counts"] == [1]
+        assert splitting_strategy["splits"] == [[0, 1, 1, 1, 1]]
+        assert splitting_strategy["splitter"] == {
+            "type": "Splitter",
+            "n_splits": 1,
+            "n_repeats": None,
+            "shuffle": False,
+            "random_state": None,
+        }
+
     @mark.respx(assert_all_called=False)
     def test_class_names(self, payload):
         assert payload.class_names == ["1", "0"]
