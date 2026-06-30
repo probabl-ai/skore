@@ -1,4 +1,4 @@
-{# Issues / Tips / Passed / Not Applicable tabset. Expects: container_id, tabs. #}
+{# Issues / Tips / Passed / Not Applicable / Skipped / Ignored tabset. Expects: container_id, tabs. #}
 {% set report_tabs = [] %}
 {% for tab in tabs %}
     {% set _ = report_tabs.append({"label": tab.label ~ " (" ~ tab.rows|length ~ ")", "help_variant": "text", "help_text": tab.help_text}) %}

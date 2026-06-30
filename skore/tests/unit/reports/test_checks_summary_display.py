@@ -1,24 +1,14 @@
 from skore._sklearn._checks.base import ChecksSummaryDisplay
 
 
-def display_html(
-    check_results,
-    *,
-    not_applicable_codes=frozenset(),
-    fast_mode=False,
-):
-    return ChecksSummaryDisplay(
-        check_results=check_results,
-        not_applicable_codes=set(not_applicable_codes),
-        n_ignored_codes=0,
-        fast_mode=fast_mode,
-    )._repr_html_()
+def display_html(check_results, fast_mode=False):
+    return ChecksSummaryDisplay(check_results, fast_mode=fast_mode)._repr_html_()
 
 
 _MOCK_ISSUE = {
     "title": "Mock issue",
     "docs_url": "skd001-mock",
-    "severity": "issue",
+    "section": "issue",
 }
 
 
@@ -51,11 +41,10 @@ def test_repr_html_groups_not_applicable_explanations():
             "SKDNA": {
                 "title": "Not applicable check",
                 "docs_url": "skdna-mock",
-                "severity": "issue",
+                "section": "not_applicable",
                 "explanation": {"Ridge": "Reason A.", "Lasso": "Reason B."},
             }
-        },
-        not_applicable_codes={"SKDNA"},
+        }
     )
     assert "Not Applicable (1)" in html
     assert ">SKDNA</a>] <strong>Not applicable check.</strong>" in html

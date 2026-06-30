@@ -90,8 +90,8 @@ class MockReport(_BaseReport):
 
     _ACCESSOR_CONFIG: dict[str, dict[str, str]] = {}
 
-    def _run_checks(self):
-        return {}, set()
+    def _get_checks_results(self, ignored_codes, *, fast_mode=False):
+        return {}
 
     def __init__(
         self,

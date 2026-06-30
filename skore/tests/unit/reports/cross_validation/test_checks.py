@@ -434,6 +434,8 @@ def test_add_checks_estimator_level_not_on_cv_summary(regression_report):
 
 def test_fast_mode_skips_slow_checks(regression_report):
     """fast_mode=True skips slow uncached checks."""
-    codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
+    summary = regression_report.checks.summarize(fast_mode=True)
     slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
-    assert slow_codes.isdisjoint(codes)
+    assert slow_codes.isdisjoint(set(summary.frame(section="issue")["code"]))
+    assert slow_codes.isdisjoint(set(summary.frame(section="passed")["code"]))
+    assert slow_codes == set(summary.frame(section="skipped")["code"])

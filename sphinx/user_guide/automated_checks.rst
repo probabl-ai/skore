@@ -40,14 +40,10 @@ can be skipped with `fast_mode=True`:
 
     report.checks.summarize(fast_mode=True)
 
-In fast mode, slow checks that are not yet in the cache are not run; cached
-slow results from a previous call are still surfaced. The HTML representation
-of a report uses fast mode so it never triggers an expensive computation.
-
 For comparison reports, :meth:`~skore.ComparisonReport.checks.summarize` builds a global
 summary from each compared report. Results are grouped by check code; the HTML summary
-lists each check once with per-estimator sub-entries for issues, tips, and not-applicable
-reasons.
+lists each check once with per-estimator sub-entries for issues, tips, not-applicable
+reasons, and fast-mode skips.
 
 
 .. _skd001-overfitting:
