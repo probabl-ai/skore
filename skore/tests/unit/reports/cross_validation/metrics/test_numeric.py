@@ -20,7 +20,7 @@ def _normalize_metric_name(index):
 
 
 def _check_metrics_names(result, expected_metrics, expected_nb_stats):
-    assert isinstance(result, pd.DataFrame)
+    assert isinstance(result, (pd.DataFrame, pd.Series))
     assert len(result.index) == expected_nb_stats
 
     normalized_expected = {
@@ -57,16 +57,32 @@ def _split_indices(columns):
     )
 
 
+def _value_column_labels(result):
+    if isinstance(result, pd.Series):
+        name = result.name
+        if isinstance(name, tuple):
+            return [str(name[-1])]
+        return [name.rsplit("_", 1)[-1]]
+    return _stat_suffixes(result.columns)
+
+
 def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_stats):
     assert hasattr(report.metrics, metric)
     result = getattr(report.metrics, metric)(aggregate=None)
-    assert isinstance(result, pd.DataFrame)
-    assert result.shape[1] == expected_n_splits
+    if expected_n_splits == 1:
+        assert isinstance(result, pd.Series)
+    else:
+        assert isinstance(result, pd.DataFrame)
+        assert result.shape[1] == expected_n_splits
     # check that we hit the cache
     result_with_cache = getattr(report.metrics, metric)(aggregate=None)
-    pd.testing.assert_frame_equal(result, result_with_cache)
+    if isinstance(result, pd.Series):
+        pd.testing.assert_series_equal(result, result_with_cache)
+    else:
+        pd.testing.assert_frame_equal(result, result_with_cache)
 
-    assert _split_indices(result.columns) == list(range(expected_n_splits))
+    if isinstance(result, pd.DataFrame):
+        assert _split_indices(result.columns) == list(range(expected_n_splits))
 
     # check that something was written to the children's cache
     assert all(report._cache != {} for report in report.reports_)
@@ -77,11 +93,12 @@ def _check_results_single_metric(report, metric, expected_n_splits, expected_nb_
     # check the aggregate parameter
     stats = ["mean", "std"]
     result = getattr(report.metrics, metric)(aggregate=stats)
-    assert _stat_suffixes(result.columns) == stats
+    assert _value_column_labels(result) == stats
 
     stats = "mean"
     result = getattr(report.metrics, metric)(aggregate=stats)
-    assert _stat_suffixes(result.columns) == [stats]
+    assert isinstance(result, pd.Series)
+    assert _value_column_labels(result) == [stats]
 
 
 @pytest.mark.parametrize(

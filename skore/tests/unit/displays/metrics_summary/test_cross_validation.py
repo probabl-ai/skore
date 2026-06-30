@@ -19,9 +19,10 @@ def test_aggregate_mean(forest_binary_classification_data):
 
     result = display.frame(format="wide", aggregate="mean")
 
+    assert isinstance(result, pd.Series)
+    assert result.name == "randomforestclassifier_mean"
     assert isinstance(result.index, pd.Index)
-    assert result.columns.tolist() == ["randomforestclassifier_mean"]
-    assert result.shape == (10, 1)
+    assert len(result) == 10
 
 
 def test_aggregate_mean_std(forest_binary_classification_data):
@@ -124,6 +125,20 @@ def test_format_wide_binary_classification(forest_binary_classification_data):
         "fit_time",
         "predict_time",
     ]
+
+
+def test_frame_with_multiindex_single_column(forest_binary_classification_data):
+    """Single-column wide layout with MultiIndex columns returns a named Series."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    display = report.metrics.summarize()
+
+    result = display.frame(
+        format="wide", aggregate="mean", with_multiindex=True, verbose_name=True
+    )
+
+    assert isinstance(result, pd.Series)
+    assert result.name == "RandomForestClassifier_mean"
 
 
 def test_frame_with_multiindex_cv(forest_binary_classification_data):

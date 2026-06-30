@@ -15,11 +15,18 @@ from skore._sklearn.types import (
     PositiveLabel,
     ReportType,
 )
-from skore._utils._index import flatten_multi_index
+from skore._utils._index import flatten_multi_index, maybe_squeeze_single_column
 
 FrameFormat = Literal["long", "wide", "auto"]
 
 _FAVORABILITY_SYMBOLS = {True: "(↗︎)", False: "(↘︎)"}
+
+
+def frame_repr_html(frame: pd.DataFrame | pd.Series) -> str:
+    """Return the HTML representation of a metrics summary frame."""
+    if isinstance(frame, pd.Series):
+        return frame.to_frame()._repr_html_()
+    return frame._repr_html_()
 
 
 class MetricsSummaryRow(TypedDict):
@@ -512,14 +519,14 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         return df
 
-    def _repr_frame(self, *, for_html: bool = False) -> pd.DataFrame:
+    def _repr_frame(self, *, for_html: bool = False) -> pd.DataFrame | pd.Series:
         """Return the dataframe used for display representation."""
         aggregate = cast(Aggregate, ("mean", "std"))
-        is_comparison = "comparison" in self.report_type
         return self.frame(
             format="auto",
             aggregate=aggregate,
-            with_multiindex=for_html and not is_comparison,
+            verbose_name=for_html,
+            with_multiindex=for_html,
         )
 
     def frame(
@@ -530,8 +537,8 @@ class MetricsSummaryDisplay(DisplayMixin):
         verbose_name: bool = False,
         with_multiindex: bool = False,
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
-        """Return the metrics summary as a dataframe.
+    ) -> pd.DataFrame | pd.Series:
+        """Return the metrics summary as a dataframe or series.
 
         Parameters
         ----------
@@ -563,10 +570,12 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         Returns
         -------
-        pandas.DataFrame
+        pandas.DataFrame or pandas.Series
             The metrics summary. The shape depends on ``format``: ``"long"``
             yields one row per metric observation, whereas ``"wide"`` pivots the
-            metrics into a table whose columns depend on the report type.
+            metrics into a table whose columns depend on the report type. For
+            ``"wide"`` layouts with a single value column, a :class:`pandas.Series`
+            is returned with its name set to that column label.
 
         Raises
         ------
@@ -604,17 +613,22 @@ class MetricsSummaryDisplay(DisplayMixin):
                 )
             return prepared.drop(columns="greater_is_better", errors="ignore")
 
-        return self._pivot_to_wide(
-            prepared,
-            aggregate=aggregate,
-            favorability=favorability,
-            verbose_name=verbose_name,
-            with_multiindex=with_multiindex,
+        return maybe_squeeze_single_column(
+            self._pivot_to_wide(
+                prepared,
+                aggregate=aggregate,
+                favorability=favorability,
+                verbose_name=verbose_name,
+                with_multiindex=with_multiindex,
+            )
         )
+
+    def _frame_repr_html(self, frame: pd.DataFrame | pd.Series) -> str:
+        return frame_repr_html(frame)
 
     def _repr_html_(self) -> str:
         return (
-            f"{self._repr_frame(for_html=True)._repr_html_()}"
+            f"{self._frame_repr_html(self._repr_frame(for_html=True))}"
             '<p role="note">Use <code>.frame()</code> to control the format'
             " of the output.</p>"
         )

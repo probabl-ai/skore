@@ -112,8 +112,8 @@ def iter_cv_metrics(
 
     for name, kwargs in METRICS[ml_task].items():
         method = getattr(report_any.metrics, name)
-        yield Metric(name, method(**kwargs, aggregate="mean").iloc[0, 0])
-        yield Metric(f"{name}_std", method(**kwargs, aggregate="std").iloc[0, 0])
+        yield Metric(name, method(**kwargs, aggregate="mean").iloc[0])
+        yield Metric(f"{name}_std", method(**kwargs, aggregate="std").iloc[0])
         if not kwargs or ml_task == "regression":
             continue
 

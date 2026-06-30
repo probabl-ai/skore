@@ -260,9 +260,7 @@ def get_fitted_estimator(
 
 def get_fit_time(report: EstimatorReport | CrossValidationReport) -> float:
     if report._report_type == "cross-validation":
-        return float(
-            report.metrics.timings(aggregate="mean").loc["Fit time (s)", "mean"]
-        )
+        return float(report.metrics.timings(aggregate="mean").loc["Fit time (s)"])
     if report._fit_time is None:
         raise CheckNotApplicable("Fit time is unavailable.")
     return report._fit_time

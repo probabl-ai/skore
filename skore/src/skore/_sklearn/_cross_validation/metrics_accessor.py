@@ -23,6 +23,7 @@ from skore._sklearn.metrics import MetricLike
 from skore._sklearn.types import Aggregate
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
+from skore._utils._index import maybe_squeeze_single_column
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
@@ -253,7 +254,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
         **kwargs,
-    ) -> pd.DataFrame | None:
+    ) -> pd.DataFrame | pd.Series | None:
         """Get a metric value.
 
         Parameters
@@ -303,7 +304,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         self,
         *,
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Get all measured processing times related to the estimator.
 
         The index of the returned dataframe is the name of the processing time. When
@@ -317,8 +318,9 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
         Returns
         -------
-        pd.DataFrame
-            A dataframe with the processing times.
+        pd.DataFrame or pd.Series
+            A dataframe or series with the processing times. When aggregation
+            yields a single column, a :class:`pandas.Series` is returned.
 
         Examples
         --------
@@ -346,7 +348,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
         timings.index = pd.Index([f"{idx} (s)" for idx in timings.index])
 
-        return timings
+        return maybe_squeeze_single_column(timings)
 
     def _metric(
         self,
@@ -395,7 +397,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the estimator's default score.
 
         This calls the underlying estimator's ``score`` method on the chosen data
@@ -447,7 +449,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the accuracy score.
 
         Parameters
@@ -498,7 +500,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the precision score.
 
         Parameters
@@ -578,7 +580,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the recall score.
 
         Parameters
@@ -654,7 +656,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the Brier score.
 
         Parameters
@@ -704,7 +706,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the ROC AUC score.
 
         Parameters
@@ -787,7 +789,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the log loss.
 
         Parameters
@@ -839,7 +841,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the R² score.
 
         Parameters
@@ -900,7 +902,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the root mean squared error.
 
         Parameters
@@ -962,7 +964,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the mean absolute error.
 
         Parameters
@@ -1024,7 +1026,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
         format: Literal["long", "wide", "auto"] = "auto",
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the mean absolute percentage error.
 
         Parameters

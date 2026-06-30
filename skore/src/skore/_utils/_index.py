@@ -58,3 +58,17 @@ def flatten_multi_index(
             for values in index
         ]
     )
+
+
+def maybe_squeeze_single_column(
+    df: pd.DataFrame,
+) -> pd.DataFrame | pd.Series:
+    """Return a Series when ``df`` has a single column, otherwise return ``df``."""
+    if df.shape[1] != 1:
+        return df
+    name = (
+        flatten_multi_index(df.columns, lowercase=False)[0]
+        if isinstance(df.columns, pd.MultiIndex)
+        else df.columns[0]
+    )
+    return df.iloc[:, 0].rename(name)

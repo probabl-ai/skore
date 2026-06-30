@@ -125,13 +125,13 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Metric summary.
 
         Used for displaying the report.
         """
         frame = self.summarize(data_source=data_source, metric=metric).frame(
-            format="auto", verbose_name=True, with_multiindex=True
+            format="wide", verbose_name=True, with_multiindex=True
         )
         frame = frame.rename_axis(
             None

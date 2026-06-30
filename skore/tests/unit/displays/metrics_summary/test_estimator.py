@@ -16,7 +16,9 @@ def test_favorability_binary(forest_binary_classification_with_test):
     display = report.metrics.summarize()
 
     result_no_fav = display.frame(format="wide", favorability=False)
-    assert result_no_fav.columns.to_list() == ["RandomForestClassifier"]
+    assert isinstance(result_no_fav, pd.Series)
+    assert result_no_fav.name == "RandomForestClassifier"
+    assert result_no_fav.loc["accuracy"] is not None
 
     result_with_fav = display.frame(format="wide", favorability=True)
     assert result_with_fav.columns.to_list() == [
@@ -33,7 +35,8 @@ def test_favorability_regression(linear_regression_with_test):
     display = report.metrics.summarize()
 
     result_no_fav = display.frame(format="wide", favorability=False)
-    assert result_no_fav.columns.to_list() == ["LinearRegression"]
+    assert isinstance(result_no_fav, pd.Series)
+    assert result_no_fav.name == "LinearRegression"
 
     result_with_fav = display.frame(format="wide", favorability=True)
     assert result_with_fav.columns.to_list() == ["LinearRegression", "Favorability"]
@@ -47,6 +50,8 @@ def test_format_wide_multiclass(forest_multiclass_classification_with_test):
     display = report.metrics.summarize()
 
     result = display.frame(format="wide", favorability=False)
+    assert isinstance(result, pd.Series)
+    assert result.name == "RandomForestClassifier"
     assert isinstance(result.index, pd.Index)
     assert result.index.to_list() == [
         "accuracy",
@@ -75,10 +80,12 @@ def test_format_wide_multioutput(linear_regression_multioutput_with_test):
     display = report.metrics.summarize()
 
     result = display.frame(format="wide", favorability=False)
+    assert isinstance(result, pd.Series)
+    assert result.name == "LinearRegression"
     assert isinstance(result.index, pd.Index)
-    assert result.shape == (10, 1)
-    assert result.loc["r2_0", "LinearRegression"] == 1
-    assert result.loc["r2_1", "LinearRegression"] == 1
+    assert len(result) == 10
+    assert result.loc["r2_0"] == 1
+    assert result.loc["r2_1"] == 1
     assert result.index.to_list() == [
         "r2_0",
         "r2_1",

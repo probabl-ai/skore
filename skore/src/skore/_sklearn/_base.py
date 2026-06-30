@@ -10,6 +10,7 @@ from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
+from skore._sklearn._plot.metrics.metrics_summary_display import frame_repr_html
 from skore._sklearn.types import DataSource
 from skore._utils._progress_bar import track
 from skore._utils.repr.base import (
@@ -209,12 +210,12 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         *,
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Metric summary.
 
         Used for displaying the accessor.
         """
-        return self.summarize().frame()
+        return self.summarize()._repr_frame(for_html=False)
 
     def __repr__(self) -> str:
         return (
@@ -226,7 +227,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     def _repr_html_(self) -> str:
         return (
             "<p>Metrics summary:</p>"
-            f"{self._formatted_summary_frame()._repr_html_()}"
+            f"{frame_repr_html(self.summarize()._repr_frame(for_html=True))}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

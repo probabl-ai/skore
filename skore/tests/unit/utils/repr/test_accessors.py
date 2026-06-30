@@ -2,6 +2,8 @@
 
 import pytest
 
+from skore._sklearn._plot.metrics.metrics_summary_display import frame_repr_html
+
 
 @pytest.fixture(
     params=[
@@ -64,14 +66,12 @@ def test_data_accessor_repr(report_with_data):
 
 
 def _metrics_summary_frame(metrics_accessor):
-    if hasattr(metrics_accessor, "_formatted_summary_frame"):
-        display = metrics_accessor.summarize()
-        return display._repr_frame()
-    return metrics_accessor.summarize()._repr_frame()
+    return metrics_accessor._formatted_summary_frame()
 
 
 def _metrics_summary_frame_html(metrics_accessor):
-    return metrics_accessor.summarize()._repr_frame(for_html=True)
+    frame = metrics_accessor.summarize()._repr_frame(for_html=True)
+    return frame_repr_html(frame)
 
 
 def test_metrics_accessor_repr(report):
@@ -87,7 +87,7 @@ def test_metrics_accessor_repr(report):
 
 def test_metrics_accessor_repr_html(report):
     """Metrics accessor _repr_html_ shows the summary frame and hints."""
-    frame_html = _metrics_summary_frame_html(report.metrics)._repr_html_()
+    frame_html = _metrics_summary_frame_html(report.metrics)
     html = report.metrics._repr_html_()
 
     assert html.startswith("<p>Metrics summary:</p>")
