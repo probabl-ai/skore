@@ -182,9 +182,8 @@ class TestRemove:
     def test_remove_unknown_metric_raises(self, binary_classification_report):
         """Removing a name that was never added raises KeyError."""
         report = binary_classification_report
-        with pytest.raises(KeyError) as exc_info:
+        with pytest.raises(KeyError, match="no_such_metric"):
             report.metrics.remove("no_such_metric")
-        assert exc_info.value.args[0] == "no_such_metric"
 
     def test_remove_builtin_metric(self, binary_classification_report):
         """Built-in metrics can be removed from the registry."""

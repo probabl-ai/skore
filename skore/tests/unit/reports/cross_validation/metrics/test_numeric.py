@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.datasets import make_classification
+from sklearn.dummy import DummyClassifier
 from sklearn.svm import SVC
 
 from skore import CrossValidationReport
@@ -212,20 +213,24 @@ def test_precision_recall_pos_label_overwrite(
 # report.metrics.get
 
 
-def test_get(forest_binary_classification_data):
+def test_get(binary_classification_data):
     """``get`` works."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
+    X, y = binary_classification_data
+    report = CrossValidationReport(
+        DummyClassifier(strategy="uniform"), X, y, splitter=2
+    )
 
     assert isinstance(report.metrics.get("precision"), pd.DataFrame)
     with pytest.raises(KeyError):
         report.metrics.get("non-existing metric")
 
 
-def test_get_custom(forest_binary_classification_data):
+def test_get_custom(binary_classification_data):
     """``get`` works for custom metrics."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X, y, splitter=2)
+    X, y = binary_classification_data
+    report = CrossValidationReport(
+        DummyClassifier(strategy="uniform"), X, y, splitter=2
+    )
 
     with pytest.raises(KeyError):
         report.metrics.get("hello")
@@ -233,6 +238,29 @@ def test_get_custom(forest_binary_classification_data):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.get("hello").to_dict() == {
-        ("RandomForestClassifier", "mean"): {"Hello": 1.0},
-        ("RandomForestClassifier", "std"): {"Hello": 0.0},
+        ("DummyClassifier", "mean"): {"Hello": 1.0},
+        ("DummyClassifier", "std"): {"Hello": 0.0},
     }
+
+
+def test_custom_metric_as_method(binary_classification_data):
+    """Custom metrics are accessible as methods."""
+    X, y = binary_classification_data
+    report = CrossValidationReport(
+        DummyClassifier(strategy="uniform"), X, y, splitter=2
+    )
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.hello().to_dict() == {
+        ("DummyClassifier", "mean"): {"Hello": 1.0},
+        ("DummyClassifier", "std"): {"Hello": 0.0},
+    }
+
+    report.metrics.remove("hello")
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()
