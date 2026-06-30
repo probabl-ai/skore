@@ -46,10 +46,10 @@ def compare(
 
     Examples
     --------
-    >>> from sklearn.datasets import load_breast_cancer
+    >>> from sklearn.datasets import make_classification
     >>> from sklearn.linear_model import LogisticRegression
     >>> from skore import evaluate, compare
-    >>> X, y = load_breast_cancer(return_X_y=True)
+    >>> X, y = make_classification(n_samples=200, random_state=0)
     >>> estimator_1 = LogisticRegression()
     >>> estimator_2 = LogisticRegression(C=2)
     >>> report_1 = evaluate(estimator_1, X, y, pos_label=1, splitter=0.2)

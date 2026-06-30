@@ -93,6 +93,9 @@ def test_log_artifact_raises_on_unsupported_payload() -> None:
         _log_artifact(project_module.Artifact("bad", 123))
 
 
+@pytest.mark.filterwarnings(
+    r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
+)
 class TestProject:
     CLF_ARTIFACTS = [
         "metrics.confusion_matrix.png",

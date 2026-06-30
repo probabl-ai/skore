@@ -132,10 +132,10 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         Examples
         --------
-        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> X, y = make_classification(n_samples=200, random_state=0)
         >>> classifier = LogisticRegression()
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.data.summarize().frame()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Literal, Protocol, cast, runtime_checkable
@@ -227,7 +228,16 @@ class StyleDisplayMixin:
                     result = plot_func(self, *args, **kwargs)
             finally:
                 if isinstance(result, Figure):
-                    result.tight_layout()
+                    # `tight_layout` is best-effort; matplotlib emits a UserWarning
+                    # when margins cannot accommodate decorations. Treat the message
+                    # as informational rather than a hard failure.
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings(
+                            "ignore",
+                            message="Tight layout not applied",
+                            category=UserWarning,
+                        )
+                        result.tight_layout()
                 plt.rcParams.update(original_params)
             return result
 

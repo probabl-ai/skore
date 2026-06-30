@@ -139,7 +139,24 @@ addopts = [
 xfail_strict = true
 log_cli_level = "info"
 filterwarnings = [
-  'ignore:codecs\.open\(\) is deprecated.*:DeprecationWarning:mlflow',
+  "error",
+  # mlflow-related
+  # NOTE: Only affects python 3.11
+  "ignore:SelectableGroups dict interface is deprecated. Use select.:DeprecationWarning",
+  # sklearn needs to update its scipy.optimize calls
+  'ignore:.*`disp` and `iprint` options of the L-BFGS-B solver are deprecated:DeprecationWarning',
+  # seaborn's boxplot still passes the deprecated `vert=` kwarg to matplotlib.
+  # Hit whenever any plot Display renders a boxplot, so keep at the top level.
+  'ignore:vert.*was deprecated in Matplotlib:matplotlib._api.deprecation.MatplotlibDeprecationWarning:seaborn',
+  # polars deprecates the dataframe interchange protocol; sklearn and plotly
+  # still call into it when handed a polars frame. Triggered across many
+  # container-parametrized tests spread over the suite.
+  'ignore:Support for the dataframe interchange protocol is deprecated:DeprecationWarning:(sklearn|plotly)',
+  # `TemporaryDirectory` finalizers may fire at arbitrary GC points during
+  # doctest teardown, blaming whichever test happens to run at that moment,
+  # so these have to stay global.
+  'ignore:Implicitly cleaning up:ResourceWarning',
+  'ignore::pytest.PytestUnraisableExceptionWarning',
 ]
 
 [tool.coverage.run]
