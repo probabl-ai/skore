@@ -740,61 +740,50 @@ class TestStringScorerNames:
         assert not row["greater_is_better"]
         assert not row["verbose_name"].lower().startswith("neg")
 
-    def test_without_neg_prefix(self, regression_report):
-        """Test that metric strings passed without 'neg_' prefix can be added and
-        duplicate registration raises an explicit error."""
+    def test_with_neg_prefix(self, regression_report):
+        """Metric passed with 'neg_' prefix can be added as normal and are independent
+        from their non-neg counterpart."""
         report = regression_report
 
         report.metrics.add("mean_squared_error")
         assert "mean_squared_error" in report._metric_registry
 
-        err_msg = re.escape(
-            "Cannot add 'mean_squared_error': it already exists. "
-            "Remove it first using the `remove` method."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add("neg_mean_squared_error")
+        report.metrics.add("neg_mean_squared_error")
+        assert "neg_mean_squared_error" in report._metric_registry
+        assert "mean_squared_error" in report._metric_registry
 
-    def test_summarize_with_neg_prefix_after_add(self, regression_report):
-        """Test that `.summarize()` accepts prefixed name with 'neg_' even though
-        registry stores it stripped.
-        Non-regression for https://github.com/probabl-ai/skore/issues/2902
-        """
+    def test_summarize_with_neg(self, regression_report):
+        """``.summarize()` accepts prefixed name with 'neg_' and does no conversion."""
         report = regression_report
 
         report.metrics.add("neg_mean_absolute_percentage_error")
-        assert "mean_absolute_percentage_error" in report._metric_registry
+        assert "neg_mean_absolute_percentage_error" in report._metric_registry
+        assert "mean_absolute_percentage_error" not in report._metric_registry
 
-        display01 = report.metrics.summarize(
-            metric="neg_mean_absolute_percentage_error"
-        )
-        display02 = report.metrics.summarize(metric="mean_absolute_percentage_error")
+        report.metrics.summarize(metric="neg_mean_absolute_percentage_error")
 
-        assert display01.summary["score"].iloc[0] == display02.summary["score"].iloc[0]
+        with pytest.raises(KeyError, match="mean_absolute_percentage_error"):
+            report.metrics.summarize(metric="mean_absolute_percentage_error")
 
-    def test_get_with_neg_prefix_after_add(self, regression_report):
-        """Test that `.get()` accepts prefixed name with 'neg_' even though
-        registry stores it stripped.
-        Non-regression for https://github.com/probabl-ai/skore/issues/2902
-        """
+    def test_get_with_neg_prefix(self, regression_report):
+        """``.get()` accepts prefixed name with 'neg_' and does no conversion."""
         report = regression_report
 
         report.metrics.add("neg_mean_absolute_percentage_error")
+        report.metrics.get("neg_mean_absolute_percentage_error")
 
-        value_withneg = report.metrics.get("neg_mean_absolute_percentage_error")
-        value_withoutneg = report.metrics.get("mean_absolute_percentage_error")
-
-        assert value_withneg == value_withoutneg
+        with pytest.raises(KeyError, match="mean_absolute_percentage_error"):
+            report.metrics.get("mean_absolute_percentage_error")
 
     def test_unknown_metric_still_raises_key_error(self, regression_report):
         """Test that really a unknown metric name still raises KeyError after the
         'neg_' fallback."""
         report = regression_report
 
-        with pytest.raises(KeyError, match="not found in the registered metrics"):
+        with pytest.raises(KeyError, match="neg_nonexistent_metric"):
             report.metrics.summarize(metric="neg_nonexistent_metric")
 
-        with pytest.raises(KeyError, match="not found in the registered metrics"):
+        with pytest.raises(KeyError, match="neg_nonexistent_metric"):
             report.metrics.get("neg_nonexistent_metric")
 
     def test_invalid_string_scorer_name(self, binary_classification_report):

@@ -790,12 +790,12 @@ class CheckTrainTestTimeOverlap(Check):
             if not nw.dependencies.is_into_dataframe(report.X_train):
                 raise CheckNotApplicable(
                     "Input data is not a narwhals compatible DataFrame. "
-                    f"Got {type(report.X_train)}."
+                    f"Got {type(report.X_train).__name__}."
                 )
             if not nw.dependencies.is_into_dataframe(report.X_test):
                 raise CheckNotApplicable(
                     "Input data is not a narwhals compatible DataFrame. "
-                    f"Got {type(report.X_test)}."
+                    f"Got {type(report.X_test).__name__}."
                 )
             X_train_nw = nw.from_native(report.X_train)
             X_test_nw = nw.from_native(report.X_test)
@@ -860,7 +860,8 @@ class CheckHyperparamsAtSearchEdge(Check):
         estimator = get_fitted_estimator(report)
         if not isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable(
-                f"Estimator is not a BaseSearchCV instance. Got {type(estimator)}."
+                "Estimator is not a BaseSearchCV instance. "
+                f"Got {type(estimator).__name__}."
             )
 
         param_combinations = estimator.cv_results_["params"]
@@ -954,7 +955,8 @@ class CheckSearchParamsToTune(Check):
         estimator = get_fitted_estimator(report)
         if not isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable(
-                f"Estimator is not a BaseSearchCV instance. Got {type(estimator)}."
+                "Estimator is not a BaseSearchCV instance. "
+                f"Got {type(estimator).__name__}."
             )
 
         searched_keys = {

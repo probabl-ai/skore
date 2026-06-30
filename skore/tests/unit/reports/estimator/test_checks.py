@@ -53,18 +53,14 @@ def regression_report(request, regression_data):
 
 
 def mock_issue(report, ignored_codes, *, fast_mode=False):
-    return (
-        {
-            "SKD001": {
-                "title": "Mock title",
-                "docs_url": "skd001-overfitting",
-                "explanation": "Mock overfitting detected.",
-                "severity": "issue",
-            }
-        },
-        {"SKD001"},
-        set(),
-    )
+    return {
+        "SKD001": {
+            "title": "Mock title",
+            "docs_url": "skd001-overfitting",
+            "explanation": "Mock overfitting detected.",
+            "section": "issue",
+        }
+    }
 
 
 class MockCheck(Check):
@@ -749,14 +745,11 @@ def test_skd016_pipeline_walks_steps(regression_data):
     assert "Ridge" not in explanation
 
 
-def test_ignore_checks(monkeypatch, regression_report):
+def test_ignore_checks(regression_report):
     """Check that checks are ignored when ignore is passed."""
-    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
-    assert (
-        regression_report.checks.summarize(ignore=["SKD001"])
-        .frame(section="issue")
-        .empty
-    )
+    result = regression_report.checks.summarize(ignore=["SKD001"])
+    assert "SKD001" in set(result.frame(section="ignored")["code"])
+    assert "SKD001" not in set(result.frame(section="issue")["code"])
 
 
 def test_exception_when_train_data_missing(regression_train_test_split):
@@ -777,7 +770,7 @@ def test_not_applicable_reason_in_summarize(regression_train_test_split):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     na = report.checks.summarize().frame(section="not_applicable").set_index("code")
     assert "SKD001" in na.index
-    assert na.loc["SKD001", "explanation"] == ("Train data is unavailable.")
+    assert na.loc["SKD001", "explanation"] == "Train data is unavailable."
 
 
 def test_exception_when_baseline_report_creation_fails(regression_data, monkeypatch):
@@ -804,19 +797,15 @@ def test_no_issues(monkeypatch, regression_report):
     """Check that no issues are detected when checks pass."""
     monkeypatch.setattr(
         EstimatorReport,
-        "_get_results",
-        lambda report, ignored_codes, *, fast_mode=False: (
-            {},
-            {"SKD001", "SKD002"},
-            set(),
-        ),
+        "_get_checks_results",
+        lambda report, ignored_codes, *, fast_mode=False: {},
     )
     assert regression_report.checks.summarize().frame(section="issue").empty
 
 
 def test_checks_summary_repr(monkeypatch, regression_report):
     """Check that the checks summary has a repr."""
-    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
+    monkeypatch.setattr(EstimatorReport, "_get_checks_results", mock_issue)
     results = regression_report.checks.summarize()
     assert isinstance(results, ChecksSummaryDisplay)
     elements = [
@@ -836,21 +825,20 @@ def test_checks_summary_repr(monkeypatch, regression_report):
     assert "report-hint-note-line" in bundle["text/html"]
 
 
-def test_global_ignore(monkeypatch, regression_report):
+def test_global_ignore(regression_report):
     """Check that checks are ignored when global ignore is set."""
-    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
-    assert "SKD001" in set(
-        regression_report.checks.summarize().frame(section="issue")["code"]
+    assert "SKD001" not in set(
+        regression_report.checks.summarize().frame(section="ignored")["code"]
     )
     with configuration(ignore_checks=["SKD001"]):
-        assert "SKD001" not in set(
-            regression_report.checks.summarize().frame(section="issue")["code"]
-        )
+        summary = regression_report.checks.summarize()
+        assert "SKD001" not in set(summary.frame(section="issue")["code"])
+        assert "SKD001" in set(summary.frame(section="ignored")["code"])
 
 
 def test_documentation_url_points_to_existing_rst():
     """Check that the URL in _get_issue_documentation_url maps to a real RST file."""
-    url = urlparse(_get_issue_documentation_url(mock_issue(None, set())[0]["SKD001"]))
+    url = urlparse(_get_issue_documentation_url(mock_issue(None, set())["SKD001"]))
     # url.path is e.g. "/dev/user_guide/automated_checks.html"
     # strip version prefix and convert .html -> .rst
     rst_rel_path = "/".join(url.path.split("/")[2:]).replace(".html", ".rst")
@@ -943,12 +931,10 @@ def test_remove_clears_cache(regression_report):
     regression_report.checks.add([MockCheck(has_issue=True)])
     regression_report.checks.summarize()
     assert "TST001" in regression_report._check_results_cache
-    assert "TST001" in regression_report._applicable_codes
+    assert regression_report._check_results_cache["TST001"]["section"] == "issue"
 
     regression_report.checks.remove("TST001")
     assert "TST001" not in regression_report._check_results_cache
-    assert "TST001" not in regression_report._applicable_codes
-    assert "TST001" not in regression_report._not_applicable_codes
 
 
 def test_remove_is_case_insensitive(regression_report):
@@ -1028,10 +1014,13 @@ def test_passed_contains_applicable_checks_with_no_finding(regression_report):
     assert "TST001" not in set(result.frame(section="tip")["code"])
 
 
-def test_passed_excludes_ignored(regression_report):
-    """Ignored codes are not listed as passed."""
+def test_ignored_checks_appear_in_ignored_section(regression_report):
+    """Ignored codes appear under the ignored section."""
     regression_report.checks.add([MockCheck(has_issue=False)])
     result = regression_report.checks.summarize(ignore=["TST001"])
+    ignored = result.frame(section="ignored").set_index("code")
+    assert "TST001" in ignored.index
+    assert pd.isna(ignored.loc["TST001", "explanation"])
     assert "TST001" not in set(result.frame(section="passed")["code"])
     assert "TST001" not in set(result.frame(section="issue")["code"])
 
@@ -1057,13 +1046,14 @@ def test_frame_section_filter(regression_report):
 
 
 def test_header_reports_all_counts(regression_report):
-    """The header reports issue, tip, passed, not applicable and ignored counts."""
+    """The header reports issue, tip, passed, NA, skipped and ignored counts."""
     regression_report.checks.add([MockCheck(has_issue=True), TipCheck()])
     result = regression_report.checks.summarize(ignore=["SKD001"])
     assert "issue(s)" in result._header
     assert "tip(s)" in result._header
     assert "passed" in result._header
     assert "not applicable" in result._header
+    assert "skipped" in result._header
     assert "1 ignored" in result._header
 
 
@@ -1075,11 +1065,13 @@ def test_html_tabs(regression_report):
     assert "Tips (" in html
     assert "Passed (" in html
     assert "Not Applicable (" in html
+    assert "Skipped (" in html
+    assert "Ignored (" in html
 
 
 def test_checks_summary_html_note_lines(monkeypatch, regression_report):
     """HTML note shows fast-mode info and mute hint on separate lines."""
-    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
+    monkeypatch.setattr(EstimatorReport, "_get_checks_results", mock_issue)
     html_fast = regression_report.checks.summarize(fast_mode=True)._repr_html_()
     assert "Fast mode is on" in html_fast
     assert "Mute a check by passing" in html_fast
@@ -1137,8 +1129,11 @@ def test_summarize_fast_mode_skips_uncached_slow_checks(regression_report):
     """fast_mode=True skips slow checks that are not cached."""
     slow_check = SlowMockCheck()
     regression_report.checks.add([slow_check])
-    codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
-    assert "TSTSLOW" not in codes
+    result = regression_report.checks.summarize(fast_mode=True)
+    assert "TSTSLOW" not in set(result.frame(section="issue")["code"])
+    skipped = result.frame(section="skipped").set_index("code")
+    assert "TSTSLOW" in skipped.index
+    assert pd.isna(skipped.loc["TSTSLOW", "explanation"])
     assert slow_check.calls == 0
 
 
@@ -1176,24 +1171,24 @@ def test_html_repr_shows_cached_slow(regression_report):
     regression_report.checks.summarize()
     fragments = regression_report._html_repr_fragments()
     checks_html = fragments["checks_summary"]
-    assert "[TSTSLOW]" in checks_html
+    assert ">TSTSLOW</a>" in checks_html
     assert "Issues (1)" in checks_html
     assert "Fast mode is on" in checks_html
 
 
 def test_html_repr_fragments_includes_checks_detail(monkeypatch, regression_report):
     """The HTML repr fragments include per-check detail from fast-mode summary."""
-    monkeypatch.setattr(EstimatorReport, "_get_results", mock_issue)
+    monkeypatch.setattr(EstimatorReport, "_get_checks_results", mock_issue)
     checks_html = regression_report._html_repr_fragments()["checks_summary"]
     assert "report-checks-summary-list" in checks_html
     assert "Issues (1)" in checks_html
     assert "report-checks-nested" in checks_html
     assert "Fast mode is on" in checks_html
-    assert "[SKD001]" in checks_html
+    assert ">SKD001</a>" in checks_html
     assert "Mock title." in checks_html
     assert "Mock overfitting detected." in checks_html
-    assert 'href="' in checks_html
     assert "user_guide/automated_checks.html#" in checks_html
+    assert "Read more about this" not in checks_html
 
 
 def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):
