@@ -477,7 +477,7 @@ class TestCrossValidationReportPayload:
 
         class Splitter:
             def split(self, X, y=None, groups=None):
-                yield array([0]), array([1, 2, 3, 4])
+                yield array([0, 1, 2, 3]), array([4])
 
             def get_n_splits(self, X, y=None, groups=None):
                 return 1
@@ -489,9 +489,9 @@ class TestCrossValidationReportPayload:
 
         splitting_strategy = payload.splitting_strategy
 
-        assert splitting_strategy["test_target_distributions_sample_counts"] == [4]
-        assert splitting_strategy["train_target_distributions_sample_counts"] == [1]
-        assert splitting_strategy["splits"] == [[0, 1, 1, 1, 1]]
+        assert splitting_strategy["test_target_distributions_sample_counts"] == [1]
+        assert splitting_strategy["train_target_distributions_sample_counts"] == [4]
+        assert splitting_strategy["splits"] == [[0, 0, 0, 0, 1]]
         assert splitting_strategy["splitter"] == {
             "type": "Splitter",
             "n_splits": 1,
