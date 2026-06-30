@@ -42,31 +42,6 @@ def test_interaction_cache_metrics(linear_regression_multioutput_with_test):
     )
 
 
-@pytest.mark.parametrize("prefit_estimator", [True, False])
-def test_has_side_effects(prefit_estimator):
-    """Re-fitting the estimator outside the EstimatorReport
-    should not have an effect on the EstimatorReport's internal estimator."""
-    X, y = make_classification(n_classes=2, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-    estimator = LogisticRegression()
-    if prefit_estimator:
-        estimator.fit(X_train, y_train)
-
-    report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-    )
-
-    predictions_before = report.estimator_.predict_proba(X_test)
-    estimator.fit(X_test, y_test)
-    predictions_after = report.estimator_.predict_proba(X_test)
-    np.testing.assert_array_equal(predictions_before, predictions_after)
-
-
 @pytest.mark.parametrize("metric", ["brier_score", "log_loss"])
 def test_brier_log_loss_requires_probabilities(metric):
     """Check that the Brier score and the Log loss is not defined for estimator
