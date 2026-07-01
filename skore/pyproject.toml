@@ -83,7 +83,6 @@ sphinx-base = [
 sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
 sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
 dev = ["ipykernel", "nbformat"]
-local = ["diskcache", "platformdirs"]
 hub = [
   "httpx",
   "orjson",
@@ -100,6 +99,10 @@ hub = "skore._plugins.hub.authentication.login:login"
 local = "skore._plugins.local:Project"
 hub = "skore._plugins.hub.project.project:Project"
 mlflow = "skore._plugins.mlflow:Project"
+
+[project.scripts]
+skore-init-workspace = "skore._plugins.local.project:init_workspace"
+skore = "skore._cli:main"
 
 [project.urls]
 Homepage = "https://probabl.ai"
@@ -213,7 +216,6 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
-  "diskcache.*",
   "jinja2.*",
   "joblib.*",
   "js.*",
