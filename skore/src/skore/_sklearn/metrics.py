@@ -426,7 +426,7 @@ class Metric:
         **kwargs: Any,
     ) -> Any:
         """Compute the raw metric and cache it in the report."""
-        cache_key = make_cache_key(data_source, self.name, kwargs)
+        cache_key = make_cache_key("metrics", data_source, self.name, kwargs)
         score = report._cache.get(cache_key)
         if score is None:
             score = self._raw(report=report, data_source=data_source, **kwargs)
@@ -916,6 +916,6 @@ class MetricRegistry(UserDict[str, Metric]):
         """
         del self.data[name]
 
-        keys_to_delete = [k for k in report._cache if k[1] == name]
+        keys_to_delete = [k for k in report._cache if k[2] == name]
         for k in keys_to_delete:
             del report._cache[k]

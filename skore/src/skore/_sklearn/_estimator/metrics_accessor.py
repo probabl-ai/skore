@@ -1004,7 +1004,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             cache_key = None
         else:
             cache_key = make_cache_key(
-                data_source, display_class.__name__, display_kwargs
+                "metrics", data_source, display_class.__name__, display_kwargs
             )
 
         cache_value = self._parent._cache.get(cache_key)
