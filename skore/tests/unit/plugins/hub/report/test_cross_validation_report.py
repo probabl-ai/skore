@@ -1090,16 +1090,17 @@ class TestCrossValidationReportPayload:
             key="<key>",
         )
 
-        for metric_name in ("precision_mean", "recall_mean", "roc_auc_mean"):
-            aggregates = [
+        for metric_name in (
+            "precision_macro_mean",
+            "recall_macro_mean",
+            "roc_auc_macro_mean",
+        ):
+            macro_metrics = [
                 m
                 for m in payload.metrics
-                if m.name == metric_name
-                and m.data_source == "test"
-                and m.label is None
-                and m.average is not None
+                if m.name == metric_name and m.data_source == "test"
             ]
-            assert {m.average for m in aggregates} == {"macro"}
+            assert len(macro_metrics) == 1
 
     @mark.filterwarnings(
         # `small_cv_binary_classification` has too few labels

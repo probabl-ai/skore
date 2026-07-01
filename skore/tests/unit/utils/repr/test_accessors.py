@@ -1,8 +1,7 @@
 """Integration tests for report accessor reprs."""
 
+import pandas as pd
 import pytest
-
-from skore._sklearn._plot.metrics.metrics_summary_display import frame_repr_html
 
 
 @pytest.fixture(
@@ -70,8 +69,14 @@ def _metrics_summary_frame(metrics_accessor):
 
 
 def _metrics_summary_frame_html(metrics_accessor):
-    frame = metrics_accessor.summarize()._repr_frame(for_html=True)
-    return frame_repr_html(frame)
+    frame = metrics_accessor.summarize().frame(
+        format="auto", verbose_name=True, flat_index=False
+    )
+    return (
+        frame.to_frame()._repr_html_()
+        if isinstance(frame, pd.Series)
+        else frame._repr_html_()
+    )
 
 
 def test_metrics_accessor_repr(report):

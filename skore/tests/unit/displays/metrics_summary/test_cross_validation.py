@@ -134,7 +134,7 @@ def test_frame_with_multiindex_single_column(forest_binary_classification_data):
     display = report.metrics.summarize()
 
     result = display.frame(
-        format="wide", aggregate="mean", with_multiindex=True, verbose_name=True
+        format="wide", aggregate="mean", flat_index=False, verbose_name=True
     )
 
     assert isinstance(result, pd.Series)
@@ -142,14 +142,12 @@ def test_frame_with_multiindex_single_column(forest_binary_classification_data):
 
 
 def test_frame_with_multiindex_cv(forest_binary_classification_data):
-    """`with_multiindex=True` preserves column MultiIndex for CV mean/std layout."""
+    """`flat_index=False` preserves column MultiIndex for CV mean/std layout."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(
-        format="wide", aggregate=["mean", "std"], with_multiindex=True
-    )
+    result = display.frame(format="wide", aggregate=["mean", "std"], flat_index=False)
 
     assert isinstance(result.columns, pd.MultiIndex)
 
@@ -349,10 +347,10 @@ def test_format_auto_uses_wide_for_cv(forest_binary_classification_data):
     ]
 
 
-def test_repr_frame_uses_long_for_comparison(
+def test_repr_uses_long_for_comparison(
     forest_binary_classification_data,
 ):
-    """Internal repr uses long format for comparison reports."""
+    """Repr uses long format for comparison reports."""
     from skore import ComparisonReport
 
     estimator, X, y = forest_binary_classification_data
@@ -362,7 +360,7 @@ def test_repr_frame_uses_long_for_comparison(
     }
     display = ComparisonReport(reports).metrics.summarize()
 
-    result = display._repr_frame()
+    result = display.frame(format="auto", flat_index=True)
 
     assert isinstance(result.index, pd.RangeIndex)
     assert "aggregate" in result.columns

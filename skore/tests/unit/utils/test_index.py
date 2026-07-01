@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from skore._utils._index import flatten_multi_index, maybe_squeeze_single_column
+from skore._utils._index import flatten_multi_index, squeeze_single_column
 
 
 @pytest.mark.parametrize(
@@ -64,20 +64,20 @@ def test_flatten_multi_index_non_multi_index():
     pd.testing.assert_index_equal(result, simple_index)
 
 
-def test_maybe_squeeze_single_column_keeps_multi_column_frame():
+def test_squeeze_single_column_keeps_multi_column_frame():
     df = pd.DataFrame({"a": [1], "b": [2]}, index=["metric"])
-    pd.testing.assert_frame_equal(maybe_squeeze_single_column(df), df)
+    pd.testing.assert_frame_equal(squeeze_single_column(df), df)
 
 
-def test_maybe_squeeze_single_column_flat_column():
+def test_squeeze_single_column_flat_column():
     df = pd.DataFrame({"LogisticRegression": [0.9, 0.8]}, index=["accuracy", "recall"])
-    result = maybe_squeeze_single_column(df)
+    result = squeeze_single_column(df)
     assert isinstance(result, pd.Series)
     assert result.name == "LogisticRegression"
     pd.testing.assert_series_equal(result, df["LogisticRegression"])
 
 
-def test_maybe_squeeze_single_column_multiindex_column():
+def test_squeeze_single_column_multiindex_column():
     df = pd.DataFrame(
         {("RandomForestClassifier", "mean"): [0.9, 0.8]},
         index=["accuracy", "recall"],
@@ -85,6 +85,6 @@ def test_maybe_squeeze_single_column_multiindex_column():
     df.columns = pd.MultiIndex.from_tuples(
         [("RandomForestClassifier", "mean")], names=["Estimator", "Aggregate"]
     )
-    result = maybe_squeeze_single_column(df)
+    result = squeeze_single_column(df)
     assert isinstance(result, pd.Series)
     assert result.name == "RandomForestClassifier_mean"

@@ -6,11 +6,12 @@ from importlib.metadata import version
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from uuid import uuid4
 
+import pandas as pd
+
 from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
-from skore._sklearn._plot.metrics.metrics_summary_display import frame_repr_html
 from skore._sklearn.types import DataSource
 from skore._utils._progress_bar import track
 from skore._utils.repr.base import (
@@ -212,7 +213,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         metric: str | list[str] | None = None,
     ) -> pd.DataFrame | pd.Series:
         """Metric summary frame used for accessor display."""
-        return self.summarize()._repr_frame(for_html=False)
+        return self.summarize().frame(format="auto", flat_index=True)
 
     def __repr__(self) -> str:
         return (
@@ -222,9 +223,17 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         )
 
     def _repr_html_(self) -> str:
+        frame = self.summarize().frame(
+            format="auto", verbose_name=True, flat_index=False
+        )
+        html = (
+            frame.to_frame()._repr_html_()
+            if isinstance(frame, pd.Series)
+            else frame._repr_html_()
+        )
         return (
             "<p>Metrics summary:</p>"
-            f"{frame_repr_html(self.summarize()._repr_frame(for_html=True))}"
+            f"{html}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

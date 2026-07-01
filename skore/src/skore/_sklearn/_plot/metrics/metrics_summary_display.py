@@ -15,18 +15,18 @@ from skore._sklearn.types import (
     PositiveLabel,
     ReportType,
 )
-from skore._utils._index import flatten_multi_index, maybe_squeeze_single_column
+from skore._utils._index import flatten_multi_index, squeeze_single_column
 
 FrameFormat = Literal["long", "wide", "auto"]
 
 _FAVORABILITY_SYMBOLS = {True: "(↗︎)", False: "(↘︎)"}
 
-
-def frame_repr_html(frame: pd.DataFrame | pd.Series) -> str:
-    """Return the HTML representation of a metrics summary frame or series."""
-    if isinstance(frame, pd.Series):
-        return frame.to_frame()._repr_html_()
-    return frame._repr_html_()
+_INDEX_LEVEL_NAMES = {
+    "metric": "Metric",
+    "label": "Label",
+    "output": "Output",
+    "average": "Average",
+}
 
 
 class MetricsSummaryRow(TypedDict):
@@ -76,10 +76,6 @@ class MetricsSummaryRow(TypedDict):
 class MetricsSummaryDisplay(DisplayMixin):
     """Summarize evaluation metrics in a table.
 
-    Use :meth:`frame` to export the summary as a :class:`pandas.DataFrame` or,
-    for wide layouts with a single value column, as a named
-    :class:`pandas.Series`.
-
     Parameters
     ----------
     summary : pandas.DataFrame
@@ -96,8 +92,6 @@ class MetricsSummaryDisplay(DisplayMixin):
     ----------
     summary : pandas.DataFrame
         The long-format dataframe storing the metric scores and metadata.
-        Always includes a ``fingerprint`` column; it is resolved and omitted from
-        :meth:`frame` output.
     report_type : ReportType
         The type of report.
 
@@ -140,93 +134,95 @@ class MetricsSummaryDisplay(DisplayMixin):
             summary["output"] = summary["output"].astype(pd.Int64Dtype())
 
         if "average" in summary.columns:
-
-            def average_to_string(value: Any) -> Any:
-                if _is_arraylike(value):
-                    return str(np.asarray(value).tolist())
-                return value
-
+            # ``multioutput`` can be an array-like value (e.g. raw_values); store
+            # a stable string representation for grouping and display.
             summary["average"] = (
-                summary["average"].map(average_to_string).astype("string")
+                summary["average"]
+                .map(
+                    lambda value: (
+                        str(np.asarray(value).tolist())
+                        if _is_arraylike(value)
+                        else value
+                    )
+                )
+                .astype("string")
             )
 
         return cls(summary, report_type=report_type)
 
     @staticmethod
     def _resolve_fingerprints(data: pd.DataFrame) -> pd.DataFrame:
-        """Disambiguate metric labels across distinct fingerprints.
+        """Disambiguate metric names across distinct fingerprints.
 
-        When several rows share a label (the technical ``name`` or its
-        ``verbose_name``) but come from metrics with different fingerprints,
-        they are renamed ``{label}_1``, ``{label}_2``, ... in the order they
-        first appear. ``None`` counts as a regular fingerprint value, so a
-        custom metric reusing a built-in's name will still get disambiguated
-        against the built-in.
+        When several rows share a name (``name`` or ``verbose_name``) but have
+        different fingerprints, they are renamed ``{name}_1``, ``{name}_2``, ...
+        in the order they first appear. Built-in metrics use a ``None``
+        fingerprint; a custom metric that reuses a built-in name is still
+        disambiguated because its fingerprint differs from ``None``.
 
         Both ``name`` and ``verbose_name`` are disambiguated independently, so
         whichever column :meth:`frame` displays is unambiguous.
 
-        Suffixes skip over any label already present in the column, so we don't
+        Suffixes skip over any name already present in the column, so we don't
         produce a collision if a metric happens to already be called e.g.
         ``"Metric_1"``.
         """
         data = data.copy()
 
-        for label_col in ("name", "verbose_name"):
-            fingerprints_per_label = defaultdict(list)
-            for label, fingerprint in (
-                data[[label_col, "fingerprint"]]
+        for name_col in ("name", "verbose_name"):
+            fingerprints_per_name = defaultdict(list)
+            for name, fingerprint in (
+                data[[name_col, "fingerprint"]]
                 .drop_duplicates()
                 .itertuples(index=False, name=None)
             ):
-                fingerprints_per_label[label].append(fingerprint)
+                fingerprints_per_name[name].append(fingerprint)
 
             renaming = {}
-            existing = set(data[label_col])
-            for label, fingerprints in fingerprints_per_label.items():
+            existing = set(data[name_col])
+            for name, fingerprints in fingerprints_per_name.items():
                 if len(fingerprints) < 2:
                     continue
                 i = 0
                 for fingerprint in fingerprints:
                     while True:
                         i += 1
-                        candidate = f"{label}_{i}"
+                        candidate = f"{name}_{i}"
                         if candidate not in existing:
                             break
                     existing.add(candidate)
-                    renaming[(label, fingerprint)] = candidate
+                    renaming[(name, fingerprint)] = candidate
 
-            for (label, fingerprint), new_name in renaming.items():
+            for (name, fingerprint), new_name in renaming.items():
                 fp_match = (
                     data["fingerprint"].isna()
                     if pd.isna(fingerprint)
                     else data["fingerprint"] == fingerprint
                 )
-                data.loc[(data[label_col] == label) & fp_match, label_col] = new_name
+                data.loc[(data[name_col] == name) & fp_match, name_col] = new_name
 
         return data
 
-    def _prepare_pivot_df(
-        self, prepared: pd.DataFrame
-    ) -> tuple[pd.DataFrame, list[str]]:
+    def _prepare_pivot_df(self, df: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
         """Return a pivot-ready frame and the columns used as the row index.
 
-        ``metric`` is always part of the index; the metric dimensions
-        (``label``, ``output``, ``average``) join it only when they carry a
-        value. ``.summary`` stores their missing entries as ``pd.NA``, but
-        pandas pivots drop or reorder ``pd.NA`` index keys, so they are filled
-        with an empty-string sentinel here (and rendered as empty at the
-        display boundary). Integer labels keep their ``Int64`` values, so no
-        float coercion is needed.
+        Returns
+        -------
+        pivot_df : pandas.DataFrame
+            Copy of ``df`` ready for pivoting.
+        index_cols : list of str
+            Columns that form the row index, always starting with ``metric``.
         """
         index_cols = ["metric"] + [
             col
             for col in ("label", "output", "average")
-            if col in prepared.columns and prepared[col].notna().any()
+            if col in df.columns and df[col].notna().any()
         ]
-        pivot_df = prepared.copy()
+        pivot_df = df.copy()
         for col in ("label", "output", "average"):
             if col in pivot_df.columns:
+                # pandas pivots drop or reorder ``pd.NA`` index keys; use a
+                # sentinel so every dimension level is preserved.
                 pivot_df[col] = pivot_df[col].astype(object).fillna("")
         return pivot_df, index_cols
 
@@ -304,25 +300,25 @@ class MetricsSummaryDisplay(DisplayMixin):
             }
         ).reset_index(drop=True)
 
-    def _pivot_to_wide(
+    def _long_to_wide(
         self,
-        prepared: pd.DataFrame,
+        df: pd.DataFrame,
         *,
         aggregate: Aggregate | None = ("mean", "std"),
         favorability: bool = False,
         verbose_name: bool = False,
-        with_multiindex: bool = False,
+        flat_index: bool = True,
     ) -> pd.DataFrame:
         """Pivot a prepared long table into wide layout."""
         if self.report_type == "estimator":
-            df = self._pivot_estimator_wide(prepared)
+            wide = self._long_to_wide_estimator(df)
         elif self.report_type == "cross-validation":
-            df = self._pivot_cross_validation_wide(prepared, aggregate=aggregate)
+            wide = self._long_to_wide_cross_validation(df, aggregate=aggregate)
         elif self.report_type == "comparison-estimator":
-            df = self._pivot_comparison_estimator_wide(prepared)
+            wide = self._long_to_wide_comparison_estimator(df)
         else:
-            df = self._pivot_comparison_cross_validation_wide(
-                prepared, aggregate=aggregate
+            wide = self._long_to_wide_comparison_cross_validation(
+                df, aggregate=aggregate
             )
 
         if favorability:
@@ -330,84 +326,80 @@ class MetricsSummaryDisplay(DisplayMixin):
             # with ``data_source``, ``split``, ``aggregate`` or ``estimator``), so
             # a single ``groupby(index_cols).first()`` yields the value for every
             # wide layout.
-            pivot_df, index_cols = self._prepare_pivot_df(prepared)
+            pivot_df, index_cols = self._prepare_pivot_df(df)
             favorability_col = self._to_favorability(
                 pivot_df.groupby(index_cols, dropna=False)["greater_is_better"].first()
             )
-            favorability_col.index = favorability_col.index.set_names(df.index.names)
-            df["Favorability"] = favorability_col
+            favorability_col.index = favorability_col.index.set_names(wide.index.names)
+            wide["Favorability"] = favorability_col
 
-        if not with_multiindex:
+        if flat_index:
             lowercase = not verbose_name
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = flatten_multi_index(df.columns, lowercase=lowercase)
-            if isinstance(df.index, pd.MultiIndex):
-                df.index = flatten_multi_index(df.index, lowercase=lowercase)
-            if isinstance(df.index, pd.Index):
-                df.index = df.index.str.replace(r"\((.*)\)$", r"\1", regex=True)
-        else:
-            if isinstance(df.index, pd.MultiIndex):
-                levels = list(df.index.levels)
-                for level_index, name in enumerate(df.index.names):
-                    if name == "Label":
-                        levels[level_index] = pd.Index(
-                            [
-                                "" if value == "" else str(value)
-                                for value in levels[level_index]
-                            ],
-                            dtype="string",
-                            name=name,
-                        )
-                df.index = df.index.set_levels(levels)
+            if isinstance(wide.columns, pd.MultiIndex):
+                wide.columns = flatten_multi_index(wide.columns, lowercase=lowercase)
+            if isinstance(wide.index, pd.MultiIndex):
+                wide.index = flatten_multi_index(wide.index, lowercase=lowercase)
+            if isinstance(wide.index, pd.Index):
+                wide.index = wide.index.str.replace(r"\((.*)\)$", r"\1", regex=True)
+        elif isinstance(wide.index, pd.MultiIndex):
+            levels = list(wide.index.levels)
+            for level_index, name in enumerate(wide.index.names):
+                if name == "Label":
+                    levels[level_index] = pd.Index(
+                        [
+                            "" if value == "" else str(value)
+                            for value in levels[level_index]
+                        ],
+                        dtype="string",
+                        name=name,
+                    )
+            wide.index = wide.index.set_levels(levels)
 
-        return df
+        return wide
 
-    def _pivot_estimator_wide(
+    def _long_to_wide_estimator(
         self,
-        prepared: pd.DataFrame,
+        df: pd.DataFrame,
         *,
         estimator_name: str | None = None,
     ) -> pd.DataFrame:
         """Pivot an estimator report into wide layout (one value column)."""
-        pivot_df, index_cols = self._prepare_pivot_df(prepared)
+        pivot_df, index_cols = self._prepare_pivot_df(df)
         if estimator_name is None:
             estimator_name = self.summary["estimator_name"].iloc[0]
 
-        if (
-            "data_source" not in prepared.columns
-            or prepared["data_source"].nunique() == 1
-        ):
-            df = pivot_df.set_index(index_cols)[["value"]]
-            df.columns = [estimator_name]
+        if "data_source" not in df.columns or df["data_source"].nunique() == 1:
+            wide = pivot_df.set_index(index_cols)[["value"]]
+            wide.columns = [estimator_name]
         else:
-            df = pivot_df.pivot_table(
+            wide = pivot_df.pivot_table(
                 index=index_cols,
                 columns="data_source",
                 values="value",
                 aggfunc="first",
                 sort=False,
             )
-            df = df[["train", "test"]]
-            df.columns = [f"{estimator_name} ({col})" for col in df.columns]
+            wide = wide[["train", "test"]]
+            wide.columns = [f"{estimator_name} ({col})" for col in wide.columns]
 
-        df.index = df.index.set_names(
-            ["Metric", "Label", "Output", "Average"][: df.index.nlevels]
+        wide.index = wide.index.set_names(
+            [_INDEX_LEVEL_NAMES[col] for col in index_cols]
         )
-        return df
+        return wide
 
-    def _pivot_cross_validation_wide(
+    def _long_to_wide_cross_validation(
         self,
-        prepared: pd.DataFrame,
+        df: pd.DataFrame,
         *,
         aggregate: Aggregate | None,
         estimator_name: str | None = None,
     ) -> pd.DataFrame:
         """Pivot a cross-validation report into wide layout (split/aggregate cols)."""
-        if "data_source" in prepared.columns and prepared["data_source"].nunique() > 1:
+        if "data_source" in df.columns and df["data_source"].nunique() > 1:
             frames = []
             for data_source in ("train", "test"):
-                source_df = prepared[prepared["data_source"] == data_source]
-                source_frame = self._pivot_cross_validation_wide(
+                source_df = df[df["data_source"] == data_source]
+                source_frame = self._long_to_wide_cross_validation(
                     source_df,
                     aggregate=aggregate,
                     estimator_name=estimator_name,
@@ -427,111 +419,99 @@ class MetricsSummaryDisplay(DisplayMixin):
 
             return pd.concat(frames, axis="columns")
 
-        pivot_df, index_cols = self._prepare_pivot_df(prepared)
+        pivot_df, index_cols = self._prepare_pivot_df(df)
         if estimator_name is None:
             estimator_name = self.summary["estimator_name"].iloc[0]
 
-        if "aggregate" in prepared.columns:
-            df = pivot_df.pivot_table(
+        if "aggregate" in df.columns:
+            wide = pivot_df.pivot_table(
                 index=index_cols,
                 columns="aggregate",
                 values="value",
                 aggfunc="first",
                 sort=False,
             )
-            if isinstance(df.columns, pd.MultiIndex):
-                df.columns = df.columns.swaplevel(0, 1)
+            if isinstance(wide.columns, pd.MultiIndex):
+                wide.columns = wide.columns.swaplevel(0, 1)
             elif isinstance(aggregate, str):
-                df.columns = pd.MultiIndex.from_tuples([(estimator_name, aggregate)])
+                wide.columns = pd.MultiIndex.from_tuples([(estimator_name, aggregate)])
             else:
-                df.columns = pd.MultiIndex.from_tuples(
-                    [(estimator_name, str(col)) for col in df.columns]
+                wide.columns = pd.MultiIndex.from_tuples(
+                    [(estimator_name, str(col)) for col in wide.columns]
                 )
         else:
-            df = pivot_df.pivot_table(
+            wide = pivot_df.pivot_table(
                 index=index_cols,
                 columns="split",
                 values="value",
                 aggfunc="first",
                 sort=False,
             )
-            df.columns = pd.MultiIndex.from_product(
-                [[estimator_name], [f"Split #{i}" for i in df.columns]]
+            wide.columns = pd.MultiIndex.from_product(
+                [[estimator_name], [f"Split #{i}" for i in wide.columns]]
             )
 
-        df.index = df.index.set_names(
-            ["Metric", "Label", "Output", "Average"][: df.index.nlevels]
+        wide.index = wide.index.set_names(
+            [_INDEX_LEVEL_NAMES[col] for col in index_cols]
         )
-        return df
+        return wide
 
-    def _pivot_comparison_estimator_wide(
+    def _long_to_wide_comparison_estimator(
         self,
-        prepared: pd.DataFrame,
+        df: pd.DataFrame,
     ) -> pd.DataFrame:
-        """Pivot a comparison-estimator report into wide layout (one col per est.)."""
-        df = pd.concat(
+        """Pivot a comparison-estimator report into wide layout."""
+        wide = pd.concat(
             [
-                self._pivot_estimator_wide(
+                self._long_to_wide_estimator(
                     estimator_df.drop(columns="estimator"),
                     estimator_name=estimator_key,
                 )
-                for estimator_key, estimator_df in prepared.groupby(
-                    "estimator", sort=False
-                )
+                for estimator_key, estimator_df in df.groupby("estimator", sort=False)
             ],
             axis="columns",
         )
-        df.columns.name = "Estimator"
-        return df
+        wide.columns.name = "Estimator"
+        return wide
 
-    def _pivot_comparison_cross_validation_wide(
+    def _long_to_wide_comparison_cross_validation(
         self,
-        prepared: pd.DataFrame,
+        df: pd.DataFrame,
         *,
         aggregate: Aggregate | None,
     ) -> pd.DataFrame:
         """Pivot a comparison-cross-validation report into wide layout."""
         estimators: list[str] = []
         frames = []
-        for estimator_key, estimator_df in prepared.groupby("estimator", sort=False):
+        for estimator_key, estimator_df in df.groupby("estimator", sort=False):
             estimators.append(estimator_key)
             frames.append(
-                self._pivot_cross_validation_wide(
+                self._long_to_wide_cross_validation(
                     estimator_df.drop(columns="estimator"),
                     aggregate=aggregate,
                     estimator_name=estimator_key,
                 )
             )
 
-        df = pd.concat(frames, axis="columns")
+        wide = pd.concat(frames, axis="columns")
 
         if aggregate is None:
-            df.columns.names = ["Estimator", "Split"]
+            wide.columns.names = ["Estimator", "Split"]
         else:
             # Group the aggregate level (e.g. mean, std) together while keeping
             # estimators in the order they were passed to the comparison.
-            df = df.swaplevel(0, 1, axis="columns")
-            aggregate_order = list(dict.fromkeys(df.columns.get_level_values(0)))
-            df = df[
+            wide = wide.swaplevel(0, 1, axis="columns")
+            aggregate_order = list(dict.fromkeys(wide.columns.get_level_values(0)))
+            wide = wide[
                 [
                     (agg, estimator)
                     for agg in aggregate_order
                     for estimator in estimators
                 ]
             ]
-            df.columns.names = [None, "Estimator"]
+            wide.columns.names = [None, "Estimator"]
 
-        return df
-
-    def _repr_frame(self, *, for_html: bool = False) -> pd.DataFrame | pd.Series:
-        """Return the dataframe used for display representation."""
-        aggregate = cast(Aggregate, ("mean", "std"))
-        return self.frame(
-            format="auto",
-            aggregate=aggregate,
-            verbose_name=for_html,
-            with_multiindex=for_html,
-        )
+        return wide
 
     def frame(
         self,
@@ -539,7 +519,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         format: FrameFormat = "auto",
         favorability: bool = False,
         verbose_name: bool = False,
-        with_multiindex: bool = False,
+        flat_index: bool = True,
         aggregate: Aggregate | None = ("mean", "std"),
     ) -> pd.DataFrame | pd.Series:
         """Return the metrics summary as a table.
@@ -561,10 +541,10 @@ class MetricsSummaryDisplay(DisplayMixin):
             Whether to use the human-readable metric names instead of the
             technical names (e.g. ``"Accuracy"`` instead of ``"accuracy"``).
 
-        with_multiindex : bool, default=False
-            Whether to keep the row and column MultiIndex in the ``"wide"``
-            layout. When ``False``, the index and columns are flattened into a
-            single level. Has no effect on the ``"long"`` layout.
+        flat_index : bool, default=True
+            Whether to keep the row and column MultiIndex.
+            When ``False``, the index and columns are flattened into a
+            single level. Has no effect when ``format="long"``.
 
         aggregate : {"mean", "std"}, list of such str or None, \
                 default=("mean", "std")
@@ -581,19 +561,14 @@ class MetricsSummaryDisplay(DisplayMixin):
             ``"wide"`` layouts with a single value column, a :class:`pandas.Series`
             is returned with its name set to that column label.
 
-        Raises
-        ------
-        ValueError
-            If ``format`` is not one of ``"long"``, ``"wide"``, or ``"auto"``.
-
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> clf = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(clf, X, y, splitter=0.2)
+        >>> estimator = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(estimator, X, y)
         >>> metrics = report.metrics.summarize().frame()
         >>> metrics.loc["accuracy"]  # Series for single-estimator wide layout
         """
@@ -618,30 +593,44 @@ class MetricsSummaryDisplay(DisplayMixin):
                 )
             return prepared.drop(columns="greater_is_better", errors="ignore")
 
-        return maybe_squeeze_single_column(
-            self._pivot_to_wide(
+        return squeeze_single_column(
+            self._long_to_wide(
                 prepared,
                 aggregate=aggregate,
                 favorability=favorability,
                 verbose_name=verbose_name,
-                with_multiindex=with_multiindex,
+                flat_index=flat_index,
             )
         )
 
-    def _frame_repr_html(self, frame: pd.DataFrame | pd.Series) -> str:
-        return frame_repr_html(frame)
-
     def _repr_html_(self) -> str:
+        aggregate = cast(Aggregate, ("mean", "std"))
+        frame = self.frame(
+            format="auto",
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
+        )
+        html = (
+            frame.to_frame()._repr_html_()
+            if isinstance(frame, pd.Series)
+            else frame._repr_html_()
+        )
         return (
-            f"{self._frame_repr_html(self._repr_frame(for_html=True))}"
+            f"{html}"
             '<p role="note">Use <code>.frame()</code> to control the format'
             " of the output.</p>"
         )
 
     def __repr__(self) -> str:
-        return (
-            f"{self._repr_frame()!r}\nUse .frame() to control the format of the output."
+        aggregate = cast(Aggregate, ("mean", "std"))
+        frame = self.frame(
+            format="auto",
+            aggregate=aggregate,
+            verbose_name=False,
+            flat_index=True,
         )
+        return f"{frame!r}\nUse .frame() to control the format of the output."
 
     @DisplayMixin.style_plot
     def plot(self) -> Figure:

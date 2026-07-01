@@ -377,16 +377,13 @@ class TestEstimatorReportPayload:
             key="<key>",
         )
 
-        for metric_name in ("precision", "recall", "roc_auc"):
-            aggregates = [
+        for metric_name in ("precision_macro", "recall_macro", "roc_auc_macro"):
+            macro_metrics = [
                 m
                 for m in payload.metrics
-                if m.name == metric_name
-                and m.data_source == "test"
-                and m.label is None
-                and m.average is not None
+                if m.name == metric_name and m.data_source == "test"
             ]
-            assert {m.average for m in aggregates} == {"macro"}
+            assert len(macro_metrics) == 1
 
     @mark.respx(assert_all_called=False)
     def test_metrics_custom(self, project):

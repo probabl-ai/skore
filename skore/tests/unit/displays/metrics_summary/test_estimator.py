@@ -237,21 +237,16 @@ def test_frame_multiclass_has_label_column(forest_multiclass_classification_with
     assert precision["label"].dropna().to_list() == [0, 1, 2]
 
 
-def test_frame_multiclass_includes_aggregate_average_rows(
+def test_frame_multiclass_includes_macro_metrics(
     forest_multiclass_classification_with_test,
 ):
-    """Built-in precision/recall/roc_auc expose a macro aggregate row."""
+    """Built-in macro metrics are exposed as separate registry entries."""
     estimator, X_test, y_test = forest_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     data = report.metrics.summarize().summary
 
-    for metric_name in ("precision", "recall", "roc_auc"):
-        aggregate = data[
-            (data["name"] == metric_name)
-            & data["label"].isna()
-            & data["average"].notna()
-        ]
-        assert set(aggregate["average"].tolist()) == {"macro"}
+    for metric_name in ("precision_macro", "recall_macro", "roc_auc_macro"):
+        assert (data["name"] == metric_name).any()
 
 
 def test_frame_multioutput_has_output_column(linear_regression_multioutput_with_test):
@@ -292,17 +287,19 @@ def test_frame_verbose_name_true_wide(forest_binary_classification_with_test):
     assert "accuracy" not in result.index
 
 
-def test_frame_with_multiindex(forest_multiclass_classification_with_test):
-    """`with_multiindex=True` preserves row MultiIndex in wide format."""
+def test_frame_flat_index_false(forest_multiclass_classification_with_test):
+    """`flat_index=False` preserves row MultiIndex in wide format."""
     estimator, X_test, y_test = forest_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     result = report.metrics.summarize().frame(
-        format="wide", with_multiindex=True, favorability=False
+        format="wide", flat_index=False, favorability=False
     )
 
     assert isinstance(result.index, pd.MultiIndex)
-    assert "Metric" in result.index.names
+    assert result.index.names == ["Metric", "Label"]
+    assert "Output" not in result.index.names
+    assert ("precision_macro", "") in result.index
 
 
 def test_frame_data_source_both(forest_binary_classification_data):

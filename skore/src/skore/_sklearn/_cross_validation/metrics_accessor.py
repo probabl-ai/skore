@@ -23,7 +23,7 @@ from skore._sklearn.metrics import MetricLike
 from skore._sklearn.types import Aggregate
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
-from skore._utils._index import maybe_squeeze_single_column
+from skore._utils._index import squeeze_single_column
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
@@ -301,7 +301,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                   1                0.94...   0.02...
         """
         return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     def timings(
@@ -353,7 +353,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
         timings.index = pd.Index([f"{idx} (s)" for idx in timings.index])
 
-        return maybe_squeeze_single_column(timings)
+        return squeeze_single_column(timings)
 
     def _metric(
         self,
@@ -448,7 +448,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         Score              0.94...  0.00...
         """
         return self._metric("score", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_estimator_report_has_method("metrics", "accuracy"))
@@ -500,7 +500,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         Accuracy           0.94...  0.00...
         """
         return self._metric("accuracy", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_estimator_report_has_method("metrics", "precision"))
@@ -583,9 +583,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """
         return self._metric(
             "precision", data_source=data_source, average=average
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_estimator_report_has_method("metrics", "recall"))
     def recall(
@@ -667,7 +665,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                1               0.96...  0.02...
         """
         return self._metric("recall", data_source=data_source, average=average).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_estimator_report_has_method("metrics", "brier_score"))
@@ -719,7 +717,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         Brier score            0.04...  0.00...
         """
         return self._metric("brier_score", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_estimator_report_has_method("metrics", "roc_auc"))
@@ -807,9 +805,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """
         return self._metric(
             "roc_auc", data_source=data_source, average=average, multi_class=multi_class
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_estimator_report_has_method("metrics", "log_loss"))
     def log_loss(
@@ -862,9 +858,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         return self._metric(
             "log_loss",
             data_source=data_source,
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_estimator_report_has_method("metrics", "r2"))
     def r2(
@@ -927,9 +921,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """
         return self._metric(
             "r2", data_source=data_source, multioutput=multioutput
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_estimator_report_has_method("metrics", "rmse"))
     def rmse(
@@ -992,9 +984,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """
         return self._metric(
             "rmse", data_source=data_source, multioutput=multioutput
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_estimator_report_has_method("metrics", "mae"))
     def mae(
@@ -1058,9 +1048,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """
         return self._metric(
             "mae", data_source=data_source, multioutput=multioutput
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_estimator_report_has_method("metrics", "mape"))
     def mape(
@@ -1124,9 +1112,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """
         return self._metric(
             "mape", data_source=data_source, multioutput=multioutput
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     ####################################################################################
     # Methods related to displays

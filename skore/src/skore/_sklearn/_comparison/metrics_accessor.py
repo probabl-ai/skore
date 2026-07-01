@@ -78,9 +78,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         >>> comparison_report = evaluate(
         ...     [estimator_1, estimator_2], X, y, splitter=0.2, pos_label=1
         ... )
-        >>> comparison_report.metrics.summarize(
-        ...     metric=["precision", "recall"]
-        ... ).frame()
+        >>> comparison_report.metrics.summarize(metric=["precision", "recall"]).frame()
                       estimator     metric     value
         0  LogisticRegression_1  precision  0.98...
         1  LogisticRegression_1     recall  0.92...
@@ -132,7 +130,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         column per compared estimator.
         """
         frame = self.summarize(data_source=data_source, metric=metric).frame(
-            format="wide", verbose_name=True, with_multiindex=True
+            format="wide", verbose_name=True, flat_index=False
         )
         frame = frame.rename_axis(
             None
@@ -347,7 +345,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
                   1                  0.984127              0.984127
         """
         return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     def timings(
@@ -471,7 +469,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Score                       0.94...               0.94...
         """
         return self._metric("score", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_any_sub_report_has_metric("accuracy"))
@@ -520,7 +518,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Accuracy                    0.94...               0.94...
         """
         return self._metric("accuracy", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_any_sub_report_has_metric("precision"))
@@ -600,9 +598,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "precision", data_source=data_source, average=average
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_any_sub_report_has_metric("recall"))
     def recall(
@@ -681,7 +677,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
                1                  0.925...              0.925...
         """
         return self._metric("recall", data_source=data_source, average=average).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_any_sub_report_has_metric("brier_score"))
@@ -730,7 +726,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Brier score                   0.036...              0.036...
         """
         return self._metric("brier_score", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_any_sub_report_has_metric("roc_auc"))
@@ -816,9 +812,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "roc_auc", data_source=data_source, average=average, multi_class=multi_class
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_any_sub_report_has_metric("log_loss"))
     def log_loss(
@@ -866,7 +860,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Log loss                   0.110...              0.110...
         """
         return self._metric("log_loss", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_any_sub_report_has_metric("r2"))
@@ -927,9 +921,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "r2", data_source=data_source, multioutput=multioutput
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_any_sub_report_has_metric("rmse"))
     def rmse(
@@ -989,9 +981,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "rmse", data_source=data_source, multioutput=multioutput
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_any_sub_report_has_metric("mae"))
     def mae(
@@ -1052,9 +1042,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "mae", data_source=data_source, multioutput=multioutput
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_any_sub_report_has_metric("mape"))
     def mape(
@@ -1115,9 +1103,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "mape", data_source=data_source, multioutput=multioutput
-        ).frame(
-            format=format, aggregate=aggregate, verbose_name=True, with_multiindex=True
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     ####################################################################################
     # Methods related to displays
