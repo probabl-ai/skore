@@ -47,6 +47,46 @@ class _ClassifierDisplayMixin:
     estimator_name: str
     ml_task: MLTask
 
+    @staticmethod
+    def _threshold_average(
+        xs: list[NDArray], ys: list[NDArray], thresholds: list[NDArray]
+    ) -> tuple[NDArray, NDArray, NDArray]:
+        """
+        Calculate threshold-averaged operating points for curves (ROC, PR).
+
+        Parameters
+        ----------
+        xs : list of ndarray of shape (n_samples,)
+            False positive rates or precision.
+        ys : list of ndarray of shape (n_samples,)
+            True positive rates or recall.
+        thresholds : list of ndarray of shape (n_samples,)
+            Thresholds.
+
+        Returns
+        -------
+        average_x : ndarray
+        average_y : ndarray
+        average_threshold : ndarray
+        """
+        unique_thresholds = np.unique(np.concatenate(thresholds))[::-1]
+
+        average_x = np.zeros_like(unique_thresholds, dtype=float)
+        average_y = np.zeros_like(unique_thresholds, dtype=float)
+
+        for x, y, thresh in zip(xs, ys, thresholds, strict=True):
+            idx = np.searchsorted(-thresh, -unique_thresholds, side="right") - 1
+            idx = np.maximum(idx, 0)
+
+            average_x += np.asarray(x)[idx]
+            average_y += np.asarray(y)[idx]
+
+        n_splits = len(xs)
+        average_x /= n_splits
+        average_y /= n_splits
+
+        return average_x, average_y, unique_thresholds
+
 
 def _rotate_ticklabels(
     ax: Axes, *, rotation: float = 45, horizontalalignment: str = "right"
