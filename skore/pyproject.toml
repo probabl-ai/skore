@@ -137,6 +137,7 @@ addopts = [
   "--durations=25",
 ]
 xfail_strict = true
+filterwarnings = ["error"]
 log_cli_level = "info"
 filterwarnings = [
   'ignore:codecs\.open\(\) is deprecated.*:DeprecationWarning:mlflow',

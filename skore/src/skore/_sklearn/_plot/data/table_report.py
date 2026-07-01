@@ -544,6 +544,8 @@ class TableReportDisplay(DisplayMixin):
                     "whiskerprops": {"alpha": 0.5},
                     "capprops": {"alpha": 0.5},
                     "medianprops": {"alpha": 0.5},
+                    "orientation": "horizontal",
+                    "vert": None,
                 },
                 boxplot_kwargs,
             )
