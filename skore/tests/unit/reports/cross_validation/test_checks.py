@@ -11,12 +11,13 @@ from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeRegressor
 from skrub import DatetimeEncoder, tabular_pipeline
 
-from skore import Check, evaluate
+from skore import Check, CrossValidationReport, evaluate
 from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.model_checks import (
     CheckHyperparamsAtSearchEdge,
     CheckSearchParamsToTune,
+    _per_split_metrics_matrix,
 )
 
 
@@ -59,11 +60,12 @@ def test_skd001_detects_overfitting(regression_data):
     X, y = regression_data
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
+    summary = report.metrics.summarize(data_source="test").summary
     n_metrics = len(
         {
-            (row["metric_verbose_name"], row["label"], row["average"], row["output"])
-            for row in report.metrics.summarize(data_source="test").rows
-            if row["metric_verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
+            (row["verbose_name"], row["label"], row["average"], row["output"])
+            for row in summary.to_dict("records")
+            if row["verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
         }
     )
     assert "SKD001" in issues.index
@@ -89,17 +91,31 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     y = convert_container(y, y_container)
     report = evaluate(DummyRegressor(), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
+    summary = report.metrics.summarize(data_source="test").summary
     n_metrics = len(
         {
-            (row["metric_verbose_name"], row["label"], row["average"], row["output"])
-            for row in report.metrics.summarize(data_source="test").rows
-            if row["metric_verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
+            (row["verbose_name"], row["label"], row["average"], row["output"])
+            for row in summary.to_dict("records")
+            if row["verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
         }
     )
     assert "SKD002" in issues.index
     assert (
         f"for {n_metrics}/{n_metrics} comparable metrics"
         in issues.loc["SKD002", "explanation"]
+    )
+
+
+def test_skd003_excludes_timing_metrics(forest_binary_classification_data):
+    """Timing metrics must not participate in split consistency detection."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    matrix = _per_split_metrics_matrix(
+        report.metrics.summarize(data_source="test").summary
+    )
+
+    assert not any(
+        idx[0] in {"Fit time (s)", "Predict time (s)"} for idx in matrix.index
     )
 
 
@@ -115,13 +131,8 @@ def test_skd003_detects_inconsistent_splits():
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD003" in issues.index
     assert "split #0" in issues.loc["SKD003", "explanation"]
-    n_metrics = (
-        len(
-            report.metrics.summarize(data_source="test").frame(
-                aggregate=None, flat_index=True
-            )
-        )
-        - 2  # -2 for the timing metrics
+    n_metrics = len(
+        _per_split_metrics_matrix(report.metrics.summarize(data_source="test").summary)
     )
     assert f"for {n_metrics}/{n_metrics} metrics" in issues.loc["SKD003", "explanation"]
 
@@ -251,8 +262,18 @@ def test_skd009_not_detected_on_strong_model():
     assert "SKD009" not in codes
 
 
-def test_skd010_detects_slower_than_baseline(regression_data):
+def test_skd010_detects_slower_than_baseline(regression_data, monkeypatch):
     """Check that SKD010 is detected when the model is slower with similar scores."""
+    from skore._sklearn._checks import model_checks
+    from skore._sklearn._checks._utils import get_fitted_estimator
+
+    def mock_get_fit_time(report):
+        if isinstance(get_fitted_estimator(report), RandomForestRegressor):
+            return 0.20
+        return 0.05
+
+    monkeypatch.setattr(model_checks, "get_fit_time", mock_get_fit_time)
+
     X, y = regression_data
     report = evaluate(
         RandomForestRegressor(n_estimators=200, random_state=0), X, y, splitter=3

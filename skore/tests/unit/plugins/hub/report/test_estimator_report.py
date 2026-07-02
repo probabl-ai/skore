@@ -97,6 +97,53 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "precision",
+                "verbose_name": "Precision",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "precision",
+                "verbose_name": "Precision",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "recall",
+                "verbose_name": "Recall",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "recall",
+                "verbose_name": "Recall",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -105,6 +152,9 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": True,
                 "value": approx(1.0, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -113,6 +163,9 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.06911, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -121,6 +174,9 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.00727, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -129,6 +185,9 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -137,6 +196,9 @@ class TestEstimatorReportPayload:
                 "data_source": "train",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -145,6 +207,53 @@ class TestEstimatorReportPayload:
                 "data_source": "test",
                 "greater_is_better": True,
                 "value": approx(0.9, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "precision",
+                "verbose_name": "Precision",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "precision",
+                "verbose_name": "Precision",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.77778, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "recall",
+                "verbose_name": "Recall",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.84615, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "recall",
+                "verbose_name": "Recall",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -153,6 +262,9 @@ class TestEstimatorReportPayload:
                 "data_source": "test",
                 "greater_is_better": True,
                 "value": approx(0.98901, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -161,6 +273,9 @@ class TestEstimatorReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.31686, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -169,6 +284,9 @@ class TestEstimatorReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.09025, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -177,6 +295,9 @@ class TestEstimatorReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
+                "average": None,
                 "position": None,
             },
             {
@@ -185,9 +306,84 @@ class TestEstimatorReportPayload:
                 "data_source": "test",
                 "greater_is_better": False,
                 "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
+                "average": None,
                 "position": None,
             },
         ]
+
+    @mark.respx(assert_all_called=False)
+    def test_binary_metrics_excludes_averaged_rows(
+        self, project, binary_classification, monkeypatch
+    ):
+        from unittest.mock import MagicMock
+
+        import pandas as pd
+
+        display = binary_classification.metrics.summarize(data_source="both")
+        data = display.summary.copy()
+        macro_row = (
+            data.loc[(data["name"] == "precision") & (data["data_source"] == "test")]
+            .iloc[0]
+            .copy()
+        )
+        macro_row["label"] = pd.NA
+        macro_row["average"] = "macro"
+        macro_row["score"] = 0.55
+        data = pd.concat([data, pd.DataFrame([macro_row])], ignore_index=True)
+
+        mock_display = MagicMock()
+        mock_display.summary = data
+        monkeypatch.setattr(
+            binary_classification.metrics,
+            "summarize",
+            lambda **kwargs: mock_display,
+        )
+
+        payload = EstimatorReportPayload(
+            project=project,
+            report=binary_classification,
+            key="<key>",
+        )
+
+        assert not any(m.average == "macro" for m in payload.metrics)
+        precision = [
+            m
+            for m in payload.metrics
+            if m.name == "precision" and m.data_source == "test"
+        ]
+        assert len(precision) == 2
+        assert {m.label for m in precision} == {0, 1}
+        assert all(m.average is None for m in precision)
+
+    @mark.respx(assert_all_called=False)
+    def test_multiclass_metrics_includes_aggregate_averages(
+        self, project, forest_multiclass_classification_with_train_test
+    ):
+        estimator, X_train, X_test, y_train, y_test = (
+            forest_multiclass_classification_with_train_test
+        )
+        report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+        payload = EstimatorReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        for metric_name in ("precision_macro", "recall_macro", "roc_auc_macro"):
+            macro_metrics = [
+                m
+                for m in payload.metrics
+                if m.name == metric_name and m.data_source == "test"
+            ]
+            assert len(macro_metrics) == 1
 
     @mark.respx(assert_all_called=False)
     def test_metrics_custom(self, project):

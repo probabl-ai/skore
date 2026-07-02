@@ -79,10 +79,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         ...     [estimator_1, estimator_2], X, y, splitter=0.2, pos_label=1
         ... )
         >>> comparison_report.metrics.summarize(metric=["precision", "recall"]).frame()
-        Estimator       LogisticRegression_1  LogisticRegression_2
-        Metric
-        Precision                    0.98...               0.98...
-        Recall                       0.92...               0.92...
+                      estimator     metric     value
+        0  LogisticRegression_1  precision  0.98...
+        1  LogisticRegression_1     recall  0.92...
+        2  LogisticRegression_2  precision  0.98...
+        3  LogisticRegression_2     recall  0.92...
         """
         parallel = joblib.Parallel(
             **_validate_joblib_parallel_params(
@@ -93,7 +94,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         summaries = list(
             track(
                 parallel(
-                    joblib.delayed(report.metrics.summarize)(
+                    joblib.delayed(report.metrics._summarize_display)(
                         data_source=data_source,
                         metric=metric,
                     )
@@ -104,26 +105,33 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             )
         )
 
-        return MetricsSummaryDisplay._concatenate(
-            summaries,
-            report_type=self._parent._report_type,
-            extra_rows_data=[
-                {"estimator_name": estimator_name}
-                for estimator_name in self._parent.reports_
+        extra_rows_data = [
+            {"estimator_name": estimator_name}
+            for estimator_name in self._parent.reports_
+        ]
+        summary = pd.concat(
+            [
+                display.summary.assign(**extra_data)
+                for display, extra_data in zip(summaries, extra_rows_data, strict=True)
             ],
+            ignore_index=True,
         )
+        return MetricsSummaryDisplay(summary, report_type=self._parent._report_type)
 
     def _formatted_summary_frame(
         self,
         *,
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
-    ) -> pd.DataFrame:
-        """Metric summary.
+    ) -> pd.DataFrame | pd.Series:
+        """Wide metric summary frame used for accessor display.
 
-        Used for displaying the report.
+        Comparison reports always return a :class:`pandas.DataFrame` with one
+        column per compared estimator.
         """
-        frame = self.summarize(data_source=data_source, metric=metric).frame()
+        frame = self.summarize(data_source=data_source, metric=metric).frame(
+            format="wide", verbose_name=True, flat_index=False
+        )
         frame = frame.rename_axis(
             None
             if self._parent._report_type == "comparison-estimator"
@@ -143,14 +151,18 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             for report in self._parent.reports_.values()
         ]
 
-        return MetricsSummaryDisplay._concatenate(
-            summaries,
-            report_type=self._parent._report_type,
-            extra_rows_data=[
-                {"estimator_name": estimator_name}
-                for estimator_name in self._parent.reports_
+        extra_rows_data = [
+            {"estimator_name": estimator_name}
+            for estimator_name in self._parent.reports_
+        ]
+        summary = pd.concat(
+            [
+                display.summary.assign(**extra_data)
+                for display, extra_data in zip(summaries, extra_rows_data, strict=True)
             ],
+            ignore_index=True,
         )
+        return MetricsSummaryDisplay(summary, report_type=self._parent._report_type)
 
     def available(self, *, report_name: str | None = None) -> list[str]:
         """List available metric names in the registry.
@@ -285,9 +297,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         name: str,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
+        format: Literal["long", "wide", "auto"] = "wide",
         **kwargs,
-    ) -> pd.DataFrame | None:
+    ) -> pd.DataFrame | pd.Series | None:
         """Get a metric value.
 
         Parameters
@@ -306,13 +318,16 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
-            Whether to return a flat index or a multi-index.
+        format : {"long", "wide", "auto"}, default="wide"
+            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
-        pd.DataFrame
-            The metric values, or None if the metric is not available.
+        pandas.DataFrame or pandas.Series or None
+            The metric values, or None if the metric is not available. Wide
+            comparison layouts normally have one column per estimator. For wide
+            layouts with a single value column, a :class:`pandas.Series` is
+            returned with its name set to that column label.
 
         Examples
         --------
@@ -330,7 +345,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
                   1                  0.984127              0.984127
         """
         return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
-            aggregate=aggregate, flat_index=flat_index
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     def timings(
@@ -353,8 +368,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            A dataframe with the processing times.
+        pandas.DataFrame
+            The processing times across compared estimators (one column per
+            estimator).
 
         Examples
         --------
@@ -409,7 +425,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the estimator's default score.
 
         This calls the underlying estimator's ``score`` method on the chosen data
@@ -431,8 +448,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The estimator's default score.
+        pandas.DataFrame or pandas.Series
+            The estimator's default score. Wide comparison layouts normally have
+            one column per estimator. For wide layouts with a single value
+            column, a :class:`pandas.Series` is returned with its name set to
+            that column label.
 
         Examples
         --------
@@ -449,7 +469,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Score                       0.94...               0.94...
         """
         return self._metric("score", data_source=data_source).frame(
-            aggregate=aggregate,
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_any_sub_report_has_metric("accuracy"))
@@ -458,7 +478,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the accuracy score.
 
         Parameters
@@ -476,8 +497,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The accuracy score.
+        pandas.DataFrame or pandas.Series
+            The accuracy score. Wide comparison layouts normally have one column
+            per estimator. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -494,7 +518,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Accuracy                    0.94...               0.94...
         """
         return self._metric("accuracy", data_source=data_source).frame(
-            aggregate=aggregate,
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_any_sub_report_has_metric("precision"))
@@ -506,7 +530,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the precision score.
 
         Parameters
@@ -550,8 +575,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The precision score.
+        pandas.DataFrame or pandas.Series
+            The precision score. Wide comparison layouts normally have one column
+            per estimator. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -570,9 +598,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "precision", data_source=data_source, average=average
-        ).frame(
-            aggregate=aggregate,
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_any_sub_report_has_metric("recall"))
     def recall(
@@ -583,7 +609,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the recall score.
 
         Parameters
@@ -628,8 +655,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The recall score.
+        pandas.DataFrame or pandas.Series
+            The recall score. Wide comparison layouts normally have one column
+            per estimator. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -647,7 +677,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
                1                  0.925...              0.925...
         """
         return self._metric("recall", data_source=data_source, average=average).frame(
-            aggregate=aggregate,
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_any_sub_report_has_metric("brier_score"))
@@ -656,7 +686,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the Brier score.
 
         Parameters
@@ -674,8 +705,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The Brier score.
+        pandas.DataFrame or pandas.Series
+            The Brier score. Wide comparison layouts normally have one column
+            per estimator. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -692,7 +726,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Brier score                   0.036...              0.036...
         """
         return self._metric("brier_score", data_source=data_source).frame(
-            aggregate=aggregate,
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_any_sub_report_has_metric("roc_auc"))
@@ -703,7 +737,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         average: Literal["auto", "macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the ROC AUC score.
 
         Parameters
@@ -755,8 +790,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The ROC AUC score.
+        pandas.DataFrame or pandas.Series
+            The ROC AUC score. Wide comparison layouts normally have one column
+            per estimator. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -774,9 +812,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "roc_auc", data_source=data_source, average=average, multi_class=multi_class
-        ).frame(
-            aggregate=aggregate,
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_any_sub_report_has_metric("log_loss"))
     def log_loss(
@@ -784,7 +820,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the log loss.
 
         Parameters
@@ -802,8 +839,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The log-loss.
+        pandas.DataFrame or pandas.Series
+            The log-loss. Wide comparison layouts normally have one column per
+            estimator. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -820,7 +860,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Log loss                   0.110...              0.110...
         """
         return self._metric("log_loss", data_source=data_source).frame(
-            aggregate=aggregate,
+            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
         )
 
     @available_if(_check_any_sub_report_has_metric("r2"))
@@ -830,7 +870,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the R² score.
 
         Parameters
@@ -858,8 +899,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The R² score.
+        pandas.DataFrame or pandas.Series
+            The R² score. Wide comparison layouts normally have one column per
+            estimator. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -877,9 +921,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "r2", data_source=data_source, multioutput=multioutput
-        ).frame(
-            aggregate=aggregate,
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_any_sub_report_has_metric("rmse"))
     def rmse(
@@ -888,7 +930,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the root mean squared error.
 
         Parameters
@@ -916,8 +959,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The root mean squared error.
+        pandas.DataFrame or pandas.Series
+            The root mean squared error. Wide comparison layouts normally have
+            one column per estimator. For wide layouts with a single value
+            column, a :class:`pandas.Series` is returned with its name set to
+            that column label.
 
         Examples
         --------
@@ -935,9 +981,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "rmse", data_source=data_source, multioutput=multioutput
-        ).frame(
-            aggregate=aggregate,
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_any_sub_report_has_metric("mae"))
     def mae(
@@ -947,7 +991,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         multioutput: Literal["raw_values", "uniform_average"]
         | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the mean absolute error.
 
         Parameters
@@ -975,8 +1020,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The mean absolute error.
+        pandas.DataFrame or pandas.Series
+            The mean absolute error. Wide comparison layouts normally have one
+            column per estimator. For wide layouts with a single value column, a
+            :class:`pandas.Series` is returned with its name set to that column
+            label.
 
         Examples
         --------
@@ -994,9 +1042,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "mae", data_source=data_source, multioutput=multioutput
-        ).frame(
-            aggregate=aggregate,
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     @available_if(_check_any_sub_report_has_metric("mape"))
     def mape(
@@ -1006,7 +1052,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         multioutput: Literal["raw_values", "uniform_average"]
         | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+        format: Literal["long", "wide", "auto"] = "wide",
+    ) -> pd.DataFrame | pd.Series:
         """Compute the mean absolute percentage error.
 
         Parameters
@@ -1034,8 +1081,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pd.DataFrame
-            The mean absolute percentage error.
+        pandas.DataFrame or pandas.Series
+            The mean absolute percentage error. Wide comparison layouts normally
+            have one column per estimator. For wide layouts with a single value
+            column, a :class:`pandas.Series` is returned with its name set to
+            that column label.
 
         Examples
         --------
@@ -1053,9 +1103,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "mape", data_source=data_source, multioutput=multioutput
-        ).frame(
-            aggregate=aggregate,
-        )
+        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
 
     ####################################################################################
     # Methods related to displays

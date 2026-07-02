@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any, Literal, cast
 
+import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.base import ClassifierMixin, RegressorMixin
 from sklearn.pipeline import Pipeline
@@ -78,6 +79,11 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         :class:`MetricsSummaryDisplay`
             A display containing the statistics for the metrics.
 
+        See Also
+        --------
+        MetricsSummaryDisplay.frame : Export the summary; wide single-column
+            layouts return a named :class:`pandas.Series`.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -86,40 +92,59 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> report.metrics.summarize().frame(favorability=True).drop(
-        ...    ["Fit time (s)", "Predict time (s)"]
-        ... )
+        >>> summary = report.metrics.summarize().frame(favorability=True)
+        >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
                     LogisticRegression Favorability
         Metric
-        Accuracy               0.94...         (↗︎)
-        Precision              0.98...         (↗︎)
-        Recall                 0.92...         (↗︎)
-        ROC AUC                0.99...         (↗︎)
-        Log loss               0.11...         (↘︎)
-        Brier score            0.03...         (↘︎)
+        accuracy              0.94...          (↗︎)
+        precision             0.98...          (↗︎)
+        recall                0.92...          (↗︎)
+        roc_auc               0.99...          (↗︎)
+        log_loss              0.11...          (↘︎)
+        brier_score           0.03...          (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(metric="log_loss").frame(favorability=True)
-                  LogisticRegression Favorability
+                 LogisticRegression Favorability
         Metric
-        Log loss             0.11...          (↘︎)
-        >>> report.metrics.summarize(
+        log_loss           0.11...          (↘︎)
+        >>> summary = report.metrics.summarize(
         ...    data_source="both"
-        ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
-                     LogisticRegression (train)  LogisticRegression (test)  Favorability
+        ... ).frame(favorability=True)
+        >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
+                    LogisticRegression (train)  LogisticRegression (test) Favorability
         Metric
-        Accuracy                        0.96...                     0.94...          (↗︎)
-        Precision                       0.96...                     0.98...          (↗︎)
-        Recall                          0.97...                     0.92...          (↗︎)
-        ROC AUC                         0.99...                     0.99...          (↗︎)
-        Log loss                        0.08...                     0.11...          (↘︎)
-        Brier score                     0.02...                     0.03...          (↘︎)
+        accuracy                      0.96...                    0.94...          (↗︎)
+        precision                     0.96...                    0.98...          (↗︎)
+        recall                        0.97...                    0.92...          (↗︎)
+        roc_auc                       0.99...                    0.99...          (↗︎)
+        log_loss                      0.08...                    0.11...          (↘︎)
+        brier_score                   0.02...                    0.03...          (↘︎)
         """
         if data_source == "both":
-            train_summary = self.summarize(data_source="train", metric=metric)
-            test_summary = self.summarize(data_source="test", metric=metric)
+            train_summary = self._summarize_display(data_source="train", metric=metric)
+            test_summary = self._summarize_display(data_source="test", metric=metric)
 
-            combined = train_summary.rows + test_summary.rows
-            return MetricsSummaryDisplay(rows=combined, report_type="estimator")
+            combined = pd.concat(
+                [train_summary.summary, test_summary.summary], ignore_index=True
+            )
+            return MetricsSummaryDisplay(summary=combined, report_type="estimator")
+
+        return self._summarize_display(data_source=data_source, metric=metric)
+
+    def _summarize_display(
+        self,
+        *,
+        data_source: DataSource | Literal["both"],
+        metric: str | list[str] | None = None,
+    ) -> MetricsSummaryDisplay:
+        if data_source == "both":
+            train_summary = self._summarize_display(data_source="train", metric=metric)
+            test_summary = self._summarize_display(data_source="test", metric=metric)
+
+            combined = pd.concat(
+                [train_summary.summary, test_summary.summary], ignore_index=True
+            )
+            return MetricsSummaryDisplay(summary=combined, report_type="estimator")
 
         registry = self._parent._metric_registry
         if isinstance(metric, str):
@@ -147,37 +172,59 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                 **parsed_metric.kwargs,
             )
             rows.extend(
-                row
-                | {
-                    "metric_name": parsed_metric.name,
+                {
+                    "name": parsed_metric.name,
+                    "verbose_name": row["metric_verbose_name"],
                     "estimator_name": self._parent.estimator_name_,
                     "data_source": data_source,
+                    "greater_is_better": row["greater_is_better"],
+                    "fingerprint": row["fingerprint"],
+                    "score": row["score"],
+                    "label": row["label"],
+                    "average": row["average"],
+                    "output": row["output"],
                 }
                 for row in metric_rows
             )
 
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        display = MetricsSummaryDisplay._compute_data_for_display(
+            rows, report_type="estimator"
+        )
+        return display
 
     def _metric(
-        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+        self,
+        metric_name: str,
+        *,
+        data_source: DataSource,
+        **kwargs: Any,
     ) -> MetricsSummaryDisplay:
         """Compute a single metric, forwarding ``kwargs`` to the score function."""
         metric = self._parent._metric_registry[metric_name]
         rows = [
             cast(
                 MetricsSummaryRow,
-                row
-                | {
-                    "metric_name": metric.name,
+                {
+                    "name": metric.name,
+                    "verbose_name": row["metric_verbose_name"],
                     "estimator_name": self._parent.estimator_name_,
                     "data_source": data_source,
+                    "greater_is_better": row["greater_is_better"],
+                    "fingerprint": row["fingerprint"],
+                    "score": row["score"],
+                    "label": row["label"],
+                    "average": row["average"],
+                    "output": row["output"],
                 },
             )
             for row in metric.rows(
                 report=self._parent, data_source=data_source, **kwargs
             )
         ]
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        display = MetricsSummaryDisplay._compute_data_for_display(
+            rows, report_type="estimator"
+        )
+        return display
 
     def available(self) -> list[str]:
         """List available metric names in the registry.

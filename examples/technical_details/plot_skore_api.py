@@ -76,7 +76,8 @@ data_display.set_style(scatterplot_kwargs={"color": "orange", "alpha": 1.0})
 data_display.plot(kind="dist", x="mean radius", y="mean texture")
 
 # %%
-# - **Export** the underlying data as a DataFrame:
+# - **Export** the underlying data as a DataFrame or Series (metrics summaries
+#   in wide layout with a single value column return a named Series):
 data_display.frame()
 
 # %%
@@ -183,7 +184,9 @@ comparison_report.metrics.summarize().frame()
 # - **Displays** share a single, predictable API:
 #
 #   - ``plot(**kwargs)`` — render the visualization
-#   - ``frame(**kwargs)`` — return the data as a :class:`pandas.DataFrame`
+#   - ``frame(**kwargs)`` — return the data as a :class:`pandas.DataFrame` or, for
+#     metrics summaries in wide layout with a single value column, a named
+#     :class:`pandas.Series`
 #   - ``set_style(policy=..., **kwargs)`` — customize appearance
 #   - ``help()`` — show available options
 #

@@ -327,17 +327,19 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         return self.__target_names
 
     @computed_field  # type: ignore[prop-decorator]
-    @property
-    def target_ranges(self) -> list[list[float]] | None:
-        """In multi-output regression, the per-target value ranges."""
-        return self.__target_ranges
-
-    @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def target_range(self) -> list[float] | None:
-        """The range of the target values of the dataset used in the report."""
+    def target_range(self) -> list[float] | list[list[float]] | None:
+        """Per-output ``[min, max]`` pairs (multioutput) or flat ``[min, max]``.
+
+        In multi-output regression, one ``[min, max]`` pair per output, aligned
+        with ``target_names``. In single-output regression, the flat
+        ``[min, max]`` of the target. ``None`` in classification.
+        """
         if self.__classes or (self.report.y is None):
             return None
+
+        if self.__target_ranges is not None:  # multioutput regression
+            return self.__target_ranges
 
         target = cast(np.ndarray, self.report.y)
 
@@ -364,25 +366,32 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
         Notes
         -----
-        All metrics whose value is not a scalar are currently ignored:
-        - ignore ``NaN``,
-        - ignore ``list[float]`` for multi-output ML task,
-        - ignore ``dict[str: float]`` for multi-classes ML task.
+        Per-label (per-class) and per-output (multioutput regression) metrics are
+        aggregated independently for each label/output and sent with their
+        dimension so the UI can expose a toggle. Metrics aggregated across labels
+        or outputs are aggregated independently for each ``average`` mode and sent
+        with their ``average`` dimension so the UI can show them as the aggregate
+        variant, except for binary classification where only per-label rows are
+        sent (``average`` is always ``None``). Only non-scalar values (``NaN``)
+        are ignored.
         """
-        data = self.report.metrics.summarize(data_source="both").data
-        scalar = data[
-            (data["label"].isna() & data["output"].isna() & data["average"].isna())
-            & data["score"].notna()
-        ]
+        data = self.report.metrics.summarize(data_source="both").summary
+        selected = data[data["score"].notna()]
+        if self.report._ml_task == "binary-classification":
+            selected = selected[selected["average"].isna()]
 
         aggregated = (
-            scalar.groupby(
+            selected.groupby(
                 [
-                    "metric_name",
-                    "metric_verbose_name",
+                    "name",
+                    "verbose_name",
                     "data_source",
                     "greater_is_better",
-                ]
+                    "label",
+                    "output",
+                    "average",
+                ],
+                dropna=False,
             )
             .agg(
                 mean=("score", "mean"),
@@ -393,13 +402,16 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
         return [
             Metric(
-                name=f"{row['metric_name']}_{suffix}",
-                verbose_name=f"{row['metric_verbose_name']} - {suffix.upper()}",
+                name=f"{row['name']}_{suffix}",
+                verbose_name=f"{row['verbose_name']} - {suffix.upper()}",
                 data_source=row["data_source"],
                 greater_is_better=(
                     row["greater_is_better"] if suffix == "mean" else False
                 ),
                 value=row[suffix],
+                label=None if pd.isna(row["label"]) else row["label"],
+                output=None if pd.isna(row["output"]) else int(row["output"]),
+                average=None if pd.isna(row["average"]) else row["average"],
             )
             for row in aggregated.to_dict("records")
             for suffix in ("mean", "std")

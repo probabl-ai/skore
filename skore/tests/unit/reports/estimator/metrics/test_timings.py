@@ -99,9 +99,7 @@ def test_summarize_fit_time(estimator_data):
     estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
-    assert isinstance(
-        report.metrics.summarize(metric=["fit_time"]).frame(), pd.DataFrame
-    )
+    assert isinstance(report.metrics.summarize(metric=["fit_time"]).frame(), pd.Series)
 
 
 @pytest.mark.parametrize("data_source", ["test", "train"])
@@ -113,5 +111,5 @@ def test_summarize_predict_time(data_source, estimator_data):
         report.metrics.summarize(
             metric=["predict_time"], data_source=data_source
         ).frame(),
-        pd.DataFrame,
+        pd.Series,
     )

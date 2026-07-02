@@ -2,7 +2,7 @@ import pandas as pd
 
 
 def flatten_multi_index(
-    index: pd.MultiIndex | pd.Index, join_str: str = "_"
+    index: pd.MultiIndex | pd.Index, join_str: str = "_", *, lowercase: bool = True
 ) -> pd.Index:
     """Flatten a pandas MultiIndex into a single-level Index.
 
@@ -18,6 +18,9 @@ def flatten_multi_index(
 
     join_str : str, default="_"
         The string to use for joining the levels.
+
+    lowercase : bool, default=True
+        Whether to lowercase the flattened labels.
 
     Returns
     -------
@@ -42,12 +45,26 @@ def flatten_multi_index(
     if not isinstance(index, pd.MultiIndex):
         return index
 
-    return pd.Index(
-        [
+    flattened = [
+        (
             join_str.join(filter(bool, map(str, values)))
             .replace(" ", join_str)
             .replace("#", "")
-            .lower()
-            for values in index
-        ]
+        )
+        for values in index
+    ]
+    if lowercase:
+        flattened = [label.lower() for label in flattened]
+    return pd.Index(flattened)
+
+
+def squeeze_single_column(df: pd.DataFrame) -> pd.DataFrame | pd.Series:
+    """Convert a single-column DataFrame into a named series."""
+    if df.shape[1] != 1:
+        return df
+    name = (
+        flatten_multi_index(df.columns, lowercase=False)[0]
+        if isinstance(df.columns, pd.MultiIndex)
+        else df.columns[0]
     )
+    return df.iloc[:, 0].rename(name)

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Literal, cast
 
 import narwhals as nw
 import numpy as np
+import pandas as pd
 from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -50,7 +51,22 @@ if TYPE_CHECKING:
     from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
 
-_TIMING_METRICS_FLAT = {"fit_time_s", "predict_time_s"}
+_TIMING_METRIC_NAMES = {"fit_time", "predict_time"}
+
+
+def _per_split_metrics_matrix(summary: pd.DataFrame) -> pd.DataFrame:
+    """Pivot test-set metric scores to one row per observation, column per split."""
+    data = summary[~summary["name"].isin(_TIMING_METRIC_NAMES)].copy()
+    for col in ("label", "output", "average"):
+        data[col] = data[col].astype("string").fillna("")
+
+    return data.pivot_table(
+        index=["verbose_name", "label", "output", "average"],
+        columns="split",
+        values="score",
+        aggfunc="first",
+        sort=False,
+    )
 
 
 def _baseline_estimator_report(
@@ -255,14 +271,12 @@ class CheckMetricsConsistencyAcrossSplits(Check):
         """Detect outlier performance across cross-validation splits."""
         report = cast("CrossValidationReport", report)
 
-        report_data = report.metrics.summarize(data_source="test").frame(
-            aggregate=None, flat_index=True
-        )
+        summary = report.metrics.summarize(data_source="test").summary
+        report_data = _per_split_metrics_matrix(summary)
         votes = np.array(
             [
                 detect_outliers_modified_zscore(report_data.loc[idx])
                 for idx in report_data.index
-                if idx not in _TIMING_METRICS_FLAT
             ]
         )
         explanation = []

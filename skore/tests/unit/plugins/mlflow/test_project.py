@@ -2,6 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import mlflow
+import pandas as pd
 import pytest
 from sklearn.linear_model import LinearRegression
 
@@ -91,6 +92,24 @@ def test_log_model_reraises_unexpected_typeerror(monkeypatch) -> None:
 def test_log_artifact_raises_on_unsupported_payload() -> None:
     with pytest.raises(TypeError, match="Unexpected artifact payload type"):
         _log_artifact(project_module.Artifact("bad", 123))
+
+
+def test_log_artifact_logs_series_metrics_as_csv(monkeypatch) -> None:
+    logged: list[tuple[str, str]] = []
+
+    def fake_log_text(text: str, artifact_file: str) -> None:
+        logged.append((text, artifact_file))
+
+    monkeypatch.setattr(mlflow, "log_text", fake_log_text)
+
+    metrics = pd.Series({"accuracy": 0.9, "rmse": 1.2}, name="test")
+    _log_artifact(project_module.Artifact("metrics", metrics))
+
+    assert len(logged) == 1
+    csv_text, artifact_file = logged[0]
+    assert artifact_file == "metrics.csv"
+    assert "accuracy" in csv_text
+    assert "0.9" in csv_text
 
 
 class TestProject:

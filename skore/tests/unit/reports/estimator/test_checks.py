@@ -83,7 +83,7 @@ def test_skd001_detects_overfitting(regression_data):
     X, y = regression_data
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
-    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+    n_metrics = report.metrics.summarize(data_source="test").summary.shape[0] - 2
     assert "SKD001" in issues.index
     assert (
         f"for {n_metrics}/{n_metrics} default predictive metrics"
@@ -107,7 +107,7 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     y = convert_container(y, y_container)
     report = evaluate(DummyRegressor(), X, y)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
-    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+    n_metrics = report.metrics.summarize(data_source="test").summary.shape[0] - 2
     assert "SKD002" in issues.index
     assert (
         f"for {n_metrics}/{n_metrics} comparable metrics"
@@ -281,8 +281,18 @@ def test_skd009_not_detected_on_strong_model(regression_data):
     assert "SKD009" not in codes
 
 
-def test_skd010_detects_slower_than_baseline(regression_data):
+def test_skd010_detects_slower_than_baseline(regression_data, monkeypatch):
     """Check that SKD010 is detected when the model is slower with similar scores."""
+    from skore._sklearn._checks import model_checks
+    from skore._sklearn._checks._utils import get_fitted_estimator
+
+    def mock_get_fit_time(report):
+        if isinstance(get_fitted_estimator(report), RandomForestRegressor):
+            return 0.20
+        return 0.05
+
+    monkeypatch.setattr(model_checks, "get_fit_time", mock_get_fit_time)
+
     X, y = regression_data
     report = evaluate(RandomForestRegressor(n_estimators=200, random_state=0), X, y)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
@@ -966,7 +976,7 @@ def test_custom_metric(binary_classification_data):
     report = evaluate(DummyClassifier(), X, y, pos_label=1)
     report.metrics.add("f1")
     issues = report.checks.summarize().frame(section="issue").set_index("code")
-    n_metrics = report.metrics.summarize(data_source="test").data.shape[0] - 2
+    n_metrics = report.metrics.summarize(data_source="test").summary.shape[0] - 2
     assert "SKD002" in issues.index
     assert (
         f"for {n_metrics}/{n_metrics} comparable metrics"

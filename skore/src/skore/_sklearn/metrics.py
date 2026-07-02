@@ -459,6 +459,7 @@ class Metric:
         score,
         *,
         report: EstimatorReport,
+        data_source: DataSource = "test",
         **kwargs: Any,
     ) -> list[MetricRow]:
         """Convert a score into one or more rows."""
@@ -466,7 +467,12 @@ class Metric:
             # Multimetric scorer
             result = []
             for submetric_name, submetric_value in score.items():
-                rows = self._to_rows(submetric_value, report=report, kwargs=kwargs)
+                rows = self._to_rows(
+                    submetric_value,
+                    report=report,
+                    data_source=data_source,
+                    **kwargs,
+                )
                 for r in rows:
                     r["metric_verbose_name"] = submetric_name
                 result.extend(rows)
@@ -481,7 +487,7 @@ class Metric:
             ]
         if report._ml_task in ("binary-classification", "multiclass-classification"):
             if isinstance(score, np.ndarray):
-                return [
+                rows = [
                     self._row(score=s, label=label)
                     for label, s in zip(
                         report.learner_.classes_.tolist(),
@@ -489,6 +495,7 @@ class Metric:
                         strict=False,
                     )
                 ]
+                return rows
             return [self._row(score=score, average=kwargs.get("average"))]
         if report._ml_task == "multioutput-regression":
             if isinstance(score, np.ndarray):
@@ -528,7 +535,9 @@ class Metric:
         score = self._raw_cached(
             report=report, data_source=data_source, **merged_kwargs
         )
-        return self._to_rows(score, report=report, **merged_kwargs)
+        return self._to_rows(
+            score, report=report, data_source=data_source, **merged_kwargs
+        )
 
     def _to_pretty(self, rows: list[MetricRow]) -> Any:
         """Convert rows into a human-readable metric output."""
@@ -638,6 +647,25 @@ class Precision(Metric):
         return super()._raw(report=report, data_source=data_source, **kwargs)
 
 
+class PrecisionMacro(Precision):
+    name = "precision_macro"
+    verbose_name = "Precision (macro)"
+    kwargs = {"average": "macro"}
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return report._ml_task == "multiclass-classification"
+
+    def _to_rows(self, score, *, report, data_source="test", **kwargs):
+        if isinstance(score, dict):
+            return super()._to_rows(
+                score, report=report, data_source=data_source, **kwargs
+            )
+        if hasattr(score, "item"):
+            score = score.item()
+        return [self._row(score=score)]
+
+
 class Recall(Metric):
     name = "recall"
     verbose_name = "Recall"
@@ -659,6 +687,25 @@ class Recall(Metric):
                 kwargs["pos_label"] = None
 
         return super()._raw(report=report, data_source=data_source, **kwargs)
+
+
+class RecallMacro(Recall):
+    name = "recall_macro"
+    verbose_name = "Recall (macro)"
+    kwargs = {"average": "macro"}
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return report._ml_task == "multiclass-classification"
+
+    def _to_rows(self, score, *, report, data_source="test", **kwargs):
+        if isinstance(score, dict):
+            return super()._to_rows(
+                score, report=report, data_source=data_source, **kwargs
+            )
+        if hasattr(score, "item"):
+            score = score.item()
+        return [self._row(score=score)]
 
 
 class Brier(Metric):
@@ -710,6 +757,25 @@ class RocAuc(Metric):
         if y_score.ndim == 2 and y_score.shape[1] == 2:
             y_score = y_score[:, 1]
         return sklearn.metrics.roc_auc_score(y_true, y_score, **kwargs)
+
+
+class RocAucMacro(RocAuc):
+    name = "roc_auc_macro"
+    verbose_name = "ROC AUC (macro)"
+    kwargs = {"average": "macro", "multi_class": "ovr"}
+
+    @staticmethod
+    def available(report: EstimatorReport) -> bool:
+        return report._ml_task == "multiclass-classification"
+
+    def _to_rows(self, score, *, report, data_source="test", **kwargs):
+        if isinstance(score, dict):
+            return super()._to_rows(
+                score, report=report, data_source=data_source, **kwargs
+            )
+        if hasattr(score, "item"):
+            score = score.item()
+        return [self._row(score=score)]
 
 
 class LogLoss(Metric):
@@ -814,8 +880,11 @@ class Score(Metric):
 BUILTIN_METRICS: list[Metric] = [
     Accuracy(),
     Precision(),
+    PrecisionMacro(),
     Recall(),
+    RecallMacro(),
     RocAuc(),
+    RocAucMacro(),
     LogLoss(),
     Brier(),
     R2(),

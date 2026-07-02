@@ -6,6 +6,8 @@ from importlib.metadata import version
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from uuid import uuid4
 
+import pandas as pd
+
 from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
@@ -209,12 +211,9 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         *,
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
-    ) -> pd.DataFrame:
-        """Metric summary.
-
-        Used for displaying the accessor.
-        """
-        return self.summarize().frame()
+    ) -> pd.DataFrame | pd.Series:
+        """Metric summary frame used for accessor display."""
+        return self.summarize().frame(format="auto", flat_index=True)
 
     def __repr__(self) -> str:
         return (
@@ -224,9 +223,17 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         )
 
     def _repr_html_(self) -> str:
+        frame = self.summarize().frame(
+            format="auto", verbose_name=True, flat_index=False
+        )
+        html = (
+            frame.to_frame()._repr_html_()
+            if isinstance(frame, pd.Series)
+            else frame._repr_html_()
+        )
         return (
             "<p>Metrics summary:</p>"
-            f"{self._formatted_summary_frame()._repr_html_()}"
+            f"{html}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

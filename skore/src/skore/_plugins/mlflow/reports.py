@@ -112,8 +112,8 @@ def iter_cv_metrics(
 
     for name, kwargs in METRICS[ml_task].items():
         method = getattr(report_any.metrics, name)
-        yield Metric(name, method(**kwargs, aggregate="mean").iloc[0, 0])
-        yield Metric(f"{name}_std", method(**kwargs, aggregate="std").iloc[0, 0])
+        yield Metric(name, method(**kwargs, aggregate="mean").iloc[0])
+        yield Metric(f"{name}_std", method(**kwargs, aggregate="std").iloc[0])
         if not kwargs or ml_task == "regression":
             continue
 
@@ -144,10 +144,12 @@ def iter_cv_metrics(
     yield Metric("fit_time_std", fit_time_std)
     yield Metric("predict_time", predict_time)
     yield Metric("predict_time_std", predict_time_std)
-    # NOTE: we could use flat_index=True in summarize, but we have to flatten
-    # other frames anyway, so we don't do it here.
-    yield Artifact("metrics_details/per_split", summary.frame(aggregate=None))
-    yield Artifact("metrics", summary.frame())
+    # NOTE: auto format is wide for single CV reports; use long for per-split details.
+    yield Artifact(
+        "metrics_details/per_split",
+        summary.frame(format="long", aggregate=None),
+    )
+    yield Artifact("metrics", summary.frame(format="auto"))
 
 
 def iter_estimator_metrics(
@@ -181,7 +183,7 @@ def iter_estimator_metrics(
     timings = report_any.metrics.timings()
     yield Metric("fit_time", timings["fit_time"])
     yield Metric("predict_time", timings["predict_time_test"])
-    yield Artifact("metrics", report_any.metrics.summarize().frame())
+    yield Artifact("metrics", report_any.metrics.summarize().frame(format="auto"))
 
 
 def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, None]:
