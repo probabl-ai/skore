@@ -15,6 +15,7 @@ from sklearn.ensemble import (
 )
 from sklearn.linear_model import LogisticRegression, RidgeCV
 from sklearn.model_selection._search import BaseSearchCV
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.utils._param_validation import Interval
 from sklearn.utils._pprint import _changed_params
@@ -65,30 +66,36 @@ def _baseline_estimator_report(
 
     Raises :class:`CheckNotApplicable` for unsupported ml tasks.
     """
-    is_classification = report.ml_task in (
+    supported_tasks = [
         "binary-classification",
         "multiclass-classification",
-    )
-    if not (is_classification or report.ml_task == "regression"):
+        "regression",
+        "multioutput-regression",
+    ]
+    if report.ml_task not in supported_tasks:
         raise CheckNotApplicable(
-            "Unsupported ML task. Supported tasks are: binary-classification, "
-            f"multiclass-classification, regression. Got {report.ml_task}."
+            f"Unsupported ML task. Supported tasks are: {supported_tasks}."
+            f"Got {report.ml_task}."
         )
     if kind == "dummy":
         estimator = (
             DummyClassifier(strategy="prior")
-            if is_classification
+            if "classification" in report.ml_task
             else DummyRegressor(strategy="mean")
         )
     elif kind == "performance":
-        estimator = tabular_pipeline(
-            HistGradientBoostingClassifier()
-            if is_classification
-            else HistGradientBoostingRegressor()
-        )
+        if "classification" in report.ml_task:
+            base_estimator = HistGradientBoostingClassifier()
+        elif report.ml_task == "multioutput-regression":
+            base_estimator = MultiOutputRegressor(HistGradientBoostingRegressor())
+        else:
+            base_estimator = HistGradientBoostingRegressor()
+        estimator = tabular_pipeline(base_estimator)
     else:  # kind == "fast"
         estimator = tabular_pipeline(
-            LogisticRegression(max_iter=1000) if is_classification else RidgeCV()
+            LogisticRegression(max_iter=1000)
+            if "classification" in report.ml_task
+            else RidgeCV()
         )
 
     if report._report_type == "cross-validation":

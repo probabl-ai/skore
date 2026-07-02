@@ -103,6 +103,14 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     )
 
 
+def test_skd002_detects_underfitting_multioutput(regression_multioutput_data):
+    """SKD002 is emitted for multioutput regression when the model underfits."""
+    X, y = regression_multioutput_data
+    report = evaluate(DummyRegressor(), X, y, splitter=3)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD002" in issues.index
+
+
 def test_skd003_detects_inconsistent_splits():
     """Check that the inconsistent performance across splits issue is detected."""
     X, y = make_classification(n_samples=400, n_features=5, random_state=0)
@@ -231,6 +239,21 @@ def test_skd008_correlated_features():
     assert "1 pair(s) of features" in issues.loc["SKD008", "explanation"]
 
 
+def test_skd008_correlated_features_multioutput(regression_multioutput_data):
+    """SKD008 is emitted for multioutput regression when features are correlated."""
+    X, y = regression_multioutput_data
+    rng = np.random.RandomState(42)
+    X[:, 1] = X[:, 0] + rng.standard_normal(X.shape[0]) * 1e-4
+    report = evaluate(
+        LinearRegression(),
+        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
+        y,
+        splitter=3,
+    )
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD008" in issues.index
+
+
 def test_skd009_detects_worse_than_baseline(regression_data):
     """Check that the worse-than-baseline issue is detected."""
     X, y = regression_data
@@ -249,6 +272,14 @@ def test_skd009_not_detected_on_strong_model():
     report = evaluate(RidgeCV(), X, y, splitter=3)
     codes = set(report.checks.summarize().frame(section="issue")["code"])
     assert "SKD009" not in codes
+
+
+def test_skd009_detects_worse_than_baseline_multioutput(regression_multioutput_data):
+    """SKD009 emitted for multioutput regression when model is worse than baseline."""
+    X, y = regression_multioutput_data
+    report = evaluate(DummyRegressor(), X, y, splitter=3)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD009" in issues.index
 
 
 def test_skd010_detects_slower_than_baseline(regression_data):
