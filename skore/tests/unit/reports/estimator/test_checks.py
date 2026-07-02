@@ -99,6 +99,7 @@ def test_skd001_detects_overfitting(regression_data):
         ("polars", "polars_series"),
     ],
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     """Check that the underfitting issue is detected."""
     X, y = regression_data
@@ -126,6 +127,7 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
 @pytest.mark.parametrize(
     "weights, code", [([0.9, 0.1], "SKD004"), ([0.9, 0.05, 0.05], "SKD005")]
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_skd004_skd005_detects_high_class_imbalance(
     weights, code, x_container, y_container
 ):
@@ -173,6 +175,9 @@ def test_skd006_detects_coefficient_interpretation(regression_data):
     assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
 def test_skd006_tabular_pipeline_with_numpy_X(regression_data):
     """SKD006 runs when tabular_pipeline is evaluated on raw numpy features."""
     X, y = regression_data
@@ -501,6 +506,9 @@ def test_skd014_skips_non_numeric_hyperparameters(regression_data, param_grid):
             Ridge(), param_distributions={"alpha": [0.1, 1.0, 10.0]}, cv=2
         ),
     ],
+)
+@pytest.mark.filterwarnings(
+    "ignore:The total space of parameters .* is smaller than n_iter:UserWarning"
 )
 def test_skd014_search_classes(regression_data, monkeypatch, search):
     """SKD014 runs for GridSearchCV and RandomizedSearchCV using cv_results_."""

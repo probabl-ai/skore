@@ -20,9 +20,9 @@ def estimator_report():
     X, y = data.X, data.y
     X["gender"] = X["gender"].astype("category")
     X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
-    X["timedelta_hired"] = (
-        pd.Timestamp.now() - X["date_first_hired"]
-    ).dt.to_pytimedelta()
+    X["timedelta_hired"] = np.array(
+        (pd.Timestamp.now() - X["date_first_hired"]).dt.to_pytimedelta()
+    )
     X["cents"] = 100 * y
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
     return EstimatorReport(
@@ -82,6 +82,9 @@ def test_constructor(display):
         ("polars", "polars_series"),
     ],
 )
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
 def test_display_creation_with_containers(x_container, y_container):
     """Check that summarize returns a display for paired container types."""
     X, y = make_regression(n_samples=100, n_features=5, random_state=42)
@@ -122,6 +125,12 @@ def test_display_creation_with_containers(x_container, y_container):
         pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
         pd.DataFrame(np.ones((100, 1))),
     ],
+)
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+@pytest.mark.filterwarnings(
+    "ignore:Some dataframe column names are not strings:UserWarning"
 )
 def test_X_y(X, y):
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)

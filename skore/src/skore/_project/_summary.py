@@ -64,6 +64,7 @@ class Summary(ReprHTMLMixin):
 
     def __init__(self, dataframe: DataFrame, project: Any = None) -> None:
         if not dataframe.empty:
+            dataframe = dataframe.copy()
             dataframe["date"] = to_datetime(dataframe["date"], errors="coerce")
             dataframe["learner"] = Categorical(dataframe["learner"])
             for column in ("key", "dataset", "ml_task", "report_type"):

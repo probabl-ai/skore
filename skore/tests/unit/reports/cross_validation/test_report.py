@@ -254,6 +254,9 @@ def test_to_markdown(forest_binary_classification_data):
     assert "fit time:" in markdown
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+)
 def test_report_repr_html_binary_classification():
     X, y = make_classification(n_classes=2, random_state=42)
     estimator = DummyClassifier()
@@ -283,6 +286,9 @@ def test_report_repr_html_multioutput_regression(regression_multioutput_data):
 
 
 @pytest.mark.parametrize("splitter", [2, 3])
+@pytest.mark.filterwarnings(
+    "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+)
 def test_report_repr_html_sklearn_estimator_bad_html_repr(splitter):
     """HTML repr must still work when the underlying estimator rejects
     ``_repr_html_``."""
