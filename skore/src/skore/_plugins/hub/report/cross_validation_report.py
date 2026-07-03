@@ -7,6 +7,7 @@ from inspect import signature
 from itertools import chain
 from typing import Any, ClassVar, cast
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
@@ -157,12 +158,15 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             from skore._utils._dataframe import _normalize_y_as_dataframe
 
             y_df = _normalize_y_as_dataframe(self.report.y)
-            y_arr = np.asarray(self.report.y)
+            y_nw = nw.from_native(y_df)
+
+            def min_max(series: nw.Series[Any]) -> list[float]:
+                return [float(series.min()), float(series.max())]
 
             self.__sample_to_class_index = None
             self.__classes = None
-            self.__target_names = [str(name) for name in y_df.columns]
-            self.__target_ranges = [[float(c.min()), float(c.max())] for c in y_arr.T]
+            self.__target_names = list(map(str, y_nw.columns))
+            self.__target_ranges = list(map(min_max, y_nw.iter_columns()))
             self.__target_range = None
         elif self.ml_task == "regression" and (self.report.y is not None):
             y_arr = np.asarray(self.report.y)
