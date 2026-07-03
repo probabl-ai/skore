@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Literal, cast
 
 import narwhals as nw
 import numpy as np
-import pandas as pd
 from scipy.stats import spearmanr
 from sklearn.base import clone
 from sklearn.dummy import DummyClassifier, DummyRegressor
@@ -16,6 +15,7 @@ from sklearn.ensemble import (
 )
 from sklearn.linear_model import LogisticRegression, RidgeCV
 from sklearn.model_selection._search import BaseSearchCV
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.utils._param_validation import Interval
 from sklearn.utils._pprint import _changed_params
@@ -51,22 +51,7 @@ if TYPE_CHECKING:
     from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
 
-_TIMING_METRIC_NAMES = {"fit_time", "predict_time"}
-
-
-def _per_split_metrics_matrix(summary: pd.DataFrame) -> pd.DataFrame:
-    """Pivot test-set metric scores to one row per observation, column per split."""
-    data = summary[~summary["name"].isin(_TIMING_METRIC_NAMES)].copy()
-    for col in ("label", "output", "average"):
-        data[col] = data[col].astype("string").fillna("")
-
-    return data.pivot_table(
-        index=["verbose_name", "label", "output", "average"],
-        columns="split",
-        values="score",
-        aggfunc="first",
-        sort=False,
-    )
+_TIMING_METRICS_FLAT = {"fit_time", "predict_time"}
 
 
 def _baseline_estimator_report(
@@ -81,30 +66,35 @@ def _baseline_estimator_report(
 
     Raises :class:`CheckNotApplicable` for unsupported ml tasks.
     """
-    is_classification = report.ml_task in (
+    supported_tasks = [
         "binary-classification",
         "multiclass-classification",
-    )
-    if not (is_classification or report.ml_task == "regression"):
+        "regression",
+        "multioutput-regression",
+    ]
+    if report.ml_task not in supported_tasks:
         raise CheckNotApplicable(
-            "Unsupported ML task. Supported tasks are: binary-classification, "
-            f"multiclass-classification, regression. Got {report.ml_task}."
+            f"Expected ML task to be one of {supported_tasks}; got {report.ml_task}."
         )
     if kind == "dummy":
         estimator = (
             DummyClassifier(strategy="prior")
-            if is_classification
+            if "classification" in report.ml_task
             else DummyRegressor(strategy="mean")
         )
     elif kind == "performance":
-        estimator = tabular_pipeline(
-            HistGradientBoostingClassifier()
-            if is_classification
-            else HistGradientBoostingRegressor()
-        )
+        if "classification" in report.ml_task:
+            base_estimator = HistGradientBoostingClassifier()
+        elif report.ml_task == "multioutput-regression":
+            base_estimator = MultiOutputRegressor(HistGradientBoostingRegressor())
+        else:
+            base_estimator = HistGradientBoostingRegressor()
+        estimator = tabular_pipeline(base_estimator)
     else:  # kind == "fast"
         estimator = tabular_pipeline(
-            LogisticRegression(max_iter=1000) if is_classification else RidgeCV()
+            LogisticRegression(max_iter=1000)
+            if "classification" in report.ml_task
+            else RidgeCV()
         )
 
     if report._report_type == "cross-validation":
@@ -271,12 +261,14 @@ class CheckMetricsConsistencyAcrossSplits(Check):
         """Detect outlier performance across cross-validation splits."""
         report = cast("CrossValidationReport", report)
 
-        summary = report.metrics.summarize(data_source="test").summary
-        report_data = _per_split_metrics_matrix(summary)
+        report_data = report.metrics.summarize(data_source="test").frame(
+            aggregate=None, flat_index=True
+        )
         votes = np.array(
             [
                 detect_outliers_modified_zscore(report_data.loc[idx])
                 for idx in report_data.index
+                if idx not in _TIMING_METRICS_FLAT
             ]
         )
         explanation = []

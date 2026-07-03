@@ -11,13 +11,12 @@ from sklearn.pipeline import Pipeline
 from sklearn.tree import DecisionTreeRegressor
 from skrub import DatetimeEncoder, tabular_pipeline
 
-from skore import Check, CrossValidationReport, evaluate
+from skore import Check, evaluate
 from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.model_checks import (
     CheckHyperparamsAtSearchEdge,
     CheckSearchParamsToTune,
-    _per_split_metrics_matrix,
 )
 
 
@@ -106,17 +105,12 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     )
 
 
-def test_skd003_excludes_timing_metrics(forest_binary_classification_data):
-    """Timing metrics must not participate in split consistency detection."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    matrix = _per_split_metrics_matrix(
-        report.metrics.summarize(data_source="test").summary
-    )
-
-    assert not any(
-        idx[0] in {"Fit time (s)", "Predict time (s)"} for idx in matrix.index
-    )
+def test_skd002_detects_underfitting_multioutput(regression_multioutput_data):
+    """SKD002 is emitted for multioutput regression when the model underfits."""
+    X, y = regression_multioutput_data
+    report = evaluate(DummyRegressor(), X, y, splitter=3)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD002" in issues.index
 
 
 def test_skd003_detects_inconsistent_splits():
@@ -131,8 +125,13 @@ def test_skd003_detects_inconsistent_splits():
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD003" in issues.index
     assert "split #0" in issues.loc["SKD003", "explanation"]
-    n_metrics = len(
-        _per_split_metrics_matrix(report.metrics.summarize(data_source="test").summary)
+    n_metrics = (
+        len(
+            report.metrics.summarize(data_source="test").frame(
+                aggregate=None, flat_index=True
+            )
+        )
+        - 2  # -2 for the timing metrics
     )
     assert f"for {n_metrics}/{n_metrics} metrics" in issues.loc["SKD003", "explanation"]
 
@@ -242,6 +241,21 @@ def test_skd008_correlated_features():
     assert "1 pair(s) of features" in issues.loc["SKD008", "explanation"]
 
 
+def test_skd008_correlated_features_multioutput(regression_multioutput_data):
+    """SKD008 is emitted for multioutput regression when features are correlated."""
+    X, y = regression_multioutput_data
+    rng = np.random.RandomState(42)
+    X[:, 1] = X[:, 0] + rng.standard_normal(X.shape[0]) * 1e-4
+    report = evaluate(
+        LinearRegression(),
+        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
+        y,
+        splitter=3,
+    )
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD008" in issues.index
+
+
 def test_skd009_detects_worse_than_baseline(regression_data):
     """Check that the worse-than-baseline issue is detected."""
     X, y = regression_data
@@ -262,18 +276,16 @@ def test_skd009_not_detected_on_strong_model():
     assert "SKD009" not in codes
 
 
-def test_skd010_detects_slower_than_baseline(regression_data, monkeypatch):
+def test_skd009_detects_worse_than_baseline_multioutput(regression_multioutput_data):
+    """SKD009 emitted for multioutput regression when model is worse than baseline."""
+    X, y = regression_multioutput_data
+    report = evaluate(DummyRegressor(), X, y, splitter=3)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD009" in issues.index
+
+
+def test_skd010_detects_slower_than_baseline(regression_data):
     """Check that SKD010 is detected when the model is slower with similar scores."""
-    from skore._sklearn._checks import model_checks
-    from skore._sklearn._checks._utils import get_fitted_estimator
-
-    def mock_get_fit_time(report):
-        if isinstance(get_fitted_estimator(report), RandomForestRegressor):
-            return 0.20
-        return 0.05
-
-    monkeypatch.setattr(model_checks, "get_fit_time", mock_get_fit_time)
-
     X, y = regression_data
     report = evaluate(
         RandomForestRegressor(n_estimators=200, random_state=0), X, y, splitter=3
