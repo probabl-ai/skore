@@ -327,19 +327,17 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         return self.__target_names
 
     @computed_field  # type: ignore[prop-decorator]
-    @cached_property
-    def target_range(self) -> list[float] | list[list[float]] | None:
-        """Per-output ``[min, max]`` pairs (multioutput) or flat ``[min, max]``.
+    @property
+    def target_ranges(self) -> list[list[float]] | None:
+        """In multi-output regression, the per-target value ranges."""
+        return self.__target_ranges
 
-        In multi-output regression, one ``[min, max]`` pair per output, aligned
-        with ``target_names``. In single-output regression, the flat
-        ``[min, max]`` of the target. ``None`` in classification.
-        """
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def target_range(self) -> list[float] | None:
+        """The range of the target values of the dataset used in the report."""
         if self.__classes or (self.report.y is None):
             return None
-
-        if self.__target_ranges is not None:  # multioutput regression
-            return self.__target_ranges
 
         target = cast(np.ndarray, self.report.y)
 

@@ -242,11 +242,11 @@ class TestCrossValidationReportPayload:
 
         assert payload.ml_task == "multioutput-regression"
         assert payload.target_names == ["Target 0", "Target 1"]
-        assert payload.target_range == [
+        assert payload.target_ranges == [
             [float(y[:, 0].min()), float(y[:, 0].max())],
             [float(y[:, 1].min()), float(y[:, 1].max())],
         ]
-        assert len(payload.target_range) == len(payload.target_names)
+        assert payload.target_range == [float(y.min()), float(y.max())]
 
     @mark.filterwarnings(
         # ignore deprecation warning due to `scikit-learn` misusing `scipy` arguments,
@@ -1211,6 +1211,7 @@ class TestCrossValidationReportPayload:
             "groups": None,
             "target_range": None,
             "target_names": None,
+            "target_ranges": None,
         }
 
     @mark.respx(assert_all_called=False)
