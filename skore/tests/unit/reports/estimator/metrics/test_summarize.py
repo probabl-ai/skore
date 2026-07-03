@@ -15,10 +15,12 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 from sklearn.base import clone
 from sklearn.datasets import make_classification
+from sklearn.decomposition import PCA
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_score, recall_score
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
 
 from skore import EstimatorReport, MetricsSummaryDisplay
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
@@ -231,7 +233,11 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
     )
 
 
-def test_default_non_standard_score(binary_classification_data):
+@pytest.mark.parametrize("wrap_in_pipeline", [False, True])
+@pytest.mark.parametrize("has_custom_score", [False, True])
+def test_default_non_standard_score(
+    binary_classification_data, wrap_in_pipeline, has_custom_score
+):
     """
     If the estimator has a non-standard `.score` method, `summarize` will include it.
     """
@@ -241,25 +247,27 @@ def test_default_non_standard_score(binary_classification_data):
             return 1
 
     X, y = binary_classification_data
-    report = EstimatorReport(
-        CustomScoreEstimator(), X_train=X, y_train=y, X_test=X, y_test=y
-    )
+    predictor = CustomScoreEstimator() if has_custom_score else RandomForestClassifier()
+    estimator = make_pipeline(PCA(), predictor) if wrap_in_pipeline else predictor
+    report = EstimatorReport(estimator, X_train=X, y_train=y, X_test=X, y_test=y)
     display = report.metrics.summarize()
 
+    expected_metrics = {
+        "Brier score",
+        "Log loss",
+        "ROC AUC",
+        "Accuracy",
+        "Precision",
+        "Recall",
+        "Fit time (s)",
+        "Predict time (s)",
+    }
+    if has_custom_score:
+        expected_metrics.add("Score")
     check_display_structure(
         display,
-        expected_metrics={
-            "Score",
-            "Brier score",
-            "Log loss",
-            "ROC AUC",
-            "Accuracy",
-            "Precision",
-            "Recall",
-            "Fit time (s)",
-            "Predict time (s)",
-        },
-        expected_estimator_name="CustomScoreEstimator",
+        expected_metrics=expected_metrics,
+        expected_estimator_name=predictor.__class__.__name__,
     )
 
 

@@ -320,20 +320,6 @@ def test_clustering():
         EstimatorReport(KMeans(), X_test=None, y_test=None)
 
 
-def test_has_no_deep_copy():
-    """Check that we raise a warning if the deep copy failed."""
-    X, y = make_classification(n_classes=2, random_state=42)
-
-    estimator = LogisticRegression()
-
-    # Make it so deepcopy does not work
-    estimator.__reduce_ex__ = None
-    estimator.__reduce__ = None
-
-    with pytest.warns(UserWarning, match="Deepcopy failed"):
-        EstimatorReport(estimator, X_train=X, y_train=y, X_test=X, y_test=y)
-
-
 class _DummyClassifierBadRepr(DummyClassifier):
     def _repr_html_(self):
         raise TypeError("error")

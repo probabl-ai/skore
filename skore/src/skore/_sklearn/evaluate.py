@@ -23,7 +23,7 @@ from skore._utils._skrub import data_op_has_explicit_cv, get_data_op
 
 def evaluate(
     estimator: EstimatorLike | list[EstimatorLike] | dict[str, EstimatorLike],
-    X: ArrayLike | list[ArrayLike | None] | dict[str, ArrayLike] | None = None,
+    X: ArrayLike | None = None,
     y: ArrayLike | None = None,
     data: dict | None = None,
     *,
@@ -53,15 +53,12 @@ def evaluate(
         - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
           by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
-    X : array-like, list of array-like, dict of array-like, or None
-        Feature matrix. When ``estimator`` is a list, ``X`` can be a list of
-        feature matrices (one per estimator) to compare models with different
-        preprocessing pipelines. When ``estimator`` is a dict, ``X`` can be a
-        dict with the same keys, mapping each name to its feature matrix, or
-        a single matrix broadcast to every estimator. When comparing prefit
-        estimators and no test features are needed, pass ``X=None``. A list of
-        ``X`` is not supported when ``estimator`` is a dict; use a dict aligned on
-        names or a single matrix.
+    X : array-like or None
+        Feature matrix shared by all estimators when comparing several models.
+        When comparing prefit estimators and no test features are needed,
+        pass ``X=None``. To compare estimators evaluated on different feature
+        matrices, call :func:`~skore.evaluate` once per estimator, then
+        :func:`~skore.compare`.
 
     y : array-like of shape (n_samples,), or None
         Target vector.
@@ -148,10 +145,11 @@ def evaluate(
     >>> list(report.reports_)
     ['m1', 'm2']
     """
-    if not isinstance(estimator, (list, dict)) and isinstance(X, (list, dict)):
+    if isinstance(X, (list, dict)):
         raise TypeError(
-            "X must be a single array-like (or None) when estimator is not a list"
-            " or dict."
+            "X must be a single array-like or None. To compare estimators "
+            "evaluated on different feature matrices, call evaluate() once per "
+            "model, then use skore.compare()."
         )
 
     if X is None and y is None and data is None:
@@ -163,33 +161,11 @@ def evaluate(
         if isinstance(estimator, dict):
             names = list(estimator.keys())
             estimators = list(estimator.values())
-            if isinstance(X, list):
-                raise TypeError(
-                    "When estimator is a dict, X cannot be a list. Pass a single "
-                    "array-like broadcast to all estimators, or a "
-                    "dict[str, array-like] with the same keys as estimator."
-                )
-            if isinstance(X, dict):
-                if set(X) != set(names):
-                    raise ValueError(
-                        "When estimator and X are both dicts, they must have the "
-                        f"same keys; got estimator keys {sorted(names)!r}"
-                        f" and X keys {sorted(X)!r}."
-                    )
-
-                Xs = [X[name] for name in names]
-            else:
-                Xs = [cast(ArrayLike, X)] * len(estimators)
-        else:  # isinstance(estimator, list)
+        else:
             names = None
             estimators = estimator
-            if isinstance(X, dict):
-                raise TypeError(
-                    "When estimator is a list, X cannot be a dict. Pass a single "
-                    "array-like broadcast to all estimators, or a list of "
-                    "array-like with one matrix per estimator."
-                )
-            Xs = cast(list, X if isinstance(X, list) else [X] * len(estimators))
+
+        Xs = [cast(ArrayLike, X)] * len(estimators)
 
         reports = cast(
             list[EstimatorReport] | list[CrossValidationReport],
@@ -212,8 +188,6 @@ def evaluate(
                 dict(zip(names, reports, strict=True)), n_jobs=n_jobs
             )
         return ComparisonReport(reports, n_jobs=n_jobs)
-
-    X = cast(ArrayLike | None, X)
 
     if splitter is _DEFAULT:
         data_op = get_data_op(estimator)

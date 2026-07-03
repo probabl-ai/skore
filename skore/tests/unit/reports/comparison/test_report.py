@@ -17,6 +17,7 @@ from skore import (
     ComparisonReport,
     CrossValidationReport,
     EstimatorReport,
+    compare,
     evaluate,
 )
 from skore._externals._sklearn_compat import convert_container
@@ -484,7 +485,10 @@ def test_to_markdown_pos_label():
 def test_to_markdown_different_datasets():
     X1, y = make_classification(n_samples=100, n_features=20, random_state=0)
     X2, _ = make_classification(n_samples=100, n_features=10, random_state=1)
-    report = evaluate([LinearRegression(), LinearRegression()], [X1, X2], y)
+    model = LinearRegression()
+    r1 = evaluate(model, X1, y)
+    r2 = evaluate(model, X2, y)
+    report = compare([r1, r2])
     markdown = report.to_markdown()
     assert "## Data" in markdown
     assert "| report name | n_rows | n_columns |" in markdown

@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import copy
 import html
 import uuid
-import warnings
 from dataclasses import asdict
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
@@ -114,9 +112,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
           by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
-        The estimator passed will not be modified in-place: it is deep-copied, and if
-        it is not already fitted, the copy is cloned before being fitted on the
-        training data.
+        If the estimator is not fitted, it is cloned and then fitted on the training
+        data.
 
     X_train : {array-like, sparse matrix} of shape (n_samples, n_features) or \
             None
@@ -237,22 +234,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             estimator_.fit(data)
         return estimator_, fit_time()
 
-    @classmethod
-    def _copy_estimator(cls, estimator: EstimatorLike) -> EstimatorLike:
-        """Copy the estimator."""
-        try:
-            return copy.deepcopy(estimator)
-        except Exception as e:
-            warnings.warn(
-                "Deepcopy failed; using estimator as-is. "
-                "Be aware that modifying the estimator outside of "
-                f"{cls.__name__} will modify the internal estimator. "
-                "Consider using a FrozenEstimator from scikit-learn to prevent this. "
-                f"Original error: {e}",
-                stacklevel=1,
-            )
-        return estimator
-
     def __init__(
         self,
         estimator: EstimatorLike,
@@ -266,7 +247,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         pos_label: PositiveLabel | None = None,
     ) -> None:
         super().__init__()
-        estimator = self._copy_estimator(estimator)
         self.estimator = estimator
 
         if isinstance(estimator, skrub.DataOp):

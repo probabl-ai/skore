@@ -45,8 +45,9 @@ produce a visualization return a **Display** object with ``plot()``, ``frame()``
 # :class:`~skore.EstimatorReport`. The accessors and display API shown below
 # are the same for the other report types.
 from sklearn.datasets import load_breast_cancer
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from skore import evaluate
+from skore import compare, evaluate
 from skrub import tabular_pipeline
 
 X, y = load_breast_cancer(return_X_y=True, as_frame=True)
@@ -131,10 +132,43 @@ _ = cv_report.inspection.coefficients().plot(select_k=10, sorting_order="descend
 # Third report type: comparison
 # =============================
 #
-# Passing a **list or dict of estimators** to :func:`~skore.evaluate` returns a
-# :class:`~skore.ComparisonReport`. It exposes the same ``metrics`` and
-# ``inspection`` accessors (no ``data`` accessor, since compared models can
-# use different datasets). The display API is unchanged.
+# Skore makes it possible to compare several estimators side by side with a
+# :class:`~skore.ComparisonReport`. Pass a list or dict of estimators to
+# :func:`~skore.evaluate` along with a single ``X`` and ``y``; each model is
+# evaluated on the same data. The resulting report exposes the same
+# ``metrics`` and ``inspection`` accessors as the other report types (there is
+# no ``data`` accessor, because compared models may rely on different inputs).
+# Methods on these accessors still return **Display** objects, so the display
+# API is unchanged.
+comparison_report = evaluate(
+    [
+        tabular_pipeline(LogisticRegression()),
+        tabular_pipeline(RandomForestClassifier()),
+    ],
+    X,
+    y,
+    splitter=0.2,
+)
+comparison_report
+
+# %%
+comparison_report.metrics.summarize().frame()
+
+# %%
+# To compare evaluations on different feature matrices, call
+# :func:`~skore.evaluate` once per matrix, then pass the resulting reports to
+# :func:`~skore.compare`:
+X_1 = X.iloc[:, :15]
+X_2 = X.iloc[:, 15:]
+report_logistic = evaluate(tabular_pipeline(LogisticRegression()), X_1, y, splitter=0.2)
+report_forest = evaluate(
+    tabular_pipeline(RandomForestClassifier()), X_2, y, splitter=0.2
+)
+comparison_report = compare([report_logistic, report_forest])
+comparison_report.help()
+
+# %%
+comparison_report.metrics.summarize().frame()
 
 # %%
 # Summary

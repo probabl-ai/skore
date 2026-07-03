@@ -4,6 +4,7 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable, Sized
 from functools import cached_property
 from inspect import signature
+from itertools import chain
 from typing import Any, ClassVar, cast
 
 import numpy as np
@@ -42,6 +43,7 @@ from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
 
+SPLITTING_STRATEGY_MAX_INDEX_COUNT = 10_000
 SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
 TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT = 100
 SPLITTERS = {
@@ -59,23 +61,28 @@ def _regression_target_kdes(
     y: np.ndarray,
 ) -> tuple[list[list[float]], list[tuple[float, float]]]:
     """Estimate per-target density curves for regression splitting strategy."""
-    sample_count = TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT
-    y = np.asarray(y)
-    if y.ndim == 1:
-        lo, hi = float(y.min()), float(y.max())
-        linspace = np.linspace(lo, hi, num=sample_count)
-        kde = gaussian_kde(y)
-        return [[float(x) for x in kde(linspace)]], [(lo, hi)]
 
-    curves: list[list[float]] = []
-    ranges: list[tuple[float, float]] = []
-    for col in y.T:
-        col_arr = np.asarray(col).ravel()
+    def _target_distribution(
+        col_arr: np.ndarray,
+    ) -> tuple[list[float], tuple[float, float]]:
+        col_arr = np.asarray(col_arr).ravel()
         lo, hi = float(col_arr.min()), float(col_arr.max())
-        linspace = np.linspace(lo, hi, num=sample_count)
-        curves.append([float(x) for x in gaussian_kde(col_arr).evaluate(linspace)])
-        ranges.append((lo, hi))
-    return curves, ranges
+        linspace = np.linspace(lo, hi, num=TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT)
+
+        if len(col_arr) > 1:
+            curve = [float(x) for x in gaussian_kde(col_arr).evaluate(linspace)]
+        else:
+            # Fallback when `y` is not compatible with `gaussian_kde`
+            distribution = np.zeros(TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT, dtype=float)
+            distribution[np.abs(linspace - col_arr[0]).argmin()] = 1.0
+            curve = [float(x) for x in distribution]
+
+        return curve, (lo, hi)
+
+    y = np.asarray(y)
+    columns: Iterable[np.ndarray] = [y] if y.ndim == 1 else y.T
+    curves, ranges = zip(*map(_target_distribution, columns), strict=True)
+    return list(curves), list(ranges)
 
 
 def _flatten_regression_target_kdes(curves: list[list[float]]) -> list[float]:
@@ -175,6 +182,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         if self.report.y is None:
             return {}
 
+        splits: list[list[int] | None] = []
         splitter = self.report.splitter
         target = cast(Sized, self.report.y)
         is_classifier = "classification" in self.ml_task
@@ -193,54 +201,67 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             "random_state": getattr(splitter, "random_state", None),
         }
 
-        rng = np.random.default_rng(0)
-        rng_size = min(len(target), SPLITTING_STRATEGY_REPR_SAMPLE_COUNT)
+        # create a simplified splitter without shuffling and repetitions when possible
+        if simplified_cls := SPLITTERS.get(splitter.__class__.__name__):
+            rng = np.random.default_rng(0)
+            rng_size = min(len(target), SPLITTING_STRATEGY_REPR_SAMPLE_COUNT)
 
-        if len(target) < SPLITTING_STRATEGY_REPR_SAMPLE_COUNT:
-            target_repr = target
-        elif is_classifier:
-            # create an undersampled target to create a simplify representation
-            if not isinstance(target, pd.Series):
-                target = pd.Series(target)
+            if len(target) < SPLITTING_STRATEGY_REPR_SAMPLE_COUNT:
+                target_repr = target
+            elif is_classifier:
+                # create an undersampled target to create a simplify representation
+                if not isinstance(target, pd.Series):
+                    target = pd.Series(target)
 
-            probs = target.value_counts(normalize=True)
-            target_repr = rng.choice(
-                probs.index.to_numpy(),  # classes
-                size=rng_size,
-                p=probs.to_numpy(),  # probabilities
-                replace=True,
+                probs = target.value_counts(normalize=True)
+                target_repr = rng.choice(
+                    probs.index.to_numpy(),  # classes
+                    size=rng_size,
+                    p=probs.to_numpy(),  # probabilities
+                    replace=True,
+                )
+                target_repr.sort()
+            else:  # regression
+                # uniformly sample the target because it will have no impact on the
+                # representation
+                target_repr = rng.choice(
+                    cast(np.ndarray, target), size=rng_size, replace=False
+                )
+
+            simplified_cls_parameters = {}
+
+            for key in signature(simplified_cls.__init__).parameters:
+                if key in splitter_metadata:
+                    simplified_cls_parameters[key] = splitter_metadata[key]
+                elif hasattr(splitter, key):
+                    simplified_cls_parameters[key] = getattr(splitter, key)
+
+            if "shuffle" in simplified_cls_parameters:
+                simplified_cls_parameters["shuffle"] = False
+                simplified_cls_parameters["random_state"] = None
+
+            target = target_repr
+            simplified_splitter = simplified_cls(**simplified_cls_parameters)
+            split_generator = simplified_splitter.split(
+                rng.normal(size=(rng_size, 1)),
+                target_repr,
             )
-            target_repr.sort()
-        else:  # regression
-            # uniformly sample the target because it will have no impact on the
-            # representation
-            target_repr = rng.choice(
-                cast(np.ndarray, target), size=rng_size, replace=False
+        else:
+            total_index_count = sum(
+                len(cast(Sized, indices))
+                for indices in chain.from_iterable(self.report.split_indices)
             )
 
-        # create a simplified splitter without shuffling and repetitions
-        simplified_cls = SPLITTERS.get(splitter.__class__.__name__, splitter.__class__)
-        simplified_cls_parameters = {}
-
-        for key in signature(simplified_cls.__init__).parameters:
-            if key in splitter_metadata:
-                simplified_cls_parameters[key] = splitter_metadata[key]
-            elif hasattr(splitter, key):
-                simplified_cls_parameters[key] = getattr(splitter, key)
-
-        if "shuffle" in simplified_cls_parameters:
-            simplified_cls_parameters["shuffle"] = False
-            simplified_cls_parameters["random_state"] = None
-
-        simplified_splitter = simplified_cls(**simplified_cls_parameters)
+            if total_index_count > SPLITTING_STRATEGY_MAX_INDEX_COUNT:
+                splits = [None] * len(self.report.split_indices)
+                split_generator = []
+            else:
+                split_generator = self.report.split_indices
 
         # Per split: one list of length N_SAMPLES_REPR, ordered by sample index,
         # with 0 = train fold and 1 = test fold for that split.
-        splits: list[list[int]] = []
-        X = rng.normal(size=(rng_size, 1))
-
-        for train_idx, test_idx in simplified_splitter.split(X, target_repr):
-            split_flags = np.full(rng_size, -1, dtype=int)
+        for train_idx, test_idx in split_generator:
+            split_flags = np.full(len(target), -1, dtype=int)
             split_flags[train_idx] = 0
             split_flags[test_idx] = 1
 
@@ -375,9 +396,9 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
                 name=f"{row['metric_name']}_{suffix}",
                 verbose_name=f"{row['metric_verbose_name']} - {suffix.upper()}",
                 data_source=row["data_source"],
-                greater_is_better=row["greater_is_better"]
-                if suffix == "mean"
-                else False,
+                greater_is_better=(
+                    row["greater_is_better"] if suffix == "mean" else False
+                ),
                 value=row[suffix],
             )
             for row in aggregated.to_dict("records")

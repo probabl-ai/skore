@@ -164,13 +164,7 @@ def test_pickle(tmp_path, logistic_binary_classification_data):
     joblib.dump(report, tmp_path / "report.joblib")
 
 
-@pytest.mark.parametrize(
-    "error",
-    [
-        ValueError("No more fitting"),
-        KeyboardInterrupt(),
-    ],
-)
+@pytest.mark.parametrize("error", [ValueError("No more fitting"), KeyboardInterrupt()])
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_interrupted_propagates_error(binary_classification_data, error, n_jobs):
     """Check that when a split fails during cross-validation, the error propagates."""
