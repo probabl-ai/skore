@@ -105,7 +105,8 @@ class MetricsSummaryDisplay(DisplayMixin):
         self.rows = rows
         self.report_type = report_type
         # Remove duplicates while preserving order
-        self.errors = list(dict.fromkeys(errors))
+        # Use repr because Metrics and Exceptions are not comparable
+        self.errors = list({repr(x): x for x in errors}.values())
 
     @property
     def data(self):
