@@ -5,6 +5,7 @@ from typing import Any, Literal, cast
 
 from numpy.typing import ArrayLike
 from sklearn.base import ClassifierMixin, RegressorMixin
+from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
@@ -126,9 +127,13 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         elif isinstance(metric, Iterable) and metric:
             parsed_metrics = [registry[m] for m in metric]
         else:
-            has_default_score = getattr(
-                type(self._parent.estimator_), "score", None
-            ) in (ClassifierMixin.score, RegressorMixin.score)
+            predictor = self._parent.estimator_
+            if isinstance(predictor, Pipeline):
+                predictor = predictor.steps[-1][1]
+            has_default_score = getattr(type(predictor), "score", None) in (
+                ClassifierMixin.score,
+                RegressorMixin.score,
+            )
             if has_default_score:
                 parsed_metrics = [s for s in registry.values() if s.name != "score"]
             else:
