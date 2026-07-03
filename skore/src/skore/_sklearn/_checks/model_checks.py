@@ -74,8 +74,7 @@ def _baseline_estimator_report(
     ]
     if report.ml_task not in supported_tasks:
         raise CheckNotApplicable(
-            f"Unsupported ML task. Supported tasks are: {supported_tasks}."
-            f"Got {report.ml_task}."
+            f"Expected ML task to be one of {supported_tasks}; got {report.ml_task}."
         )
     if kind == "dummy":
         estimator = (
