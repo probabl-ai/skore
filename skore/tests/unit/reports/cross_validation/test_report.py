@@ -299,7 +299,7 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(splitter):
 
 
 def test_report_with_data_op():
-    X_a, y_a = make_classification(n_samples=10)
+    X_a, y_a = make_classification(n_samples=10, random_state=42)
     data_op = skrub.X(X_a).skb.apply(LogisticRegression(), y=skrub.y(y_a))
     learner = data_op.skb.make_learner()
 
