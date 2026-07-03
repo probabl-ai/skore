@@ -342,13 +342,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         )
         favorability_col = df.pop("Favorability")
 
-        # TODO: Have one `if aggregate is None` block
-        if isinstance(aggregate, (list, tuple)):
-            aggregate = list(aggregate)
-        elif aggregate is not None:
-            aggregate = cast(Literal["mean", "std"], aggregate)
-            aggregate = [aggregate]
-
         if aggregate is None:
             metric_order = df.index.get_level_values("Metric").unique()
             df = (
@@ -356,20 +349,6 @@ class MetricsSummaryDisplay(DisplayMixin):
                 .unstack("split")
                 .reindex(metric_order, level="Metric")
             )
-        else:
-            df = df.reset_index().pivot_table(
-                index=df.index.names,
-                columns=None,
-                aggfunc=aggregate,
-                sort=False,
-            )
-
-        if aggregate is not None:
-            df = df.drop(
-                [col for col in df.columns if col[1] == "split"], axis="columns"
-            )
-
-        if aggregate is None:
             df.columns = pd.MultiIndex.from_product(
                 [
                     [estimator_name],
@@ -377,6 +356,20 @@ class MetricsSummaryDisplay(DisplayMixin):
                 ]
             )
         else:
+            if isinstance(aggregate, (list, tuple)):
+                aggregate = list(aggregate)
+            else:
+                aggregate = [cast(Literal["mean", "std"], aggregate)]
+
+            df = df.reset_index().pivot_table(
+                index=df.index.names,
+                columns=None,
+                aggfunc=aggregate,
+                sort=False,
+            )
+            df = df.drop(
+                [col for col in df.columns if col[1] == "split"], axis="columns"
+            )
             df.columns = df.columns.swaplevel(0, 1)
 
         if favorability:
