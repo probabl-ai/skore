@@ -3,6 +3,7 @@ from io import BytesIO
 import skrub
 from joblib import dump, hash
 from numpy import array
+from pandas import DataFrame
 from pydantic import ValidationError
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
@@ -197,6 +198,10 @@ class TestCrossValidationReportPayload:
             test_target_distributions_sample_counts
         )
 
+        assert payload.ml_task == "regression"
+        assert payload.target_names is None
+        assert payload.target_ranges is None
+        assert payload.target_range == [y.min(), y.max()]
         assert payload.splitting_strategy == {
             "splitter": metadata,
             "splits": expected_splits,
@@ -246,7 +251,7 @@ class TestCrossValidationReportPayload:
             [float(y[:, 0].min()), float(y[:, 0].max())],
             [float(y[:, 1].min()), float(y[:, 1].max())],
         ]
-        assert payload.target_range == [float(y.min()), float(y.max())]
+        assert payload.target_range is None
 
     @mark.filterwarnings(
         # ignore deprecation warning due to `scikit-learn` misusing `scipy` arguments,
@@ -350,6 +355,21 @@ class TestCrossValidationReportPayload:
             "splitter": metadata,
             "splits": expected_splits,
         }
+
+    def test_multioutput_regression_do_not_compute_target_range(self, project):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3120
+        X = array([0, 1, 2])
+        y = DataFrame([[3, 4], [5, 6], [7, 8]])
+
+        class Splitter:
+            def split(self, X, y=None, groups=None):
+                yield array([0, 1]), array([2])
+
+        report = CrossValidationReport(DummyRegressor(), X, y, splitter=Splitter())
+        payload = CrossValidationReportPayload(project=project, report=report, key="-")
+
+        assert report.ml_task == "multioutput-regression"
+        assert payload.target_range is None
 
     def test_splitting_do_not_call_get_n_splits(self, project):
         # non-regression test for https://github.com/probabl-ai/skore/pull/3011
