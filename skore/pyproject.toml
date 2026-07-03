@@ -83,6 +83,7 @@ sphinx-base = [
 sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
 sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
 dev = ["ipykernel", "nbformat"]
+local = ["platformdirs"]
 hub = [
   "httpx",
   "orjson",

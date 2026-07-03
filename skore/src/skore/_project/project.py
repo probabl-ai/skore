@@ -182,12 +182,16 @@ class Project:
                 | The workspace can be shared between all the projects.
                 | The workspace can be set using kwargs or the environment variable
                   ``SKORE_WORKSPACE``.
-                | If not, it will be by default set to a ``skore/`` directory in the
-                  user data directory:
+                | If not passed explicitly the current working directory and
+                  its parents are searched for a skore workspace (a directory
+                  named ``skore_data`` containing a special marker file
+                  ``.SKORE_WORKSPACE``).
+                | If none is found a global default location in the user
+                  Documents directory is used:
 
-                - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-                - on Linux, usually ``${HOME}/.local/share/skore``,
-                - on macOS, usually ``${HOME}/Library/Application Support/skore``.
+                    - on Linux, usually ``~/Documents/skore_data``,
+                    - on macOS, usually ``~/Documents/skore_data``,
+                    - on Windows, usually ``C:\Users\<User>\Documents\skore_data``.
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.

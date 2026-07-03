@@ -11,6 +11,7 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
+import platformdirs
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._utils._cache_key import deep_key_sanitize
@@ -44,7 +45,8 @@ def find_workspace() -> Path:
     - otherwise look in the current working directory and its parent for a
       skore workspace: a directory named 'skore_data' containing a file named
       '.SKORE_WORKSPACE'. If found, use that.
-    - otherwise use a global default location: ~/skore_data/
+    - otherwise use a global default location: 'skore_data' in the user's
+      Documents directory.
 
     Returns
     -------
@@ -58,7 +60,7 @@ def find_workspace() -> Path:
         workspace = candidate / "skore_data"
         if workspace.is_dir() and (workspace / ".SKORE_WORKSPACE").exists():
             return init_workspace(workspace)
-    return init_workspace(Path.home() / "skore_data")
+    return init_workspace(platformdirs.user_documents_path() / "skore_data")
 
 
 def _init_project_dir(workspace: Path, project_name: str) -> Path:
@@ -381,7 +383,7 @@ def _get_data_ref(value: Any, workspace: Path) -> dict[str, str]:
 
 
 class Project:
-    """
+    r"""
     Project (collection of reports) in local storage.
 
     Parameters
@@ -396,16 +398,24 @@ class Project:
         If not provided, a workspace is found or created according to those
         rules (see find_workspace() in this module):
 
-        - if the SKORE_WORKSPACE environment variable is set, use that.
-        - otherwise look in the current working directory and its parent for a
-          skore workspace: a directory named 'skore_data' containing a file named
-          '.SKORE_WORKSPACE'. If found, use that.
-        - otherwise use a global default location: ~/skore_data/
+            - if the SKORE_WORKSPACE environment variable is set, use that.
+            - otherwise look in the current working directory and its parent for a
+              skore workspace: a directory named 'skore_data' containing a file named
+              '.SKORE_WORKSPACE'. If found, use that.
+            - otherwise use a global default location in the user Documents directory:
+
+                - on Linux, usually ``~/Documents/skore_data``,
+                - on macOS, usually ``~/Documents/skore_data``,
+                - on Windows, usually ``C:\Users\<User>\Documents\skore_data``.
 
     Attributes
     ----------
+    name : str
+        The project name.
+    workspace : Path
+        The path to the workspace directory.
     path : Path
-        The path to the project's directory
+        The path to the project's directory (which is workspace / 'projects' / name).
     """
 
     def __init__(self, name: str, workspace: str | Path | None = None):
