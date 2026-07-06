@@ -290,7 +290,7 @@ def _write_estimator_report(
     _write_permutation_importances(report, output_dir)
     predictions_dir = output_dir / "predictions"
     predictions_dir.mkdir(exist_ok=True)
-    for (subset_name, meth_name), val in report.to_dict()["predictions"].items():
+    for (_, subset_name, meth_name), val in report.to_dict()["predictions"].items():
         with open(predictions_dir / f"{subset_name}__{meth_name}.joblib", "wb") as f:
             joblib.dump(val, f)
 
