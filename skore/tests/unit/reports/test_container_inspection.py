@@ -20,6 +20,7 @@ from skore._sklearn._plot import TableReportDisplay
     "report_cls",
     [EstimatorReport, CrossValidationReport],
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_permutation_importance_with_containers(report_cls, x_container, y_container):
     """Permutation importance accepts array, pandas, and polars X/y inputs."""
     X, y = make_regression(n_samples=100, n_features=5, random_state=42)
@@ -50,6 +51,9 @@ def test_permutation_importance_with_containers(report_cls, x_container, y_conta
 @pytest.mark.parametrize(
     "report_cls",
     [EstimatorReport, CrossValidationReport],
+)
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
 )
 def test_data_summarize_plot_with_containers(
     report_cls, x_container, y_container, pyplot

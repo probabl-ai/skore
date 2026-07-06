@@ -236,6 +236,9 @@ def test_evaluate_skrub_learner_uses_data_op_cv_with_split_kwargs():
     assert skore_accuracy == pytest.approx(skrub_cv["test_score"].mean())
 
 
+@pytest.mark.filterwarnings(
+    "ignore:The least populated class in y has only:UserWarning"
+)
 def test_evaluate_skrub_learner_explicit_splitter_overrides_data_op_cv():
     """An explicit splitter argument overrides the DataOp cv configuration."""
     df = skrub.datasets.toy_products()

@@ -81,6 +81,7 @@ def test_skd001_detects_overfitting(regression_data):
         ("polars", "polars_series"),
     ],
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     """Check that the underfitting issue is detected."""
     X, y = regression_data
@@ -142,6 +143,7 @@ def test_skd003_detects_inconsistent_splits():
         ("polars", "polars_series"),
     ],
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_skd004_detects_high_class_imbalance(x_container, y_container):
     """Check that high class imbalance is detected with several container types."""
     weights = [0.9, 0.1]
@@ -170,6 +172,7 @@ def test_skd004_detects_high_class_imbalance(x_container, y_container):
         ("polars", "polars_series"),
     ],
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_skd005_detects_underrepresented_classes(x_container, y_container):
     """Check that underrepresented classes are detected."""
     weights = [0.9, 0.05, 0.05]
@@ -254,6 +257,9 @@ def test_skd008_correlated_features_multioutput(regression_multioutput_data):
     assert "SKD008" in issues.index
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
 def test_skd009_detects_worse_than_baseline(regression_data):
     """Check that the worse-than-baseline issue is detected."""
     X, y = regression_data
@@ -274,6 +280,9 @@ def test_skd009_not_detected_on_strong_model():
     assert "SKD009" not in codes
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
 def test_skd009_detects_worse_than_baseline_multioutput(regression_multioutput_data):
     """SKD009 emitted for multioutput regression when model is worse than baseline."""
     X, y = regression_multioutput_data
@@ -282,6 +291,9 @@ def test_skd009_detects_worse_than_baseline_multioutput(regression_multioutput_d
     assert "SKD009" in issues.index
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
 def test_skd010_detects_slower_than_baseline(regression_data):
     """Check that SKD010 is detected when the model is slower with similar scores."""
     X, y = regression_data

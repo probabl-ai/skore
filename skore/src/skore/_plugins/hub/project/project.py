@@ -359,7 +359,41 @@ class Project:
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted reports in insertion order."""
 
-        def dto(response: Any) -> Metadata:
+        def depaginate(client: HUBClient, query: str, /, limit: int = 500) -> list[Any]:
+            """
+            Get all reports from a paginated endpoint.
+
+            The skore-hub uses cursor-based pagination: each page is requested using the
+            ``created_at`` and ``id`` of the last item from the previous page as the
+            cursor, rather than a numeric page offset.
+            """
+            reports = []
+            cursor_created_at = None
+            cursor_id = None
+
+            while True:
+                params = {"limit": limit}
+
+                if (cursor_created_at is not None) and (cursor_id is not None):
+                    params["cursor_created_at"] = cursor_created_at
+                    params["cursor_id"] = cursor_id
+
+                if not (page := client.get(query, params=params).json()):
+                    break
+
+                reports.extend(page)
+
+                if len(page) < limit:
+                    # avoid one server call when we are sure that the current page is
+                    # the last one
+                    break
+
+                cursor_created_at = page[-1]["created_at"]
+                cursor_id = page[-1]["id"]
+
+            return reports
+
+        def dto(response: Any, /) -> Metadata:
             report_type, summary = response
             metrics = {
                 metric["name"]: metric["value"]
@@ -396,9 +430,10 @@ class Project:
             responses = itertools.chain(
                 zip(
                     itertools.repeat("estimator"),
-                    hub_client.get(
-                        f"projects/{self.workspace}/{self.name}/estimator-reports/"
-                    ).json(),
+                    depaginate(
+                        hub_client,
+                        f"projects/{self.workspace}/{self.name}/estimator-reports/",
+                    ),
                 ),
                 zip(
                     itertools.repeat("cross-validation"),
