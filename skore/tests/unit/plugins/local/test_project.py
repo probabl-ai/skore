@@ -124,7 +124,7 @@ def test_permutation_importances(tmp_path, regression_dummy):
     project.put("regression", regression_dummy)
     fetched = project.get(regression_dummy.id)
     assert any(
-        k[:2] == ("inspection", "test", "permutation_importance")
+        k[:3] == ("inspection", "test", "permutation_importance")
         for k in fetched._cache
     )
     pd.testing.assert_frame_equal(
