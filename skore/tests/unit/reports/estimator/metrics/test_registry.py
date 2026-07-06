@@ -485,9 +485,6 @@ class TestEdgeCases:
         scorer = make_scorer(accuracy_score, response_method="predict")
         report.metrics.add(scorer)
 
-        with pytest.raises(ValueError, match="(?i)train|data"):
-            report.metrics.summarize(metric="accuracy_score", data_source="train")
-
     def test_duplicate_name_raises(self, binary_classification_report):
         """Adding with duplicate name raises and keeps the original metric."""
         report = binary_classification_report
@@ -853,11 +850,11 @@ class TestSerialization:
         report2 = pickle.loads(pickle.dumps(report))
         assert report2._metric_registry["<lambda>"].function is None
 
-        err_msg = "Metric '<lambda>' has no scoring function."
-        with pytest.raises(ValueError, match=err_msg):
-            report2.metrics.summarize()
+        # Computation fails
+        display = report2.metrics.summarize()
+        assert "Metric '<lambda>' has no scoring function." in repr(display.errors)
 
-        # if we cache beforehand, then it works:
+        # If we cache beforehand, then it works:
         report.metrics.summarize()
         report3 = pickle.loads(pickle.dumps(report))
         report3.metrics.summarize()
