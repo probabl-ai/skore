@@ -68,7 +68,7 @@ def test_metrics_failure(report):
     """If a metric fails, `summarize` still returns."""
 
     def fail(estimator, X, y):
-        raise Exception()
+        raise Exception("test error")
 
     report.metrics.add(fail)
 
@@ -80,4 +80,8 @@ def test_metrics_failure(report):
         .isna()
         .all()
     )
-    assert "Fail" in repr(display.frame())
+
+    err_msg = r"Metric 'fail' has failed: Exception\('test error'\)"
+    with pytest.warns(UserWarning, match=err_msg):
+        frame = display.frame()
+    assert "Fail" in repr(frame)

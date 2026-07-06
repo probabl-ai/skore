@@ -61,6 +61,7 @@ def display_fail(request):
     return display
 
 
+@pytest.mark.filterwarnings(r"ignore:Metric 'fail\d' has failed:UserWarning")
 def test_repr_failure(display_fail):
     """Check that __repr__ shows failed metrics."""
     repr_str = repr(display_fail)
@@ -87,6 +88,7 @@ def test_repr_failure(display_fail):
     assert repr_str.count("'fail2'") == 1
 
 
+@pytest.mark.filterwarnings(r"ignore:Metric 'fail\d' has failed:UserWarning")
 def test_repr_html_failure(display_fail):
     """Check that _repr_html_ shows failed metrics."""
     repr_html = display_fail._repr_html_()

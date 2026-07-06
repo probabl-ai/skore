@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from collections import defaultdict
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
@@ -409,6 +410,15 @@ class MetricsSummaryDisplay(DisplayMixin):
         frame : pandas.DataFrame
             The report metrics as a dataframe.
         """
+        if self.errors:
+            warnings.warn(
+                "\n".join(
+                    f"Metric {metric.name!r} has failed: {error!r}"
+                    for metric, error in self.errors
+                ),
+                stacklevel=2,
+            )
+
         if self.report_type == "estimator":
             return MetricsSummaryDisplay._frame_estimator(
                 self.data,
