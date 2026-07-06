@@ -172,7 +172,11 @@ def _write_metrics(
         with open(metrics_dir / "registry.pickle", "wb") as f:
             pickle.dump(report._metric_registry, f)
         available = set(report.metrics.available())
-        metrics_cache = {k: v for k, v in report._cache.items() if k[1] in available}
+        metrics_cache = {
+            k: v
+            for k, v in report._cache.items()
+            if k[0] == "metrics" and k[2] in available
+        }
         with open(metrics_dir / "cache.pickle", "wb") as f:
             pickle.dump(metrics_cache, f)
 
@@ -248,6 +252,7 @@ def _write_permutation_importances(report: EstimatorReport, output_dir: Path) ->
     for cache_item in report._cache.items():
         match cache_item:
             case (
+                "inspection",
                 data_source,
                 "permutation_importance",
                 ("mapping", kwarg_items),
@@ -267,7 +272,9 @@ def _write_permutation_importances(report: EstimatorReport, output_dir: Path) ->
                 display.importances.to_csv(display_dir / "importances.csv", index=False)
                 (display_dir / "kwargs.json").write_text(json.dumps(kwargs), "UTF-8")
                 (display_dir / "cache_key.json").write_text(
-                    json.dumps((data_source, "permutation_importance", kwargs))
+                    json.dumps(
+                        ("inspection", data_source, "permutation_importance", kwargs)
+                    )
                 )
             case _:
                 pass
