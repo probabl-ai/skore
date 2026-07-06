@@ -97,8 +97,9 @@ def test_put_get_summarize(tmp_path, regression, regression_dummy, cv_regression
     fetched_regression = project.get(str(regression.id))
     fetched_dummy = project.get(regression_dummy.id)
     fetched_cv = project.get(cv_regression.id)
-    assert ("test", "predict", None) in fetched_regression._cache
+    assert ("report", "test", "predict", None) in fetched_regression._cache
     assert (
+        "metrics",
         "test",
         "r2",
         ("mapping", (("multioutput", "raw_values"),)),
@@ -122,7 +123,10 @@ def test_permutation_importances(tmp_path, regression_dummy):
     importances = regression_dummy.inspection.permutation_importance().frame()
     project.put("regression", regression_dummy)
     fetched = project.get(regression_dummy.id)
-    assert any(k[:2] == ("test", "permutation_importance") for k in fetched._cache)
+    assert any(
+        k[:2] == ("inspection", "test", "permutation_importance")
+        for k in fetched._cache
+    )
     pd.testing.assert_frame_equal(
         fetched.inspection.permutation_importance().frame(), importances
     )
