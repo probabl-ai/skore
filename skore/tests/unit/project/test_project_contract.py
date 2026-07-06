@@ -92,6 +92,9 @@ class TestMlflowProjectContract:
                 mlflow.end_run()
             mlflow.set_tracking_uri(previous_tracking_uri)
 
+    @pytest.mark.filterwarnings(
+        r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
+    )
     def test_api_contract(
         self, regression_report, second_regression_report, isolated_mlflow_tracking
     ):

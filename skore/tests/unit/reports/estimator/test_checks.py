@@ -99,6 +99,7 @@ def test_skd001_detects_overfitting(regression_data):
         ("polars", "polars_series"),
     ],
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     """Check that the underfitting issue is detected."""
     X, y = regression_data
@@ -115,6 +116,14 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     )
 
 
+def test_skd002_detects_underfitting_multioutput(regression_multioutput_data):
+    """SKD002 is emitted for multioutput regression when the model underfits."""
+    X, y = regression_multioutput_data
+    report = evaluate(DummyRegressor(), X, y)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD002" in issues.index
+
+
 @pytest.mark.parametrize(
     "x_container,y_container",
     [
@@ -126,6 +135,7 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
 @pytest.mark.parametrize(
     "weights, code", [([0.9, 0.1], "SKD004"), ([0.9, 0.05, 0.05], "SKD005")]
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_skd004_skd005_detects_high_class_imbalance(
     weights, code, x_container, y_container
 ):
@@ -173,6 +183,9 @@ def test_skd006_detects_coefficient_interpretation(regression_data):
     assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
 def test_skd006_tabular_pipeline_with_numpy_X(regression_data):
     """SKD006 runs when tabular_pipeline is evaluated on raw numpy features."""
     X, y = regression_data
@@ -261,6 +274,20 @@ def test_skd008_not_emitted_for_independent_features(regression_data):
     assert "SKD008" not in issues.index
 
 
+def test_skd008_correlated_features_multioutput(regression_multioutput_data):
+    """SKD008 is emitted for multioutput regression when features are correlated."""
+    X, y = regression_multioutput_data
+    rng = np.random.RandomState(42)
+    X[:, 1] = X[:, 0] + rng.standard_normal(X.shape[0]) * 1e-4
+    report = evaluate(
+        LinearRegression(),
+        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
+        y,
+    )
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD008" in issues.index
+
+
 def test_skd009_detects_worse_than_baseline(regression_data):
     """Check that the worse-than-baseline issue is detected on a dummy estimator."""
     X, y = regression_data
@@ -279,6 +306,14 @@ def test_skd009_not_detected_on_strong_model(regression_data):
     report = evaluate(RidgeCV(), X, y)
     codes = set(report.checks.summarize().frame(section="issue")["code"])
     assert "SKD009" not in codes
+
+
+def test_skd009_detects_worse_than_baseline_multioutput(regression_multioutput_data):
+    """SKD009 emitted for multioutput regression when model is worse than baseline."""
+    X, y = regression_multioutput_data
+    report = evaluate(DummyRegressor(), X, y)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD009" in issues.index
 
 
 def test_skd010_detects_slower_than_baseline(regression_data):
@@ -501,6 +536,9 @@ def test_skd014_skips_non_numeric_hyperparameters(regression_data, param_grid):
             Ridge(), param_distributions={"alpha": [0.1, 1.0, 10.0]}, cv=2
         ),
     ],
+)
+@pytest.mark.filterwarnings(
+    "ignore:The total space of parameters .* is smaller than n_iter:UserWarning"
 )
 def test_skd014_search_classes(regression_data, monkeypatch, search):
     """SKD014 runs for GridSearchCV and RandomizedSearchCV using cv_results_."""
