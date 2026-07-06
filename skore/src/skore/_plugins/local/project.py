@@ -360,7 +360,9 @@ def read_report(report_dir: Path | str) -> EstimatorReport | CrossValidationRepo
     state["predictions"] = {}
     for pred_file in (report_dir / "predictions").glob("*.joblib"):
         with open(pred_file, "rb") as f:
-            state["predictions"][tuple(pred_file.stem.split("__"))] = joblib.load(f)
+            state["predictions"][("report",) + tuple(pred_file.stem.split("__"))] = (
+                joblib.load(f)
+            )
     with open(report_dir / "metrics" / "registry.pickle", "rb") as f:
         state["metric_registry"] = pickle.load(f)
     with open(report_dir / "metrics" / "cache.pickle", "rb") as f:
