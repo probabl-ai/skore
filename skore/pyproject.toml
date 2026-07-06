@@ -101,10 +101,6 @@ local = "skore._plugins.local:Project"
 hub = "skore._plugins.hub.project.project:Project"
 mlflow = "skore._plugins.mlflow:Project"
 
-[project.scripts]
-skore-init-workspace = "skore._plugins.local.project:init_workspace"
-skore = "skore._cli:main"
-
 [project.urls]
 Homepage = "https://probabl.ai"
 Repository = "https://github.com/probabl-ai/skore"
