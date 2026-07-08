@@ -12,6 +12,10 @@ from sklearn.model_selection import train_test_split
 
 from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.local import Project
+from skore._plugins.local.metadata import (
+    CrossValidationReportMetadata,
+    EstimatorReportMetadata,
+)
 from skore._plugins.local.storage import DiskCacheStorage
 
 
@@ -283,6 +287,57 @@ class TestProject:
 
         assert len(project._Project__artifacts_storage) == 1
         assert len(project._Project__metadata_storage) == 2
+
+    def test_metadata_metric_returns_none_when_accessor_is_missing(
+        self, regression, cv_regression
+    ):
+        assert EstimatorReportMetadata.metric(regression, "<missing>") is None
+        assert CrossValidationReportMetadata.metric(cv_regression, "<missing>") == (
+            None,
+            None,
+        )
+
+    @pytest.mark.parametrize("metric_name", ["rmse", "log_loss", "roc_auc"])
+    def test_put_estimator_report_skips_failing_metadata_metric(
+        self, monkeypatch, tmp_path, regression, metric_name
+    ):
+        def failing_metric(*_, **__):
+            raise ValueError("unsupported predictions")
+
+        monkeypatch.setattr(
+            regression.metrics.__class__, metric_name, failing_metric, raising=False
+        )
+
+        assert EstimatorReportMetadata.metric(regression, metric_name) is None
+
+        project = Project("<project>", workspace=tmp_path)
+        project.put("<key>", regression)
+
+        metadata = next(iter(project._Project__metadata_storage.values()))
+        assert metadata[metric_name] is None
+
+    @pytest.mark.parametrize("metric_name", ["rmse", "log_loss", "roc_auc"])
+    def test_put_cross_validation_report_skips_failing_metadata_metric(
+        self, monkeypatch, tmp_path, cv_regression, metric_name
+    ):
+        def failing_metric(*_, **__):
+            raise ValueError("unsupported predictions")
+
+        monkeypatch.setattr(
+            cv_regression.metrics.__class__, metric_name, failing_metric, raising=False
+        )
+
+        assert CrossValidationReportMetadata.metric(cv_regression, metric_name) == (
+            None,
+            None,
+        )
+
+        project = Project("<project>", workspace=tmp_path)
+        project.put("<key>", cv_regression)
+
+        metadata = next(iter(project._Project__metadata_storage.values()))
+        assert metadata[f"{metric_name}_mean"] is None
+        assert metadata[f"{metric_name}_std"] is None
 
     def test_get(self, tmp_path, regression):
         project = Project("<project>", workspace=tmp_path)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from abc import ABC
 from collections.abc import Callable
 from functools import reduce
@@ -25,8 +26,20 @@ class PerformanceDataFrame(Media[Report], ABC):  # noqa: D101
         except AttributeError:
             return None
 
-        display = function(data_source=self.data_source)
-        frame = display.frame(**(self.parameters or {}))  # type: ignore[arg-type]
+        try:
+            display = function(data_source=self.data_source)
+            frame = display.frame(**(self.parameters or {}))  # type: ignore[arg-type]
+        except Exception as exception:
+            warnings.warn(
+                (
+                    f"Skipping performance media '{self.name}' "
+                    f"for data source '{self.data_source}' because it could not be "
+                    f"computed: {exception}"
+                ),
+                UserWarning,
+                stacklevel=2,
+            )
+            return None
 
         return dumps(
             frame.astype(object).where(frame.notna(), "NaN").to_dict(orient="tight")

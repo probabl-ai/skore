@@ -95,7 +95,10 @@ class EstimatorReportMetadata(ReportMetadata):  # noqa: D101
         if not hasattr(report.metrics, name):
             return None
 
-        return cast_to_float(getattr(report.metrics, name)(data_source="test"))
+        try:
+            return cast_to_float(getattr(report.metrics, name)(data_source="test"))
+        except Exception:
+            return None
 
     def __post_init__(self, report: EstimatorReport) -> None:  # type: ignore[override]
         """Initialize dynamic fields."""
@@ -131,15 +134,18 @@ class CrossValidationReportMetadata(ReportMetadata):  # noqa: D101
         if not hasattr(report.metrics, name):
             return None, None
 
-        dataframe = getattr(report.metrics, name)(
-            data_source="test",
-            aggregate=("mean", "std"),
-        )
+        try:
+            dataframe = getattr(report.metrics, name)(
+                data_source="test",
+                aggregate=("mean", "std"),
+            )
 
-        return (
-            cast_to_float(dataframe.iloc[0, 0]),
-            cast_to_float(dataframe.iloc[0, 1]),
-        )
+            return (
+                cast_to_float(dataframe.iloc[0, 0]),
+                cast_to_float(dataframe.iloc[0, 1]),
+            )
+        except Exception:
+            return None, None
 
     @staticmethod
     def timing(

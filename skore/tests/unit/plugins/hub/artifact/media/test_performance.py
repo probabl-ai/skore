@@ -1,5 +1,5 @@
 from pydantic import ValidationError
-from pytest import mark, param, raises
+from pytest import mark, param, raises, warns
 
 from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTestAll,
@@ -15,6 +15,7 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.serializer import Serializer
 from skore._plugins.hub.json import dumps
+from skore._plugins.hub.report import EstimatorReportPayload
 
 
 @mark.filterwarnings(
@@ -269,3 +270,70 @@ def test_performance(
         match=f"Input should be an instance of {report.__class__.__name__}",
     ):
         Media(project=project, report=None)
+
+
+@mark.respx()
+def test_performance_content_failure_warns_and_skips_upload(
+    monkeypatch, regression, project, upload_mock
+):
+    def prediction_error(_, data_source):
+        raise ValueError(f"unsupported predictions for {data_source}")
+
+    monkeypatch.setattr(
+        regression.metrics.__class__, "prediction_error", prediction_error
+    )
+
+    media = PredictionErrorDataFrameTest(project=project, report=regression)
+
+    with warns(
+        UserWarning,
+        match=(
+            "Skipping performance media 'prediction_error'.*"
+            "test.*unsupported predictions for test"
+        ),
+    ):
+        assert media.content_to_upload() is None
+
+    upload_mock.reset_mock()
+
+    with warns(
+        UserWarning,
+        match=(
+            "Skipping performance media 'prediction_error'.*"
+            "test.*unsupported predictions for test"
+        ),
+    ):
+        assert media.checksum is None
+
+    assert not upload_mock.called
+
+
+@mark.respx()
+def test_performance_payload_filters_failing_media(monkeypatch, regression, project):
+    original_prediction_error = regression.metrics.prediction_error
+
+    def prediction_error(_, data_source):
+        if data_source == "test":
+            raise ValueError("unsupported predictions for test")
+
+        return original_prediction_error(data_source=data_source)
+
+    monkeypatch.setattr(
+        regression.metrics.__class__, "prediction_error", prediction_error
+    )
+    monkeypatch.setattr(
+        EstimatorReportPayload,
+        "MEDIAS",
+        (PredictionErrorDataFrameTest, PredictionErrorDataFrameTrain),
+    )
+
+    payload = EstimatorReportPayload(project=project, report=regression, key="<key>")
+
+    with warns(
+        UserWarning,
+        match=(
+            "Skipping performance media 'prediction_error'.*"
+            "test.*unsupported predictions for test"
+        ),
+    ):
+        assert list(map(type, payload.medias)) == [PredictionErrorDataFrameTrain]
