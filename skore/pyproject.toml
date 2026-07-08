@@ -80,7 +80,7 @@ sphinx-base = [
   "xgboost ; platform_system == 'Darwin'",
   "xgboost-cpu ; platform_system != 'Darwin'",
 ]
-sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
+sphinx = ["mlflow", "openml", "polars", "skore[sphinx-base, hub, mlflow]"]
 sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
 dev = ["ipykernel", "nbformat"]
 local = ["diskcache", "platformdirs"]

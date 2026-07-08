@@ -82,6 +82,8 @@ How to reduce the risk
 - improve feature engineering,
 - use better validation protocols or more data.
 
+Check out the :ref:`example for this check <sphx_glr_auto_examples_pitfalls_and_solutions_plot_skd001_overfitting.py>`.
+
 
 .. _skd002-underfitting:
 
