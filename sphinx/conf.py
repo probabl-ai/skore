@@ -88,6 +88,14 @@ autodoc_typehints = "none"
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 
+# Every build (dev/, X.Y/, stable/) is produced from the same artifact and deployed
+# as-is to several S3 destinations (see .github/workflows/sphinx.yml). Setting
+# `html_baseurl` makes Sphinx emit a `<link rel="canonical">` on every page pointing
+# at its `stable/` counterpart, regardless of which destination the artifact ends up
+# in. This consolidates SEO ranking signal on `stable/` and prevents old or dev
+# versions from competing with it in search results.
+html_baseurl = f"{os.environ['SPHINX_URL']}/stable/"
+
 html_css_files = ["css/custom.css"]
 html_js_files = [
     "js/sg_plotly_resize.js"

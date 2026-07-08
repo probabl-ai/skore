@@ -276,6 +276,15 @@ jobs:
           name: sphinx-html-artifact
           path: html/
 
+      - name: Mark as non-indexable
+        # This job only ever deploys to `dev/` or `X.Y/`, never `stable/` (which is
+        # deployed separately from its own artifact download in `sphinx-deploy-stable`).
+        # These are not the canonical copy of the documentation, so search engines
+        # should not index them.
+        run: |
+          find html/ -name '*.html' -exec sed -i \
+            's#<head>#<head>\n    <meta name="robots" content="noindex,follow">#' {} +
+
       - name: Deploy HTML artifacts
         uses: ./.github/actions/sphinx/deploy-aws
         with:
