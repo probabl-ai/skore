@@ -77,7 +77,6 @@ training data and may generalize poorly.
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- simplify the model,
 - regularize more strongly,
 - improve feature engineering,
 - use better validation protocols or more data.
