@@ -459,7 +459,6 @@ class Metric:
         score,
         *,
         report: EstimatorReport,
-        data_source: DataSource = "test",
         **kwargs: Any,
     ) -> list[MetricRow]:
         """Convert a score into one or more rows."""
@@ -467,12 +466,7 @@ class Metric:
             # Multimetric scorer
             result = []
             for submetric_name, submetric_value in score.items():
-                rows = self._to_rows(
-                    submetric_value,
-                    report=report,
-                    data_source=data_source,
-                    **kwargs,
-                )
+                rows = self._to_rows(submetric_value, report=report, **kwargs)
                 for r in rows:
                     r["metric_verbose_name"] = submetric_name
                 result.extend(rows)
@@ -487,7 +481,9 @@ class Metric:
             ]
         if report._ml_task in ("binary-classification", "multiclass-classification"):
             if isinstance(score, np.ndarray):
-                rows = [
+                if score.ndim == 0:
+                    return [self._row(score=score)]
+                return [
                     self._row(score=s, label=label)
                     for label, s in zip(
                         report.learner_.classes_.tolist(),
@@ -495,8 +491,7 @@ class Metric:
                         strict=False,
                     )
                 ]
-                return rows
-            return [self._row(score=score, average=kwargs.get("average"))]
+            return [self._row(score=score)]
         if report._ml_task == "multioutput-regression":
             if isinstance(score, np.ndarray):
                 return [
@@ -535,9 +530,7 @@ class Metric:
         score = self._raw_cached(
             report=report, data_source=data_source, **merged_kwargs
         )
-        return self._to_rows(
-            score, report=report, data_source=data_source, **merged_kwargs
-        )
+        return self._to_rows(score, report=report, **merged_kwargs)
 
     def _to_pretty(self, rows: list[MetricRow]) -> Any:
         """Convert rows into a human-readable metric output."""
@@ -656,15 +649,6 @@ class PrecisionMacro(Precision):
     def available(report: EstimatorReport) -> bool:
         return report._ml_task == "multiclass-classification"
 
-    def _to_rows(self, score, *, report, data_source="test", **kwargs):
-        if isinstance(score, dict):
-            return super()._to_rows(
-                score, report=report, data_source=data_source, **kwargs
-            )
-        if hasattr(score, "item"):
-            score = score.item()
-        return [self._row(score=score)]
-
 
 class Recall(Metric):
     name = "recall"
@@ -697,15 +681,6 @@ class RecallMacro(Recall):
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task == "multiclass-classification"
-
-    def _to_rows(self, score, *, report, data_source="test", **kwargs):
-        if isinstance(score, dict):
-            return super()._to_rows(
-                score, report=report, data_source=data_source, **kwargs
-            )
-        if hasattr(score, "item"):
-            score = score.item()
-        return [self._row(score=score)]
 
 
 class Brier(Metric):
@@ -767,15 +742,6 @@ class RocAucMacro(RocAuc):
     @staticmethod
     def available(report: EstimatorReport) -> bool:
         return report._ml_task == "multiclass-classification"
-
-    def _to_rows(self, score, *, report, data_source="test", **kwargs):
-        if isinstance(score, dict):
-            return super()._to_rows(
-                score, report=report, data_source=data_source, **kwargs
-            )
-        if hasattr(score, "item"):
-            score = score.item()
-        return [self._row(score=score)]
 
 
 class LogLoss(Metric):
