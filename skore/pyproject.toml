@@ -66,6 +66,7 @@ sphinx-base = [
   "altair",
   "kaleido",
   "numpydoc",
+  "openml",
   "plotly>=6,<7", # plotly <6 conflicting with kaleido
   "pydata-sphinx-theme",
   "seaborn",
@@ -80,7 +81,7 @@ sphinx-base = [
   "xgboost ; platform_system == 'Darwin'",
   "xgboost-cpu ; platform_system != 'Darwin'",
 ]
-sphinx = ["mlflow", "openml", "polars", "skore[sphinx-base, hub, mlflow]"]
+sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
 sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
 dev = ["ipykernel", "nbformat"]
 local = ["diskcache", "platformdirs"]
