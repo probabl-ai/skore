@@ -6,7 +6,7 @@ SKD001 — Potential overfitting
 
 When a model fits the training set much better than the hold-out test set, it may
 have memorized patterns of the training data instead of generalizing.
-:ref:`SKD001 <skd001-overfitting>`flags this situation by comparing train and test
+:ref:`SKD001 <skd001-overfitting>` flags this situation by comparing train and test
 scores across the report's default metrics.
 
 This example walks through practical mitigations suggested in
@@ -25,11 +25,11 @@ deliberately withhold one moderately useful predictor, inject a spurious
 
 # %%
 # Load the California housing dataset
-# ==============================
+# ===================================
 #
 # Each row describes a block in California. The target is ``MedHouseVal``
 # in \$100k units; we multiply by 100 so errors read naturally in k$.
-# We keep a 5,000-row subsample so this  example stays short.
+# We keep a 5,000-row subsample so this example stays short.
 
 import pandas as pd
 from sklearn.datasets import fetch_california_housing
@@ -71,7 +71,7 @@ splitter = TrainTestSplit(random_state=42)
 
 # %%
 # Trigger SKD001 — untuned gradient boosting
-# ==========================================
+# ===========================================
 #
 # :class:`~sklearn.ensemble.HistGradientBoostingRegressor` with default settings
 # has enough capacity to overfit the training data on this table. Compare train and
@@ -176,7 +176,7 @@ report_more_data.metrics.summarize(data_source="both").frame(favorability=True)
 # %%
 report_more_data.checks.summarize()
 
-# Eventhough the gap is reduced, SKD001 is still triggered.
+# Even though the gap is reduced, SKD001 is still triggered.
 
 # %%
 # Improve feature engineering
