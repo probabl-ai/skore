@@ -321,11 +321,12 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.add(
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
-        >>> report.metrics.summarize().frame()
-                            LogisticRegression
+        >>> report.metrics.summarize(metric="mean_absolute_error").frame(
+        ...     verbose_name=True
+        ... )
         Metric
-                                           ...
-        Mean Absolute Error                ...
+        Mean Absolute Error    0.05...
+        Name: LogisticRegression, dtype: float64
         >>> report.metrics.mean_absolute_error()
         0.05...
         """

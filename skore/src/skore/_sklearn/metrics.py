@@ -491,7 +491,8 @@ class Metric:
                         strict=False,
                     )
                 ]
-            return [self._row(score=score)]
+            average = None if self.name.endswith("_macro") else kwargs.get("average")
+            return [self._row(score=score, average=average)]
         if report._ml_task == "multioutput-regression":
             if isinstance(score, np.ndarray):
                 return [
@@ -741,7 +742,9 @@ class RocAucMacro(RocAuc):
 
     @staticmethod
     def available(report: EstimatorReport) -> bool:
-        return report._ml_task == "multiclass-classification"
+        return report._ml_task == "multiclass-classification" and RocAuc.available(
+            report
+        )
 
 
 class LogLoss(Metric):

@@ -249,7 +249,10 @@ class MetricsSummaryDisplay(DisplayMixin):
             if col in pivot_df.columns:
                 # pandas pivots drop or reorder ``pd.NA`` index keys; use a
                 # sentinel so every dimension level is preserved.
-                pivot_df[col] = pivot_df[col].astype(object).fillna("")
+                series = pivot_df[col]
+                if series.isna().any():
+                    pivot_df[col] = series.astype(object)
+                    pivot_df.loc[series.isna(), col] = ""
         return pivot_df, index_cols
 
     @staticmethod

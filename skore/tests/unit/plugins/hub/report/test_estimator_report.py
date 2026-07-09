@@ -314,6 +314,10 @@ class TestEstimatorReportPayload:
         ]
 
     @mark.respx(assert_all_called=False)
+    @mark.filterwarnings(
+        "ignore:The behavior of DataFrame concatenation with empty or all-NA "
+        "entries is deprecated:FutureWarning"
+    )
     def test_binary_metrics_excludes_averaged_rows(
         self, project, binary_classification, monkeypatch
     ):
@@ -328,7 +332,7 @@ class TestEstimatorReportPayload:
             .iloc[0]
             .copy()
         )
-        macro_row["label"] = pd.NA
+        macro_row["label"] = None
         macro_row["average"] = "macro"
         macro_row["score"] = 0.55
         data = pd.concat([data, pd.DataFrame([macro_row])], ignore_index=True)

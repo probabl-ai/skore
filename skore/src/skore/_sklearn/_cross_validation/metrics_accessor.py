@@ -221,12 +221,12 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> report.metrics.add(
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
-        >>> report.metrics.summarize().frame()
-                            LogisticRegression
-                                mean       std
+        >>> report.metrics.summarize(metric="mean_absolute_error").frame(
+        ...     verbose_name=True
+        ... )
+                     LogisticRegression_mean  LogisticRegression_std
         Metric
-        ...
-        Mean Absolute Error      ...       ...
+        Mean Absolute Error                 0.05...               0.00...
         >>> report.metrics.mean_absolute_error()
                              LogisticRegression
                                           mean   std

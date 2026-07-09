@@ -251,11 +251,12 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         >>> report.metrics.add(
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
-        >>> report.metrics.summarize().frame()
+        >>> report.metrics.summarize(metric="mean_absolute_error").frame(
+        ...     verbose_name=True, format="wide", flat_index=False
+        ... )
         Estimator                  LogisticRegression_1  LogisticRegression_2
-        Metric              Label
-        ...
-        Mean Absolute Error                    ...                   ...
+        Metric
+        Mean Absolute Error                0.05...              0.05...
         >>> report.metrics.mean_absolute_error()
         Estimator             LogisticRegression_1  LogisticRegression_2
         Metric
