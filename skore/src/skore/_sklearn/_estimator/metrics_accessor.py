@@ -200,7 +200,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                 {
                     "name": parsed_metric.name,
                     "verbose_name": row["metric_verbose_name"],
-                    "estimator_name": self._parent.estimator_name_,
+                    "estimator": self._parent.estimator_name_,
                     "data_source": data_source,
                     "greater_is_better": row["greater_is_better"],
                     "fingerprint": row["fingerprint"],
@@ -231,7 +231,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                 {
                     "name": metric.name,
                     "verbose_name": row["metric_verbose_name"],
-                    "estimator_name": self._parent.estimator_name_,
+                    "estimator": self._parent.estimator_name_,
                     "data_source": data_source,
                     "greater_is_better": row["greater_is_better"],
                     "fingerprint": row["fingerprint"],

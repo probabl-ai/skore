@@ -58,13 +58,14 @@ def flatten_multi_index(
     return pd.Index(flattened)
 
 
-def squeeze_single_column(df: pd.DataFrame) -> pd.DataFrame | pd.Series:
+def squeeze_single_column(
+    df: pd.DataFrame, *, lowercase: bool = True
+) -> pd.DataFrame | pd.Series:
     """Convert a single-column DataFrame into a named series."""
     if df.shape[1] != 1:
         return df
-    name = (
-        flatten_multi_index(df.columns, lowercase=False)[0]
-        if isinstance(df.columns, pd.MultiIndex)
-        else df.columns[0]
-    )
+    if isinstance(df.columns, pd.MultiIndex):
+        name = flatten_multi_index(df.columns, lowercase=lowercase)[0]
+    else:
+        name = df.columns[0]
     return df.iloc[:, 0].rename(name)

@@ -8,22 +8,23 @@ from sklearn.dummy import DummyRegressor
 from skore import ComparisonReport, MetricsSummaryDisplay, evaluate
 
 
-def test_format_auto_uses_long(estimator_reports_binary_classification):
-    """Auto format uses long layout for comparison-estimator reports."""
+def test_default_is_wide(estimator_reports_binary_classification):
+    """Default ``frame()`` returns wide layout for comparison-estimator reports."""
     estimator_report_1, estimator_report_2 = estimator_reports_binary_classification
     report = ComparisonReport([estimator_report_1, estimator_report_2])
 
-    result = report.metrics.summarize().frame(format="auto")
+    result = report.metrics.summarize().frame()
 
-    assert isinstance(result.index, pd.RangeIndex)
-    assert "estimator" in result.columns
+    assert isinstance(result, pd.DataFrame)
+    assert isinstance(result.index, pd.Index)
+    assert result.columns.tolist() == ["DummyClassifier_1", "DummyClassifier_2"]
 
 
 def test_data_source_both(estimator_reports_binary_classification):
     """Check that `MetricsSummaryDisplay` works with `data_source="both"`."""
     estimator_report_1, estimator_report_2 = estimator_reports_binary_classification
     report = ComparisonReport([estimator_report_1, estimator_report_2])
-    result = report.metrics.summarize(data_source="both").frame(format="wide")
+    result = report.metrics.summarize(data_source="both").frame()
 
     assert result.index.to_list() == [
         "score",
@@ -52,7 +53,7 @@ def test_format_wide(estimator_reports_binary_classification):
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
     result = report.metrics.summarize()
     assert isinstance(result, MetricsSummaryDisplay)
-    result_df = result.frame(format="wide")
+    result_df = result.frame()
     assert isinstance(result_df.index, pd.Index)
     assert result_df.index.tolist() == [
         "score",
@@ -74,30 +75,31 @@ def test_favorability(comparison_estimator_reports_binary_classification):
     """Check that the behaviour of `favorability` is correct."""
     report = comparison_estimator_reports_binary_classification
     display = report.metrics.summarize()
-    result = display.frame(format="wide", favorability=True)
-    assert set(result["Favorability"]) == {"(↗︎)", "(↘︎)"}
+    result = display.frame(favorability=True)
+    assert set(result["favorability"]) == {"(↗︎)", "(↘︎)"}
 
 
-def test_frame_has_estimator_column(
+def test_frame_has_estimator_columns(
     comparison_estimator_reports_binary_classification,
 ):
-    """The tidy frame exposes an ``estimator`` column with each estimator name."""
+    """The wide frame exposes one column per compared estimator."""
     report = comparison_estimator_reports_binary_classification
-    frame = report.metrics.summarize().frame(format="long")
+    frame = report.metrics.summarize().frame(flat_index=False)
 
-    assert isinstance(frame.index, pd.RangeIndex)
-    assert "estimator" in frame.columns
+    assert isinstance(frame.index, pd.Index)
+    assert frame.columns.tolist() == ["DummyClassifier_1", "DummyClassifier_2"]
     assert "split" not in frame.columns
-    assert frame["estimator"].nunique() == 2
 
 
 def test_aggregate(comparison_estimator_reports_binary_classification):
     """Passing `aggregate` should have no effect, as this argument is only relevant
     when comparing `CrossValidationReport`s."""
     report = comparison_estimator_reports_binary_classification
-    np.testing.assert_allclose(
-        report.metrics.summarize().frame(format="wide", aggregate="mean"),
-        report.metrics.summarize().frame(format="wide"),
+    from pandas.testing import assert_frame_equal
+
+    assert_frame_equal(
+        report.metrics.summarize().frame(aggregate="mean"),
+        report.metrics.summarize().frame(),
     )
 
 
@@ -123,7 +125,7 @@ class TestDisambiguateMetrics:
 
         report = evaluate([A(), B()], X, y, splitter=0.2)
 
-        result = report.metrics.summarize().frame(format="wide", verbose_name=True)
+        result = report.metrics.summarize().frame(verbose_name=True, flat_index=False)
 
         metric_names = result.index.tolist()
         assert metric_names[0] == "Score_1"
@@ -151,7 +153,7 @@ class TestDisambiguateMetrics:
         report_2.metrics.add(metric)
 
         report = ComparisonReport([report_1, report_2])
-        result = report.metrics.summarize().frame(format="wide", verbose_name=True)
+        result = report.metrics.summarize().frame(verbose_name=True, flat_index=False)
 
         metric_names = result.index.tolist()
         assert metric_names[0] == "Metric_1"
@@ -182,7 +184,7 @@ class TestDisambiguateMetrics:
         report_2.metrics.add(metric)
 
         report = ComparisonReport([report_1, report_2])
-        result = report.metrics.summarize().frame(format="wide")
+        result = report.metrics.summarize().frame()
 
         metric_names = result.index.tolist()
         assert "metric_1" in metric_names
@@ -221,7 +223,7 @@ class TestDisambiguateMetrics:
         report_1.metrics.add(metric_already_suffixed, verbose_name="Metric_1")
 
         report = ComparisonReport([report_1, report_2])
-        result = report.metrics.summarize().frame(format="wide", verbose_name=True)
+        result = report.metrics.summarize().frame(verbose_name=True, flat_index=False)
 
         # so the renaming must skip _1 and use _2 / _3.
         metric_names = result.index.tolist()
@@ -253,7 +255,7 @@ class TestDisambiguateMetrics:
         report_1.metrics.add(custom_r2, verbose_name="R²")
 
         report = ComparisonReport([report_1, report_2])
-        result = report.metrics.summarize().frame(format="wide", verbose_name=True)
+        result = report.metrics.summarize().frame(verbose_name=True, flat_index=False)
 
         assert result.loc["R²_1", "DummyRegressor_1"] == 1000
         assert np.isnan(result.loc["R²_1", "DummyRegressor_2"])
@@ -278,7 +280,7 @@ class TestDisambiguateMetrics:
         report_1.metrics.add(multimetric_scorer)
 
         report = ComparisonReport([report_1, report_2])
-        result = report.metrics.summarize().frame(format="wide", verbose_name=True)
+        result = report.metrics.summarize().frame(verbose_name=True, flat_index=False)
 
         # Custom metric, only computed for report 1
         assert result.loc["R²_1", "DummyRegressor_1"] == 999

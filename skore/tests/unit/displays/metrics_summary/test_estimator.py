@@ -1,4 +1,4 @@
-"""Tests for MetricsSummaryDisplay.frame(format="wide") method."""
+"""Tests for MetricsSummaryDisplay.frame() method."""
 
 import pandas as pd
 from sklearn.metrics import make_scorer, mean_absolute_error, precision_score
@@ -15,17 +15,17 @@ def test_favorability_binary(forest_binary_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     display = report.metrics.summarize()
 
-    result_no_fav = display.frame(format="wide", favorability=False)
+    result_no_fav = display.frame(favorability=False)
     assert isinstance(result_no_fav, pd.Series)
     assert result_no_fav.name == "RandomForestClassifier"
     assert result_no_fav.loc["accuracy"] is not None
 
-    result_with_fav = display.frame(format="wide", favorability=True)
+    result_with_fav = display.frame(favorability=True)
     assert result_with_fav.columns.to_list() == [
         "RandomForestClassifier",
-        "Favorability",
+        "favorability",
     ]
-    assert set(result_with_fav["Favorability"]) == {"(↗︎)", "(↘︎)"}
+    assert set(result_with_fav["favorability"]) == {"(↗︎)", "(↘︎)"}
 
 
 def test_favorability_regression(linear_regression_with_test):
@@ -34,13 +34,13 @@ def test_favorability_regression(linear_regression_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     display = report.metrics.summarize()
 
-    result_no_fav = display.frame(format="wide", favorability=False)
+    result_no_fav = display.frame(favorability=False)
     assert isinstance(result_no_fav, pd.Series)
     assert result_no_fav.name == "LinearRegression"
 
-    result_with_fav = display.frame(format="wide", favorability=True)
-    assert result_with_fav.columns.to_list() == ["LinearRegression", "Favorability"]
-    assert set(result_with_fav["Favorability"]) == {"(↗︎)", "(↘︎)"}
+    result_with_fav = display.frame(favorability=True)
+    assert result_with_fav.columns.to_list() == ["LinearRegression", "favorability"]
+    assert set(result_with_fav["favorability"]) == {"(↗︎)", "(↘︎)"}
 
 
 def test_format_wide_multiclass(forest_multiclass_classification_with_test):
@@ -49,7 +49,7 @@ def test_format_wide_multiclass(forest_multiclass_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", favorability=False)
+    result = display.frame(favorability=False)
     assert isinstance(result, pd.Series)
     assert result.name == "RandomForestClassifier"
     assert isinstance(result.index, pd.Index)
@@ -79,7 +79,7 @@ def test_format_wide_multioutput(linear_regression_multioutput_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", favorability=False)
+    result = display.frame(favorability=False)
     assert isinstance(result, pd.Series)
     assert result.name == "LinearRegression"
     assert isinstance(result.index, pd.Index)
@@ -101,27 +101,29 @@ def test_format_wide_multioutput(linear_regression_multioutput_with_test):
 
 
 def test_custom_macro_metric_uses_average(forest_binary_classification_with_test):
-    """Average-only classification metrics expose ``average`` in long format."""
+    """Average-only classification metrics expose ``average`` in the row index."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     name = "Precision (Macro)"
     report.metrics.add(make_scorer(precision_score, average="macro"), name=name)
-    result = report.metrics.summarize(metric=[name]).frame(format="long")
-    assert result["average"].tolist() == ["macro"]
+    result = report.metrics.summarize(metric=[name]).frame(flat_index=False)
+    assert result.index.names == ["metric", "average"]
+    assert result.index.get_level_values("average").tolist() == ["macro"]
 
 
 def test_multioutput_average_uses_output_average(
     linear_regression_multioutput_with_test,
 ):
-    """Average-only multioutput regression metrics expose ``average`` in long format."""
+    """Average-only multioutput regression metrics expose `average` in the row index."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     name = "MAE (Average)"
     report.metrics.add(
         make_scorer(mean_absolute_error, multioutput="uniform_average"), name=name
     )
-    result = report.metrics.summarize(metric=[name]).frame(format="long")
-    assert result["average"].tolist().count("uniform_average") == 1
+    result = report.metrics.summarize(metric=[name]).frame(flat_index=False)
+    assert result.index.names == ["metric", "average"]
+    assert result.index.get_level_values("average").tolist() == ["uniform_average"]
 
 
 def test_format_wide_with_favorability(forest_binary_classification_with_test):
@@ -130,8 +132,8 @@ def test_format_wide_with_favorability(forest_binary_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", favorability=True)
-    assert result.columns.to_list() == ["RandomForestClassifier", "Favorability"]
+    result = display.frame(favorability=True)
+    assert result.columns.to_list() == ["RandomForestClassifier", "favorability"]
 
     assert isinstance(result.index, pd.Index)
     assert result.index.to_list() == [
@@ -157,17 +159,17 @@ def test_data_source_both_favorability(forest_binary_classification_data):
     )
     display = report.metrics.summarize(data_source="both")
 
-    result_no_fav = display.frame(format="wide", favorability=False)
+    result_no_fav = display.frame(favorability=False)
     assert result_no_fav.columns.to_list() == [
         "RandomForestClassifier (train)",
         "RandomForestClassifier (test)",
     ]
 
-    result_with_fav = display.frame(format="wide", favorability=True)
+    result_with_fav = display.frame(favorability=True)
     assert result_with_fav.columns.to_list() == [
         "RandomForestClassifier (train)",
         "RandomForestClassifier (test)",
-        "Favorability",
+        "favorability",
     ]
 
 
@@ -180,7 +182,7 @@ def test_data_source_both_format_wide(forest_binary_classification_data):
     )
     display = report.metrics.summarize(data_source="both")
 
-    result = display.frame(format="wide")
+    result = display.frame()
     assert result.columns.to_list() == [
         "RandomForestClassifier (train)",
         "RandomForestClassifier (test)",
@@ -200,16 +202,15 @@ def test_data_source_both_format_wide(forest_binary_classification_data):
 
 
 def test_frame_flat_index(forest_binary_classification_with_test):
-    """The tidy frame has a flat index and the expected metadata columns."""
+    """The wide frame preserves metric and label levels in the row index."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    frame = report.metrics.summarize().frame(format="long")
+    frame = report.metrics.summarize().frame(flat_index=False)
 
-    assert isinstance(frame.index, pd.RangeIndex)
-    assert not isinstance(frame.columns, pd.MultiIndex)
-    # estimator is constant, so it is not exposed; no split nor data_source either
-    assert frame.columns.to_list() == ["metric", "label", "value"]
-    assert "accuracy" in frame["metric"].to_numpy()
+    assert isinstance(frame, pd.Series)
+    assert isinstance(frame.index, pd.MultiIndex)
+    assert frame.index.names == ["metric", "label"]
+    assert "accuracy" in frame.index.get_level_values("metric").to_numpy()
 
 
 def test_frame_favorability_column(forest_binary_classification_with_test):
@@ -217,24 +218,24 @@ def test_frame_favorability_column(forest_binary_classification_with_test):
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    frame = report.metrics.summarize().frame(format="long")
-    frame_fav = report.metrics.summarize().frame(favorability=True, format="long")
+    frame = report.metrics.summarize().frame(flat_index=False)
+    frame_fav = report.metrics.summarize().frame(favorability=True, flat_index=False)
 
-    assert "favorability" not in frame.columns
-    assert frame_fav.columns.to_list() == [*frame.columns, "favorability"]
+    assert isinstance(frame, pd.Series)
+    assert frame_fav.columns.to_list() == ["RandomForestClassifier", "favorability"]
     assert set(frame_fav["favorability"]) == {"(↗︎)", "(↘︎)"}
 
 
 def test_frame_multiclass_has_label_column(forest_multiclass_classification_with_test):
-    """Per-class metrics expose a ``label`` column in long format."""
+    """Per-class metrics expose a ``label`` level in the row index."""
     estimator, X_test, y_test = forest_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    frame = report.metrics.summarize().frame(format="long")
+    frame = report.metrics.summarize().frame(flat_index=False)
 
-    assert "label" in frame.columns
-    assert "output" not in frame.columns
-    precision = frame[frame["metric"] == "precision"]
-    assert precision["label"].dropna().to_list() == [0, 1, 2]
+    assert "label" in frame.index.names
+    assert "output" not in frame.index.names
+    precision_labels = frame.loc["precision"].index.get_level_values("label")
+    assert precision_labels.dropna().astype(int).to_list() == [0, 1, 2]
 
 
 def test_frame_multiclass_includes_macro_metrics(
@@ -250,15 +251,14 @@ def test_frame_multiclass_includes_macro_metrics(
 
 
 def test_frame_multioutput_has_output_column(linear_regression_multioutput_with_test):
-    """Multioutput regression metrics expose an ``output`` column."""
+    """Multioutput regression metrics expose an ``output`` level in the row index."""
     estimator, X_test, y_test = linear_regression_multioutput_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    frame = report.metrics.summarize().frame(format="long")
+    frame = report.metrics.summarize().frame(flat_index=False)
 
-    assert "output" in frame.columns
-    assert "label" not in frame.columns
-    r2 = frame[frame["metric"] == "r2"]
-    assert r2["output"].to_list() == [0, 1]
+    assert "output" in frame.index.names
+    assert "label" not in frame.index.names
+    assert frame.loc["r2"].index.get_level_values("output").to_list() == [0, 1]
 
 
 def test_frame_verbose_name_true(forest_binary_classification_with_test):
@@ -266,10 +266,11 @@ def test_frame_verbose_name_true(forest_binary_classification_with_test):
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
-    frame = report.metrics.summarize().frame(verbose_name=True, format="long")
+    frame = report.metrics.summarize().frame(verbose_name=True, flat_index=False)
 
-    assert "Accuracy" in frame["metric"].to_numpy()
-    assert "accuracy" not in frame["metric"].to_numpy()
+    assert "Metric" in frame.index.names
+    assert "Accuracy" in frame.index.get_level_values("Metric").to_numpy()
+    assert "accuracy" not in frame.index.get_level_values("Metric").to_numpy()
 
 
 def test_frame_verbose_name_true_wide(forest_binary_classification_with_test):
@@ -278,13 +279,13 @@ def test_frame_verbose_name_true_wide(forest_binary_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     result = report.metrics.summarize().frame(
-        format="wide", verbose_name=True, favorability=False
+        verbose_name=True, flat_index=False, favorability=False
     )
 
-    assert "Fit_time_s" in result.index
-    assert "fit_time" not in result.index
-    assert "Accuracy" in result.index
-    assert "accuracy" not in result.index
+    assert ("Fit time (s)", "") in result.index
+    assert ("fit_time", "") not in result.index
+    assert ("Accuracy", "") in result.index
+    assert ("accuracy", "") not in result.index
 
 
 def test_frame_flat_index_false(forest_multiclass_classification_with_test):
@@ -293,23 +294,25 @@ def test_frame_flat_index_false(forest_multiclass_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     result = report.metrics.summarize().frame(
-        format="wide", flat_index=False, favorability=False
+        flat_index=False, favorability=False, verbose_name=True
     )
 
     assert isinstance(result.index, pd.MultiIndex)
     assert result.index.names == ["Metric", "Label"]
     assert "Output" not in result.index.names
-    assert ("precision_macro", "") in result.index
+    assert ("Precision (macro)", "") in result.index
 
 
 def test_frame_data_source_both(forest_binary_classification_data):
-    """With both data sources, the frame exposes a ``data_source`` column."""
+    """With both data sources, the frame exposes train and test value columns."""
     estimator, X, y = forest_binary_classification_data
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
-    frame = report.metrics.summarize(data_source="both").frame(format="long")
+    frame = report.metrics.summarize(data_source="both").frame(flat_index=False)
 
-    assert "data_source" in frame.columns
-    assert set(frame["data_source"]) == {"train", "test"}
+    assert frame.columns.to_list() == [
+        "RandomForestClassifier (train)",
+        "RandomForestClassifier (test)",
+    ]

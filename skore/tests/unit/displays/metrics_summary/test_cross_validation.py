@@ -1,4 +1,4 @@
-"""Tests for ``MetricsSummaryDisplay.frame(format="wide")`` with cross-validation.
+"""Tests for ``MetricsSummaryDisplay.frame()`` with cross-validation.
 
 These tests focus on testing the display/formatting logic of MetricsSummaryDisplay
 for cross-validation reports without depending on CrossValidationReport or summarize().
@@ -17,7 +17,7 @@ def test_aggregate_mean(forest_binary_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", aggregate="mean")
+    result = display.frame(aggregate="mean")
 
     assert isinstance(result, pd.Series)
     assert result.name == "randomforestclassifier_mean"
@@ -31,7 +31,7 @@ def test_aggregate_mean_std(forest_binary_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", aggregate=["mean", "std"])
+    result = display.frame(aggregate=["mean", "std"])
 
     assert isinstance(result.index, pd.Index)
     assert result.columns.tolist() == [
@@ -47,7 +47,7 @@ def test_aggregate_none(forest_binary_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", aggregate=None)
+    result = display.frame(aggregate=None)
 
     assert isinstance(result.index, pd.Index)
     assert result.columns.tolist() == [
@@ -65,17 +65,13 @@ def test_favorability_with_aggregate_mean_std(forest_binary_classification_data)
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result_no_fav = display.frame(
-        format="wide", aggregate=["mean", "std"], favorability=False
-    )
+    result_no_fav = display.frame(aggregate=["mean", "std"], favorability=False)
     assert result_no_fav.columns.tolist() == [
         "randomforestclassifier_mean",
         "randomforestclassifier_std",
     ]
 
-    result_with_fav = display.frame(
-        format="wide", aggregate=["mean", "std"], favorability=True
-    )
+    result_with_fav = display.frame(aggregate=["mean", "std"], favorability=True)
     assert result_with_fav.columns.tolist() == [
         "randomforestclassifier_mean",
         "randomforestclassifier_std",
@@ -90,13 +86,13 @@ def test_favorability_with_aggregate_none(forest_binary_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result_no_fav = display.frame(format="wide", aggregate=None, favorability=False)
+    result_no_fav = display.frame(aggregate=None, favorability=False)
     assert result_no_fav.columns.tolist() == [
         "randomforestclassifier_split_0",
         "randomforestclassifier_split_1",
     ]
 
-    result_with_fav = display.frame(format="wide", aggregate=None, favorability=True)
+    result_with_fav = display.frame(aggregate=None, favorability=True)
     assert result_with_fav.columns.tolist() == [
         "randomforestclassifier_split_0",
         "randomforestclassifier_split_1",
@@ -111,7 +107,7 @@ def test_format_wide_binary_classification(forest_binary_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", aggregate=["mean", "std"])
+    result = display.frame(aggregate=["mean", "std"])
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
         "accuracy",
@@ -133,9 +129,7 @@ def test_frame_with_multiindex_single_column(forest_binary_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(
-        format="wide", aggregate="mean", flat_index=False, verbose_name=True
-    )
+    result = display.frame(aggregate="mean", flat_index=False, verbose_name=True)
 
     assert isinstance(result, pd.Series)
     assert result.name == "RandomForestClassifier_mean"
@@ -147,7 +141,7 @@ def test_frame_with_multiindex_cv(forest_binary_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", aggregate=["mean", "std"], flat_index=False)
+    result = display.frame(aggregate=["mean", "std"], flat_index=False)
 
     assert isinstance(result.columns, pd.MultiIndex)
 
@@ -158,7 +152,7 @@ def test_format_wide_multioutput(linear_regression_multioutput_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", aggregate=["mean", "std"])
+    result = display.frame(aggregate=["mean", "std"])
     assert isinstance(result.index, pd.Index)
     assert result.index.tolist() == [
         "r2_0",
@@ -180,8 +174,8 @@ def test_preserves_score_values_with_aggregate(forest_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", aggregate=["mean", "std"])
-    result_no_agg = display.frame(format="wide", aggregate=None)
+    result = display.frame(aggregate=["mean", "std"])
+    result_no_agg = display.frame(aggregate=None)
     accuracy_no_agg = result_no_agg.loc["accuracy"]
 
     assert result.loc["accuracy", "randomforestclassifier_mean"] == pytest.approx(
@@ -192,34 +186,6 @@ def test_preserves_score_values_with_aggregate(forest_binary_classification_data
     )
 
 
-def test_format_wide_with_favorability(forest_binary_classification_data):
-    """Compact format and favorability work together for CV."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    display = report.metrics.summarize()
-
-    result = display.frame(format="wide", aggregate=["mean", "std"], favorability=True)
-    assert result.columns.tolist() == [
-        "randomforestclassifier_mean",
-        "randomforestclassifier_std",
-        "favorability",
-    ]
-
-    assert isinstance(result.index, pd.Index)
-    assert result.index.tolist() == [
-        "accuracy",
-        "precision_0",
-        "precision_1",
-        "recall_0",
-        "recall_1",
-        "roc_auc",
-        "log_loss",
-        "brier_score",
-        "fit_time",
-        "predict_time",
-    ]
-
-
 def test_data_source_both_favorability(forest_binary_classification_data):
     """Test favorability columns when data_source='both'."""
     estimator, X, y = forest_binary_classification_data
@@ -227,7 +193,7 @@ def test_data_source_both_favorability(forest_binary_classification_data):
     name = report.estimator_name_.lower()
     display = report.metrics.summarize(data_source="both")
 
-    result = display.frame(format="wide", favorability=False)
+    result = display.frame(favorability=False)
     assert result.columns.tolist() == [
         f"{name}_(train)_mean",
         f"{name}_(train)_std",
@@ -235,7 +201,7 @@ def test_data_source_both_favorability(forest_binary_classification_data):
         f"{name}_(test)_std",
     ]
 
-    result = display.frame(format="wide", favorability=True)
+    result = display.frame(favorability=True)
     assert result.columns.tolist() == [
         f"{name}_(train)_mean",
         f"{name}_(train)_std",
@@ -250,7 +216,7 @@ def test_data_source_both_format_wide(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     name = report.estimator_name_.lower()
-    result = report.metrics.summarize(data_source="both").frame(format="wide")
+    result = report.metrics.summarize(data_source="both").frame()
 
     assert result.columns.tolist() == [
         f"{name}_(train)_mean",
@@ -278,7 +244,7 @@ def test_multiclass_classification(forest_multiclass_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", aggregate=["mean", "std"])
+    result = display.frame(aggregate=["mean", "std"])
 
     assert isinstance(result.index, pd.Index)
     assert result.shape == (16, 2)
@@ -290,7 +256,7 @@ def test_with_mixed_favorability(forest_binary_classification_data):
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    result = display.frame(format="wide", aggregate=["mean", "std"], favorability=True)
+    result = display.frame(aggregate=["mean", "std"], favorability=True)
 
     assert "favorability" in result.columns
     assert isinstance(result.index, pd.Index)
@@ -298,70 +264,40 @@ def test_with_mixed_favorability(forest_binary_classification_data):
     assert result.loc["brier_score", "favorability"] == "(↘︎)"
 
 
-def test_frame_has_split_column(forest_binary_classification_data):
-    """The tidy frame exposes one row per split via a ``split`` column."""
+def test_frame_has_split_columns(forest_binary_classification_data):
+    """The wide frame exposes one column per split via a MultiIndex."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    frame = report.metrics.summarize().frame(format="long", aggregate=None)
+    frame = report.metrics.summarize().frame(flat_index=False, aggregate=None)
 
-    assert isinstance(frame.index, pd.RangeIndex)
-    assert "split" in frame.columns
-    assert "estimator" not in frame.columns
-    assert set(frame["split"]) == {0, 1}
+    assert isinstance(frame.index, pd.Index)
+    assert isinstance(frame.columns, pd.MultiIndex)
+    assert frame.columns.names == ["estimator", "split"]
+    assert set(frame.columns.get_level_values("split")) == {"Split #0", "Split #1"}
 
 
-def test_long_frame_aggregate_mean_std(forest_binary_classification_data):
-    """Long format with aggregate exposes mean/std rows, not per-split rows."""
+def test_wide_frame_aggregate_mean_std(forest_binary_classification_data):
+    """Wide layout with aggregate exposes mean/std columns, not per-split columns."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
 
-    frame = display.frame(format="long", aggregate=["mean", "std"])
-    wide = display.frame(format="wide", aggregate=["mean", "std"])
+    wide = display.frame(aggregate=["mean", "std"])
+    wide_unflat = display.frame(flat_index=False, aggregate=["mean", "std"])
 
-    assert isinstance(frame.index, pd.RangeIndex)
-    assert "aggregate" in frame.columns
-    assert "split" not in frame.columns
-    assert set(frame["aggregate"]) == {"mean", "std"}
+    assert "randomforestclassifier_mean" in wide.columns
+    assert "randomforestclassifier_std" in wide.columns
+    assert isinstance(wide_unflat.columns, pd.MultiIndex)
+    assert wide_unflat.columns.names == ["estimator", "aggregate"]
+    assert set(wide_unflat.columns.get_level_values("aggregate")) == {"mean", "std"}
 
-    accuracy_mean = frame.loc[
-        (frame["metric"] == "accuracy") & (frame["aggregate"] == "mean"), "value"
-    ].iloc[0]
-    assert accuracy_mean == pytest.approx(
-        wide.loc["accuracy", "randomforestclassifier_mean"]
+
+def test_wide_frame_verbose_name_level_names(forest_binary_classification_data):
+    """`verbose_name=True` capitalizes the row and column MultiIndex level names."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    result = report.metrics.summarize().frame(
+        aggregate=["mean", "std"], flat_index=False, verbose_name=True
     )
-
-
-def test_format_auto_uses_wide_for_cv(forest_binary_classification_data):
-    """Auto format uses wide layout for single cross-validation reports."""
-    estimator, X, y = forest_binary_classification_data
-    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
-    display = report.metrics.summarize()
-
-    result = display.frame(format="auto", aggregate=["mean", "std"])
-
-    assert isinstance(result.index, pd.Index)
-    assert result.columns.tolist() == [
-        "randomforestclassifier_mean",
-        "randomforestclassifier_std",
-    ]
-
-
-def test_repr_uses_long_for_comparison(
-    forest_binary_classification_data,
-):
-    """Repr uses long format for comparison reports."""
-    from skore import ComparisonReport
-
-    estimator, X, y = forest_binary_classification_data
-    reports = {
-        f"est_{i}": CrossValidationReport(estimator, X=X, y=y, splitter=2)
-        for i in range(2)
-    }
-    display = ComparisonReport(reports).metrics.summarize()
-
-    result = display.frame(format="auto", flat_index=True)
-
-    assert isinstance(result.index, pd.RangeIndex)
-    assert "aggregate" in result.columns
-    assert "estimator" in result.columns
+    assert result.index.names == ["Metric", "Label"]
+    assert result.columns.names == ["Estimator", "Aggregate"]

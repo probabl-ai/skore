@@ -16,7 +16,7 @@ def check_display_structure(
     display,
     *,
     expected_metrics,
-    expected_estimator_name=None,
+    expected_estimator=None,
     expected_data_source="test",
     expected_greater_is_better=None,
 ):
@@ -29,7 +29,7 @@ def check_display_structure(
         The display object to check.
     expected_metrics : set, optional
         Expected set of metric names.
-    expected_estimator_name : str, optional
+    expected_estimator : str, optional
         Expected estimator name.
     expected_data_source : str, default="test"
         Expected data source value.
@@ -44,7 +44,7 @@ def check_display_structure(
         "split",
         "name",
         "verbose_name",
-        "estimator_name",
+        "estimator",
         "data_source",
         "label",
         "average",
@@ -54,7 +54,7 @@ def check_display_structure(
         "fingerprint",
     }
     assert set(data["verbose_name"]) == expected_metrics
-    assert set(data["estimator_name"]) == {expected_estimator_name}
+    assert set(data["estimator"]) == {expected_estimator}
     assert set(data["data_source"]) == {expected_data_source}
     assert set(data["split"]) == {0, 1}
     assert pd.api.types.is_numeric_dtype(data["score"])
@@ -89,7 +89,7 @@ def test_binary_classification_forest(forest_binary_classification_data):
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="RandomForestClassifier",
+        expected_estimator="RandomForestClassifier",
     )
 
     data = display.summary.set_index(["split", "verbose_name"]).sort_index()
@@ -123,7 +123,7 @@ def test_binary_classification_svc(svc_binary_classification_data):
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="SVC",
+        expected_estimator="SVC",
     )
 
 
@@ -150,7 +150,7 @@ def test_multiclass_classification_forest(forest_multiclass_classification_data)
             "Predict time (s)",
             "Fit time (s)",
         },
-        expected_estimator_name="RandomForestClassifier",
+        expected_estimator="RandomForestClassifier",
     )
 
     assert display.summary["output"].isna().all()
@@ -183,7 +183,7 @@ def test_multiclass_classification_svc(svc_multiclass_classification_data):
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="SVC",
+        expected_estimator="SVC",
     )
 
     assert display.summary["output"].isna().all()
@@ -209,7 +209,7 @@ def test_regression(linear_regression_data):
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="LinearRegression",
+        expected_estimator="LinearRegression",
     )
 
     assert display.summary["label"].isna().all()
@@ -232,7 +232,7 @@ def test_multioutput_regression(linear_regression_multioutput_data):
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="LinearRegression",
+        expected_estimator="LinearRegression",
     )
 
     assert display.summary["label"].isna().all()
@@ -257,7 +257,7 @@ def test_without_predict_proba(custom_classifier_no_predict_proba_data):
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="CustomClassifierPredictOnly",
+        expected_estimator="CustomClassifierPredictOnly",
     )
 
 

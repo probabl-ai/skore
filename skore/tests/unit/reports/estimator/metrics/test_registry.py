@@ -230,15 +230,10 @@ class TestSummarizeIntegration:
 
         display = report.metrics.summarize()
 
-        # Should include both built-in and custom metrics
-        assert (
-            "Accuracy"
-            in display.frame(format="long", verbose_name=True)["metric"].to_numpy()
-        )
-        assert (
-            "Business Loss"
-            in display.frame(format="long", verbose_name=True)["metric"].to_numpy()
-        )
+        frame = display.frame(flat_index=False, verbose_name=True)
+        metric_names = frame.index.get_level_values("Metric").to_numpy()
+        assert "Accuracy" in metric_names
+        assert "Business Loss" in metric_names
 
     def test_summarize_with_explicit_custom_metric(self, binary_classification_report):
         """Test calling summarize with explicit custom metric name."""
@@ -482,11 +477,7 @@ class TestEdgeCases:
         estimator, X_train, X_test, y_train, y_test = (
             logistic_binary_classification_with_train_test
         )
-        report = EstimatorReport(
-            estimator,
-            X_test=X_test,
-            y_test=y_test,
-        )
+        report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
         scorer = make_scorer(accuracy_score, response_method="predict")
         report.metrics.add(scorer)
@@ -532,11 +523,7 @@ class TestDifferentMLTasks:
             logistic_multiclass_classification_with_train_test
         )
         report = EstimatorReport(
-            estimator,
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
         )
 
         report.metrics.add(make_scorer(accuracy_score, response_method="predict"))
@@ -552,9 +539,7 @@ class TestDifferentMLTasks:
             return mean_squared_error(y_true, y_pred)
 
         scorer = make_scorer(
-            custom_mse,
-            greater_is_better=False,
-            response_method="predict",
+            custom_mse, greater_is_better=False, response_method="predict"
         )
         report.metrics.add(scorer)
 
@@ -569,17 +554,11 @@ class TestDifferentMLTasks:
             linear_regression_multioutput_with_train_test
         )
         report = EstimatorReport(
-            estimator,
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
         )
 
         scorer = make_scorer(
-            mean_squared_error,
-            greater_is_better=False,
-            response_method="predict",
+            mean_squared_error, greater_is_better=False, response_method="predict"
         )
         report.metrics.add(scorer)
 
@@ -678,15 +657,16 @@ class TestMultiMetric:
         assert "fingerprint" in display.summary.columns
         assert display.summary["verbose_name"].tolist().count("Accuracy") == 2
 
-        result = display.frame(format="long", verbose_name=True)
-        assert "Accuracy" not in result["metric"].tolist()
-        assert "Accuracy_1" in result["metric"].tolist()
-        assert "Accuracy_2" in result["metric"].tolist()
+        result = display.frame(flat_index=False, verbose_name=True)
+        metric_names = result.index.get_level_values("Metric").tolist()
+        assert "Accuracy" not in metric_names
+        assert "Accuracy_1" in metric_names
+        assert "Accuracy_2" in metric_names
 
-        accuracy_1 = result[result["metric"] == "Accuracy_1"]
-        accuracy_2 = result[result["metric"] == "Accuracy_2"]
-        assert list(accuracy_1["value"]) == [1000]
-        assert list(accuracy_2["value"]) == [1.0]
+        accuracy_1 = result[result.index.get_level_values("Metric") == "Accuracy_1"]
+        accuracy_2 = result[result.index.get_level_values("Metric") == "Accuracy_2"]
+        assert accuracy_1.iloc[0] == 1000
+        assert accuracy_2.iloc[0] == 1.0
 
 
 class TestStringScorerNames:
@@ -802,10 +782,7 @@ class TestMetric:
     def test_repr_kwargs(self):
         """Test that Metric.__repr__ works as expected when kwargs are passed."""
         m = Metric(
-            name="accuracy",
-            function=None,
-            greater_is_better=True,
-            kwargs={"hello": 1},
+            name="accuracy", function=None, greater_is_better=True, kwargs={"hello": 1}
         )
 
         assert repr(m) == (

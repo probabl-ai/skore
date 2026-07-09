@@ -14,7 +14,7 @@ def test_repr_includes_frame_and_hint(forest_binary_classification_with_test):
     ).metrics.summarize()
 
     repr_str = repr(display)
-    assert repr_str.startswith(repr(display.frame(format="auto")))
+    assert repr_str.startswith(repr(display.frame()))
     assert repr_str.endswith("Use .frame() to control the format of the output.")
     assert (
         "Use .plot() to plot the data" not in display._repr_mimebundle_()["text/plain"]
@@ -29,7 +29,7 @@ def test_repr_html_includes_frame_and_hint(forest_binary_classification_with_tes
     ).metrics.summarize()
 
     html = display._repr_html_()
-    frame = display.frame(format="auto", verbose_name=True, flat_index=False)
+    frame = display.frame(verbose_name=True, flat_index=False)
     expected_html = (
         frame.to_frame()._repr_html_()
         if isinstance(frame, pd.Series)
@@ -51,8 +51,8 @@ def test_repr_frame_for_html_uses_verbose_names_and_multiindex(
         estimator, X_test=X_test, y_test=y_test
     ).metrics.summarize()
 
-    html_frame = display.frame(format="auto", verbose_name=True, flat_index=False)
-    plain_frame = display.frame(format="auto", flat_index=True)
+    html_frame = display.frame(verbose_name=True, flat_index=False)
+    plain_frame = display.frame(flat_index=True)
 
     assert isinstance(html_frame.index, pd.MultiIndex)
     assert "Metric" in html_frame.index.names
@@ -88,19 +88,31 @@ def display_fail(request):
     return display
 
 
+def _metric_index_labels(frame: pd.DataFrame | pd.Series) -> pd.Index:
+    index = frame.index if isinstance(frame, pd.DataFrame) else frame.index
+    if isinstance(index, pd.MultiIndex):
+        return index.get_level_values(0)
+    return index
+
+
 @pytest.mark.filterwarnings(r"ignore:Metric 'fail\d' has failed:UserWarning")
 def test_repr_failure(display_fail):
     """Check that __repr__ shows failed metrics."""
     repr_str = repr(display_fail)
     assert repr_str.startswith(repr(display_fail.frame()))
 
-    # NaN is not filtered out of the dataframe
-    long_frame = display_fail.frame(format="long")
-    assert long_frame["metric"].str.contains("fail", case=False).any()
+    # NaN is not filtered out of the dataframe for estimator reports
+    wide_frame = display_fail.frame(flat_index=False)
+    if display_fail.report_type == "estimator":
+        assert _metric_index_labels(wide_frame).str.contains("fail", case=False).any()
+    if display_fail.report_type == "cross-validation":
+        assert display_fail.summary["name"].str.contains("fail", case=False).any()
     assert (
-        display_fail.frame(aggregate=None, format="long")["metric"]
+        _metric_index_labels(display_fail.frame(aggregate=None, flat_index=False))
         .str.contains("fail", case=False)
         .any()
+        if display_fail.report_type == "estimator"
+        else display_fail.summary["name"].str.contains("fail", case=False).any()
     )
 
     assert "Use .frame() to control the format of the output." in repr_str
@@ -124,7 +136,7 @@ def test_repr_failure(display_fail):
 def test_repr_html_failure(display_fail):
     """Check that _repr_html_ shows failed metrics."""
     repr_html = display_fail._repr_html_()
-    frame = display_fail.frame(format="auto", verbose_name=True, flat_index=False)
+    frame = display_fail.frame(verbose_name=True, flat_index=False)
     expected_html = (
         frame.to_frame()._repr_html_()
         if isinstance(frame, pd.Series)
@@ -132,11 +144,20 @@ def test_repr_html_failure(display_fail):
     )
     assert repr_html.startswith(expected_html)
 
-    # NaN is not filtered out of the dataframe
-    long_frame = display_fail.frame(format="long")
-    assert long_frame["metric"].str.contains("fail", case=False).any()
-    long_html = display_fail.frame(aggregate=None, format="long")._repr_html_()
-    assert "fail" in long_html.lower()
+    # NaN is not filtered out of the dataframe for estimator reports
+    wide_frame = display_fail.frame(flat_index=False)
+    if display_fail.report_type == "estimator":
+        assert _metric_index_labels(wide_frame).str.contains("fail", case=False).any()
+    else:
+        assert display_fail.summary["name"].str.contains("fail", case=False).any()
+    per_split = display_fail.frame(aggregate=None, flat_index=False)
+    long_html = (
+        per_split.to_frame()._repr_html_()
+        if isinstance(per_split, pd.Series)
+        else per_split._repr_html_()
+    )
+    if display_fail.report_type == "estimator":
+        assert "fail" in long_html.lower()
 
     assert "Use <code>.frame()</code> to control the format of the output." in repr_html
     mime_html = display_fail._repr_mimebundle_()["text/html"]
@@ -152,3 +173,48 @@ def test_repr_html_failure(display_fail):
     # Error messages are not duplicated (for CV)
     assert repr_html.count("'fail1'") == 1
     assert repr_html.count("'fail2'") == 1
+
+
+@pytest.fixture(
+    params=[
+        "estimator",
+        "cross-validation",
+        "comparison-estimator",
+        "comparison-cross-validation",
+    ]
+)
+def summary_display(request):
+    if request.param == "estimator":
+        estimator, X_test, y_test = request.getfixturevalue(
+            "forest_binary_classification_with_test"
+        )
+        report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    elif request.param == "cross-validation":
+        estimator, X, y = request.getfixturevalue("forest_binary_classification_data")
+        report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    elif request.param == "comparison-estimator":
+        report = request.getfixturevalue(
+            "comparison_estimator_reports_binary_classification"
+        )
+    else:
+        report = request.getfixturevalue(
+            "comparison_cross_validation_reports_binary_classification"
+        )
+    return report.metrics.summarize()
+
+
+def test_frame_verbose_name_flat_index_true_raises(summary_display):
+    """`verbose_name=True` with `flat_index=True` is forbidden for every report type."""
+    with pytest.raises(ValueError, match="verbose_name=True is incompatible"):
+        summary_display.frame(verbose_name=True, flat_index=True)
+
+
+@pytest.mark.parametrize("verbose_name", [False, True])
+def test_frame_favorability_column_name(summary_display, verbose_name):
+    """The favorability column label follows `verbose_name` for every report type."""
+    kwargs = {"favorability": True, "verbose_name": verbose_name}
+    if verbose_name:
+        kwargs["flat_index"] = False
+    result = summary_display.frame(**kwargs)
+    expected = "Favorability" if verbose_name else "favorability"
+    assert expected in result.columns

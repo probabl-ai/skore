@@ -7,22 +7,26 @@ from sklearn.dummy import DummyClassifier
 from skore import ComparisonReport, CrossValidationReport
 
 
-def test_format_auto_uses_long(
-    comparison_cross_validation_reports_binary_classification,
-):
-    """Auto format uses long layout for comparison-cross-validation reports."""
+def test_default_is_wide(comparison_cross_validation_reports_binary_classification):
+    """Default `frame()` returns wide layout for comparison-cross-validation reports."""
     report = comparison_cross_validation_reports_binary_classification
 
-    result = report.metrics.summarize().frame(format="auto")
+    result = report.metrics.summarize().frame()
 
-    assert isinstance(result.index, pd.RangeIndex)
-    assert "estimator" in result.columns
+    assert isinstance(result, pd.DataFrame)
+    assert isinstance(result.index, pd.Index)
+    assert result.columns.tolist() == [
+        "mean_dummyclassifier_1",
+        "mean_dummyclassifier_2",
+        "std_dummyclassifier_1",
+        "std_dummyclassifier_2",
+    ]
 
 
 def test_aggregate_none(comparison_cross_validation_reports_binary_classification):
     """Compact format works with ``aggregate=None``."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize().frame(format="wide", aggregate=None)
+    result = report.metrics.summarize().frame(aggregate=None)
 
     assert result.columns.to_list() == [
         "dummyclassifier_1_split_0",
@@ -37,7 +41,7 @@ def test_aggregate_none(comparison_cross_validation_reports_binary_classificatio
 def test_default(comparison_cross_validation_reports_binary_classification):
     """Compact format works with default aggregation."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize().frame(format="wide")
+    result = report.metrics.summarize().frame()
 
     assert result.columns.tolist() == [
         "mean_dummyclassifier_1",
@@ -51,7 +55,7 @@ def test_default(comparison_cross_validation_reports_binary_classification):
 def test_default_regression(comparison_cross_validation_reports_regression):
     """Compact format works for regression comparison reports."""
     report = comparison_cross_validation_reports_regression
-    result = report.metrics.summarize().frame(format="wide")
+    result = report.metrics.summarize().frame()
 
     assert result.columns.tolist() == [
         "mean_dummyregressor_1",
@@ -73,7 +77,7 @@ def test_default_regression(comparison_cross_validation_reports_regression):
 def test_aggregate_none_regression(comparison_cross_validation_reports_regression):
     """Compact format works with ``aggregate=None`` for regression."""
     report = comparison_cross_validation_reports_regression
-    result = report.metrics.summarize().frame(format="wide", aggregate=None)
+    result = report.metrics.summarize().frame(aggregate=None)
 
     assert isinstance(result.index, pd.Index)
     assert len(result) == 7
@@ -83,9 +87,7 @@ def test_aggregate_none_regression(comparison_cross_validation_reports_regressio
 def test_metric(comparison_cross_validation_reports_binary_classification):
     """Compact format works with the ``metric`` parameter."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize(metric=["accuracy"]).frame(
-        format="wide", aggregate=None
-    )
+    result = report.metrics.summarize(metric=["accuracy"]).frame(aggregate=None)
 
     assert result.columns.tolist() == [
         "dummyclassifier_1_split_0",
@@ -99,7 +101,7 @@ def test_metric(comparison_cross_validation_reports_binary_classification):
 def test_favorability(comparison_cross_validation_reports_binary_classification):
     """Compact format works with ``favorability=True``."""
     report = comparison_cross_validation_reports_binary_classification
-    result = report.metrics.summarize().frame(format="wide", favorability=True)
+    result = report.metrics.summarize().frame(favorability=True)
 
     assert result.columns.tolist() == [
         "mean_dummyclassifier_1",
@@ -125,8 +127,9 @@ def test_init_with_report_names(binary_classification_data):
     )
     report = ComparisonReport({"model_1": report_1, "model_2": report_2})
 
-    frame = report.metrics.summarize().frame(format="long", aggregate=None)
-    assert set(frame["estimator"].unique()) == {"model_1", "model_2"}
+    frame = report.metrics.summarize().frame(flat_index=False, aggregate=None)
+    assert isinstance(frame.columns, pd.MultiIndex)
+    assert set(frame.columns.get_level_values("estimator")) == {"model_1", "model_2"}
 
 
 def test_cache_poisoning(binary_classification_data):
@@ -145,10 +148,8 @@ def test_cache_poisoning(binary_classification_data):
         DummyClassifier(strategy="uniform", random_state=2), X=X, y=y
     )
     report = ComparisonReport({"model_1": report_1, "model_2": report_2})
-    report.metrics.summarize().frame(format="wide", favorability=True)
-    result = report_1.metrics.summarize().frame(
-        format="wide", aggregate=None, favorability=True
-    )
+    report.metrics.summarize().frame(favorability=True)
+    result = report_1.metrics.summarize().frame(aggregate=None, favorability=True)
 
     assert "favorability" in result.columns
 
@@ -159,19 +160,20 @@ def test_aggregate_sequence_of_one_element(
     """Passing a list of one string is the same as passing the string itself."""
     report = comparison_cross_validation_reports_binary_classification
     assert_frame_equal(
-        report.metrics.summarize().frame(format="wide", aggregate="mean"),
-        report.metrics.summarize().frame(format="wide", aggregate=["mean"]),
+        report.metrics.summarize().frame(aggregate="mean"),
+        report.metrics.summarize().frame(aggregate=["mean"]),
     )
 
 
 def test_frame_has_estimator_and_split_columns(
     comparison_cross_validation_reports_binary_classification,
 ):
-    """The tidy frame exposes both ``estimator`` and ``split`` columns."""
+    """The wide frame exposes estimator and split levels in column MultiIndex."""
     report = comparison_cross_validation_reports_binary_classification
-    frame = report.metrics.summarize().frame(format="long", aggregate=None)
+    frame = report.metrics.summarize().frame(flat_index=False, aggregate=None)
 
-    assert isinstance(frame.index, pd.RangeIndex)
-    assert {"estimator", "split"}.issubset(frame.columns)
-    assert frame["estimator"].nunique() == 2
-    assert set(frame["split"]) == {0, 1}
+    assert isinstance(frame.index, pd.Index)
+    assert isinstance(frame.columns, pd.MultiIndex)
+    assert frame.columns.names == ["estimator", "split"]
+    assert frame.columns.get_level_values("estimator").nunique() == 2
+    assert set(frame.columns.get_level_values("split")) == {"Split #0", "Split #1"}

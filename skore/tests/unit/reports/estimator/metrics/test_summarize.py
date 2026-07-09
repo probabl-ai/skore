@@ -30,7 +30,7 @@ def check_display_structure(
     display,
     *,
     expected_metrics,
-    expected_estimator_name=None,
+    expected_estimator=None,
     expected_data_source="test",
     expected_greater_is_better=None,
     expected_average=None,
@@ -42,7 +42,7 @@ def check_display_structure(
     assert set(data.columns) == {
         "name",
         "verbose_name",
-        "estimator_name",
+        "estimator",
         "data_source",
         "label",
         "average",
@@ -53,7 +53,7 @@ def check_display_structure(
     }
     assert pd.api.types.is_numeric_dtype(data["score"])
     assert set(data["verbose_name"]) == expected_metrics
-    assert set(data["estimator_name"]) == {expected_estimator_name}
+    assert set(data["estimator"]) == {expected_estimator}
     assert set(data["data_source"]) == {expected_data_source}
     if expected_average is not None:
         assert set(data["average"].dropna()) == expected_average
@@ -85,7 +85,7 @@ def test_default(forest_binary_classification_with_test, metric):
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="RandomForestClassifier",
+        expected_estimator="RandomForestClassifier",
     )
 
 
@@ -106,7 +106,7 @@ def test_default_binary_classification_svc(svc_binary_classification_with_test):
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="SVC",
+        expected_estimator="SVC",
     )
 
 
@@ -132,7 +132,7 @@ def test_default_multiclass_classification_forest(
             "Predict time (s)",
             "Fit time (s)",
         },
-        expected_estimator_name="RandomForestClassifier",
+        expected_estimator="RandomForestClassifier",
     )
 
     assert display.summary["output"].isna().all()
@@ -160,7 +160,7 @@ def test_default_multiclass_classification_svc(svc_multiclass_classification_wit
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="SVC",
+        expected_estimator="SVC",
     )
 
     assert display.summary["output"].isna().all()
@@ -187,7 +187,7 @@ def test_default_regression(linear_regression_with_test):
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="LinearRegression",
+        expected_estimator="LinearRegression",
     )
 
     assert display.summary["label"].isna().all()
@@ -210,7 +210,7 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="LinearRegression",
+        expected_estimator="LinearRegression",
     )
 
     assert display.summary["label"].isna().all()
@@ -235,7 +235,7 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="CustomClassifierPredictOnly",
+        expected_estimator="CustomClassifierPredictOnly",
     )
 
 
@@ -273,7 +273,7 @@ def test_default_non_standard_score(
     check_display_structure(
         display,
         expected_metrics=expected_metrics,
-        expected_estimator_name=predictor.__class__.__name__,
+        expected_estimator=predictor.__class__.__name__,
     )
 
 
@@ -290,7 +290,7 @@ def test_string_plain(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={"R²", "RMSE"},
-        expected_estimator_name="LinearRegression",
+        expected_estimator="LinearRegression",
     )
 
 
@@ -315,7 +315,7 @@ def test_pos_label(forest_binary_classification_with_test):
             "Fit time (s)",
             "Predict time (s)",
         },
-        expected_estimator_name="RandomForestClassifier",
+        expected_estimator="RandomForestClassifier",
     )
 
     assert len(display.summary[display.summary["verbose_name"] == "Precision"]) == 1

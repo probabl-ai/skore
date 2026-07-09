@@ -79,11 +79,10 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         ...     [estimator_1, estimator_2], X, y, splitter=0.2, pos_label=1
         ... )
         >>> comparison_report.metrics.summarize(metric=["precision", "recall"]).frame()
-                      estimator     metric     value
-        0  LogisticRegression_1  precision  0.98...
-        1  LogisticRegression_1     recall  0.92...
-        2  LogisticRegression_2  precision  0.98...
-        3  LogisticRegression_2     recall  0.92...
+        DummyClassifier_1  DummyClassifier_2
+        metric
+        precision               0.98...          0.98...
+        recall                  0.92...          0.92...
         """
         parallel = joblib.Parallel(
             **_validate_joblib_parallel_params(
@@ -106,8 +105,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         )
 
         extra_rows_data = [
-            {"estimator_name": estimator_name}
-            for estimator_name in self._parent.reports_
+            {"estimator": estimator_name} for estimator_name in self._parent.reports_
         ]
         return MetricsSummaryDisplay._concatenate(
             summaries,
@@ -127,7 +125,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         column per compared estimator.
         """
         frame = self.summarize(data_source=data_source, metric=metric).frame(
-            format="wide", verbose_name=True, flat_index=False
+            flat_index=False,
+            verbose_name=True,
         )
         frame = frame.rename_axis(
             None
@@ -139,6 +138,20 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             frame = frame.swaplevel(axis="columns")
         return frame
 
+    def _repr_html_(self) -> str:
+        frame = self._formatted_summary_frame()
+        html = (
+            frame.to_frame()._repr_html_()
+            if isinstance(frame, pd.Series)
+            else frame._repr_html_()
+        )
+        return (
+            "<p>Metrics summary:</p>"
+            f"{html}"
+            '<p role="note">Explore available methods with '
+            "<code>.help()</code>.</p>"
+        )
+
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
     ) -> MetricsSummaryDisplay:
@@ -149,8 +162,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         ]
 
         extra_rows_data = [
-            {"estimator_name": estimator_name}
-            for estimator_name in self._parent.reports_
+            {"estimator": estimator_name} for estimator_name in self._parent.reports_
         ]
         return MetricsSummaryDisplay._concatenate(
             summaries,
@@ -252,7 +264,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
         >>> report.metrics.summarize(metric="mean_absolute_error").frame(
-        ...     verbose_name=True, format="wide", flat_index=False
+        ...     verbose_name=True, flat_index=False
         ... )
         Estimator                  LogisticRegression_1  LogisticRegression_2
         Metric
@@ -292,7 +304,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         name: str,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
         **kwargs,
     ) -> pd.DataFrame | pd.Series | None:
         """Get a metric value.
@@ -312,9 +323,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
-
-        format : {"long", "wide", "auto"}, default="wide"
-            Output shape passed to :meth:`~MetricsSummaryDisplay.frame`.
 
         Returns
         -------
@@ -340,7 +348,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
                   1                  0.984127              0.984127
         """
         return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
-            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     def timings(
@@ -428,7 +438,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the estimator's default score.
 
@@ -472,7 +481,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Score                       0.94...               0.94...
         """
         return self._metric("score", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("accuracy"))
@@ -481,7 +492,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the accuracy score.
 
@@ -521,7 +531,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Accuracy                    0.94...               0.94...
         """
         return self._metric("accuracy", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("precision"))
@@ -533,7 +545,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the precision score.
 
@@ -601,7 +612,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "precision", data_source=data_source, average=average
-        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
+        ).frame(
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
+        )
 
     @available_if(_check_any_sub_report_has_metric("recall"))
     def recall(
@@ -612,7 +627,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the recall score.
 
@@ -680,7 +694,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
                1                  0.925...              0.925...
         """
         return self._metric("recall", data_source=data_source, average=average).frame(
-            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("brier_score"))
@@ -689,7 +705,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the Brier score.
 
@@ -729,7 +744,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Brier score                   0.036...              0.036...
         """
         return self._metric("brier_score", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("roc_auc"))
@@ -740,7 +757,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         average: Literal["auto", "macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the ROC AUC score.
 
@@ -815,7 +831,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "roc_auc", data_source=data_source, average=average, multi_class=multi_class
-        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
+        ).frame(
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
+        )
 
     @available_if(_check_any_sub_report_has_metric("log_loss"))
     def log_loss(
@@ -823,7 +843,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the log loss.
 
@@ -863,7 +882,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         Log loss                   0.110...              0.110...
         """
         return self._metric("log_loss", data_source=data_source).frame(
-            format=format, aggregate=aggregate, verbose_name=True, flat_index=False
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("r2"))
@@ -873,7 +894,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the R² score.
 
@@ -924,7 +944,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "r2", data_source=data_source, multioutput=multioutput
-        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
+        ).frame(
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
+        )
 
     @available_if(_check_any_sub_report_has_metric("rmse"))
     def rmse(
@@ -933,7 +957,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the root mean squared error.
 
@@ -984,7 +1007,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "rmse", data_source=data_source, multioutput=multioutput
-        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
+        ).frame(
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
+        )
 
     @available_if(_check_any_sub_report_has_metric("mae"))
     def mae(
@@ -994,7 +1021,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         multioutput: Literal["raw_values", "uniform_average"]
         | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the mean absolute error.
 
@@ -1045,7 +1071,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "mae", data_source=data_source, multioutput=multioutput
-        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
+        ).frame(
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
+        )
 
     @available_if(_check_any_sub_report_has_metric("mape"))
     def mape(
@@ -1055,7 +1085,6 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         multioutput: Literal["raw_values", "uniform_average"]
         | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-        format: Literal["long", "wide", "auto"] = "wide",
     ) -> pd.DataFrame | pd.Series:
         """Compute the mean absolute percentage error.
 
@@ -1106,7 +1135,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric(
             "mape", data_source=data_source, multioutput=multioutput
-        ).frame(format=format, aggregate=aggregate, verbose_name=True, flat_index=False)
+        ).frame(
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
+        )
 
     ####################################################################################
     # Methods related to displays

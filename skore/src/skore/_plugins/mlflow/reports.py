@@ -147,9 +147,9 @@ def iter_cv_metrics(
     # NOTE: auto format is wide for single CV reports; use long for per-split details.
     yield Artifact(
         "metrics_details/per_split",
-        summary.frame(format="long", aggregate=None),
+        summary.frame(flat_index=False, aggregate=None),
     )
-    yield Artifact("metrics", summary.frame(format="auto"))
+    yield Artifact("metrics", summary.frame())
 
 
 def iter_estimator_metrics(
@@ -183,7 +183,7 @@ def iter_estimator_metrics(
     timings = report_any.metrics.timings()
     yield Metric("fit_time", timings["fit_time"])
     yield Metric("predict_time", timings["predict_time_test"])
-    yield Artifact("metrics", report_any.metrics.summarize().frame(format="auto"))
+    yield Artifact("metrics", report_any.metrics.summarize().frame())
 
 
 def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, None]:
@@ -275,9 +275,7 @@ def _dataset_from_Xy(
             y = pd.Series(y, index=X.index, name="target")
         else:
             y = pd.DataFrame(
-                y,
-                index=X.index,
-                columns=[f"target_{idx}" for idx in range(y.shape[1])],
+                y, index=X.index, columns=[f"target_{idx}" for idx in range(y.shape[1])]
             )
 
     assert isinstance(y, (pd.DataFrame, pd.Series))
@@ -287,7 +285,7 @@ def _dataset_from_Xy(
         targets = name
         y = pd.DataFrame({name: y})
     elif len(y.columns) == 1:
-        (targets,) = y.columns
+        (targets) = y.columns
     else:
         # mlflow.data.from_pandas doesn't support multiple targets
         # use mlflow.data.from_numpy instead

@@ -14,8 +14,7 @@ from skore import ComparisonReport, EstimatorReport
             pd.DataFrame(
                 [[0.45, 0.55]],
                 columns=pd.Index(
-                    ["DummyClassifier_1", "DummyClassifier_2"],
-                    name="Estimator",
+                    ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
                 ),
                 index=pd.Index(["Score"], name="Metric"),
             ),
@@ -25,8 +24,7 @@ from skore import ComparisonReport, EstimatorReport
             pd.DataFrame(
                 [[0.45, 0.55]],
                 columns=pd.Index(
-                    ["DummyClassifier_1", "DummyClassifier_2"],
-                    name="Estimator",
+                    ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
                 ),
                 index=pd.Index(["Accuracy"], name="Metric"),
             ),
@@ -39,8 +37,7 @@ from skore import ComparisonReport, EstimatorReport
                     [0.545455, 0.636364],
                 ],
                 columns=pd.Index(
-                    ["DummyClassifier_1", "DummyClassifier_2"],
-                    name="Estimator",
+                    ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
                 ),
                 index=pd.MultiIndex.from_arrays(
                     [
@@ -59,8 +56,7 @@ from skore import ComparisonReport, EstimatorReport
                     [0.5, 0.583333],
                 ],
                 columns=pd.Index(
-                    ["DummyClassifier_1", "DummyClassifier_2"],
-                    name="Estimator",
+                    ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
                 ),
                 index=pd.MultiIndex.from_arrays(
                     [
@@ -76,8 +72,7 @@ from skore import ComparisonReport, EstimatorReport
             pd.DataFrame(
                 [[0.25, 0.25]],
                 columns=pd.Index(
-                    ["DummyClassifier_1", "DummyClassifier_2"],
-                    name="Estimator",
+                    ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
                 ),
                 index=pd.Index(["Brier score"], name="Metric"),
             ),
@@ -87,8 +82,7 @@ from skore import ComparisonReport, EstimatorReport
             pd.DataFrame(
                 [[0.5, 0.5]],
                 columns=pd.Index(
-                    ["DummyClassifier_1", "DummyClassifier_2"],
-                    name="Estimator",
+                    ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
                 ),
                 index=pd.Index(["ROC AUC"], name="Metric"),
             ),
@@ -98,8 +92,7 @@ from skore import ComparisonReport, EstimatorReport
             pd.DataFrame(
                 [[0.693147, 0.693147]],
                 columns=pd.Index(
-                    ["DummyClassifier_1", "DummyClassifier_2"],
-                    name="Estimator",
+                    ["DummyClassifier_1", "DummyClassifier_2"], name="Estimator"
                 ),
                 index=pd.Index(["Log loss"], name="Metric"),
             ),
@@ -129,8 +122,7 @@ def test_binary_classification(
             pd.DataFrame(
                 [[-0.061173, -0.061173]],
                 columns=pd.Index(
-                    ["DummyRegressor_1", "DummyRegressor_2"],
-                    name="Estimator",
+                    ["DummyRegressor_1", "DummyRegressor_2"], name="Estimator"
                 ),
                 index=pd.Index(["Score"], name="Metric"),
             ),
@@ -140,8 +132,7 @@ def test_binary_classification(
             pd.DataFrame(
                 [[94.426101, 94.426101]],
                 columns=pd.Index(
-                    ["DummyRegressor_1", "DummyRegressor_2"],
-                    name="Estimator",
+                    ["DummyRegressor_1", "DummyRegressor_2"], name="Estimator"
                 ),
                 index=pd.Index(["RMSE"], name="Metric"),
             ),
@@ -151,8 +142,7 @@ def test_binary_classification(
             pd.DataFrame(
                 [[-0.061173, -0.061173]],
                 columns=pd.Index(
-                    ["DummyRegressor_1", "DummyRegressor_2"],
-                    name="Estimator",
+                    ["DummyRegressor_1", "DummyRegressor_2"], name="Estimator"
                 ),
                 index=pd.Index(["R²"], name="Metric"),
             ),
@@ -162,8 +152,7 @@ def test_binary_classification(
             pd.DataFrame(
                 [[79.536267, 79.536267]],
                 columns=pd.Index(
-                    ["DummyRegressor_1", "DummyRegressor_2"],
-                    name="Estimator",
+                    ["DummyRegressor_1", "DummyRegressor_2"], name="Estimator"
                 ),
                 index=pd.Index(["MAE"], name="Metric"),
             ),
@@ -173,8 +162,7 @@ def test_binary_classification(
             pd.DataFrame(
                 [[1.012348, 1.012348]],
                 columns=pd.Index(
-                    ["DummyRegressor_1", "DummyRegressor_2"],
-                    name="Estimator",
+                    ["DummyRegressor_1", "DummyRegressor_2"], name="Estimator"
                 ),
                 index=pd.Index(["MAPE"], name="Metric"),
             ),
@@ -291,8 +279,10 @@ def test_summarize_pos_label_default(
         y_test=y_test,
     )
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(metric=metric).frame(format="long")
-    assert result_both_labels["label"].drop_duplicates().to_list() == ["A", "B"]
+    result_both_labels = report.metrics.summarize(metric=metric).frame(flat_index=False)
+    assert result_both_labels.index.get_level_values(
+        "label"
+    ).drop_duplicates().to_list() == ["A", "B"]
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])

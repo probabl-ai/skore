@@ -45,10 +45,7 @@ class _BaseReport(ReportHelpMixin):
     checks: _ChecksAccessor
 
     def _aggregate_checks(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
+        self, ignored_codes: set[CheckCode], *, fast_mode: bool = False
     ) -> dict[CheckCode, CheckResult]:
         """Aggregate EstimatorReport checks.
 
@@ -57,10 +54,7 @@ class _BaseReport(ReportHelpMixin):
         return {}
 
     def _get_checks_results(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
+        self, ignored_codes: set[CheckCode], *, fast_mode: bool = False
     ) -> dict[CheckCode, CheckResult]:
         """Run uncached checks and return the checks summary.
 
@@ -213,7 +207,9 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         metric: str | list[str] | None = None,
     ) -> pd.DataFrame | pd.Series:
         """Metric summary frame used for accessor display."""
-        return self.summarize().frame(format="auto", flat_index=True)
+        display = self.summarize(data_source=data_source, metric=metric)
+        flat_index = "comparison" not in display.report_type
+        return display.frame(flat_index=flat_index)
 
     def __repr__(self) -> str:
         return (
@@ -223,9 +219,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         )
 
     def _repr_html_(self) -> str:
-        frame = self.summarize().frame(
-            format="auto", verbose_name=True, flat_index=False
-        )
+        frame = self.summarize().frame(verbose_name=True, flat_index=False)
         html = (
             frame.to_frame()._repr_html_()
             if isinstance(frame, pd.Series)

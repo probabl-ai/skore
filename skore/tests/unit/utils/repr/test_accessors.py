@@ -69,9 +69,14 @@ def _metrics_summary_frame(metrics_accessor):
 
 
 def _metrics_summary_frame_html(metrics_accessor):
-    frame = metrics_accessor.summarize().frame(
-        format="auto", verbose_name=True, flat_index=False
+    from skore._sklearn._comparison.metrics_accessor import (
+        _MetricsAccessor as ComparisonMetricsAccessor,
     )
+
+    if isinstance(metrics_accessor, ComparisonMetricsAccessor):
+        frame = metrics_accessor._formatted_summary_frame()
+    else:
+        frame = metrics_accessor.summarize().frame(verbose_name=True, flat_index=False)
     return (
         frame.to_frame()._repr_html_()
         if isinstance(frame, pd.Series)

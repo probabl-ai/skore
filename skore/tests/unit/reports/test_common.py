@@ -82,5 +82,5 @@ def test_metrics_failure(report):
     err_msg = r"Metric 'fail' has failed: Exception\('test error'\)"
     with pytest.warns(UserWarning, match=err_msg):
         display.frame()
-        long_frame = display.frame(format="long")
-    assert long_frame["metric"].str.contains("fail", case=False).any()
+        display.frame(flat_index=False)
+    assert display.summary["name"].str.contains("fail", case=False).any()
