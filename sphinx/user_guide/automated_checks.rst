@@ -121,6 +121,8 @@ How to reduce the risk
   and :ref:`SKD016 <skd016-estimator-not-tuned>`),
 - collect richer data if possible.
 
+Check out the :ref:`example for this check <sphx_glr_auto_examples_pitfalls_and_solutions_plot_skd002_underfitting.py>`.
+
 
 .. _skd003-inconsistent-performance:
 
