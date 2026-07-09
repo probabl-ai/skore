@@ -21,8 +21,6 @@ from skore._utils._index import flatten_multi_index, squeeze_single_column
 
 FrameFormat = Literal["long", "wide", "auto"]
 
-_FAVORABILITY_SYMBOLS = {True: "(↗︎)", False: "(↘︎)"}
-
 _INDEX_LEVEL_NAMES = {
     "metric": "Metric",
     "label": "Label",
@@ -258,7 +256,11 @@ class MetricsSummaryDisplay(DisplayMixin):
     @staticmethod
     def _to_favorability(greater_is_better: pd.Series) -> pd.Series:
         """Map ``greater_is_better`` flags to favorability arrow symbols."""
-        return greater_is_better.map(_FAVORABILITY_SYMBOLS).fillna("").astype("string")
+        return (
+            greater_is_better.map({True: "(↗︎)", False: "(↘︎)"})
+            .fillna("")
+            .astype("string")
+        )
 
     def _prepare_long(
         self,
@@ -571,9 +573,8 @@ class MetricsSummaryDisplay(DisplayMixin):
             technical names (e.g. ``"Accuracy"`` instead of ``"accuracy"``).
 
         flat_index : bool, default=True
-            Whether to keep the row and column MultiIndex.
-            When ``False``, the index and columns are flattened into a
-            single level. Has no effect when ``format="long"``.
+            Whether to return a flat index or a multi-index.
+            Has no effect when ``format="long"``.
 
         aggregate : {"mean", "std"}, list of such str or None, \
                 default=("mean", "std")
@@ -610,9 +611,9 @@ class MetricsSummaryDisplay(DisplayMixin):
                 stacklevel=2,
             )
 
-        if format not in {"long", "wide", "auto"}:
+        if format not in (expected := {"long", "wide", "auto"}):
             raise ValueError(
-                f"Invalid format: {format!r}. Expected 'long', 'wide', or 'auto'."
+                f"Expected one of {','.join(map(repr, expected))}; got {format!r}."
             )
         if format == "auto":
             resolved = "long" if "comparison" in self.report_type else "wide"

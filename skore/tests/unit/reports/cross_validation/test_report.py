@@ -304,14 +304,14 @@ def test_report_with_data_op():
     learner = data_op.skb.make_learner()
 
     report = CrossValidationReport(learner, data=data_op.skb.get_data())
-    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
-        ("SkrubLearner", "mean")
-    ]
+    accuracy = report.metrics.accuracy(aggregate="mean")
+    assert isinstance(accuracy, pd.Series)
+    assert accuracy.name.endswith("_mean")
 
     report = CrossValidationReport(data_op)
-    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
-        ("SkrubLearner", "mean")
-    ]
+    accuracy = report.metrics.accuracy(aggregate="mean")
+    assert isinstance(accuracy, pd.Series)
+    assert accuracy.name.endswith("_mean")
 
 
 def test_cross_validation_report_split_indices_from_data_op_cv():

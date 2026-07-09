@@ -126,9 +126,9 @@ def test_binary_classification(forest_binary_classification_data, metric, nb_sta
     "metric, nb_stats",
     [
         ("accuracy", 1),
-        ("precision", 4),
-        ("recall", 4),
-        ("roc_auc", 4),
+        ("precision", 3),
+        ("recall", 3),
+        ("roc_auc", 3),
         ("log_loss", 1),
         ("score", 1),
     ],

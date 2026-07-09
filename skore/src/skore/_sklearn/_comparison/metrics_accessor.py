@@ -407,10 +407,18 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             timings.index.name = "Metric"
             if aggregate is None:
                 timings.columns.names = ["Estimator", "Split"]
-            else:
+            elif isinstance(timings.columns, pd.MultiIndex):
                 timings.columns = timings.columns.swaplevel(0, 1)
                 timings = timings.sort_index(axis=1)
                 timings.columns.names = [None, "Estimator"]
+            else:
+                stat = (
+                    aggregate[0] if isinstance(aggregate, (list, tuple)) else aggregate
+                )
+                timings.columns = pd.MultiIndex.from_tuples(
+                    [(stat, estimator) for estimator in timings.columns],
+                    names=[None, "Estimator"],
+                )
 
             return timings
 
