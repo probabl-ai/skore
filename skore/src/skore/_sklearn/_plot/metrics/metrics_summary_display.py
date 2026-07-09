@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from collections import defaultdict
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
@@ -9,6 +10,7 @@ from matplotlib.figure import Figure
 from sklearn.utils.validation import _is_arraylike
 
 from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn.metrics import Metric
 from skore._sklearn.types import (
     Aggregate,
     DataSource,
@@ -108,9 +110,13 @@ class MetricsSummaryDisplay(DisplayMixin):
         self,
         summary: pd.DataFrame,
         report_type: ReportType,
+        errors: list[tuple[Metric, Exception]] | None = None,
     ):
         self.summary = summary
         self.report_type = report_type
+        # Remove duplicates while preserving order
+        # Use repr because Metrics and Exceptions are not comparable
+        self.errors = list({repr(x): x for x in (errors or [])}.values())
 
     @classmethod
     def _compute_data_for_display(
@@ -118,6 +124,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         rows: list[MetricsSummaryRow],
         *,
         report_type: ReportType,
+        errors: list[tuple[Metric, Exception]] | None = None,
     ) -> MetricsSummaryDisplay:
         """Build a display from metric rows, stored as a long-format DataFrame."""
         summary = pd.DataFrame(rows)
@@ -148,7 +155,26 @@ class MetricsSummaryDisplay(DisplayMixin):
                 .astype("string")
             )
 
-        return cls(summary, report_type=report_type)
+        return cls(summary, report_type=report_type, errors=errors)
+
+    @staticmethod
+    def _concatenate(
+        child_displays: list[MetricsSummaryDisplay],
+        *,
+        report_type: ReportType,
+        extra_rows_data: list[dict[str, Any]],
+    ) -> MetricsSummaryDisplay:
+        summary = pd.concat(
+            [
+                display.summary.assign(**extra_data)
+                for display, extra_data in zip(
+                    child_displays, extra_rows_data, strict=True
+                )
+            ],
+            ignore_index=True,
+        )
+        errors = [error for display in child_displays for error in display.errors]
+        return MetricsSummaryDisplay(summary, report_type=report_type, errors=errors)
 
     @staticmethod
     def _resolve_fingerprints(data: pd.DataFrame) -> pd.DataFrame:
@@ -572,6 +598,15 @@ class MetricsSummaryDisplay(DisplayMixin):
         >>> metrics = report.metrics.summarize().frame()
         >>> metrics.loc["accuracy"]  # Series for single-estimator wide layout
         """
+        if self.errors:
+            warnings.warn(
+                "\n".join(
+                    f"Metric {metric.name!r} has failed: {error!r}"
+                    for metric, error in self.errors
+                ),
+                stacklevel=2,
+            )
+
         if format not in {"long", "wide", "auto"}:
             raise ValueError(
                 f"Invalid format: {format!r}. Expected 'long', 'wide', or 'auto'."
@@ -616,11 +651,18 @@ class MetricsSummaryDisplay(DisplayMixin):
             if isinstance(frame, pd.Series)
             else frame._repr_html_()
         )
-        return (
-            f"{html}"
-            '<p role="note">Use <code>.frame()</code> to control the format'
-            " of the output.</p>"
+        lines = [
+            html,
+            (
+                '<p role="note">Use <code>.frame()</code> to control the format'
+                " of the output.</p>"
+            ),
+        ]
+        lines.extend(
+            f'<p role="note">Metric {metric.name!r} has failed: {error!r}</p>'
+            for metric, error in self.errors
         )
+        return "".join(lines)
 
     def __repr__(self) -> str:
         aggregate = cast(Aggregate, ("mean", "std"))
@@ -630,9 +672,17 @@ class MetricsSummaryDisplay(DisplayMixin):
             verbose_name=False,
             flat_index=True,
         )
-        return f"{frame!r}\nUse .frame() to control the format of the output."
+        lines = [
+            f"{frame!r}",
+            "Use .frame() to control the format of the output.",
+        ]
+        lines.extend(
+            f"Metric {metric.name!r} has failed: {error!r}"
+            for metric, error in self.errors
+        )
+        return "\n".join(lines)
 
     @DisplayMixin.style_plot
     def plot(self) -> Figure:
         """Plot the metrics summary (not implemented)."""
-        raise NotImplementedError
+        raise NotImplementedError()

@@ -7,6 +7,7 @@ from inspect import signature
 from itertools import chain
 from typing import Any, ClassVar, cast
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
@@ -132,6 +133,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         self.__classes: list[str] | None
         self.__target_names: list[str] | None
         self.__target_ranges: list[list[float]] | None
+        self.__target_range: list[float] | None
 
         if "classification" in self.ml_task and (self.report.y is not None):
             class_to_class_indice: defaultdict[Any, int] = defaultdict(
@@ -148,24 +150,38 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             self.__classes = [str(class_) for class_ in class_to_class_indice]
 
             assert max(self.__sample_to_class_index) == (len(self.__classes) - 1)
+
             self.__target_names = None
             self.__target_ranges = None
+            self.__target_range = None
         elif self.ml_task == "multioutput-regression" and (self.report.y is not None):
             from skore._utils._dataframe import _normalize_y_as_dataframe
 
             y_df = _normalize_y_as_dataframe(self.report.y)
+            y_nw = nw.from_native(y_df)
+
+            def min_max(series: nw.Series[Any]) -> list[float]:
+                return [float(series.min()), float(series.max())]
+
             self.__sample_to_class_index = None
             self.__classes = None
-            self.__target_names = [str(name) for name in y_df.columns]
+            self.__target_names = list(map(str, y_nw.columns))
+            self.__target_ranges = list(map(min_max, y_nw.iter_columns()))
+            self.__target_range = None
+        elif self.ml_task == "regression" and (self.report.y is not None):
             y_arr = np.asarray(self.report.y)
-            self.__target_ranges = [
-                [float(col.min()), float(col.max())] for col in y_arr.T
-            ]
+
+            self.__sample_to_class_index = None
+            self.__classes = None
+            self.__target_names = None
+            self.__target_ranges = None
+            self.__target_range = [float(y_arr.min()), float(y_arr.max())]
         else:
             self.__sample_to_class_index = None
             self.__classes = None
             self.__target_names = None
             self.__target_ranges = None
+            self.__target_range = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -329,19 +345,14 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def target_ranges(self) -> list[list[float]] | None:
-        """In multi-output regression, the per-target value ranges."""
+        """In multi-output regression, the per-target value ranges of the dataset."""
         return self.__target_ranges
 
     @computed_field  # type: ignore[prop-decorator]
-    @cached_property
+    @property
     def target_range(self) -> list[float] | None:
-        """The range of the target values of the dataset used in the report."""
-        if self.__classes or (self.report.y is None):
-            return None
-
-        target = cast(np.ndarray, self.report.y)
-
-        return [float(target.min()), float(target.max())]
+        """In single-output regression, the target value range of the dataset."""
+        return self.__target_range
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property

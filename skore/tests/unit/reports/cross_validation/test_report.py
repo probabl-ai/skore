@@ -102,8 +102,8 @@ def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
     for estimator_report in report.reports_:
-        assert ("test", "predict", None) in estimator_report._cache
-        assert ("train", "predict", None) not in estimator_report._cache
+        assert ("report", "test", "predict", None) in estimator_report._cache
+        assert ("report", "train", "predict", None) not in estimator_report._cache
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -254,6 +254,9 @@ def test_to_markdown(forest_binary_classification_data):
     assert "fit time:" in markdown
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+)
 def test_report_repr_html_binary_classification():
     X, y = make_classification(n_classes=2, random_state=42)
     estimator = DummyClassifier()
@@ -283,6 +286,9 @@ def test_report_repr_html_multioutput_regression(regression_multioutput_data):
 
 
 @pytest.mark.parametrize("splitter", [2, 3])
+@pytest.mark.filterwarnings(
+    "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+)
 def test_report_repr_html_sklearn_estimator_bad_html_repr(splitter):
     """HTML repr must still work when the underlying estimator rejects
     ``_repr_html_``."""
@@ -293,7 +299,7 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(splitter):
 
 
 def test_report_with_data_op():
-    X_a, y_a = make_classification(n_samples=10)
+    X_a, y_a = make_classification(n_samples=10, random_state=42)
     data_op = skrub.X(X_a).skb.apply(LogisticRegression(), y=skrub.y(y_a))
     learner = data_op.skb.make_learner()
 

@@ -112,6 +112,9 @@ def test_log_artifact_logs_series_metrics_as_csv(monkeypatch) -> None:
     assert "0.9" in csv_text
 
 
+@pytest.mark.filterwarnings(
+    r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
+)
 class TestProject:
     CLF_ARTIFACTS = [
         "metrics.confusion_matrix.png",

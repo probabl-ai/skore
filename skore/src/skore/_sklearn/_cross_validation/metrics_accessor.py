@@ -91,7 +91,9 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                 [train_summary.summary, test_summary.summary], ignore_index=True
             )
             return MetricsSummaryDisplay(
-                summary=combined, report_type="cross-validation"
+                summary=combined,
+                report_type="cross-validation",
+                errors=train_summary.errors + test_summary.errors,
             )
 
         return self._summarize_display(data_source=data_source, metric=metric)
@@ -110,7 +112,9 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                 [train_summary.summary, test_summary.summary], ignore_index=True
             )
             return MetricsSummaryDisplay(
-                summary=combined, report_type="cross-validation"
+                summary=combined,
+                report_type="cross-validation",
+                errors=train_summary.errors + test_summary.errors,
             )
 
         parallel = Parallel(
@@ -141,7 +145,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             ],
             ignore_index=True,
         )
-        return MetricsSummaryDisplay(summary, report_type="cross-validation")
+        errors = [error for display in summaries for error in display.errors]
+        return MetricsSummaryDisplay(
+            summary, report_type="cross-validation", errors=errors
+        )
 
     def available(self) -> list[str]:
         """List available metric names in the registry.
@@ -390,10 +397,9 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                 for row in metric_rows
             )
 
-        display = MetricsSummaryDisplay._compute_data_for_display(
-            rows, report_type="cross-validation"
+        return MetricsSummaryDisplay._compute_data_for_display(
+            rows, report_type="cross-validation", errors=[]
         )
-        return display
 
     @available_if(_check_estimator_report_has_method("metrics", "score"))
     def score(

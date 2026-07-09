@@ -62,3 +62,25 @@ def test_metrics_add_scorer(report):
 
     display = report.metrics.summarize()
     assert "Mean Squared Error" in display.summary["verbose_name"].values
+
+
+def test_metrics_failure(report):
+    """If a metric fails, `summarize` still returns."""
+
+    def fail(estimator, X, y):
+        raise Exception("test error")
+
+    report.metrics.add(fail)
+
+    display = report.metrics.summarize()
+
+    assert "Fail" in set(display.summary["verbose_name"])
+    assert (
+        display.summary[display.summary["verbose_name"] == "Fail"]["score"].isna().all()
+    )
+
+    err_msg = r"Metric 'fail' has failed: Exception\('test error'\)"
+    with pytest.warns(UserWarning, match=err_msg):
+        display.frame()
+        long_frame = display.frame(format="long")
+    assert long_frame["metric"].str.contains("fail", case=False).any()

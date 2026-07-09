@@ -109,14 +109,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             {"estimator_name": estimator_name}
             for estimator_name in self._parent.reports_
         ]
-        summary = pd.concat(
-            [
-                display.summary.assign(**extra_data)
-                for display, extra_data in zip(summaries, extra_rows_data, strict=True)
-            ],
-            ignore_index=True,
+        return MetricsSummaryDisplay._concatenate(
+            summaries,
+            report_type=self._parent._report_type,
+            extra_rows_data=extra_rows_data,
         )
-        return MetricsSummaryDisplay(summary, report_type=self._parent._report_type)
 
     def _formatted_summary_frame(
         self,
@@ -155,14 +152,11 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             {"estimator_name": estimator_name}
             for estimator_name in self._parent.reports_
         ]
-        summary = pd.concat(
-            [
-                display.summary.assign(**extra_data)
-                for display, extra_data in zip(summaries, extra_rows_data, strict=True)
-            ],
-            ignore_index=True,
+        return MetricsSummaryDisplay._concatenate(
+            summaries,
+            report_type=self._parent._report_type,
+            extra_rows_data=extra_rows_data,
         )
-        return MetricsSummaryDisplay(summary, report_type=self._parent._report_type)
 
     def available(self, *, report_name: str | None = None) -> list[str]:
         """List available metric names in the registry.

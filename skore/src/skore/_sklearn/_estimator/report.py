@@ -319,10 +319,10 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         cached_results = {}
 
         for key, val in self._cache.items():
-            data_source, name, kwargs = key
+            scope, data_source, name, kwargs = key
             if name in pred_key_names:
                 assert kwargs is None
-                predictions[(data_source, name)] = val
+                predictions[(scope, data_source, name)] = val
             else:
                 cached_results[key] = val
 
@@ -380,8 +380,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report._cache.update(state["optional"]["cache"])
         report._cache.update(
             {
-                make_cache_key(data_source, name): val
-                for (data_source, name), val in state["predictions"].items()
+                make_cache_key(scope, data_source, name): val
+                for (scope, data_source, name), val in state["predictions"].items()
             }
         )
         report._metric_registry = state["metric_registry"]
@@ -423,7 +423,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "features when creating the report."
             )
 
-        pred_key = make_cache_key(data_source, "predict")
+        pred_key = make_cache_key("report", data_source, "predict")
         if pred_key in self._cache:
             return
 
@@ -446,7 +446,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     data, response_method="decision_function"
                 )
             )
-            decision_key = make_cache_key(data_source, "decision_function")
+            decision_key = make_cache_key("report", data_source, "decision_function")
             self._cache[decision_key] = response
             if self._can_skip_predict:
                 self._predict_time[data_source] = pred_time
@@ -458,9 +458,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     data, response_method="predict_proba"
                 )
             )
-            proba_key = make_cache_key(data_source, "predict_proba")
+            proba_key = make_cache_key("report", data_source, "predict_proba")
             self._cache[proba_key] = response
-            log_key = make_cache_key(data_source, "predict_log_proba")
+            log_key = make_cache_key("report", data_source, "predict_log_proba")
             # Most sklearn's estimator derive predict_log_proba this way
             # except for *NB models (naive bayes) that derive predict_proba
             # from predict_log_proba using exp:
@@ -674,7 +674,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         method_name = _check_response_method(self.estimator_, response_method).__name__
         self._cache_predictions(data_source=data_source)
-        cache_key = make_cache_key(data_source, method_name)
+        cache_key = make_cache_key("report", data_source, method_name)
         predictions = self._cache[cache_key]
 
         if method_name == "predict":
