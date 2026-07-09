@@ -96,7 +96,7 @@ report_regularized.metrics.summarize(data_source="both").frame(favorability=True
 
 # %%
 report_regularized.checks.summarize()
-# SKD001 often clears once the train/test gap narrows.
+# SKD001 clears once the train/test gap narrows.
 
 # %%
 # Simplify the model
