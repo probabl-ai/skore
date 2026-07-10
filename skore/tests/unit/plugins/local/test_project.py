@@ -2,7 +2,6 @@ import shutil
 from pathlib import Path
 
 import pandas as pd
-import platformdirs
 import pytest
 from pytest import fixture
 from sklearn.datasets import make_classification, make_regression
@@ -147,18 +146,18 @@ def test_init_with_workspace(tmp_path, type):
 
 def test_find_workspace(tmp_path, monkeypatch):
     """Check the priority order of workspace lookup"""
-    docs = tmp_path / "Documents"
     env = tmp_path / "env"
     local = tmp_path / "repo"
     pwd = local / "a" / "b"
 
-    for d in (docs, pwd):
-        d.mkdir(parents=True)
-    monkeypatch.setattr(platformdirs, "user_documents_path", lambda: docs)
+    pwd.mkdir(parents=True)
     monkeypatch.chdir(pwd)
 
-    # When there is no local workspace and no env variable, use the global default one
-    assert Project("regression").path == docs / "skore_data" / "projects" / "regression"
+    # TODO: check git repo (if we decide to keep that part)
+
+    # When there is no local workspace and no env variable, use pwd
+    assert Project("regression").path == pwd / "skore_data" / "projects" / "regression"
+    shutil.rmtree(pwd / "skore_data")
 
     # Create a local workspace in a parent directory of pwd
     Project("abc", workspace=local / "skore_data")

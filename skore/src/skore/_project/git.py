@@ -92,3 +92,19 @@ def git_commit() -> str | None:
     if working_tree_clean():
         return commit_hash
     return f"{commit_hash} (working tree dirty)"
+
+
+@functools.cache
+def git_repo_root() -> str | None:
+    """Get the root of the repository if we are in one, otherwise None."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        return None
+    path = result.stdout.strip()
+    return path or None

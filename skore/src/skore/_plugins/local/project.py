@@ -11,9 +11,9 @@ from typing import Any
 import joblib
 import numpy as np
 import pandas as pd
-import platformdirs
 
 from skore import CrossValidationReport, EstimatorReport
+from skore._project.git import git_repo_root
 from skore._utils._cache_key import deep_key_sanitize
 
 
@@ -45,8 +45,9 @@ def find_workspace() -> Path:
     - otherwise look in the current working directory and its parent for a
       skore workspace: a directory named 'skore_data' containing a file named
       '.SKORE_WORKSPACE'. If found, use that.
-    - otherwise use a global default location: 'skore_data' in the user's
-      Documents directory.
+    - otherwise if we are in a Git repository, create 'skore_data' at the root
+      of the repository.
+    - otherwise create 'skore_data' in the current working directory.
 
     Returns
     -------
@@ -60,7 +61,9 @@ def find_workspace() -> Path:
         workspace = candidate / "skore_data"
         if workspace.is_dir() and (workspace / ".SKORE_WORKSPACE").exists():
             return init_workspace(workspace)
-    return init_workspace(platformdirs.user_documents_path() / "skore_data")
+    if (repo := git_repo_root()) is not None:
+        return init_workspace(Path(repo) / "skore_data")
+    return init_workspace(Path(".") / "skore_data")
 
 
 def _init_project_dir(workspace: Path, project_name: str) -> Path:
@@ -411,11 +414,9 @@ class Project:
             - otherwise look in the current working directory and its parent for a
               skore workspace: a directory named 'skore_data' containing a file named
               '.SKORE_WORKSPACE'. If found, use that.
-            - otherwise use a global default location in the user Documents directory:
-
-                - on Linux, usually ``~/Documents/skore_data``,
-                - on macOS, usually ``~/Documents/skore_data``,
-                - on Windows, usually ``C:\Users\<User>\Documents\skore_data``.
+            - otherwise if we are in a Git repository, create 'skore_data' at the root
+              of the repository.
+            - otherwise create 'skore_data' in the current working directory.
 
     Attributes
     ----------

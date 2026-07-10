@@ -267,9 +267,7 @@ pillow==12.2.0
     #   matplotlib
     #   sphinx-gallery
 platformdirs==4.10.0
-    # via
-    #   skore (skore/pyproject.toml)
-    #   choreographer
+    # via choreographer
 plotly==6.8.0
     # via skore (skore/pyproject.toml)
 polars==1.41.2
