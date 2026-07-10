@@ -38,10 +38,10 @@ from sklearn.model_selection import train_test_split
 housing = fetch_california_housing(as_frame=True)
 y_full = housing.target * 100
 
-X_full, _, y, _ = train_test_split(
+X, X_heldout, y, y_heldout = train_test_split(
     housing.data,
     y_full,
-    train_size=5_000,
+    train_size=0.5,
     random_state=42,
 )
 
