@@ -213,6 +213,7 @@ numpy==2.4.6
     #   numpy-typing-compat
     #   optype
     #   pandas
+    #   pandas-stubs
     #   scikit-learn
     #   scipy
     #   seaborn
@@ -257,6 +258,8 @@ pandas==2.3.3
     #   mlflow
     #   seaborn
     #   skrub
+pandas-stubs==3.0.3.260530
+    # via skore (skore/pyproject.toml)
 parso==0.8.7
     # via jedi
 pathspec==1.1.1
