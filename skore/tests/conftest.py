@@ -1,6 +1,5 @@
 from datetime import UTC, datetime
 
-import matplotlib
 import numpy as np
 import pytest
 from sklearn.base import BaseEstimator, ClassifierMixin, clone
@@ -20,22 +19,9 @@ from skore import (
     ComparisonReport,
     CrossValidationReport,
     EstimatorReport,
-    configuration,
 )
 from skore._config import LocalConfiguration
 from skore._externals._sklearn_compat import validate_data
-
-
-def pytest_configure(config):
-    """Set up global test configuration.
-
-    Some of these could be set in fixtures, but doctests do not run fixtures.
-    """
-    matplotlib.use("agg")
-
-    # Disable progress bars during tests to avoid rich interfering with
-    # doctest stdout capture.
-    configuration.show_progress = False
 
 
 @pytest.fixture(autouse=True)
@@ -83,24 +69,6 @@ def MockDatetime(mock_now):
             return mock_now
 
     return MockDatetime
-
-
-@pytest.fixture(scope="session")
-def pyplot():
-    """Setup and teardown fixture for matplotlib.
-
-    This fixture closes the figures before and after running the functions.
-
-    Returns
-    -------
-    pyplot : module
-        The ``matplotlib.pyplot`` module.
-    """
-    from matplotlib import pyplot
-
-    pyplot.close("all")
-    yield pyplot
-    pyplot.close("all")
 
 
 @pytest.fixture

@@ -55,9 +55,7 @@ def test_permutation_importance_with_containers(report_cls, x_container, y_conta
 @pytest.mark.filterwarnings(
     "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
 )
-def test_data_summarize_plot_with_containers(
-    report_cls, x_container, y_container, pyplot
-):
+def test_data_summarize_plot_with_containers(report_cls, x_container, y_container):
     """Table report plots work with array, pandas, and polars-backed summaries."""
     X, y = make_regression(n_samples=100, n_features=3, random_state=42)
     feature_columns = [f"Feature {i}" for i in range(X.shape[1])]

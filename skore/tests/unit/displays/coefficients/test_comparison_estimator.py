@@ -23,7 +23,7 @@ import pytest
         ),
     ],
 )
-def test_invalid_subplot_by(pyplot, fixture_name, valid_values, request):
+def test_invalid_subplot_by(fixture_name, valid_values, request):
     report = request.getfixturevalue(fixture_name)
     display = report.inspection.coefficients()
     err_msg = (
@@ -55,7 +55,7 @@ def test_invalid_subplot_by(pyplot, fixture_name, valid_values, request):
         ),
     ],
 )
-def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
     display = report.inspection.coefficients()
     for subplot_by, expected_len in subplot_by_tuples:
@@ -76,7 +76,6 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
     ],
 )
 def test_subplot_by_none_multiclass_or_multioutput(
-    pyplot,
     request,
     fixture_name,
 ):
@@ -107,7 +106,7 @@ def test_subplot_by_none_multiclass_or_multioutput(
         ),
     ],
 )
-def test_different_features(pyplot, fixture_name, subplot_by, request):
+def test_different_features(fixture_name, subplot_by, request):
     """Check that we get a proper report even if the estimators do not have the same
     input features."""
     report = request.getfixturevalue(fixture_name)

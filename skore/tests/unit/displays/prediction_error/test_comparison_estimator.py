@@ -5,7 +5,7 @@ import pytest
     "task, n_legend_entries",
     [("regression", 1), ("multioutput_regression", 3)],
 )
-def test_legend(pyplot, task, n_legend_entries, request):
+def test_legend(task, n_legend_entries, request):
     """Check the legend of the prediction error plot with comparison of estimators."""
     figure, _ = request.getfixturevalue(
         f"comparison_estimator_reports_{task}_figure_axes"
@@ -24,7 +24,7 @@ def test_legend(pyplot, task, n_legend_entries, request):
     "task, n_legend_entries",
     [("regression", 1), ("multioutput_regression", 3)],
 )
-def test_legend_actual_vs_predicted(pyplot, task, n_legend_entries, request):
+def test_legend_actual_vs_predicted(task, n_legend_entries, request):
     """Check the legend when kind is actual_vs_predicted."""
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.metrics.prediction_error()
@@ -45,7 +45,7 @@ def test_legend_actual_vs_predicted(pyplot, task, n_legend_entries, request):
         ("multioutput_regression", ["auto", "output", "estimator"]),
     ],
 )
-def test_invalid_subplot_by(pyplot, task, valid_values, request):
+def test_invalid_subplot_by(task, valid_values, request):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `subplot_by` argument.
     """
@@ -71,7 +71,7 @@ def test_invalid_subplot_by(pyplot, task, valid_values, request):
         ),
     ],
 )
-def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     """Check that we can pass valid values to `subplot_by`."""
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.prediction_error()
@@ -82,7 +82,7 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
 
 
 @pytest.mark.parametrize("task", ["regression", "multioutput_regression"])
-def test_subplot_by_data_source(pyplot, task, request):
+def test_subplot_by_data_source(task, request):
     """Check the behaviour when `subplot_by` is `data_source`."""
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.metrics.prediction_error(data_source="both")
@@ -106,7 +106,7 @@ def test_subplot_by_data_source(pyplot, task, request):
 
 
 @pytest.mark.parametrize("task", ["regression", "multioutput_regression"])
-def test_source_both(pyplot, task, request):
+def test_source_both(task, request):
     """Check the behaviour of the plot when data_source='both'."""
     report = request.getfixturevalue(f"comparison_estimator_reports_{task}")
     display = report.metrics.prediction_error(data_source="both")

@@ -3,7 +3,6 @@ import pytest
 
 
 def test_legend_binary_classification(
-    pyplot,
     comparison_estimator_reports_binary_classification,
     comparison_estimator_reports_binary_classification_figure_axes,
 ):
@@ -31,7 +30,6 @@ def test_legend_binary_classification(
 
 
 def test_legend_multiclass_classification(
-    pyplot,
     comparison_estimator_reports_multiclass_classification,
     comparison_estimator_reports_multiclass_classification_figure_axes,
 ):
@@ -138,7 +136,7 @@ def test_subplot_by_data_source(fixture_name, request):
         "comparison_estimator_reports_multiclass_classification",
     ],
 )
-def test_source_both(pyplot, fixture_name, request):
+def test_source_both(fixture_name, request):
     """Check the behaviour of the plot when data_source='both'."""
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.roc(data_source="both")

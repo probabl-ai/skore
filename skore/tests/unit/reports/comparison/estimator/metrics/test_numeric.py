@@ -214,7 +214,7 @@ def test_timings(comparison_estimator_reports_binary_classification):
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_display_binary_classification_pos_label(
-    pyplot, metric, logistic_binary_classification_with_train_test
+    metric, logistic_binary_classification_with_train_test
 ):
     """Check the behaviour of the display methods when `pos_label` is not set."""
     classifier, X_train, X_test, y_train, y_test = (
