@@ -224,9 +224,12 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         )
 
     def _repr_html_(self) -> str:
+        frame = self._formatted_summary_frame()
+        frame_repr_html = frame._repr_html_()  # type: ignore[operator]
+
         return (
             "<p>Metrics summary:</p>"
-            f"{self._formatted_summary_frame()._repr_html_()}"
+            f"{frame_repr_html}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

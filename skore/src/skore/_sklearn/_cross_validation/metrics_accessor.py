@@ -319,7 +319,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         if aggregate:
             if isinstance(aggregate, str):
                 aggregate = [aggregate]
-            timings = timings.aggregate(func=aggregate, axis=1)
+            timings = timings.aggregate(func=list(aggregate), axis="columns")
 
         timings.index = timings.index.str.replace("_", " ").str.capitalize()
         timings.index = pd.Index([f"{idx} (s)" for idx in timings.index])

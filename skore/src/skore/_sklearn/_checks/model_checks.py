@@ -301,10 +301,10 @@ class CheckHighClassImbalance(Check):
             raise CheckNotApplicable(
                 f"ML task is not binary classification. Got {report.ml_task}."
             )
-        y = get_report_y(report, data_source="both")
+        y_native = get_report_y(report, data_source="both")
 
-        y = nw.from_native(cast(UserSeries, y), series_only=True)
-        counts = y.value_counts()
+        y_nw = nw.from_native(cast(UserSeries, y_native), series_only=True)
+        counts = y_nw.value_counts()
         value_col = counts.columns[0]
         total = counts["count"].sum()
         overrepresented_class = counts.filter(nw.col("count") >= 0.8 * total)[
@@ -341,10 +341,10 @@ class CheckUnderrepresentedClasses(Check):
                 f"ML task is not multiclass classification. Got {report.ml_task}."
             )
 
-        y = get_report_y(report, data_source="both")
+        y_native = get_report_y(report, data_source="both")
 
-        y = nw.from_native(cast(UserSeries, y), series_only=True)
-        counts = y.value_counts()
+        y_nw = nw.from_native(cast(UserSeries, y_native), series_only=True)
+        counts = y_nw.value_counts()
         value_col = counts.columns[0]
         total = counts["count"].sum()
         underrepresented_classes = counts.filter(nw.col("count") <= 0.1 * total)[
@@ -424,14 +424,14 @@ class CheckMDIHighCardinalityBias(Check):
                 "`feature_importances_` attribute."
             )
 
-        X = get_preprocessed_X(report, data_source="train")
+        X_native = get_preprocessed_X(report, data_source="train")
 
-        X = nw.from_native(X)
-        n_samples = X.shape[0]
+        X_nw = nw.from_native(X_native)
+        n_samples = X_nw.shape[0]
         high_cardinality_features = [
             column
-            for column in X.columns
-            if X.select(nw.col(column).n_unique()).item(0, 0) > 0.5 * n_samples
+            for column in X_nw.columns
+            if X_nw.select(nw.col(column).n_unique()).item(0, 0) > 0.5 * n_samples
         ]
 
         if high_cardinality_features:
@@ -475,16 +475,16 @@ class CheckCorrelatedFeatures(Check):
             fewer than two numeric features are present.
         """
         report = cast_report(report)
-        X = get_preprocessed_X(report, data_source="train")
+        X_native = get_preprocessed_X(report, data_source="train")
 
-        X = nw.from_native(X).select(nw.selectors.numeric())
-        if X.shape[1] < 2 or X.shape[1] > 1000:
+        X_nw = nw.from_native(X_native).select(nw.selectors.numeric())
+        if X_nw.shape[1] < 2 or X_nw.shape[1] > 1000:
             raise CheckNotApplicable(
                 "Expected train data to have between 2 and 1000 features; "
-                f"got {X.shape[1]}."
+                f"got {X_nw.shape[1]}."
             )
 
-        corr = np.abs(spearmanr(X.to_numpy()).statistic)
+        corr = np.abs(spearmanr(X_nw.to_numpy()).statistic)
         if corr.ndim < 2:
             raise CheckNotApplicable("Less than 2 numeric features are present.")
         np.fill_diagonal(corr, 0)

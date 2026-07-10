@@ -207,11 +207,11 @@ class PermutationImportanceDisplay(DisplayMixin):
                 metric_name = _callable_name(metric_obj).replace("_", " ")
             scores = {metric_name: scores}
 
-        df_importances = []
+        importance_frames: list[pd.DataFrame] = []
         for metric_name, metric_values in scores.items():
             metric_importances = np.atleast_3d(metric_values["importances"])
 
-            df_metric_importances = []
+            target_frames: list[pd.DataFrame] = []
             # we loop across the labels (for classification) or the outputs
             # (for regression)
             for target_index, target_importances in enumerate(
@@ -234,12 +234,11 @@ class PermutationImportanceDisplay(DisplayMixin):
 
                 df["metric"] = metric_name
                 df["feature"] = np.tile(feature_names, n_repeats)
-                df_metric_importances.append(df)
+                target_frames.append(df)
 
-            df_metric_importances = pd.concat(df_metric_importances, axis="index")
-            df_importances.append(df_metric_importances)
+            importance_frames.append(pd.concat(target_frames, axis="index"))
 
-        df_importances = pd.concat(df_importances, axis="index")
+        df_importances = pd.concat(importance_frames, axis="index")
         df_importances["data_source"] = data_source
         df_importances["estimator"] = name
         df_importances["split"] = np.nan

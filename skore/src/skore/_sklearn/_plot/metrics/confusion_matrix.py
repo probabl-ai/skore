@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Literal
+from typing import Literal, cast
 
 import numpy as np
 import pandas as pd
@@ -165,7 +165,7 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             confusion_matrix_ovr = None
         else:
             confusion_matrix_ovr = _concat_frames_with_column_data(
-                [d.confusion_matrix_ovr for d in child_displays],
+                [cast(pd.DataFrame, d.confusion_matrix_ovr) for d in child_displays],
                 column_data,
             )
 
@@ -175,7 +175,10 @@ class ConfusionMatrixDisplay(_ClassifierDisplayMixin, DisplayMixin):
             confusion_matrix_thresholded = None
         else:
             confusion_matrix_thresholded = _concat_frames_with_column_data(
-                [d.confusion_matrix_thresholded for d in child_displays],
+                [
+                    cast(pd.DataFrame, d.confusion_matrix_thresholded)
+                    for d in child_displays
+                ],
                 column_data,
             )
 
