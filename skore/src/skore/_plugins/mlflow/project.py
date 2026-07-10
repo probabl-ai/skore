@@ -358,9 +358,12 @@ class Project:
                 "active runs are still in progress."
             )
 
-        runs = mlflow.search_runs(
-            experiment_ids=[experiment.experiment_id],
-            output_format="list",
+        runs = cast(
+            list[MLFlowRun],
+            mlflow.search_runs(
+                experiment_ids=[experiment.experiment_id],
+                output_format="list",
+            ),
         )
         for run in runs:
             client.delete_run(run.info.run_id)
@@ -551,7 +554,7 @@ def _flatten_df_index(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize a dataframe-like object before CSV logging."""
     df = df.copy(deep=False)
     columns = df.columns
-    if columns is not None and columns.nlevels > 1:
+    if isinstance(columns, pd.MultiIndex):
         df.columns = columns.droplevel(0)
 
     index = df.index

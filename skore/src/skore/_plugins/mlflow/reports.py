@@ -5,7 +5,7 @@ from __future__ import annotations
 import itertools
 from collections.abc import Generator, Iterable
 from dataclasses import dataclass
-from typing import Any, TypeAlias
+from typing import Any, TypeAlias, cast
 
 import matplotlib.pyplot as plt
 import mlflow.data
@@ -134,10 +134,12 @@ def iter_cv_metrics(
         continue
 
     timings = report_any.metrics.timings()
-    fit_time = timings.loc["Fit time (s)"].loc["mean"]
-    fit_time_std = timings.loc["Fit time (s)"].loc["std"]
-    predict_time = timings.loc["Predict time test (s)"].loc["mean"]
-    predict_time_std = timings.loc["Predict time test (s)"].loc["std"]
+    fit_time = float(cast(float, timings.loc["Fit time (s)"].loc["mean"]))
+    fit_time_std = float(cast(float, timings.loc["Fit time (s)"].loc["std"]))
+    predict_time = float(cast(float, timings.loc["Predict time test (s)"].loc["mean"]))
+    predict_time_std = float(
+        cast(float, timings.loc["Predict time test (s)"].loc["std"])
+    )
     summary = report_any.metrics.summarize()
 
     yield Metric("fit_time", fit_time)
@@ -190,11 +192,11 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
 
     estimator = clone(report.estimator).fit(report.X, report.y)
     yield Params(estimator.get_params())
-    yield Model(estimator, _sample_input_example(report.X))
+    yield Model(estimator, _sample_input_example(cast(ArrayLike, report.X)))
 
     yield Artifact("data.summarize", _data_analyze_html(report))
 
-    yield _dataset_from_Xy(report.X, report.y)
+    yield _dataset_from_Xy(cast(ArrayLike, report.X), cast(ArrayLike, report.y))
 
     for split_id, estimator_report in enumerate(report.reports_):
         yield (
@@ -221,12 +223,20 @@ def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
 
     estimator = report.estimator_
     yield Params(estimator.get_params())
-    yield Model(estimator, _sample_input_example(report.X_test))
+    yield Model(estimator, _sample_input_example(cast(ArrayLike, report.X_test)))
 
     yield Artifact("data.summarize", _data_analyze_html(report))
 
-    yield _dataset_from_Xy(report.X_train, report.y_train, context="training")
-    yield _dataset_from_Xy(report.X_test, report.y_test, context="evaluation")
+    yield _dataset_from_Xy(
+        cast(ArrayLike, report.X_train),
+        cast(ArrayLike, report.y_train),
+        context="training",
+    )
+    yield _dataset_from_Xy(
+        cast(ArrayLike, report.X_test),
+        cast(ArrayLike, report.y_test),
+        context="evaluation",
+    )
 
 
 def _data_analyze_html(report: CrossValidationReport | EstimatorReport) -> Any:
