@@ -287,9 +287,9 @@ _ = final_report.metrics.confusion_matrix().plot()
 
 # %%
 # We can easily combine the results of the previous cross-validation together with
-# the evaluation on the held-out dataset, since the two are accessible as tables
-# (DataFrame or Series). This way, we can check if our chosen model meets the
-# expectations we set during the experiment phase.
+# the evaluation on the held-out dataset, since the two are accessible as tables. This
+# way, we can check if our chosen model meets the expectations we set during the
+# experiment phase.
 
 # %%
 import pandas as pd
