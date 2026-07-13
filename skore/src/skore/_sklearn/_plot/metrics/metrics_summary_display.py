@@ -159,9 +159,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         """Build a display from metric rows, stored as a long-format DataFrame."""
         summary = pd.DataFrame(rows)
 
-        if "fingerprint" not in summary.columns:
-            summary["fingerprint"] = None
-
         if any(isinstance(r["label"], bool) for r in rows):
             summary["label"] = summary["label"].astype(pd.BooleanDtype())
         elif any(isinstance(r["label"], int) for r in rows):
