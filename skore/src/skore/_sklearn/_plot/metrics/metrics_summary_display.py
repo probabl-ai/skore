@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import warnings
 from collections import defaultdict
+from collections.abc import Sequence
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
 import numpy as np
@@ -24,41 +25,8 @@ MetricColumnKey = Literal["estimator", "data_source", "split"]
 
 METRIC_INDEX_KEYS: tuple[MetricIndexKey, ...] = ("metric", "label", "output", "average")
 METRIC_DIMENSION_KEYS = METRIC_INDEX_KEYS[1:]
-PIVOT_VALUE_COLUMN = "value"
+PIVOT_VALUE_COLUMN = "score"
 PIVOT_META_COLUMN = "greater_is_better"
-
-
-def _resolve_pivot_index_keys(df: pd.DataFrame) -> list[str]:
-    """Return row-index keys present in ``df``."""
-    return [
-        col
-        for col in METRIC_INDEX_KEYS
-        if col == "metric" or (col in df.columns and df[col].notna().any())
-    ]
-
-
-def _resolve_pivot_column_keys(
-    report_type: ReportType,
-    df: pd.DataFrame,
-    *,
-    aggregate: Aggregate | None,
-) -> list[str]:
-    """Return pivot column keys for ``df``, mirroring roc_curve indexing columns.
-
-    When ``aggregate`` is set, cross-validation splits are reduced with an
-    aggregation function during the pivot, so ``split`` is not a pivot column.
-    """
-    has_both_sources = "data_source" in df.columns and df["data_source"].nunique() > 1
-    keys: list[MetricColumnKey]
-    if report_type == "estimator":
-        keys = ["data_source"] if has_both_sources else []
-    elif report_type == "comparison-estimator":
-        keys = ["estimator", "data_source"] if has_both_sources else ["estimator"]
-    elif report_type == "cross-validation":
-        keys = [] if aggregate is not None else ["split"]
-    else:  # comparison-cross-validation
-        keys = ["estimator"] if aggregate is not None else ["estimator", "split"]
-    return [key for key in keys if key in df.columns]
 
 
 class MetricsSummaryRow(TypedDict):
@@ -256,45 +224,16 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         return data
 
-    def _prepare_long(
-        self,
-        summary: pd.DataFrame,
-        *,
-        verbose_name: bool = False,
-    ) -> pd.DataFrame:
-        """Select the columns needed for pivoting and normalize their names."""
-        metric_col = "verbose_name" if verbose_name else "name"
-
-        columns: list[str] = []
-        if "comparison" in self.report_type:
-            columns.append("estimator")
-        if "cross-validation" in self.report_type:
-            columns.append("split")
-        if summary["data_source"].nunique() > 1:
-            columns.append("data_source")
-        columns.append(metric_col)
-        columns.extend(
-            col for col in METRIC_DIMENSION_KEYS if summary[col].notna().any()
-        )
-        columns.extend(["score", "greater_is_better"])
-
-        frame = summary[columns].copy()
-        return frame.rename(
-            columns={
-                metric_col: "metric",
-                "score": "value",
-            }
-        ).reset_index(drop=True)
-
     def _pivot_estimator(
         self,
         df: pd.DataFrame,
-        index_cols: list[str],
-        column_cols: list[str],
+        index_cols: Sequence[str],
+        column_cols: Sequence[str],
     ) -> pd.DataFrame:
         """Pivot a single-estimator table."""
         estimator = self.summary["estimator"].iloc[0]
         if not column_cols:
+            # single data source and no column to spread across
             table = df.set_index(index_cols)[[PIVOT_VALUE_COLUMN]]
             table.columns = [estimator]
         else:
@@ -312,7 +251,7 @@ class MetricsSummaryDisplay(DisplayMixin):
     def _pivot_cross_validation_single_source(
         self,
         df: pd.DataFrame,
-        index_cols: list[str],
+        index_cols: Sequence[str],
         *,
         aggregate: Aggregate | None,
         estimator: str,
@@ -344,13 +283,13 @@ class MetricsSummaryDisplay(DisplayMixin):
     def _pivot_cross_validation(
         self,
         df: pd.DataFrame,
-        index_cols: list[str],
+        index_cols: Sequence[str],
         *,
         aggregate: Aggregate | None,
     ) -> pd.DataFrame:
         """Pivot cross-validation metrics."""
         estimator = self.summary["estimator"].iloc[0]
-        if "data_source" in df.columns and df["data_source"].nunique() > 1:
+        if "data_source" in df.columns:
             frames = []
             for data_source in ("train", "test"):
                 source = df[df["data_source"] == data_source]
@@ -378,8 +317,8 @@ class MetricsSummaryDisplay(DisplayMixin):
     def _pivot_comparison_estimator(
         self,
         df: pd.DataFrame,
-        index_cols: list[str],
-        column_cols: list[str],
+        index_cols: Sequence[str],
+        column_cols: Sequence[str],
     ) -> pd.DataFrame:
         """Pivot comparison-estimator metrics."""
         table = df.pivot_table(
@@ -409,7 +348,7 @@ class MetricsSummaryDisplay(DisplayMixin):
     def _pivot_comparison_cross_validation(
         self,
         df: pd.DataFrame,
-        index_cols: list[str],
+        index_cols: Sequence[str],
         *,
         aggregate: Aggregate | None,
     ) -> pd.DataFrame:
@@ -447,12 +386,12 @@ class MetricsSummaryDisplay(DisplayMixin):
         self,
         table: pd.DataFrame,
         df: pd.DataFrame,
-        index_cols: list[str],
+        index_cols: Sequence[str],
         *,
         favorability: bool,
         verbose_name: bool,
         flat_index: bool,
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Apply favorability, flat_index, and label-level cleanup to the table."""
         if favorability:
             favorability_col = (
@@ -494,7 +433,7 @@ class MetricsSummaryDisplay(DisplayMixin):
                 for name in table.columns.names
             ]
             table = table.rename(columns={"favorability": "Favorability"})
-        return table
+        return squeeze_single_column(table, lowercase=not verbose_name)
 
     def frame(
         self,
@@ -560,14 +499,45 @@ class MetricsSummaryDisplay(DisplayMixin):
                 "or set verbose_name=False."
             )
 
-        prepared = self._prepare_long(
-            self._resolve_fingerprints(self.summary),
-            verbose_name=verbose_name,
+        summary = self._resolve_fingerprints(self.summary)
+        metric_col = "verbose_name" if verbose_name else "name"
+
+        dimension_cols = [
+            col for col in METRIC_DIMENSION_KEYS if summary[col].notna().any()
+        ]
+        has_both_sources = summary["data_source"].nunique() > 1
+
+        columns: list[str] = []
+        if "comparison" in self.report_type:
+            columns.append("estimator")
+        if "cross-validation" in self.report_type:
+            columns.append("split")
+        if has_both_sources:
+            columns.append("data_source")
+        columns.append(metric_col)
+        columns.extend(dimension_cols)
+        columns.extend(["score", "greater_is_better"])
+
+        prepared = (
+            summary[columns]
+            .copy()
+            .rename(columns={metric_col: "metric"})
+            .reset_index(drop=True)
         )
-        index_cols = _resolve_pivot_index_keys(prepared)
-        column_cols = _resolve_pivot_column_keys(
-            self.report_type, prepared, aggregate=aggregate
-        )
+        index_cols = ["metric", *dimension_cols]
+        column_cols: list[MetricColumnKey]
+        if self.report_type == "estimator":
+            column_cols = ["data_source"] if has_both_sources else []
+        elif self.report_type == "comparison-estimator":
+            column_cols = (
+                ["estimator", "data_source"] if has_both_sources else ["estimator"]
+            )
+        elif self.report_type == "cross-validation":
+            column_cols = [] if aggregate is not None else ["split"]
+        else:  # comparison-cross-validation
+            column_cols = (
+                ["estimator"] if aggregate is not None else ["estimator", "split"]
+            )
 
         # Pivoting on a dimension column that contains NaN keys drops those rows, so
         # replace missing per-class/output/averaging values with an empty-string
@@ -594,7 +564,7 @@ class MetricsSummaryDisplay(DisplayMixin):
                 aggregate=aggregate,
             )
 
-        table = self._finalize(
+        return self._finalize(
             table,
             prepared,
             index_cols,
@@ -602,7 +572,6 @@ class MetricsSummaryDisplay(DisplayMixin):
             verbose_name=verbose_name,
             flat_index=flat_index,
         )
-        return squeeze_single_column(table, lowercase=not verbose_name)
 
     def _repr_html_(self) -> str:
         aggregate = cast(Aggregate, ("mean", "std"))
