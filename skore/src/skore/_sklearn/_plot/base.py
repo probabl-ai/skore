@@ -48,10 +48,7 @@ class Display(Protocol):
         Returns
         -------
         pandas.DataFrame or pandas.Series
-            The data used to create the display. Most displays return a
-            :class:`pandas.DataFrame`. :meth:`~skore.MetricsSummaryDisplay.frame`
-            may return a named :class:`pandas.Series` for wide layouts with a
-            single value column.
+            The data used to create the display.
         """
 
     def help(self) -> None:

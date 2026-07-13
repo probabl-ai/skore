@@ -305,7 +305,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
         **kwargs,
-    ) -> pd.DataFrame | pd.Series | None:
+    ) -> pd.DataFrame | pd.Series:
         """Get a metric value.
 
         Parameters
@@ -326,11 +326,13 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series or None
-            The metric values, or None if the metric is not available. Wide
-            comparison layouts normally have one column per estimator. For wide
-            layouts with a single value column, a :class:`pandas.Series` is
-            returned with its name set to that column label.
+        pd.DataFrame
+            The metric values.
+
+        Raises
+        ------
+        KeyError
+            If ``name`` is not in the metric registry of any sub-report.
 
         Examples
         --------
@@ -373,9 +375,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame
-            The processing times across compared estimators (one column per
-            estimator).
+        pd.DataFrame
+            A dataframe with the processing times.
 
         Examples
         --------
@@ -460,11 +461,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The estimator's default score. Wide comparison layouts normally have
-            one column per estimator. For wide layouts with a single value
-            column, a :class:`pandas.Series` is returned with its name set to
-            that column label.
+        pd.DataFrame
+            The estimator's default score.
 
         Examples
         --------
@@ -510,11 +508,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The accuracy score. Wide comparison layouts normally have one column
-            per estimator. For wide layouts with a single value column, a
-            :class:`pandas.Series` is returned with its name set to that column
-            label.
+        pd.DataFrame
+            The accuracy score.
 
         Examples
         --------
@@ -589,11 +584,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The precision score. Wide comparison layouts normally have one column
-            per estimator. For wide layouts with a single value column, a
-            :class:`pandas.Series` is returned with its name set to that column
-            label.
+        pd.DataFrame
+            The precision score.
 
         Examples
         --------
@@ -672,11 +664,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The recall score. Wide comparison layouts normally have one column
-            per estimator. For wide layouts with a single value column, a
-            :class:`pandas.Series` is returned with its name set to that column
-            label.
+        pd.DataFrame
+            The recall score.
 
         Examples
         --------
@@ -723,11 +712,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The Brier score. Wide comparison layouts normally have one column
-            per estimator. For wide layouts with a single value column, a
-            :class:`pandas.Series` is returned with its name set to that column
-            label.
+        pd.DataFrame
+            The Brier score.
 
         Examples
         --------
@@ -809,11 +795,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The ROC AUC score. Wide comparison layouts normally have one column
-            per estimator. For wide layouts with a single value column, a
-            :class:`pandas.Series` is returned with its name set to that column
-            label.
+        pd.DataFrame
+            The ROC AUC score.
 
         Examples
         --------
@@ -861,11 +844,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The log-loss. Wide comparison layouts normally have one column per
-            estimator. For wide layouts with a single value column, a
-            :class:`pandas.Series` is returned with its name set to that column
-            label.
+        pd.DataFrame
+            The log-loss.
 
         Examples
         --------
@@ -922,11 +902,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The R² score. Wide comparison layouts normally have one column per
-            estimator. For wide layouts with a single value column, a
-            :class:`pandas.Series` is returned with its name set to that column
-            label.
+        pd.DataFrame
+            The R² score.
 
         Examples
         --------
@@ -985,11 +962,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The root mean squared error. Wide comparison layouts normally have
-            one column per estimator. For wide layouts with a single value
-            column, a :class:`pandas.Series` is returned with its name set to
-            that column label.
+        pd.DataFrame
+            The root mean squared error.
 
         Examples
         --------
@@ -1049,11 +1023,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The mean absolute error. Wide comparison layouts normally have one
-            column per estimator. For wide layouts with a single value column, a
-            :class:`pandas.Series` is returned with its name set to that column
-            label.
+        pd.DataFrame
+            The mean absolute error.
 
         Examples
         --------
@@ -1113,11 +1084,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
 
         Returns
         -------
-        pandas.DataFrame or pandas.Series
-            The mean absolute percentage error. Wide comparison layouts normally
-            have one column per estimator. For wide layouts with a single value
-            column, a :class:`pandas.Series` is returned with its name set to
-            that column label.
+        pd.DataFrame
+            The mean absolute percentage error.
 
         Examples
         --------

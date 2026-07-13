@@ -364,7 +364,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         name: str,
         data_source: DataSource = "test",
         **kwargs,
-    ) -> float | None:
+    ) -> Any:
         """Get a metric value.
 
         Parameters
@@ -383,7 +383,15 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
 
         Returns
         -------
-        The metric value, or None if the metric is not available.
+        Any
+            The metric value in a human-readable shape: a scalar for
+            single-output metrics, a mapping from class labels for per-class
+            classification metrics, or an array for multioutput regression.
+
+        Raises
+        ------
+        KeyError
+            If ``name`` is not in the metric registry.
 
         Examples
         --------
