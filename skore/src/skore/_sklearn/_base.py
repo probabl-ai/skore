@@ -156,11 +156,6 @@ class _BaseReport(ReportHelpMixin):
     def id(self) -> int:
         return self._metadata["id"]
 
-    @property
-    def _hash(self) -> int:
-        # FIXME: only for backward compatibility
-        return self.id
-
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
 
