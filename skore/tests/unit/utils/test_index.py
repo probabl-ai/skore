@@ -85,6 +85,6 @@ def test_squeeze_single_column_multiindex_column():
     df.columns = pd.MultiIndex.from_tuples(
         [("RandomForestClassifier", "mean")], names=["Estimator", "Aggregate"]
     )
-    result = squeeze_single_column(df)
+    result = squeeze_single_column(df, lowercase=False)
     assert isinstance(result, pd.Series)
     assert result.name == "RandomForestClassifier_mean"

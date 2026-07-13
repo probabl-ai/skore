@@ -753,7 +753,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def __repr__(self) -> str:
         """Return a string representation."""
         metrics_frame = self.metrics.summarize(data_source="test").frame(
-            verbose_name=True
+            verbose_name=True, flat_index=False
         )
         return f"""{self.__class__.__name__}:
         {self.estimator_name_!r}
@@ -782,7 +782,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         table_report_html = table_report.html_snippet()
         metrics_html = (
             self.metrics.summarize(data_source="test")
-            .frame(verbose_name=True)
+            .frame(verbose_name=True, flat_index=False)
             .reset_index()
             .to_html(index=False)
         )
@@ -858,7 +858,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             The markdown summary of the report.
         """
         metrics_text = repr(
-            self.metrics.summarize(data_source="test").frame(verbose_name=True)
+            self.metrics.summarize(data_source="test").frame(
+                verbose_name=True, flat_index=False
+            )
         )
         timings = self.metrics.timings()
         summary = summarize_dataframe(
