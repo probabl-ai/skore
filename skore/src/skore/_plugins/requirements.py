@@ -1,34 +1,53 @@
+import importlib.metadata
+import platform
 import sys
-import types
-from importlib.metadata import packages_distributions
-
-BUILTIN = {"built-in", "frozen"}
+import typing
 
 
-def is_builtin(top_level_module: str, module: types.ModuleType) -> bool:
-    return (
-        (top_level_module in sys.stdlib_module_names) or
-        (
-            (module.__spec__ is not None) and
-            (module.__spec__.origin in BUILTIN)
-        )
-    )
+class Requirement(typing.TypedDict):
+    name: str
+    version: str | None
 
 
-def infer() -> list[str]:
-    module_to_distribution = packages_distributions()
-    packages: set[str] = set()
+class Requirements(typing.TypedDict):
+    python: str
+    requirements: list[Requirement]
+
+
+def version(requirement: str) -> str | None:
+    try:
+        return importlib.metadata.version(requirement)
+    except importlib.metadata.PackageNotFoundError:
+        return None
+
+
+def infer() -> Requirements:
+    module_to_requirement = importlib.metadata.packages_distributions()
+    requirement_to_version = {}
 
     for name, module in sys.modules.items():
-        top_level_module = name.partition(".")[0]
-
-        if is_builtin(top_level_module, module):
+        if module is None:
             continue
 
         top_level_module = name.partition(".")[0]
-        distribution = module_to_distribution.get(top_level_module)
 
-        if distribution:
-            packages.update(distribution)
+        if top_level_module in sys.stdlib_module_names:
+            continue
 
-    return sorted(packages)
+        if requirements := module_to_requirement.get(top_level_module):
+            for requirement in requirements:
+                if requirement not in requirement_to_version:
+                    requirement_to_version[requirement] = version(requirement)
+        else:
+            ...
+
+    return Requirements(
+        python=platform.python_version(),
+        requirements=[
+            Requirement(
+                name=name,
+                version=version,
+            )
+            for name, version in sorted(requirement_to_version.items())
+        ],
+    )
