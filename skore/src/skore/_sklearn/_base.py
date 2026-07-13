@@ -10,7 +10,7 @@ from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
-from skore._sklearn.types import DataSource
+from skore._sklearn.types import DataSource, ReportMetadata
 from skore._utils._progress_bar import track
 from skore._utils.repr.base import (
     AccessorHelpMixin,
@@ -141,7 +141,8 @@ class _BaseReport(ReportHelpMixin):
         return self.checks.summarize(fast_mode=True)._embedded_repr_html()
 
     def __init__(self) -> None:
-        self._metadata = {
+        self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
+        self._metadata: ReportMetadata = {
             "id": uuid4().int,
             "skore-version": version("skore"),
             "creation-date": datetime.now(UTC).isoformat(),
@@ -150,10 +151,9 @@ class _BaseReport(ReportHelpMixin):
             "report_type": getattr(self, "_report_type", "comparison"),
             "git_commit": git_commit(),
         }
-        self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
 
     @property
-    def id(self):
+    def id(self) -> int:
         return self._metadata["id"]
 
     @property
