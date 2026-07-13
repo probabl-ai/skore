@@ -233,21 +233,32 @@ def test_frame_multiclass_has_label_column(forest_multiclass_classification_with
     frame = report.metrics.summarize().frame(flat_index=False)
 
     assert "label" in frame.index.names
+    assert "average" in frame.index.names
     assert "output" not in frame.index.names
-    precision_labels = frame.loc["precision"].index.get_level_values("label")
-    assert precision_labels.dropna().astype(int).to_list() == [0, 1, 2]
+    precision_index = frame.loc["precision"].index
+    precision_labels = [
+        label
+        for label, average in zip(
+            precision_index.get_level_values("label"),
+            precision_index.get_level_values("average"),
+            strict=True,
+        )
+        if average == ""
+    ]
+    assert [int(label) for label in precision_labels] == [0, 1, 2]
 
 
 def test_frame_multiclass_includes_macro_metrics(
     forest_multiclass_classification_with_test,
 ):
-    """Built-in macro metrics are exposed as separate registry entries."""
+    """Built-in macro metrics are exposed via the ``average`` dimension."""
     estimator, X_test, y_test = forest_multiclass_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     data = report.metrics.summarize().summary
 
-    for metric_name in ("precision_macro", "recall_macro", "roc_auc_macro"):
-        assert (data["name"] == metric_name).any()
+    for metric_name in ("precision", "recall", "roc_auc"):
+        macro_rows = data[(data["name"] == metric_name) & (data["average"] == "macro")]
+        assert len(macro_rows) == 1
 
 
 def test_frame_multioutput_has_output_column(linear_regression_multioutput_with_test):
@@ -298,9 +309,9 @@ def test_frame_flat_index_false(forest_multiclass_classification_with_test):
     )
 
     assert isinstance(result.index, pd.MultiIndex)
-    assert result.index.names == ["Metric", "Label"]
+    assert result.index.names == ["Metric", "Label", "Average"]
     assert "Output" not in result.index.names
-    assert ("Precision (macro)", "") in result.index
+    assert ("Precision", "", "macro") in result.index
 
 
 def test_frame_data_source_both(forest_binary_classification_data):

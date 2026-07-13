@@ -377,7 +377,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                 cast(
                     MetricsSummaryRow,
                     {
-                        "name": metric.name,
+                        "name": metric.summary_name,
                         "verbose_name": row["metric_verbose_name"],
                         "estimator": report.estimator_name_,
                         "data_source": data_source,

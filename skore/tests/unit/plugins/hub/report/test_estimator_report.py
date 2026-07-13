@@ -381,11 +381,13 @@ class TestEstimatorReportPayload:
             key="<key>",
         )
 
-        for metric_name in ("precision_macro", "recall_macro", "roc_auc_macro"):
+        for metric_name in ("precision", "recall", "roc_auc"):
             macro_metrics = [
                 m
                 for m in payload.metrics
-                if m.name == metric_name and m.data_source == "test"
+                if m.name == metric_name
+                and m.average == "macro"
+                and m.data_source == "test"
             ]
             assert len(macro_metrics) == 1
 

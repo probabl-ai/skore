@@ -1115,14 +1115,16 @@ class TestCrossValidationReportPayload:
         )
 
         for metric_name in (
-            "precision_macro_mean",
-            "recall_macro_mean",
-            "roc_auc_macro_mean",
+            "precision_mean",
+            "recall_mean",
+            "roc_auc_mean",
         ):
             macro_metrics = [
                 m
                 for m in payload.metrics
-                if m.name == metric_name and m.data_source == "test"
+                if m.name == metric_name
+                and m.average == "macro"
+                and m.data_source == "test"
             ]
             assert len(macro_metrics) == 1
 

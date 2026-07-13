@@ -124,16 +124,16 @@ def test_default_multiclass_classification_forest(
             "Accuracy",
             "Log loss",
             "Precision",
-            "Precision (macro)",
             "Recall",
-            "Recall (macro)",
             "ROC AUC",
-            "ROC AUC (macro)",
             "Predict time (s)",
             "Fit time (s)",
         },
         expected_estimator="RandomForestClassifier",
+        expected_average={"macro"},
     )
+
+    assert "precision_macro" in report.metrics.available()
 
     assert display.summary["output"].isna().all()
     data = display.summary.set_index("verbose_name")
@@ -154,9 +154,7 @@ def test_default_multiclass_classification_svc(svc_multiclass_classification_wit
         expected_metrics={
             "Accuracy",
             "Precision",
-            "Precision (macro)",
             "Recall",
-            "Recall (macro)",
             "Fit time (s)",
             "Predict time (s)",
         },

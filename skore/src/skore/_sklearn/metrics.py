@@ -189,6 +189,14 @@ class Metric:
         self.function = function
         self.function_kind = function_kind
 
+    @property
+    def summary_name(self) -> str:
+        """Name used in summarize output rows (may differ from registry ``name``)."""
+        cls_value = type(self).__dict__.get("summary_name")
+        if isinstance(cls_value, str):
+            return cls_value
+        return self.name
+
     @staticmethod
     def new(
         metric: MetricLike | Metric,
@@ -491,8 +499,7 @@ class Metric:
                         strict=False,
                     )
                 ]
-            average = None if self.name.endswith("_macro") else kwargs.get("average")
-            return [self._row(score=score, average=average)]
+            return [self._row(score=score, average=kwargs.get("average"))]
         if report._ml_task == "multioutput-regression":
             if isinstance(score, np.ndarray):
                 return [
@@ -643,7 +650,7 @@ class Precision(Metric):
 
 class PrecisionMacro(Precision):
     name = "precision_macro"
-    verbose_name = "Precision (macro)"
+    summary_name = "precision"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -676,7 +683,7 @@ class Recall(Metric):
 
 class RecallMacro(Recall):
     name = "recall_macro"
-    verbose_name = "Recall (macro)"
+    summary_name = "recall"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -737,7 +744,7 @@ class RocAuc(Metric):
 
 class RocAucMacro(RocAuc):
     name = "roc_auc_macro"
-    verbose_name = "ROC AUC (macro)"
+    summary_name = "roc_auc"
     kwargs = {"average": "macro", "multi_class": "ovr"}
 
     @staticmethod
