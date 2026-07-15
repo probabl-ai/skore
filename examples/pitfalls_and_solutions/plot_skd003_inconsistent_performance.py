@@ -115,14 +115,13 @@ report_clean = evaluate(model, X=X, y=y_clean, splitter=5, n_jobs=-1)
 report_clean.metrics.summarize(data_source="test").frame(aggregate=None)
 
 # %%
-# What to check when the cause is unknown? SKD003 does not distinguish
+# **What to check when the cause is unknown.** SKD003 does not distinguish
 # label errors from leakage or temporal drift. If one fold still looks wrong
 # after auditing labels, review the feature pipeline for target leakage (e.g.
 # statistics fit on the full table before splitting, duplicate rows across
 # folds, features that encode future information) and, when rows are ordered in
 # time, whether cross-validation respects chronology — see
 # :ref:`SKD013 <skd013-train-test-time-overlap>`.
-# %%
 # With clean labels, per-fold scores should cluster and SKD003 should be absent.
 
 report_clean.checks.summarize(fast_mode=True, ignore=["SKD008"])
