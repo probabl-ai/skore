@@ -162,6 +162,8 @@ How to reduce the risk
 - check for data leakage or temporal effects,
 - increase the size of the dataset to improve stability.
 
+Check out the :ref:`example for this check <example_skd003_inconsistent_performance>`.
+
 
 .. _skd004-high-class-imbalance:
 
