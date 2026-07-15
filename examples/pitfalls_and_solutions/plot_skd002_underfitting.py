@@ -101,7 +101,7 @@ report_ridge.checks.summarize()
 
 # %%
 # Increase model capacity — gradient boosting
-# ==========================================
+# ============================================
 #
 # :class:`~sklearn.ensemble.HistGradientBoostingRegressor` adds nonlinear
 # capacity. It can capture interactions between income, room counts, and
