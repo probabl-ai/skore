@@ -36,7 +36,7 @@ housing = fetch_california_housing()
 X, y = housing.X, housing.y
 
 # %%
-# :class:`~skrub.TableReport` is sused to visualize the data.
+# skrub's :class:`~skrub.TableReport` is used to visualize the data.
 from skrub import TableReport
 
 TableReport(X)
