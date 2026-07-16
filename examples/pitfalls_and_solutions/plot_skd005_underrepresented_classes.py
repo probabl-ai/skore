@@ -91,7 +91,7 @@ report = evaluate(
 # %%
 # SKD005 should list classes 3, 4, 5, 6, and 7 as under 10 % of rows.
 
-report.checks.summarize(fast_mode=True)
+report.checks.summarize(fast_mode=True, ignore=["SKD008"])
 
 # %%
 # Monitor per-class metrics
@@ -130,7 +130,7 @@ report_weighted = evaluate(
 # %%
 # SKD005 remains present; only the data mix clears this check.
 
-report_weighted.checks.summarize(fast_mode=True)
+report_weighted.checks.summarize(fast_mode=True, ignore=["SKD008"])
 
 # %%
 comparison_weights = compare({"default": report, "balanced_weights": report_weighted})
@@ -190,7 +190,7 @@ report_more_data = evaluate(
 # %%
 # With enough rare-type rows added, SKD005 should be absent.
 
-report_more_data.checks.summarize(fast_mode=True)
+report_more_data.checks.summarize(fast_mode=True, ignore=["SKD008"])
 
 # %%
 report_more_data.metrics.summarize(
@@ -271,7 +271,7 @@ report_resampled = EstimatorReport(
 # SKD005 looks at train and test together. The holdout still has the original distribution
 # of classes, so the check can remain for some classes even though training labels are oversampled.
 
-report_resampled.checks.summarize(fast_mode=True)
+report_resampled.checks.summarize(fast_mode=True, ignore=["SKD008"])
 
 # %%
 # Train scores can look strong because rare rows are repeated in the training
