@@ -222,6 +222,8 @@ How to reduce the risk
 - use class weights in the estimator,
 - collect more data for the underrepresented classes if possible.
 
+Check out the :ref:`example for this check <example_skd005_underrepresented_classes>`.
+
 
 .. _skd006-unscaled-coefficients:
 
