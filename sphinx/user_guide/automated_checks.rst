@@ -273,6 +273,9 @@ How to reduce the risk
   :class:`~skore.PermutationImportanceDisplay`.
 
 
+Check out the :ref:`example for this check <example_skd006_coefficient_interpretation>`.
+
+
 .. _skd007-mdi-cardinality-bias:
 
 SKD007 - MDI feature importance is biased for high-cardinality features
