@@ -74,7 +74,7 @@ report = evaluate(
 )
 
 # %%
-# SKD008 give the number of highly correlated feature pairs on the training fold.
+# SKD008 gives the number of highly correlated feature pairs on the training fold.
 
 report.checks.summarize(fast_mode=True)
 
@@ -82,7 +82,7 @@ report.checks.summarize(fast_mode=True)
 # Investigate correlated pairs on train data
 # ==========================================
 #
-# SKD008 runs on **train** inputs. Lets check the correlated pairs on the train data.
+# SKD008 runs on **train** inputs. Let's check the correlated pairs on the train data.
 # manually to see how many there are.
 
 import numpy as np
@@ -139,7 +139,7 @@ from sklearn.linear_model import LogisticRegression
 
 report_lasso = evaluate(
     LogisticRegression(
-        penalty="l1",
+        l1_ratio=1.0,
         solver="liblinear",
         C=0.1,
         max_iter=10_000,
@@ -250,7 +250,7 @@ comparison.metrics.summarize(data_source="both").frame(favorability=True)
 # SKD008 highlights redundant numeric features that complicate interpretation.
 # Here, checking the correlation on training data manually guided both aggressive dropping
 # and structured grouping; L1 regularization helped coefficients but did not
-# clear the check. Choose dropping or aggregation based on which how you want to
+# clear the check. Choose dropping or aggregation based on how you want to
 # modify the feature table.
 
 # %%
