@@ -117,13 +117,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
             None
         Training data.
 
-    y_train : array-like of shape (n_samples) or (n_samples, n_outputs) or None
+    y_train : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Training target.
 
     X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         Testing data. It should have the same structure as the training data.
 
-    y_test : array-like of shape (n_samples) or (n_samples, n_outputs) or None
+    y_test : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         Testing target.
 
     train_data : dict or None
@@ -484,7 +484,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         response : ndarray of shape (n_samples, n_classes)
             For binary decision_function, the returned array is reshaped to
             (n_samples, 2) so it can be aligned with classes_.
-        predictions : ndarray of shape (n_samples) or None
+        predictions : ndarray of shape (n_samples,) or None
             Predicted labels derived from response
             or None for ill-shaped decision function (OVO)
         pred_time : float
@@ -557,7 +557,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         data : dict of input data
             The requested dataset.
 
-        y : array-like of shape (n_samples)
+        y : array-like of shape (n_samples,)
             The target labels.
         """
         if data_source not in ["train", "test"]:
@@ -604,7 +604,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Returns
         -------
-        np.ndarray of shape (n_samples) or (n_samples, n_classes)
+        np.ndarray of shape (n_samples,) or (n_samples, n_classes)
             The predictions.
 
         Raises
@@ -651,9 +651,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         Returns
         -------
-        np.ndarray of shape (n_samples) or (n_samples, n_classes)
+        np.ndarray of shape (n_samples,) or (n_samples, n_classes)
             The predictions.
-            The shape is (n_samples) if:
+            The shape is (n_samples,) if:
                 - response_method is "predict"
                 - OR if pos_label is specified (binary-classification only)
             Otherwise it's (n_samples, n_classes)

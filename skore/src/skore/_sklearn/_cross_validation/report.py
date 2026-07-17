@@ -81,7 +81,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
     X : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         The data to fit. Can be for example a list, or an array.
 
-    y : array-like of shape (n_samples) or (n_samples, n_outputs) or None
+    y : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
         The target variable to try to predict in the case of supervised learning.
 
     data : dict or None
@@ -444,13 +444,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         Returns
         -------
-        list of np.ndarray of shape (n_samples) or (n_samples, n_classes)
+        list of np.ndarray of shape (n_samples,) or (n_samples, n_classes)
             The predictions for each cross-validation split.
-
-        Raises
-        ------
-        ValueError
-            If the data source is invalid.
 
         Examples
         --------
@@ -495,7 +490,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         X_test : {array-like, sparse matrix} of shape (n_samples, n_features)
             Testing data. It should have the same structure as the training data.
 
-        y_test : array-like of shape (n_samples) or (n_samples, n_outputs)
+        y_test : array-like of shape (n_samples,) or (n_samples, n_outputs)
             Testing target.
 
         test_data : dict or None
