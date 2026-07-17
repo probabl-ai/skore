@@ -7,7 +7,7 @@ SKD008 — Highly correlated input features
 This example walks through mitigations when check
 :ref:`SKD008 <skd008-correlated-features>` fires because numeric columns are
 nearly redundant. The check computes pairwise Spearman correlation on training
-inputs and flags pairs with :math:`|\rho| > 0.9`.
+inputs and flags pairs with :math:`|ρ| > 0.9`.
 
 Mitigations from the :ref:`automated_checks` user guide:
 
