@@ -1,7 +1,4 @@
-import matplotlib as mpl
 import pytest
-
-mpl.rc("figure", max_open_warning=False)
 
 
 @pytest.fixture(scope="module")
@@ -11,7 +8,7 @@ def estimator_type():
 
 @pytest.fixture(scope="module")
 def estimator_reports_binary_classification_figure_axes(
-    pyplot, estimator_reports_binary_classification
+    estimator_reports_binary_classification,
 ):
     report = estimator_reports_binary_classification[0]
     display = report.inspection.impurity_decrease()
@@ -22,7 +19,7 @@ def estimator_reports_binary_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def estimator_reports_multiclass_classification_figure_axes(
-    pyplot, estimator_reports_multiclass_classification
+    estimator_reports_multiclass_classification,
 ):
     report = estimator_reports_multiclass_classification[0]
     display = report.inspection.impurity_decrease()
@@ -32,7 +29,7 @@ def estimator_reports_multiclass_classification_figure_axes(
 
 
 @pytest.fixture(scope="module")
-def estimator_reports_regression_figure_axes(pyplot, estimator_reports_regression):
+def estimator_reports_regression_figure_axes(estimator_reports_regression):
     report = estimator_reports_regression[0]
     display = report.inspection.impurity_decrease()
     fig = display.plot()
@@ -42,7 +39,7 @@ def estimator_reports_regression_figure_axes(pyplot, estimator_reports_regressio
 
 @pytest.fixture(scope="module")
 def estimator_reports_multioutput_regression_figure_axes(
-    pyplot, estimator_reports_multioutput_regression
+    estimator_reports_multioutput_regression,
 ):
     report = estimator_reports_multioutput_regression[0]
     display = report.inspection.impurity_decrease()
@@ -53,7 +50,7 @@ def estimator_reports_multioutput_regression_figure_axes(
 
 @pytest.fixture(scope="module")
 def cross_validation_reports_binary_classification_figure_axes(
-    pyplot, cross_validation_reports_binary_classification
+    cross_validation_reports_binary_classification,
 ):
     report = cross_validation_reports_binary_classification[0]
     display = report.inspection.impurity_decrease()
@@ -64,7 +61,7 @@ def cross_validation_reports_binary_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def cross_validation_reports_multiclass_classification_figure_axes(
-    pyplot, cross_validation_reports_multiclass_classification
+    cross_validation_reports_multiclass_classification,
 ):
     report = cross_validation_reports_multiclass_classification[0]
     display = report.inspection.impurity_decrease()
@@ -75,7 +72,7 @@ def cross_validation_reports_multiclass_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def cross_validation_reports_regression_figure_axes(
-    pyplot, cross_validation_reports_regression
+    cross_validation_reports_regression,
 ):
     report = cross_validation_reports_regression[0]
     display = report.inspection.impurity_decrease()
@@ -86,7 +83,7 @@ def cross_validation_reports_regression_figure_axes(
 
 @pytest.fixture(scope="module")
 def cross_validation_reports_multioutput_regression_figure_axes(
-    pyplot, cross_validation_reports_multioutput_regression
+    cross_validation_reports_multioutput_regression,
 ):
     report = cross_validation_reports_multioutput_regression[0]
     display = report.inspection.impurity_decrease()
@@ -97,7 +94,7 @@ def cross_validation_reports_multioutput_regression_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_estimator_reports_binary_classification_figure_axes(
-    pyplot, comparison_estimator_reports_binary_classification
+    comparison_estimator_reports_binary_classification,
 ):
     report = comparison_estimator_reports_binary_classification
     display = report.inspection.impurity_decrease()
@@ -108,7 +105,7 @@ def comparison_estimator_reports_binary_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_estimator_reports_multiclass_classification_figure_axes(
-    pyplot, comparison_estimator_reports_multiclass_classification
+    comparison_estimator_reports_multiclass_classification,
 ):
     report = comparison_estimator_reports_multiclass_classification
     display = report.inspection.impurity_decrease()
@@ -119,7 +116,7 @@ def comparison_estimator_reports_multiclass_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_estimator_reports_regression_figure_axes(
-    pyplot, comparison_estimator_reports_regression
+    comparison_estimator_reports_regression,
 ):
     report = comparison_estimator_reports_regression
     display = report.inspection.impurity_decrease()
@@ -130,7 +127,7 @@ def comparison_estimator_reports_regression_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_estimator_reports_multioutput_regression_figure_axes(
-    pyplot, comparison_estimator_reports_multioutput_regression
+    comparison_estimator_reports_multioutput_regression,
 ):
     report = comparison_estimator_reports_multioutput_regression
     display = report.inspection.impurity_decrease()
@@ -141,7 +138,7 @@ def comparison_estimator_reports_multioutput_regression_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_cross_validation_reports_binary_classification_figure_axes(
-    pyplot, comparison_cross_validation_reports_binary_classification
+    comparison_cross_validation_reports_binary_classification,
 ):
     report = comparison_cross_validation_reports_binary_classification
     display = report.inspection.impurity_decrease()
@@ -152,7 +149,7 @@ def comparison_cross_validation_reports_binary_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_cross_validation_reports_multiclass_classification_figure_axes(
-    pyplot, comparison_cross_validation_reports_multiclass_classification
+    comparison_cross_validation_reports_multiclass_classification,
 ):
     report = comparison_cross_validation_reports_multiclass_classification
     display = report.inspection.impurity_decrease()
@@ -163,7 +160,7 @@ def comparison_cross_validation_reports_multiclass_classification_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_cross_validation_reports_regression_figure_axes(
-    pyplot, comparison_cross_validation_reports_regression
+    comparison_cross_validation_reports_regression,
 ):
     report = comparison_cross_validation_reports_regression
     display = report.inspection.impurity_decrease()
@@ -174,7 +171,7 @@ def comparison_cross_validation_reports_regression_figure_axes(
 
 @pytest.fixture(scope="module")
 def comparison_cross_validation_reports_multioutput_regression_figure_axes(
-    pyplot, comparison_cross_validation_reports_multioutput_regression
+    comparison_cross_validation_reports_multioutput_regression,
 ):
     report = comparison_cross_validation_reports_multioutput_regression
     display = report.inspection.impurity_decrease()

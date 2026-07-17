@@ -1,7 +1,7 @@
 """Types between parts of the sklearn module."""
 
 from collections.abc import Iterator, Sequence
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, TypedDict
 
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator
@@ -77,3 +77,15 @@ class SKLearnCrossValidator(Protocol):
         test : ndarray
             The testing set indices for that split.
         """
+
+
+ReportMetadata = TypedDict(
+    "ReportMetadata",
+    {
+        "id": int,
+        "skore-version": str,
+        "creation-date": str,
+        "report_type": str,
+        "git_commit": str | None,
+    },
+)

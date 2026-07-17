@@ -6,7 +6,7 @@ import pytest
     "task, legend_prefix",
     [("regression", "Split"), ("multioutput_regression", "Output")],
 )
-def test_legend(pyplot, task, legend_prefix, request):
+def test_legend(task, legend_prefix, request):
     """Check the legend of the prediction error plot with cross-validation."""
     figure, _ = request.getfixturevalue(f"cross_validation_reports_{task}_figure_axes")
     legend = figure.axes[len(figure.axes) // 2].get_legend()
@@ -22,7 +22,7 @@ def test_legend(pyplot, task, legend_prefix, request):
     "task, legend_prefix",
     [("regression", "Split"), ("multioutput_regression", "Output")],
 )
-def test_legend_actual_vs_predicted(pyplot, task, legend_prefix, request):
+def test_legend_actual_vs_predicted(task, legend_prefix, request):
     """Check the legend when kind is actual_vs_predicted."""
     report = request.getfixturevalue(f"cross_validation_reports_{task}")[0]
     display = report.metrics.prediction_error()
@@ -43,7 +43,7 @@ def test_legend_actual_vs_predicted(pyplot, task, legend_prefix, request):
         ("multioutput_regression", ["auto", "output", "split", "None"]),
     ],
 )
-def test_invalid_subplot_by(pyplot, task, valid_values, request):
+def test_invalid_subplot_by(task, valid_values, request):
     """Check that we raise a proper error message when passing an inappropriate
     value for the `subplot_by` argument.
     """
@@ -69,7 +69,7 @@ def test_invalid_subplot_by(pyplot, task, valid_values, request):
         ),
     ],
 )
-def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     """Check that we can pass valid values to `subplot_by`."""
     report = request.getfixturevalue(fixture_name)[0]
     display = report.metrics.prediction_error()

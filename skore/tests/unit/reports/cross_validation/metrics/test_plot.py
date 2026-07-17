@@ -15,9 +15,7 @@ def test_plot_roc(forest_binary_classification_data):
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
-def test_display_binary_classification(
-    pyplot, forest_binary_classification_data, display
-):
+def test_display_binary_classification(forest_binary_classification_data, display):
     """General behaviour of the function creating display on binary classification."""
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
@@ -30,7 +28,7 @@ def test_display_binary_classification(
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
-def test_display_regression(pyplot, linear_regression_data, display):
+def test_display_regression(linear_regression_data, display):
     """General behaviour of the function creating display on regression."""
     estimator, X, y = linear_regression_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
@@ -44,7 +42,7 @@ def test_display_regression(pyplot, linear_regression_data, display):
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_display_binary_classification_pos_label(
-    pyplot, metric, forest_binary_classification_data
+    metric, forest_binary_classification_data
 ):
     """Check the behaviour of the display methods when `pos_label` needs to be set."""
     classifier, X, y = forest_binary_classification_data
