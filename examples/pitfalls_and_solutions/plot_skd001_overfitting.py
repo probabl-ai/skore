@@ -12,7 +12,7 @@ scores across the report's default metrics.
 This example walks through practical mitigations suggested in
 :ref:`automated_checks`:
 
-- regularize more strongly,
+- regularize more strongly to limit the expressiveness of the model,
 - improve feature engineering,
 - use better validation protocols or more data.
 
