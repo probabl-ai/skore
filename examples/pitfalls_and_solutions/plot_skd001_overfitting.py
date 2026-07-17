@@ -5,7 +5,7 @@ SKD001 — Potential overfitting
 ==============================
 
 When a model fits the training set much better than the hold-out test set, it may
-have memorized patterns of the training data instead of generalizing.
+have memorized patterns of that only exist into the training data instead of only focusing on pattern leading to generalization to the testing data as well.
 :ref:`SKD001 <skd001-overfitting>` flags this situation by comparing train and test
 scores across the report's default metrics.
 
