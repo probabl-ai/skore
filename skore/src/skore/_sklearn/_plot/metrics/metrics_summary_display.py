@@ -83,12 +83,18 @@ class MetricsSummaryDisplay(DisplayMixin):
             "comparison-cross-validation"}
         The type of report.
 
+    errors : list of tuple of (Metric, Exception)
+        Metric failures encountered while building the summary. Pass an empty
+        list when no metric failed.
+
     Attributes
     ----------
     summary : pandas.DataFrame
         The long-format dataframe storing the metric scores and metadata.
     report_type : ReportType
         The type of report.
+    errors : list of tuple of (Metric, Exception)
+        Deduplicated list of metric failures. Empty when no metric failed.
 
     See Also
     --------
@@ -103,13 +109,13 @@ class MetricsSummaryDisplay(DisplayMixin):
         self,
         summary: pd.DataFrame,
         report_type: ReportType,
-        errors: list[tuple[Metric, Exception]] | None = None,
+        errors: list[tuple[Metric, Exception]],
     ):
         self.summary = summary
         self.report_type = report_type
         # Remove duplicates while preserving order
         # Use repr because Metrics and Exceptions are not comparable
-        self.errors = list({repr(x): x for x in (errors or [])}.values())
+        self.errors = list({repr(x): x for x in errors}.values())
 
     @classmethod
     def _compute_data_for_display(
@@ -117,7 +123,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         rows: list[MetricsSummaryRow],
         *,
         report_type: ReportType,
-        errors: list[tuple[Metric, Exception]] | None = None,
+        errors: list[tuple[Metric, Exception]],
     ) -> MetricsSummaryDisplay:
         """Build a display from metric rows, stored as a long-format DataFrame."""
         summary = pd.DataFrame(rows)
