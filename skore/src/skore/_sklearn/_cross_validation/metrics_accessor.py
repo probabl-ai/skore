@@ -79,9 +79,9 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         ...     metric=["precision", "recall"],
         ... ).frame(favorability=True)
                    logisticregression_mean  logisticregression_std favorability
-        Metric
-        precision                  0.94...                 0.02...          (↗︎)
-        recall                     0.96...                 0.02...          (↗︎)
+        metric
+        precision                 0.94...                0.02...         (↗︎)
+        recall                    0.96...                0.02...         (↗︎)
         """
         if data_source == "both":
             train_summary = self._summarize_display(data_source="train", metric=metric)
@@ -222,16 +222,17 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
         >>> report.metrics.summarize(metric="mean_absolute_error").frame(
-        ...     verbose_name=True
+        ...     verbose_name=True, flat_index=False
         ... )
-                     LogisticRegression_mean  LogisticRegression_std
+        Estimator           LogisticRegression
+        Aggregate                         mean      std
         Metric
-        Mean Absolute Error                 0.05...               0.00...
+        Mean Absolute Error           0.05...  0.00...
         >>> report.metrics.mean_absolute_error()
-                             LogisticRegression
-                                          mean   std
+        Estimator           LogisticRegression
+        Aggregate                         mean      std
         Metric
-        Mean Absolute Error            0.05...   ...
+        Mean Absolute Error           0.05...  0.00...
         """
         for report in self._parent.reports_:
             report.metrics.add(
@@ -284,11 +285,6 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         pd.DataFrame
             The metric values.
 
-        Raises
-        ------
-        KeyError
-            If ``name`` is not in the metric registry.
-
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -298,11 +294,11 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.get("precision")
-                        LogisticRegression
-                                      mean       std
+        Estimator       LogisticRegression
+        Aggregate                     mean       std
         Metric    Label
-        Precision 0                0.93...   0.04...
-                  1                0.94...   0.02...
+        Precision 0               0.93...  0.04...
+                  1               0.94...  0.02...
         """
         return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
             aggregate=aggregate,
@@ -436,10 +432,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.score()
-                LogisticRegression
-                            mean      std
+        Estimator LogisticRegression
+        Aggregate               mean      std
         Metric
-        Score              0.94...  0.00...
+        Score               0.94...  0.00...
         """
         return self._metric("score", data_source=data_source).frame(
             aggregate=aggregate,
@@ -482,10 +478,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.accuracy()
-                LogisticRegression
-                            mean      std
+        Estimator LogisticRegression
+        Aggregate               mean      std
         Metric
-        Accuracy           0.94...  0.00...
+        Accuracy            0.94...  0.00...
         """
         return self._metric("accuracy", data_source=data_source).frame(
             aggregate=aggregate,
@@ -557,8 +553,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.precision()
-                LogisticRegression
-                              mean       std
+        Estimator       LogisticRegression
+        Aggregate                     mean       std
         Metric    Label
         Precision 0               0.93...  0.04...
                   1               0.94...  0.02...
@@ -636,8 +632,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.recall()
-             LogisticRegression
-                           mean       std
+        Estimator    LogisticRegression
+        Aggregate                  mean       std
         Metric Label
         Recall 0               0.91...  0.04...
                1               0.96...  0.02...
@@ -683,10 +679,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.brier_score()
-                    LogisticRegression
-                                mean       std
+        Estimator   LogisticRegression
+        Aggregate                 mean       std
         Metric
-        Brier score            0.04...  0.00...
+        Brier score           0.04...  0.00...
         """
         return self._metric("brier_score", data_source=data_source).frame(
             aggregate=aggregate,
@@ -764,10 +760,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.roc_auc()
-                LogisticRegression
-                            mean       std
+        Estimator LogisticRegression
+        Aggregate               mean       std
         Metric
-        ROC AUC           0.98...  0.00...
+        ROC AUC             0.98...  0.00...
         """
         return self._metric(
             "roc_auc", data_source=data_source, average=average, multi_class=multi_class
@@ -812,8 +808,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.metrics.log_loss()
-                LogisticRegression
-                            mean       std
+        Estimator LogisticRegression
+        Aggregate               mean       std
         Metric
         Log loss            0.14...  0.03...
         """
@@ -872,10 +868,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> regressor = Ridge()
         >>> report = evaluate(regressor, X, y, splitter=2)
         >>> report.metrics.r2()
-                Ridge
-                    mean       std
+        Estimator     Ridge
+        Aggregate      mean       std
         Metric
-        R²      0.37...  0.02...
+        R²         0.37...  0.02...
         """
         return self._metric(
             "r2", data_source=data_source, multioutput=multioutput
@@ -931,10 +927,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> regressor = Ridge()
         >>> report = evaluate(regressor, X, y, splitter=2)
         >>> report.metrics.rmse()
-                    Ridge
-                    mean       std
+        Estimator      Ridge
+        Aggregate       mean       std
         Metric
-        RMSE    60.7...  1.0...
+        RMSE       60.7...  1.0...
         """
         return self._metric(
             "rmse", data_source=data_source, multioutput=multioutput
@@ -991,10 +987,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> regressor = Ridge()
         >>> report = evaluate(regressor, X, y, splitter=2)
         >>> report.metrics.mae()
-                    Ridge
-                    mean       std
+        Estimator     Ridge
+        Aggregate      mean       std
         Metric
-        MAE     5...       ...
+        MAE        51...  1...
         """
         return self._metric(
             "mae", data_source=data_source, multioutput=multioutput
@@ -1051,10 +1047,10 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         >>> regressor = Ridge()
         >>> report = evaluate(regressor, X, y, splitter=2)
         >>> report.metrics.mape()
-                    Ridge
-                    mean       std
+        Estimator     Ridge
+        Aggregate      mean       std
         Metric
-        MAPE      0....      ...
+        MAPE       0.47...  0.00...
         """
         return self._metric(
             "mape", data_source=data_source, multioutput=multioutput

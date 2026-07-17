@@ -462,7 +462,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         >>> report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
         >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
-        [(50), (50)]
+        [(50,), (50,)]
         """
         if data_source not in ("train", "test"):
             raise ValueError(

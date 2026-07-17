@@ -622,7 +622,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> predictions = report.get_predictions(data_source="test")
         >>> predictions.shape
-        (114)
+        (114,)
         """
         pos_label = self.pos_label
         if (

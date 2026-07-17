@@ -95,31 +95,31 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
         >>> summary = report.metrics.summarize().frame(favorability=True)
         >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
-                    LogisticRegression Favorability
-        Metric
-        accuracy              0.94...          (↗︎)
-        precision             0.98...          (↗︎)
-        recall                0.92...          (↗︎)
-        roc_auc               0.99...          (↗︎)
-        log_loss              0.11...          (↘︎)
-        brier_score           0.03...          (↘︎)
+                     LogisticRegression favorability
+        metric
+        accuracy               0.94...         (↗︎)
+        precision              0.98...         (↗︎)
+        recall                 0.92...         (↗︎)
+        roc_auc                0.99...         (↗︎)
+        log_loss               0.11...         (↘︎)
+        brier_score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(metric="log_loss").frame(favorability=True)
-                 LogisticRegression Favorability
-        Metric
-        log_loss           0.11...          (↘︎)
+                  LogisticRegression favorability
+        metric
+        log_loss            0.11...         (↘︎)
         >>> summary = report.metrics.summarize(
         ...    data_source="both"
         ... ).frame(favorability=True)
         >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
-                    LogisticRegression (train)  LogisticRegression (test) Favorability
-        Metric
-        accuracy                      0.96...                    0.94...          (↗︎)
-        precision                     0.96...                    0.98...          (↗︎)
-        recall                        0.97...                    0.92...          (↗︎)
-        roc_auc                       0.99...                    0.99...          (↗︎)
-        log_loss                      0.08...                    0.11...          (↘︎)
-        brier_score                   0.02...                    0.03...          (↘︎)
+                     LogisticRegression (train)  LogisticRegression (test) favorability
+        metric
+        accuracy                       0.96...                    0.94...         (↗︎)
+        precision                      0.96...                    0.98...         (↗︎)
+        recall                         0.97...                    0.92...         (↗︎)
+        roc_auc                        0.99...                    0.99...         (↗︎)
+        log_loss                       0.08...                    0.11...         (↘︎)
+        brier_score                    0.02...                    0.03...         (↘︎)
         """
         if data_source == "both":
             train_summary = self._summarize_display(data_source="train", metric=metric)
@@ -319,7 +319,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
         >>> report.metrics.summarize(metric="mean_absolute_error").frame(
-        ...     verbose_name=True
+        ...     verbose_name=True, flat_index=False
         ... )
         Metric
         Mean Absolute Error    0.05...
