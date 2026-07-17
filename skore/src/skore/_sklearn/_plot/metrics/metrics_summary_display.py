@@ -93,8 +93,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         The long-format dataframe storing the metric scores and metadata.
     report_type : ReportType
         The type of report.
-    errors : list of tuple of (Metric, Exception)
-        Deduplicated list of metric failures. Empty when no metric failed.
 
     See Also
     --------
