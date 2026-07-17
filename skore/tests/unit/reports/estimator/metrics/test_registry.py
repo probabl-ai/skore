@@ -638,12 +638,7 @@ class TestMultiMetric:
         assert list(display.summary["label"]) == [pd.NA, np.int64(0), np.int64(1)]
 
     def test_preexisting_metric_name(self, binary_classification_report):
-        """A multimetric scorer's submetric clashing with a built-in is renamed.
-
-        The submetric and the built-in have distinct fingerprints (the multimetric
-        scorer's parent fingerprint vs. ``None`` for the built-in), so the display
-        disambiguates them as ``Accuracy_1`` (custom) and ``Accuracy_2`` (built-in).
-        """
+        """A multimetric scorer submetric can share a built-in verbose name."""
         report = binary_classification_report
 
         def multimetric_scorer(y_true, y_pred):
@@ -654,19 +649,11 @@ class TestMultiMetric:
 
         display = report.metrics.summarize()
 
-        assert "fingerprint" in display.summary.columns
         assert display.summary["verbose_name"].tolist().count("Accuracy") == 2
 
         result = display.frame(flat_index=False, verbose_name=True)
         metric_names = result.index.get_level_values("Metric").tolist()
-        assert "Accuracy" not in metric_names
-        assert "Accuracy_1" in metric_names
-        assert "Accuracy_2" in metric_names
-
-        accuracy_1 = result[result.index.get_level_values("Metric") == "Accuracy_1"]
-        accuracy_2 = result[result.index.get_level_values("Metric") == "Accuracy_2"]
-        assert accuracy_1.iloc[0] == 1000
-        assert accuracy_2.iloc[0] == 1.0
+        assert metric_names.count("Accuracy") == 2
 
 
 class TestStringScorerNames:

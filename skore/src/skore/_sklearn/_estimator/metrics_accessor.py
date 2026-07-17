@@ -186,7 +186,6 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                 metric_rows = [
                     MetricRow(
                         metric_verbose_name=parsed_metric.verbose_name,
-                        fingerprint=None,
                         greater_is_better=parsed_metric.greater_is_better,
                         label=None,
                         average=None,
@@ -203,7 +202,6 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                     "estimator": self._parent.estimator_name_,
                     "data_source": data_source,
                     "greater_is_better": row["greater_is_better"],
-                    "fingerprint": row["fingerprint"],
                     "score": row["score"],
                     "label": row["label"],
                     "average": row["average"],
@@ -234,7 +232,6 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
                     "estimator": self._parent.estimator_name_,
                     "data_source": data_source,
                     "greater_is_better": row["greater_is_better"],
-                    "fingerprint": row["fingerprint"],
                     "score": row["score"],
                     "label": row["label"],
                     "average": row["average"],

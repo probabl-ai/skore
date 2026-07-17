@@ -29,6 +29,7 @@ from skore._plugins.hub.artifact.media import (
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report.report import ReportPayload
+from skore._plugins.hub.report.utils import select_exportable_summary_rows
 
 
 class EstimatorReportPayload(ReportPayload[EstimatorReport]):
@@ -82,10 +83,10 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         expose a toggle. For binary classification, only per-label rows are sent
         (``average`` is always ``None``). Non-scalar values (``NaN``) are ignored.
         """
-        data = self.report.metrics.summarize(data_source="both").summary
-        selected = data[data["score"].notna()]
-        if self.report._ml_task == "binary-classification":
-            selected = selected[selected["average"].isna()]
+        selected = select_exportable_summary_rows(
+            self.report.metrics.summarize(data_source="both").summary,
+            ml_task=self.report._ml_task,
+        )
 
         return [
             Metric(

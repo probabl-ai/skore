@@ -43,6 +43,7 @@ from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
+from skore._plugins.hub.report.utils import select_exportable_summary_rows
 
 SPLITTING_STRATEGY_MAX_INDEX_COUNT = 10_000
 SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
@@ -384,10 +385,10 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         sent (``average`` is always ``None``). Only non-scalar values (``NaN``)
         are ignored.
         """
-        data = self.report.metrics.summarize(data_source="both").summary
-        selected = data[data["score"].notna()]
-        if self.report._ml_task == "binary-classification":
-            selected = selected[selected["average"].isna()]
+        selected = select_exportable_summary_rows(
+            self.report.metrics.summarize(data_source="both").summary,
+            ml_task=self.report._ml_task,
+        )
 
         aggregated = (
             selected.groupby(

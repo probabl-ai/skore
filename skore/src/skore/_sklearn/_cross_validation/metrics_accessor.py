@@ -384,7 +384,6 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                         "data_source": data_source,
                         "split": split_idx,
                         "greater_is_better": row["greater_is_better"],
-                        "fingerprint": row["fingerprint"],
                         "score": row["score"],
                         "label": row["label"],
                         "average": row["average"],

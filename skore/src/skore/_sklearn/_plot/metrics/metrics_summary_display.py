@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import warnings
-from collections import defaultdict
 from collections.abc import Sequence
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
@@ -45,9 +44,6 @@ class MetricsSummaryRow(TypedDict):
         Dataset split used to compute the metric.
     greater_is_better : bool or None
         Whether higher or lower values are better.
-    fingerprint : str or None
-        Identifier disambiguating distinct custom metrics that share
-        ``verbose_name``. ``None`` for built-in metrics.
     score : Any
         Scalar metric value stored in the row.
     label : label, default=None
@@ -65,7 +61,6 @@ class MetricsSummaryRow(TypedDict):
     estimator: str
     data_source: DataSource
     greater_is_better: bool | None
-    fingerprint: str | None
     score: Any
     label: PositiveLabel | None
     average: str | None
@@ -170,59 +165,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         )
         errors = [error for display in child_displays for error in display.errors]
         return MetricsSummaryDisplay(summary, report_type=report_type, errors=errors)
-
-    @staticmethod
-    def _resolve_fingerprints(data: pd.DataFrame) -> pd.DataFrame:
-        """Disambiguate metric names across distinct fingerprints.
-
-        When several rows share a name (``name`` or ``verbose_name``) but have
-        different fingerprints, they are renamed ``{name}_1``, ``{name}_2``, ...
-        in the order they first appear. Built-in metrics use a ``None``
-        fingerprint; a custom metric that reuses a built-in name is still
-        disambiguated because its fingerprint differs from ``None``.
-
-        Both ``name`` and ``verbose_name`` are disambiguated independently, so
-        whichever column :meth:`frame` displays is unambiguous.
-
-        Suffixes skip over any name already present in the column, so we don't
-        produce a collision if a metric happens to already be called e.g.
-        ``"Metric_1"``.
-        """
-        data = data.copy()
-
-        for name_col in ("name", "verbose_name"):
-            fingerprints_per_name = defaultdict(list)
-            for name, fingerprint in (
-                data[[name_col, "fingerprint"]]
-                .drop_duplicates()
-                .itertuples(index=False, name=None)
-            ):
-                fingerprints_per_name[name].append(fingerprint)
-
-            renaming = {}
-            existing = set(data[name_col])
-            for name, fingerprints in fingerprints_per_name.items():
-                if len(fingerprints) < 2:
-                    continue
-                i = 0
-                for fingerprint in fingerprints:
-                    while True:
-                        i += 1
-                        candidate = f"{name}_{i}"
-                        if candidate not in existing:
-                            break
-                    existing.add(candidate)
-                    renaming[(name, fingerprint)] = candidate
-
-            for (name, fingerprint), new_name in renaming.items():
-                fp_match = (
-                    data["fingerprint"].isna()
-                    if pd.isna(fingerprint)
-                    else data["fingerprint"] == fingerprint
-                )
-                data.loc[(data[name_col] == name) & fp_match, name_col] = new_name
-
-        return data
 
     def _pivot_estimator(
         self,
@@ -499,7 +441,7 @@ class MetricsSummaryDisplay(DisplayMixin):
                 "or set verbose_name=False."
             )
 
-        summary = self._resolve_fingerprints(self.summary)
+        summary = self.summary
         metric_col = "verbose_name" if verbose_name else "name"
 
         dimension_cols = [
