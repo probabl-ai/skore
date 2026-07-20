@@ -78,10 +78,12 @@ How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - regularize more strongly,
+- use early stopping for iterative models,
 - improve feature engineering,
 - use better validation protocols or more data.
 
-Check out the :ref:`example for this check <example_skd001_overfitting>`.
+Check out the
+:ref:`example for this check <example_skd001_skd002_overfitting_underfitting>`.
 
 
 .. _skd002-underfitting:
@@ -119,6 +121,9 @@ How to reduce the risk
 - tune hyperparameters (see :ref:`SKD015 <skd015-hyperparameters-worth-tuning>`
   and :ref:`SKD016 <skd016-estimator-not-tuned>`),
 - collect richer data if possible.
+
+Check out the
+:ref:`example for this check <example_skd001_skd002_overfitting_underfitting>`.
 
 
 .. _skd003-inconsistent-performance:
