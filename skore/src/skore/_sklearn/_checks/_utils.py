@@ -7,10 +7,12 @@ from typing import TYPE_CHECKING, Literal, cast
 import narwhals as nw
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
+from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import EstimatorLike, PositiveLabel
 from skore._utils._dataframe import (
     UserDataFrame,
@@ -277,9 +279,18 @@ def get_preprocessed_X(
         else:
             data = report.X_test
 
-    preprocessor, _ = split_preprocessor_estimator(get_fitted_estimator(report))
+    preprocessor, predictor = split_preprocessor_estimator(get_fitted_estimator(report))
     if preprocessor is not None and len(preprocessor.steps) > 0:
         data = preprocessor.transform(data)
+        if not nw.dependencies.is_into_dataframe(data) and not sp.issparse(data):
+            data = pd.DataFrame(
+                data,
+                columns=_get_feature_names(
+                    predictor,
+                    transformer=preprocessor,
+                    n_features=np.shape(data)[1],
+                ),
+            )
 
     try:
         return _normalize_X_as_dataframe(data)
