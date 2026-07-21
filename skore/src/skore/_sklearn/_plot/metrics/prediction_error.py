@@ -329,9 +329,9 @@ class PredictionErrorDisplay(DisplayMixin):
             handles, labels = self._format_relplot_legend(
                 facet._legend.legend_handles,
                 [t.get_text() for t in facet._legend.get_texts()],
-                hue,
-                style,
-                plot_data,
+                huehue,
+                style=style,
+                plot_data=plot_data,
             )
             facet._legend.remove()
         handles.append(
