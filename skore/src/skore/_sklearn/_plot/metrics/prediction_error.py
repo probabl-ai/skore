@@ -15,6 +15,7 @@ from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
+    _reorder_categoricals_by_appearance,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import DataSource, MLTask, ReportType
@@ -260,6 +261,7 @@ class PredictionErrorDisplay(DisplayMixin):
 
         plot_data = self.frame()
         col, hue, style = self._get_plot_columns(subplot_by)
+        plot_data = _reorder_categoricals_by_appearance(plot_data, [col, hue, style])
         relplot_kwargs = {
             "col": col,
             "hue": hue,
