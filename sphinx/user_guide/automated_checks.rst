@@ -436,6 +436,8 @@ How to reduce the risk
 - profile fit time to understand the dominant cost,
 - check that the input pipeline (encoding, scaling) is not the actual bottleneck.
 
+Check out the :ref:`example for this check <example_skd010_slower_than_baseline>`.
+
 
 .. _skd011-golden-feature:
 
