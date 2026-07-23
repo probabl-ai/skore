@@ -10,6 +10,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import train_test_split
 
+import skore
 from skore import CrossValidationReport, EstimatorReport
 from skore._plugins.local import Project
 
@@ -153,8 +154,6 @@ def test_find_workspace(tmp_path, monkeypatch):
     pwd.mkdir(parents=True)
     monkeypatch.chdir(pwd)
 
-    # TODO: check git repo (if we decide to keep that part)
-
     # When there is no local workspace and no env variable, use pwd
     assert Project("regression").path == pwd / "skore" / "projects" / "regression"
     shutil.rmtree(pwd / "skore")
@@ -164,6 +163,12 @@ def test_find_workspace(tmp_path, monkeypatch):
 
     # When there is a workspace in a parent of the current directory, prefer
     # that to the global one
+    assert Project("regression").path == local / "skore" / "projects" / "regression"
+    shutil.rmtree(local / "skore")
+
+    monkeypatch.setattr(skore._plugins.local.project, "git_repo_root", lambda: local)
+    # When we are in a git repo, create the workspace at the root of the repo
+    # if no skore dir found
     assert Project("regression").path == local / "skore" / "projects" / "regression"
 
     monkeypatch.setenv("SKORE_WORKSPACE", str(env))
