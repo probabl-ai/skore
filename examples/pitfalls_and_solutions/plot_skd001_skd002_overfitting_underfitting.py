@@ -1,26 +1,27 @@
 """
 .. _example_skd001_skd002_overfitting_underfitting:
 
-SKD001 & SKD002 — Overfitting and underfitting
+SKD001 & SKD002 - Overfitting and underfitting
 ==============================================
 
 :ref:`SKD002 <skd002-underfitting>` and :ref:`SKD001 <skd001-overfitting>`
 describe opposite ends of the same problem: model *expressiveness*.
 
-- Too little expressiveness: train and test scores stay close to a weak
-  learner / dummy baseline (SKD002).
+- Too little expressiveness: train and test scores are close to those of a
+  model that guesses randomly (often called a dummy model) (SKD002).
 - Too much expressiveness: train scores pull far ahead of test scores
   (SKD001).
 
-The correct the model beats that baseline on both train and test, without
-memorizing the training set. This notebook walks that path while showing
-different mitigations
+A performant model learns from the training data without memorizing its
+specificities, so that learned knowledge can be generalized to new data. This
+notebook walks the underfitting to overfitting path while showing different
+mitigations techniques:
 
-- capacity (model family / complexity)
-- features
-- regularization
-- early stopping
-- more data
+- tweaking model capacity (model family / complexity)
+- adding and removing features
+- tuning regularization
+- using early stopping
+- using more data
 
 We use California housing (median house value in k\$). Half of the rows feed
 the main walkthrough; the other half is reserved to show the effect of adding
@@ -60,7 +61,8 @@ TableReport(X)
 TableReport(y)
 
 # %%
-# We use the same split for every :func:`~skore.evaluate` call.
+# We use the same split for every :func:`~skore.evaluate` call with a fixed
+# seed, so that we are sure that we are comparing models on the same test data.
 
 from skore import TrainTestSplit, compare, evaluate
 
@@ -85,7 +87,7 @@ report_underfit = evaluate(
 report_underfit.metrics.summarize(data_source="both").frame()
 
 # %%
-# SKD002 should be present.
+# For a model that learns so little, SKD002 fires.
 
 report_underfit.checks.summarize(fast_mode=True)
 
@@ -96,7 +98,7 @@ report_underfit.checks.summarize(fast_mode=True)
 # Moving away from underfitting means giving the model enough expressiveness to
 # use the inputs. Dropping to a default :class:`~sklearn.linear_model.Ridge`
 # (mild regularization) already learns useful weights on each feature and is
-# usually enough to clear SKD002 on this table.
+# enough to clear SKD002 on this table.
 
 report_ridge = evaluate(Ridge(), X=X, y=y, splitter=splitter)
 report_ridge.metrics.summarize(data_source="both").frame()
@@ -147,25 +149,112 @@ report_ridge_fe.metrics.summarize(data_source="both").frame()
 report_ridge_fe.checks.summarize(fast_mode=True)
 
 # %%
-# Overfitting: SKD001 fires
-# =========================
-#
-# To see the other end of the continuum on the **same** split, fit a default
-# :class:`~sklearn.ensemble.RandomForestRegressor`. Unrestricted leaves can
-# memorize training idiosyncrasies: train metrics look excellent, test metrics
-# lag, and SKD001 flags the gap.
+# Feature selection is the other direction: drop columns that do not carry
+# enough signal so the model has less room to memorize noise. We fit a
+# default random forest on the existing housing columns, then run
+# :class:`~sklearn.feature_selection.RFECV` with permutation importance as the
+# ranking signal. RFECV recursively removes the weakest feature(s) and keeps
+# the subset size with the best cross-validated score.
 
+from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.feature_selection import RFECV
+from sklearn.inspection import permutation_importance
+from sklearn.model_selection import KFold
 
-report_rf = evaluate(
+report_rf_all_features = evaluate(
     RandomForestRegressor(random_state=42),
     X=X,
     y=y,
     splitter=splitter,
 )
-report_rf.metrics.summarize(data_source="both").frame()
+report_rf_all_features.metrics.summarize(data_source="both").frame()
 
 # %%
+# A small wrapper fits the forest, then stores permutation importances so
+# RFECV can drop the least useful column at each step.
+
+
+class PermutationImportanceEstimator(RegressorMixin, BaseEstimator):
+    def __init__(self, n_estimators=20, n_repeats=1, random_state=42, n_jobs=4):
+        self.n_estimators = n_estimators
+        self.n_repeats = n_repeats
+        self.random_state = random_state
+        self.n_jobs = n_jobs
+
+    def fit(self, X, y):
+        self.estimator_ = RandomForestRegressor(
+            n_estimators=self.n_estimators,
+            max_depth=10,
+            random_state=self.random_state,
+            n_jobs=1,
+        )
+        self.estimator_.fit(X, y)
+        self.feature_importances_ = permutation_importance(
+            self.estimator_,
+            X,
+            y,
+            n_repeats=self.n_repeats,
+            random_state=self.random_state,
+            n_jobs=self.n_jobs,
+        ).importances_mean
+        return self
+
+    def predict(self, X):
+        return self.estimator_.predict(X)
+
+
+# Subsample for the selector so the gallery stays fast; apply the chosen
+# columns on the full table afterward.
+X_sel_fit = X.sample(3_000, random_state=42)
+y_sel_fit = y.loc[X_sel_fit.index]
+
+selector = RFECV(
+    estimator=PermutationImportanceEstimator(random_state=42, n_jobs=4),
+    step=1,
+    cv=KFold(2, shuffle=True, random_state=42),
+    scoring="r2",
+    n_jobs=4,
+)
+selector.fit(X_sel_fit, y_sel_fit)
+
+selected_columns = list(X.columns[selector.support_])
+dropped_columns = list(X.columns[~selector.support_])
+selected_columns, dropped_columns
+
+# %%
+X_selected = X.loc[:, selected_columns]
+
+report_rf_selected = evaluate(
+    RandomForestRegressor(random_state=42),
+    X=X_selected,
+    y=y,
+    splitter=splitter,
+)
+
+compare(
+    {
+        "rf_all_features": report_rf_all_features,
+        "rf_after_rfecv": report_rf_selected,
+    }
+).metrics.summarize(data_source="both").frame()
+
+# %%
+# After RFECV, test metrics move up a little and the train/test gap narrows:
+# the forest focuses on the stronger housing features. Selection helps, but
+# further capacity control is still useful if SKD001 remains.
+
+report_rf_selected.checks.summarize(fast_mode=True)
+
+# %%
+# Overfitting: SKD001 fires
+# =========================
+#
+# The full-feature forest above already shows the other end of the continuum:
+# unrestricted leaves can memorize training idiosyncrasies, so train metrics
+# look excellent, test metrics lag, and SKD001 flags the gap.
+
+report_rf = report_rf_all_features
 report_rf.checks.summarize(fast_mode=True)
 
 # %%
@@ -203,10 +292,11 @@ report_rf_reg.checks.summarize(fast_mode=True)
 # Early stopping
 # ==============
 #
-# For iterative learners, early stopping is another way to limit expressiveness,
-# but it does not require a hyperparameter search. Hold out a validation set,
-# monitor a metric, and stop when that metric stops improving — further
-# iterations are assumed to overfit. See scikit-learn's example on
+# For iterative learners, early stopping is another way to limit expressiveness
+# that does not require a hyperparameter search. Hold out a validation set,
+# monitor a metric, and stop when that metric stops improving. Further
+# iterations are assumed to overfit. Either pass a validation set to ``.fit``
+# or use the ``validation_fraction`` parameter. See scikit-learn's example on
 # `gradient boosting with early stopping
 # <https://scikit-learn.org/stable/auto_examples/ensemble/plot_gradient_boosting_early_stopping.html>`_.
 
@@ -298,7 +388,8 @@ compare(
 # model beats a weak baseline; then regularize, stop early, and add data if
 # train scores have a noticeable gap compared to the test scores.
 #
-# Feature engineering and hyperparameter choices sit in the middle of that path:
-# they can rescue an underfit model or, if pushed, create an overfit one. In
-# practice you combine several of these levers and re-run the checks until the
-# results are satisfying enough.
+# Feature engineering and feature selection are the middle steps:
+# adding informative columns can rescue an underfit model; dropping weaker
+# ones with RFECV can shrink an overfit gap. Hyperparameter choices play a
+# similar dual role. In practice you combine several of these levers and
+# re-run the checks until the results are satisfying enough.
