@@ -432,7 +432,7 @@ class PredictionErrorDisplay(DisplayMixin):
         formatted_handles = []
         formatted_labels = []
         for handle, label in zip(handles, labels, strict=True):
-            if label in hue or label in style:
+            if (hue is not None and label == hue) or (style is not None and label == style):
                 continue
             if hue == "split" and label in hue_values:
                 label = f"Split #{label}"

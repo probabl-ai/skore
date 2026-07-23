@@ -114,7 +114,7 @@ def test_source_both(task, request):
     legend = fig.axes[len(fig.axes) // 2].get_legend()
     assert legend is not None
     legend_texts = [t.get_text() for t in legend.get_texts()]
-    assert len(legend_texts) == 3 if task == "regression" else 5
+    assert len(legend_texts) == (3 if task == "regression" else 5)
     assert legend_texts[-1] == "Perfect predictions"
     assert "train" in legend_texts
     assert "test" in legend_texts
