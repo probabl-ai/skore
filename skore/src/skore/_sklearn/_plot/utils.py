@@ -267,7 +267,6 @@ def _reorder_categoricals_by_appearance(
     Reordering the categories to the order of appearance makes seaborn draw in that
     same order, keeping curves and legend in sync.
     """
-    plot_data = plot_data.copy()
     for column in columns:
         if column is None:
             continue

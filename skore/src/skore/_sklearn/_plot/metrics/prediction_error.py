@@ -259,7 +259,7 @@ class PredictionErrorDisplay(DisplayMixin):
             ]
             y_line = [0, 0]
 
-        plot_data = self.frame()
+        plot_data = self.frame().copy() # Ensure a fresh DataFrame since `frame()` returns a slice
         col, hue, style = self._get_plot_columns(subplot_by)
         plot_data = _reorder_categoricals_by_appearance(plot_data, [col, hue, style])
         relplot_kwargs = {
