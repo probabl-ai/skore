@@ -260,7 +260,7 @@ pathspec==1.1.1
     # via mypy
 pexpect==4.9.0
     # via ipython
-pillow==12.2.0
+pillow==12.3.0
     # via matplotlib
 platformdirs==4.10.0
     # via
