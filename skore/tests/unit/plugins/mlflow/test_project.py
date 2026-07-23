@@ -206,6 +206,7 @@ class TestProject:
         project.put("<key>", reg_report)
 
         summary = project.summarize()
+        assert summary[0]["report_id"] == str(reg_report.id)
         report = project.get(summary[0]["id"])
         predictions = report.estimator_.predict(reg_report.X_test)
         expected_predictions = reg_report.estimator_.predict(reg_report.X_test)

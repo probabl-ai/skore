@@ -115,6 +115,11 @@ def test_put_get_summarize(tmp_path, regression, regression_dummy, cv_regression
     )
     summary = project.summarize()
     assert len(summary) == 3
+    assert {item["report_id"] for item in summary} == {
+        str(regression.id),
+        str(regression_dummy.id),
+        str(cv_regression.id),
+    }
     assert Path(next(iter(summary))["local_path"]).is_relative_to(tmp_path)
 
 

@@ -38,6 +38,7 @@ dependencies = [
   "scikit-learn",
   "seaborn",
   "skrub>=0.10",
+  "uuid6>=2025.0.0; python_version < '3.14'",
 ]
 
 [project.optional-dependencies]

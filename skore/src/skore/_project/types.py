@@ -8,6 +8,7 @@ class ReportMetadata(TypedDict):
     """Metadata and metrics for a single persisted report."""
 
     id: str
+    report_id: str | None
     key: str
     date: str
     learner: str

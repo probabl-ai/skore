@@ -382,7 +382,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         report = cls.__new__(cls)
 
-        report._metadata = state["metadata"]
+        report._metadata = report._normalize_metadata(state["metadata"])
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
         report._fit_time = state["fit_time"]

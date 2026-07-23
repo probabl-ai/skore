@@ -354,7 +354,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         report = cls.__new__(cls)
 
-        report._metadata = state["metadata"]
+        report._metadata = report._normalize_metadata(state["metadata"])
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
         report._pos_label = state["pos_label"]

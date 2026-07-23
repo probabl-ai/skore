@@ -1,6 +1,7 @@
 import re
 from copy import deepcopy
 from io import BytesIO
+from uuid import UUID, uuid4
 
 import joblib
 import numpy as np
@@ -567,11 +568,50 @@ def test_from_dict_bypasses_init_and_restores_state(
     assert restored.pos_label == report.pos_label
     assert restored._cache == report._cache
     assert restored.metrics.accuracy() == expected_accuracy
-
     # check new metrics can be computed, including custom metrics:
     restored.metrics.roc_auc()
     df = restored.metrics.summarize().frame(flat_index=False, verbose_name=True)
     assert "F1" in df.index.get_level_values("Metric").to_numpy()
+
+
+def test_new_report_id_is_uuid7(logistic_binary_classification_with_test):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
+
+    assert report.id.version == 7
+
+
+def test_from_dict_migrates_legacy_integer_report_id(
+    logistic_binary_classification_with_test,
+):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
+    state = report.to_dict()
+    legacy_id = uuid4()
+    state["metadata"]["id"] = legacy_id.int
+
+    restored = EstimatorReport.from_dict(state)
+
+    assert isinstance(restored.id, UUID)
+    assert restored.id == legacy_id
+    assert restored._hash == legacy_id.int
+
+
+def test_unpickle_migrates_legacy_direct_report_id(
+    logistic_binary_classification_with_test,
+):
+    estimator, X_test, y_test = logistic_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
+    legacy_id = uuid4()
+    state = report.__dict__.copy()
+    state.pop("_metadata")
+    state["id"] = legacy_id.int
+
+    restored = EstimatorReport.__new__(EstimatorReport)
+    restored.__setstate__(state)
+
+    assert restored.id == legacy_id
+    assert restored._hash == legacy_id.int
 
 
 def test_from_dict_rejects_unknown_version(logistic_binary_classification_with_test):

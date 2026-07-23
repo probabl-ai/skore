@@ -53,6 +53,7 @@ except ImportError:
 
 class Metadata(TypedDict):  # noqa: D101
     id: str
+    report_id: str | None
     key: str
     date: str
     learner: str
@@ -193,6 +194,7 @@ class Project:
                 {
                     "skore_status": "started",
                     "skore_version": version("skore"),
+                    "skore_report_id": str(report.id),
                     "report_type": report_type(report),
                     "ml_task": report.ml_task,
                     "learner": report.estimator_name_,
@@ -307,6 +309,7 @@ class Project:
 
         metadata = {
             "id": run.info.run_id,
+            "report_id": tags.get("skore_report_id"),
             "key": run.info.run_name,
             "date": format_date(run.info.start_time),
             "report_type": report_type,

@@ -143,6 +143,7 @@ def _write_metadata(
     name: str | None = None,
 ) -> None:
     metadata = report._metadata | {
+        "report_id": str(report.id),
         "ml_task": report._ml_task,
         "learner": repr(report.estimator_),
     }

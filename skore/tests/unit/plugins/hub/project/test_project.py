@@ -516,6 +516,7 @@ class TestProject:
                                 "urn": "skore:report:estimator:<report_id_0>",
                                 "type": "estimator",
                                 "id": "<report_id_0>",
+                                "report_id": "<report_id_0>",
                                 "key": "<key>",
                                 "ml_task": "<ml_task>",
                                 "estimator_class_name": "<estimator_class_name>",
@@ -534,6 +535,7 @@ class TestProject:
                                 "urn": "skore:report:estimator:<report_id_1>",
                                 "type": "estimator",
                                 "id": "<report_id_1>",
+                                "report_id": "<report_id_1>",
                                 "key": "<key>",
                                 "ml_task": "<ml_task>",
                                 "estimator_class_name": "<estimator_class_name>",
@@ -556,6 +558,7 @@ class TestProject:
                                 "urn": "skore:report:cross-validation:<report_id_2>",
                                 "type": "cross-validation",
                                 "id": "<report_id_2>",
+                                "report_id": "<report_id_2>",
                                 "key": "<key>",
                                 "ml_task": "<ml_task>",
                                 "estimator_class_name": "<estimator_class_name>",
@@ -594,6 +597,7 @@ class TestProject:
         assert summary == [
             {
                 "id": "skore:report:estimator:<report_id_0>",
+                "report_id": "<report_id_0>",
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -618,6 +622,7 @@ class TestProject:
             },
             {
                 "id": "skore:report:estimator:<report_id_1>",
+                "report_id": "<report_id_1>",
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
@@ -642,6 +647,7 @@ class TestProject:
             },
             {
                 "id": "skore:report:cross-validation:<report_id_2>",
+                "report_id": "<report_id_2>",
                 "key": "<key>",
                 "date": nowstr,
                 "learner": "<estimator_class_name>",
