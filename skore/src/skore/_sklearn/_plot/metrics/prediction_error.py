@@ -4,6 +4,7 @@ from typing import Literal
 
 import numpy as np
 import seaborn as sns
+from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from numpy.typing import ArrayLike
@@ -259,7 +260,9 @@ class PredictionErrorDisplay(DisplayMixin):
             ]
             y_line = [0, 0]
 
-        plot_data = self.frame().copy() # Ensure a fresh DataFrame since `frame()` returns a slice
+        plot_data = (
+            self.frame().copy()
+        )  # Ensure a fresh DataFrame since `frame()` returns a slice
         col, hue, style = self._get_plot_columns(subplot_by)
         plot_data = _reorder_categoricals_by_appearance(plot_data, [col, hue, style])
         relplot_kwargs = {
@@ -323,8 +326,8 @@ class PredictionErrorDisplay(DisplayMixin):
         # Add the perfect model line to the legend
         # We retrieve the legend elements created by seaborn, add the perfect model line
         # and create a new legend manually.
-        handles = []
-        labels = []
+        handles: list[Artist] = []
+        labels: list[str] = []
         if facet._legend is not None:
             handles, labels = self._format_relplot_legend(
                 facet._legend.legend_handles,
@@ -416,13 +419,13 @@ class PredictionErrorDisplay(DisplayMixin):
 
     @staticmethod
     def _format_relplot_legend(
-        handles,
+        handles: list[Artist],
         labels: list[str],
         *,
         hue: str | None,
         style: str | None,
         plot_data: DataFrame,
-    ) -> tuple[list, list[str]]:
+    ) -> tuple[list[Artist], list[str]]:
         """Filter seaborn legend entries and format hue labels."""
         hue_values = (
             {str(value) for value in plot_data[hue].unique()}
@@ -432,7 +435,9 @@ class PredictionErrorDisplay(DisplayMixin):
         formatted_handles = []
         formatted_labels = []
         for handle, label in zip(handles, labels, strict=True):
-            if (hue is not None and label == hue) or (style is not None and label == style):
+            if (hue is not None and label == hue) or (
+                style is not None and label == style
+            ):
                 continue
             if hue == "split" and label in hue_values:
                 label = f"Split #{label}"
