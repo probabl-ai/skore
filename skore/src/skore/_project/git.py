@@ -1,6 +1,7 @@
 import functools
 import shutil
 import subprocess
+from pathlib import Path
 
 
 def git_available() -> bool:
@@ -95,16 +96,11 @@ def git_commit() -> str | None:
 
 
 @functools.cache
-def git_repo_root() -> str | None:
+def git_repo_root() -> Path | None:
     """Get the root of the repository if we are in one, otherwise None."""
-    try:
-        result = subprocess.run(
-            ["git", "rev-parse", "--show-toplevel"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-    except subprocess.CalledProcessError:
-        return None
-    path = result.stdout.strip()
-    return path or None
+    cmd = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+    )
+    return ((not cmd.returncode) and Path(cmd.stdout.strip())) or None
