@@ -156,17 +156,15 @@ def test_find_workspace(tmp_path, monkeypatch):
     # TODO: check git repo (if we decide to keep that part)
 
     # When there is no local workspace and no env variable, use pwd
-    assert Project("regression").path == pwd / "skore_data" / "projects" / "regression"
-    shutil.rmtree(pwd / "skore_data")
+    assert Project("regression").path == pwd / "skore" / "projects" / "regression"
+    shutil.rmtree(pwd / "skore")
 
     # Create a local workspace in a parent directory of pwd
-    Project("abc", workspace=local / "skore_data")
+    Project("abc", workspace=local / "skore")
 
     # When there is a workspace in a parent of the current directory, prefer
     # that to the global one
-    assert (
-        Project("regression").path == local / "skore_data" / "projects" / "regression"
-    )
+    assert Project("regression").path == local / "skore" / "projects" / "regression"
 
     monkeypatch.setenv("SKORE_WORKSPACE", str(env))
 

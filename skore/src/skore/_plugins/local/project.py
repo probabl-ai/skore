@@ -23,7 +23,7 @@ def _check_name(name: Any) -> str:
 
 def init_workspace(workspace_dir: str | Path | None = None) -> Path:
     workspace_dir = (
-        (Path(".") / "skore_data" if workspace_dir is None else Path(workspace_dir))
+        (Path(".") / "skore" if workspace_dir is None else Path(workspace_dir))
         .expanduser()
         .resolve()
     )
@@ -43,11 +43,11 @@ def find_workspace() -> Path:
 
     - if the SKORE_WORKSPACE environment variable is set, use that.
     - otherwise look in the current working directory and its parent for a
-      skore workspace: a directory named 'skore_data' containing a file named
+      skore workspace: a directory named 'skore' containing a file named
       '.SKORE_WORKSPACE'. If found, use that.
-    - otherwise if we are in a Git repository, create 'skore_data' at the root
+    - otherwise if we are in a Git repository, create 'skore' at the root
       of the repository.
-    - otherwise create 'skore_data' in the current working directory.
+    - otherwise create 'skore' in the current working directory.
 
     Returns
     -------
@@ -58,12 +58,12 @@ def find_workspace() -> Path:
         return init_workspace(Path(env_workspace).expanduser().resolve())
     start = Path(".").resolve()
     for candidate in [start, *start.parents[::-1]]:
-        workspace = candidate / "skore_data"
+        workspace = candidate / "skore"
         if workspace.is_dir() and (workspace / ".SKORE_WORKSPACE").exists():
             return init_workspace(workspace)
     if (repo := git_repo_root()) is not None:
-        return init_workspace(Path(repo) / "skore_data")
-    return init_workspace(Path(".") / "skore_data")
+        return init_workspace(Path(repo) / "skore")
+    return init_workspace(Path(".") / "skore")
 
 
 def _init_project_dir(workspace: Path, project_name: str) -> Path:
@@ -412,11 +412,11 @@ class Project:
 
             - if the SKORE_WORKSPACE environment variable is set, use that.
             - otherwise look in the current working directory and its parent for a
-              skore workspace: a directory named 'skore_data' containing a file named
+              skore workspace: a directory named 'skore' containing a file named
               '.SKORE_WORKSPACE'. If found, use that.
-            - otherwise if we are in a Git repository, create 'skore_data' at the root
+            - otherwise if we are in a Git repository, create 'skore' at the root
               of the repository.
-            - otherwise create 'skore_data' in the current working directory.
+            - otherwise create 'skore' in the current working directory.
 
     Attributes
     ----------
@@ -435,6 +435,11 @@ class Project:
         )
         self.path = _init_project_dir(self.workspace, self.name)
 
+    def __repr__(self) -> str:
+        return (
+            f"Project(name='{self.name}', mode='local', workspace='{self.workspace}')"
+        )
+
     def put(self, key: str, report: EstimatorReport | CrossValidationReport) -> Path:
         """
         Put a key-report pair to the local project.
@@ -448,6 +453,11 @@ class Project:
             The key to associate with ``report`` in the local project.
         report : skore.EstimatorReport | skore.CrossValidationReport
             The report to associate with ``key`` in the local project.
+
+        Returns
+        -------
+        Path
+            The path to the directory where the report was stored.
         """
         return _write_report(
             report, workspace=self.workspace, project_name=self.name, name=key
