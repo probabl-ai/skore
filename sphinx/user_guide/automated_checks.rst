@@ -549,6 +549,9 @@ How to reduce the risk
 - use a time-based splitter such as
   :class:`~sklearn.model_selection.TimeSeriesSplit` or similar.
 
+Check out the
+:ref:`example for this check <example_skd013_train_test_time_overlap>`.
+
 .. _skd014-hyperparams-at-search-edge:
 
 SKD014 - Hyperparameters at search edge
