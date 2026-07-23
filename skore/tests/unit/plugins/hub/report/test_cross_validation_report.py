@@ -1181,6 +1181,42 @@ class TestCrossValidationReportPayload:
         ]
 
     @mark.filterwarnings(
+        # `small_cv_binary_classification` has too few labels
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+    )
+    @mark.respx(assert_all_called=False)
+    def test_metrics_multimetric_scorer(self, project):
+        def my_multi_scorer(_estimator, _X, _y):
+            return {"score_a_1": 1.0, "score_b_1": 2.0, "score_c_1": 3.0}
+
+        X, y = make_classification(random_state=42, n_samples=10)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y, splitter=2)
+        report.metrics.add(my_multi_scorer)
+
+        payload = CrossValidationReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        custom = [
+            m
+            for m in payload.metrics
+            if m.name.startswith("score_") and m.name.endswith(("_mean", "_std"))
+        ]
+        assert {m.name for m in custom} == {
+            "score_a_1_mean",
+            "score_a_1_std",
+            "score_b_1_mean",
+            "score_b_1_std",
+            "score_c_1_mean",
+            "score_c_1_std",
+        }
+        # train + test × mean/std × 3 submetrics
+        assert len(custom) == 12
+        assert len({m.name for m in custom}) == 6
+
+    @mark.filterwarnings(
         # seaborn's use of pandas
         "ignore:The default of observed=False is deprecated.*:FutureWarning",
     )

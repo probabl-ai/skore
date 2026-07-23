@@ -2,7 +2,11 @@
 
 import pandas as pd
 
-from skore._plugins.hub.report.utils import select_exportable_summary_rows
+from skore._plugins.hub.report.utils import (
+    hub_metric_name,
+    multimetric_scalar_names,
+    select_exportable_summary_rows,
+)
 
 
 def _summary(rows: list[dict]) -> pd.DataFrame:
@@ -51,3 +55,66 @@ def test_multiclass_keeps_averaged_rows() -> None:
 
     assert len(selected) == 2
     assert selected["average"].tolist() == [None, "macro"]
+
+
+def test_multimetric_scalar_names_detects_dict_submetrics() -> None:
+    summary = _summary(
+        [
+            {
+                "name": "my_multi_scorer",
+                "verbose_name": "score_a",
+                "label": None,
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "my_multi_scorer",
+                "verbose_name": "score_b",
+                "label": None,
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "r2",
+                "verbose_name": "R²",
+                "label": None,
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "precision",
+                "verbose_name": "Precision",
+                "label": 0,
+                "output": None,
+                "average": None,
+            },
+            {
+                "name": "precision",
+                "verbose_name": "Precision",
+                "label": 1,
+                "output": None,
+                "average": None,
+            },
+        ]
+    )
+
+    assert multimetric_scalar_names(summary) == frozenset({"my_multi_scorer"})
+
+
+def test_hub_metric_name_uses_verbose_name_for_multimetric() -> None:
+    multimetric_names = frozenset({"my_multi_scorer"})
+
+    assert (
+        hub_metric_name(
+            {"name": "my_multi_scorer", "verbose_name": "score_a"},
+            multimetric_names=multimetric_names,
+        )
+        == "score_a"
+    )
+    assert (
+        hub_metric_name(
+            {"name": "r2", "verbose_name": "R²"},
+            multimetric_names=multimetric_names,
+        )
+        == "r2"
+    )

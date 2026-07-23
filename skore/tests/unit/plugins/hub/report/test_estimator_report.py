@@ -425,6 +425,32 @@ class TestEstimatorReportPayload:
             ),
         ]
 
+    @mark.respx(assert_all_called=False)
+    def test_metrics_multimetric_scorer(self, project):
+        def my_multi_scorer(_estimator, _X, _y):
+            return {"score_a_1": 1.0, "score_b_1": 2.0, "score_c_1": 3.0}
+
+        X, y = make_classification(random_state=42)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y)
+        report.metrics.add(my_multi_scorer)
+
+        payload = EstimatorReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        custom = [m for m in payload.metrics if m.name.startswith("score_")]
+        assert {m.name for m in custom} == {"score_a_1", "score_b_1", "score_c_1"}
+        assert {m.verbose_name for m in custom} == {
+            "score_a_1",
+            "score_b_1",
+            "score_c_1",
+        }
+        # train + test for each submetric
+        assert len(custom) == 6
+        assert len({m.name for m in custom}) == 3
+
     @mark.respx()
     def test_medias(self, payload):
         assert list(map(type, payload.medias)) == [

@@ -29,7 +29,11 @@ from skore._plugins.hub.artifact.media import (
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report.report import ReportPayload
-from skore._plugins.hub.report.utils import select_exportable_summary_rows
+from skore._plugins.hub.report.utils import (
+    hub_metric_name,
+    multimetric_scalar_names,
+    select_exportable_summary_rows,
+)
 
 
 class EstimatorReportPayload(ReportPayload[EstimatorReport]):
@@ -87,10 +91,11 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
             self.report.metrics.summarize(data_source="both").summary,
             ml_task=self.report._ml_task,
         )
+        multimetric_names = multimetric_scalar_names(selected)
 
         return [
             Metric(
-                name=row["name"],
+                name=hub_metric_name(row, multimetric_names=multimetric_names),
                 verbose_name=row["verbose_name"],
                 data_source=row["data_source"],
                 greater_is_better=row["greater_is_better"],
