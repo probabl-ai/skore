@@ -61,10 +61,10 @@ TableReport(X)
 TableReport(y)
 
 # %%
-# We use the same split for every :func:`~skore.evaluate` call with a fixed
-# seed, so that we are sure that we are comparing models on the same test data.
+# We use the same split for every model comparison, with a fixed seed, so that
+# we are sure that we are comparing models on the same test data.
 
-from skore import TrainTestSplit, compare, evaluate
+from skore import TrainTestSplit
 
 splitter = TrainTestSplit(test_size=0.2, random_state=42)
 
@@ -77,9 +77,10 @@ splitter = TrainTestSplit(test_size=0.2, random_state=42)
 # coefficients toward zero, so predictions stay close to a dummy baseline.
 
 from sklearn.linear_model import Ridge
+from skore import evaluate
 
 report_underfit = evaluate(
-    Ridge(alpha=1_000_000),
+    Ridge(alpha=1e6),
     X=X,
     y=y,
     splitter=splitter,
@@ -92,15 +93,15 @@ report_underfit.metrics.summarize(data_source="both").frame()
 report_underfit.checks.summarize(fast_mode=True)
 
 # %%
-# Increase model capacity
-# =======================
+# Increase model expressiveness
+# =============================
 #
 # Moving away from underfitting means giving the model enough expressiveness to
-# use the inputs. Dropping to a default :class:`~sklearn.linear_model.Ridge`
-# (mild regularization) already learns useful weights on each feature and is
-# enough to clear SKD002 on this table.
+# use the inputs. Dropping to a :class:`~sklearn.linear_model.Ridge` with a much
+# smaller ``alpha`` already learns useful weights on each feature and is enough
+# to clear SKD002 on this table.
 
-report_ridge = evaluate(Ridge(), X=X, y=y, splitter=splitter)
+report_ridge = evaluate(Ridge(alpha=1.0), X=X, y=y, splitter=splitter)
 report_ridge.metrics.summarize(data_source="both").frame()
 
 # %%
@@ -142,7 +143,7 @@ report_hgbr.checks.summarize(fast_mode=True)
 
 X_fe = X.assign(RoomsPerPerson=X["AveRooms"] / X["AveOccup"].clip(lower=0.1))
 
-report_ridge_fe = evaluate(Ridge(), X=X_fe, y=y, splitter=splitter)
+report_ridge_fe = evaluate(Ridge(alpha=1.0), X=X_fe, y=y, splitter=splitter)
 report_ridge_fe.metrics.summarize(data_source="both").frame()
 
 # %%
@@ -204,17 +205,18 @@ class PermutationImportanceEstimator(RegressorMixin, BaseEstimator):
         return self.estimator_.predict(X)
 
 
+# %%
 # Subsample for the selector so the gallery stays fast; apply the chosen
 # columns on the full table afterward.
 X_sel_fit = X.sample(3_000, random_state=42)
 y_sel_fit = y.loc[X_sel_fit.index]
 
 selector = RFECV(
-    estimator=PermutationImportanceEstimator(random_state=42, n_jobs=4),
+    estimator=PermutationImportanceEstimator(random_state=42),
     step=1,
     cv=KFold(2, shuffle=True, random_state=42),
     scoring="r2",
-    n_jobs=4,
+    n_jobs=None,
 )
 selector.fit(X_sel_fit, y_sel_fit)
 
@@ -223,6 +225,8 @@ dropped_columns = list(X.columns[~selector.support_])
 selected_columns, dropped_columns
 
 # %%
+from skore import compare
+
 X_selected = X.loc[:, selected_columns]
 
 report_rf_selected = evaluate(
@@ -273,12 +277,13 @@ report_rf.checks.summarize(fast_mode=True)
 # In this particular example, we are not implementing the search in order to
 # keep the execution time of the example short.
 
+model_rf_reg = RandomForestRegressor(
+    min_samples_leaf=20,
+    max_features=0.5,
+    random_state=42,
+)
 report_rf_reg = evaluate(
-    RandomForestRegressor(
-        min_samples_leaf=20,
-        max_features=0.5,
-        random_state=42,
-    ),
+    model_rf_reg,
     X=X,
     y=y,
     splitter=splitter,
@@ -300,14 +305,15 @@ report_rf_reg.checks.summarize(fast_mode=True)
 # `gradient boosting with early stopping
 # <https://scikit-learn.org/stable/auto_examples/ensemble/plot_gradient_boosting_early_stopping.html>`_.
 
+model_hgbr_es = HistGradientBoostingRegressor(
+    early_stopping=True,
+    validation_fraction=0.1,
+    n_iter_no_change=10,
+    max_iter=40,
+    random_state=42,
+)
 report_hgbr_es = evaluate(
-    HistGradientBoostingRegressor(
-        early_stopping=True,
-        validation_fraction=0.1,
-        n_iter_no_change=10,
-        max_iter=40,
-        random_state=42,
-    ),
+    model_hgbr_es,
     X=X,
     y=y,
     splitter=splitter,
@@ -326,7 +332,8 @@ report_hgbr_es.checks.summarize(fast_mode=True)
 # Keep one fixed test fold, fit on the original train fold, then refit after
 # concatenating the held-out half of the dataset. Use
 # :func:`~skore.evaluate` with ``splitter="prefit"`` once the estimator is
-# fitted.
+# fitted. A side-effect is that fit time is unavailable (skore did not time
+# ``.fit``), so that metric appears as NaN in the reported tables.
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42
