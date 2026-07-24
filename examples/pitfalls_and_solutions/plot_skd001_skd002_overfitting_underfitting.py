@@ -76,10 +76,10 @@ splitter = TrainTestSplit(test_size=0.2, random_state=42)
 # :class:`~sklearn.linear_model.Ridge` with a very large ``alpha`` shrinks
 # coefficients toward zero, so predictions stay close to a dummy baseline.
 
+import skore
 from sklearn.linear_model import Ridge
-from skore import evaluate
 
-report_underfit = evaluate(
+report_underfit = skore.evaluate(
     Ridge(alpha=1e6),
     X=X,
     y=y,
@@ -101,7 +101,7 @@ report_underfit.checks.summarize(fast_mode=True)
 # smaller ``alpha`` already learns useful weights on each feature and is enough
 # to clear SKD002 on this table.
 
-report_ridge = evaluate(Ridge(alpha=1.0), X=X, y=y, splitter=splitter)
+report_ridge = skore.evaluate(Ridge(alpha=1.0), X=X, y=y, splitter=splitter)
 report_ridge.metrics.summarize(data_source="both").frame()
 
 # %%
@@ -115,7 +115,7 @@ report_ridge.checks.summarize(fast_mode=True)
 
 from sklearn.ensemble import HistGradientBoostingRegressor
 
-report_hgbr = evaluate(
+report_hgbr = skore.evaluate(
     HistGradientBoostingRegressor(random_state=42),
     X=X,
     y=y,
@@ -143,7 +143,7 @@ report_hgbr.checks.summarize(fast_mode=True)
 
 X_fe = X.assign(RoomsPerPerson=X["AveRooms"] / X["AveOccup"].clip(lower=0.1))
 
-report_ridge_fe = evaluate(Ridge(alpha=1.0), X=X_fe, y=y, splitter=splitter)
+report_ridge_fe = skore.evaluate(Ridge(alpha=1.0), X=X_fe, y=y, splitter=splitter)
 report_ridge_fe.metrics.summarize(data_source="both").frame()
 
 # %%
@@ -163,7 +163,7 @@ from sklearn.feature_selection import RFECV
 from sklearn.inspection import permutation_importance
 from sklearn.model_selection import KFold
 
-report_rf_all_features = evaluate(
+report_rf_all_features = skore.evaluate(
     RandomForestRegressor(random_state=42),
     X=X,
     y=y,
@@ -225,18 +225,16 @@ dropped_columns = list(X.columns[~selector.support_])
 selected_columns, dropped_columns
 
 # %%
-from skore import compare
-
 X_selected = X.loc[:, selected_columns]
 
-report_rf_selected = evaluate(
+report_rf_selected = skore.evaluate(
     RandomForestRegressor(random_state=42),
     X=X_selected,
     y=y,
     splitter=splitter,
 )
 
-compare(
+skore.compare(
     {
         "rf_all_features": report_rf_all_features,
         "rf_after_rfecv": report_rf_selected,
@@ -282,7 +280,7 @@ model_rf_reg = RandomForestRegressor(
     max_features=0.5,
     random_state=42,
 )
-report_rf_reg = evaluate(
+report_rf_reg = skore.evaluate(
     model_rf_reg,
     X=X,
     y=y,
@@ -312,7 +310,7 @@ model_hgbr_es = HistGradientBoostingRegressor(
     max_iter=40,
     random_state=42,
 )
-report_hgbr_es = evaluate(
+report_hgbr_es = skore.evaluate(
     model_hgbr_es,
     X=X,
     y=y,
@@ -345,7 +343,7 @@ model_less = HistGradientBoostingRegressor(
     n_iter_no_change=10,
     random_state=42,
 ).fit(X_train, y_train)
-report_less = evaluate(model_less, X_test, y_test, splitter="prefit")
+report_less = skore.evaluate(model_less, X_test, y_test, splitter="prefit")
 
 model_more = HistGradientBoostingRegressor(
     early_stopping=True,
@@ -353,9 +351,9 @@ model_more = HistGradientBoostingRegressor(
     n_iter_no_change=10,
     random_state=42,
 ).fit(pd.concat([X_train, X_heldout]), pd.concat([y_train, y_heldout]))
-report_more = evaluate(model_more, X_test, y_test, splitter="prefit")
+report_more = skore.evaluate(model_more, X_test, y_test, splitter="prefit")
 
-compare(
+skore.compare(
     {"less_training_data": report_less, "more_training_data": report_more}
 ).metrics.summarize(data_source="test").frame()
 
@@ -374,7 +372,7 @@ compare(
 # capacity → controlled fit → more data. The same mitigations appear once; only
 # the *direction* (add expressiveness vs limit it) changes.
 
-compare(
+skore.compare(
     {
         "1_ridge_large_alpha": report_underfit,
         "2_ridge": report_ridge,
