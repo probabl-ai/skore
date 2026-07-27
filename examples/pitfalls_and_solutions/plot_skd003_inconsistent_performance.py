@@ -1,34 +1,46 @@
 """
 .. _example_skd003_inconsistent_performance:
 
-SKD003 — Inconsistent performance across splits
+SKD003 - Inconsistent performance across splits
 ===============================================
 
-This example demonstrates mitigations when check :ref:`SKD003 <skd003-inconsistent-performance>`
-fires on a :class:`~skore.CrossValidationReport`. The check compares per-fold test scores and flags
-splits whose metrics diverge sharply from the median — often a sign of a bad data batch, leakage, or
-an unlucky fold draw.
+:ref:`SKD003 <skd003-inconsistent-performance>` flags folds whose test metrics
+diverge sharply from the median on a :class:`~skore.CrossValidationReport`.
+With a proper splitter this is often a diagnostic check: the data have structure
+(groups, time, or a corrupted batch) that shuffled CV would hide.
 
-Mitigations from the :ref:`automated_checks` user guide:
+Realistic triggers:
 
-- use grouped cross-validation when observations share a group structure,
-- investigate whether the outlier split has a different distribution,
-- check for data leakage or temporal effects,
-- increase the size of the dataset to improve stability.
+- a contiguous bad batch of labels or features (mislabelled window, logging
+  bug, schema mix-up),
+- a much easier or harder group in one test fold under
+  :class:`~sklearn.model_selection.GroupKFold`,
+- temporal drift under :class:`~sklearn.model_selection.TimeSeriesSplit`
+  (e.g. an easy class that becomes rarer),
+- accidental fold imbalance from unshuffled
+  :class:`~sklearn.model_selection.KFold` when prevalence varies along
+  collection order (then shuffle or stratify if that will not appear in
+  production).
 
-We use a subsample of the Covertype classification task, restricted to its two most frequent forest
-cover types, and corrupt labels in a contiguous block of rows so one fold becomes an outlier. The
-goal is to restore homogeneous cross-validation scores once the root cause is addressed.
+When structure is real, shuffled CV overestimates performance. SKD003 under a
+proper split is a good sign. The structure may not be fully fixable: once
+understood, mute with :func:`~skore.configuration` and consider collecting more
+data on the hard regime.
+
+This notebook walks four beats: artificial corruption, a bad group in test,
+distribution shift in the last time-series fold, then ignoring SKD003 once the
+problem is understood. We focus on SKD003 throughout and pass
+``ignore=["SKD008"]`` so Covertype's constant one-hot soil columns do not
+drown the summary in correlated-feature noise.
 """
 
 # %%
 # Load Covertype (two classes)
 # ============================
 #
-# The Covertype task predicts forest cover type from cartographic variables. Classes 1 (Spruce/Fir)
-# and 2 (Lodgepole Pine) make up about 85 % of the table. We keep only those rows and draw a
-# 2,000-row subsample. Because SKD003 applies only to cross-validated reports, every evaluation
-# below uses ``splitter=5`` (or an explicit CV splitter with five folds).
+# Classes 1 and 2 dominate Covertype. We keep those rows and take a 2,000-row
+# subsample. SKD003 needs CV, so we use ``splitter=5`` or an explicit five-fold
+# splitter below.
 
 import numpy as np
 import pandas as pd
@@ -48,26 +60,25 @@ X, _, y_clean, _ = train_test_split(
 )
 
 # %%
-# Inspect the feature matrix with :class:`~skrub.TableReport`.
+# Inspect features with :class:`~skrub.TableReport`.
 
 from skrub import TableReport
 
 TableReport(X)
 
 # %%
-# The two retained classes are fairly balanced on this subsample.
+# The two classes are fairly balanced on this subsample.
 
 TableReport(y_clean)
 
 # %%
-# Corrupt labels to simulate a bad production batch
-# =================================================
+# Artificial corruption: a bad contiguous batch
+# =============================================
 #
-# We copy the clean target and randomly reassign labels on the first fifth of rows. That mimics a
-# real incident: a mislabelled annotation batch, a logging bug that swapped class codes for one
-# window of production data, or a schema mix-up when merging sources. The corrupted block is large
-# enough that one cross-validation fold will look like an outlier under SKD003, which is the
-# situation we want to trigger and then debug.
+# Randomly reassign labels on the first fifth of rows (mislabelled batch,
+# logging bug, or merge mix-up). ``splitter=5`` is unshuffled
+# :class:`~sklearn.model_selection.KFold`, so that block stays in fold #0 and
+# SKD003 can flag it.
 
 y_corrupted = y_clean.copy()
 n_corrupt = len(y_corrupted) // 5
@@ -77,30 +88,27 @@ y_corrupted.iloc[:n_corrupt] = np.random.RandomState(0).choice(
 )
 
 # %%
-# A default :func:`~skrub.tabular_pipeline` classifier handles the preprocessing.
+# Default :func:`~skrub.tabular_pipeline` classifier for preprocessing.
 
 from skrub import tabular_pipeline
 
 model = tabular_pipeline("classifier")
 
 # %%
-# Trigger SKD003 — cross-validate on corrupted labels
-# ===================================================
+# Trigger SKD003: cross-validate on corrupted labels
+# ==================================================
 #
-# Five-fold cross-validation shuffles rows before splitting, so the corrupted prefix is spread
-# across folds — but fold #0 still sees enough bad labels to drag its test scores away from the
-# others. Inspect per-split metrics with ``aggregate=None``, then summarize checks.
+# Corrupted rows land in split #0; later folds stay clean. Inspect per-split
+# metrics with ``aggregate=None``, then checks.
 
-from skore import evaluate
+import skore
 
-report = evaluate(model, X=X, y=y_corrupted, splitter=5, n_jobs=4)
+report = skore.evaluate(model, X=X, y=y_corrupted, splitter=5, n_jobs=4)
 
 report.metrics.summarize(data_source="test").frame(aggregate=None)
 
 # %%
-# SKD003 should list split #0 as an outlier relative to the other folds. We ignore SKD008 here: its
-# correlated-features check is unrelated to this walkthrough and can warn on Covertype's constant
-# one-hot soil columns.
+# ``SKD003`` should flag split #0.
 
 report.checks.summarize(fast_mode=True, ignore=["SKD008"])
 
@@ -108,9 +116,8 @@ report.checks.summarize(fast_mode=True, ignore=["SKD008"])
 # Debug the flagged fold through its EstimatorReport
 # ==================================================
 #
-# A :class:`~skore.CrossValidationReport` stores one :class:`~skore.EstimatorReport` per split in
-# ``reports_``. Open the flagged fold to inspect its metrics and plots the same way you would for a
-# single hold-out report.
+# ``reports_`` holds one :class:`~skore.EstimatorReport` per split; open the
+# flagged fold as usual.
 
 outlier_report = report.reports_[0]
 outlier_report.metrics.summarize(data_source="test").frame()
@@ -119,35 +126,25 @@ outlier_report.metrics.summarize(data_source="test").frame()
 outlier_report.metrics.precision_recall().plot()
 
 # %%
-# Investigate and fix the outlier split
-# =====================================
-#
-# In this example we know the root cause because we created it: the first fifth of labels was
-# flipped. The fix is to swap back to ``y_clean`` and show that SKD003 clears once the batch is
-# corrected.
+# If the cause was a fixable bad batch, clean labels clear the outlier fold.
 
-report_clean = evaluate(model, X=X, y=y_clean, splitter=5, n_jobs=4)
-
+report_clean = skore.evaluate(model, X=X, y=y_clean, splitter=5, n_jobs=4)
 report_clean.metrics.summarize(data_source="test").frame(aggregate=None)
 
 # %%
-# What to check when the cause is unknown? SKD003 does not distinguish label errors from leakage or
-# temporal drift. If one fold still looks wrong after auditing labels, review the feature pipeline
-# for target leakage (e.g. statistics fit on the full table before splitting, duplicate rows across
-# folds, features that encode future information) and, when rows are ordered in time, whether
-# cross-validation respects chronology — see :ref:`SKD013 <skd013-train-test-time-overlap>`. With
-# clean labels, per-fold scores should cluster and SKD003 should be absent.
-
 report_clean.checks.summarize(fast_mode=True, ignore=["SKD008"])
 
 # %%
-# Use grouped cross-validation
-# ============================
+# Bad group in the test fold
+# ==========================
 #
-# When rows share a group id (site, patient, acquisition batch), ignoring that structure can put
-# related rows in both train and test, or concentrate whole groups in a few folds, which inflates
-# fold-to-fold variance. Below we invent batch ids and corrupt an entire batch — a common production
-# failure mode — then compare a plain shuffle split to :class:`~sklearn.model_selection.GroupKFold`.
+# With group ids (site, patient, batch), a grouped splitter keeps each group on
+# one side of every split. A much harder or easier group in one test fold
+# triggers SKD003: expected, the splitter did its job. Shuffled CV would smear
+# that group across folds, hide the gap, and overestimate performance.
+#
+# Below we invent batch ids, corrupt labels for batch ``0`` only, and evaluate
+# with :class:`~sklearn.model_selection.GroupKFold`.
 
 from sklearn.model_selection import GroupKFold
 
@@ -165,85 +162,95 @@ y_batch.loc[bad_batch] = np.random.RandomState(1).choice(
     size=int(bad_batch.sum()),
 )
 
-# %%
-# Ignoring groups: related rows from the bad batch can land in several folds.
-
-report_ignore_groups = evaluate(model, X=X, y=y_batch, splitter=5, n_jobs=4)
-report_ignore_groups.metrics.summarize(data_source="test").frame(aggregate=None)
-
-# %%
-report_ignore_groups.checks.summarize(fast_mode=True, ignore=["SKD008"])
-
-# %%
-# Respecting groups: each batch stays on one side of every split, so a bad batch shows up as a clear
-# outlier fold instead of leaking across folds. When observations share a group structure (sites,
-# patients, acquisition batches), prefer :class:`~sklearn.model_selection.GroupKFold` (or another
-# grouped splitter): it makes problematic batches visible under SKD003 instead of smearing them
-# across folds and masking the issue.
-
 group_splits = list(GroupKFold(n_splits=5).split(X, y_batch, groups=groups))
-report_grouped = evaluate(model, X=X, y=y_batch, splitter=group_splits, n_jobs=4)
+report_grouped = skore.evaluate(model, X=X, y=y_batch, splitter=group_splits, n_jobs=4)
 report_grouped.metrics.summarize(data_source="test").frame(aggregate=None)
 
 # %%
+# ``SKD003`` should flag the fold that tests the corrupted batch.
+
 report_grouped.checks.summarize(fast_mode=True, ignore=["SKD008"])
 
 # %%
-# Increase dataset size with clean rows
-# =====================================
+# Distribution shift in the last time-series fold
+# ===============================================
 #
-# Appending 4,000 clean rows from the full two-class table dilutes the corrupted share. Per-fold
-# metrics become more homogeneous even though the bad batch is still mislabelled, because more data
-# can mask, but not fix, label errors.
+# Under :class:`~sklearn.model_selection.TimeSeriesSplit`, later windows can
+# diverge from early training data (e.g. an easy class becomes rarer). Earlier
+# folds look strong, the last fold drops, and SKD003 fires.
+#
+# Build a balanced task with :func:`~sklearn.datasets.make_classification`,
+# treat row order as time, and replace labels only in the final test window
+# with a rare positive class so that one late fold stands out. No shuffle.
 
-X_more, _, y_more, _ = train_test_split(
-    X_full,
-    y_full,
-    train_size=4_000,
-    random_state=1,
-)
+from sklearn.datasets import make_classification
+from sklearn.ensemble import HistGradientBoostingClassifier
+from sklearn.model_selection import TimeSeriesSplit
 
-X_augmented = pd.concat(
-    [X.reset_index(drop=True), X_more.reset_index(drop=True)],
-    ignore_index=True,
-)
-y_augmented = pd.concat(
-    [y_corrupted.reset_index(drop=True), y_more.reset_index(drop=True)],
-    ignore_index=True,
-)
+rng = np.random.RandomState(0)
+n_time = 3_000
+n_splits = 5
+# Last test fold is the final ``n_time // (n_splits + 1)`` rows.
+hard_start = n_time - (n_time // (n_splits + 1))
 
-report_more_data = evaluate(
-    model,
-    X=X_augmented,
-    y=y_augmented,
-    splitter=5,
-    n_jobs=4,
+X_arr, y_arr = make_classification(
+    n_samples=n_time,
+    n_features=6,
+    n_informative=2,
+    n_redundant=0,
+    weights=[0.5, 0.5],
+    random_state=0,
 )
+X_time = pd.DataFrame(X_arr, columns=[f"f{i}" for i in range(6)])
+y_time = pd.Series(y_arr, name="label")
+y_time.iloc[hard_start:] = rng.choice([0, 1], size=n_time - hard_start, p=[0.96, 0.04])
 
-report_more_data.metrics.summarize(data_source="test").frame(aggregate=None)
+time_splits = list(TimeSeriesSplit(n_splits=n_splits).split(X_time))
+model_time = HistGradientBoostingClassifier(random_state=0)
+report_time = skore.evaluate(
+    model_time, X=X_time, y=y_time, splitter=time_splits, n_jobs=4
+)
+report_time.metrics.summarize(data_source="test").frame(aggregate=None)
 
 # %%
-report_more_data.checks.summarize(fast_mode=True, ignore=["SKD008"])
+# Split #4 should underperform once positives are rare in that window. SKD003
+# here is expected from chronological CV, not a reason to reshuffle time.
+
+report_time.checks.summarize(fast_mode=True, ignore=["SKD008"])
 
 # %%
-# Compare clean vs corrupted labels
-# =================================
+# When the problem is understood: mute SKD003
+# ===========================================
 #
-# :func:`~skore.compare` contrasts mean test metrics between the corrupted and clean reports on the
-# same model and split count.
+# Groups and drift are data properties: investigate, collect more labels on the
+# hard regime if needed, but folds may never look uniform. Once SKD003 is
+# expected, mute it with :func:`~skore.configuration` (or
+# ``ignore=["SKD003"]`` on one summarize call).
 
-from skore import compare
+with skore.configuration(ignore_checks=["SKD003"]):
+    muted = report_time.checks.summarize(fast_mode=True, ignore=["SKD008"])
+muted
 
-comparison = compare({"clean_labels": report_clean, "corrupted_labels": report})
-comparison.metrics.summarize(data_source="test").frame(aggregate="mean")
+# %%
+# Side note: if there is no group or time structure, but an unshuffled
+# :class:`~sklearn.model_selection.KFold` still creates imbalanced folds because
+# class prevalence varies along the collection order (for example a sensor
+# failed for part of the dump), shuffling or stratifying is appropriate *when
+# you are sure that irregularity is accidental and will not appear in
+# production*. That case is the exception where changing the splitter to
+# smooth folds is the right fix; do not use it to hide real groups or time
+# drift.
 
 # %%
 # Conclusion
 # ==========
 #
-# SKD003 highlights unstable cross-validation — often a data or splitting issue rather than a
-# hyperparameter problem. In this walkthrough, restoring clean labels removed the outlier fold:
-# fixing the root cause is the main fix. Grouped cross-validation and more data are supporting
-# levers for stable evaluation. Use grouped splits when rows share a site or batch id so bad batches
-# stay visible under SKD003; add data only after the table is trustworthy, since extra clean rows
-# can mask leftover label errors without repairing them.
+# SKD003 is a reminder to inspect unstable cross-validation folds. With a
+# proper splitter, firing often means the evaluation exposed a bad batch,
+# a hard group, or temporal shift. Fix what you can (for example a corrupted
+# label window). When the structure is intrinsic, keep the honest splitter,
+# document the outlier regime, mute SKD003 via configuration, and collect more
+# data on that regime if you need better coverage. Avoid shuffled CV as a way
+# to make the check disappear when groups or time are real.
+# See also :ref:`SKD013 <skd013-train-test-time-overlap>` for chronological
+# train/test overlap on hold-out reports.
