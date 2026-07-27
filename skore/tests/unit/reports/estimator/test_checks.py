@@ -350,6 +350,33 @@ def test_skd011_detects_golden_feature(estimator):
     assert "Feature 3" not in explanation
 
 
+def test_skd011_sklearn_pipeline_preserves_feature_names():
+    """SKD011 works when a sklearn preprocessor returns an ndarray.
+
+    Default sklearn ``transform`` drops column names; ``get_preprocessed_X``
+    must restore them so single-feature selection matches ``_get_feature_names``.
+    """
+    rng = np.random.RandomState(0)
+    n_samples = 200
+    X = rng.normal(size=(n_samples, 4))
+    y = X[:, 0] * 10
+    X[:, 1] = y + rng.normal(scale=0.01, size=n_samples)
+    columns = [f"col_{i}" for i in range(X.shape[1])]
+    report = evaluate(
+        Pipeline([("scaler", StandardScaler()), ("model", LinearRegression())]),
+        pd.DataFrame(X, columns=columns),
+        pd.Series(y),
+        splitter=0.2,
+    )
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD011" in tips.index
+    explanation = tips.loc["SKD011", "explanation"]
+    assert "col_0" in explanation
+    assert "col_1" in explanation
+    assert "col_2" not in explanation
+    assert "col_3" not in explanation
+
+
 def test_skd012_detects_useless_features():
     """Noise features are flagged when permutation importance is negligible."""
     X, y = make_regression(

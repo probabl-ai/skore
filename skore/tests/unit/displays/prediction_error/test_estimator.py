@@ -122,8 +122,8 @@ def test_source_both(task, request):
     assert "data_source" in plot_data.columns
     assert set(plot_data["data_source"]) == {"train", "test"}
     if task == "multioutput_regression":
-        assert "0" in legend_texts
-        assert "1" in legend_texts
+        assert "Output #0" in legend_texts
+        assert "Output #1" in legend_texts
 
 
 @pytest.mark.parametrize(
