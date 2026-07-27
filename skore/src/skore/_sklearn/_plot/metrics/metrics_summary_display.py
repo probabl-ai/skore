@@ -84,8 +84,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         The type of report.
 
     errors : list of tuple of (Metric, Exception)
-        Metric failures encountered while building the summary. Pass an empty
-        list when no metric failed.
+        Metric failures encountered while building the summary.
 
     Attributes
     ----------
