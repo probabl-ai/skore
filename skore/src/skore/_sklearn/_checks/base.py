@@ -269,10 +269,11 @@ class ChecksSummaryDisplay(DisplayMixin):
                         )
                     else:
                         if pd.notna(explanation):
-                            msg += f". {explanation}"
+                            msg += f". {explanation!s}"
                         if pd.notna(row.documentation_url):
                             msg += (
-                                f" Read more about this here: {row.documentation_url}."
+                                f" Read more about this here: "
+                                f"{row.documentation_url!s}."
                             )
                         lines.append(msg)
         lines.append("Mute a check with .checks.summarize(ignore=['<code>']).")

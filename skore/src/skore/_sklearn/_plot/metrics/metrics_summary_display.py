@@ -256,7 +256,12 @@ class MetricsSummaryDisplay(DisplayMixin):
         df = df.drop(columns="greater_is_better")
 
         df.index = df.index.set_names(
-            [new_columns.get(name, name) for name in df.index.names]
+            [
+                new_columns[name]
+                if isinstance(name, str) and name in new_columns
+                else name
+                for name in df.index.names
+            ]
         )
 
         if df["data_source"].nunique() == 1:
@@ -346,10 +351,11 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         if aggregate is None:
             metric_order = df.index.get_level_values("Metric").unique()
-            df = (
+            df = cast(
+                pd.DataFrame,
                 df.set_index("split", append=True)
                 .unstack("split")
-                .reindex(metric_order, level="Metric")
+                .reindex(metric_order, level="Metric"),
             )
             df.columns = pd.MultiIndex.from_product(
                 [
@@ -372,7 +378,7 @@ class MetricsSummaryDisplay(DisplayMixin):
             df = df.drop(
                 [col for col in df.columns if col[1] == "split"], axis="columns"
             )
-            df.columns = df.columns.swaplevel(0, 1)
+            df = df.swaplevel(0, 1, axis=1)
 
         if favorability:
             df["Favorability"] = favorability_col[~favorability_col.index.duplicated()]
@@ -447,7 +453,9 @@ class MetricsSummaryDisplay(DisplayMixin):
             )
 
             # Extract favorability columns and use first non-NaN value for each row
-            favorability_col = df.pop("Favorability").bfill(axis=1).iloc[:, 0]
+            favorability_col = (
+                cast(pd.DataFrame, df.pop("Favorability")).bfill(axis=1).iloc[:, 0]
+            )
 
             df.columns.name = "Estimator"
 
@@ -474,12 +482,18 @@ class MetricsSummaryDisplay(DisplayMixin):
 
             # Sort columns to avoid lexsort warning when accessing specific columns
             df = df.sort_index(axis=1)
-            favorability_col = df.pop(("Favorability", "")).bfill(axis=1).iloc[:, 0]
+            favorability_cols = df.loc[
+                :, [col for col in df.columns if col[0] == "Favorability"]
+            ]
+            df = df.drop(
+                columns=[col for col in df.columns if col[0] == "Favorability"]
+            )
+            favorability_col = favorability_cols.bfill(axis=1).iloc[:, 0]
 
             if aggregate is None:
                 df.columns.names = ["Estimator", "Split"]
             else:
-                df.columns = df.columns.swaplevel(0, 1)
+                df = df.swaplevel(0, 1, axis=1)
                 df = df.sort_index(axis=1, level=[0, 1])
                 df.columns.names = [None, "Estimator"]
 

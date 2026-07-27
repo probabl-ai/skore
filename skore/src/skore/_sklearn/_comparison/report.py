@@ -468,6 +468,8 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 "scikit-learn data."
             )
 
+        X_train: ArrayLike | None
+        y_train: ArrayLike | None
         if concatenate_train_and_test:
             if (
                 estimator_report.X_train is None
@@ -479,11 +481,13 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                     "The source report must provide X_train, y_train, X_test, and "
                     "y_test when concatenate_train_and_test=True."
                 )
-            X_train = _concat_vertical(
-                estimator_report.X_train, estimator_report.X_test
+            X_train = cast(
+                ArrayLike,
+                _concat_vertical(estimator_report.X_train, estimator_report.X_test),
             )
-            y_train = _concat_vertical(
-                estimator_report.y_train, estimator_report.y_test
+            y_train = cast(
+                ArrayLike,
+                _concat_vertical(estimator_report.y_train, estimator_report.y_test),
             )
         else:
             X_train, y_train = estimator_report.X_train, estimator_report.y_train

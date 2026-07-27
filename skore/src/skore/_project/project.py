@@ -10,7 +10,7 @@ from pandas import DataFrame, Index, MultiIndex, RangeIndex
 from skore._project import plugin
 from skore._project._summary import Summary
 from skore._project.dependencies import assert_optional_dependencies_installed
-from skore._project.types import ProjectMode
+from skore._project.types import ProjectMode, ReportMetadata
 
 if TYPE_CHECKING:
     from skore import CrossValidationReport, EstimatorReport
@@ -356,8 +356,10 @@ class Project:
         :func:`~skore.compare` :
             Compare selected reports side by side.
         """
-        records = self.__project.summarize()
-        frame = DataFrame(sorted(records, key=lambda r: r["date"]), copy=False)
+        records: list[ReportMetadata] = self.__project.summarize()
+        sorted_records = sorted(records, key=lambda r: r["date"])
+        frame = DataFrame(sorted_records, copy=False)
+
         if not frame.empty:
             frame.index = MultiIndex.from_arrays(
                 [
@@ -365,6 +367,7 @@ class Project:
                     Index(frame.pop("id"), name="id", dtype=str),
                 ]
             )
+
         return Summary(frame, self.__project)
 
     def __repr__(self) -> str:  # noqa: D105

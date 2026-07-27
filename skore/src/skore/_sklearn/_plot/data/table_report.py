@@ -1,4 +1,4 @@
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import narwhals as nw
 import numpy as np
@@ -27,7 +27,7 @@ from skore._utils._dataframe import UserDataFrame
 
 def _truncate_top_k_categories(
     col: pd.Series | None, k: int, other_label: str = "other"
-) -> pd.Series:
+) -> pd.Series | None:
     """Truncate a column to the top k most frequent values.
 
     Replaces the rest with a label defined by ``other_label``. Note that if `col` is not
@@ -59,13 +59,13 @@ def _truncate_top_k_categories(
     keep = col.isin(values) | col.isna()
     if isinstance(col.dtype, pd.CategoricalDtype):
         col = col.cat.add_categories(other_label)
-        col[~keep] = other_label
+        col = col.where(keep, other_label)
         col = col.cat.remove_unused_categories()
         col = col.cat.rename_categories(
             {v: ellide_string(v, max_len=20) for v in values if isinstance(v, str)}
         )
     else:
-        col[~keep] = other_label
+        col = col.where(keep, other_label)
         col = col.apply(
             lambda x: ellide_string(x, max_len=20) if isinstance(x, str) else x
         )
@@ -119,7 +119,7 @@ def _compute_contingency_table(
     with pd.option_context("future.no_silent_downcasting", True):
         return (
             contingency_table.fillna(0)
-            .infer_objects(copy=False)
+            .infer_objects()
             .reindex(index=top_y_values, columns=top_x_values, fill_value=0)
         )
 
@@ -583,6 +583,7 @@ class TableReportDisplay(DisplayMixin):
                     "If 'x' and 'y' are categories, 'hue' must be continuous."
                 )
 
+            assert x_series is not None and y_series is not None
             contingency_table = _compute_contingency_table(
                 x_series, y_series, hue_series, k
             )
@@ -593,7 +594,7 @@ class TableReportDisplay(DisplayMixin):
                 ellide_string(s) for s in contingency_table.columns
             ]
 
-            if max_value := contingency_table.max(axis=None) < 100_000:
+            if (max_value := cast(float, contingency_table.max(axis=None))) < 100_000:
                 # avoid scientific notation for small numbers
                 annotation_format = (
                     ".0f"

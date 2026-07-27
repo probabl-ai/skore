@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from collections.abc import Hashable
 from typing import TYPE_CHECKING
 
 from pandas import Categorical, DataFrame, Timestamp, isna, to_datetime
@@ -238,7 +239,7 @@ class Summary(ReprHTMLMixin):
         return repr(self._summary)
 
     @staticmethod
-    def _cell(record: dict[str, Any], column: str) -> dict[str, str]:
+    def _cell(record: dict[Hashable, Any], column: str) -> dict[str, str]:
         """Build the display/sort parts of a single HTML table cell."""
         value = record[column]
         if isna(value):
