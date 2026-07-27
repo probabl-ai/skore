@@ -84,3 +84,22 @@ def test_metrics_failure(report):
         display.frame()
         display.frame(flat_index=False)
     assert display.summary["name"].str.contains("fail", case=False).any()
+
+
+def test_help_custom_metric(report, capsys):
+    """Custom metrics are shown in the help menu, unless their name is not a valid
+    identifier."""
+    report.metrics.add(lambda e, X, y: 1, name="custom")
+
+    # Not a valid identifier
+    report.metrics.add(lambda e, X, y: 2, name="a b")
+
+    report.metrics.help()
+
+    stdout = capsys.readouterr().out
+
+    # Sanity check that help menu is there
+    assert "predict_time(...)" in stdout
+    assert "custom(...)" in stdout
+    # Not a valid identifier, so the help showing ".a b()" would be misleading
+    assert "a b" not in stdout

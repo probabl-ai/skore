@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from functools import partial
 from importlib.metadata import version
+from keyword import iskeyword
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from uuid import uuid4
 
@@ -19,11 +20,13 @@ from skore._utils.repr.base import (
     ReportHelpMixin,
     render_panel_to_plain_text,
 )
+from skore._utils.repr.data import MethodHelp, get_documentation_url
 
 if TYPE_CHECKING:
     import pandas as pd
 
     from skore._sklearn._checks.accessor import _ChecksAccessor
+    from skore._utils.repr.data import AccessorHelpData
 
 
 class _BaseReport(ReportHelpMixin):
@@ -194,6 +197,32 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     def __dir__(self) -> list[str]:
         """Add custom metrics to __dir__ for tab-completion."""
         return list(set(super().__dir__()).union(self.available()))
+
+    def _build_help_data(self) -> AccessorHelpData:
+        """Include custom metrics in the help data.
+
+        Custom metrics are only reachable through ``__getattr__``, so they are not
+        picked up by the default method-discovery logic used to build help data.
+        Names that are not valid identifiers (e.g. containing spaces) are excluded,
+        since they cannot be called as ``report.metrics.<name>(...)``.
+        """
+        help_data = super()._build_help_data()
+        known_names = {method.name for method in help_data.methods}
+        doc_url = get_documentation_url(
+            obj=self._parent, accessor_name=self.__class__._accessor_name
+        )
+        help_data.methods.extend(
+            MethodHelp(
+                name=name,
+                parameters="(...)",
+                description="Custom metric.",
+                doc_url=doc_url,
+            )
+            for name in self.available()
+            if name not in known_names and name.isidentifier() and not iskeyword(name)
+        )
+        help_data.methods.sort(key=lambda method: method.name)
+        return help_data
 
     def _formatted_summary_frame(
         self,
