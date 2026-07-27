@@ -396,7 +396,7 @@ six==1.17.0
     # via python-dateutil
 skops==0.14.0
     # via mlflow
-skrub==0.9.0
+skrub==0.10.0
     # via skore (skore/pyproject.toml)
 smmap==5.0.3
     # via gitdb

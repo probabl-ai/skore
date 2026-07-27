@@ -807,7 +807,18 @@ class Score(Metric):
         # estimators; ``SkrubLearner`` takes the full env, preserving vars
         # beyond X/y (e.g. additional tables referenced by the DataOp).
         data, _ = report._get_data_and_y_true(data_source=data_source)
-        return report.learner_.score(data, **kwargs)
+
+        # Give skrub the cached predictions
+        predictions, _ = report._extract_cached_predictions()
+        skrub_predictions = {}
+        for key, value in predictions.items():
+            _, prediction_data_source, name, _ = key
+            if prediction_data_source == data_source:
+                skrub_predictions[name] = value
+
+        return report.learner_.score(
+            data | {"_skrub_predictions": skrub_predictions}, **kwargs
+        )
 
 
 # Order matters for default display
