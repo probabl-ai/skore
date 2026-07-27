@@ -244,7 +244,7 @@ def test_metrics_aggregate(case):
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_binary_classification_pos_label(pyplot, metric):
+def test_binary_classification_pos_label(metric):
     """Check the behaviour of the display methods when `pos_label` is not set."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0

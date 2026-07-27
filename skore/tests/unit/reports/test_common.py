@@ -64,6 +64,29 @@ def test_metrics_add_scorer(report):
     assert "Mean Squared Error" in display.data["metric_verbose_name"].values
 
 
+def test_metrics_failure(report):
+    """If a metric fails, `summarize` still returns."""
+
+    def fail(estimator, X, y):
+        raise Exception("test error")
+
+    report.metrics.add(fail)
+
+    display = report.metrics.summarize()
+
+    assert "Fail" in set(display.data["metric_verbose_name"])
+    assert (
+        display.data[display.data["metric_verbose_name"] == "Fail"]["score"]
+        .isna()
+        .all()
+    )
+
+    err_msg = r"Metric 'fail' has failed: Exception\('test error'\)"
+    with pytest.warns(UserWarning, match=err_msg):
+        frame = display.frame()
+    assert "Fail" in repr(frame)
+
+
 def test_help_custom_metric(report, capsys):
     """Custom metrics are shown in the help menu, unless their name is not a valid
     identifier."""

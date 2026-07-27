@@ -53,7 +53,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test sets, showing them side-by-side.
+            - "both" : use both the train and test sets, showing them together.
 
         metric : str or list of str or None, default=None
             The metrics to report, from the list of registered metrics. None means show
@@ -88,7 +88,11 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             test_summary = self.summarize(data_source="test", metric=metric)
 
             combined = train_summary.rows + test_summary.rows
-            return MetricsSummaryDisplay(rows=combined, report_type="cross-validation")
+            return MetricsSummaryDisplay(
+                rows=combined,
+                report_type="cross-validation",
+                errors=train_summary.errors + test_summary.errors,
+            )
 
         parallel = Parallel(
             **_validate_joblib_parallel_params(
@@ -347,7 +351,9 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                 for row in metric_rows
             )
 
-        return MetricsSummaryDisplay(rows=rows, report_type="cross-validation")
+        return MetricsSummaryDisplay(
+            rows=rows, report_type="cross-validation", errors=[]
+        )
 
     @available_if(_check_estimator_report_has_method("metrics", "score"))
     def score(
@@ -1043,7 +1049,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test and show them side-by-side.
+            - "both" : use both the train and test and show them together.
 
         Returns
         -------
@@ -1100,7 +1106,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
-            - "both" : use both the train and test and show them side-by-side.
+            - "both" : use both the train and test and show them together.
 
         Returns
         -------
@@ -1146,7 +1152,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
     def prediction_error(
         self,
         *,
-        data_source: DataSource = "test",
+        data_source: DataSource | Literal["both"] = "test",
         subsample: float | int | None = 1_000,
         seed: int | None = None,
     ) -> PredictionErrorDisplay:
@@ -1154,11 +1160,12 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
 
         Parameters
         ----------
-        data_source : {"test", "train"}, default="test"
+        data_source : {"test", "train", "both"}, default="test"
             The data source to use.
 
             - "test" : use the test set provided when creating the report.
             - "train" : use the train set provided when creating the report.
+            - "both" : use both train and test and display them together.
 
         subsample : float, int or None, default=1_000
             Sampling the samples to be shown on the scatter plot. If `float`,

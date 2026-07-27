@@ -10,7 +10,7 @@ def test_default_repr_includes_frame_and_hint(repr_coefficients_display):
     )
 
 
-def test_default_repr_html_includes_plot_and_hint(pyplot, repr_coefficients_display):
+def test_default_repr_html_includes_plot_and_hint(repr_coefficients_display):
     display = repr_coefficients_display
     html = display._repr_html_()
     assert "data:image/png;base64," in html
@@ -18,7 +18,7 @@ def test_default_repr_html_includes_plot_and_hint(pyplot, repr_coefficients_disp
     assert "<code>.frame()</code> to access the plotted data." in html
 
 
-def test_default_repr_mimebundle(pyplot, repr_coefficients_display):
+def test_default_repr_mimebundle(repr_coefficients_display):
     bundle = repr_coefficients_display._repr_mimebundle_()
     assert bundle == {
         "text/plain": repr(repr_coefficients_display),

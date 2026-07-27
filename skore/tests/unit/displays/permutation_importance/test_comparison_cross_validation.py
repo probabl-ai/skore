@@ -12,7 +12,7 @@ from sklearn.metrics import make_scorer, precision_score, r2_score
         "multioutput_regression",
     ],
 )
-def test_invalid_subplot_by(pyplot, task, request):
+def test_invalid_subplot_by(task, request):
     report = request.getfixturevalue(f"comparison_cross_validation_reports_{task}")
     display = report.inspection.permutation_importance(seed=0, n_repeats=2)
     err_msg = "The column 'invalid' is not available for subplotting."
@@ -38,7 +38,7 @@ def test_invalid_subplot_by(pyplot, task, request):
         (None, 1),
     ],
 )
-def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
+def test_valid_subplot_by(task, subplot_by, expected_len, request):
     report = request.getfixturevalue(f"comparison_cross_validation_reports_{task}")
     display = report.inspection.permutation_importance(seed=0, n_repeats=2)
     fig = display.plot(subplot_by=subplot_by)
@@ -58,7 +58,7 @@ def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
         "multioutput_regression",
     ],
 )
-def test_different_features(pyplot, task, request):
+def test_different_features(task, request):
     report = request.getfixturevalue(
         f"comparison_cross_validation_reports_{task}_different_features"
     )
@@ -96,7 +96,7 @@ def test_different_features(pyplot, task, request):
     ],
 )
 def test_subplot_by_non_averaged_metrics(
-    pyplot, task, metric, metric_name, subplot_by, expected_len, request
+    task, metric, metric_name, subplot_by, expected_len, request
 ):
     report = request.getfixturevalue(f"comparison_cross_validation_reports_{task}")
     display = report.inspection.permutation_importance(

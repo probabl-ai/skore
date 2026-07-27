@@ -36,7 +36,7 @@ def test_multiple_thresholds_different_confusion_matrices(
         "forest_multiclass_classification_with_train_test",
     ],
 )
-def test_subplot_by(pyplot, subplot_by, fixture_name, request):
+def test_subplot_by(subplot_by, fixture_name, request):
     estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
@@ -55,7 +55,7 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
         assert isinstance(axes[0], mpl.axes.Axes)
 
 
-def test_pos_label(pyplot, forest_binary_classification_with_train_test):
+def test_pos_label(forest_binary_classification_with_train_test):
     """Check that the report_pos_label parameter works correctly."""
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
