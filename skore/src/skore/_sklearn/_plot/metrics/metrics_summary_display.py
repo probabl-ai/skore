@@ -91,6 +91,7 @@ class MetricsSummaryDisplay(DisplayMixin):
     ----------
     summary : pandas.DataFrame
         The long-format dataframe storing the metric scores and metadata.
+
     report_type : ReportType
         The type of report.
 
