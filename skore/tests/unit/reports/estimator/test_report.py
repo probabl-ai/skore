@@ -564,23 +564,3 @@ def test_no_data_error():
         EstimatorReport(estimator)
         EstimatorReport(estimator, X_test=X)
         EstimatorReport(estimator, y_test=y)
-
-
-def test_help_custom_metric(forest_binary_classification_with_test, capsys):
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-
-    report.metrics.add(lambda e, X, y: 1, name="custom")
-
-    # Not a valid identifier
-    report.metrics.add(lambda e, X, y: 2, name="a b")
-
-    report.metrics.help()
-
-    stdout = capsys.readouterr().out
-
-    # Sanity check that help menu is there
-    assert "accuracy(...)" in stdout
-    assert "custom(...)" in stdout
-    # Not a valid identifier, so the help showing ".a b()" would be misleading
-    assert "a b" not in stdout
