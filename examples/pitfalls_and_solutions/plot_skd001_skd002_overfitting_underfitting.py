@@ -23,7 +23,7 @@ mitigations techniques:
 - using early stopping
 - using more data
 
-We use California housing (median house value in k\$). Half of the rows feed
+We use California housing (median house value in kUSD). Half of the rows feed
 the main walkthrough; the other half is reserved to show the effect of adding
 training data.
 """
@@ -32,8 +32,8 @@ training data.
 # Load the California housing dataset
 # ===================================
 #
-# Each row is a census block group. The target ``MedHouseVal`` is in \$100k
-# units; we multiply by 100 so errors read in k\$.
+# Each row is a census block group. The target ``MedHouseVal`` is in 100k USD
+# units; we multiply by 100 so errors read in kUSD.
 
 import pandas as pd
 from sklearn.datasets import fetch_california_housing
@@ -49,8 +49,8 @@ X, X_heldout, y, y_heldout = train_test_split(
     random_state=42,
 )
 
-y = pd.Series(y, name="MedHouseVal_k$")
-y_heldout = pd.Series(y_heldout, name="MedHouseVal_k$")
+y = pd.Series(y, name="MedHouseVal_kUSD")
+y_heldout = pd.Series(y_heldout, name="MedHouseVal_kUSD")
 
 # %%
 from skrub import TableReport
@@ -110,7 +110,7 @@ report_ridge.checks.summarize(fast_mode=True)
 # %%
 # A :class:`~sklearn.ensemble.HistGradientBoostingRegressor` adds nonlinear
 # capacity and can lift test scores further. Watch the train/test gap as you do
-# this: the same lever that cures underfitting is the one that creates
+# this: the same method that cures underfitting is the one that creates
 # overfitting.
 
 from sklearn.ensemble import HistGradientBoostingRegressor
@@ -130,15 +130,15 @@ report_hgbr.checks.summarize(fast_mode=True)
 # Feature engineering
 # ===================
 #
-# Better features help when the model family is fine but the *representation*
+# Better features help when the model family is fine but the representation
 # is weak (still an underfitting problem). Here, ``AveRooms / AveOccup`` is a
 # rooms-per-person signal that a linear model can use more easily than the raw
 # counts.
 #
-# The same step has an overfitting side: every new feature also increases
+# The same step has an overfitting side effect: every new feature also increases
 # expressiveness. Mild engineering can close an underfit gap; aggressive
 # expansions (very high-degree interactions, huge one-hot spaces) can reopen an
-# overfit gap. Think of features as capacity you add to the *inputs*, not only
+# overfit gap. Think of features as capacity you add to the inputs, not only
 # to the estimator.
 
 X_fe = X.assign(RoomsPerPerson=X["AveRooms"] / X["AveOccup"].clip(lower=0.1))
@@ -147,96 +147,134 @@ report_ridge_fe = skore.evaluate(Ridge(alpha=1.0), X=X_fe, y=y, splitter=splitte
 report_ridge_fe.metrics.summarize(data_source="both").frame()
 
 # %%
+# The test score rises while the train score stays close: we reduced underfitting
+# without creating overfitting by adding a signal-rich feature.
+
 report_ridge_fe.checks.summarize(fast_mode=True)
 
 # %%
-# Feature selection is the other direction: drop columns that do not carry
-# enough signal so the model has less room to memorize noise. We fit a
-# default random forest on the existing housing columns, then run
-# :class:`~sklearn.feature_selection.RFECV` with permutation importance as the
-# ranking signal. RFECV recursively removes the weakest feature(s) and keeps
-# the subset size with the best cross-validated score.
+# Overfitting: SKD001 fires
+# =========================
+#
+# To see the other end of the spectrum on the same split, fit a default
+# :class:`~sklearn.ensemble.RandomForestRegressor`. Unrestricted leaves can
+# memorize training data really well so train metrics look excellent, test metrics
+# lag, and SKD001 flags the gap.
 
-from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.feature_selection import RFECV
-from sklearn.inspection import permutation_importance
-from sklearn.model_selection import KFold
 
-report_rf_all_features = skore.evaluate(
+report_rf = skore.evaluate(
     RandomForestRegressor(random_state=42),
     X=X,
     y=y,
     splitter=splitter,
 )
-report_rf_all_features.metrics.summarize(data_source="both").frame()
+report_rf.metrics.summarize(data_source="both").frame()
 
 # %%
-# A small wrapper fits the forest, then stores permutation importances so
-# RFECV can drop the least useful column at each step.
-
-
-class PermutationImportanceEstimator(RegressorMixin, BaseEstimator):
-    def __init__(self, n_estimators=20, n_repeats=1, random_state=42, n_jobs=4):
-        self.n_estimators = n_estimators
-        self.n_repeats = n_repeats
-        self.random_state = random_state
-        self.n_jobs = n_jobs
-
-    def fit(self, X, y):
-        self.estimator_ = RandomForestRegressor(
-            n_estimators=self.n_estimators,
-            max_depth=10,
-            random_state=self.random_state,
-            n_jobs=1,
-        )
-        self.estimator_.fit(X, y)
-        self.feature_importances_ = permutation_importance(
-            self.estimator_,
-            X,
-            y,
-            n_repeats=self.n_repeats,
-            random_state=self.random_state,
-            n_jobs=self.n_jobs,
-        ).importances_mean
-        return self
-
-    def predict(self, X):
-        return self.estimator_.predict(X)
-
+report_rf.checks.summarize(fast_mode=True)
 
 # %%
-# Subsample for the selector so the gallery stays fast; apply the chosen
-# columns on the full table afterward.
-X_sel_fit = X.sample(3_000, random_state=42)
-y_sel_fit = y.loc[X_sel_fit.index]
+# Feature selection
+# =================
+#
+# Feature selection is the other direction from engineering: drop columns that
+# do not carry enough signal so the model has less room to memorize noise. We
+# run :class:`~sklearn.feature_selection.RFECV` with a random forest and
+# rank features via :func:`~sklearn.inspection.permutation_importance` through
+# ``importance_getter``.
+#
+# RFECV calls ``importance_getter(model)`` only, so we:
+#
+# - split a held-out validation set ourselves for permutation importance (not
+#   the skore evaluation test fold, to avoid leakage),
+# - close over that hold-out in a ``lambda`` that still matches the one-argument
+#   getter signature,
+# - return ``importances_mean`` from the permutation-importance result.
 
-selector = RFECV(
-    estimator=PermutationImportanceEstimator(random_state=42),
+import inspect
+
+import numpy as np
+from sklearn.feature_selection import RFECV
+from sklearn.inspection import permutation_importance
+from sklearn.model_selection import KFold
+
+X_sel = X.sample(3_000, random_state=42)
+y_sel = y.loc[X_sel.index]
+X_fs, X_val, y_fs, y_val = train_test_split(
+    X_sel, y_sel, test_size=0.2, random_state=42
+)
+X_val_np = np.asarray(X_val)
+y_val_np = np.asarray(y_val)
+
+
+def permutation_importance_getter(model, X_val, y_val, random_state=42):
+    X_val = np.asarray(X_val)
+    y_val = np.asarray(y_val)
+    if X_val.shape[1] != model.n_features_in_:
+        features = None
+        frame = inspect.currentframe()
+        try:
+            caller = frame.f_back
+            while caller is not None:
+                local_ns = caller.f_locals
+                if "features" in local_ns and "support_" in local_ns:
+                    features = local_ns["features"]
+                    break
+                caller = caller.f_back
+        finally:
+            del frame
+        if features is None:
+            raise RuntimeError(
+                "Could not recover active RFECV feature indices for the hold-out set."
+            )
+        X_val = X_val[:, features]
+    return permutation_importance(
+        model,
+        X_val,
+        y_val,
+        n_repeats=1,
+        random_state=random_state,
+        n_jobs=None,
+    ).importances_mean
+
+
+rf_regressor = RandomForestRegressor(
+    n_estimators=20,
+    max_depth=10,
+    random_state=42,
+    n_jobs=1,
+)
+
+rfecv = RFECV(
+    estimator=rf_regressor,
     step=1,
     cv=KFold(2, shuffle=True, random_state=42),
     scoring="r2",
     n_jobs=None,
+    importance_getter=lambda model: permutation_importance_getter(
+        model, X_val_np, y_val_np, random_state=42
+    ),
 )
-selector.fit(X_sel_fit, y_sel_fit)
-
-selected_columns = list(X.columns[selector.support_])
-dropped_columns = list(X.columns[~selector.support_])
-selected_columns, dropped_columns
-
-# %%
-X_selected = X.loc[:, selected_columns]
 
 report_rf_selected = skore.evaluate(
+    rfecv,
+    X=X_fs,
+    y=y_fs,
+    splitter=splitter,
+)
+
+# Same subsample and splitter as RFECV so ``skore.compare`` shares test targets.
+report_rf_fs = skore.evaluate(
     RandomForestRegressor(random_state=42),
-    X=X_selected,
-    y=y,
+    X=X_fs,
+    y=y_fs,
     splitter=splitter,
 )
 
 skore.compare(
     {
-        "rf_all_features": report_rf_all_features,
+        "rf_all_features": report_rf_fs,
         "rf_after_rfecv": report_rf_selected,
     }
 ).metrics.summarize(data_source="both").frame()
@@ -249,15 +287,9 @@ skore.compare(
 report_rf_selected.checks.summarize(fast_mode=True)
 
 # %%
-# Overfitting: SKD001 fires
-# =========================
-#
-# The full-feature forest above already shows the other end of the continuum:
-# unrestricted leaves can memorize training idiosyncrasies, so train metrics
-# look excellent, test metrics lag, and SKD001 flags the gap.
-
-report_rf = report_rf_all_features
-report_rf.checks.summarize(fast_mode=True)
+selected_columns = list(X_fs.columns[report_rf_selected.estimator_.support_])
+dropped_columns = list(X_fs.columns[~report_rf_selected.estimator_.support_])
+selected_columns, dropped_columns
 
 # %%
 # Regularization
@@ -390,10 +422,11 @@ skore.compare(
 #
 # SKD002 and SKD001 are two different consequences of a unsuited expressiveness.
 # Relax regularization / add capacity and use informative features until the
-# model beats a weak baseline; then regularize, stop early, and add data if
-# train scores have a noticeable gap compared to the test scores.
+# model beats a weak baseline; then select features, regularize, stop early,
+# and add data if train scores have a noticeable gap compared to the test
+# scores.
 #
-# Feature engineering and feature selection are the middle steps:
+# Feature engineering and feature selection are opposite middle steps:
 # adding informative columns can rescue an underfit model; dropping weaker
 # ones with RFECV can shrink an overfit gap. Hyperparameter choices play a
 # similar dual role. In practice you combine several of these levers and
