@@ -211,8 +211,8 @@ class MetricsSummaryDisplay(DisplayMixin):
                 aggfunc="first",
                 sort=False,
             )
-            table.columns = pd.MultiIndex.from_product(
-                [[estimator], [f"Split #{col}" for col in table.columns]]
+            table.columns = pd.MultiIndex.from_tuples(
+                [(estimator, f"Split #{col}") for col in table.columns]
             )
             table.columns.names = ["estimator", "split"]
         else:
