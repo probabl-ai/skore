@@ -299,15 +299,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 f"It should be one of: {labels!r}."
             )
 
-    def to_dict(self) -> dict[str, Any]:
-        """Return a serializable representation of the report state.
-
-        This state is meant to ease serialization/deserialization of
-        reports while preserving some backward compatibility across skore
-        versions. In particular, this is more stable than pickling a report
-        object directly, which can break when internal implementations change.
-        """
-        # split the cache between predictions and results
+    def _extract_cached_predictions(self) -> tuple[dict[tuple, Any], dict[tuple, Any]]:
+        """Extract the predictions from the report cache."""
         pred_key_names = {
             "predict",
             "decision_function",
@@ -316,15 +309,32 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         }
 
         predictions = {}
-        cached_results = {}
+        other_cached_results = {}
 
         for key, val in self._cache.items():
             scope, data_source, name, kwargs = key
             if name in pred_key_names:
-                assert kwargs is None
-                predictions[(scope, data_source, name)] = val
+                predictions[key] = val
             else:
-                cached_results[key] = val
+                other_cached_results[key] = val
+
+        return predictions, other_cached_results
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a serializable representation of the report state.
+
+        This state is meant to ease serialization/deserialization of
+        reports while preserving some backward compatibility across skore
+        versions. In particular, this is more stable than pickling a report
+        object directly, which can break when internal implementations change.
+        """
+        predictions, cached_results = self._extract_cached_predictions()
+
+        predictions_without_kwargs = {}
+        for key, value in predictions.items():
+            scope, data_source, name, kwargs = key
+            assert kwargs is None
+            predictions_without_kwargs[(scope, data_source, name)] = value
 
         return {
             "version": _STATE_VERSION,
@@ -341,7 +351,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "train_data": self._train_data,
                 "test_data": self._test_data,
             },
-            "predictions": predictions,
+            "predictions": predictions_without_kwargs,
             "metric_registry": self._metric_registry,
             # ---------- OPTIONAL STATE ------------
             # this part is less structured and not crucial for reconstructing a report
@@ -589,7 +599,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def get_predictions(
         self,
         *,
-        data_source: Literal["train", "test"],
+        data_source: DataSource,
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
@@ -650,7 +660,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def _get_predictions(
         self,
         *,
-        data_source: Literal["train", "test"],
+        data_source: DataSource,
         response_method: str | list[str] | tuple[str, ...],
         pos_label: PositiveLabel | None = None,
     ) -> ArrayLike:
