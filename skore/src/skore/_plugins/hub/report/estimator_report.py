@@ -28,12 +28,12 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.metric import Metric
-from skore._plugins.hub.report.report import ReportPayload
-from skore._plugins.hub.report.utils import (
+from skore._plugins.hub.report.metric import (
     hub_metric_name,
     multimetric_scalar_names,
-    select_exportable_summary_rows,
+    select_exportable_metrics,
 )
+from skore._plugins.hub.report.report import ReportPayload
 
 
 class EstimatorReportPayload(ReportPayload[EstimatorReport]):
@@ -87,11 +87,8 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         expose a toggle. For binary classification, only per-label rows are sent
         (``average`` is always ``None``). Non-scalar values (``NaN``) are ignored.
         """
-        selected = select_exportable_summary_rows(
-            self.report.metrics.summarize(data_source="both").summary,
-            ml_task=self.report._ml_task,
-        )
-        multimetric_names = multimetric_scalar_names(selected)
+        metrics = select_exportable_metrics(self.report)
+        multimetric_names = multimetric_scalar_names(metrics)
 
         return [
             Metric(
@@ -104,5 +101,5 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
                 output=None if pd.isna(row["output"]) else int(row["output"]),
                 average=None if pd.isna(row["average"]) else row["average"],
             )
-            for row in selected.to_dict("records")
+            for row in metrics.to_dict("records")
         ]

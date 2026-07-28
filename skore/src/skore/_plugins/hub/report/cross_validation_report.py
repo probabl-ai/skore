@@ -42,12 +42,12 @@ from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
-from skore._plugins.hub.report.report import ReportPayload
-from skore._plugins.hub.report.utils import (
+from skore._plugins.hub.report.metric import (
     hub_metric_name,
     multimetric_scalar_names,
-    select_exportable_summary_rows,
+    select_exportable_metrics,
 )
+from skore._plugins.hub.report.report import ReportPayload
 
 SPLITTING_STRATEGY_MAX_INDEX_COUNT = 10_000
 SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
@@ -389,13 +389,10 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         sent (``average`` is always ``None``). Only non-scalar values (``NaN``)
         are ignored.
         """
-        selected = select_exportable_summary_rows(
-            self.report.metrics.summarize(data_source="both").summary,
-            ml_task=self.report._ml_task,
-        )
+        metrics = select_exportable_metrics(self.report)
 
         aggregated = (
-            selected.groupby(
+            metrics.groupby(
                 [
                     "name",
                     "verbose_name",

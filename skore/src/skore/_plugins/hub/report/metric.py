@@ -1,4 +1,4 @@
-"""Utilities for building hub report payloads."""
+"""Helpers for building hub metric payloads from reports."""
 
 from __future__ import annotations
 
@@ -7,24 +7,28 @@ from typing import Any, cast
 
 import pandas as pd
 
+from skore import CrossValidationReport, EstimatorReport
 
-def select_exportable_summary_rows(
-    summary: pd.DataFrame,
-    *,
-    ml_task: str,
+
+def select_exportable_metrics(
+    report: EstimatorReport | CrossValidationReport,
 ) -> pd.DataFrame:
-    """Filter a summarize summary for hub export.
+    """Select metric summary rows suitable for hub export.
 
     Drops rows with missing scores. For binary classification, drops
     averaged rows (keeps per-label rows only).
     """
-    selected = summary[summary["score"].notna()]
-    if ml_task == "binary-classification":
-        selected = selected[selected["average"].isna()]
-    return selected
+    metrics_summary = report.metrics.summarize(data_source="both").summary
+
+    if report._ml_task == "binary-classification":
+        return metrics_summary[
+            metrics_summary["score"].notna() & metrics_summary["average"].isna()
+        ]
+
+    return metrics_summary[metrics_summary["score"].notna()]
 
 
-def multimetric_scalar_names(summary: pd.DataFrame) -> frozenset[str]:
+def multimetric_scalar_names(metrics_summary: pd.DataFrame) -> frozenset[str]:
     """Registry names that expand to multiple scalar submetrics.
 
     Multimetric scorers produce several summary rows that share the same registry
@@ -32,17 +36,19 @@ def multimetric_scalar_names(summary: pd.DataFrame) -> frozenset[str]:
     ``average``. Hub ``MetricType`` is unique on ``name``, so those rows need
     distinct hub identities.
     """
-    if summary.empty:
+    if metrics_summary.empty:
         return frozenset()
 
-    scalar = summary[
-        summary["label"].isna() & summary["output"].isna() & summary["average"].isna()
+    scalar = metrics_summary[
+        metrics_summary["label"].isna()
+        & metrics_summary["output"].isna()
+        & metrics_summary["average"].isna()
     ]
     if scalar.empty:
         return frozenset()
 
-    n_verbose = scalar.groupby("name", dropna=False)["verbose_name"].nunique()
-    return frozenset(n_verbose[n_verbose > 1].index)
+    keys = scalar[["name", "data_source"]]
+    return frozenset(keys[keys.duplicated()]["name"])
 
 
 def hub_metric_name(

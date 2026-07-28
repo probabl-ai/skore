@@ -1,68 +1,83 @@
-"""Tests for hub report payload utilities."""
+"""Tests for hub report metric helpers."""
+
+from types import SimpleNamespace
 
 import pandas as pd
 
-from skore._plugins.hub.report.utils import (
+from skore._plugins.hub.report.metric import (
     hub_metric_name,
     multimetric_scalar_names,
-    select_exportable_summary_rows,
+    select_exportable_metrics,
 )
 
 
-def _summary(rows: list[dict]) -> pd.DataFrame:
+def _metrics_summary(rows: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _report(ml_task: str, rows: list[dict]) -> SimpleNamespace:
+    return SimpleNamespace(
+        _ml_task=ml_task,
+        metrics=SimpleNamespace(
+            summarize=lambda data_source: SimpleNamespace(
+                summary=_metrics_summary(rows)
+            )
+        ),
+    )
+
+
 def test_drops_rows_with_missing_scores() -> None:
-    summary = _summary(
+    report = _report(
+        "regression",
         [
             {"name": "accuracy", "score": 0.9, "average": None},
             {"name": "precision", "score": float("nan"), "average": None},
-        ]
+        ],
     )
 
-    selected = select_exportable_summary_rows(summary, ml_task="regression")
+    selected = select_exportable_metrics(report)
 
     assert selected["name"].tolist() == ["accuracy"]
 
 
 def test_binary_classification_drops_averaged_rows() -> None:
-    summary = _summary(
+    report = _report(
+        "binary-classification",
         [
             {"name": "precision", "score": 0.8, "label": 0, "average": None},
             {"name": "precision", "score": 0.7, "label": 1, "average": None},
             {"name": "precision", "score": 0.75, "label": None, "average": "macro"},
-        ]
+        ],
     )
 
-    selected = select_exportable_summary_rows(summary, ml_task="binary-classification")
+    selected = select_exportable_metrics(report)
 
     assert len(selected) == 2
     assert selected["average"].isna().all()
 
 
 def test_multiclass_keeps_averaged_rows() -> None:
-    summary = _summary(
+    report = _report(
+        "multiclass-classification",
         [
             {"name": "precision", "score": 0.8, "label": 0, "average": None},
             {"name": "precision", "score": 0.75, "label": None, "average": "macro"},
-        ]
+        ],
     )
 
-    selected = select_exportable_summary_rows(
-        summary, ml_task="multiclass-classification"
-    )
+    selected = select_exportable_metrics(report)
 
     assert len(selected) == 2
     assert selected["average"].tolist() == [None, "macro"]
 
 
 def test_multimetric_scalar_names_detects_dict_submetrics() -> None:
-    summary = _summary(
+    metrics_summary = _metrics_summary(
         [
             {
                 "name": "my_multi_scorer",
                 "verbose_name": "score_a",
+                "data_source": "test",
                 "label": None,
                 "output": None,
                 "average": None,
@@ -70,6 +85,7 @@ def test_multimetric_scalar_names_detects_dict_submetrics() -> None:
             {
                 "name": "my_multi_scorer",
                 "verbose_name": "score_b",
+                "data_source": "test",
                 "label": None,
                 "output": None,
                 "average": None,
@@ -77,6 +93,7 @@ def test_multimetric_scalar_names_detects_dict_submetrics() -> None:
             {
                 "name": "r2",
                 "verbose_name": "R²",
+                "data_source": "test",
                 "label": None,
                 "output": None,
                 "average": None,
@@ -84,6 +101,7 @@ def test_multimetric_scalar_names_detects_dict_submetrics() -> None:
             {
                 "name": "precision",
                 "verbose_name": "Precision",
+                "data_source": "test",
                 "label": 0,
                 "output": None,
                 "average": None,
@@ -91,6 +109,7 @@ def test_multimetric_scalar_names_detects_dict_submetrics() -> None:
             {
                 "name": "precision",
                 "verbose_name": "Precision",
+                "data_source": "test",
                 "label": 1,
                 "output": None,
                 "average": None,
@@ -98,7 +117,7 @@ def test_multimetric_scalar_names_detects_dict_submetrics() -> None:
         ]
     )
 
-    assert multimetric_scalar_names(summary) == frozenset({"my_multi_scorer"})
+    assert multimetric_scalar_names(metrics_summary) == frozenset({"my_multi_scorer"})
 
 
 def test_hub_metric_name_uses_verbose_name_for_multimetric() -> None:
