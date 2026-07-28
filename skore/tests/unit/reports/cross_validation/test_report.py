@@ -304,14 +304,14 @@ def test_report_with_data_op():
     learner = data_op.skb.make_learner()
 
     report = CrossValidationReport(learner, data=data_op.skb.get_data())
-    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
-        ("SkrubLearner", "mean")
-    ]
+    accuracy = report.metrics.accuracy(aggregate="mean")
+    assert isinstance(accuracy, pd.Series)
+    assert accuracy.name.endswith("_mean")
 
     report = CrossValidationReport(data_op)
-    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
-        ("SkrubLearner", "mean")
-    ]
+    accuracy = report.metrics.accuracy(aggregate="mean")
+    assert isinstance(accuracy, pd.Series)
+    assert accuracy.name.endswith("_mean")
 
 
 def test_cross_validation_report_split_indices_from_data_op_cv():
@@ -504,3 +504,20 @@ def test_no_data_error():
         CrossValidationReport(estimator, splitter=2)
         CrossValidationReport(estimator, X=X, splitter=2)
         CrossValidationReport(estimator, y=y, splitter=2)
+
+
+def test_repr_and_html_do_not_raise(forest_binary_classification_data):
+    """Report repr and HTML must work with auto/wide metrics frames."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+
+    repr_str = repr(report)
+    assert "CrossValidationReport" in repr_str
+
+    html = report._repr_html_()
+    assert isinstance(html, str)
+    assert len(html) > 0
+
+    markdown = report.to_markdown()
+    assert isinstance(markdown, str)
+    assert len(markdown) > 0

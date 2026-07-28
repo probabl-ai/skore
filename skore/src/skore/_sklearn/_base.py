@@ -7,6 +7,8 @@ from keyword import iskeyword
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from uuid import uuid4
 
+import pandas as pd
+
 from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
@@ -46,10 +48,7 @@ class _BaseReport(ReportHelpMixin):
     checks: _ChecksAccessor
 
     def _aggregate_checks(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
+        self, ignored_codes: set[CheckCode], *, fast_mode: bool = False
     ) -> dict[CheckCode, CheckResult]:
         """Aggregate EstimatorReport checks.
 
@@ -58,10 +57,7 @@ class _BaseReport(ReportHelpMixin):
         return {}
 
     def _get_checks_results(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
+        self, ignored_codes: set[CheckCode], *, fast_mode: bool = False
     ) -> dict[CheckCode, CheckResult]:
         """Run uncached checks and return the checks summary.
 
@@ -233,12 +229,11 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         *,
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
-    ) -> pd.DataFrame:
-        """Metric summary.
-
-        Used for displaying the accessor.
-        """
-        return self.summarize().frame()
+    ) -> pd.DataFrame | pd.Series:
+        """Metric summary frame used for accessor display."""
+        display = self.summarize(data_source=data_source, metric=metric)
+        flat_index = "comparison" not in display.report_type
+        return display.frame(flat_index=flat_index)
 
     def __repr__(self) -> str:
         return (
@@ -248,9 +243,15 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         )
 
     def _repr_html_(self) -> str:
+        frame = self.summarize().frame(verbose_name=True, flat_index=False)
+        html = (
+            frame.to_frame()._repr_html_()
+            if isinstance(frame, pd.Series)
+            else frame._repr_html_()
+        )
         return (
             "<p>Metrics summary:</p>"
-            f"{self._formatted_summary_frame()._repr_html_()}"
+            f"{html}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

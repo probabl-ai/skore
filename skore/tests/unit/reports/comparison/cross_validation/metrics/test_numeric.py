@@ -21,9 +21,7 @@ expected_columns = pd.MultiIndex.from_tuples(
 
 
 @pytest.fixture
-def case_timings(
-    comparison_cross_validation_reports_binary_classification,
-):
+def case_timings(comparison_cross_validation_reports_binary_classification):
     expected_index = pd.Index(["Fit time (s)", "Predict time test (s)"], name="Metric")
     return (
         comparison_cross_validation_reports_binary_classification,
@@ -44,12 +42,7 @@ def case_timings_with_train_predictions(
 
     report = comparison_cross_validation_reports_binary_classification
     report._cache_predictions()
-    return (
-        report,
-        "timings",
-        expected_index,
-        expected_columns,
-    )
+    return (report, "timings", expected_index, expected_columns)
 
 
 @pytest.fixture
@@ -278,9 +271,10 @@ def test_pos_label_default(metric):
     report_1 = CrossValidationReport(LogisticRegression(), X, y)
     report_2 = CrossValidationReport(LogisticRegression(), X, y)
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert result_both_labels["Label"].to_list() == ["A", "B"]
-    result_both_labels = result_both_labels.set_index(["Metric", "Label"])
+    result_both_labels = report.metrics.summarize(metric=metric).frame(flat_index=False)
+    assert result_both_labels.index.get_level_values(
+        "label"
+    ).drop_duplicates().to_list() == ["A", "B"]
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])

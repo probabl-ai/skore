@@ -12,9 +12,7 @@ from numpy.typing import ArrayLike
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
-from sklearn.utils._response import (
-    _check_response_method,
-)
+from sklearn.utils._response import _check_response_method
 from sklearn.utils.validation import _num_samples, check_is_fitted
 from skrub._reporting._summarize import summarize_dataframe
 
@@ -219,9 +217,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     checks: _ChecksAccessor
 
     def _fit_estimator(
-        self,
-        estimator: EstimatorLike,
-        data: dict | None,
+        self, estimator: EstimatorLike, data: dict | None
     ) -> tuple[EstimatorLike, float]:
         """Clone then fit the estimator on the training data."""
         if data is None:
@@ -404,9 +400,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._cache = Cache()
 
     def _cache_predictions(
-        self,
-        *,
-        data_source: DataSource | Literal["both"] = "both",
+        self, *, data_source: DataSource | Literal["both"] = "both"
     ) -> None:
         """Cache estimator's predictions.
 
@@ -549,17 +543,14 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         # probe:
         predictions = self.learner_.predict(sampled_data)
         _, deduced_predictions, _ = self._get_response_and_derived_predictions(
-            sampled_data,
-            response_method=method.__name__,
+            sampled_data, response_method=method.__name__
         )
         if deduced_predictions is None:
             return False
         return np.array_equal(predictions, deduced_predictions)
 
     def _get_data_and_y_true(
-        self,
-        *,
-        data_source: DataSource,
+        self, *, data_source: DataSource
     ) -> tuple[dict, ArrayLike]:
         """Get the requested dataset.
 
@@ -771,10 +762,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
+        metrics_frame = self.metrics.summarize(data_source="test").frame(
+            verbose_name=True, flat_index=False
+        )
         return f"""{self.__class__.__name__}:
         {self.estimator_name_!r}
 
-        {self.metrics.summarize(data_source="test").frame()}
+        {metrics_frame}
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
     def _html_repr_fragments(self) -> dict[str, str]:
@@ -798,7 +792,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         table_report_html = table_report.html_snippet()
         metrics_html = (
             self.metrics.summarize(data_source="test")
-            .frame()
+            .frame(verbose_name=True, flat_index=False)
             .reset_index()
             .to_html(index=False)
         )
@@ -873,7 +867,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         str
             The markdown summary of the report.
         """
-        metrics_text = repr(self.metrics.summarize(data_source="test").frame())
+        metrics_text = repr(
+            self.metrics.summarize(data_source="test").frame(
+                verbose_name=True, flat_index=False
+            )
+        )
         timings = self.metrics.timings()
         summary = summarize_dataframe(
             self.data._prepare_dataframe_for_display(
@@ -895,8 +893,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "predict_time": timings.get("predict_time_test"),
                 "metrics_text": metrics_text,
                 **markdown_data_section(
-                    summary,
-                    data_label="full" if self.X_train is not None else "test",
+                    summary, data_label="full" if self.X_train is not None else "test"
                 ),
             },
         )

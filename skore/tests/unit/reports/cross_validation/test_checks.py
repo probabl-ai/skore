@@ -60,11 +60,12 @@ def test_skd001_detects_overfitting(regression_data):
     X, y = regression_data
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
+    summary = report.metrics.summarize(data_source="test").summary
     n_metrics = len(
         {
-            (row["metric_verbose_name"], row["label"], row["average"], row["output"])
-            for row in report.metrics.summarize(data_source="test").rows
-            if row["metric_verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
+            (row["verbose_name"], row["label"], row["average"], row["output"])
+            for row in summary.to_dict("records")
+            if row["verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
         }
     )
     assert "SKD001" in issues.index
@@ -91,11 +92,12 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     y = convert_container(y, y_container)
     report = evaluate(DummyRegressor(), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
+    summary = report.metrics.summarize(data_source="test").summary
     n_metrics = len(
         {
-            (row["metric_verbose_name"], row["label"], row["average"], row["output"])
-            for row in report.metrics.summarize(data_source="test").rows
-            if row["metric_verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
+            (row["verbose_name"], row["label"], row["average"], row["output"])
+            for row in summary.to_dict("records")
+            if row["verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
         }
     )
     assert "SKD002" in issues.index

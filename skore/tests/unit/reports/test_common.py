@@ -33,7 +33,7 @@ def test_summarize_single_list_equivalence(report):
     """Passing a single string is equivalent to passing a list with one element."""
     display_single = report.metrics.summarize(metric="r2")
     display_list = report.metrics.summarize(metric=["r2"])
-    assert_frame_equal(display_single.data, display_list.data)
+    assert_frame_equal(display_single.summary, display_list.summary)
 
 
 def test_metrics_available_returns_metric_keys(report):
@@ -61,7 +61,7 @@ def test_metrics_add_scorer(report):
     report.metrics.add(scorer)
 
     display = report.metrics.summarize()
-    assert "Mean Squared Error" in display.data["metric_verbose_name"].values
+    assert "Mean Squared Error" in display.summary["verbose_name"].values
 
 
 def test_metrics_failure(report):
@@ -74,17 +74,16 @@ def test_metrics_failure(report):
 
     display = report.metrics.summarize()
 
-    assert "Fail" in set(display.data["metric_verbose_name"])
+    assert "Fail" in set(display.summary["verbose_name"])
     assert (
-        display.data[display.data["metric_verbose_name"] == "Fail"]["score"]
-        .isna()
-        .all()
+        display.summary[display.summary["verbose_name"] == "Fail"]["score"].isna().all()
     )
 
     err_msg = r"Metric 'fail' has failed: Exception\('test error'\)"
     with pytest.warns(UserWarning, match=err_msg):
-        frame = display.frame()
-    assert "Fail" in repr(frame)
+        display.frame()
+        display.frame(flat_index=False)
+    assert display.summary["name"].str.contains("fail", case=False).any()
 
 
 def test_help_custom_metric(report, capsys):

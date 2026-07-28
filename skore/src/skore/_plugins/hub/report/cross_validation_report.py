@@ -40,7 +40,12 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.media.media import Media
-from skore._plugins.hub.metric import Metric
+from skore._plugins.hub.metric import (
+    Metric,
+    find_multimetric_scalar_names,
+    get_hub_metric_name,
+    select_exportable_metrics,
+)
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
 
@@ -375,25 +380,29 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
         Notes
         -----
-        All metrics whose value is not a scalar are currently ignored:
-        - ignore ``NaN``,
-        - ignore ``list[float]`` for multi-output ML task,
-        - ignore ``dict[str: float]`` for multi-classes ML task.
+        Per-label (per-class) and per-output (multioutput regression) metrics are
+        aggregated independently for each label/output and sent with their
+        dimension so the UI can expose a toggle. Metrics aggregated across labels
+        or outputs are aggregated independently for each ``average`` mode and sent
+        with their ``average`` dimension so the UI can show them as the aggregate
+        variant, except for binary classification where only per-label rows are
+        sent (``average`` is always ``None``). Only non-scalar values (``NaN``)
+        are ignored.
         """
-        data = self.report.metrics.summarize(data_source="both").data
-        scalar = data[
-            (data["label"].isna() & data["output"].isna() & data["average"].isna())
-            & data["score"].notna()
-        ]
+        metrics = select_exportable_metrics(self.report)
 
         aggregated = (
-            scalar.groupby(
+            metrics.groupby(
                 [
-                    "metric_name",
-                    "metric_verbose_name",
+                    "name",
+                    "verbose_name",
                     "data_source",
                     "greater_is_better",
-                ]
+                    "label",
+                    "output",
+                    "average",
+                ],
+                dropna=False,
             )
             .agg(
                 mean=("score", "mean"),
@@ -401,16 +410,23 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             )
             .reset_index()
         )
+        multimetric_names = find_multimetric_scalar_names(aggregated)
 
         return [
             Metric(
-                name=f"{row['metric_name']}_{suffix}",
-                verbose_name=f"{row['metric_verbose_name']} - {suffix.upper()}",
+                name=(
+                    f"{get_hub_metric_name(row, multimetric_names=multimetric_names)}"
+                    f"_{suffix}"
+                ),
+                verbose_name=f"{row['verbose_name']} - {suffix.upper()}",
                 data_source=row["data_source"],
                 greater_is_better=(
                     row["greater_is_better"] if suffix == "mean" else False
                 ),
                 value=row[suffix],
+                label=None if pd.isna(row["label"]) else row["label"],
+                output=None if pd.isna(row["output"]) else int(row["output"]),
+                average=None if pd.isna(row["average"]) else row["average"],
             )
             for row in aggregated.to_dict("records")
             for suffix in ("mean", "std")

@@ -51,7 +51,7 @@ if TYPE_CHECKING:
     from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
 
-_TIMING_METRICS_FLAT = {"fit_time_s", "predict_time_s"}
+_TIMING_METRICS_FLAT = {"fit_time", "predict_time"}
 
 
 def _baseline_estimator_report(
