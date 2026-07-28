@@ -595,8 +595,11 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
-        metrics_frame = self.metrics.summarize(data_source="test").frame(
-            verbose_name=True, flat_index=False
+        metrics_frame = (
+            self.metrics.summarize(data_source="test")
+            .frame(verbose_name=True, flat_index=False)
+            .droplevel(level=0, axis="columns")
+            .rename_axis(None, axis="columns")
         )
         return f"""{self.__class__.__name__}:
         {self.estimator_name_!r}
@@ -617,9 +620,10 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             The markdown summary of the report.
         """
         metrics_text = repr(
-            self.metrics.summarize(data_source="test").frame(
-                verbose_name=True, flat_index=False
-            )
+            self.metrics.summarize(data_source="test")
+            .frame(verbose_name=True, flat_index=False)
+            .droplevel(level=0, axis="columns")
+            .rename_axis(None, axis="columns")
         )
         timings = self.metrics.timings()
         summary = summarize_dataframe(
@@ -663,6 +667,8 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
                 verbose_name=True,
                 flat_index=False,
             )
+            .droplevel(level=0, axis="columns")
+            .rename_axis(None, axis="columns")
             .reset_index()
             .to_html(index=False)
         )

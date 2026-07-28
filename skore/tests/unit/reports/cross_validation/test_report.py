@@ -231,6 +231,29 @@ def _assert_cross_validation_report_repr_html(
     assert "CrossValidationReport.metrics" in html_out
 
 
+def test_metrics_summary_html_is_compact(forest_binary_classification_data):
+    """Metrics tab HTML must not keep the estimator / Aggregate MultiIndex levels.
+
+    After #3094, frame(verbose_name=True, flat_index=False) returns a named
+    MultiIndex on the columns. Without droplevel + rename_axis, to_html emits a
+    second header row and a leading index column of level names.
+    """
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    metrics_html = report._html_repr_fragments()["metrics_summary"]
+
+    thead = metrics_html[metrics_html.find("<thead>") : metrics_html.find("</thead>")]
+    tbody = metrics_html[metrics_html.find("<tbody>") : metrics_html.find("</tbody>")]
+    assert thead.count("<tr") == 1
+    assert "<th>" not in tbody
+    assert "Estimator" not in metrics_html
+    assert "Aggregate" not in metrics_html
+
+    repr_str = repr(report)
+    assert "Estimator" not in repr_str
+    assert "Aggregate" not in repr_str
+
+
 def test_text_repr(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
     report = evaluate(estimator, X, y, splitter=2)
