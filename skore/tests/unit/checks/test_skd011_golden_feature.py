@@ -1,0 +1,91 @@
+import numpy as np
+import pandas as pd
+import pytest
+from sklearn.cross_decomposition import PLSRegression
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from skrub import tabular_pipeline
+
+from skore import evaluate
+from skore._sklearn._checks._utils import CheckNotApplicable
+from skore._sklearn._checks.model_checks import CheckGoldenFeature
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+@pytest.mark.parametrize(
+    "estimator", [LinearRegression(), tabular_pipeline(LinearRegression())]
+)
+def test_detects_golden_feature(report_type, estimator):
+    """Features correlated with the target get flagged as golden."""
+    rng = np.random.RandomState(0)
+    n_samples = 200
+    X = rng.normal(size=(n_samples, 4))
+    y = X[:, 0] * 10
+    X[:, 1] = y + rng.normal(scale=0.01, size=n_samples)
+    X = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])
+    report = evaluate(
+        estimator,
+        X,
+        y,
+        splitter=0.2 if report_type == "estimator" else 3,
+    )
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+
+    assert "SKD011" in tips.index
+    explanation = tips.loc["SKD011", "explanation"]
+    assert "Feature 0" in explanation
+    assert "Feature 1" in explanation
+    assert "Feature 2" not in explanation
+    assert "Feature 3" not in explanation
+
+
+def test_sklearn_pipeline_preserves_feature_names():
+    """SKD011 works when a sklearn preprocessor returns an ndarray.
+
+    Default sklearn ``transform`` drops column names; ``get_preprocessed_X``
+    must restore them so single-feature selection matches ``_get_feature_names``.
+    """
+    rng = np.random.RandomState(0)
+    n_samples = 200
+    X = rng.normal(size=(n_samples, 4))
+    y = X[:, 0] * 10
+    X[:, 1] = y + rng.normal(scale=0.01, size=n_samples)
+    X = pd.DataFrame(X, columns=[f"col_{i}" for i in range(X.shape[1])])
+    estimator = Pipeline([("scaler", StandardScaler()), ("model", LinearRegression())])
+    report = evaluate(estimator, X, y, splitter=0.2)
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+
+    assert "SKD011" in tips.index
+    explanation = tips.loc["SKD011", "explanation"]
+    assert "col_0" in explanation
+    assert "col_1" in explanation
+    assert "col_2" not in explanation
+    assert "col_3" not in explanation
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_not_applicable_single_feature_estimator(report_type, regression_data):
+    """SKD011 needs at least 2 features to compare against a single one."""
+    X, y = regression_data
+    report = evaluate(
+        LinearRegression(),
+        X[:, :1],
+        y,
+        splitter=0.2 if report_type == "estimator" else 3,
+    )
+
+    with pytest.raises(CheckNotApplicable, match="only one feature"):
+        CheckGoldenFeature().check_function(report)
+
+
+def test_not_applicable_when_single_feature_refit_fails(regression_data):
+    """SKD011 raises when the single-feature estimator cannot be refit.
+
+    ``PLSRegression(n_components=2)`` fails to fit once selected down to a
+    single column, since 2 components cannot be extracted from 1 feature.
+    """
+    X, y = regression_data
+    report = evaluate(PLSRegression(n_components=2), X, y, splitter=0.2)
+    with pytest.raises(CheckNotApplicable, match="Failed to create report"):
+        CheckGoldenFeature().check_function(report)
