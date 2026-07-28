@@ -581,6 +581,8 @@ How to reduce the risk
   both together: the search space is too narrow on at least one axis and is
   also missing recommended axes entirely.
 
+Check out the :ref:`example for this check <example_skd014_hyperparams_at_search_edge_skd015_hyperparameters_worth_tuning>`.
+
 .. _skd015-hyperparameters-worth-tuning:
 
 SKD015 - Hyperparameters worth tuning
@@ -602,11 +604,15 @@ to a single suggestion.
 Why it matters
 ^^^^^^^^^^^^^^
 Not tuning the most impactful hyperparameters leaves performance on the table.
+This finding is a **tip**: the search is incomplete relative to a curated table,
+not proof that the fitted model is wrong.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
 - add the suggested parameters to ``param_grid`` or ``param_distributions``.
+
+Check out the :ref:`example for this check <example_skd014_hyperparams_at_search_edge_skd015_hyperparameters_worth_tuning>`.
 
 .. _skd016-estimator-not-tuned:
 
