@@ -18,7 +18,7 @@ notebook walks the underfitting to overfitting path while showing different
 mitigations techniques:
 
 - tweaking model capacity (model family / complexity)
-- adding and removing features
+- feature engineering
 - tuning regularization
 - using early stopping
 - using more data
@@ -175,123 +175,6 @@ report_rf.metrics.summarize(data_source="both").frame()
 report_rf.checks.summarize(fast_mode=True)
 
 # %%
-# Feature selection
-# =================
-#
-# Feature selection is the other direction from engineering: drop columns that
-# do not carry enough signal so the model has less room to memorize noise. We
-# run :class:`~sklearn.feature_selection.RFECV` with a random forest and
-# rank features via :func:`~sklearn.inspection.permutation_importance` through
-# ``importance_getter``.
-#
-# RFECV calls ``importance_getter(model)`` only, so we:
-#
-# - split a held-out validation set ourselves for permutation importance (not
-#   the skore evaluation test fold, to avoid leakage),
-# - close over that hold-out in a ``lambda`` that still matches the one-argument
-#   getter signature,
-# - return ``importances_mean`` from the permutation-importance result.
-
-import inspect
-
-import numpy as np
-from sklearn.feature_selection import RFECV
-from sklearn.inspection import permutation_importance
-from sklearn.model_selection import KFold
-
-X_sel = X.sample(3_000, random_state=42)
-y_sel = y.loc[X_sel.index]
-X_fs, X_val, y_fs, y_val = train_test_split(
-    X_sel, y_sel, test_size=0.2, random_state=42
-)
-X_val_np = np.asarray(X_val)
-y_val_np = np.asarray(y_val)
-
-
-def permutation_importance_getter(model, X_val, y_val, random_state=42):
-    X_val = np.asarray(X_val)
-    y_val = np.asarray(y_val)
-    if X_val.shape[1] != model.n_features_in_:
-        features = None
-        frame = inspect.currentframe()
-        try:
-            caller = frame.f_back
-            while caller is not None:
-                local_ns = caller.f_locals
-                if "features" in local_ns and "support_" in local_ns:
-                    features = local_ns["features"]
-                    break
-                caller = caller.f_back
-        finally:
-            del frame
-        if features is None:
-            raise RuntimeError(
-                "Could not recover active RFECV feature indices for the hold-out set."
-            )
-        X_val = X_val[:, features]
-    return permutation_importance(
-        model,
-        X_val,
-        y_val,
-        n_repeats=1,
-        random_state=random_state,
-        n_jobs=None,
-    ).importances_mean
-
-
-rf_regressor = RandomForestRegressor(
-    n_estimators=20,
-    max_depth=10,
-    random_state=42,
-    n_jobs=1,
-)
-
-rfecv = RFECV(
-    estimator=rf_regressor,
-    step=1,
-    cv=KFold(2, shuffle=True, random_state=42),
-    scoring="r2",
-    n_jobs=None,
-    importance_getter=lambda model: permutation_importance_getter(
-        model, X_val_np, y_val_np, random_state=42
-    ),
-)
-
-report_rf_selected = skore.evaluate(
-    rfecv,
-    X=X_fs,
-    y=y_fs,
-    splitter=splitter,
-)
-
-# Same subsample and splitter as RFECV so ``skore.compare`` shares test targets.
-report_rf_fs = skore.evaluate(
-    RandomForestRegressor(random_state=42),
-    X=X_fs,
-    y=y_fs,
-    splitter=splitter,
-)
-
-skore.compare(
-    {
-        "rf_all_features": report_rf_fs,
-        "rf_after_rfecv": report_rf_selected,
-    }
-).metrics.summarize(data_source="both").frame()
-
-# %%
-# After RFECV, test metrics move up a little and the train/test gap narrows:
-# the forest focuses on the stronger housing features. Selection helps, but
-# further capacity control is still useful if SKD001 remains.
-
-report_rf_selected.checks.summarize(fast_mode=True)
-
-# %%
-selected_columns = list(X_fs.columns[report_rf_selected.estimator_.support_])
-dropped_columns = list(X_fs.columns[~report_rf_selected.estimator_.support_])
-selected_columns, dropped_columns
-
-# %%
 # Regularization
 # ==============
 #
@@ -422,12 +305,10 @@ skore.compare(
 #
 # SKD002 and SKD001 are two different consequences of a unsuited expressiveness.
 # Relax regularization / add capacity and use informative features until the
-# model beats a weak baseline; then select features, regularize, stop early,
-# and add data if train scores have a noticeable gap compared to the test
-# scores.
+# model beats a weak baseline; then regularize, stop early, and add data if
+# train scores have a noticeable gap compared to the test scores.
 #
-# Feature engineering and feature selection are opposite middle steps:
-# adding informative columns can rescue an underfit model; dropping weaker
-# ones with RFECV can shrink an overfit gap. Hyperparameter choices play a
-# similar dual role. In practice you combine several of these levers and
-# re-run the checks until the results are satisfying enough.
+# Feature engineering helps the underfit side of the path; capacity control
+# and more data help the overfit side. Hyperparameter choices play a dual
+# role. In practice you combine several of these levers and re-run the checks
+# until the results are satisfying enough.
