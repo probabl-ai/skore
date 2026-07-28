@@ -27,10 +27,10 @@ from skore._plugins.hub.artifact.media import (
     TableReportTrain,
 )
 from skore._plugins.hub.artifact.media.media import Media
-from skore._plugins.hub.metric import Metric
-from skore._plugins.hub.report.metric import (
-    hub_metric_name,
-    multimetric_scalar_names,
+from skore._plugins.hub.metric import (
+    Metric,
+    find_multimetric_scalar_names,
+    get_hub_metric_name,
     select_exportable_metrics,
 )
 from skore._plugins.hub.report.report import ReportPayload
@@ -88,11 +88,11 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         (``average`` is always ``None``). Non-scalar values (``NaN``) are ignored.
         """
         metrics = select_exportable_metrics(self.report)
-        multimetric_names = multimetric_scalar_names(metrics)
+        multimetric_names = find_multimetric_scalar_names(metrics)
 
         return [
             Metric(
-                name=hub_metric_name(row, multimetric_names=multimetric_names),
+                name=get_hub_metric_name(row, multimetric_names=multimetric_names),
                 verbose_name=row["verbose_name"],
                 data_source=row["data_source"],
                 greater_is_better=row["greater_is_better"],

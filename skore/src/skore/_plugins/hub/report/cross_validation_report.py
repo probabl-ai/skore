@@ -40,13 +40,13 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.media.media import Media
-from skore._plugins.hub.metric import Metric
-from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
-from skore._plugins.hub.report.metric import (
-    hub_metric_name,
-    multimetric_scalar_names,
+from skore._plugins.hub.metric import (
+    Metric,
+    find_multimetric_scalar_names,
+    get_hub_metric_name,
     select_exportable_metrics,
 )
+from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
 
 SPLITTING_STRATEGY_MAX_INDEX_COUNT = 10_000
@@ -410,12 +410,12 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             )
             .reset_index()
         )
-        multimetric_names = multimetric_scalar_names(aggregated)
+        multimetric_names = find_multimetric_scalar_names(aggregated)
 
         return [
             Metric(
                 name=(
-                    f"{hub_metric_name(row, multimetric_names=multimetric_names)}"
+                    f"{get_hub_metric_name(row, multimetric_names=multimetric_names)}"
                     f"_{suffix}"
                 ),
                 verbose_name=f"{row['verbose_name']} - {suffix.upper()}",

@@ -1,12 +1,12 @@
-"""Tests for hub report metric helpers."""
+"""Tests for hub metric helpers."""
 
 from types import SimpleNamespace
 
 import pandas as pd
 
-from skore._plugins.hub.report.metric import (
-    hub_metric_name,
-    multimetric_scalar_names,
+from skore._plugins.hub.metric import (
+    find_multimetric_scalar_names,
+    get_hub_metric_name,
     select_exportable_metrics,
 )
 
@@ -71,7 +71,7 @@ def test_multiclass_keeps_averaged_rows() -> None:
     assert selected["average"].tolist() == [None, "macro"]
 
 
-def test_multimetric_scalar_names_detects_dict_submetrics() -> None:
+def test_find_multimetric_scalar_names_detects_dict_submetrics() -> None:
     metrics_summary = _metrics_summary(
         [
             {
@@ -117,21 +117,23 @@ def test_multimetric_scalar_names_detects_dict_submetrics() -> None:
         ]
     )
 
-    assert multimetric_scalar_names(metrics_summary) == frozenset({"my_multi_scorer"})
+    assert find_multimetric_scalar_names(metrics_summary) == frozenset(
+        {"my_multi_scorer"}
+    )
 
 
-def test_hub_metric_name_uses_verbose_name_for_multimetric() -> None:
+def test_get_hub_metric_name_uses_verbose_name_for_multimetric() -> None:
     multimetric_names = frozenset({"my_multi_scorer"})
 
     assert (
-        hub_metric_name(
+        get_hub_metric_name(
             {"name": "my_multi_scorer", "verbose_name": "score_a"},
             multimetric_names=multimetric_names,
         )
         == "score_a"
     )
     assert (
-        hub_metric_name(
+        get_hub_metric_name(
             {"name": "r2", "verbose_name": "R²"},
             multimetric_names=multimetric_names,
         )
