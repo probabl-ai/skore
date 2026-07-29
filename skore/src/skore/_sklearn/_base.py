@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+from abc import abstractmethod
 from datetime import UTC, datetime
 from functools import partial
 from importlib.metadata import version
@@ -15,14 +16,16 @@ from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
+from skore._sklearn.metrics import Metric
 from skore._sklearn.types import DataSource, ReportMetadata
 from skore._utils._progress_bar import track
 from skore._utils.docscrape import (
     build_numpy_docstring,
+    callable_docstring,
     docstring_summary,
-    param_description_text,
     parameters_by_name,
     parse_numpy_doc,
+    replace_default,
 )
 from skore._utils.repr.base import (
     AccessorHelpMixin,
@@ -35,7 +38,6 @@ if TYPE_CHECKING:
     import pandas as pd
 
     from skore._sklearn._checks.accessor import _ChecksAccessor
-    from skore._sklearn.metrics import Metric
     from skore._utils.repr.data import AccessorHelpData
 
 
@@ -204,49 +206,35 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
             if self._is_callable_metric_name(name) and not hasattr(type(self), name)
         ]
 
+    @abstractmethod
     def _resolve_metric(self, name: str) -> Metric:
-        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``."""
-        parent = self._parent
-        registry = getattr(parent, "_metric_registry", None)
-        if registry is not None:
-            return registry[name]
+        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``.
 
-        reports = getattr(parent, "reports_", None)
-        if isinstance(reports, dict):
-            for report in reports.values():
-                registry = getattr(report, "_metric_registry", None)
-                if registry is None:
-                    fold_reports = getattr(report, "reports_", None)
-                    if not fold_reports:
-                        continue
-                    registry = fold_reports[0]._metric_registry
-                if name in registry:
-                    return registry[name]
-            raise KeyError(name)
-        if reports:
-            return reports[0]._metric_registry[name]
-        raise KeyError(name)
+        Raises
+        ------
+        KeyError
+            If ``name`` is not registered on the parent report.
+        """
+
+    def _metric_summary(self, metric: Metric) -> str:
+        """Summarize ``metric`` in a single sentence."""
+        summary = docstring_summary(callable_docstring(metric.function))
+        if not summary and type(metric) is not Metric:
+            # Only built-in metrics document themselves at the class level; a custom
+            # metric is a plain ``Metric``, whose docstring describes the machinery.
+            summary = docstring_summary(type(metric).__doc__)
+        return summary or metric.verbose_name or "Registered metric."
 
     def _build_metric_method_docstring(self, name: str) -> str:
         """Build a numpydoc string for a dynamically exposed registry metric."""
-        metric = self._resolve_metric(name)
-
-        summary = None
-        if metric.function is not None:
-            summary = docstring_summary(getattr(metric.function, "__doc__", None))
-        if not summary:
-            summary = docstring_summary(getattr(type(metric), "__doc__", None))
-        if not summary:
-            summary = getattr(metric, "verbose_name", None) or "Registered metric."
+        try:
+            metric: Metric | None = self._resolve_metric(name)
+        except KeyError:
+            metric = None
 
         get_doc = getattr(self.get, "__doc__", None)
         get_parsed = parse_numpy_doc(get_doc)
         get_params = parameters_by_name(get_doc)
-        score_params = parameters_by_name(
-            getattr(metric.function, "__doc__", None)
-            if metric.function is not None
-            else None
-        )
 
         parameters: list[Parameter] = []
         shared_names: set[str] = set()
@@ -265,14 +253,25 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
                     )
                 )
 
-        for key, default in metric.kwargs.items():
-            if key in shared_names:
-                continue
-            if key in score_params:
-                description = param_description_text(score_params[key])
-            else:
-                description = "Forwarded to the underlying score function."
-            parameters.append(Parameter(key, f"default={default!r}", [description]))
+        if metric is None:
+            summary = "Registered metric."
+        else:
+            summary = self._metric_summary(metric)
+            score_params = parameters_by_name(callable_docstring(metric.function))
+            for key, default in metric.kwargs.items():
+                if key in shared_names:
+                    continue
+                score_param = score_params.get(key)
+                if score_param is not None and score_param.type:
+                    type_spec = replace_default(score_param.type, default)
+                else:
+                    type_spec = f"default={default!r}"
+                description = (
+                    list(score_param.desc)
+                    if score_param is not None and score_param.desc
+                    else ["Forwarded to the underlying score function."]
+                )
+                parameters.append(Parameter(key, type_spec, description))
 
         parameters.append(
             Parameter(
@@ -295,10 +294,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     def _metric_help_description(self, name: str) -> str:
         """Build a help description for a registry metric method."""
         try:
-            return (
-                docstring_summary(self._build_metric_method_docstring(name))
-                or "Registered metric."
-            )
+            return self._metric_summary(self._resolve_metric(name))
         except KeyError:
             return "Registered metric."
 

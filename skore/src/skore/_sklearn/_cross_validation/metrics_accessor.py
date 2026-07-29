@@ -18,7 +18,7 @@ from skore._sklearn._plot import (
     RocCurveDisplay,
 )
 from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
-from skore._sklearn.metrics import MetricLike
+from skore._sklearn.metrics import Metric, MetricLike
 from skore._sklearn.types import Aggregate
 from skore._utils._accessor import _check_estimator_report_has_method
 from skore._utils._fixes import _validate_joblib_parallel_params
@@ -158,6 +158,16 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
             The list of available metric names.
         """
         return self._parent.reports_[0].metrics.available()
+
+    def _resolve_metric(self, name: str) -> Metric:
+        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``.
+
+        Raises
+        ------
+        KeyError
+            If ``name`` is not registered on the first split report.
+        """
+        return self._parent.reports_[0].metrics._resolve_metric(name)
 
     def add(
         self,

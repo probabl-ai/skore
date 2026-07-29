@@ -18,7 +18,7 @@ from skore._sklearn._plot.metrics import (
     PredictionErrorDisplay,
     RocCurveDisplay,
 )
-from skore._sklearn.metrics import MetricLike
+from skore._sklearn.metrics import Metric, MetricLike
 from skore._sklearn.types import Aggregate
 from skore._utils._accessor import (
     _check_any_sub_report_has_metric,
@@ -199,6 +199,21 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             for metric in report.metrics.available()
         )
         return list(keys)
+
+    def _resolve_metric(self, name: str) -> Metric:
+        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``.
+
+        Raises
+        ------
+        KeyError
+            If ``name`` is not registered on any of the sub-reports.
+        """
+        for report in self._parent.reports_.values():
+            try:
+                return report.metrics._resolve_metric(name)
+            except KeyError:
+                continue
+        raise KeyError(name)
 
     def add(
         self,

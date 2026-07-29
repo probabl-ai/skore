@@ -7,6 +7,7 @@ import sklearn.metrics
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import make_scorer, mean_squared_error
 
+from skore._sklearn.metrics import Metric
 from skore._utils.docscrape import docstring_summary
 
 
@@ -192,6 +193,35 @@ def test_dynamic_metric_docstring_includes_metric_kwargs(report):
     assert expected_kwarg in doc
 
 
+def test_dynamic_metric_docstring_keeps_score_function_parameter(report):
+    """Metric kwargs reuse the score function's type spec, but with skore's default."""
+    if "r2" not in report.metrics.available():
+        pytest.skip("No r2 metric available on this report")
+
+    doc = report.metrics.r2.__doc__
+
+    assert "multioutput : {'raw_values', 'uniform_average', 'variance_weighted'}" in doc
+    # skore registers r2 with multioutput="raw_values", not scikit-learn's default
+    assert "default='raw_values'" in doc
+    assert "default='uniform_average'" not in doc
+    # the description keeps its structure instead of being flattened into one line
+    assert "\n    'raw_values' :\n" in doc
+    assert "\n    .. versionchanged:: 0.19\n" in doc
+
+
+def test_dynamic_metric_docstring_keeps_parameter_choices(
+    estimator_reports_binary_classification,
+):
+    """The allowed values of a score function parameter survive in the docstring."""
+    report = estimator_reports_binary_classification[0]
+
+    doc = report.metrics.precision.__doc__
+
+    assert (
+        "average : {'micro', 'macro', 'samples', 'weighted', 'binary'} or None" in doc
+    )
+
+
 def test_dynamic_custom_metric_docstring(report):
     """Custom metrics expose their callable summary and registry name."""
 
@@ -206,3 +236,49 @@ def test_dynamic_custom_metric_docstring(report):
     assert (
         docstring_summary(method.__doc__) == "Custom score used as attribute docstring."
     )
+
+
+def test_dynamic_custom_metric_docstring_without_docstring(report):
+    """An undocumented custom metric falls back to its verbose name."""
+    report.metrics.add(lambda e, X, y: 1, name="nodoc", verbose_name="No doc metric")
+
+    assert docstring_summary(report.metrics.nodoc.__doc__) == "No doc metric"
+    assert report.metrics._metric_help_description("nodoc") == "No doc metric"
+    # the docstring of the Metric class itself describes the machinery, not the metric
+    assert "A metric that can compute a score from a report." not in (
+        report.metrics.nodoc.__doc__
+    )
+
+
+def test_dynamic_custom_metric_docstring_from_partial(report):
+    """A metric built from a partial does not expose the stdlib partial docstring."""
+
+    def business_loss(estimator, X, y, cost):
+        return 1
+
+    report.metrics.add(partial(business_loss, cost=10), name="loss")
+
+    assert docstring_summary(report.metrics.loss.__doc__) == "Loss"
+    assert "partial application" not in report.metrics.loss.__doc__
+
+
+def test_resolve_metric(report):
+    """Each accessor resolves registry metrics from its own report structure."""
+    for name in report.metrics.available():
+        metric = report.metrics._resolve_metric(name)
+        assert isinstance(metric, Metric)
+        assert metric.name == name
+
+    with pytest.raises(KeyError):
+        report.metrics._resolve_metric("does_not_exist")
+
+
+def test_resolve_metric_comparison_partial_coverage(
+    comparison_estimator_reports_regression,
+):
+    """A comparison resolves a metric registered on a single sub-report."""
+    comparison = comparison_estimator_reports_regression
+    first, *_ = comparison.reports_.values()
+    first.metrics.add(lambda e, X, y: 1, name="only_first")
+
+    assert comparison.metrics._resolve_metric("only_first").name == "only_first"

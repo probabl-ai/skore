@@ -70,11 +70,32 @@ def monkeypatch_datetime(monkeypatch, Datetime):
 
 @fixture(autouse=True)
 def monkeypatch_metrics(monkeypatch, Datetime):
-    monkeypatch.setattr(
-        "skore.EstimatorReport.metrics.rmse",
-        lambda _, data_source: float(hash(f"<rmse_{data_source}>")),
-        raising=False,
-    )
+    # ``rmse`` is exposed dynamically from the metric registry, so it is stubbed by
+    # intercepting ``get``; every other metric keeps its real implementation.
+    estimator_get = EstimatorReport.metrics.get
+    cv_get = CrossValidationReport.metrics.get
+
+    def estimator_metrics_get(self, name, *args, **kwargs):
+        if name == "rmse":
+            return float(hash(f"<rmse_{kwargs['data_source']}>"))
+        return estimator_get(self, name, *args, **kwargs)
+
+    def cv_metrics_get(self, name, *args, **kwargs):
+        if name == "rmse":
+            data_source = kwargs["data_source"]
+            return DataFrame.from_dict(
+                {
+                    ("Ridge", "mean"): {
+                        "RMSE": float(hash(f"<rmse_mean_{data_source}>"))
+                    },
+                    ("Ridge", "std"): {
+                        "RMSE": float(hash(f"<rmse_std_{data_source}>"))
+                    },
+                }
+            )
+        return cv_get(self, name, *args, **kwargs)
+
+    monkeypatch.setattr("skore.EstimatorReport.metrics.get", estimator_metrics_get)
     monkeypatch.setattr(
         "skore.EstimatorReport.metrics.timings",
         lambda _: {
@@ -83,16 +104,7 @@ def monkeypatch_metrics(monkeypatch, Datetime):
             "predict_time_test": float(hash("<predict_time_test>")),
         },
     )
-    monkeypatch.setattr(
-        "skore.CrossValidationReport.metrics.rmse",
-        lambda _, data_source, aggregate: DataFrame.from_dict(
-            {
-                ("Ridge", "mean"): {"RMSE": float(hash(f"<rmse_mean_{data_source}>"))},
-                ("Ridge", "std"): {"RMSE": float(hash(f"<rmse_std_{data_source}>"))},
-            }
-        ),
-        raising=False,
-    )
+    monkeypatch.setattr("skore.CrossValidationReport.metrics.get", cv_metrics_get)
     monkeypatch.setattr(
         "skore.CrossValidationReport.metrics.timings",
         lambda _, aggregate: DataFrame.from_dict(

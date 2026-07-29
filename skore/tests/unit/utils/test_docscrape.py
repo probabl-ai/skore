@@ -1,12 +1,15 @@
 """Tests for :mod:`skore._utils.docscrape`."""
 
+import functools
+
 from skore._externals._docscrape import Parameter
 from skore._utils.docscrape import (
     build_numpy_docstring,
+    callable_docstring,
     docstring_summary,
-    param_description_text,
     parameters_by_name,
     parse_numpy_doc,
+    replace_default,
 )
 
 NUMPYDOC_EXAMPLE = """\
@@ -62,17 +65,35 @@ def test_docstring_summary_empty():
     assert docstring_summary("") is None
 
 
-def test_param_description_text():
-    param = Parameter("average", "str or None", ["Averaging", "strategy."])
-    assert param_description_text(param) == "Averaging strategy."
+def test_callable_docstring():
+    def documented():
+        """Own docstring."""
+
+    def undocumented():
+        pass
+
+    class Callable:
+        """Class docstring."""
+
+        def __call__(self):
+            pass
+
+    assert callable_docstring(documented) == "Own docstring."
+    assert callable_docstring(undocumented) is None
+    assert callable_docstring(None) is None
+    # Objects without their own docstring inherit it from their type.
+    assert callable_docstring(functools.partial(documented)) is None
+    assert callable_docstring(Callable()) is None
 
 
-def test_param_description_text_default_when_empty():
-    param = Parameter("cast", "bool", [])
+def test_replace_default():
     assert (
-        param_description_text(param) == "Forwarded to the underlying score function."
+        replace_default("{'micro', 'macro'} or None, default='binary'", None)
+        == "{'micro', 'macro'} or None, default=None"
     )
-    assert param_description_text(param, default="Missing.") == "Missing."
+    assert replace_default("bool", True) == "bool, default=True"
+    assert replace_default("str, optional", "raw") == "str, default='raw'"
+    assert replace_default("default='uniform'", "raw") == "default='raw'"
 
 
 def test_parameters_by_name_strips_stars():
