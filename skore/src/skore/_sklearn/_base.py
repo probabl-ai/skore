@@ -38,6 +38,9 @@ if TYPE_CHECKING:
     import pandas as pd
 
     from skore._sklearn._checks.accessor import _ChecksAccessor
+    from skore._sklearn._cross_validation.report import CrossValidationReport
+    from skore._sklearn._estimator.report import EstimatorReport
+    from skore._sklearn._plot import MetricsSummaryDisplay
     from skore._utils.repr.data import AccessorHelpData
 
 
@@ -189,6 +192,20 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 
     def _repr_mimebundle_(self, **kwargs):
         return {"text/plain": repr(self), "text/html": self._repr_html_()}
+
+
+def _summarize_report_metrics(
+    report: EstimatorReport | CrossValidationReport,
+    *,
+    data_source: DataSource | Literal["both"],
+    metric: str | list[str] | None = None,
+) -> MetricsSummaryDisplay:
+    """Compute a metrics summary for ``report``.
+
+    Pure Python function to avoid pickling a metrics accessor as a bound method's
+    ``__self__``.
+    """
+    return report.metrics._summarize_display(data_source=data_source, metric=metric)
 
 
 class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
