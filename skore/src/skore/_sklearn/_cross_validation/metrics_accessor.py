@@ -9,7 +9,7 @@ from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import BaseMetricsAccessor
+from skore._sklearn._base import BaseMetricsAccessor, _summarize_report_metrics
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -126,7 +126,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         summaries = list(
             track(
                 parallel(
-                    delayed(report.metrics._summarize_display)(
+                    delayed(_summarize_report_metrics)(
+                        report,
                         data_source=data_source,
                         metric=metric,
                     )

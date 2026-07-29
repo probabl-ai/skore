@@ -4,13 +4,13 @@ import numbers
 import warnings
 from typing import Any, Literal
 
-import joblib
 import pandas as pd
+from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import BaseMetricsAccessor
+from skore._sklearn._base import BaseMetricsAccessor, _summarize_report_metrics
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._plot.metrics import (
     ConfusionMatrixDisplay,
@@ -26,6 +26,7 @@ from skore._utils._accessor import (
     _check_supported_ml_task,
 )
 from skore._utils._fixes import _validate_joblib_parallel_params
+from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
 DataSource = Literal["test", "train", "both"]
@@ -84,7 +85,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         precision              0.98...              0.98...
         recall                 0.92...              0.92...
         """
-        parallel = joblib.Parallel(
+        parallel = Parallel(
             **_validate_joblib_parallel_params(
                 n_jobs=self._parent.n_jobs, return_as="generator"
             )
@@ -93,7 +94,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         summaries = list(
             track(
                 parallel(
-                    joblib.delayed(report.metrics._summarize_display)(
+                    delayed(_summarize_report_metrics)(
+                        report,
                         data_source=data_source,
                         metric=metric,
                     )

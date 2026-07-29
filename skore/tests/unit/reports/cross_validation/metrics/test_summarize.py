@@ -339,3 +339,17 @@ def test_pos_label_overwrite(metric, logistic_binary_classification_data):
 
     assert len(display.summary) == 2  # One line per split
     assert display.summary["label"].isna().all()
+
+
+def test_non_default_n_jobs(forest_binary_classification_data):
+    """summarize() must work when the report uses process-based parallelism.
+
+    Joblib must not pickle a bound metrics-accessor method; that used to recurse
+    while unpickling ``__getattr__`` / ``available()`` in worker processes.
+    """
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=5, n_jobs=2)
+    display = report.metrics.summarize()
+
+    assert isinstance(display, MetricsSummaryDisplay)
+    assert set(display.summary["split"]) == {0, 1, 2, 3, 4}
