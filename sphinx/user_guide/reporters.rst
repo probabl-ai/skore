@@ -64,6 +64,12 @@ addition, set `data_source` to `X_y` to pass a new dataset using the parameters 
 
 There are individual methods to compute each metric specific to the problem at hand.
 They return usual python objects such as floats, integers, or dictionaries.
+Any metric registered in the report (built-in or custom) whose name is a valid
+Python identifier is also available as ``report.metrics.<name>(...)``. Use
+:meth:`~skore.EstimatorReport.metrics.available` to list names,
+:meth:`~skore.EstimatorReport.metrics.get` when you prefer an explicit lookup,
+and :meth:`~skore.EstimatorReport.metrics.help` to explore the callable methods
+with short descriptions.
 
 The second type of methods provided by :obj:`EstimatorReport.metrics` are methods that
 return a :class:`~skore.Display` object. They have a common API as well. They expose

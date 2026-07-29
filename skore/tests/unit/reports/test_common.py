@@ -88,8 +88,13 @@ def test_metrics_failure(report):
 
 def test_help_custom_metric(report, capsys):
     """Custom metrics are shown in the help menu, unless their name is not a valid
-    identifier."""
-    report.metrics.add(lambda e, X, y: 1, name="custom")
+    identifier. Descriptions come from the metric docstring summary."""
+
+    def custom(e, X, y):
+        """Custom score used in help."""
+        return 1
+
+    report.metrics.add(custom)
 
     # Not a valid identifier
     report.metrics.add(lambda e, X, y: 2, name="a b")
@@ -101,5 +106,24 @@ def test_help_custom_metric(report, capsys):
     # Sanity check that help menu is there
     assert "predict_time(...)" in stdout
     assert "custom(...)" in stdout
+    assert "Custom score used in help." in stdout
+    # Built-in registry metrics also appear with a real description
+    assert "accuracy(...)" in stdout or "r2(...)" in stdout
     # Not a valid identifier, so the help showing ".a b()" would be misleading
     assert "a b" not in stdout
+    assert "Custom metric." not in stdout
+
+
+def test_help_builtin_metric_description(report):
+    """Built-in dynamic metrics expose a docstring-derived help description."""
+    help_data = report.metrics._build_help_data()
+    by_name = {method.name: method.description for method in help_data.methods}
+
+    if "accuracy" in report.metrics.available():
+        assert "accuracy" in by_name
+        assert by_name["accuracy"] != "Custom metric."
+        assert by_name["accuracy"] != "Registered metric."
+    if "r2" in report.metrics.available():
+        assert "r2" in by_name
+        assert by_name["r2"] != "Custom metric."
+        assert by_name["r2"] != "Registered metric."

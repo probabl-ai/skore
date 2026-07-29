@@ -54,6 +54,10 @@ Metrics
 The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator across cross-validation splits.
 
+Registered metrics whose name is a valid Python identifier are also available as
+``report.metrics.<name>(...)``. See the built-in registry metrics listed under
+:ref:`estimator_metrics`.
+
 .. include:: ../api/CrossValidationReport.metrics.inc
 
 Inspection

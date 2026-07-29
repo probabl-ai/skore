@@ -75,8 +75,9 @@ report.metrics.get("specificity")
 
 # %%
 # Further, if the metric name is a valid identifier, the metric is also exposed as a
-# method:
+# method — the same way built-in metrics such as ``accuracy`` or ``precision`` are:
 report.metrics.specificity()
+report.metrics.accuracy()
 
 # %%
 # Passing extra keyword arguments
