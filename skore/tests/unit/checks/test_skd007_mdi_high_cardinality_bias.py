@@ -4,6 +4,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
 
 from skore import evaluate
+from skore._sklearn._checks.model_checks import CheckMDIHighCardinalityBias
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -20,11 +21,11 @@ def test_mdi_bias_with_high_cardinality(report_type, regression_data, estimator)
     report = evaluate(
         estimator, X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD007" in tips.index
+    explanation = CheckMDIHighCardinalityBias().check_function(report)
+    assert explanation is not None
     assert (
         "High-cardinality features detected: Feature 0, Feature 1, Feature 2 "
-        "(and 1 more)" in tips.loc["SKD007", "explanation"]
+        "(and 1 more)" in explanation
     )
 
 
@@ -40,5 +41,4 @@ def test_not_emitted_for_binary_features(report_type):
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD007" not in tips.index
+    assert CheckMDIHighCardinalityBias().check_function(report) is None

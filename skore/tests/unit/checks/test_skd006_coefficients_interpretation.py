@@ -5,6 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from skrub import tabular_pipeline
 
 from skore import evaluate
+from skore._sklearn._checks.model_checks import CheckCoefficientsInterpretation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -14,9 +15,9 @@ def test_detects_unscaled_coefficients(report_type, regression_data):
     report = evaluate(
         LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD006" in tips.index
-    assert "Features are not on the same scale" in tips.loc["SKD006", "explanation"]
+    explanation = CheckCoefficientsInterpretation().check_function(report)
+    assert explanation is not None
+    assert "Features are not on the same scale" in explanation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -27,9 +28,9 @@ def test_detects_standardized_coefficients(report_type, regression_data):
     report = evaluate(
         LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD006" in tips.index
-    assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
+    explanation = CheckCoefficientsInterpretation().check_function(report)
+    assert explanation is not None
+    assert "Features appear to be standardized" in explanation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -45,8 +46,7 @@ def test_tabular_pipeline_with_numpy_X(report_type, regression_data):
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD006" in tips.index
+    assert CheckCoefficientsInterpretation().check_function(report) is not None
 
 
 @pytest.mark.parametrize(
@@ -68,6 +68,6 @@ def test_pipeline_coefficient_interpretation(
     """SKD006 tip reflects preprocessed feature scale in a pipeline."""
     X, y = regression_data
     report = evaluate(pipeline, X, y)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD006" in tips.index
-    assert expected_message in tips.loc["SKD006", "explanation"]
+    explanation = CheckCoefficientsInterpretation().check_function(report)
+    assert explanation is not None
+    assert expected_message in explanation

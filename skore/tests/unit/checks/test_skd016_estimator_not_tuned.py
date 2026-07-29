@@ -22,9 +22,8 @@ def test_fires_on_default_estimator(report_type, regression_data):
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD016" in tips.index
-    explanation = tips.loc["SKD016", "explanation"]
+    explanation = CheckEstimatorNotTuned().check_function(report)
+    assert explanation is not None
     assert "RandomForestRegressor" in explanation
     assert "max_features" in explanation
     assert "min_samples_leaf" in explanation
@@ -40,7 +39,7 @@ def test_passed_when_tuned(report_type, regression_data):
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
-    assert "SKD016" in set(report.checks.summarize().frame(section="passed")["code"])
+    assert CheckEstimatorNotTuned().check_function(report) is None
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -53,9 +52,9 @@ def test_ignores_infrastructure(report_type, regression_data):
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD016" in tips.index
-    assert "alpha" in tips.loc["SKD016", "explanation"]
+    explanation = CheckEstimatorNotTuned().check_function(report)
+    assert explanation is not None
+    assert "alpha" in explanation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -65,9 +64,9 @@ def test_ignores_budget_params(report_type, regression_data):
     report = evaluate(
         Ridge(max_iter=200), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD016" in tips.index
-    assert "alpha" in tips.loc["SKD016", "explanation"]
+    explanation = CheckEstimatorNotTuned().check_function(report)
+    assert explanation is not None
+    assert "alpha" in explanation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -77,9 +76,8 @@ def test_pipeline_walks_steps(report_type, regression_data):
     X, y = pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]), pd.Series(y)
     pipe = Pipeline([("pca", PCA()), ("ridge", Ridge(alpha=2.0))])
     report = evaluate(pipe, X, y, splitter=0.2 if report_type == "estimator" else 3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD016" in tips.index
-    explanation = tips.loc["SKD016", "explanation"]
+    explanation = CheckEstimatorNotTuned().check_function(report)
+    assert explanation is not None
     assert "PCA" in explanation
     assert "n_components" in explanation
     assert "Ridge" not in explanation

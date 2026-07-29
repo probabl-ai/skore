@@ -21,9 +21,8 @@ def test_detects_useless_features(report_type):
         random_state=0,
     )
     report = evaluate(Ridge(), X, y, splitter=0.2 if report_type == "estimator" else 3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD012" in tips.index
-    explanation = tips.loc["SKD012", "explanation"]
+    explanation = CheckUselessFeatures().check_function(report)
+    assert explanation is not None
     assert "permutation importance" in explanation
     assert "Feature #0" not in explanation
     assert "Feature #1" not in explanation

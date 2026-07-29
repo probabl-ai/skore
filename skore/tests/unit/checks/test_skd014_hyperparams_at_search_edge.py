@@ -60,9 +60,8 @@ def test_raises_at_numeric_edge(report_type, regression_data):
         report = evaluate(search, X, y, splitter=3)
         report.reports_[0].estimator_.best_params_ = {"constant": 0.1}
 
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD014" in issues.index
-    explanation = issues.loc["SKD014", "explanation"]
+    explanation = CheckHyperparamsAtSearchEdge().check_function(report)
+    assert explanation is not None
     assert "constant" in explanation
     assert "minimum" in explanation
 
@@ -77,8 +76,7 @@ def test_not_raised_for_interior_best(regression_data):
     )
     report = evaluate(search, X, y)
     report.estimator_.best_params_ = {"constant": 2.0}
-    codes = set(report.checks.summarize().frame(section="issue")["code"])
-    assert "SKD014" not in codes
+    assert CheckHyperparamsAtSearchEdge().check_function(report) is None
 
 
 def test_prefit(regression_data):
@@ -91,9 +89,9 @@ def test_prefit(regression_data):
     )
     report = _prefit_grid_search_report(X, y, search)
     report.estimator_.best_params_ = {"constant": 0.1}
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD014" in issues.index
-    assert "minimum" in issues.loc["SKD014", "explanation"]
+    explanation = CheckHyperparamsAtSearchEdge().check_function(report)
+    assert explanation is not None
+    assert "minimum" in explanation
 
 
 @pytest.mark.parametrize(
@@ -104,8 +102,7 @@ def test_skips_non_numeric_hyperparameters(regression_data, param_grid):
     X, y = regression_data
     search = GridSearchCV(Ridge(), param_grid=param_grid, cv=2)
     report = evaluate(search, X, y)
-    codes = set(report.checks.summarize().frame(section="issue")["code"])
-    assert "SKD014" not in codes
+    assert CheckHyperparamsAtSearchEdge().check_function(report) is None
 
 
 def test_skips_non_numeric_best_value(regression_data):
@@ -118,8 +115,7 @@ def test_skips_non_numeric_best_value(regression_data):
     )
     report = evaluate(search, X, y)
     report.estimator_.best_params_ = {"constant": "not-a-number"}
-    codes = set(report.checks.summarize().frame(section="issue")["code"])
-    assert "SKD014" not in codes
+    assert CheckHyperparamsAtSearchEdge().check_function(report) is None
 
 
 @pytest.mark.parametrize(
@@ -145,9 +141,9 @@ def test_search_classes(regression_data, search):
     X, y = regression_data
     report = evaluate(search, X, y)
     report.estimator_.best_params_ = {"constant": 0.1}
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD014" in issues.index
-    assert "minimum" in issues.loc["SKD014", "explanation"]
+    explanation = CheckHyperparamsAtSearchEdge().check_function(report)
+    assert explanation is not None
+    assert "minimum" in explanation
 
 
 @pytest.mark.parametrize(
@@ -174,8 +170,7 @@ def test_not_raised_when_search_edge_matches_space_edge(
     X, y = regression_data
     report = evaluate(search, X, y)
     report.estimator_.best_params_ = best_params
-    codes = set(report.checks.summarize().frame(section="issue")["code"])
-    assert "SKD014" not in codes
+    assert CheckHyperparamsAtSearchEdge().check_function(report) is None
 
 
 @pytest.mark.filterwarnings("ignore::sklearn.exceptions.ConvergenceWarning")
@@ -190,8 +185,7 @@ def test_not_raised_when_maximum_matches_space_edge(regression_data):
     )
     report = evaluate(search, X, y)
     report.estimator_.best_params_ = {"l1_ratio": 1.0}
-    codes = set(report.checks.summarize().frame(section="issue")["code"])
-    assert "SKD014" not in codes
+    assert CheckHyperparamsAtSearchEdge().check_function(report) is None
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])

@@ -4,6 +4,7 @@ from sklearn.linear_model import LogisticRegression
 
 from skore import evaluate
 from skore._externals._sklearn_compat import convert_container
+from skore._sklearn._checks.model_checks import CheckUnderrepresentedClasses
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -23,8 +24,7 @@ def test_not_detected_for_balanced_classes(report_type):
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
-    result = report.checks.summarize()
-    assert "SKD005" not in set(result.frame(section="issue")["code"])
+    assert CheckUnderrepresentedClasses().check_function(report) is None
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -58,6 +58,6 @@ def test_detects_underrepresented_classes(report_type, x_container, y_container)
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD005" in issues.index
-    assert "Accuracy should not be used alone" in issues.loc["SKD005", "explanation"]
+    explanation = CheckUnderrepresentedClasses().check_function(report)
+    assert explanation is not None
+    assert "Accuracy should not be used alone" in explanation

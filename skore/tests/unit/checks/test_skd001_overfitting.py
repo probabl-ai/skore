@@ -3,6 +3,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import EstimatorReport, evaluate
+from skore._sklearn._checks._utils import CheckNotApplicable
+from skore._sklearn._checks.model_checks import CheckOverfitting
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -24,12 +26,9 @@ def test_detects_overfitting(report_type, regression_data):
             }
         )
 
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD001" in issues.index
-    assert (
-        f"for {n_metrics}/{n_metrics} default predictive metrics"
-        in issues.loc["SKD001", "explanation"]
-    )
+    explanation = CheckOverfitting().check_function(report)
+    assert explanation is not None
+    assert f"for {n_metrics}/{n_metrics} default predictive metrics" in explanation
 
 
 def test_not_applicable_when_train_data_missing(regression_train_test_split):
@@ -37,6 +36,5 @@ def test_not_applicable_when_train_data_missing(regression_train_test_split):
     X_train, X_test, y_train, y_test = regression_train_test_split
     estimator = LinearRegression().fit(X_train, y_train)
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    na = report.checks.summarize().frame(section="not_applicable").set_index("code")
-    assert "SKD001" in na.index
-    assert na.loc["SKD001", "explanation"] == "Train data is unavailable."
+    with pytest.raises(CheckNotApplicable, match="Train data is unavailable."):
+        CheckOverfitting().check_function(report)

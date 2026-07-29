@@ -24,9 +24,8 @@ def test_suggests_missing_params(report_type, regression_data):
         cv=2,
     )
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD015" in tips.index
-    explanation = tips.loc["SKD015", "explanation"]
+    explanation = CheckSearchParamsToTune().check_function(report)
+    assert explanation is not None
     assert "max_features" in explanation
     assert "min_samples_leaf" in explanation
     assert "max_depth" not in explanation
@@ -43,8 +42,7 @@ def test_passes_when_all_recommended_covered(report_type, regression_data):
         cv=2,
     )
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
-    summary = report.checks.summarize()
-    assert "SKD015" in set(summary.frame(section="passed")["code"])
+    assert CheckSearchParamsToTune().check_function(report) is None
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -54,9 +52,8 @@ def test_pipeline_single_step(report_type, regression_data):
     pipe = Pipeline([("scaler", StandardScaler()), ("rf", RandomForestRegressor())])
     search = GridSearchCV(pipe, param_grid={"rf__n_estimators": [10, 50]}, cv=2)
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD015" in tips.index
-    explanation = tips.loc["SKD015", "explanation"]
+    explanation = CheckSearchParamsToTune().check_function(report)
+    assert explanation is not None
     assert "RandomForestRegressor" in explanation
     assert "max_features" in explanation
     assert "n_estimators" not in explanation
@@ -82,9 +79,8 @@ def test_pipeline_multi_step(report_type, binary_classification_data):
         cv=2,
     )
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD015" in tips.index
-    explanation = tips.loc["SKD015", "explanation"]
+    explanation = CheckSearchParamsToTune().check_function(report)
+    assert explanation is not None
     assert "StandardScaler" not in explanation
     assert "PCA" in explanation
     assert "n_components" in explanation
@@ -101,9 +97,8 @@ def test_pipeline_flags_untuned_step(report_type, regression_data):
     pipe = Pipeline([("pca", PCA()), ("ridge", Ridge())])
     search = GridSearchCV(pipe, param_grid={"ridge__alpha": [0.1, 1.0]}, cv=2)
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD015" in tips.index
-    explanation = tips.loc["SKD015", "explanation"]
+    explanation = CheckSearchParamsToTune().check_function(report)
+    assert explanation is not None
     assert "PCA" in explanation
     assert "n_components" in explanation
 
@@ -118,9 +113,8 @@ def test_equivalent_params_not_suggested(report_type, regression_data):
         cv=2,
     )
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD015" in tips.index
-    explanation = tips.loc["SKD015", "explanation"]
+    explanation = CheckSearchParamsToTune().check_function(report)
+    assert explanation is not None
     assert "min_samples_leaf" not in explanation
     assert "min_samples_split" not in explanation
     assert "max_features" in explanation

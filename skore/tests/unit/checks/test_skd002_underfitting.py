@@ -39,12 +39,9 @@ def test_detects_underfitting(report_type, regression_data, x_container, y_conta
             }
         )
 
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD002" in issues.index
-    assert (
-        f"for {n_metrics}/{n_metrics} comparable metrics"
-        in issues.loc["SKD002", "explanation"]
-    )
+    explanation = CheckUnderfitting().check_function(report)
+    assert explanation is not None
+    assert f"for {n_metrics}/{n_metrics} comparable metrics" in explanation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -54,8 +51,7 @@ def test_detects_underfitting_multioutput(report_type, regression_multioutput_da
     report = evaluate(
         DummyRegressor(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD002" in issues.index
+    assert CheckUnderfitting().check_function(report) is not None
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -79,12 +75,9 @@ def test_uses_custom_metrics(report_type, binary_classification_data):
             }
         )
 
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD002" in issues.index
-    assert (
-        f"for {n_metrics}/{n_metrics} comparable metrics"
-        in issues.loc["SKD002", "explanation"]
-    )
+    explanation = CheckUnderfitting().check_function(report)
+    assert explanation is not None
+    assert f"for {n_metrics}/{n_metrics} comparable metrics" in explanation
 
 
 def test_not_applicable_when_train_data_missing(regression_train_test_split):

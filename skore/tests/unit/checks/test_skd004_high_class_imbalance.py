@@ -4,6 +4,7 @@ from sklearn.linear_model import LogisticRegression
 
 from skore import evaluate
 from skore._externals._sklearn_compat import convert_container
+from skore._sklearn._checks.model_checks import CheckHighClassImbalance
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -19,8 +20,7 @@ def test_not_detected_for_balanced_classes(report_type):
     report = evaluate(
         LogisticRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    result = report.checks.summarize()
-    assert "SKD004" not in set(result.frame(section="issue")["code"])
+    assert CheckHighClassImbalance().check_function(report) is None
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -50,6 +50,6 @@ def test_detects_high_class_imbalance(report_type, x_container, y_container):
     report = evaluate(
         LogisticRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD004" in issues.index
-    assert "Accuracy should not be used alone" in issues.loc["SKD004", "explanation"]
+    explanation = CheckHighClassImbalance().check_function(report)
+    assert explanation is not None
+    assert "Accuracy should not be used alone" in explanation

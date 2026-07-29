@@ -51,9 +51,9 @@ def test_train_test_time_overlap(report_type):
         report = evaluate(
             pipe, X, y, splitter=KFold(n_splits=5, shuffle=True, random_state=0)
         )
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD013" in issues.index
-    assert "date" in issues.loc["SKD013", "explanation"]
+    explanation = CheckTrainTestTimeOverlap().check_function(report)
+    assert explanation is not None
+    assert "date" in explanation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -80,9 +80,7 @@ def test_train_test_time_no_overlap(report_type):
         )
     else:
         report = evaluate(pipe, X, y, splitter=TimeSeriesSplit(n_splits=5))
-    summary = report.checks.summarize()
-    assert "SKD013" not in set(summary.frame(section="issue")["code"])
-    assert "SKD013" in set(summary.frame(section="passed")["code"])
+    assert CheckTrainTestTimeOverlap().check_function(report) is None
 
 
 @pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")

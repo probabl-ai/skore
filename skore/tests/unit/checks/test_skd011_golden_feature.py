@@ -30,10 +30,9 @@ def test_detects_golden_feature(report_type, estimator):
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    explanation = CheckGoldenFeature().check_function(report)
 
-    assert "SKD011" in tips.index
-    explanation = tips.loc["SKD011", "explanation"]
+    assert explanation is not None
     assert "Feature 0" in explanation
     assert "Feature 1" in explanation
     assert "Feature 2" not in explanation
@@ -57,10 +56,9 @@ def test_sklearn_pipeline_preserves_feature_names(report_type):
     report = evaluate(
         estimator, X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    explanation = CheckGoldenFeature().check_function(report)
 
-    assert "SKD011" in tips.index
-    explanation = tips.loc["SKD011", "explanation"]
+    assert explanation is not None
     assert "col_0" in explanation
     assert "col_1" in explanation
     assert "col_2" not in explanation

@@ -18,11 +18,10 @@ def test_detects_worse_than_baseline(report_type, regression_data):
     report = evaluate(
         DummyRegressor(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD009" in issues.index
+    explanation = CheckWorseThanBaseline().check_function(report)
+    assert explanation is not None
     assert (
-        "not significantly better than a HistGradientBoosting baseline"
-        in issues.loc["SKD009", "explanation"]
+        "not significantly better than a HistGradientBoosting baseline" in explanation
     )
 
 
@@ -33,8 +32,7 @@ def test_not_detected_on_strong_model(report_type):
     report = evaluate(
         RidgeCV(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    codes = set(report.checks.summarize().frame(section="issue")["code"])
-    assert "SKD009" not in codes
+    assert CheckWorseThanBaseline().check_function(report) is None
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -49,8 +47,7 @@ def test_detects_worse_than_baseline_multioutput(
     report = evaluate(
         DummyRegressor(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD009" in issues.index
+    assert CheckWorseThanBaseline().check_function(report) is not None
 
 
 def test_not_applicable_when_train_data_missing(regression_train_test_split):

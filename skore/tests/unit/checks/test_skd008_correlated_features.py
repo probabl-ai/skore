@@ -24,9 +24,9 @@ def test_correlated_features(report_type, estimator):
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD008" in issues.index
-    assert "1 pair(s) of features" in issues.loc["SKD008", "explanation"]
+    explanation = CheckCorrelatedFeatures().check_function(report)
+    assert explanation is not None
+    assert "1 pair(s) of features" in explanation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -36,8 +36,7 @@ def test_not_emitted_for_independent_features(report_type, regression_data):
     report = evaluate(
         LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD008" not in issues.index
+    assert CheckCorrelatedFeatures().check_function(report) is None
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -49,8 +48,7 @@ def test_correlated_features_multioutput(report_type, regression_multioutput_dat
     report = evaluate(
         LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD008" in issues.index
+    assert CheckCorrelatedFeatures().check_function(report) is not None
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
