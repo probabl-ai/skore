@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from datetime import UTC, datetime
 from functools import partial
 from importlib.metadata import version
@@ -9,13 +10,20 @@ from uuid import uuid4
 
 import pandas as pd
 
+from skore._externals._docscrape import Parameter
 from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn.types import DataSource, ReportMetadata
 from skore._utils._progress_bar import track
-from skore._utils.docscrape import build_metric_method_docstring, docstring_summary
+from skore._utils.docscrape import (
+    build_numpy_docstring,
+    docstring_summary,
+    param_description_text,
+    parameters_by_name,
+    parse_numpy_doc,
+)
 from skore._utils.repr.base import (
     AccessorHelpMixin,
     ReportHelpMixin,
@@ -222,13 +230,67 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     def _build_metric_method_docstring(self, name: str) -> str:
         """Build a numpydoc string for a dynamically exposed registry metric."""
         metric = self._resolve_metric(name)
-        return build_metric_method_docstring(
-            self.get,
-            function=metric.function,
-            metric_cls=type(metric),
-            verbose_name=getattr(metric, "verbose_name", None),
-            kwargs=metric.kwargs,
+
+        summary = None
+        if metric.function is not None:
+            summary = docstring_summary(getattr(metric.function, "__doc__", None))
+        if not summary:
+            summary = docstring_summary(getattr(type(metric), "__doc__", None))
+        if not summary:
+            summary = getattr(metric, "verbose_name", None) or "Registered metric."
+
+        get_doc = getattr(self.get, "__doc__", None)
+        get_parsed = parse_numpy_doc(get_doc)
+        get_params = parameters_by_name(get_doc)
+        score_params = parameters_by_name(
+            getattr(metric.function, "__doc__", None)
+            if metric.function is not None
+            else None
         )
+
+        parameters: list[Parameter] = []
+        shared_names: set[str] = set()
+        for param in inspect.signature(self.get).parameters.values():
+            if param.name in {"self", "name"} or param.kind is param.VAR_KEYWORD:
+                continue
+            shared_names.add(param.name)
+            if param.name in get_params:
+                parameters.append(get_params[param.name])
+            else:
+                parameters.append(
+                    Parameter(
+                        param.name,
+                        f"default={param.default!r}",
+                        ["Shared metric accessor parameter."],
+                    )
+                )
+
+        for key, default in metric.kwargs.items():
+            if key in shared_names:
+                continue
+            if key in score_params:
+                description = param_description_text(score_params[key])
+            else:
+                description = "Forwarded to the underlying score function."
+            parameters.append(Parameter(key, f"default={default!r}", [description]))
+
+        parameters.append(
+            Parameter(
+                "**kwargs",
+                "",
+                [
+                    "Additional keyword arguments forwarded to the underlying "
+                    "score function."
+                ],
+            )
+        )
+
+        returns = (
+            get_parsed["Returns"]
+            if get_parsed is not None and get_parsed["Returns"]
+            else None
+        )
+        return build_numpy_docstring(summary, parameters, returns=returns)
 
     def _metric_help_description(self, name: str) -> str:
         """Build a help description for a registry metric method."""

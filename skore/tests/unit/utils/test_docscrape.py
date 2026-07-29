@@ -2,7 +2,6 @@
 
 from skore._externals._docscrape import Parameter
 from skore._utils.docscrape import (
-    build_metric_method_docstring,
     build_numpy_docstring,
     docstring_summary,
     param_description_text,
@@ -107,77 +106,3 @@ def test_build_numpy_docstring():
     assert "Returns" in doc
     assert "float" in doc
     assert docstring_summary(doc) == "Compute a score."
-
-
-def _get_like(
-    self,
-    name: str,
-    data_source: str = "test",
-    aggregate: tuple[str, ...] | None = ("mean", "std"),
-    **kwargs,
-):
-    """Get a metric value.
-
-    Parameters
-    ----------
-    name : str
-        Name of the metric to compute.
-    data_source : {"test", "train"}, default="test"
-        The data source to use.
-    aggregate : {"mean", "std"} or None, default=("mean", "std")
-        Aggregation across splits.
-
-    Returns
-    -------
-    result : float or pandas.DataFrame
-        The metric value.
-    """
-    return None
-
-
-def test_build_metric_method_docstring_reuses_get_and_score_docs():
-    def score_fn(y_true, y_pred, *, average=None):
-        """Accuracy classification score.
-
-        Parameters
-        ----------
-        y_true : array-like
-            Ground truth.
-        average : str or None, default=None
-            Averaging strategy.
-        """
-        return 1.0
-
-    doc = build_metric_method_docstring(
-        _get_like,
-        function=score_fn,
-        kwargs={"average": None},
-    )
-    assert docstring_summary(doc) == "Accuracy classification score."
-    assert "data_source" in doc
-    assert "aggregate" in doc
-    assert "average" in doc
-    assert "Averaging strategy." in doc
-    assert "**kwargs" in doc
-    assert "result" in doc or "float" in doc
-    # Score-function positional args must not appear as call parameters.
-    params_section = doc.split("Parameters", 1)[1].split("Returns", 1)[0]
-    assert "y_true" not in params_section
-    assert "y_pred" not in params_section
-    assert "name" not in params_section
-
-
-def test_build_metric_method_docstring_fallbacks():
-    class MetricWithoutDocs:
-        pass
-
-    doc = build_metric_method_docstring(
-        _get_like,
-        function=None,
-        metric_cls=MetricWithoutDocs,
-        verbose_name="Fit time (s)",
-        kwargs={"cast": True},
-    )
-    assert docstring_summary(doc) == "Fit time (s)"
-    assert "cast" in doc
-    assert "Forwarded to the underlying score function." in doc
