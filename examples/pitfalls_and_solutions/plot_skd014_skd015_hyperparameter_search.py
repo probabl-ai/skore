@@ -1,8 +1,8 @@
 """
 .. _example_skd014_hyperparams_at_search_edge_skd015_hyperparameters_worth_tuning:
 
-SKD014 & SKD015 - Hyperparameter search pitfalls
-================================================
+SKD014 & SKD015: Hyperparameter search pitfalls
+===============================================
 
 This example walks through mitigations when checks
 :ref:`SKD014 <skd014-hyperparams-at-search-edge>` and
@@ -18,14 +18,14 @@ recommends addressing them jointly when both fire.
 
 Mitigations from the :ref:`automated_checks` user guide:
 
-**SKD014 - hyperparameters at search edge** (issue)
+**SKD014: hyperparameters at search edge** (issue)
 
 - extend ``param_grid`` or ``param_distributions`` beyond the flagged bounds,
 - for :class:`~sklearn.model_selection.RandomizedSearchCV`, increase ``n_iter``
   and sample from a wider range,
 - if SKD015 also fires, widen the search on every recommended axis.
 
-**SKD015 - hyperparameters worth tuning** (tip)
+**SKD015: hyperparameters worth tuning** (tip)
 
 - add the suggested parameters to ``param_grid`` or ``param_distributions``.
 
@@ -95,8 +95,8 @@ base_pipeline = tabular_pipeline(
 )
 
 # %%
-# Trigger SKD015 - grid with only ``max_iter``
-# ============================================
+# Trigger SKD015: grid with only ``max_iter``
+# ===========================================
 #
 # ``max_iter`` is a budget parameter, not a complexity knob in the SKD015 table.
 # A single-value grid still runs a search, but SKD014 skips axes with fewer than
@@ -134,7 +134,7 @@ report_axes.checks.summarize(fast_mode=True)
 report_axes.estimator_.best_params_
 
 # %%
-# Trigger SKD014 - two-point ``GridSearchCV``
+# Trigger SKD014: two-point ``GridSearchCV``
 # ==========================================
 #
 # With exactly two values on each searched axis, whichever value wins is always
@@ -175,8 +175,8 @@ report_edge.estimator_.best_params_
 report_edge.metrics.summarize(data_source="both").frame()
 
 # %%
-# SKD014 & SKD015 - widen bounds and add recommended axes
-# =======================================================
+# SKD014 & SKD015: widen bounds and add recommended axes
+# ======================================================
 #
 # Pad beyond the previous two-point edges so those learning-rate values become
 # interior grid points, and add ``max_depth`` so SKD015 clears (``max_depth``
