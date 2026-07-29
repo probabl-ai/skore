@@ -14,7 +14,7 @@ is incomplete rather than necessarily wrong.
 
 These findings often appear together on the same
 :class:`~sklearn.model_selection.BaseSearchCV` report. The user guide
-recommends addressing them together when both fire.
+recommends addressing them jointly when both fire.
 
 Mitigations from the :ref:`automated_checks` user guide:
 
@@ -30,9 +30,10 @@ Mitigations from the :ref:`automated_checks` user guide:
 - add the suggested parameters to ``param_grid`` or ``param_distributions``.
 
 We tune a :class:`~sklearn.ensemble.HistGradientBoostingClassifier` inside
-:func:`~skrub.tabular_pipeline` on the employee salaries dataset (above-median
-salary as the positive class). The walkthrough has three beats: missing axes
-(SKD015), edge hits (SKD014), then one joint fix that clears both.
+:func:`~skrub.tabular_pipeline` on a stratified subsample of the employee
+salaries dataset (above-median salary as the positive class). The walkthrough
+has three beats: missing axes (SKD015), edge hits (SKD014), then one joint fix
+that clears both.
 """
 
 # %%
@@ -40,19 +41,30 @@ salary as the positive class). The walkthrough has three beats: missing axes
 # ==================================
 #
 # We predict whether salary exceeds the median. Mixed HR features suit
-# :func:`~skrub.tabular_pipeline`.
+# :func:`~skrub.tabular_pipeline`. A 3,000-row stratified subsample keeps the
+# gallery grids short while preserving class balance.
 
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from skrub.datasets import fetch_employee_salaries
 
 dataset = fetch_employee_salaries()
-X = dataset.X
+X_full = dataset.X
 y_salary = dataset.y.squeeze()
-y = pd.Series(
+y_full = pd.Series(
     (y_salary > y_salary.median()).astype(int),
     name="high_earner",
-    index=X.index,
+    index=X_full.index,
 )
+
+X, _, y, _ = train_test_split(
+    X_full,
+    y_full,
+    train_size=3_000,
+    stratify=y_full,
+    random_state=42,
+)
+y = pd.Series(y, name="high_earner")
 
 # %%
 # Inspect predictors and the binary target with :class:`~skrub.TableReport`.
@@ -72,28 +84,30 @@ TableReport(y)
 # ``cv=3`` folds are stratified (no time ordering required for these checks).
 
 from sklearn.ensemble import HistGradientBoostingClassifier
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV
 from skore import TrainTestSplit
 from skrub import tabular_pipeline
 
 splitter = TrainTestSplit(test_size=0.2, random_state=42, stratify=y)
 cv = 3
-base_pipeline = tabular_pipeline(HistGradientBoostingClassifier(random_state=42))
+base_pipeline = tabular_pipeline(
+    HistGradientBoostingClassifier(max_iter=200, random_state=42)
+)
 
 # %%
 # Trigger SKD015 - grid with only ``max_iter``
 # ============================================
 #
 # ``max_iter`` is a budget parameter, not a complexity knob in the SKD015 table.
-# Searching only iteration count leaves learning rate, depth, and leaf size at
-# defaults - the cleanest way to see SKD015 without an edge-of-grid effect.
+# A single-value grid still runs a search, but SKD014 skips axes with fewer than
+# two distinct tried values, so this beat isolates the SKD015 tip.
 
 from skore import evaluate
 
 max_iter_only_search = GridSearchCV(
     base_pipeline,
     param_grid={
-        "histgradientboostingclassifier__max_iter": [100, 200, 300],
+        "histgradientboostingclassifier__max_iter": [200],
     },
     cv=cv,
     n_jobs=4,
@@ -111,6 +125,8 @@ report_axes = evaluate(
 # %%
 # SKD015 should tip that learning rate, depth, and leaf size were not searched.
 # ``best_params_`` only contains ``max_iter`` - that incompleteness is the point.
+# A search that only tweaks training budget ignores the axes that usually move
+# generalization for tree ensembles.
 
 report_axes.checks.summarize(fast_mode=True)
 
@@ -118,35 +134,28 @@ report_axes.checks.summarize(fast_mode=True)
 report_axes.estimator_.best_params_
 
 # %%
-# A search that only tweaks training budget ignores the axes that usually move
-# generalization for tree ensembles.
-
-# %%
-# Trigger SKD014 - narrow ``RandomizedSearchCV``
-# ==============================================
+# Trigger SKD014 - two-point ``GridSearchCV``
+# ==========================================
 #
-# With only eight random draws and tight bounds, ``best_params_`` often lands on
-# the minimum or maximum tried on at least one axis. Compare the issue to
-# ``best_params_`` below: edge hits mean the optimum may lie outside the box you
-# searched.
+# With exactly two values on each searched axis, whichever value wins is always
+# the tried minimum or maximum, so SKD014 fires deterministically. We still omit
+# depth / leaf axes so SKD015 tips as well. Prefer a small grid over
+# :class:`~sklearn.model_selection.RandomizedSearchCV` here: every candidate is
+# evaluated, and the edge story does not depend on which draws were sampled.
 
-narrow_search = RandomizedSearchCV(
+edge_search = GridSearchCV(
     base_pipeline,
-    param_distributions={
-        "histgradientboostingclassifier__learning_rate": [0.01, 0.05, 0.1],
-        "histgradientboostingclassifier__max_iter": [100, 200, 300],
-        "histgradientboostingclassifier__max_depth": [3, 5, 8],
-        "histgradientboostingclassifier__min_samples_leaf": [10, 20, 50],
+    param_grid={
+        "histgradientboostingclassifier__learning_rate": [0.05, 0.1],
+        "histgradientboostingclassifier__max_iter": [100, 200],
     },
-    n_iter=8,
     cv=cv,
-    random_state=42,
     n_jobs=4,
     refit=True,
 )
 
 report_edge = evaluate(
-    narrow_search,
+    edge_search,
     X=X,
     y=y,
     pos_label=1,
@@ -154,8 +163,8 @@ report_edge = evaluate(
 )
 
 # %%
-# SKD014 should list numeric parameters at search edges as an issue; SKD015 may
-# tip as well if a recommended axis is still missing from the distributions.
+# SKD014 should list numeric parameters at search edges as an issue; SKD015
+# should tip because depth / leaf axes are still missing.
 
 report_edge.checks.summarize(fast_mode=True)
 
@@ -166,20 +175,20 @@ report_edge.estimator_.best_params_
 report_edge.metrics.summarize(data_source="both").frame()
 
 # %%
-# SKD014 & SKD015 - widen bounds and add every recommended axis
-# =============================================================
+# SKD014 & SKD015 - widen bounds and add recommended axes
+# =======================================================
 #
-# When both checks fire (or you want one fix for both stories), extend values
-# beyond the previous edges and include the high-impact axes SKD015 asks
-# for. Prior boundary bests become interior grid points when the box grows.
+# Pad beyond the previous two-point edges so those learning-rate values become
+# interior grid points, and add ``max_depth`` so SKD015 clears (``max_depth``
+# covers the tree-complexity family). ``None`` in ``max_depth`` is non-numeric,
+# so SKD014 ignores that axis and only watches learning rate - fewer ways for
+# the gallery to flake.
 
 full_search = GridSearchCV(
     base_pipeline,
     param_grid={
-        "histgradientboostingclassifier__learning_rate": [0.01, 0.05, 0.1],
-        "histgradientboostingclassifier__max_iter": [50, 100, 200, 300],
-        "histgradientboostingclassifier__max_depth": [2, 3, 5, 8, None],
-        "histgradientboostingclassifier__min_samples_leaf": [10, 20, 50, 100],
+        "histgradientboostingclassifier__learning_rate": [0.01, 0.05, 0.1, 0.2],
+        "histgradientboostingclassifier__max_depth": [3, 5, None],
     },
     cv=cv,
     n_jobs=4,
@@ -195,9 +204,10 @@ report_full = evaluate(
 )
 
 # %%
-# SKD014 and SKD015 often clear together once the grid is complete and wide
-# enough for interior bests. Check ``best_params_``: values should sit strictly
-# inside the ranges you tried when SKD014 is gone.
+# SKD015 should clear once a recommended complexity axis is present with
+# learning rate. SKD014 clears when the best learning rate sits strictly inside
+# ``[0.01, 0.05, 0.1, 0.2]`` (not at the padded ends). Check ``best_params_``
+# against the grid above.
 
 report_full.checks.summarize(fast_mode=True)
 
@@ -208,17 +218,17 @@ report_full.estimator_.best_params_
 # Compare search strategies
 # =========================
 #
-# Hold-out metrics for the incomplete grid, the narrow random search, and the
-# joint fix. Clearing the checks means the search design improved; still judge
-# models on validation metrics and cost, not check status alone.
+# Hold-out metrics for the incomplete grid, the two-point edge grid, and the
+# joint fix. Clearing the findings means the *search design* improved; still
+# judge models on validation metrics and cost, not check status alone.
 
 from skore import compare
 
 compare(
     {
         "max_iter_only": report_axes,
-        "narrow_random_search": report_edge,
-        "full_recommended_axes": report_full,
+        "two_point_edge_grid": report_edge,
+        "padded_recommended_axes": report_full,
     }
 ).metrics.summarize(data_source="both").frame()
 
@@ -227,7 +237,8 @@ compare(
 # ==========
 #
 # SKD015 tips about incomplete search spaces; SKD014 issues when optima stick to
-# the boundary of the box you tried. In this walkthrough, a ``max_iter``-only grid
-# missed key axes, a narrow random search hit edges, and one wider complete
-# grid addressed both. Expand the search before deploying ``best_params_`` -
-# green checks are about search hygiene, not a guarantee of the best model.
+# the boundary of the box you tried. In this walkthrough, a ``max_iter``-only
+# search missed key axes, a two-point grid forced edge hits, and one padded
+# complete grid addressed both. Expand the search before deploying
+# ``best_params_`` - green checks are about search hygiene, not a guarantee of
+# the best model.
