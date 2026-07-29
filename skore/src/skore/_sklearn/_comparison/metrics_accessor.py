@@ -210,8 +210,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         position: Literal["first", "last"] = "first",
         **kwargs: Any,
     ) -> None:
-        """
-        Add a custom metric to :meth:`~skore.ComparisonReport.metrics.summarize`.
+        """Add a custom metric to :meth:`summarize`.
 
         Parameters
         ----------

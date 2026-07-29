@@ -1,7 +1,13 @@
+import inspect
+from functools import partial
+
 import jedi
 import pytest
+import sklearn.metrics
 from pandas.testing import assert_frame_equal
 from sklearn.metrics import make_scorer, mean_squared_error
+
+from skore._utils.docscrape import docstring_summary
 
 
 @pytest.fixture(
@@ -127,3 +133,76 @@ def test_help_builtin_metric_description(report):
         assert "r2" in by_name
         assert by_name["r2"] != "Custom metric."
         assert by_name["r2"] != "Registered metric."
+
+
+def test_dynamic_metric_docstring_and_signature(report):
+    """Dynamic metrics expose a constructed docstring and the accessor signature."""
+    available = report.metrics.available()
+    if "r2" in available:
+        name = "r2"
+        score_function = sklearn.metrics.r2_score
+    elif "accuracy" in available:
+        name = "accuracy"
+        score_function = sklearn.metrics.accuracy_score
+    else:
+        pytest.skip("No built-in score-function metric available on this report")
+
+    method = getattr(report.metrics, name)
+    assert method.__name__ == name
+    assert method.__doc__ is not None
+
+    expected_summary = docstring_summary(score_function.__doc__)
+    assert docstring_summary(method.__doc__) == expected_summary
+    assert "data_source" in method.__doc__
+    assert (
+        "y_true" not in method.__doc__.split("Parameters", 1)[1].split("Returns", 1)[0]
+    )
+    assert (
+        "y_pred" not in method.__doc__.split("Parameters", 1)[1].split("Returns", 1)[0]
+    )
+
+    assert inspect.signature(method) == inspect.signature(
+        partial(report.metrics.get, name)
+    )
+
+    report_type = getattr(report, "_report_type", "")
+    if "cross-validation" in report_type or "comparison" in report_type:
+        assert "aggregate" in method.__doc__
+    else:
+        assert (
+            "aggregate"
+            not in method.__doc__.split("Parameters", 1)[1].split("Returns", 1)[0]
+        )
+
+
+def test_dynamic_metric_docstring_includes_metric_kwargs(report):
+    """Metric kwargs defaults (e.g. average) appear in the constructed docstring."""
+    available = report.metrics.available()
+    if "precision" in available:
+        name = "precision"
+        expected_kwarg = "average"
+    elif "r2" in available:
+        name = "r2"
+        expected_kwarg = "multioutput"
+    else:
+        pytest.skip("No metric with kwargs defaults available on this report")
+
+    doc = getattr(report.metrics, name).__doc__
+    assert doc is not None
+    assert expected_kwarg in doc
+
+
+def test_dynamic_custom_metric_docstring(report):
+    """Custom metrics expose their callable summary and registry name."""
+
+    def custom(e, X, y):
+        """Custom score used as attribute docstring."""
+        return 1
+
+    report.metrics.add(custom)
+    method = report.metrics.custom
+
+    assert method.__name__ == "custom"
+    assert (
+        docstring_summary(method.__doc__) == "Custom score used as attribute docstring."
+    )

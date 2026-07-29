@@ -169,8 +169,7 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         position: Literal["first", "last"] = "first",
         **kwargs: Any,
     ) -> None:
-        """
-        Add a custom metric to :meth:`~skore.CrossValidationReport.metrics.summarize`.
+        """Add a custom metric to :meth:`summarize`.
 
         Parameters
         ----------

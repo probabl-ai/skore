@@ -177,50 +177,6 @@ def _write_accessor_method_stub(
         stub_path.write_text(content)
 
 
-def _docstring_summary(obj: Any) -> str:
-    """Return a one-line summary from ``obj``'s docstring."""
-    doc = getattr(obj, "__doc__", None) or ""
-    if not doc:
-        return ""
-    first_line = doc.strip().split("\n")[0].strip()
-    return first_line.rstrip(".")
-
-
-def _write_builtin_metrics_inc(output_dir: Path) -> None:
-    """Write an RST list-table of built-in registry metrics."""
-    from skore._sklearn.metrics import BUILTIN_METRICS, Score
-
-    rows: list[tuple[str, str]] = []
-    for metric in [Score(), *BUILTIN_METRICS]:
-        description = _docstring_summary(metric.function) or _docstring_summary(
-            type(metric)
-        )
-        if not description:
-            description = metric.verbose_name
-        rows.append((metric.name, description))
-
-    lines = [
-        ".. list-table:: Built-in registry metrics",
-        "   :header-rows: 1",
-        "   :widths: 25 75",
-        "",
-        "   * - Name",
-        "     - Description",
-    ]
-    for name, description in rows:
-        lines.append(f"   * - ``{name}``")
-        lines.append(f"     - {description}")
-    lines.append("")
-
-    file_path = output_dir / "builtin_metrics.inc"
-    content = "\n".join(lines)
-    if not file_path.exists() or file_path.read_text() != content:
-        file_path.write_text(content)
-        logger.info("Updated builtin_metrics.inc")
-    else:
-        logger.debug("No changes for builtin_metrics.inc")
-
-
 def generate_accessor_tables(app: Sphinx, config: Any) -> None:
     """Generate accessor table RST and individual accessor .inc files.
 
@@ -258,8 +214,6 @@ def generate_accessor_tables(app: Sphinx, config: Any) -> None:
     output_path = output_dir / "accessor_tables.rst"
     output_path.write_text(rst_content)
     logger.info(f"Wrote accessor tables to {output_path}")
-
-    _write_builtin_metrics_inc(output_dir)
 
     # Generate .inc files and collect toctree/method data for each accessor
     accessor_toctrees: dict[str, list[str]] = {}

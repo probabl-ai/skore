@@ -106,8 +106,9 @@ types of metric:
    includes scorers constructed with :func:`sklearn.metrics.make_scorer`.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
-API. Refer to the :ref:`estimator_metrics` section for more details on all the
-available metrics in `skore`.
+API. Refer to the :ref:`estimator_metrics` section for the metrics accessor API; use
+:meth:`~skore.EstimatorReport.metrics.available` at runtime to list metrics on a
+given report.
 
 Model interpretability
 ^^^^^^^^^^^^^^^^^^^^^^

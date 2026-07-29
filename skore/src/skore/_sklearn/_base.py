@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import inspect
-import re
 from datetime import UTC, datetime
 from functools import partial
 from importlib.metadata import version
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar
+from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from uuid import uuid4
 
 import pandas as pd
@@ -17,6 +15,7 @@ from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSect
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn.types import DataSource, ReportMetadata
 from skore._utils._progress_bar import track
+from skore._utils.docscrape import build_metric_method_docstring, docstring_summary
 from skore._utils.repr.base import (
     AccessorHelpMixin,
     ReportHelpMixin,
@@ -30,24 +29,6 @@ if TYPE_CHECKING:
     from skore._sklearn._checks.accessor import _ChecksAccessor
     from skore._sklearn.metrics import Metric
     from skore._utils.repr.data import AccessorHelpData
-
-
-def _docstring_summary(obj: Any) -> str | None:
-    """Return the numpydoc Summary section of ``obj``'s docstring, if any."""
-    doc = getattr(obj, "__doc__", None)
-    if not doc:
-        return None
-    doc = inspect.cleandoc(doc)
-    summary = re.split(
-        r"\n(?=Parameters\n|Attributes\n|Returns\n|Notes\n|See Also\n|"
-        r"Examples\n|Raises\n)",
-        doc,
-        maxsplit=1,
-    )[0].strip()
-    if not summary:
-        return None
-    first_para = summary.split("\n\n", 1)[0]
-    return " ".join(line.strip() for line in first_para.splitlines() if line.strip())
 
 
 class _BaseReport(ReportHelpMixin):
@@ -238,23 +219,26 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
             return reports[0]._metric_registry[name]
         raise KeyError(name)
 
+    def _build_metric_method_docstring(self, name: str) -> str:
+        """Build a numpydoc string for a dynamically exposed registry metric."""
+        metric = self._resolve_metric(name)
+        return build_metric_method_docstring(
+            self.get,
+            function=metric.function,
+            metric_cls=type(metric),
+            verbose_name=getattr(metric, "verbose_name", None),
+            kwargs=metric.kwargs,
+        )
+
     def _metric_help_description(self, name: str) -> str:
         """Build a help description for a registry metric method."""
         try:
-            metric = self._resolve_metric(name)
+            return (
+                docstring_summary(self._build_metric_method_docstring(name))
+                or "Registered metric."
+            )
         except KeyError:
             return "Registered metric."
-
-        if metric.function is not None:
-            summary = _docstring_summary(metric.function)
-            if summary:
-                return summary
-
-        summary = _docstring_summary(type(metric))
-        if summary:
-            return summary
-
-        return getattr(metric, "verbose_name", None) or "Registered metric."
 
     def __getattr__(self, name):
         """Expose registry metrics as methods when not defined statically.
@@ -262,7 +246,11 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         If attribute ``name`` is defined statically, this method will not be called.
         """
         if self._is_callable_metric_name(name) and name in self.available():
-            return partial(self.get, name)
+            method = partial(self.get, name)
+            method.__doc__ = self._build_metric_method_docstring(name)
+            method.__name__ = name
+            method.__qualname__ = f"{type(self).__qualname__}.{name}"
+            return method
 
         raise AttributeError(
             f"'{self.__class__.__name__}' object has no attribute '{name}'"
