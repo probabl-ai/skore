@@ -56,16 +56,9 @@ def select_exportable_metrics(
 ) -> pd.DataFrame:
     """Select metric summary rows suitable for hub export.
 
-    Drops rows with missing scores. For binary classification, drops
-    averaged rows (keeps per-label rows only).
+    Drops rows with missing scores.
     """
     metrics_summary = report.metrics.summarize(data_source="both").summary
-
-    if report._ml_task == "binary-classification":
-        return metrics_summary[
-            metrics_summary["score"].notna() & metrics_summary["average"].isna()
-        ]
-
     return metrics_summary[metrics_summary["score"].notna()]
 
 

@@ -10,6 +10,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.metrics import make_scorer, precision_score
 from sklearn.model_selection import (
     GroupKFold,
     KFold,
@@ -1047,49 +1048,21 @@ class TestCrossValidationReportPayload:
         ]
 
     @mark.filterwarnings(
-        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning",
-        (
-            "ignore:The behavior of DataFrame concatenation with empty or all-NA "
-            "entries:FutureWarning"
-        ),
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
     )
     @mark.respx(assert_all_called=False)
-    def test_binary_metrics_excludes_averaged_rows(
-        self, project, small_cv_binary_classification, monkeypatch
-    ):
-        from unittest.mock import MagicMock
+    def test_binary_metrics_includes_averaged_rows(self, project):
+        X, y = make_classification(random_state=42, n_samples=10)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y, splitter=2)
 
-        import pandas as pd
-
-        from skore._plugins.hub.report import CrossValidationReportPayload
-
-        display = small_cv_binary_classification.metrics.summarize(data_source="both")
-        data = display.summary.copy()
-        macro_row = (
-            data.loc[(data["name"] == "precision") & (data["data_source"] == "test")]
-            .iloc[0]
-            .copy()
-        )
-        macro_row["label"] = pd.NA
-        macro_row["average"] = "macro"
-        macro_row["score"] = 0.55
-        data = pd.concat([data, pd.DataFrame([macro_row])], ignore_index=True)
-
-        mock_display = MagicMock()
-        mock_display.summary = data
-        monkeypatch.setattr(
-            small_cv_binary_classification.metrics,
-            "summarize",
-            lambda **kwargs: mock_display,
-        )
+        report.metrics.add(make_scorer(precision_score, average="macro"), name="xxx")
 
         payload = CrossValidationReportPayload(
             project=project,
-            report=small_cv_binary_classification,
+            report=report,
             key="<key>",
         )
 
-        assert not any(m.average == "macro" for m in payload.metrics)
         precision = [
             m
             for m in payload.metrics
@@ -1098,6 +1071,16 @@ class TestCrossValidationReportPayload:
         assert len(precision) >= 1
         assert all(m.average is None for m in precision)
         assert all(m.label is not None for m in precision)
+
+        custom = [
+            m
+            for m in payload.metrics
+            if m.name == "xxx_mean" and m.data_source == "test"
+        ]
+        assert len(custom) == 1
+        assert custom[0].average == "macro"
+        assert custom[0].label is None
+        assert custom[0].value is not None
 
     @mark.filterwarnings(
         "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"

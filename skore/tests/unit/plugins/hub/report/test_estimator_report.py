@@ -3,6 +3,7 @@ from pydantic import ValidationError
 from pytest import approx, fixture, mark, raises
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import make_scorer, precision_score
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
@@ -314,44 +315,18 @@ class TestEstimatorReportPayload:
         ]
 
     @mark.respx(assert_all_called=False)
-    @mark.filterwarnings(
-        "ignore:The behavior of DataFrame concatenation with empty or all-NA "
-        "entries is deprecated:FutureWarning"
-    )
-    def test_binary_metrics_excludes_averaged_rows(
-        self, project, binary_classification, monkeypatch
-    ):
-        from unittest.mock import MagicMock
+    def test_binary_metrics_includes_averaged_rows(self, project):
+        X, y = make_classification(random_state=42)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y)
 
-        import pandas as pd
-
-        display = binary_classification.metrics.summarize(data_source="both")
-        data = display.summary.copy()
-        macro_row = (
-            data.loc[(data["name"] == "precision") & (data["data_source"] == "test")]
-            .iloc[0]
-            .copy()
-        )
-        macro_row["label"] = None
-        macro_row["average"] = "macro"
-        macro_row["score"] = 0.55
-        data = pd.concat([data, pd.DataFrame([macro_row])], ignore_index=True)
-
-        mock_display = MagicMock()
-        mock_display.summary = data
-        monkeypatch.setattr(
-            binary_classification.metrics,
-            "summarize",
-            lambda **kwargs: mock_display,
-        )
+        report.metrics.add(make_scorer(precision_score, average="macro"), name="xxx")
 
         payload = EstimatorReportPayload(
             project=project,
-            report=binary_classification,
+            report=report,
             key="<key>",
         )
 
-        assert not any(m.average == "macro" for m in payload.metrics)
         precision = [
             m
             for m in payload.metrics
@@ -360,6 +335,14 @@ class TestEstimatorReportPayload:
         assert len(precision) == 2
         assert {m.label for m in precision} == {0, 1}
         assert all(m.average is None for m in precision)
+
+        custom = [
+            m for m in payload.metrics if m.name == "xxx" and m.data_source == "test"
+        ]
+        assert len(custom) == 1
+        assert custom[0].average == "macro"
+        assert custom[0].label is None
+        assert custom[0].value is not None
 
     @mark.respx(assert_all_called=False)
     def test_multiclass_metrics_includes_aggregate_averages(

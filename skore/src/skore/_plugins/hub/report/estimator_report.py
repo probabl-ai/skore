@@ -84,8 +84,7 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
 
         Per-label (per-class) and per-output (multioutput regression) metrics are
         sent with their ``label``/``output``/``average`` dimension so the UI can
-        expose a toggle. For binary classification, only per-label rows are sent
-        (``average`` is always ``None``). Non-scalar values (``NaN``) are ignored.
+        expose a toggle. Non-scalar values (``NaN``) are ignored.
         """
         metrics = select_exportable_metrics(self.report)
         multimetric_names = find_multimetric_scalar_names(metrics)
