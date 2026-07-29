@@ -73,6 +73,7 @@ def monkeypatch_metrics(monkeypatch, Datetime):
     monkeypatch.setattr(
         "skore.EstimatorReport.metrics.rmse",
         lambda _, data_source: float(hash(f"<rmse_{data_source}>")),
+        raising=False,
     )
     monkeypatch.setattr(
         "skore.EstimatorReport.metrics.timings",
@@ -90,6 +91,7 @@ def monkeypatch_metrics(monkeypatch, Datetime):
                 ("Ridge", "std"): {"RMSE": float(hash(f"<rmse_std_{data_source}>"))},
             }
         ),
+        raising=False,
     )
     monkeypatch.setattr(
         "skore.CrossValidationReport.metrics.timings",

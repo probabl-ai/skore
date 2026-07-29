@@ -242,7 +242,6 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
                 position=position,
                 **kwargs,
             )
-        self._attach_registry_metric_methods()
 
     def remove(self, name: str) -> None:
         """Remove a metric from each underlying estimator report.
@@ -254,7 +253,6 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """
         for report in self._parent.reports_:
             report.metrics.remove(name)
-        self._attach_registry_metric_methods()
 
     def get(
         self,

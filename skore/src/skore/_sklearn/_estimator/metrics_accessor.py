@@ -332,7 +332,6 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             raise ValueError(
                 f"{error.msg} Pass those kwargs to add: add({error.metric}, {args_msg})"
             ) from error
-        self._attach_registry_metric_methods()
 
     def remove(self, name: str) -> None:
         """Remove a metric from the registry.
@@ -345,7 +344,6 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         # `remove` takes the report as input so that the MetricRegistry does not
         # need to have the report as an attribute, which would be a circular reference
         self._parent._metric_registry.remove(report=self._parent, name=name)
-        self._attach_registry_metric_methods()
 
     def get(
         self,

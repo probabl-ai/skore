@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import inspect
 import re
-from contextlib import suppress
 from datetime import UTC, datetime
 from functools import partial
 from importlib.metadata import version
@@ -204,11 +203,6 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     """Base class for metrics accessor."""
 
-    def __init__(self, parent: ParentT) -> None:
-        super().__init__(parent)
-        self._dynamic_metric_names: set[str] = set()
-        self._attach_registry_metric_methods()
-
     @staticmethod
     def _is_callable_metric_name(name: str) -> bool:
         return name.isidentifier() and not iskeyword(name)
@@ -262,21 +256,10 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
 
         return getattr(metric, "verbose_name", None) or "Registered metric."
 
-    def _attach_registry_metric_methods(self) -> None:
-        """Bind callables for registry metrics with valid identifiers."""
-        desired = set(self._callable_metric_names())
-        for name in self._dynamic_metric_names - desired:
-            with suppress(AttributeError):
-                delattr(self, name)
-        for name in desired:
-            setattr(self, name, partial(self.get, name))
-        self._dynamic_metric_names = desired
-
     def __getattr__(self, name):
         """Expose registry metrics as methods when not defined statically.
 
-        If attribute ``name`` is defined statically or already bound on the instance,
-        this method will not be called.
+        If attribute ``name`` is defined statically, this method will not be called.
         """
         if self._is_callable_metric_name(name) and name in self.available():
             return partial(self.get, name)
@@ -292,8 +275,8 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     def _build_help_data(self) -> AccessorHelpData:
         """Include registry metrics in the help data.
 
-        Registry metrics are only reachable through binding / ``__getattr__``, so they
-        are not picked up by the default method-discovery logic used to build help data.
+        Registry metrics are only reachable through ``__getattr__``, so they are not
+        picked up by the default method-discovery logic used to build help data.
         Names that are not valid identifiers (e.g. containing spaces) are excluded,
         since they cannot be called as ``report.metrics.<name>(...)``.
         """
