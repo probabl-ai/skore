@@ -254,10 +254,31 @@ def test_remove_is_case_insensitive(regression_report):
     assert "TST001 - Test issue" not in regression_report.checks.available()
 
 
-# --------------------------------------------------------------------------- #
-# summarize(): section routing (issue/tip/passed/not_applicable/ignored),
-# ignore=, caching, and fast_mode/slow-check handling
-# --------------------------------------------------------------------------- #
+# summarize
+
+
+def test_summarize(regression_report):
+    """summarize() runs end-to-end on a real report and returns a sane display."""
+    result = regression_report.checks.summarize()
+    assert isinstance(result, ChecksSummaryDisplay)
+
+    frame = result.frame()
+    assert list(frame.columns) == [
+        "code",
+        "title",
+        "section",
+        "explanation",
+        "documentation_url",
+    ]
+    assert set(frame["section"]) <= {
+        "issue",
+        "tip",
+        "passed",
+        "not_applicable",
+        "skipped",
+        "ignored",
+    }
+    assert "Checks summary:" in repr(result)
 
 
 def test_no_issues(monkeypatch, regression_report):
@@ -276,6 +297,13 @@ def test_no_issues(monkeypatch, regression_report):
 def test_ignore_checks(regression_report):
     """Check that checks are ignored when ignore is passed."""
     result = regression_report.checks.summarize(ignore=["SKD001"])
+    assert "SKD001" in set(result.frame(section="ignored")["code"])
+    assert "SKD001" not in set(result.frame(section="issue")["code"])
+
+
+def test_ignore_codes_are_normalized(regression_report):
+    """ignore= codes are stripped and upper-cased; blank entries are dropped."""
+    result = regression_report.checks.summarize(ignore=[" skd001 ", "  "])
     assert "SKD001" in set(result.frame(section="ignored")["code"])
     assert "SKD001" not in set(result.frame(section="issue")["code"])
 
