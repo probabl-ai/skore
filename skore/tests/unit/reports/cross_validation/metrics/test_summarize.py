@@ -339,3 +339,9 @@ def test_pos_label_overwrite(metric, logistic_binary_classification_data):
 
     assert len(display.summary) == 2  # One line per split
     assert display.summary["label"].isna().all()
+
+
+def test_non_default_n_jobs(forest_binary_classification_data):
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=5, n_jobs=5)
+    report.metrics.summarize()
