@@ -1,5 +1,6 @@
 """Tests for the `.checks` accessor mechanics."""
 
+from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -9,6 +10,7 @@ from sklearn.linear_model import LinearRegression
 from skrub import tabular_pipeline
 
 from skore import Check, EstimatorReport, configuration, evaluate
+from skore._sklearn._checks import base
 from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.base import (
     ChecksSummaryDisplay,
@@ -117,86 +119,7 @@ class NotApplicableMockCheck(Check):
         raise CheckNotApplicable("Mock check is not applicable.")
 
 
-def test_ignore_checks(regression_report):
-    """Check that checks are ignored when ignore is passed."""
-    result = regression_report.checks.summarize(ignore=["SKD001"])
-    assert "SKD001" in set(result.frame(section="ignored")["code"])
-    assert "SKD001" not in set(result.frame(section="issue")["code"])
-
-
-def test_no_issues(monkeypatch, regression_report):
-    """Check that no issues are detected when checks pass."""
-    monkeypatch.setattr(
-        EstimatorReport,
-        "_get_checks_results",
-        lambda report, ignored_codes, *, fast_mode=False: {},
-    )
-    assert regression_report.checks.summarize().frame(section="issue").empty
-
-
-def test_checks_summary_repr(monkeypatch, regression_report):
-    """Check that the checks summary has a repr."""
-    monkeypatch.setattr(EstimatorReport, "_get_checks_results", mock_issue)
-    results = regression_report.checks.summarize()
-    assert isinstance(results, ChecksSummaryDisplay)
-    elements = [
-        "Checks summary:",
-        "Mock title.",
-        "[SKD001]",
-        "Mock overfitting detected",
-    ]
-    for element in elements:
-        assert element in repr(results)
-    bundle = results._repr_mimebundle_()
-    assert "text/plain" in bundle
-    assert "text/html" in bundle
-    assert 'href="' in bundle["text/html"]
-    assert "user_guide/automated_checks.html#" in bundle["text/html"]
-    assert "Mute a check by passing" in bundle["text/html"]
-    assert "report-hint-note-line" in bundle["text/html"]
-
-
-def test_global_ignore(regression_report):
-    """Check that checks are ignored when global ignore is set."""
-    assert "SKD001" not in set(
-        regression_report.checks.summarize().frame(section="ignored")["code"]
-    )
-    with configuration(ignore_checks=["SKD001"]):
-        summary = regression_report.checks.summarize()
-        assert "SKD001" not in set(summary.frame(section="issue")["code"])
-        assert "SKD001" in set(summary.frame(section="ignored")["code"])
-
-
-def test_reuses_cached_results(monkeypatch, regression_report):
-    """Check that check results are cached and reused."""
-    calls = 0
-    original_run = Check.check_function
-
-    def counting_run(self, report):
-        nonlocal calls
-        calls += 1
-        return original_run(self, report)
-
-    monkeypatch.setattr(Check, "check_function", counting_run)
-    regression_report.checks.summarize()
-    calls_after_first = calls
-    regression_report.checks.summarize()
-    assert calls == calls_after_first
-
-
-def test_reuses_cv_cached_results(monkeypatch, cv_regression_report):
-    """Check that CV-level check results are cached and reused."""
-    cv_regression_report.checks.summarize()
-
-    for check in cv_regression_report._checks_registry:
-        if check.code == "SKD003":
-            monkeypatch.setattr(
-                check,
-                "check_function",
-                lambda rpt: pytest.fail("re-ran cached check"),
-            )
-
-    cv_regression_report.checks.summarize()
+# add
 
 
 def test_add_checks_runs_custom_check(regression_report):
@@ -264,11 +187,42 @@ def test_add_checks_docs_url_absent(regression_report):
     assert row["documentation_url"].isna().all()
 
 
+def test_add_checks_invalid_report_type(regression_report):
+    """Check that Check raises TypeError for unsupported report_type."""
+    with pytest.raises(TypeError, match="must be a non-empty list"):
+        regression_report.checks.add(
+            [MockCheck(has_issue=False, report_type="invalid")]
+        )
+    with pytest.raises(TypeError, match="unsupported values"):
+        regression_report.checks.add(
+            [MockCheck(has_issue=False, report_type=["invalid"])]
+        )
+
+
+def test_add_checks_invalid_protocol(regression_report):
+    """Check that Check raises TypeError for unsupported protocol."""
+
+    class InvalidCheck:
+        code = "INVALID001"
+        title = "Invalid issue"
+        report_types = ["estimator"]
+        docs_url = "invalid001"
+
+    with pytest.raises(TypeError, match="is not a subclass of Check."):
+        regression_report.checks.add([InvalidCheck()])
+
+
+# available
+
+
 def test_available_returns_code_dash_title(regression_report):
     """Check that available returns strings in 'code - title' format."""
     regression_report.checks.add([MockCheck(has_issue=True)])
     available = regression_report.checks.available()
     assert "TST001 - Test issue" in available
+
+
+# remove
 
 
 def test_remove_checks_excludes_results(regression_report):
@@ -300,29 +254,79 @@ def test_remove_is_case_insensitive(regression_report):
     assert "TST001 - Test issue" not in regression_report.checks.available()
 
 
-def test_check_invalid_report_type(regression_report):
-    """Check that Check raises TypeError for unsupported report_type."""
-    with pytest.raises(TypeError, match="must be a non-empty list"):
-        regression_report.checks.add(
-            [MockCheck(has_issue=False, report_type="invalid")]
-        )
-    with pytest.raises(TypeError, match="unsupported values"):
-        regression_report.checks.add(
-            [MockCheck(has_issue=False, report_type=["invalid"])]
-        )
+# --------------------------------------------------------------------------- #
+# summarize(): section routing (issue/tip/passed/not_applicable/ignored),
+# ignore=, caching, and fast_mode/slow-check handling
+# --------------------------------------------------------------------------- #
 
 
-def test_check_invalid_protocol(regression_report):
-    """Check that Check raises TypeError for unsupported protocol."""
+def test_no_issues(monkeypatch, regression_report):
+    """Check that no issues are detected when checks pass."""
+    monkeypatch.setattr(
+        EstimatorReport,
+        "_get_checks_results",
+        lambda report, ignored_codes, *, fast_mode=False: {},
+    )
+    assert regression_report.checks.summarize().frame(section="issue").empty
 
-    class InvalidCheck:
-        code = "INVALID001"
-        title = "Invalid issue"
-        report_types = ["estimator"]
-        docs_url = "invalid001"
 
-    with pytest.raises(TypeError, match="is not a subclass of Check."):
-        regression_report.checks.add([InvalidCheck()])
+# ignore
+
+
+def test_ignore_checks(regression_report):
+    """Check that checks are ignored when ignore is passed."""
+    result = regression_report.checks.summarize(ignore=["SKD001"])
+    assert "SKD001" in set(result.frame(section="ignored")["code"])
+    assert "SKD001" not in set(result.frame(section="issue")["code"])
+
+
+def test_global_ignore(regression_report):
+    """Check that checks are ignored when global ignore is set."""
+    assert "SKD001" not in set(
+        regression_report.checks.summarize().frame(section="ignored")["code"]
+    )
+    with configuration(ignore_checks=["SKD001"]):
+        summary = regression_report.checks.summarize()
+        assert "SKD001" not in set(summary.frame(section="issue")["code"])
+        assert "SKD001" in set(summary.frame(section="ignored")["code"])
+
+
+# cache
+
+
+def test_reuses_cached_results(monkeypatch, regression_report):
+    """Check that check results are cached and reused."""
+    calls = 0
+    original_run = Check.check_function
+
+    def counting_run(self, report):
+        nonlocal calls
+        calls += 1
+        return original_run(self, report)
+
+    monkeypatch.setattr(Check, "check_function", counting_run)
+    regression_report.checks.summarize()
+    calls_after_first = calls
+    regression_report.checks.summarize()
+    assert calls == calls_after_first
+
+
+def test_reuses_cv_cached_results(monkeypatch, cv_regression_report):
+    """Check that CV-level check results are cached and reused."""
+    cv_regression_report.checks.summarize()
+
+    for check in cv_regression_report._checks_registry:
+        if check.code == "SKD003":
+            monkeypatch.setattr(
+                check,
+                "check_function",
+                lambda rpt: pytest.fail("re-ran cached check"),
+            )
+
+    cv_regression_report.checks.summarize()
+
+
+# sections
 
 
 def test_tip_goes_to_tips_not_issues(regression_report):
@@ -387,44 +391,7 @@ def test_frame_section_filter(regression_report):
     assert set(result.frame()["code"]) >= {"TST001", "TST002"}
 
 
-def test_header_reports_all_counts(regression_report):
-    """The header reports issue, tip, passed, NA, skipped and ignored counts."""
-    regression_report.checks.add([MockCheck(has_issue=True), TipCheck()])
-    result = regression_report.checks.summarize(ignore=["SKD001"])
-    assert "issue(s)" in result._header
-    assert "tip(s)" in result._header
-    assert "passed" in result._header
-    assert "not applicable" in result._header
-    assert "skipped" in result._header
-    assert "1 ignored" in result._header
-
-
-def test_html_tabs(regression_report):
-    """The HTML repr contains one label per bucket with its count."""
-    regression_report.checks.add([MockCheck(has_issue=True), TipCheck()])
-    html = regression_report.checks.summarize()._repr_html_()
-    assert "Issues (" in html
-    assert "Tips (" in html
-    assert "Passed (" in html
-    assert "Not Applicable (" in html
-    assert "Skipped (" in html
-    assert "Ignored (" in html
-
-
-def test_checks_summary_html_note_lines(monkeypatch, regression_report):
-    """HTML note shows fast-mode info and mute hint on separate lines."""
-    monkeypatch.setattr(EstimatorReport, "_get_checks_results", mock_issue)
-    html_fast = regression_report.checks.summarize(fast_mode=True)._repr_html_()
-    assert "Fast mode is on" in html_fast
-    assert "Mute a check by passing" in html_fast
-    assert "report-hint-note-line" in html_fast
-    assert "Checks summary (fast mode):" in html_fast
-
-    html_full = regression_report.checks.summarize(fast_mode=False)._repr_html_()
-    assert "Fast mode is on" not in html_full
-    assert "Mute a check by passing" in html_full
-    assert "Checks summary:" in html_full
-    assert "Checks summary (fast mode):" not in html_full
+# fast-mode
 
 
 def test_summarize_fast_mode_skips_uncached_slow_checks(regression_report):
@@ -461,6 +428,91 @@ def test_fast_mode_skips_slow_checks_on_cv_report(cv_regression_report):
     assert slow_codes.isdisjoint(set(summary.frame(section="issue")["code"]))
     assert slow_codes.isdisjoint(set(summary.frame(section="passed")["code"]))
     assert slow_codes == set(summary.frame(section="skipped")["code"])
+
+
+def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):
+    """Subclass of Check without `slow` inherits the protocol default."""
+
+    class CheckNoSlowAttr(Check):
+        code = "TSTFAST"
+        title = "No slow attr"
+        report_types = ["estimator"]
+        docs_url = "tstfast"
+        severity = "issue"
+
+        def check_function(self, report):
+            return "Found."
+
+    check = CheckNoSlowAttr()
+    assert check.slow is False
+    regression_report.checks.add([check])
+    codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
+    assert "TSTFAST" in codes
+
+
+# repr / HTML
+
+
+def test_header_reports_all_counts(regression_report):
+    """The header reports issue, tip, passed, NA, skipped and ignored counts."""
+    regression_report.checks.add([MockCheck(has_issue=True), TipCheck()])
+    result = regression_report.checks.summarize(ignore=["SKD001"])
+    assert "issue(s)" in result._header
+    assert "tip(s)" in result._header
+    assert "passed" in result._header
+    assert "not applicable" in result._header
+    assert "skipped" in result._header
+    assert "1 ignored" in result._header
+
+
+def test_checks_summary_repr(monkeypatch, regression_report):
+    """Check that the checks summary has a repr."""
+    monkeypatch.setattr(EstimatorReport, "_get_checks_results", mock_issue)
+    results = regression_report.checks.summarize()
+    assert isinstance(results, ChecksSummaryDisplay)
+    elements = [
+        "Checks summary:",
+        "Mock title.",
+        "[SKD001]",
+        "Mock overfitting detected",
+    ]
+    for element in elements:
+        assert element in repr(results)
+    bundle = results._repr_mimebundle_()
+    assert "text/plain" in bundle
+    assert "text/html" in bundle
+    assert 'href="' in bundle["text/html"]
+    assert "user_guide/automated_checks.html#" in bundle["text/html"]
+    assert "Mute a check by passing" in bundle["text/html"]
+    assert "report-hint-note-line" in bundle["text/html"]
+
+
+def test_html_tabs(regression_report):
+    """The HTML repr contains one label per bucket with its count."""
+    regression_report.checks.add([MockCheck(has_issue=True), TipCheck()])
+    html = regression_report.checks.summarize()._repr_html_()
+    assert "Issues (" in html
+    assert "Tips (" in html
+    assert "Passed (" in html
+    assert "Not Applicable (" in html
+    assert "Skipped (" in html
+    assert "Ignored (" in html
+
+
+def test_checks_summary_html_note_lines(monkeypatch, regression_report):
+    """HTML note shows fast-mode info and mute hint on separate lines."""
+    monkeypatch.setattr(EstimatorReport, "_get_checks_results", mock_issue)
+    html_fast = regression_report.checks.summarize(fast_mode=True)._repr_html_()
+    assert "Fast mode is on" in html_fast
+    assert "Mute a check by passing" in html_fast
+    assert "report-hint-note-line" in html_fast
+    assert "Checks summary (fast mode):" in html_fast
+
+    html_full = regression_report.checks.summarize(fast_mode=False)._repr_html_()
+    assert "Fast mode is on" not in html_full
+    assert "Mute a check by passing" in html_full
+    assert "Checks summary:" in html_full
+    assert "Checks summary (fast mode):" not in html_full
 
 
 def test_html_repr_does_not_compute_slow(regression_report):
@@ -502,24 +554,7 @@ def test_html_repr_fragments_includes_checks_detail(monkeypatch, regression_repo
     assert "Read more about this" not in checks_html
 
 
-def test_subclass_check_without_slow_attr_treated_as_fast(regression_report):
-    """Subclass of Check without `slow` inherits the protocol default."""
-
-    class CheckNoSlowAttr(Check):
-        code = "TSTFAST"
-        title = "No slow attr"
-        report_types = ["estimator"]
-        docs_url = "tstfast"
-        severity = "issue"
-
-        def check_function(self, report):
-            return "Found."
-
-    check = CheckNoSlowAttr()
-    assert check.slow is False
-    regression_report.checks.add([check])
-    codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
-    assert "TSTFAST" in codes
+# _get_issue_documentation_url
 
 
 def test_documentation_url_points_to_existing_rst():
@@ -534,3 +569,17 @@ def test_documentation_url_points_to_existing_rst():
     rst_rel_path = "/".join(url.path.split("/")[2:]).replace(".html", ".rst")
     rst_path = Path(__file__).parents[4] / "sphinx" / rst_rel_path
     assert rst_path.is_file()
+
+
+def test_documentation_url_falls_back_to_dev_when_package_not_found(monkeypatch):
+    """The docs URL uses the 'dev' version when skore's package metadata is missing."""
+
+    def raise_not_found(name):
+        raise PackageNotFoundError(name)
+
+    monkeypatch.setattr(base, "version", raise_not_found)
+    url = _get_issue_documentation_url({"docs_url": "skd001-mock"})
+    assert (
+        url
+        == "https://docs.skore.probabl.ai/dev/user_guide/automated_checks.html#skd001-mock"
+    )

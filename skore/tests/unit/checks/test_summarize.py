@@ -1,14 +1,8 @@
-from importlib.metadata import PackageNotFoundError
-
 import pytest
 from sklearn.linear_model import LinearRegression
 
 from skore import evaluate
-from skore._sklearn._checks import base
-from skore._sklearn._checks.base import (
-    ChecksSummaryDisplay,
-    _get_issue_documentation_url,
-)
+from skore._sklearn._checks.base import ChecksSummaryDisplay
 
 
 def display_html(check_results, fast_mode=False):
@@ -136,17 +130,3 @@ def test_accessor_repr_and_html_delegate_to_fast_mode_summarize(regression_data)
     # container ids embed a random uuid, so compare structure, not exact HTML.
     assert "Fast mode is on" in report.checks._repr_html_()
     assert "Issues (" in report.checks._repr_html_()
-
-
-def test_documentation_url_falls_back_to_dev_when_package_not_found(monkeypatch):
-    """The docs URL uses the 'dev' version when skore's package metadata is missing."""
-
-    def raise_not_found(name):
-        raise PackageNotFoundError(name)
-
-    monkeypatch.setattr(base, "version", raise_not_found)
-    url = _get_issue_documentation_url({"docs_url": "skd001-mock"})
-    assert (
-        url
-        == "https://docs.skore.probabl.ai/dev/user_guide/automated_checks.html#skd001-mock"
-    )
