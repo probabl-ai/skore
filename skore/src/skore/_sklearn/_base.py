@@ -236,10 +236,13 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     def _metric_summary(self, metric: Metric) -> str:
         """Summarize ``metric`` in a single sentence."""
         summary = docstring_summary(callable_docstring(metric.function))
-        if not summary and type(metric) is not Metric:
-            # Only built-in metrics document themselves at the class level; a custom
-            # metric is a plain ``Metric``, whose docstring describes the machinery.
-            summary = docstring_summary(type(metric).__doc__)
+        if not summary:
+            # Prefer a class docstring the metric owns. Plain ``Metric`` instances
+            # (from ``Metric.new``) inherit the base class docstring, which
+            # describes the machinery rather than the metric itself.
+            class_doc = type(metric).__doc__
+            if class_doc is not None and class_doc is not Metric.__doc__:
+                summary = docstring_summary(class_doc)
         return summary or metric.verbose_name or "Registered metric."
 
     def _build_metric_method_docstring(self, name: str) -> str:
@@ -320,7 +323,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
 
         If attribute ``name`` is defined statically, this method will not be called.
         """
-        if self._is_callable_metric_name(name) and name in self.available():
+        if name in self._callable_metric_names():
             method = partial(self.get, name)
             method.__doc__ = self._build_metric_method_docstring(name)
             method.__name__ = name
