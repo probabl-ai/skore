@@ -10,6 +10,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.metrics import make_scorer, precision_score
 from sklearn.model_selection import (
     GroupKFold,
     KFold,
@@ -1047,28 +1048,18 @@ class TestCrossValidationReportPayload:
         ]
 
     @mark.filterwarnings(
-        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning",
-        (
-            "ignore:The behavior of DataFrame concatenation with empty or all-NA "
-            "entries:FutureWarning"
-        ),
+        "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
     )
     @mark.respx(assert_all_called=False)
-    def test_binary_metrics_includes_averaged_rows(
-        self, project, small_cv_binary_classification
-    ):
-        from sklearn.metrics import make_scorer, precision_score
+    def test_binary_metrics_includes_averaged_rows(self, project):
+        X, y = make_classification(random_state=42, n_samples=10)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y, splitter=2)
 
-        from skore._plugins.hub.report import CrossValidationReportPayload
-
-        small_cv_binary_classification.metrics.add(
-            make_scorer(precision_score, average="macro"),
-            name="xxx",
-        )
+        report.metrics.add(make_scorer(precision_score, average="macro"), name="xxx")
 
         payload = CrossValidationReportPayload(
             project=project,
-            report=small_cv_binary_classification,
+            report=report,
             key="<key>",
         )
 

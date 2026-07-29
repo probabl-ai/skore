@@ -3,6 +3,7 @@ from pydantic import ValidationError
 from pytest import approx, fixture, mark, raises
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import make_scorer, precision_score
 
 from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
@@ -314,23 +315,15 @@ class TestEstimatorReportPayload:
         ]
 
     @mark.respx(assert_all_called=False)
-    @mark.filterwarnings(
-        "ignore:The behavior of DataFrame concatenation with empty or all-NA "
-        "entries is deprecated:FutureWarning"
-    )
-    def test_binary_metrics_includes_averaged_rows(
-        self, project, binary_classification
-    ):
-        from sklearn.metrics import make_scorer, precision_score
+    def test_binary_metrics_includes_averaged_rows(self, project):
+        X, y = make_classification(random_state=42)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y)
 
-        binary_classification.metrics.add(
-            make_scorer(precision_score, average="macro"),
-            name="xxx",
-        )
+        report.metrics.add(make_scorer(precision_score, average="macro"), name="xxx")
 
         payload = EstimatorReportPayload(
             project=project,
-            report=binary_classification,
+            report=report,
             key="<key>",
         )
 
