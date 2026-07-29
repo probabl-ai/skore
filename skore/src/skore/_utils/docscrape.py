@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
 import re
 from functools import lru_cache
 from typing import Any
@@ -47,26 +46,19 @@ def parse_numpy_doc(doc: str | None) -> NumpyDocString | None:
 
 
 def docstring_summary(doc: str | None) -> str | None:
-    """Return the leading summary paragraph of a docstring, if any."""
+    """Return the leading summary from a numpydoc string, if any."""
     parsed = parse_numpy_doc(doc)
-    if parsed is not None:
-        summary = " ".join(
-            line.strip() for line in parsed["Summary"] if line and line.strip()
-        ).strip()
-        if summary:
-            return summary
-
-    if not doc:
+    if parsed is None or not parsed["Summary"]:
         return None
-    first_para = inspect.cleandoc(doc).split("\n\n", 1)[0].strip()
-    if not first_para:
-        return None
-    return " ".join(line.strip() for line in first_para.splitlines() if line.strip())
+    summary = " ".join(parsed["Summary"]).strip()
+    return summary or None
 
 
-def parameters_by_name(doc: str | None) -> dict[str, Parameter]:
+def parameters_by_name(
+    doc: str | NumpyDocString | None,
+) -> dict[str, Parameter]:
     """Return Parameters from ``doc`` keyed by name (stars stripped)."""
-    parsed = parse_numpy_doc(doc)
+    parsed = doc if isinstance(doc, NumpyDocString) else parse_numpy_doc(doc)
     if parsed is None:
         return {}
     return {param.name.lstrip("*"): param for param in parsed["Parameters"]}

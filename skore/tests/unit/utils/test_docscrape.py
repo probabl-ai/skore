@@ -55,7 +55,8 @@ def test_docstring_summary_from_numpydoc():
     assert docstring_summary(NUMPYDOC_EXAMPLE) == "Accuracy classification score."
 
 
-def test_docstring_summary_plain_text_fallback():
+def test_docstring_summary_simple_paragraphs():
+    """The scraper puts the first paragraph in Summary even without Parameters."""
     doc = "One line summary.\n\nMore details without a Parameters section."
     assert docstring_summary(doc) == "One line summary."
 
@@ -100,6 +101,11 @@ def test_parameters_by_name_strips_stars():
     by_name = parameters_by_name(NUMPYDOC_EXAMPLE)
     assert set(by_name) == {"y_true", "average", "kwargs"}
     assert by_name["average"].type.startswith("{'micro'")
+
+
+def test_parameters_by_name_from_parsed():
+    parsed = parse_numpy_doc(NUMPYDOC_EXAMPLE)
+    assert parameters_by_name(parsed) == parameters_by_name(NUMPYDOC_EXAMPLE)
 
 
 def test_parameters_by_name_empty_doc():

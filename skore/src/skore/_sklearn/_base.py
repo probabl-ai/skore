@@ -254,7 +254,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
 
         get_doc = getattr(self.get, "__doc__", None)
         get_parsed = parse_numpy_doc(get_doc)
-        get_params = parameters_by_name(get_doc)
+        get_params = parameters_by_name(get_parsed)
 
         parameters: list[Parameter] = []
         shared_names: set[str] = set()
