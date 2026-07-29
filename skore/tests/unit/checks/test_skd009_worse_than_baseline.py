@@ -8,10 +8,16 @@ from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.model_checks import CheckWorseThanBaseline
 
 
-def test_detects_worse_than_baseline(regression_data):
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+def test_detects_worse_than_baseline(report_type, regression_data):
     """Check that the worse-than-baseline issue is detected on a dummy estimator."""
     X, y = regression_data
-    report = evaluate(DummyRegressor(), X, y)
+    report = evaluate(
+        DummyRegressor(), X, y, splitter=0.2 if report_type == "estimator" else 3
+    )
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD009" in issues.index
     assert (
@@ -20,54 +26,29 @@ def test_detects_worse_than_baseline(regression_data):
     )
 
 
-@pytest.mark.filterwarnings(
-    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
-)
-def test_detects_worse_than_baseline_cv(regression_data):
-    """Check that the worse-than-baseline issue is detected on a CV report."""
-    X, y = regression_data
-    report = evaluate(DummyRegressor(), X, y, splitter=3)
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD009" in issues.index
-    assert (
-        "not significantly better than a HistGradientBoosting baseline"
-        in issues.loc["SKD009", "explanation"]
-    )
-
-
-def test_not_detected_on_strong_model(regression_data):
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_not_detected_on_strong_model(report_type):
     """Check that SKD009 is not detected when the model beats HistGradientBoosting."""
     X, y = make_regression(n_features=4, noise=0.1, random_state=0)
-    report = evaluate(RidgeCV(), X, y)
+    report = evaluate(
+        RidgeCV(), X, y, splitter=0.2 if report_type == "estimator" else 3
+    )
     codes = set(report.checks.summarize().frame(section="issue")["code"])
     assert "SKD009" not in codes
 
 
-def test_not_detected_on_strong_model_cv():
-    """Check that SKD009 is not detected on a CV report for a strong model."""
-    X, y = make_regression(n_features=4, noise=0.1, random_state=0)
-    report = evaluate(RidgeCV(), X, y, splitter=3)
-    codes = set(report.checks.summarize().frame(section="issue")["code"])
-    assert "SKD009" not in codes
-
-
-def test_detects_worse_than_baseline_multioutput(regression_multioutput_data):
-    """SKD009 emitted for multioutput regression when model is worse than baseline."""
-    X, y = regression_multioutput_data
-    report = evaluate(DummyRegressor(), X, y)
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD009" in issues.index
-
-
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
 @pytest.mark.filterwarnings(
     "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
 )
-def test_detects_worse_than_baseline_multioutput_cv(
-    regression_multioutput_data,
+def test_detects_worse_than_baseline_multioutput(
+    report_type, regression_multioutput_data
 ):
-    """SKD009 emitted for multioutput regression on a CV report."""
+    """SKD009 emitted for multioutput regression when model is worse than baseline."""
     X, y = regression_multioutput_data
-    report = evaluate(DummyRegressor(), X, y, splitter=3)
+    report = evaluate(
+        DummyRegressor(), X, y, splitter=0.2 if report_type == "estimator" else 3
+    )
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD009" in issues.index
 
@@ -81,12 +62,15 @@ def test_not_applicable_when_train_data_missing(regression_train_test_split):
         CheckWorseThanBaseline().check_function(report)
 
 
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
 def test_not_applicable_when_baseline_report_creation_fails(
-    regression_data, monkeypatch
+    report_type, regression_data, monkeypatch
 ):
     """SKD009 raises when the HistGradientBoosting baseline report can't be fit."""
     X, y = regression_data
-    report = evaluate(LinearRegression(), X, y)
+    report = evaluate(
+        LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
+    )
 
     def failing_fit(self, **kwargs):
         raise RuntimeError("Test error")
@@ -94,18 +78,3 @@ def test_not_applicable_when_baseline_report_creation_fails(
     monkeypatch.setattr(EstimatorReport, "_fit_estimator", failing_fit)
     with pytest.raises(CheckNotApplicable):
         CheckWorseThanBaseline().check_function(report)
-
-
-def test_not_applicable_when_baseline_report_creation_fails_cv(
-    regression_data, monkeypatch
-):
-    """SKD009 raises on a CV report when the baseline report can't be fit."""
-    X, y = regression_data
-    cv_report = evaluate(LinearRegression(), X, y, splitter=3)
-
-    def failing_fit(self, **kwargs):
-        raise RuntimeError("Test error")
-
-    monkeypatch.setattr(EstimatorReport, "_fit_estimator", failing_fit)
-    with pytest.raises(CheckNotApplicable):
-        CheckWorseThanBaseline().check_function(cv_report)

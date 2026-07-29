@@ -27,8 +27,9 @@ def _datetime_pipeline():
     )
 
 
-def test_train_test_time_overlap():
-    """Shuffled split triggers overlap; proper temporal split passes."""
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_train_test_time_overlap(report_type):
+    """Shuffled split/CV triggers overlap; proper temporal split/CV passes."""
     n = 200
     X = pd.DataFrame(
         {
@@ -39,54 +40,25 @@ def test_train_test_time_overlap():
     y = np.arange(n, dtype=float)
     pipe = _datetime_pipeline()
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, shuffle=True, random_state=0
-    )
-    report = EstimatorReport(
-        pipe, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
+    if report_type == "estimator":
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, shuffle=True, random_state=0
+        )
+        report = EstimatorReport(
+            pipe, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+    else:
+        report = evaluate(
+            pipe, X, y, splitter=KFold(n_splits=5, shuffle=True, random_state=0)
+        )
     issues = report.checks.summarize().frame(section="issue").set_index("code")
     assert "SKD013" in issues.index
     assert "date" in issues.loc["SKD013", "explanation"]
 
-    split = int(n * 0.8)
-    report = EstimatorReport(
-        pipe,
-        X_train=X.iloc[:split],
-        y_train=y[:split],
-        X_test=X.iloc[split:],
-        y_test=y[split:],
-    )
-    summary = report.checks.summarize()
-    assert "SKD013" not in set(summary.frame(section="issue")["code"])
-    assert "SKD013" in set(summary.frame(section="passed")["code"])
 
-
-def test_train_test_time_no_overlap():
-    n = 200
-    X = pd.DataFrame(
-        {
-            "feat": np.arange(n, dtype=float),
-            "date": pd.date_range("2026-12-01", periods=n, freq="D"),
-        }
-    )
-    y = np.arange(n, dtype=float)
-    pipe = _datetime_pipeline()
-    split = int(n * 0.8)
-    report = EstimatorReport(
-        pipe,
-        X_train=X.iloc[:split],
-        y_train=y[:split],
-        X_test=X.iloc[split:],
-        y_test=y[split:],
-    )
-    summary = report.checks.summarize()
-    assert "SKD013" not in set(summary.frame(section="issue")["code"])
-    assert "SKD013" in set(summary.frame(section="passed")["code"])
-
-
-def test_train_test_time_overlap_cv():
-    """Shuffled CV triggers overlap; time-series CV passes."""
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_train_test_time_no_overlap(report_type):
+    """Proper temporal train/test split or time-series CV doesn't trigger SKD013."""
     n = 200
     X = pd.DataFrame(
         {
@@ -97,14 +69,17 @@ def test_train_test_time_overlap_cv():
     y = np.arange(n, dtype=float)
     pipe = _datetime_pipeline()
 
-    report = evaluate(
-        pipe, X, y, splitter=KFold(n_splits=5, shuffle=True, random_state=0)
-    )
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD013" in issues.index
-    assert "date" in issues.loc["SKD013", "explanation"]
-
-    report = evaluate(pipe, X, y, splitter=TimeSeriesSplit(n_splits=5))
+    if report_type == "estimator":
+        split = int(n * 0.8)
+        report = EstimatorReport(
+            pipe,
+            X_train=X.iloc[:split],
+            y_train=y[:split],
+            X_test=X.iloc[split:],
+            y_test=y[split:],
+        )
+    else:
+        report = evaluate(pipe, X, y, splitter=TimeSeriesSplit(n_splits=5))
     summary = report.checks.summarize()
     assert "SKD013" not in set(summary.frame(section="issue")["code"])
     assert "SKD013" in set(summary.frame(section="passed")["code"])

@@ -7,43 +7,44 @@ from skrub import tabular_pipeline
 from skore import evaluate
 
 
-def test_detects_coefficient_interpretation(regression_data):
-    """Check that the coefficient interpretation tip is emitted."""
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_detects_unscaled_coefficients(report_type, regression_data):
+    """SKD006 warns that coefficients aren't comparable when features are unscaled."""
     X, y = regression_data
-    report = evaluate(LinearRegression(), X, y)
+    report = evaluate(
+        LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
+    )
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD006" in tips.index
     assert "Features are not on the same scale" in tips.loc["SKD006", "explanation"]
 
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_detects_standardized_coefficients(report_type, regression_data):
+    """SKD006 notes coefficients are comparable when features are standardized."""
+    X, y = regression_data
     X /= X.std(axis=0)
-    report = evaluate(LinearRegression(), X, y)
+    report = evaluate(
+        LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
+    )
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD006" in tips.index
     assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
 
 
-def test_detects_coefficient_interpretation_cv(regression_data):
-    """Check that the coefficient interpretation tip is emitted on a CV report."""
-    X, y = regression_data
-    report = evaluate(LinearRegression(), X, y, splitter=3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD006" in tips.index
-    assert "Features are not on the same scale" in tips.loc["SKD006", "explanation"]
-
-    X /= X.std(axis=0)
-    report = evaluate(LinearRegression(), X, y, splitter=3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD006" in tips.index
-    assert "Features appear to be standardized" in tips.loc["SKD006", "explanation"]
-
-
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
 @pytest.mark.filterwarnings(
     "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
 )
-def test_tabular_pipeline_with_numpy_X(regression_data):
+def test_tabular_pipeline_with_numpy_X(report_type, regression_data):
     """SKD006 runs when tabular_pipeline is evaluated on raw numpy features."""
     X, y = regression_data
-    report = evaluate(tabular_pipeline(LinearRegression()), X, y, splitter=0.2)
+    report = evaluate(
+        tabular_pipeline(LinearRegression()),
+        X,
+        y,
+        splitter=0.2 if report_type == "estimator" else 3,
+    )
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD006" in tips.index
 

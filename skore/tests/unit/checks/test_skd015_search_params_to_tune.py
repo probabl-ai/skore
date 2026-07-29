@@ -14,7 +14,8 @@ from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.model_checks import CheckSearchParamsToTune
 
 
-def test_suggests_missing_params(regression_data):
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_suggests_missing_params(report_type, regression_data):
     """SKD015 tip is emitted when the search grid misses recommended params."""
     X, y = regression_data
     search = GridSearchCV(
@@ -22,7 +23,7 @@ def test_suggests_missing_params(regression_data):
         param_grid={"n_estimators": [10, 50]},
         cv=2,
     )
-    report = evaluate(search, X, y)
+    report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
@@ -32,21 +33,8 @@ def test_suggests_missing_params(regression_data):
     assert "n_estimators" not in explanation
 
 
-def test_suggests_missing_params_on_cv_report(regression_data):
-    """SKD015 tip is emitted on a cross-validation report."""
-    X, y = regression_data
-    search = GridSearchCV(
-        RandomForestRegressor(random_state=0),
-        param_grid={"n_estimators": [10, 50]},
-        cv=2,
-    )
-    report = evaluate(search, X, y, splitter=3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD015" in tips.index
-    assert "max_features" in tips.loc["SKD015", "explanation"]
-
-
-def test_passes_when_all_recommended_covered(regression_data):
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_passes_when_all_recommended_covered(report_type, regression_data):
     """SKD015 passes when every recommended param is already searched."""
     X, y = regression_data
     search = GridSearchCV(
@@ -54,17 +42,18 @@ def test_passes_when_all_recommended_covered(regression_data):
         param_grid={"alpha": [0.1, 1.0, 10.0]},
         cv=2,
     )
-    report = evaluate(search, X, y)
+    report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     summary = report.checks.summarize()
     assert "SKD015" in set(summary.frame(section="passed")["code"])
 
 
-def test_pipeline_single_step(regression_data):
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_pipeline_single_step(report_type, regression_data):
     """SKD015 strips pipeline prefixes correctly for a single tuned step."""
     X, y = regression_data
     pipe = Pipeline([("scaler", StandardScaler()), ("rf", RandomForestRegressor())])
     search = GridSearchCV(pipe, param_grid={"rf__n_estimators": [10, 50]}, cv=2)
-    report = evaluate(search, X, y)
+    report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
@@ -73,7 +62,8 @@ def test_pipeline_single_step(regression_data):
     assert "n_estimators" not in explanation
 
 
-def test_pipeline_multi_step(binary_classification_data):
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_pipeline_multi_step(report_type, binary_classification_data):
     """SKD015 reports missing params for multiple pipeline steps."""
     X, y = binary_classification_data
     pipe = Pipeline(
@@ -91,7 +81,7 @@ def test_pipeline_multi_step(binary_classification_data):
         },
         cv=2,
     )
-    report = evaluate(search, X, y)
+    report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
@@ -104,12 +94,13 @@ def test_pipeline_multi_step(binary_classification_data):
     assert "max_features" in explanation
 
 
-def test_pipeline_flags_untuned_step(regression_data):
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_pipeline_flags_untuned_step(report_type, regression_data):
     """SKD015 flags pipeline steps whose params are not in the grid at all."""
     X, y = regression_data
     pipe = Pipeline([("pca", PCA()), ("ridge", Ridge())])
     search = GridSearchCV(pipe, param_grid={"ridge__alpha": [0.1, 1.0]}, cv=2)
-    report = evaluate(search, X, y)
+    report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
@@ -117,7 +108,8 @@ def test_pipeline_flags_untuned_step(regression_data):
     assert "n_components" in explanation
 
 
-def test_equivalent_params_not_suggested(regression_data):
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_equivalent_params_not_suggested(report_type, regression_data):
     """Tuning max_depth should not suggest min_samples_leaf or min_samples_split."""
     X, y = regression_data
     search = GridSearchCV(
@@ -125,7 +117,7 @@ def test_equivalent_params_not_suggested(regression_data):
         param_grid={"max_depth": [3, 5, 10]},
         cv=2,
     )
-    report = evaluate(search, X, y)
+    report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD015" in tips.index
     explanation = tips.loc["SKD015", "explanation"]
@@ -134,23 +126,17 @@ def test_equivalent_params_not_suggested(regression_data):
     assert "max_features" in explanation
 
 
-def test_not_applicable_plain_estimator(regression_data):
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_not_applicable_plain_estimator(report_type, regression_data):
     """SKD015 raises CheckNotApplicable on a plain (non-search) estimator."""
     X, y = regression_data
-    report = evaluate(Ridge(), X, y)
-    with pytest.raises(CheckNotApplicable):
-        CheckSearchParamsToTune().check_function(report)
-
-
-def test_not_applicable_plain_estimator_on_cv_report(regression_data):
-    """SKD015 raises CheckNotApplicable with a plain estimator on a CV report."""
-    X, y = regression_data
-    report = evaluate(Ridge(), X, y, splitter=3)
+    report = evaluate(Ridge(), X, y, splitter=0.2 if report_type == "estimator" else 3)
     with pytest.raises(CheckNotApplicable, match="not a BaseSearchCV"):
         CheckSearchParamsToTune().check_function(report)
 
 
-def test_not_applicable_unknown_estimator(regression_data):
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_not_applicable_unknown_estimator(report_type, regression_data):
     """SKD015 raises CheckNotApplicable for estimators not in the table."""
     X, y = regression_data
     search = GridSearchCV(
@@ -158,18 +144,19 @@ def test_not_applicable_unknown_estimator(regression_data):
         param_grid={"strategy": ["mean", "median"]},
         cv=2,
     )
-    report = evaluate(search, X, y)
+    report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     with pytest.raises(CheckNotApplicable):
         CheckSearchParamsToTune().check_function(report)
 
 
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
 def test_not_applicable_pipeline_with_no_recommendable_step(
-    binary_classification_data,
+    report_type, binary_classification_data
 ):
     """SKD015 raises when no pipeline step's class is in the recommendation table."""
     X, y = binary_classification_data
     pipe = Pipeline([("scaler", StandardScaler()), ("nb", GaussianNB())])
     search = GridSearchCV(pipe, param_grid={"nb__var_smoothing": [1e-9, 1e-8]}, cv=3)
-    report = evaluate(search, X, y)
+    report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
     with pytest.raises(CheckNotApplicable, match="No parameter to recommend"):
         CheckSearchParamsToTune().check_function(report)

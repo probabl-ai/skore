@@ -9,7 +9,8 @@ from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.model_checks import CheckUselessFeatures
 
 
-def test_detects_useless_features():
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_detects_useless_features(report_type):
     """Noise features are flagged when permutation importance is negligible."""
     X, y = make_regression(
         n_samples=300,
@@ -19,7 +20,7 @@ def test_detects_useless_features():
         shuffle=False,
         random_state=0,
     )
-    report = evaluate(Ridge(), X, y, splitter=0.2)
+    report = evaluate(Ridge(), X, y, splitter=0.2 if report_type == "estimator" else 3)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD012" in tips.index
     explanation = tips.loc["SKD012", "explanation"]
@@ -30,22 +31,6 @@ def test_detects_useless_features():
     assert "Feature #3" in explanation
     assert "Feature #4" in explanation
     assert "Feature #5" in explanation
-
-
-def test_detects_useless_features_cv():
-    """Noise features are flagged on a cross-validation report."""
-    X, y = make_regression(
-        n_samples=300,
-        n_features=6,
-        n_informative=2,
-        noise=0.1,
-        shuffle=False,
-        random_state=0,
-    )
-    report = evaluate(Ridge(), X, y, splitter=3)
-    tips = report.checks.summarize().frame(section="tip").set_index("code")
-    assert "SKD012" in tips.index
-    assert "permutation importance" in tips.loc["SKD012", "explanation"]
 
 
 class _NoScoreRegressor(BaseEstimator):
