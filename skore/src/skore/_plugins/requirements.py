@@ -1,27 +1,25 @@
 import importlib.metadata
+import logging
 import pathlib
 import platform
 import site
 import sys
 import sysconfig
+import types
 import typing
 
+logger = logging.getLogger(__name__)
 
-def _site_dirs() -> list[pathlib.Path]:
-    dirs = [pathlib.Path(p).resolve() for p in site.getsitepackages()]
+
+def is_local_module(module: types.ModuleType) -> bool:
+    sitepackages = [pathlib.Path(path).resolve() for path in site.getsitepackages()]
 
     if site.ENABLE_USER_SITE and site.getusersitepackages():
-        dirs.append(pathlib.Path(site.getusersitepackages()).resolve())
+        sitepackages.append(pathlib.Path(site.getusersitepackages()).resolve())
 
-    return dirs
+    origin = ((spec := module.__spec__) and spec.origin) or module.__file__
 
-
-def is_local_module(module) -> bool:
-    origin = getattr(module, "__file__", None) or getattr(
-        getattr(module, "__spec__", None), "origin", None
-    )
-
-    if not origin or origin in {"built-in", "frozen"}:
+    if (not origin) or (origin in {"built-in", "frozen"}):
         return False
 
     path = pathlib.Path(origin).resolve()
@@ -30,7 +28,7 @@ def is_local_module(module) -> bool:
     if path.is_relative_to(stdlib):
         return False
 
-    return not any(path.is_relative_to(d) for d in _site_dirs())
+    return not any(map(path.is_relative_to, sitepackages))
 
 
 class Requirement(typing.TypedDict):
@@ -46,10 +44,14 @@ class Requirements(typing.TypedDict):
 def infer() -> Requirements:
     module_to_requirement = importlib.metadata.packages_distributions()
     requirement_to_version = {}
-    nonlocalm = []
-    localm = []
+    warned = set()
 
-    for module in sys.modules.values():
+    # Snapshot: importlib.metadata / console I/O can load modules and mutate
+    # sys.modules while we iterate.
+    for module in list(sys.modules.values()):
+        if module is None:
+            continue
+
         name = ((spec := module.__spec__) and spec.name) or module.__name__
         top_level_name = name.partition(".")[0]
 
@@ -63,27 +65,27 @@ def infer() -> Requirements:
                         requirement
                     )
         else:
-            # Cython internals
-            # C extensions
-            # Runtime entrypoints
-            # Editable packages: origin outside site-packages (repo, cwd, editable .pth path)
+            # No distribution mapping: Cython/C-extension aliases, runtime entrypoints
+            # (__main__), or local/dev imports outside site-packages.
+            logging.debug(module)
 
-            if not is_local_module(module):
-                nonlocalm.append((module, top_level_name))
-            else:
-                localm.append((module, top_level_name))
-
-    return (
-        nonlocalm,
-        localm,
-        Requirements(
-            python=platform.python_version(),
-            requirements=[
-                Requirement(
-                    name=name,
-                    version=version,
+            if is_local_module(module) and (top_level_name not in warned):
+                warned.add(top_level_name)
+                logger.warning(
+                    "\033[38;5;208m"
+                    f"Package \033[1;3m{top_level_name}\033[22;23m seems to be an "
+                    "editable or local install (loaded from outside site-packages). "
+                    "It will not be recorded in the inferred requirements."
+                    "\033[0m"
                 )
-                for name, version in sorted(requirement_to_version.items())
-            ],
-        ),
+
+    return Requirements(
+        python=platform.python_version(),
+        requirements=[
+            Requirement(
+                name=name,
+                version=version,
+            )
+            for name, version in sorted(requirement_to_version.items())
+        ],
     )
