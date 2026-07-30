@@ -1,6 +1,7 @@
 import numpy
 import pandas
 import pytest
+from numpy.testing import assert_array_equal
 from sklearn.cluster import KMeans
 from sklearn.datasets import (
     make_classification,
@@ -11,6 +12,7 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.multioutput import MultiOutputClassifier
 
+from skore._sklearn._plot.utils import _ClassifierDisplayMixin
 from skore._sklearn.find_ml_task import _find_ml_task
 
 
@@ -128,3 +130,15 @@ def test_find_ml_task_pandas_large_label_gap():
 
 def test_find_ml_task_string():
     assert _find_ml_task(["0", "1", "2"], None) == "multiclass-classification"
+
+
+class Test_ClassifierDisplayMixin:
+    def test__threshold_average(self):
+        xs = [numpy.array([3, 2, 1]), numpy.array([3, 2, 1])]
+        ys = [numpy.array([3, 2, 1]), numpy.array([3, 2, 1])]
+        thresholds = [numpy.array([4, 3, 1]), numpy.array([5, 3, 2])]
+        x, y, threshold = _ClassifierDisplayMixin._threshold_average(xs, ys, thresholds)
+        expected = numpy.array([3.0, 3.0, 2.0, 1.5, 1.0])
+        assert_array_equal(x, expected)
+        assert_array_equal(y, expected)
+        assert_array_equal(threshold, numpy.array([5, 4, 3, 2, 1]))
