@@ -23,36 +23,38 @@ mitigations techniques:
 - using early stopping
 - using more data
 
-We use California housing (median house value in kUSD). Half of the rows feed
-the main walkthrough; the other half is reserved to show the effect of adding
-training data.
+We use California housing (median house value). Half of the rows feed the main
+walkthrough; the other half is reserved to show the effect of adding training
+data.
 """
 
 # %%
 # Load the California housing dataset
 # ===================================
 #
-# Each row is a census block group. The target ``MedHouseVal`` is in 100k USD
-# units; we multiply by 100 so errors read in kUSD.
+# Each row is a census block group. The target ``MedHouseVal`` is the median
+# house value for the block group.
 
 import pandas as pd
 from sklearn.datasets import fetch_california_housing
 from sklearn.model_selection import train_test_split
 
 housing = fetch_california_housing(as_frame=True)
-y_full = housing.target * 100
 
 X, X_heldout, y, y_heldout = train_test_split(
     housing.data,
-    y_full,
+    housing.target,
     train_size=0.5,
     random_state=42,
 )
 
-y = pd.Series(y, name="MedHouseVal_kUSD")
-y_heldout = pd.Series(y_heldout, name="MedHouseVal_kUSD")
+y = pd.Series(y, name="MedHouseVal")
+y_heldout = pd.Series(y_heldout, name="MedHouseVal")
 
 # %%
+# Note ``AveRooms`` and ``AveOccup``: we combine them later into a
+# rooms-per-person feature.
+
 from skrub import TableReport
 
 TableReport(X)
@@ -108,25 +110,6 @@ report_ridge.metrics.summarize(data_source="both").frame()
 report_ridge.checks.summarize(fast_mode=True)
 
 # %%
-# A :class:`~sklearn.ensemble.HistGradientBoostingRegressor` adds nonlinear
-# capacity and can lift test scores further. Watch the train/test gap as you do
-# this: the same method that cures underfitting is the one that creates
-# overfitting.
-
-from sklearn.ensemble import HistGradientBoostingRegressor
-
-report_hgbr = skore.evaluate(
-    HistGradientBoostingRegressor(random_state=42),
-    X=X,
-    y=y,
-    splitter=splitter,
-)
-report_hgbr.metrics.summarize(data_source="both").frame()
-
-# %%
-report_hgbr.checks.summarize(fast_mode=True)
-
-# %%
 # Feature engineering
 # ===================
 #
@@ -156,10 +139,11 @@ report_ridge_fe.checks.summarize(fast_mode=True)
 # Overfitting: SKD001 fires
 # =========================
 #
-# To see the other end of the spectrum on the same split, fit a default
-# :class:`~sklearn.ensemble.RandomForestRegressor`. Unrestricted leaves can
-# memorize training data really well so train metrics look excellent, test metrics
-# lag, and SKD001 flags the gap.
+# Hand-crafted features are one way to capture nonlinearity for a linear model.
+# Another is to switch to a model family that learns nonlinear structure on its
+# own. A default :class:`~sklearn.ensemble.RandomForestRegressor` does that,
+# but unrestricted leaves can also memorize the training data: train metrics
+# look excellent, test metrics lag, and SKD001 flags the gap.
 
 from sklearn.ensemble import RandomForestRegressor
 
@@ -217,6 +201,18 @@ report_rf_reg.checks.summarize(fast_mode=True)
 # or use the ``validation_fraction`` parameter. See scikit-learn's example on
 # `gradient boosting with early stopping
 # <https://scikit-learn.org/stable/auto_examples/ensemble/plot_gradient_boosting_early_stopping.html>`_.
+#
+# Compare a :class:`~sklearn.ensemble.HistGradientBoostingRegressor` with and
+# without early stopping on the same split.
+
+from sklearn.ensemble import HistGradientBoostingRegressor
+
+report_hgbr = skore.evaluate(
+    HistGradientBoostingRegressor(max_iter=40, random_state=42),
+    X=X,
+    y=y,
+    splitter=splitter,
+)
 
 model_hgbr_es = HistGradientBoostingRegressor(
     early_stopping=True,
@@ -231,7 +227,16 @@ report_hgbr_es = skore.evaluate(
     y=y,
     splitter=splitter,
 )
-report_hgbr_es.metrics.summarize(data_source="both").frame()
+
+skore.compare(
+    {
+        "hgbr": report_hgbr,
+        "hgbr_early_stopping": report_hgbr_es,
+    }
+).metrics.summarize(data_source="both").frame()
+
+# %%
+report_hgbr.checks.summarize(fast_mode=True)
 
 # %%
 report_hgbr_es.checks.summarize(fast_mode=True)
@@ -283,19 +288,19 @@ skore.compare(
 # Summary comparison
 # ==================
 #
-# Reading left to right: over-regularized Ridge → enough capacity → too much
-# capacity → controlled fit → more data. The same mitigations appear once; only
-# the *direction* (add expressiveness vs limit it) changes.
+# Here is a side-by-side comparison of the impact of the different techniques we
+# applied, measured on the same test set.
 
 skore.compare(
     {
-        "1_ridge_large_alpha": report_underfit,
-        "2_ridge": report_ridge,
-        "3_hgbr": report_hgbr,
-        "4_default_rf": report_rf,
-        "5_regularized_rf": report_rf_reg,
-        "6_hgbr_early_stopping": report_hgbr_es,
-        "7_more_data": report_more,
+        "ridge_large_alpha": report_underfit,
+        "ridge": report_ridge,
+        "ridge_feature_engineering": report_ridge_fe,
+        "default_rf": report_rf,
+        "regularized_rf": report_rf_reg,
+        "hgbr": report_hgbr,
+        "hgbr_early_stopping": report_hgbr_es,
+        "more_data": report_more,
     }
 ).metrics.summarize(data_source="test").frame()
 
