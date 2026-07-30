@@ -1,3 +1,5 @@
+"""Infer installed package requirements from currently imported modules."""
+
 import importlib.metadata
 import logging
 import pathlib
@@ -12,12 +14,20 @@ logger = logging.getLogger(__name__)
 
 
 def is_local_module(module: types.ModuleType) -> bool:
+    """
+    Return whether ``module`` was loaded from outside site-packages.
+
+    True for editable installs, source trees, and other paths that are neither the
+    standard library nor an installed distribution in site-packages.
+    """
     sitepackages = [pathlib.Path(path).resolve() for path in site.getsitepackages()]
 
     if site.ENABLE_USER_SITE and site.getusersitepackages():
         sitepackages.append(pathlib.Path(site.getusersitepackages()).resolve())
 
-    origin = ((spec := module.__spec__) and spec.origin) or module.__file__
+    origin = (module.__spec__ and module.__spec__.origin) or getattr(
+        module, "__file__", None
+    )
 
     if (not origin) or (origin in {"built-in", "frozen"}):
         return False
@@ -32,16 +42,28 @@ def is_local_module(module: types.ModuleType) -> bool:
 
 
 class Requirement(typing.TypedDict):
+    """A distribution name and its installed version."""
+
     name: str
     version: str | None
 
 
 class Requirements(typing.TypedDict):
+    """Python version and inferred distribution requirements."""
+
     python: str
     requirements: list[Requirement]
 
 
 def infer() -> Requirements:
+    """
+    Infer distribution requirements from modules currently in ``sys.modules``.
+
+    Maps each imported top-level package to its distribution via
+    :func:`importlib.metadata.packages_distributions`, then records the installed
+    version. Local or editable packages outside site-packages are skipped and a
+    warning is emitted once per package name.
+    """
     module_to_requirement = importlib.metadata.packages_distributions()
     requirement_to_version = {}
     warned = set()
@@ -52,7 +74,7 @@ def infer() -> Requirements:
         if module is None:
             continue
 
-        name = ((spec := module.__spec__) and spec.name) or module.__name__
+        name = (module.__spec__ and module.__spec__.name) or module.__name__
         top_level_name = name.partition(".")[0]
 
         if top_level_name in sys.stdlib_module_names:
