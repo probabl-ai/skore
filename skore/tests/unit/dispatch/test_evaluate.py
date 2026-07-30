@@ -1,7 +1,9 @@
+import numpy as np
 import pytest
 import skrub
+from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.model_selection import KFold, LeaveOneGroupOut, StratifiedKFold
 
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport, evaluate
 
@@ -81,23 +83,12 @@ def test_multiple_estimators_cv(regression_data):
     assert isinstance(report, ComparisonReport)
 
 
-def test_multiple_estimators_multiple_X(regression_data):
-    """A list of estimators with a list of X returns a ComparisonReport."""
+def test_list_or_dict_X_raises(regression_data):
+    """Passing list or dict X raises TypeError."""
     X, y = regression_data
-    report = evaluate([LinearRegression(), LinearRegression()], [X, X], y, splitter=0.2)
-    assert isinstance(report, ComparisonReport)
-
-
-def test_list_estimator_dict_X_raises(regression_data):
-    """List estimators with a dict X raises TypeError."""
-    X, y = regression_data
-    with pytest.raises(TypeError, match="cannot be a dict"):
-        evaluate(
-            [LinearRegression(), LinearRegression()],
-            {"a": X, "b": X},
-            y,
-            splitter=0.2,
-        )
+    for invalid_x in ([X], {"a": X}):
+        with pytest.raises(TypeError, match="single array-like or None"):
+            evaluate(LinearRegression(), invalid_x, y)
 
 
 def test_multiple_estimators_dict(regression_data):
@@ -128,44 +119,6 @@ def test_multiple_estimators_dict_cv(regression_data):
     assert set(report.reports_) == {"a", "b"}
 
 
-def test_multiple_estimators_dict_per_estimator_X(regression_data):
-    """A dict of estimators with a dict of X (same keys) returns a ComparisonReport."""
-    X, y = regression_data
-    report = evaluate(
-        {"a": LinearRegression(), "b": LinearRegression()},
-        {"a": X, "b": X},
-        y,
-        splitter=0.2,
-    )
-    assert isinstance(report, ComparisonReport)
-    assert set(report.reports_) == {"a", "b"}
-
-
-def test_dict_estimator_list_X_raises(regression_data):
-    """Dict estimators with a list X raises TypeError."""
-    X, y = regression_data
-    with pytest.raises(TypeError, match="X cannot be a list"):
-        evaluate(
-            {"a": LinearRegression(), "b": LinearRegression()},
-            [X, X],
-            y,
-            splitter=0.2,
-        )
-
-
-def test_dict_estimator_mismatched_X_keys_raises(regression_data):
-    """Dict estimators with dict X whose keys differ from estimator raises
-    ValueError."""
-    X, y = regression_data
-    with pytest.raises(ValueError, match="same keys"):
-        evaluate(
-            {"a": LinearRegression(), "b": LinearRegression()},
-            {"a": X, "c": X},
-            y,
-            splitter=0.2,
-        )
-
-
 def test_dict_estimators_prefit(regression_data):
     """A dict of fitted estimators with splitter='prefit' returns ComparisonReport."""
     X, y = regression_data
@@ -181,20 +134,6 @@ def test_empty_dict_raises(regression_data):
     X, y = regression_data
     with pytest.raises(ValueError, match="Expected.*reports to compare"):
         evaluate({}, X, y)
-
-
-def test_single_estimator_list_X_raises(regression_data):
-    """A single estimator with list X raises TypeError."""
-    X, y = regression_data
-    with pytest.raises(TypeError, match="single array-like"):
-        evaluate(LinearRegression(), [X], y)
-
-
-def test_single_estimator_dict_X_raises(regression_data):
-    """A single estimator with dict X raises TypeError."""
-    X, y = regression_data
-    with pytest.raises(TypeError, match="single array-like"):
-        evaluate(LinearRegression(), {"a": X}, y)
 
 
 def test_invalid_splitter_string(regression_data):
@@ -252,3 +191,65 @@ def test_evaluate_learner(binary_classification_data):
     learner = skrub.X().skb.apply(LogisticRegression(), y=skrub.y()).skb.make_learner()
     report = evaluate(learner, data={"X": X, "y": y}, splitter=Splitter())
     assert len(report.reports_) == 5
+
+
+def test_evaluate_skrub_learner_default_holdout_without_explicit_cv(
+    binary_classification_data,
+):
+    """Skrub learners without an explicit DataOp cv keep the 0.2 holdout default."""
+    X, y = binary_classification_data
+    learner = skrub.X().skb.apply(LogisticRegression(), y=skrub.y()).skb.make_learner()
+    report = evaluate(learner, data={"X": X, "y": y})
+    assert isinstance(report, EstimatorReport)
+    assert len(report.X_test) == round(0.2 * len(X))
+
+
+def test_evaluate_skrub_learner_uses_data_op_cv_with_split_kwargs():
+    """Reproduce issue #2884: grouped CV from mark_as_X split_kwargs."""
+    df = skrub.datasets.toy_products()
+    data = skrub.var("df", df)
+    groups = data["seller"]
+    X = data[["description", "price"]].skb.mark_as_X(
+        cv=LeaveOneGroupOut(), split_kwargs={"groups": groups}
+    )
+    y = data["category"].skb.mark_as_y()
+    pred = X.skb.apply(DummyClassifier(), y=y)
+    learner = pred.skb.make_learner()
+
+    report = evaluate(learner, data={"df": df})
+    assert isinstance(report, CrossValidationReport)
+    assert len(report.reports_) == 2
+
+    expected_indices = tuple(
+        (split["row_indices_train"], split["row_indices_test"])
+        for split in pred.skb.iter_cv_splits(environment={"df": df}, cv=None)
+    )
+    assert len(report.split_indices) == len(expected_indices)
+    for (train_a, test_a), (train_b, test_b) in zip(
+        report.split_indices, expected_indices, strict=True
+    ):
+        np.testing.assert_array_equal(train_a, train_b)
+        np.testing.assert_array_equal(test_a, test_b)
+
+    skrub_cv = pred.skb.cross_validate({"df": df})
+    skore_accuracy = report.metrics.accuracy(aggregate="mean").iloc[0]
+    assert skore_accuracy == pytest.approx(skrub_cv["test_score"].mean())
+
+
+@pytest.mark.filterwarnings(
+    "ignore:The least populated class in y has only:UserWarning"
+)
+def test_evaluate_skrub_learner_explicit_splitter_overrides_data_op_cv():
+    """An explicit splitter argument overrides the DataOp cv configuration."""
+    df = skrub.datasets.toy_products()
+    data = skrub.var("df", df)
+    groups = data["seller"]
+    X = data[["description", "price"]].skb.mark_as_X(
+        cv=LeaveOneGroupOut(), split_kwargs={"groups": groups}
+    )
+    y = data["category"].skb.mark_as_y()
+    learner = X.skb.apply(DummyClassifier(), y=y).skb.make_learner()
+
+    report = evaluate(learner, data={"df": df}, splitter=3)
+    assert isinstance(report, CrossValidationReport)
+    assert len(report.reports_) == 3

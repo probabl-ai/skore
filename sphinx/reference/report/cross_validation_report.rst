@@ -20,8 +20,6 @@ functionalities of the report are exposed through accessors.
    :template: class_methods_no_index.rst
 
    CrossValidationReport.help
-   CrossValidationReport.cache_predictions
-   CrossValidationReport.clear_cache
    CrossValidationReport.create_estimator_report
    CrossValidationReport.get_predictions
 

@@ -169,6 +169,8 @@ class Project:
 
     Parameters
     ----------
+    name : str
+        The name of the project.
     workspace : str
         The workspace of the project.
 
@@ -176,8 +178,6 @@ class Project:
         ``skore hub`` interface. It represents an isolated entity managing users,
         projects, and resources. It can be a company, organization, or team that
         operates independently within the system.
-    name : str
-        The name of the project.
 
     Attributes
     ----------
@@ -193,7 +193,7 @@ class Project:
 
     @ensure_workspace_is_valid
     @ensure_name_is_valid
-    def __init__(self, *, workspace: str, name: str):
+    def __init__(self, *, name: str, workspace: str):
         """
         Initialize a hub project.
 
@@ -316,17 +316,18 @@ class Project:
         report_url = f"{self.__frontend_url}/{frontend_slug}/{response.json()['id']}"
         console.print(f"Consult your report at [link={report_url}]{report_url}[/link]")
 
-    def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
-        """Get a persisted report by its URN."""
-        if m := re.match(Project.__REPORT_URN_PATTERN, urn):
+    def get(self, id: str) -> EstimatorReport | CrossValidationReport:
+        """Get a persisted report by its ID (hub URN)."""
+        if m := re.match(Project.__REPORT_URN_PATTERN, id):
             workspace = self.workspace
             name = self.name
             type = m["type"]
-            id = m["id"]
-            url = f"projects/{workspace}/{name}/{type}-reports/{id}"
+            report_id = m["id"]
+            url = f"projects/{workspace}/{name}/{type}-reports/{report_id}"
         else:
             raise ValueError(
-                f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'."
+                f"Report ID '{id}' format does not match "
+                f"'{Project.__REPORT_URN_PATTERN}'."
             )
 
         # Retrieve presigned URL
@@ -358,7 +359,41 @@ class Project:
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted reports in insertion order."""
 
-        def dto(response: Any) -> Metadata:
+        def depaginate(client: HUBClient, query: str, /, limit: int = 500) -> list[Any]:
+            """
+            Get all reports from a paginated endpoint.
+
+            The skore-hub uses cursor-based pagination: each page is requested using the
+            ``created_at`` and ``id`` of the last item from the previous page as the
+            cursor, rather than a numeric page offset.
+            """
+            reports = []
+            cursor_created_at = None
+            cursor_id = None
+
+            while True:
+                params = {"limit": limit}
+
+                if (cursor_created_at is not None) and (cursor_id is not None):
+                    params["cursor_created_at"] = cursor_created_at
+                    params["cursor_id"] = cursor_id
+
+                if not (page := client.get(query, params=params).json()):
+                    break
+
+                reports.extend(page)
+
+                if len(page) < limit:
+                    # avoid one server call when we are sure that the current page is
+                    # the last one
+                    break
+
+                cursor_created_at = page[-1]["created_at"]
+                cursor_id = page[-1]["id"]
+
+            return reports
+
+        def dto(response: Any, /) -> Metadata:
             report_type, summary = response
             metrics = {
                 metric["name"]: metric["value"]
@@ -395,9 +430,10 @@ class Project:
             responses = itertools.chain(
                 zip(
                     itertools.repeat("estimator"),
-                    hub_client.get(
-                        f"projects/{self.workspace}/{self.name}/estimator-reports/"
-                    ).json(),
+                    depaginate(
+                        hub_client,
+                        f"projects/{self.workspace}/{self.name}/estimator-reports/",
+                    ),
                 ),
                 zip(
                     itertools.repeat("cross-validation"),
@@ -410,17 +446,19 @@ class Project:
         return sorted(map(dto, responses), key=itemgetter("date"))
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(mode='hub', name='{self.name}', workspace='{self.workspace}')"
+        return f"Project(name='{self.name}', mode='hub', workspace='{self.workspace}')"
 
     @staticmethod
     @ensure_workspace_is_valid
     @ensure_name_is_valid
-    def delete(*, workspace: str, name: str) -> None:
+    def delete(*, name: str, workspace: str) -> None:
         """
         Delete a hub project.
 
         Parameters
         ----------
+        name : str
+            The name of the project.
         workspace : Path
             The workspace of the project.
 
@@ -428,8 +466,6 @@ class Project:
             ``skore hub`` interface. It represents an isolated entity managing users,
             projects, and resources. It can be a company, organization, or team that
             operates independently within the system.
-        name : str
-            The name of the project.
         """
         with HUBClient() as hub_client:
             try:

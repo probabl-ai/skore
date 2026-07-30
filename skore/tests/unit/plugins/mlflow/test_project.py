@@ -2,6 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import mlflow
+import pandas as pd
 import pytest
 from sklearn.linear_model import LinearRegression
 
@@ -93,6 +94,27 @@ def test_log_artifact_raises_on_unsupported_payload() -> None:
         _log_artifact(project_module.Artifact("bad", 123))
 
 
+def test_log_artifact_logs_series_metrics_as_csv(monkeypatch) -> None:
+    logged: list[tuple[str, str]] = []
+
+    def fake_log_text(text: str, artifact_file: str) -> None:
+        logged.append((text, artifact_file))
+
+    monkeypatch.setattr(mlflow, "log_text", fake_log_text)
+
+    metrics = pd.Series({"accuracy": 0.9, "rmse": 1.2}, name="test")
+    _log_artifact(project_module.Artifact("metrics", metrics))
+
+    assert len(logged) == 1
+    csv_text, artifact_file = logged[0]
+    assert artifact_file == "metrics.csv"
+    assert "accuracy" in csv_text
+    assert "0.9" in csv_text
+
+
+@pytest.mark.filterwarnings(
+    r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
+)
 class TestProject:
     CLF_ARTIFACTS = [
         "metrics.confusion_matrix.png",
@@ -111,7 +133,7 @@ class TestProject:
         assert project.name == "<project>"
         assert project.tracking_uri == tracking_uri
         assert repr(project) == (
-            f"Project(mode='mlflow', name='<project>', tracking_uri='{tracking_uri}')"
+            f"Project(name='<project>', mode='mlflow', tracking_uri='{tracking_uri}')"
         )
 
     @pytest.mark.parametrize(
@@ -244,7 +266,12 @@ class TestProject:
         with pytest.raises(KeyError):
             project.get("missing-run-id")
 
-    def test_delete(self):
-        project = Project("project")
-        with pytest.raises(NotImplementedError):
-            Project.delete(name=project.name)
+    def test_delete(self, tmp_path, reg_report):
+        tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
+        project = Project("project", tracking_uri=tracking_uri)
+        project.put("<key>", reg_report)
+
+        Project.delete(name=project.name, tracking_uri=tracking_uri)
+
+        with pytest.raises(LookupError):
+            Project.delete(name=project.name, tracking_uri=tracking_uri)

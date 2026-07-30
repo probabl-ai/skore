@@ -1,7 +1,7 @@
 import warnings
 from typing import Literal
 
-from skrub import _dataframe as sbd
+import narwhals as nw
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseAccessor
@@ -75,15 +75,21 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             with_y = self._parent.ml_task != "clustering"
 
         X, y = self._retrieve_data_as_frame(with_y)
-        df = sbd.concat(X, y, axis=1) if with_y else X
+        if with_y:
+            df = nw.concat(
+                [nw.from_native(X), nw.from_native(y)],
+                how="horizontal",
+            )
+        else:
+            df = nw.from_native(X)
 
         if subsample:
             if subsample_strategy == "head":
-                df = sbd.head(df, subsample)
+                df = df.head(subsample)
             else:  # subsample_strategy == "random":
-                df = sbd.sample(df, subsample, seed=seed)
+                df = df.sample(subsample, seed=seed)
 
-        return df
+        return df.to_native()
 
     def summarize(
         self,
@@ -91,6 +97,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         with_y: bool = True,
         subsample: int | None = None,
         subsample_strategy: Literal["head", "random"] = "head",
+        with_plots: bool = True,
         seed: int | None = None,
     ) -> TableReportDisplay:
         """Plot dataset statistics.
@@ -115,6 +122,10 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             - If ``"random"``: randomly subsample the dataframe by using a uniform
               distribution. The random seed is controlled by ``seed``.
 
+        with_plots : bool, default=True
+            Whether to compute the TableReport plots, which can be computationally
+            expensive.
+
         seed : int, default=None
             The random seed to use when randomly subsampling. It only has an effect when
             ``subsample`` is not None and ``subsample_strategy='random'``.
@@ -126,10 +137,10 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         Examples
         --------
-        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> X, y = make_classification(n_samples=200, random_state=0)
         >>> classifier = LogisticRegression()
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.data.summarize().frame()
@@ -140,7 +151,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             subsample_strategy=subsample_strategy,
             seed=seed,
         )
-        return TableReportDisplay._compute_data_for_display(df)
+        return TableReportDisplay._compute_data_for_display(df, with_plots=with_plots)
 
     def analyze(self, **kwargs) -> TableReportDisplay:
         """Use :meth:`summarize` instead."""

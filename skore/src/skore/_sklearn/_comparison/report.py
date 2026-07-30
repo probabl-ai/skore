@@ -1,23 +1,26 @@
 from __future__ import annotations
 
 import uuid
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Literal, cast
 
 import joblib
-import numpy as np
-import pandas as pd
 from numpy.typing import ArrayLike
 
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._checks.base import CheckCode
+from skore._sklearn._checks.base import (
+    CheckCode,
+    CheckExplanation,
+    CheckResult,
+    CheckSource,
+)
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn.types import PositiveLabel
-from skore._utils._progress_bar import track
+from skore._utils._dataframe import _concat_vertical
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 from skore._utils.repr.markdown import (
@@ -27,9 +30,7 @@ from skore._utils.repr.markdown import (
 
 if TYPE_CHECKING:
     from skore._sklearn._checks.accessor import _ChecksAccessor
-    from skore._sklearn._comparison.inspection_accessor import (
-        _InspectionAccessor,
-    )
+    from skore._sklearn._comparison.inspection_accessor import _InspectionAccessor
     from skore._sklearn._comparison.metrics_accessor import _MetricsAccessor
 
     ComparisonReportType = Literal[
@@ -267,50 +268,15 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         self.n_jobs = n_jobs
         self._ml_task = next(iter(self.reports_.values()))._ml_task  # type: ignore
 
-    def clear_cache(self) -> None:
-        """Clear the cache.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import make_classification
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import compare, evaluate
-        >>> X, y = make_classification(random_state=42)
-        >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
-        >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
-        >>> report = compare([estimator_report_1, estimator_report_2])
-        >>> report.cache_predictions()
-        >>> report.clear_cache()
-        """
+    def _clear_cache(self) -> None:
+        """Clear the cache."""
         for report in self.reports_.values():
-            report.clear_cache()
+            report._clear_cache()
 
-    def cache_predictions(
-        self,
-    ) -> None:
-        """Cache the predictions for sub-estimators reports.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import make_classification
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import compare, evaluate
-        >>> X, y = make_classification(random_state=42)
-        >>> estimator_1 = LogisticRegression()
-        >>> estimator_report_1 = evaluate(estimator_1, X, y, splitter=0.2)
-        >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
-        >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
-        >>> report = compare([estimator_report_1, estimator_report_2])
-        >>> report.cache_predictions()
-        """
-        for report in track(
-            self.reports_.values(),
-            description="Estimator predictions",
-            total=len(self.reports_),
-        ):
-            report.cache_predictions()
+    def _cache_predictions(self) -> None:
+        """Cache the predictions for sub-estimators reports."""
+        for report in self.reports_.values():
+            report._cache_predictions()
 
     def get_predictions(
         self,
@@ -360,7 +326,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         >>> estimator_2 = LogisticRegression(C=2)  # Different regularization
         >>> estimator_report_2 = evaluate(estimator_2, X, y, splitter=0.2)
         >>> report = compare([estimator_report_1, estimator_report_2])
-        >>> report.cache_predictions()
         >>> predictions = report.get_predictions(data_source="test")
         >>> print([split_predictions.shape for split_predictions in predictions])
         [(20,), (20,)]
@@ -487,7 +452,6 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
                 )
             return EstimatorReport(
                 estimator_report.estimator_,
-                fit=False,
                 train_data=estimator_report.train_data,
                 test_data=test_data,
                 pos_label=self._pos_label,
@@ -505,22 +469,27 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
             )
 
         if concatenate_train_and_test:
-            X_train = (
-                pd.concat([estimator_report.X_train, estimator_report.X_test])
-                if isinstance(estimator_report.X_train, pd.DataFrame)
-                else np.concatenate([estimator_report.X_train, estimator_report.X_test])
+            if (
+                estimator_report.X_train is None
+                or estimator_report.y_train is None
+                or estimator_report.X_test is None
+                or estimator_report.y_test is None
+            ):
+                raise ValueError(
+                    "The source report must provide X_train, y_train, X_test, and "
+                    "y_test when concatenate_train_and_test=True."
+                )
+            X_train = _concat_vertical(
+                estimator_report.X_train, estimator_report.X_test
             )
-            y_train = (
-                pd.concat([estimator_report.y_train, estimator_report.y_test])
-                if isinstance(estimator_report.y_train, (pd.DataFrame, pd.Series))
-                else np.concatenate([estimator_report.y_train, estimator_report.y_test])
+            y_train = _concat_vertical(
+                estimator_report.y_train, estimator_report.y_test
             )
         else:
             X_train, y_train = estimator_report.X_train, estimator_report.y_train
 
         return EstimatorReport(
             estimator_report.estimator,
-            fit=True,
             X_train=X_train,
             y_train=y_train,
             X_test=X_test,
@@ -541,39 +510,85 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
         ignored_codes: set[CheckCode],
         *,
         fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
-        comparison_results: dict[CheckCode, dict] = {}
-        reports_by_code: dict[CheckCode, list[str]] = {}
-        all_applicable_codes: set[CheckCode] = set()
-        all_not_applicable_codes: set[CheckCode] = set()
+    ) -> dict[CheckCode, CheckResult]:
+        comparison_summary: dict[CheckCode, CheckResult] = {}
+        explanation_by_code: dict[CheckCode, dict[CheckSource, CheckExplanation]] = (
+            defaultdict(dict)
+        )
+        na_explanation_by_code: dict[CheckCode, dict[CheckSource, CheckExplanation]] = (
+            defaultdict(dict)
+        )
+        finding_section_by_code: dict[CheckCode, Literal["issue", "tip"]] = {}
+        ran_on_any: set[CheckCode] = set()
+        na_on_any: set[CheckCode] = set()
+        skipped_on_any: set[CheckCode] = set()
         for report_name, report in self.reports_.items():
             report.checks.add(self._checks_registry)
-            report_results, applicable_codes, not_applicable_codes = (
-                report._get_results(ignored_codes, fast_mode=fast_mode)
-            )
-            all_applicable_codes |= applicable_codes
-            all_not_applicable_codes |= not_applicable_codes
+            sub_summary = report._get_checks_results(ignored_codes, fast_mode=fast_mode)
 
-            for code, result in report_results.items():
-                comparison_results.setdefault(
+            for code, result in sub_summary.items():
+                comparison_summary.setdefault(
                     code,
                     {
                         "title": result["title"],
                         "docs_url": result.get("docs_url"),
                         "explanation": None,
-                        "severity": result.get("severity"),
+                        "section": result["section"],
                     },
                 )
-                if result["explanation"] is not None:
-                    reports_by_code.setdefault(code, []).append(report_name)
+                section = result["section"]
+                if section in ("issue", "tip"):
+                    ran_on_any.add(code)
+                    finding_section_by_code[code] = section
+                    explanation = result["explanation"]
+                    if isinstance(explanation, str):
+                        explanation_by_code[code][report_name] = explanation
+                elif section == "passed":
+                    ran_on_any.add(code)
+                elif section == "not_applicable":
+                    na_on_any.add(code)
+                    explanation = result["explanation"]
+                    if isinstance(explanation, str):
+                        na_explanation_by_code[code][report_name] = explanation
+                elif section == "skipped":
+                    skipped_on_any.add(code)
 
-        all_not_applicable_codes -= all_applicable_codes
+        global_na_codes = na_on_any - ran_on_any
+        global_skipped_codes = skipped_on_any - ran_on_any
 
-        for code, reports in reports_by_code.items():
-            comparison_results[code]["explanation"] = (
-                f"Detected in: {', '.join(f'[{r}]' for r in reports)}."
-            )
-        return comparison_results, all_applicable_codes, all_not_applicable_codes
+        for code, per_estimator in explanation_by_code.items():
+            comparison_summary[code] = {
+                **comparison_summary[code],
+                "explanation": dict(per_estimator),
+                "section": finding_section_by_code[code],
+            }
+        for code in global_na_codes:
+            comparison_summary[code] = {
+                **comparison_summary[code],
+                "explanation": dict(na_explanation_by_code[code]),
+                "section": "not_applicable",
+            }
+        for code in global_skipped_codes:
+            comparison_summary[code] = {
+                **comparison_summary[code],
+                "explanation": None,
+                "section": "skipped",
+            }
+        for code in ran_on_any:
+            if code not in explanation_by_code:
+                comparison_summary[code] = {
+                    **comparison_summary[code],
+                    "explanation": None,
+                    "section": "passed",
+                }
+        for code in ignored_codes:
+            if code in comparison_summary:
+                comparison_summary[code] = {
+                    **comparison_summary[code],
+                    "explanation": None,
+                    "section": "ignored",
+                }
+        return comparison_summary
 
     def _get_help_title(self) -> str:
         return "Tools to compare estimators"

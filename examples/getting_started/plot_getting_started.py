@@ -287,17 +287,14 @@ _ = final_report.metrics.confusion_matrix().plot()
 
 # %%
 # We can easily combine the results of the previous cross-validation together with
-# the evaluation on the held-out dataset, since the two are accessible as dataframes.
-# This way, we can check if our chosen model meets the expectations we set during the
+# the evaluation on the held-out dataset, since the two are accessible as tables. This
+# way, we can check if our chosen model meets the expectations we set during the
 # experiment phase.
 
 # %%
-import pandas as pd
-
-pd.concat(
-    [final_metrics.frame(), logreg_cv_report.metrics.summarize().frame()],
-    axis="columns",
-)
+final_frame = final_metrics.frame().to_frame()
+cv_frame = logreg_cv_report.metrics.summarize().frame()
+final_frame.merge(cv_frame, on="metric", how="outer")
 
 # %%
 # As expected, our final model gets better performance, likely thanks to the
@@ -391,7 +388,7 @@ from httpx import HTTPStatusError, codes
 from skore import Project
 
 try:
-    Project.delete(f"{WORKSPACE}/{PROJECT}", mode="hub")
+    Project.delete(name=PROJECT, mode="hub", workspace=WORKSPACE)
 except HTTPStatusError as e:
     if e.response.status_code != codes.NOT_FOUND:
         raise
@@ -400,7 +397,7 @@ except HTTPStatusError as e:
 # %%
 # We load or create a hub project:
 
-project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
+project = Project(name=PROJECT, mode="hub", workspace=WORKSPACE)
 
 # %%
 # We store our reports with descriptive keys:

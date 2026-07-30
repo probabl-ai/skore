@@ -28,7 +28,7 @@ from skore import Project
 
 tmp_dir = TemporaryDirectory()
 tmp_path = Path(tmp_dir.name)
-project = Project("example-project", workspace=tmp_path)
+project = Project(name="example-project", mode="local", workspace=tmp_path)
 
 # %%
 from sklearn.datasets import load_breast_cancer

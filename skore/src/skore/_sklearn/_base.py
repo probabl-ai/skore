@@ -1,20 +1,35 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from functools import partial
 from importlib.metadata import version
-from typing import Generic, Literal, TypeVar
+from keyword import iskeyword
+from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from uuid import uuid4
+
+import pandas as pd
 
 from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
-from skore._sklearn._checks.base import Check, CheckCode
+from skore._sklearn._checks.base import Check, CheckCode, CheckResult, CheckSection
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
+from skore._sklearn.types import DataSource, ReportMetadata
 from skore._utils._progress_bar import track
 from skore._utils.repr.base import (
     AccessorHelpMixin,
     ReportHelpMixin,
     render_panel_to_plain_text,
 )
+from skore._utils.repr.data import MethodHelp, get_documentation_url
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+    from skore._sklearn._checks.accessor import _ChecksAccessor
+    from skore._sklearn._cross_validation.report import CrossValidationReport
+    from skore._sklearn._estimator.report import EstimatorReport
+    from skore._sklearn._plot import MetricsSummaryDisplay
+    from skore._utils.repr.data import AccessorHelpData
 
 
 class _BaseReport(ReportHelpMixin):
@@ -33,57 +48,48 @@ class _BaseReport(ReportHelpMixin):
         "comparison-cross-validation",
     ]
 
+    checks: _ChecksAccessor
+
     def _aggregate_checks(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
+        self, ignored_codes: set[CheckCode], *, fast_mode: bool = False
+    ) -> dict[CheckCode, CheckResult]:
         """Aggregate EstimatorReport checks.
 
-        Overwritten in CrossValidation and Comparison reports.
-
-        Returns ``(check_results, applicable_codes, not_applicable_codes)``.
+        Overwritten in Comparison reports.
         """
-        return {}, set(), set()
+        return {}
 
-    def _get_results(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
-        """Get the check results from the cache or compute them.
+    def _get_checks_results(
+        self, ignored_codes: set[CheckCode], *, fast_mode: bool = False
+    ) -> dict[CheckCode, CheckResult]:
+        """Run uncached checks and return the checks summary.
 
         Parameters
         ----------
         ignored_codes : set of CheckCode
-            Check codes to exclude from the results, e.g. ``{"SKD001"}``.
+            Check codes to exclude from execution, e.g. ``{"SKD001"}``.
 
         fast_mode : bool, default=False
             When True, skip slow checks that are not already in the cache
             (their `check_function` is never invoked). Cached slow results
             are still surfaced.
 
-        Returns ``(check_results, applicable_codes, not_applicable_codes)``
-        where ``applicable_codes`` contains the codes of the checks that ran
-        without raising :class:`CheckNotApplicable`, and
-        ``not_applicable_codes`` contains those that raised it.
+        Returns
+        -------
+        dict of CheckCode to CheckResult
+            Summary of every check applicable to the report type with its display
+            section.
         """
         if not hasattr(self, "_check_results_cache"):
-            self._check_results_cache: dict[CheckCode, dict] = {}
-        if not hasattr(self, "_applicable_codes"):
-            self._applicable_codes: set[CheckCode] = set()
-        if not hasattr(self, "_not_applicable_codes"):
-            self._not_applicable_codes: set[CheckCode] = set()
+            self._check_results_cache: dict[CheckCode, CheckResult] = {}
 
         checks_to_run = [
             check
             for check in self._checks_registry
-            if check.report_type == self._report_type
+            if self._report_type in check.report_types
             and check.code not in self._check_results_cache
             and check.code not in ignored_codes
-            and not (fast_mode and getattr(check, "slow", False))
+            and not (fast_mode and check.slow)
         ]
         for check in track(
             checks_to_run,
@@ -93,35 +99,52 @@ class _BaseReport(ReportHelpMixin):
         ):
             try:
                 explanation = check.check_function(self)
-                self._applicable_codes.add(check.code)
-            except CheckNotApplicable:
-                explanation = None
-                self._not_applicable_codes.add(check.code)
+                section: CheckSection = (
+                    getattr(check, "severity", "issue") if explanation else "passed"
+                )
+            except CheckNotApplicable as exc:
+                explanation = exc.args[0] if exc.args else None
+                section = "not_applicable"
             self._check_results_cache[check.code] = {
                 "title": check.title,
                 "docs_url": check.docs_url,
                 "explanation": explanation,
-                "severity": getattr(check, "severity", "issue"),
+                "section": section,
             }
 
-        if "cross-validation" in self._report_type or "comparison" in self._report_type:
-            agg_check_results, agg_applicable, agg_not_applicable = (
-                self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
-            )
-            return (
-                self._check_results_cache | agg_check_results,
-                self._applicable_codes | agg_applicable,
-                self._not_applicable_codes | agg_not_applicable,
-            )
+        if "comparison" in self._report_type:
+            return self._aggregate_checks(ignored_codes, fast_mode=fast_mode)
 
-        return (
-            self._check_results_cache,
-            self._applicable_codes,
-            self._not_applicable_codes,
-        )
+        summary: dict[CheckCode, CheckResult] = {}
+        for check in self._checks_registry:
+            if self._report_type not in check.report_types:
+                continue
+            code = check.code
+            if code in ignored_codes:
+                summary[code] = {
+                    "title": check.title,
+                    "docs_url": check.docs_url,
+                    "explanation": None,
+                    "section": "ignored",
+                }
+            elif fast_mode and check.slow and code not in self._check_results_cache:
+                summary[code] = {
+                    "title": check.title,
+                    "docs_url": check.docs_url,
+                    "explanation": None,
+                    "section": "skipped",
+                }
+            elif code in self._check_results_cache:
+                summary[code] = self._check_results_cache[code]
+        return summary
+
+    def _checks_summary_html_fragment(self) -> str:
+        """HTML snippet for the checks summary tab in report reprs."""
+        return self.checks.summarize(fast_mode=True)._embedded_repr_html()
 
     def __init__(self) -> None:
-        self._metadata = {
+        self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
+        self._metadata: ReportMetadata = {
             "id": uuid4().int,
             "skore-version": version("skore"),
             "creation-date": datetime.now(UTC).isoformat(),
@@ -130,16 +153,10 @@ class _BaseReport(ReportHelpMixin):
             "report_type": getattr(self, "_report_type", "comparison"),
             "git_commit": git_commit(),
         }
-        self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
 
     @property
-    def id(self):
+    def id(self) -> int:
         return self._metadata["id"]
-
-    @property
-    def _hash(self) -> int:
-        # FIXME: only for backward compatibility
-        return self.id
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")
@@ -163,3 +180,95 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
 
     def _repr_mimebundle_(self, **kwargs):
         return {"text/plain": repr(self), "text/html": self._repr_html_()}
+
+
+def _summarize_report_metrics(
+    report: EstimatorReport | CrossValidationReport,
+    *,
+    data_source: DataSource | Literal["both"],
+    metric: str | list[str] | None = None,
+) -> MetricsSummaryDisplay:
+    """Compute a metrics summary for ``report``.
+
+    Pure Python function to avoid pickling a metrics accessor as a bound method's
+    ``__self__``.
+    """
+    return report.metrics._summarize_display(data_source=data_source, metric=metric)
+
+
+class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
+    """Base class for metrics accessor."""
+
+    def __getattr__(self, name):
+        """Define custom metric methods dynamically.
+
+        If attribute ``name`` is defined statically, this method will not be called.
+        """
+        if name in self.available():
+            return partial(lambda *args, **kwargs: self.get(name, *args, **kwargs))
+
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
+
+    def __dir__(self) -> list[str]:
+        """Add custom metrics to __dir__ for tab-completion."""
+        return list(set(super().__dir__()).union(self.available()))
+
+    def _build_help_data(self) -> AccessorHelpData:
+        """Include custom metrics in the help data.
+
+        Custom metrics are only reachable through ``__getattr__``, so they are not
+        picked up by the default method-discovery logic used to build help data.
+        Names that are not valid identifiers (e.g. containing spaces) are excluded,
+        since they cannot be called as ``report.metrics.<name>(...)``.
+        """
+        help_data = super()._build_help_data()
+        known_names = {method.name for method in help_data.methods}
+        doc_url = get_documentation_url(
+            obj=self._parent, accessor_name=self.__class__._accessor_name
+        )
+        help_data.methods.extend(
+            MethodHelp(
+                name=name,
+                parameters="(...)",
+                description="Custom metric.",
+                doc_url=doc_url,
+            )
+            for name in self.available()
+            if name not in known_names and name.isidentifier() and not iskeyword(name)
+        )
+        help_data.methods.sort(key=lambda method: method.name)
+        return help_data
+
+    def _formatted_summary_frame(
+        self,
+        *,
+        data_source: DataSource = "test",
+        metric: str | list[str] | None = None,
+    ) -> pd.DataFrame | pd.Series:
+        """Metric summary frame used for accessor display."""
+        display = self.summarize(data_source=data_source, metric=metric)
+        flat_index = "comparison" not in display.report_type
+        return display.frame(flat_index=flat_index)
+
+    def __repr__(self) -> str:
+        return (
+            "Metrics summary:\n"
+            f"{self._formatted_summary_frame()!r}\n"
+            "Explore available methods with .help()."
+        )
+
+    def _repr_html_(self) -> str:
+        frame = self.summarize().frame(verbose_name=True, flat_index=False)
+        html = (
+            frame.to_frame()._repr_html_()
+            if isinstance(frame, pd.Series)
+            else frame._repr_html_()
+        )
+        return (
+            "<p>Metrics summary:</p>"
+            f"{html}"
+            '<p role="note">Explore available methods with '
+            "<code>.help()</code>.</p>"
+        )

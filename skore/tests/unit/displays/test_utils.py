@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pytest
@@ -107,18 +108,18 @@ def test_validate_style_kwargs_error(default_kwargs, user_kwargs):
 @pytest.mark.parametrize(
     "rotation, horizontalalignment", [(45, "right"), (90, "center"), (180, "left")]
 )
-def test_rotate_ticklabels(pyplot, rotation, horizontalalignment):
+def test_rotate_ticklabels(rotation, horizontalalignment):
     """Check that we can rotate the ticks labels on an axis."""
-    _, ax = pyplot.subplots()
+    _, ax = plt.subplots()
     ax.plot(range(10))
     _rotate_ticklabels(ax, rotation=rotation, horizontalalignment=horizontalalignment)
     assert ax.get_xticklabels()[0].get_rotation() == rotation
     assert ax.get_xticklabels()[0].get_horizontalalignment() == horizontalalignment
 
 
-def test_get_adjusted_fig_size(pyplot):
+def test_get_adjusted_fig_size():
     """Check the computation of the adjusted figure size."""
-    fig, ax = pyplot.subplots(figsize=(2, 4))
+    fig, ax = plt.subplots(figsize=(2, 4))
     assert _get_adjusted_fig_size(fig, ax, "width", 2) == pytest.approx(
         2.0 * _get_adjusted_fig_size(fig, ax, "width", 1)
     )
@@ -127,9 +128,9 @@ def test_get_adjusted_fig_size(pyplot):
     )
 
 
-def test_adjust_fig_size(pyplot):
+def test_adjust_fig_size():
     """Check the adjustment of the figure size."""
-    fig, ax = pyplot.subplots(figsize=(2, 4))
+    fig, ax = plt.subplots(figsize=(2, 4))
     _adjust_fig_size(fig, ax, 1, 2)
     expected_width = _get_adjusted_fig_size(fig, ax, "width", 1)
     expected_height = _get_adjusted_fig_size(fig, ax, "height", 2)

@@ -59,30 +59,30 @@ def test_at_step(regression_data):
 def test_cache_seed_int(regression_data):
     X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
-    assert _children_cache_size(report) == 0
+    before = _children_cache_size(report)
 
     display1 = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test"
     )
-    assert _children_cache_size(report) == 1
+    assert _children_cache_size(report) == before + 1
 
     display2 = report.inspection.permutation_importance(
         seed=42, n_repeats=2, data_source="test"
     )
     assert display1.importances.equals(display2.importances)
-    assert _children_cache_size(report) == 1
+    assert _children_cache_size(report) == before + 1
 
 
 def test_cache_seed_none(regression_data):
     X, y = regression_data
     report = CrossValidationReport(Ridge(), X, y, splitter=2)
-    assert _children_cache_size(report) == 0
+    before = _children_cache_size(report)
 
     report.inspection.permutation_importance(n_repeats=2, data_source="test")
-    assert _children_cache_size(report) == 1
+    assert _children_cache_size(report) == before + 1
 
     report.inspection.permutation_importance(n_repeats=2, data_source="test")
-    assert _children_cache_size(report) == 1
+    assert _children_cache_size(report) == before + 1
 
 
 def test_cache_parameter_in_cache(regression_data):

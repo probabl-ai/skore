@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.tree import DecisionTreeRegressor
 
 from skore import EstimatorReport
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._plot import TableReportDisplay
 from skore._utils._dataframe import _normalize_X_as_dataframe, _normalize_y_as_dataframe
 
@@ -28,9 +29,7 @@ def test_summarize_error(forest_binary_classification_with_test, params, err_msg
         report.data.summarize(**params)
 
 
-def test_summarize_data_source_not_available(
-    forest_binary_classification_with_test,
-):
+def test_summarize_data_source_not_available(forest_binary_classification_with_test):
     """Check that we raise a proper error message when the data source requested is
     not available."""
     classifier, X_test, y_test = forest_binary_classification_with_test
@@ -50,8 +49,8 @@ def test_summarize_data_source_without_y():
     X, y = make_classification(n_classes=2, random_state=42)
     X = pd.DataFrame(X, columns=[f"Column {i}" for i in range(X.shape[1])])
     y = pd.Series(y, name="Classification target")
-    X_train, X_test = X.iloc[:100], X.iloc[100:]
-    y_train, y_test = y.iloc[:100], y.iloc[100:]
+    X_train, X_test = X.iloc[:50], X.iloc[50:]
+    y_train, y_test = y.iloc[:50], y.iloc[50:]
     classifier = LogisticRegression()
 
     report = EstimatorReport(
@@ -113,9 +112,19 @@ def test_summarize_sequence(X, y):
 
 @pytest.mark.parametrize("data_source", ["train", "test", "both"])
 @pytest.mark.parametrize(
-    "n_targets, target_column_names", [(1, ["Target"]), (2, ["Target 0", "Target 1"])]
+    "n_targets, target_column_names, x_container, y_container",
+    [
+        (1, ["Target"], "array", "array"),
+        (1, ["Target"], "pandas", "series"),
+        (1, ["Target"], "polars", "polars_series"),
+        (2, ["Target 0", "Target 1"], "array", "array"),
+        (2, ["Target 0", "Target 1"], "pandas", "pandas"),
+        (2, ["Target 0", "Target 1"], "polars", "polars"),
+    ],
 )
-def test_summarize_numpy_array(data_source, n_targets, target_column_names):
+def test_summarize_numpy_array(
+    data_source, n_targets, target_column_names, x_container, y_container
+):
     """Check that NumPy arrays are converted to pandas DataFrames when data are
     retrieved."""
     X, y = make_regression(
@@ -124,6 +133,26 @@ def test_summarize_numpy_array(data_source, n_targets, target_column_names):
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, shuffle=False, train_size=50
     )
+    feature_columns = [f"Feature {i}" for i in range(X_train.shape[1])]
+    X_train = convert_container(
+        X_train, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    X_test = convert_container(
+        X_test, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y_train = convert_container(
+        y_train,
+        y_container,
+        column_names=target_column_names if n_targets > 1 else None,
+        minversion="0.20.23",
+    )
+    y_test = convert_container(
+        y_test,
+        y_container,
+        column_names=target_column_names if n_targets > 1 else None,
+        minversion="0.20.23",
+    )
+
     classifier = LinearRegression()
 
     report = EstimatorReport(
@@ -131,18 +160,21 @@ def test_summarize_numpy_array(data_source, n_targets, target_column_names):
     )
 
     display = report.data.summarize(data_source=data_source, with_y=False)
-    assert display.summary["dataframe"].columns.to_list() == [
+    assert list(display.summary["dataframe"].columns) == [
         f"Feature {i}" for i in range(X_train.shape[1])
     ]
 
     display = report.data.summarize(data_source=data_source, with_y=True)
-    assert (
-        display.summary["dataframe"].columns.to_list()
-        == [f"Feature {i}" for i in range(X_train.shape[1])] + target_column_names
+    assert list(display.summary["dataframe"].columns) == (
+        [f"Feature {i}" for i in range(X_train.shape[1])] + target_column_names
     )
 
 
 @pytest.mark.parametrize("subsample_strategy", ["head", "random"])
+@pytest.mark.filterwarnings(
+    "ignore:X has feature names, but RandomForestClassifier was fitted without"
+    " feature names:UserWarning"
+)
 def test_summarize_subsampling(
     forest_binary_classification_with_test, subsample_strategy
 ):

@@ -1,7 +1,8 @@
 /**
  * ComparisonReport: shadow shell + theme; Results show full comparison metrics;
  * Estimator / Data each have a synced <select>; only one light-DOM pair uses
- * slot="estimator-display" / slot="table-report" at a time.
+ * slot="estimator-display" / slot="table-report" at a time. Checks panels are
+ * toggled inside the shadow DOM.
  */
 function skoreInitComparisonReport(containerId) {
     const wrapper = document.getElementById(containerId + "-wrapper");
@@ -57,12 +58,8 @@ function skoreInitComparisonReport(containerId) {
             }
         });
 
-        host.querySelectorAll(".skore-cmp-checks-summary-slot").forEach((el) => {
-            if (el.dataset.comparisonIndex === idx) {
-                el.setAttribute("slot", "checks-summary");
-            } else {
-                el.removeAttribute("slot");
-            }
+        shadowRoot.querySelectorAll(".skore-cmp-checks-summary-panel").forEach((el) => {
+            el.hidden = el.dataset.comparisonIndex !== idx;
         });
     }
 

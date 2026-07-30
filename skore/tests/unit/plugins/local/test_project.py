@@ -128,7 +128,7 @@ class TestProject:
         project = Project("<project>", workspace=tmp_path)
 
         project.put("<key-1>", regression)
-        regression.cache_predictions()
+        regression._cache_predictions()
         project.put("<key-2>", regression)
 
         # Ensure only one artifact was persisted:
@@ -138,7 +138,7 @@ class TestProject:
 
         # Make sure the pickle is not broken:
         report = project.get(str(regression.id))
-        report.cache_predictions()
+        report._cache_predictions()
 
     def test_put_cross_validation_report_reuses_artifact_id(
         self, tmp_path, cv_regression
@@ -146,7 +146,7 @@ class TestProject:
         project = Project("<project>", workspace=tmp_path)
 
         project.put("<key-1>", cv_regression)
-        cv_regression.cache_predictions()
+        cv_regression._cache_predictions()
         project.put("<key-2>", cv_regression)
 
         # Ensure only one artifact was persisted:
@@ -156,7 +156,7 @@ class TestProject:
 
         # Make sure the pickle is not broken:
         report = project.get(str(cv_regression.id))
-        report.cache_predictions()
+        report._cache_predictions()
 
     def test_init_with_envar(self, monkeypatch, tmp_path):
         monkeypatch.setenv("SKORE_WORKSPACE", str(tmp_path))
@@ -193,7 +193,7 @@ class TestProject:
             RuntimeError,
             match=re.escape(
                 f"Skore could not proceed because "
-                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"Project(name='<project>', mode='local', workspace='{tmp_path}') "
                 f"does not exist anymore."
             ),
         ):
@@ -307,7 +307,7 @@ class TestProject:
             RuntimeError,
             match=re.escape(
                 f"Skore could not proceed because "
-                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"Project(name='<project>', mode='local', workspace='{tmp_path}') "
                 f"does not exist anymore."
             ),
         ):
@@ -407,7 +407,7 @@ class TestProject:
             RuntimeError,
             match=re.escape(
                 f"Skore could not proceed because "
-                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"Project(name='<project>', mode='local', workspace='{tmp_path}') "
                 f"does not exist anymore."
             ),
         ):
@@ -435,7 +435,7 @@ class TestProject:
         with raises(
             LookupError,
             match=re.escape(
-                f"Project(mode='local', name='<project>', workspace='{tmp_path}') "
+                f"Project(name='<project>', mode='local', workspace='{tmp_path}') "
                 f"does not exist."
             ),
         ):

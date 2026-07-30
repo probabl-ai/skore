@@ -33,7 +33,7 @@ from skore import EstimatorReport
         ),
     ],
 )
-def test_invalid_subplot_by(pyplot, fixture_name, subplot_by, err_msg, request):
+def test_invalid_subplot_by(fixture_name, subplot_by, err_msg, request):
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
     display = report.inspection.coefficients()
@@ -62,7 +62,7 @@ def test_invalid_subplot_by(pyplot, fixture_name, subplot_by, err_msg, request):
         ),
     ],
 )
-def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     """Check that we can pass non default values to `subplot_by`."""
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]

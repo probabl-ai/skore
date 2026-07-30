@@ -330,12 +330,46 @@ class Project:
 
     @staticmethod
     def delete(*, name: str, tracking_uri: str | None = None) -> None:
-        """Not implemented for now."""
-        raise NotImplementedError("Delete is not implemented for MLFlow projects")
+        """Delete an MLflow experiment and its runs."""
+        if tracking_uri is not None:
+            mlflow.set_tracking_uri(tracking_uri)
+
+        tracking_uri = mlflow.get_tracking_uri()
+        client = MlflowClient()
+        experiment = client.get_experiment_by_name(name)
+        if experiment is None or experiment.lifecycle_stage != "active":
+            raise LookupError(
+                f"Project(name={name!r}, mode='mlflow', "
+                f"tracking_uri='{tracking_uri}') does not exist."
+            )
+
+        active_runs = cast(
+            list[MLFlowRun],
+            mlflow.search_runs(
+                experiment_ids=[experiment.experiment_id],
+                filter_string='attributes.status = "RUNNING"',
+                max_results=1,
+                output_format="list",
+            ),
+        )
+        if active_runs:
+            raise RuntimeError(
+                f"Cannot delete MLflow experiment {name!r}: "
+                "active runs are still in progress."
+            )
+
+        runs = mlflow.search_runs(
+            experiment_ids=[experiment.experiment_id],
+            output_format="list",
+        )
+        for run in runs:
+            client.delete_run(run.info.run_id)
+
+        client.delete_experiment(experiment.experiment_id)
 
     def __repr__(self) -> str:  # noqa: D105
         return (
-            f"Project(mode='mlflow', name='{self.name}', "
+            f"Project(name={self.name!r}, mode='mlflow', "
             f"tracking_uri='{self.tracking_uri}')"
         )
 
@@ -513,8 +547,10 @@ def _log_figure(figure: Any, artifact_file: str) -> None:
             )
 
 
-def _flatten_df_index(df: pd.DataFrame) -> pd.DataFrame:
+def _flatten_df_index(df: pd.DataFrame | pd.Series) -> pd.DataFrame:
     """Normalize a dataframe-like object before CSV logging."""
+    if isinstance(df, pd.Series):
+        df = df.to_frame(name=df.name)
     df = df.copy(deep=False)
     columns = df.columns
     if columns is not None and columns.nlevels > 1:
