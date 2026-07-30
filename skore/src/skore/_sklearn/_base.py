@@ -32,7 +32,7 @@ from skore._utils.repr.base import (
     ReportHelpMixin,
     render_panel_to_plain_text,
 )
-from skore._utils.repr.data import MethodHelp, get_documentation_url
+from skore._utils.repr.data import MethodHelp
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -348,15 +348,12 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         """
         help_data = super()._build_help_data()
         known_names = {method.name for method in help_data.methods}
-        doc_url = get_documentation_url(
-            obj=self._parent, accessor_name=self.__class__._accessor_name
-        )
+        # Registry metrics have no Sphinx API page; show the summary tooltip only.
         help_data.methods.extend(
             MethodHelp(
                 name=name,
                 parameters="(...)",
                 description=self._metric_help_description(name),
-                doc_url=doc_url,
             )
             for name in self._callable_metric_names()
             if name not in known_names

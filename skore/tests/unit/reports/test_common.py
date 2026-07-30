@@ -136,6 +136,31 @@ def test_help_builtin_metric_description(report):
         assert by_name["r2"] != "Registered metric."
 
 
+def test_help_dynamic_metric_has_no_docs_link(report):
+    """Registry metrics have no Sphinx page; HTML help shows a tooltip only."""
+    available = report.metrics.available()
+    if "r2" in available:
+        dynamic_name = "r2"
+    elif "accuracy" in available:
+        dynamic_name = "accuracy"
+    else:
+        pytest.skip("No built-in score-function metric available on this report")
+
+    help_data = report.metrics._build_help_data()
+    by_name = {method.name: method for method in help_data.methods}
+
+    assert by_name[dynamic_name].doc_url is None
+    assert by_name["get"].doc_url is not None
+    assert by_name["get"].doc_url.startswith("https://docs.skore.probabl.ai/")
+
+    html = report.metrics._create_help_html()
+    # Dynamic metric: tooltip span only (no docs link).
+    assert f'<span class="method-tooltip">{dynamic_name}<' in html
+    assert by_name[dynamic_name].description in html
+    # Static method keeps its Sphinx link.
+    assert f'href="{by_name["get"].doc_url}"' in html
+
+
 def test_dynamic_metric_docstring_and_signature(report):
     """Dynamic metrics expose a constructed docstring and the accessor signature."""
     available = report.metrics.available()
