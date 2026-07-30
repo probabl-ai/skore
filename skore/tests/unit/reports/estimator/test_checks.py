@@ -52,18 +52,18 @@ def regression_pandas_data(regression_data):
     )
 
 
-def _make_skrub_regression_report(X, y, estimator, *, splitter=0.2):
+def make_skrub_regression_report(X, y, estimator, *, splitter=0.2):
     """Build an EstimatorReport from a SkrubLearner backed by ``X`` and ``y``."""
     learner = skrub.X().skb.apply(estimator, y=skrub.y()).skb.make_learner()
     return evaluate(learner, data={"X": X, "y": y}, splitter=splitter)
 
 
-def _evaluate_regression_report(estimator, X, y, *, backend="sklearn", splitter=0.2):
+def make_regression_report(estimator, X, y, *, backend="sklearn", splitter=0.2):
     if backend == "skrub":
         if not isinstance(X, pd.DataFrame):
             X = pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])])
             y = pd.Series(y)
-        return _make_skrub_regression_report(X, y, estimator, splitter=splitter)
+        return make_skrub_regression_report(X, y, estimator, splitter=splitter)
     return evaluate(estimator, X, y, splitter=splitter)
 
 
@@ -212,7 +212,7 @@ def test_skd006_tabular_pipeline_with_numpy_X(regression_data, backend):
     """SKD006 runs when tabular_pipeline is evaluated on raw numpy features."""
     X, y = regression_data
     estimator = tabular_pipeline(LinearRegression())
-    report = _evaluate_regression_report(estimator, X, y, backend=backend, splitter=0.2)
+    report = make_regression_report(estimator, X, y, backend=backend, splitter=0.2)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD006" in tips.index
 
@@ -276,7 +276,7 @@ def test_skd006_pipeline_coefficient_interpretation(
 def test_skd007_mdi_bias_with_high_cardinality(regression_data, estimator, backend):
     """SKD007 tip is emitted with continuous features and tree importances."""
     X, y = regression_data
-    report = _evaluate_regression_report(estimator, X, y, backend=backend)
+    report = make_regression_report(estimator, X, y, backend=backend)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD007" in tips.index
     explanation = tips.loc["SKD007", "explanation"]
@@ -388,7 +388,7 @@ def test_skd011_detects_golden_feature(estimator, backend):
     X[:, 1] = y + rng.normal(scale=0.01, size=n_samples)
     X_df = pd.DataFrame(X, columns=[f"Feature {i}" for i in range(X.shape[1])])
     y_series = pd.Series(y)
-    report = _evaluate_regression_report(
+    report = make_regression_report(
         estimator, X_df, y_series, backend=backend, splitter=0.2
     )
     tips = report.checks.summarize().frame(section="tip").set_index("code")
@@ -792,7 +792,7 @@ def test_skd015_equivalent_params_not_suggested(regression_data):
 def test_skd016_fires_on_default_estimator(regression_data, estimator, backend):
     """SKD016 fires when the estimator is left at sklearn defaults."""
     X, y = regression_data
-    report = _evaluate_regression_report(estimator, X, y, backend=backend)
+    report = make_regression_report(estimator, X, y, backend=backend)
     tips = report.checks.summarize().frame(section="tip").set_index("code")
     assert "SKD016" in tips.index
     explanation = tips.loc["SKD016", "explanation"]
