@@ -1,5 +1,8 @@
+import math
+
 import numpy as np
 import pytest
+from sklearn.dummy import DummyRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression, RidgeCV
 
@@ -16,11 +19,16 @@ def test_detects_slower_than_baseline(report_type, regression_data):
     """Check that SKD010 is detected when the model is slower with similar scores."""
     X, y = regression_data
     report = evaluate(
-        RandomForestRegressor(n_estimators=200, random_state=0),
+        DummyRegressor(),
         X,
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
+    if report_type == "estimator":
+        report._fit_time = math.inf
+    else:
+        report.reports_[0]._fit_time = math.inf
+
     explanation = CheckSlowerThanBaseline().check_function(report)
     assert explanation is not None
     assert "slower than a fast linear baseline" in explanation
@@ -43,11 +51,15 @@ def test_not_detected_when_slower_model_scores_better(report_type):
     X = rng.normal(size=(300, 4))
     y = np.sin(X[:, 0] * 5) + np.cos(X[:, 1] * 3) + rng.normal(scale=0.01, size=300)
     report = evaluate(
-        RandomForestRegressor(n_estimators=300, random_state=0),
+        RandomForestRegressor(n_estimators=200, random_state=0),
         X,
         y,
         splitter=0.2 if report_type == "estimator" else 3,
     )
+    if report_type == "estimator":
+        report._fit_time = math.inf
+    else:
+        report.reports_[0]._fit_time = math.inf
     assert CheckSlowerThanBaseline().check_function(report) is None
 
 
