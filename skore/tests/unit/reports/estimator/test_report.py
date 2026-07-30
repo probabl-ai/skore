@@ -304,8 +304,7 @@ def test_get_predictions_with_multiclass_ovo_decision_function():
     )
 
     with pytest.raises(
-        ValueError,
-        match=r"Decision function output.*classes; expected 4 but got 6\.",
+        ValueError, match=r"Decision function output.*classes; expected 4 but got 6\."
     ):
         report.get_predictions(data_source="test", response_method="decision_function")
 
@@ -318,20 +317,6 @@ def test_clustering():
         "classification or regression model instead.",
     ):
         EstimatorReport(KMeans(), X_test=None, y_test=None)
-
-
-def test_has_no_deep_copy():
-    """Check that we raise a warning if the deep copy failed."""
-    X, y = make_classification(n_classes=2, random_state=42)
-
-    estimator = LogisticRegression()
-
-    # Make it so deepcopy does not work
-    estimator.__reduce_ex__ = None
-    estimator.__reduce__ = None
-
-    with pytest.warns(UserWarning, match="Deepcopy failed"):
-        EstimatorReport(estimator, X_train=X, y_train=y, X_test=X, y_test=y)
 
 
 class _DummyClassifierBadRepr(DummyClassifier):
@@ -509,12 +494,7 @@ def test_from_dict_bypasses_init_and_restores_state(
     monkeypatch, logistic_binary_classification_with_test
 ):
     estimator, X_test, y_test = logistic_binary_classification_with_test
-    report = EstimatorReport(
-        estimator,
-        X_test=X_test,
-        y_test=y_test,
-        pos_label=1,
-    )
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
     expected_accuracy = report.metrics.accuracy()
     report._cache_predictions()
     report.metrics.add("f1", name="F1")
@@ -538,8 +518,8 @@ def test_from_dict_bypasses_init_and_restores_state(
 
     # check new metrics can be computed, including custom metrics:
     restored.metrics.roc_auc()
-    df = restored.metrics.summarize().frame()
-    assert "F1" in df.index
+    df = restored.metrics.summarize().frame(flat_index=False, verbose_name=True)
+    assert "F1" in df.index.get_level_values("Metric").to_numpy()
 
 
 def test_from_dict_rejects_unknown_version(logistic_binary_classification_with_test):

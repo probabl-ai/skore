@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import copy
 import html
 import uuid
-import warnings
 from dataclasses import asdict
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal, NotRequired, TypedDict
@@ -14,9 +12,7 @@ from numpy.typing import ArrayLike
 from sklearn.base import clone
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
-from sklearn.utils._response import (
-    _check_response_method,
-)
+from sklearn.utils._response import _check_response_method
 from sklearn.utils.validation import _num_samples, check_is_fitted
 from skrub._reporting._summarize import summarize_dataframe
 
@@ -114,9 +110,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
           by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
-        The estimator passed will not be modified in-place: it is deep-copied, and if
-        it is not already fitted, the copy is cloned before being fitted on the
-        training data.
+        If the estimator is not fitted, it is cloned and then fitted on the training
+        data.
 
     X_train : {array-like, sparse matrix} of shape (n_samples, n_features) or \
             None
@@ -222,9 +217,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     checks: _ChecksAccessor
 
     def _fit_estimator(
-        self,
-        estimator: EstimatorLike,
-        data: dict | None,
+        self, estimator: EstimatorLike, data: dict | None
     ) -> tuple[EstimatorLike, float]:
         """Clone then fit the estimator on the training data."""
         if data is None:
@@ -236,22 +229,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         with MeasureTime() as fit_time:
             estimator_.fit(data)
         return estimator_, fit_time()
-
-    @classmethod
-    def _copy_estimator(cls, estimator: EstimatorLike) -> EstimatorLike:
-        """Copy the estimator."""
-        try:
-            return copy.deepcopy(estimator)
-        except Exception as e:
-            warnings.warn(
-                "Deepcopy failed; using estimator as-is. "
-                "Be aware that modifying the estimator outside of "
-                f"{cls.__name__} will modify the internal estimator. "
-                "Consider using a FrozenEstimator from scikit-learn to prevent this. "
-                f"Original error: {e}",
-                stacklevel=1,
-            )
-        return estimator
 
     def __init__(
         self,
@@ -266,7 +243,6 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         pos_label: PositiveLabel | None = None,
     ) -> None:
         super().__init__()
-        estimator = self._copy_estimator(estimator)
         self.estimator = estimator
 
         if isinstance(estimator, skrub.DataOp):
@@ -319,15 +295,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 f"It should be one of: {labels!r}."
             )
 
-    def to_dict(self) -> dict[str, Any]:
-        """Return a serializable representation of the report state.
-
-        This state is meant to ease serialization/deserialization of
-        reports while preserving some backward compatibility across skore
-        versions. In particular, this is more stable than pickling a report
-        object directly, which can break when internal implementations change.
-        """
-        # split the cache between predictions and results
+    def _extract_cached_predictions(self) -> tuple[dict[tuple, Any], dict[tuple, Any]]:
+        """Extract the predictions from the report cache."""
         pred_key_names = {
             "predict",
             "decision_function",
@@ -336,15 +305,32 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         }
 
         predictions = {}
-        cached_results = {}
+        other_cached_results = {}
 
         for key, val in self._cache.items():
-            data_source, name, kwargs = key
+            scope, data_source, name, kwargs = key
             if name in pred_key_names:
-                assert kwargs is None
-                predictions[(data_source, name)] = val
+                predictions[key] = val
             else:
-                cached_results[key] = val
+                other_cached_results[key] = val
+
+        return predictions, other_cached_results
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a serializable representation of the report state.
+
+        This state is meant to ease serialization/deserialization of
+        reports while preserving some backward compatibility across skore
+        versions. In particular, this is more stable than pickling a report
+        object directly, which can break when internal implementations change.
+        """
+        predictions, cached_results = self._extract_cached_predictions()
+
+        predictions_without_kwargs = {}
+        for key, value in predictions.items():
+            scope, data_source, name, kwargs = key
+            assert kwargs is None
+            predictions_without_kwargs[(scope, data_source, name)] = value
 
         return {
             "version": _STATE_VERSION,
@@ -361,7 +347,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "train_data": self._train_data,
                 "test_data": self._test_data,
             },
-            "predictions": predictions,
+            "predictions": predictions_without_kwargs,
             "metric_registry": self._metric_registry,
             # ---------- OPTIONAL STATE ------------
             # this part is less structured and not crucial for reconstructing a report
@@ -400,8 +386,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         report._cache.update(state["optional"]["cache"])
         report._cache.update(
             {
-                make_cache_key(data_source, name): val
-                for (data_source, name), val in state["predictions"].items()
+                make_cache_key(scope, data_source, name): val
+                for (scope, data_source, name), val in state["predictions"].items()
             }
         )
         report._metric_registry = state["metric_registry"]
@@ -414,9 +400,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._cache = Cache()
 
     def _cache_predictions(
-        self,
-        *,
-        data_source: DataSource | Literal["both"] = "both",
+        self, *, data_source: DataSource | Literal["both"] = "both"
     ) -> None:
         """Cache estimator's predictions.
 
@@ -443,7 +427,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "features when creating the report."
             )
 
-        pred_key = make_cache_key(data_source, "predict")
+        pred_key = make_cache_key("report", data_source, "predict")
         if pred_key in self._cache:
             return
 
@@ -466,7 +450,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     data, response_method="decision_function"
                 )
             )
-            decision_key = make_cache_key(data_source, "decision_function")
+            decision_key = make_cache_key("report", data_source, "decision_function")
             self._cache[decision_key] = response
             if self._can_skip_predict:
                 self._predict_time[data_source] = pred_time
@@ -478,9 +462,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                     data, response_method="predict_proba"
                 )
             )
-            proba_key = make_cache_key(data_source, "predict_proba")
+            proba_key = make_cache_key("report", data_source, "predict_proba")
             self._cache[proba_key] = response
-            log_key = make_cache_key(data_source, "predict_log_proba")
+            log_key = make_cache_key("report", data_source, "predict_log_proba")
             # Most sklearn's estimator derive predict_log_proba this way
             # except for *NB models (naive bayes) that derive predict_proba
             # from predict_log_proba using exp:
@@ -559,17 +543,14 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         # probe:
         predictions = self.learner_.predict(sampled_data)
         _, deduced_predictions, _ = self._get_response_and_derived_predictions(
-            sampled_data,
-            response_method=method.__name__,
+            sampled_data, response_method=method.__name__
         )
         if deduced_predictions is None:
             return False
         return np.array_equal(predictions, deduced_predictions)
 
     def _get_data_and_y_true(
-        self,
-        *,
-        data_source: DataSource,
+        self, *, data_source: DataSource
     ) -> tuple[dict, ArrayLike]:
         """Get the requested dataset.
 
@@ -609,7 +590,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def get_predictions(
         self,
         *,
-        data_source: Literal["train", "test"],
+        data_source: DataSource,
         response_method: Literal[
             "predict", "predict_proba", "decision_function"
         ] = "predict",
@@ -670,7 +651,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     def _get_predictions(
         self,
         *,
-        data_source: Literal["train", "test"],
+        data_source: DataSource,
         response_method: str | list[str] | tuple[str, ...],
         pos_label: PositiveLabel | None = None,
     ) -> ArrayLike:
@@ -694,7 +675,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
         method_name = _check_response_method(self.estimator_, response_method).__name__
         self._cache_predictions(data_source=data_source)
-        cache_key = make_cache_key(data_source, method_name)
+        cache_key = make_cache_key("report", data_source, method_name)
         predictions = self._cache[cache_key]
 
         if method_name == "predict":
@@ -781,10 +762,13 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
+        metrics_frame = self.metrics.summarize(data_source="test").frame(
+            verbose_name=True, flat_index=False
+        )
         return f"""{self.__class__.__name__}:
         {self.estimator_name_!r}
 
-        {self.metrics.summarize(data_source="test").frame()}
+        {metrics_frame}
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
     def _html_repr_fragments(self) -> dict[str, str]:
@@ -808,7 +792,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         table_report_html = table_report.html_snippet()
         metrics_html = (
             self.metrics.summarize(data_source="test")
-            .frame()
+            .frame(verbose_name=True, flat_index=False)
             .reset_index()
             .to_html(index=False)
         )
@@ -883,7 +867,11 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         str
             The markdown summary of the report.
         """
-        metrics_text = repr(self.metrics.summarize(data_source="test").frame())
+        metrics_text = repr(
+            self.metrics.summarize(data_source="test").frame(
+                verbose_name=True, flat_index=False
+            )
+        )
         timings = self.metrics.timings()
         summary = summarize_dataframe(
             self.data._prepare_dataframe_for_display(
@@ -905,8 +893,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
                 "predict_time": timings.get("predict_time_test"),
                 "metrics_text": metrics_text,
                 **markdown_data_section(
-                    summary,
-                    data_label="full" if self.X_train is not None else "test",
+                    summary, data_label="full" if self.X_train is not None else "test"
                 ),
             },
         )

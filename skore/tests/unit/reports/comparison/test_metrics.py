@@ -39,9 +39,9 @@ def test_favorability_undefined_metrics(report):
     comparison_report = ComparisonReport(reports)
     metrics = comparison_report.metrics.summarize()
     assert isinstance(metrics, MetricsSummaryDisplay)
-    metrics_df = metrics.frame(favorability=True)
+    metrics_df = metrics.frame(flat_index=False, favorability=True, verbose_name=True)
 
-    assert "Brier score" in metrics_df.index
+    assert "Brier score" in metrics_df.index.get_level_values("Metric").to_numpy()
     assert "Favorability" in metrics_df.columns
     assert not metrics_df["Favorability"].isna().any()
     expected_values = {"(↗︎)", "(↘︎)"}

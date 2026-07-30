@@ -19,7 +19,7 @@ from skore._utils._testing import check_frame_structure
 )
 class TestPrecisionRecallCurveDisplay:
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_class_attributes(self, pyplot, fixture_prefix, task, request):
+    def test_class_attributes(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -90,7 +90,7 @@ class TestPrecisionRecallCurveDisplay:
         ]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_relplot_kwargs(self, pyplot, fixture_prefix, task, request):
+    def test_relplot_kwargs(self, fixture_prefix, task, request):
         """Check that heatmap kwargs are applied correctly and can be changed."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
@@ -112,7 +112,7 @@ class TestPrecisionRecallCurveDisplay:
         assert actual_colors == set(palette)
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_plot_structure(self, pyplot, fixture_prefix, task, request):
+    def test_plot_structure(self, fixture_prefix, task, request):
         """Check that the plot has correct structure"""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
@@ -132,7 +132,7 @@ class TestPrecisionRecallCurveDisplay:
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_title(self, pyplot, fixture_prefix, task, request):
+    def test_title(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]

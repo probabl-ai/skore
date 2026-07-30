@@ -36,10 +36,10 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         Returns
         -------
         ChecksSummaryDisplay
-            A display object with an HTML representation organized as four
-            tabs (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``). The
-            full list of results is accessible via the
-            :meth:`~ChecksSummaryDisplay.frame` method.
+            A display object with an HTML representation organized in
+            tabs (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``,
+            ``Skipped``, ``Ignored``). The full list of results is
+            accessible via the :meth:`~ChecksSummaryDisplay.frame` method.
 
         Examples
         --------
@@ -52,8 +52,8 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         >>> "SKD002" in summary.frame()["code"].values
         True
         >>> filtered = report.checks.summarize(ignore=["SKD002"])
-        >>> "SKD002" in filtered.frame()["code"].values
-        False
+        >>> "SKD002" in filtered.frame(section="ignored")["code"].values
+        True
         """
         ignored_codes: set[CheckCode] = set()
         if ignore:
@@ -66,18 +66,8 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 for code in configuration.ignore_checks
                 if code.strip()
             )
-        check_results, applicable_codes, not_applicable_codes = (
-            self._parent._get_results(ignored_codes, fast_mode=fast_mode)
-        )
         return ChecksSummaryDisplay(
-            check_results={
-                code: check_result
-                for code, check_result in check_results.items()
-                if (code in applicable_codes or code in not_applicable_codes)
-                and code not in ignored_codes
-            },
-            not_applicable_codes=not_applicable_codes,
-            n_ignored_codes=len(ignored_codes),
+            self._parent._get_checks_results(ignored_codes, fast_mode=fast_mode),
             fast_mode=fast_mode,
         )
 
@@ -147,10 +137,6 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         ]
         if hasattr(self._parent, "_check_results_cache"):
             self._parent._check_results_cache.pop(code, None)
-        if hasattr(self._parent, "_applicable_codes"):
-            self._parent._applicable_codes.discard(code)
-        if hasattr(self._parent, "_not_applicable_codes"):
-            self._parent._not_applicable_codes.discard(code)
 
     def __repr__(self) -> str:
         return (

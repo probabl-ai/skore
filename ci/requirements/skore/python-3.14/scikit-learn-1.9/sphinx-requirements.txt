@@ -100,7 +100,7 @@ frozenlist==1.8.0
     #   aiosignal
 gitdb==4.0.12
     # via gitpython
-gitpython==3.1.50
+gitpython==3.1.54
     # via mlflow-skinny
 google-auth==2.53.0
     # via databricks-sdk
@@ -264,7 +264,7 @@ parso==0.8.7
     # via jedi
 pexpect==4.9.0
     # via ipython
-pillow==12.2.0
+pillow==12.3.0
     # via
     #   matplotlib
     #   sphinx-gallery
@@ -300,7 +300,7 @@ pure-eval==0.2.3
     # via stack-data
 pyarrow==24.0.0
     # via mlflow
-pyasn1==0.6.3
+pyasn1==0.6.4
     # via pyasn1-modules
 pyasn1-modules==0.4.2
     # via google-auth
@@ -382,7 +382,7 @@ six==1.17.0
     # via python-dateutil
 skops==0.14.0
     # via mlflow
-skrub==0.9.0
+skrub==0.10.0
     # via skore (skore/pyproject.toml)
 smmap==5.0.3
     # via gitdb

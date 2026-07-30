@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import warnings
 from collections import defaultdict
-from typing import TYPE_CHECKING, Literal, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import narwhals as nw
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
 
 from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
+from skore._sklearn.feature_names import _get_feature_names
 from skore._sklearn.types import EstimatorLike, PositiveLabel
 from skore._utils._dataframe import (
     UserDataFrame,
@@ -46,7 +48,28 @@ StepName = str
 
 def _metric_key(row: MetricsSummaryRow) -> MetricKey:
     """Identity tuple for a metric row (verbose name + label/average/output)."""
-    return (row["metric_verbose_name"], row["label"], row["average"], row["output"])
+    return (row["verbose_name"], row["label"], row["average"], row["output"])
+
+
+def _summary_to_rows(summary: pd.DataFrame) -> list[MetricsSummaryRow]:
+    """Convert a display summary dataframe back to metric rows."""
+    nullable_cols = {
+        "label",
+        "average",
+        "output",
+        "greater_is_better",
+        "split",
+    }
+    rows: list[MetricsSummaryRow] = []
+    for record in summary.to_dict("records"):
+        row: dict[str, Any] = {}
+        for key, value in record.items():
+            if key in nullable_cols and pd.isna(value):
+                row[key] = None
+            else:
+                row[key] = value
+        rows.append(cast("MetricsSummaryRow", row))
+    return rows
 
 
 def collect_scores(
@@ -61,10 +84,11 @@ def collect_scores(
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-        rows = report.metrics.summarize(data_source=data_source).rows
-    filtered_rows = [
-        row for row in rows if row["metric_verbose_name"] not in _TIMING_METRICS
-    ]
+        rows = _summary_to_rows(
+            report.metrics.summarize(data_source=data_source).summary
+        )
+
+    filtered_rows = [row for row in rows if row["verbose_name"] not in _TIMING_METRICS]
     if report._report_type == "estimator":
         return {_metric_key(row): row for row in filtered_rows}
 
@@ -273,9 +297,7 @@ def get_fitted_estimator(
 
 def get_fit_time(report: EstimatorReport | CrossValidationReport) -> float:
     if report._report_type == "cross-validation":
-        return float(
-            report.metrics.timings(aggregate="mean").loc["Fit time (s)", "mean"]
-        )
+        return float(report.metrics.timings(aggregate="mean").loc["Fit time (s)"])
     if report._fit_time is None:
         raise CheckNotApplicable("Fit time is unavailable.")
     return report._fit_time
@@ -330,9 +352,18 @@ def get_preprocessed_X(
                 raise
             raise CheckNotApplicable(str(err)) from err
     else:
-        preprocessor, _ = split_preprocessor_estimator(estimator)
+        preprocessor, predictor = split_preprocessor_estimator(estimator)
         if preprocessor is not None and len(preprocessor.steps) > 0:
             data = preprocessor.transform(data)
+            if not nw.dependencies.is_into_dataframe(data) and not sp.issparse(data):
+                data = pd.DataFrame(
+                    data,
+                    columns=_get_feature_names(
+                        predictor,
+                        transformer=preprocessor,
+                        n_features=np.shape(data)[1],
+                    ),
+                )
 
     try:
         return _normalize_X_as_dataframe(data)

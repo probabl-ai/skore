@@ -22,7 +22,7 @@ from skore import PermutationImportanceDisplay
     ],
 )
 class TestPermutationImportanceDisplay:
-    def test_class_attributes(self, pyplot, fixture_prefix, task, request):
+    def test_class_attributes(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -65,13 +65,13 @@ class TestPermutationImportanceDisplay:
             expected.add("estimator")
         assert set(frame.columns) == expected
 
-    def test_plot_structure(self, pyplot, fixture_prefix, task, request):
+    def test_plot_structure(self, fixture_prefix, task, request):
         _, axes = request.getfixturevalue(f"{fixture_prefix}_{task}_figure_axes")
         ax = axes[0]
         assert "Decrease in" in ax.get_xlabel()
         assert ax.get_ylabel() == ""
 
-    def test_title(self, pyplot, fixture_prefix, task, request):
+    def test_title(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -87,7 +87,7 @@ class TestPermutationImportanceDisplay:
         else:
             assert "averaged over splits" not in title
 
-    def test_set_style(self, pyplot, fixture_prefix, task, request):
+    def test_set_style(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]

@@ -111,14 +111,14 @@ class CustomCheck2(Check):
     def check_function(self, report):
         """Flag high score variance across CV splits."""
         frames = [
-            sub_report.metrics.summarize(data_source="test").data
+            sub_report.metrics.summarize(data_source="test").summary
             for sub_report in report.reports_
         ]
         scores = pd.concat(frames, ignore_index=True)
 
         high_var_metrics = [
             metric_name
-            for metric_name, group in scores.groupby("metric_verbose_name")
+            for metric_name, group in scores.groupby("verbose_name")
             if group["score"].std() > 0.1
         ]
 

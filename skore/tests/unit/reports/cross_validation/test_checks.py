@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge, RidgeCV
 from sklearn.model_selection import GridSearchCV, KFold, TimeSeriesSplit
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeRegressor
 from skrub import DatetimeEncoder, tabular_pipeline
 
@@ -59,11 +60,12 @@ def test_skd001_detects_overfitting(regression_data):
     X, y = regression_data
     report = evaluate(DecisionTreeRegressor(random_state=0), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
+    summary = report.metrics.summarize(data_source="test").summary
     n_metrics = len(
         {
-            (row["metric_verbose_name"], row["label"], row["average"], row["output"])
-            for row in report.metrics.summarize(data_source="test").rows
-            if row["metric_verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
+            (row["verbose_name"], row["label"], row["average"], row["output"])
+            for row in summary.to_dict("records")
+            if row["verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
         }
     )
     assert "SKD001" in issues.index
@@ -81,6 +83,7 @@ def test_skd001_detects_overfitting(regression_data):
         ("polars", "polars_series"),
     ],
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     """Check that the underfitting issue is detected."""
     X, y = regression_data
@@ -89,11 +92,12 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
     y = convert_container(y, y_container)
     report = evaluate(DummyRegressor(), X, y, splitter=3)
     issues = report.checks.summarize().frame(section="issue").set_index("code")
+    summary = report.metrics.summarize(data_source="test").summary
     n_metrics = len(
         {
-            (row["metric_verbose_name"], row["label"], row["average"], row["output"])
-            for row in report.metrics.summarize(data_source="test").rows
-            if row["metric_verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
+            (row["verbose_name"], row["label"], row["average"], row["output"])
+            for row in summary.to_dict("records")
+            if row["verbose_name"] not in {"Fit time (s)", "Predict time (s)"}
         }
     )
     assert "SKD002" in issues.index
@@ -101,6 +105,14 @@ def test_skd002_detects_underfitting(regression_data, x_container, y_container):
         f"for {n_metrics}/{n_metrics} comparable metrics"
         in issues.loc["SKD002", "explanation"]
     )
+
+
+def test_skd002_detects_underfitting_multioutput(regression_multioutput_data):
+    """SKD002 is emitted for multioutput regression when the model underfits."""
+    X, y = regression_multioutput_data
+    report = evaluate(DummyRegressor(), X, y, splitter=3)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD002" in issues.index
 
 
 def test_skd003_detects_inconsistent_splits():
@@ -134,6 +146,7 @@ def test_skd003_detects_inconsistent_splits():
         ("polars", "polars_series"),
     ],
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_skd004_detects_high_class_imbalance(x_container, y_container):
     """Check that high class imbalance is detected with several container types."""
     weights = [0.9, 0.1]
@@ -162,6 +175,7 @@ def test_skd004_detects_high_class_imbalance(x_container, y_container):
         ("polars", "polars_series"),
     ],
 )
+@pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")
 def test_skd005_detects_underrepresented_classes(x_container, y_container):
     """Check that underrepresented classes are detected."""
     weights = [0.9, 0.05, 0.05]
@@ -231,6 +245,24 @@ def test_skd008_correlated_features():
     assert "1 pair(s) of features" in issues.loc["SKD008", "explanation"]
 
 
+def test_skd008_correlated_features_multioutput(regression_multioutput_data):
+    """SKD008 is emitted for multioutput regression when features are correlated."""
+    X, y = regression_multioutput_data
+    rng = np.random.RandomState(42)
+    X[:, 1] = X[:, 0] + rng.standard_normal(X.shape[0]) * 1e-4
+    report = evaluate(
+        LinearRegression(),
+        pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])]),
+        y,
+        splitter=3,
+    )
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD008" in issues.index
+
+
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
 def test_skd009_detects_worse_than_baseline(regression_data):
     """Check that the worse-than-baseline issue is detected."""
     X, y = regression_data
@@ -251,6 +283,20 @@ def test_skd009_not_detected_on_strong_model():
     assert "SKD009" not in codes
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+def test_skd009_detects_worse_than_baseline_multioutput(regression_multioutput_data):
+    """SKD009 emitted for multioutput regression when model is worse than baseline."""
+    X, y = regression_multioutput_data
+    report = evaluate(DummyRegressor(), X, y, splitter=3)
+    issues = report.checks.summarize().frame(section="issue").set_index("code")
+    assert "SKD009" in issues.index
+
+
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
 def test_skd010_detects_slower_than_baseline(regression_data):
     """Check that SKD010 is detected when the model is slower with similar scores."""
     X, y = regression_data
@@ -285,6 +331,33 @@ def test_skd011_detects_golden_feature(estimator):
     assert "Feature 1" in explanation
     assert "Feature 2" not in explanation
     assert "Feature 3" not in explanation
+
+
+def test_skd011_sklearn_pipeline_preserves_feature_names():
+    """SKD011 works when a sklearn preprocessor returns an ndarray.
+
+    Default sklearn ``transform`` drops column names; ``get_preprocessed_X``
+    must restore them so single-feature selection matches ``_get_feature_names``.
+    """
+    rng = np.random.RandomState(0)
+    n_samples = 200
+    X = rng.normal(size=(n_samples, 4))
+    y = X[:, 0] * 10
+    X[:, 1] = y + rng.normal(scale=0.01, size=n_samples)
+    columns = [f"col_{i}" for i in range(X.shape[1])]
+    report = evaluate(
+        Pipeline([("scaler", StandardScaler()), ("model", LinearRegression())]),
+        pd.DataFrame(X, columns=columns),
+        pd.Series(y),
+        splitter=3,
+    )
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD011" in tips.index
+    explanation = tips.loc["SKD011", "explanation"]
+    assert "col_0" in explanation
+    assert "col_1" in explanation
+    assert "col_2" not in explanation
+    assert "col_3" not in explanation
 
 
 def test_skd012_detects_useless_features():
@@ -434,6 +507,8 @@ def test_add_checks_estimator_level_not_on_cv_summary(regression_report):
 
 def test_fast_mode_skips_slow_checks(regression_report):
     """fast_mode=True skips slow uncached checks."""
-    codes = set(regression_report.checks.summarize(fast_mode=True).frame()["code"])
+    summary = regression_report.checks.summarize(fast_mode=True)
     slow_codes = {"SKD009", "SKD010", "SKD011", "SKD012"}
-    assert slow_codes.isdisjoint(codes)
+    assert slow_codes.isdisjoint(set(summary.frame(section="issue")["code"]))
+    assert slow_codes.isdisjoint(set(summary.frame(section="passed")["code"]))
+    assert slow_codes == set(summary.frame(section="skipped")["code"])

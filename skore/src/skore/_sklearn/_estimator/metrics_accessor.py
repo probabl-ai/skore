@@ -3,12 +3,14 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any, Literal, cast
 
+import pandas as pd
 from numpy.typing import ArrayLike
 from sklearn.base import ClassifierMixin, RegressorMixin
+from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor
+from skore._sklearn._base import BaseMetricsAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -19,7 +21,6 @@ from skore._sklearn._plot import (
 )
 from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._sklearn.metrics import (
-    BUILTIN_METRICS,
     R2,
     Accuracy,
     Brier,
@@ -29,6 +30,7 @@ from skore._sklearn.metrics import (
     Mape,
     Metric,
     MetricLike,
+    MetricRow,
     MissingKwargsError,
     Precision,
     PredictTime,
@@ -42,27 +44,11 @@ from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
 
 
-class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
+class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
-
-    def __getattribute__(self, name):
-        """Hide some metric methods conditionally.
-
-        When the registry is initialized, the report is analyzed to filter metrics
-        depending on the report's characteristics (e.g. the ML task and the estimator's
-        prediction methods).
-        """
-        if (
-            name in {m.name for m in BUILTIN_METRICS}
-            and name not in self._parent._metric_registry
-        ):
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{name}'"
-            )
-        return super().__getattribute__(name)
 
     def summarize(
         self,
@@ -94,6 +80,11 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         :class:`MetricsSummaryDisplay`
             A display containing the statistics for the metrics.
 
+        See Also
+        --------
+        MetricsSummaryDisplay.frame : Export the summary; wide single-column
+            layouts return a named :class:`pandas.Series`.
+
         Examples
         --------
         >>> from sklearn.datasets import load_breast_cancer
@@ -102,40 +93,67 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> report.metrics.summarize().frame(favorability=True).drop(
-        ...    ["Fit time (s)", "Predict time (s)"]
-        ... )
-                    LogisticRegression Favorability
-        Metric
-        Accuracy               0.94...         (↗︎)
-        Precision              0.98...         (↗︎)
-        Recall                 0.92...         (↗︎)
-        ROC AUC                0.99...         (↗︎)
-        Log loss               0.11...         (↘︎)
-        Brier score            0.03...         (↘︎)
+        >>> summary = report.metrics.summarize().frame(favorability=True)
+        >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
+                     LogisticRegression favorability
+        metric
+        accuracy               0.94...         (↗︎)
+        precision              0.98...         (↗︎)
+        recall                 0.92...         (↗︎)
+        roc_auc                0.99...         (↗︎)
+        log_loss               0.11...         (↘︎)
+        brier_score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(metric="log_loss").frame(favorability=True)
-                  LogisticRegression Favorability
-        Metric
-        Log loss             0.11...          (↘︎)
-        >>> report.metrics.summarize(
+                  LogisticRegression favorability
+        metric
+        log_loss            0.11...         (↘︎)
+        >>> summary = report.metrics.summarize(
         ...    data_source="both"
-        ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
-                     LogisticRegression (train)  LogisticRegression (test)  Favorability
-        Metric
-        Accuracy                        0.96...                     0.94...          (↗︎)
-        Precision                       0.96...                     0.98...          (↗︎)
-        Recall                          0.97...                     0.92...          (↗︎)
-        ROC AUC                         0.99...                     0.99...          (↗︎)
-        Log loss                        0.08...                     0.11...          (↘︎)
-        Brier score                     0.02...                     0.03...          (↘︎)
+        ... ).frame(favorability=True)
+        >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
+                     LogisticRegression (train)  LogisticRegression (test) favorability
+        metric
+        accuracy                       0.96...                    0.94...         (↗︎)
+        precision                      0.96...                    0.98...         (↗︎)
+        recall                         0.97...                    0.92...         (↗︎)
+        roc_auc                        0.99...                    0.99...         (↗︎)
+        log_loss                       0.08...                    0.11...         (↘︎)
+        brier_score                    0.02...                    0.03...         (↘︎)
         """
         if data_source == "both":
-            train_summary = self.summarize(data_source="train", metric=metric)
-            test_summary = self.summarize(data_source="test", metric=metric)
+            train_summary = self._summarize_display(data_source="train", metric=metric)
+            test_summary = self._summarize_display(data_source="test", metric=metric)
 
-            combined = train_summary.rows + test_summary.rows
-            return MetricsSummaryDisplay(rows=combined, report_type="estimator")
+            combined = pd.concat(
+                [train_summary.summary, test_summary.summary], ignore_index=True
+            )
+            return MetricsSummaryDisplay(
+                summary=combined,
+                report_type="estimator",
+                errors=train_summary.errors + test_summary.errors,
+            )
+
+        return self._summarize_display(data_source=data_source, metric=metric)
+
+    def _summarize_display(
+        self,
+        *,
+        data_source: DataSource | Literal["both"],
+        metric: str | list[str] | None = None,
+    ) -> MetricsSummaryDisplay:
+        if data_source == "both":
+            train_summary = self._summarize_display(data_source="train", metric=metric)
+            test_summary = self._summarize_display(data_source="test", metric=metric)
+
+            combined = pd.concat(
+                [train_summary.summary, test_summary.summary], ignore_index=True
+            )
+            return MetricsSummaryDisplay(
+                summary=combined,
+                report_type="estimator",
+                errors=train_summary.errors + test_summary.errors,
+            )
 
         registry = self._parent._metric_registry
         if isinstance(metric, str):
@@ -143,53 +161,90 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         elif isinstance(metric, Iterable) and metric:
             parsed_metrics = [registry[m] for m in metric]
         else:
-            has_default_score = getattr(
-                type(self._parent.estimator_), "score", None
-            ) in (ClassifierMixin.score, RegressorMixin.score)
+            predictor = self._parent.estimator_
+            if isinstance(predictor, Pipeline):
+                predictor = predictor.steps[-1][1]
+            has_default_score = getattr(type(predictor), "score", None) in (
+                ClassifierMixin.score,
+                RegressorMixin.score,
+            )
             if has_default_score:
                 parsed_metrics = [s for s in registry.values() if s.name != "score"]
             else:
                 parsed_metrics = list(registry.values())
 
         rows: list[MetricsSummaryRow] = []
+        errors = []
         for parsed_metric in parsed_metrics:
-            metric_rows = parsed_metric.rows(
-                report=self._parent,
-                data_source=data_source,
-                **parsed_metric.kwargs,
-            )
+            try:
+                metric_rows = parsed_metric.rows(
+                    report=self._parent,
+                    data_source=data_source,
+                    **parsed_metric.kwargs,
+                )
+            except Exception as exception:
+                metric_rows = [
+                    MetricRow(
+                        metric_verbose_name=parsed_metric.verbose_name,
+                        greater_is_better=parsed_metric.greater_is_better,
+                        label=None,
+                        average=None,
+                        output=None,
+                        score=float("nan"),
+                    )
+                ]
+                errors.append((parsed_metric, exception))
+
             rows.extend(
-                row
-                | {
-                    "metric_name": parsed_metric.name,
-                    "estimator_name": self._parent.estimator_name_,
+                {
+                    "name": parsed_metric.summary_name,
+                    "verbose_name": row["metric_verbose_name"],
+                    "estimator": self._parent.estimator_name_,
                     "data_source": data_source,
+                    "greater_is_better": row["greater_is_better"],
+                    "score": row["score"],
+                    "label": row["label"],
+                    "average": row["average"],
+                    "output": row["output"],
                 }
                 for row in metric_rows
             )
 
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        return MetricsSummaryDisplay._compute_data_for_display(
+            rows, report_type="estimator", errors=errors
+        )
 
     def _metric(
-        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+        self,
+        metric_name: str,
+        *,
+        data_source: DataSource,
+        **kwargs: Any,
     ) -> MetricsSummaryDisplay:
-        """Compute a single metric, forwarding *kwargs* to the score function."""
+        """Compute a single metric, forwarding ``kwargs`` to the score function."""
         metric = self._parent._metric_registry[metric_name]
         rows = [
             cast(
                 MetricsSummaryRow,
-                row
-                | {
-                    "metric_name": metric.name,
-                    "estimator_name": self._parent.estimator_name_,
+                {
+                    "name": metric.summary_name,
+                    "verbose_name": row["metric_verbose_name"],
+                    "estimator": self._parent.estimator_name_,
                     "data_source": data_source,
+                    "greater_is_better": row["greater_is_better"],
+                    "score": row["score"],
+                    "label": row["label"],
+                    "average": row["average"],
+                    "output": row["output"],
                 },
             )
             for row in metric.rows(
                 report=self._parent, data_source=data_source, **kwargs
             )
         ]
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        return MetricsSummaryDisplay._compute_data_for_display(
+            rows, report_type="estimator", errors=[]
+        )
 
     def available(self) -> list[str]:
         """List available metric names in the registry.
@@ -259,15 +314,18 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
+        >>> report = evaluate(classifier, X, y, pos_label=1)
         >>> report.metrics.add(
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
-        >>> report.metrics.summarize().frame()
-                            LogisticRegression
+        >>> report.metrics.summarize(metric="mean_absolute_error").frame(
+        ...     verbose_name=True, flat_index=False
+        ... )
         Metric
-                                           ...
-        Mean Absolute Error                ...
+        Mean Absolute Error    0.05...
+        Name: LogisticRegression, dtype: float64
+        >>> report.metrics.mean_absolute_error()
+        0.05...
         """
         try:
             self._parent._metric_registry.add(
@@ -303,7 +361,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         name: str,
         data_source: DataSource = "test",
         **kwargs,
-    ) -> float | None:
+    ) -> Any:
         """Get a metric value.
 
         Parameters
@@ -322,7 +380,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Returns
         -------
-        The metric value, or None if the metric is not available.
+        Any
+            The metric value in a human-readable shape: a scalar for
+            single-output metrics, a mapping from class labels for per-class
+            classification metrics, or an array for multioutput regression.
 
         Examples
         --------
@@ -335,10 +396,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report.metrics.get("precision")
         {0: 0.90..., 1: 0.98...}
         """
-        try:
-            metric = self._parent._metric_registry[name]
-        except KeyError:
-            raise KeyError(f"{name!r} not found in the registered metrics") from None
+        metric = self._parent._metric_registry[name]
         return metric.pretty(report=self._parent, data_source=data_source, **kwargs)
 
     def fit_time(self, *, cast: bool = True) -> float | None:
@@ -419,6 +477,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         }
         return {k: v for k, v in times.items() if v is not None}
 
+    @available_if(lambda self: Score.available(self._parent))
     def score(
         self,
         *,
@@ -455,6 +514,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         return Score().pretty(report=self._parent, data_source=data_source)
 
+    @available_if(lambda self: Accuracy.available(self._parent))
     def accuracy(
         self,
         *,
@@ -488,6 +548,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         return Accuracy().pretty(report=self._parent, data_source=data_source)
 
+    @available_if(lambda self: Precision.available(self._parent))
     def precision(
         self,
         *,
@@ -547,6 +608,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, average=average
         )
 
+    @available_if(lambda self: Recall.available(self._parent))
     def recall(
         self,
         *,
@@ -612,6 +674,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, average=average
         )
 
+    @available_if(lambda self: Brier.available(self._parent))
     def brier_score(
         self,
         *,
@@ -645,6 +708,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         return Brier().pretty(report=self._parent, data_source=data_source)
 
+    @available_if(lambda self: RocAuc.available(self._parent))
     def roc_auc(
         self,
         *,
@@ -718,6 +782,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             multi_class=multi_class,
         )
 
+    @available_if(lambda self: LogLoss.available(self._parent))
     def log_loss(
         self,
         *,
@@ -751,6 +816,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         return LogLoss().pretty(report=self._parent, data_source=data_source)
 
+    @available_if(lambda self: R2.available(self._parent))
     def r2(
         self,
         *,
@@ -799,6 +865,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
+    @available_if(lambda self: Rmse.available(self._parent))
     def rmse(
         self,
         *,
@@ -847,6 +914,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
+    @available_if(lambda self: Mae.available(self._parent))
     def mae(
         self,
         *,
@@ -895,6 +963,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             report=self._parent, data_source=data_source, multioutput=multioutput
         )
 
+    @available_if(lambda self: Mape.available(self._parent))
     def mape(
         self,
         *,
@@ -941,25 +1010,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         return Mape().pretty(
             report=self._parent, data_source=data_source, multioutput=multioutput
-        )
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def __repr__(self) -> str:
-        return (
-            "Metrics summary:\n"
-            f"{self.summarize().frame()!r}\n"
-            "Explore available methods with .help()."
-        )
-
-    def _repr_html_(self) -> str:
-        return (
-            "<p>Metrics summary:</p>"
-            f"{self.summarize().frame()._repr_html_()}"
-            '<p role="note">Explore available methods with '
-            "<code>.help()</code>.</p>"
         )
 
     ####################################################################################
@@ -1030,7 +1080,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             cache_key = None
         else:
             cache_key = make_cache_key(
-                data_source, display_class.__name__, display_kwargs
+                "metrics", data_source, display_class.__name__, display_kwargs
             )
 
         cache_value = self._parent._cache.get(cache_key)

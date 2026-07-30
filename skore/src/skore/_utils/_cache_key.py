@@ -1,28 +1,30 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence, Set
-from typing import Any
+from typing import Any, Literal
 
 import joblib
 import numpy as np
 
 from skore._sklearn.types import _DEFAULT, DataSource
 
+CacheKeyScope = Literal["report", "metrics", "inspection"]
+
 
 def make_cache_key(
+    scope: CacheKeyScope,
     data_source: DataSource,
     name: str,
     kwargs: Mapping[str, Any] | None = None,
-) -> tuple[Any, ...]:
-    """Build a cache key.
-
-    Enforce structure (data_source, "predict_time", sanitized_kwargs).
-    """
+) -> tuple[CacheKeyScope, DataSource, str, tuple]:
+    """Build a cache key."""
+    if scope not in (expected_scope := {"report", "metrics", "inspection"}):
+        raise ValueError(f"scope must be one of {expected_scope}; got {scope!r}")
     if data_source not in {"train", "test"}:
         raise ValueError(f"data_source must be 'train' or 'test'; got {data_source!r}")
     if not isinstance(name, str):
         raise TypeError(f"name must be a string; got {type(name)}")
-    return (data_source, name, deep_key_sanitize(kwargs))
+    return (scope, data_source, name, deep_key_sanitize(kwargs))
 
 
 def deep_key_sanitize(value: Any) -> Any:
