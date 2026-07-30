@@ -167,13 +167,8 @@ class TestHubProjectContract:
             ),
             (
                 "get",
-                "projects/workspace/contract-hub/estimator-reports/",
-                Response(200, json=[]),
-            ),
-            (
-                "get",
-                "projects/workspace/contract-hub/cross-validation-reports/",
-                Response(200, json=[]),
+                "projects/workspace/contract-hub/reports/",
+                Response(200, json={"next_cursor": None, "items": []}),
             ),
             ("delete", "/projects/workspace/contract-hub", Response(204)),
         ]
