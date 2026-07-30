@@ -221,29 +221,6 @@ def split_preprocessor_estimator(estimator):
     return None, estimator
 
 
-def _skrub_env_for_report(
-    report: EstimatorReport | CrossValidationReport,
-    *,
-    data_source: Literal["train", "test", "both"],
-) -> dict | tuple[dict, dict]:
-    if report._report_type == "cross-validation":
-        return report.input_data
-
-    if data_source == "train":
-        if report.train_data is None:
-            raise CheckNotApplicable("Train data is unavailable.")
-        return report.train_data
-    if data_source == "test":
-        if report.test_data is None:
-            raise CheckNotApplicable("Test data is unavailable.")
-        return report.test_data
-    if report.train_data is None:
-        raise CheckNotApplicable("Train data is unavailable.")
-    if report.test_data is None:
-        raise CheckNotApplicable("Test data is unavailable.")
-    return report.train_data, report.test_data
-
-
 def cast_report(report: _BaseReport) -> EstimatorReport | CrossValidationReport:
     if report._report_type == "estimator":
         return cast("EstimatorReport", report)
@@ -339,14 +316,33 @@ def get_preprocessed_X(
     if report._initialized_with_data_op:
         learner = estimator
         try:
-            env_or_envs = _skrub_env_for_report(report, data_source=data_source)
-            if isinstance(env_or_envs, tuple):
-                train_env, test_env = env_or_envs
-                train_X, _ = get_predictor_and_input(learner, train_env)
-                test_X, _ = get_predictor_and_input(learner, test_env)
-                data = _concat_vertical(train_X, test_X)
+            if report._report_type == "cross-validation":
+                env = report.input_data
+                data, _ = get_predictor_and_input(learner, env)
             else:
-                data, _ = get_predictor_and_input(learner, env_or_envs)
+                if data_source == "train":
+                    if report.train_data is None:
+                        raise CheckNotApplicable("Train data is unavailable.")
+                    env = report.train_data
+
+                    data, _ = get_predictor_and_input(learner, env)
+                elif data_source == "test":
+                    if report.test_data is None:
+                        raise CheckNotApplicable("Test data is unavailable.")
+                    env = report.test_data
+
+                    data, _ = get_predictor_and_input(learner, env)
+                else:  # data_source == "test"
+                    if report.train_data is None:
+                        raise CheckNotApplicable("Train data is unavailable.")
+                    train_X, _ = get_predictor_and_input(learner, report.train_data)
+
+                    if report.test_data is None:
+                        raise CheckNotApplicable("Test data is unavailable.")
+                    test_X, _ = get_predictor_and_input(learner, report.test_data)
+
+                    data = _concat_vertical(train_X, test_X)
+
         except ValueError as err:
             if "multiple supervised apply" not in str(err):
                 raise
