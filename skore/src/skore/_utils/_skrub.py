@@ -63,12 +63,26 @@ def _supervised_apply_node(data_op: DataOp) -> Apply:
 
 
 def _ensure_single_supervised_apply(data_op: DataOp) -> None:
+    """Guard against ambiguous graphs with more than one final predictor.
+
+    A node counts as a predictor candidate when it uses ``y`` *and* its estimator
+    has no ``transform`` method: supervised preprocessing steps (e.g.
+    ``SelectKBest(y=...)``, ``TargetEncoder(y=...)``) also pass ``y`` but remain
+    transformers, so they must not be mistaken for the final predictor.
+
+    The fitted ``estimator_`` is checked when available (falling back to the
+    unfitted ``estimator``): a skrub choice among estimators (e.g.
+    ``skrub.choose_from(...)``) never exposes ``transform`` itself, so it must be
+    resolved to the concrete fitted estimator to test its capability correctly.
+    """
     supervised_applies: list[DataOp] = []
 
     def check_node(node: DataOp) -> bool:
         impl = getattr(node, "_skrub_impl", None)
         if isinstance(impl, Apply) and impl.y is not None:
-            supervised_applies.append(node)
+            estimator = getattr(impl, "estimator_", impl.estimator)
+            if not hasattr(estimator, "transform"):
+                supervised_applies.append(node)
         return False
 
     data_op.skb.find(check_node)

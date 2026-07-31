@@ -3,6 +3,7 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 import skrub
+from sklearn.feature_selection import SelectKBest
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -28,38 +29,64 @@ def regression_xy():
     return df, y
 
 
-@pytest.mark.filterwarnings(
-    "ignore:R\\^2 score is not well-defined:sklearn.exceptions.UndefinedMetricWarning"
-)
-def test_resolve_fitted_predictor_returns_ridge_for_chained_applies(regression_xy):
-    """Chained applies resolve to the supervised predictor, not a stitched Pipeline."""
-    df, y = regression_xy
-    learner = (
+def case_chained_applies():
+    """A pipeline with several Apply nodes."""
+    return (
         skrub.X()
         .skb.apply(StandardScaler())
         .skb.apply(Ridge(), y=skrub.y())
         .skb.make_learner()
     )
-    report = evaluate(learner, data={"X": df, "y": y})
-
-    predictor = resolve_fitted_predictor(report.estimator_)
-    assert isinstance(predictor, Ridge)
 
 
-@pytest.mark.filterwarnings(
-    "ignore:R\\^2 score is not well-defined:sklearn.exceptions.UndefinedMetricWarning"
-)
-def test_resolve_fitted_predictor_returns_inner_pipeline_last_step_for_tabular(
-    regression_xy,
-):
-    """A single apply wrapping tabular_pipeline resolves to the inner predictor."""
-    df, y = regression_xy
-    learner = (
+def case_tabular_pipeline():
+    """A ``tabular_pipeline``."""
+    return (
         skrub.X().skb.apply(tabular_pipeline(Ridge()), y=skrub.y()).skb.make_learner()
     )
-    report = evaluate(learner, data={"X": df, "y": y})
 
-    predictor = resolve_fitted_predictor(report.estimator_)
+
+def case_supervised_preprocessing():
+    """A pipeline with several supervised Apply nodes."""
+    skb_y = skrub.y()
+    return (
+        skrub.X()
+        .skb.apply(SelectKBest(k=1), y=skb_y)
+        .skb.apply(Ridge(), y=skb_y)
+        .skb.make_learner()
+    )
+
+
+def case_supervised_preprocessing_choice():
+    """A pipeline with supervised preprocessing Apply nodes, some of which are
+    ``Choice``s (these nodes do not expose ``transform``)."""
+    skb_y = skrub.y()
+    return (
+        skrub.X()
+        .skb.apply(
+            skrub.choose_from([SelectKBest(k=1), SelectKBest(k=2)], name="fs"), y=skb_y
+        )
+        .skb.apply(Ridge(), y=skb_y)
+        .skb.make_learner()
+    )
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        case_chained_applies,
+        case_tabular_pipeline,
+        case_supervised_preprocessing,
+        case_supervised_preprocessing_choice,
+    ],
+)
+def test_resolve_fitted_predictor(case, regression_xy):
+    """``resolve_fitted_predictor`` finds the final Ridge estimator."""
+    df, y = regression_xy
+    learner = case()
+    learner.fit({"X": df, "y": y})
+
+    predictor = resolve_fitted_predictor(learner)
     assert isinstance(predictor, Ridge)
 
 
