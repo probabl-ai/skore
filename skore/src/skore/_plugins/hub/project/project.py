@@ -367,7 +367,7 @@ class Project:
 
             return {
                 "id": summary["urn"],
-                "report_id": summary.get("report_id"),
+                "report_id": summary.get("canonical_report_id"),
                 "key": summary["key"],
                 "date": summary["created_at"],
                 "learner": summary["estimator_class_name"],
