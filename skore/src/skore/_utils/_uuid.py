@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-import uuid
-from collections.abc import Callable
+import sys
 from uuid import RFC_4122, UUID
 
-_uuid7_factory: Callable[[], UUID] | None = getattr(uuid, "uuid7", None)
-if _uuid7_factory is None:
-    from uuid6 import uuid7 as _uuid7_factory
+if sys.version_info >= (3, 14):
+    from uuid import uuid7 as _generate_uuid7
+else:
+    from uuid6 import uuid7 as _generate_uuid7
 
 
 def uuid7() -> UUID:
     """Generate a UUIDv7 as a standard-library UUID object."""
-    assert _uuid7_factory is not None
-    return UUID(str(_uuid7_factory()))
+    return UUID(str(_generate_uuid7()))
 
 
 def normalize_report_id(value: object) -> UUID:
