@@ -18,8 +18,6 @@ def callable_docstring(func: Any) -> str | None:
     inherit ``__doc__`` from their type, which describes the wrapper rather than
     the metric.
     """
-    if func is None:
-        return None
     doc = getattr(func, "__doc__", None)
     if doc is None or doc is getattr(type(func), "__doc__", None):
         return None
@@ -51,7 +49,7 @@ def docstring_summary(doc: str | None) -> str | None:
     if parsed is None or not parsed["Summary"]:
         return None
     summary = " ".join(parsed["Summary"]).strip()
-    return summary or None
+    return summary
 
 
 def parameters_by_name(
@@ -65,10 +63,10 @@ def parameters_by_name(
 
 
 def replace_default(type_spec: str, default: Any) -> str:
-    """Restate a numpydoc type spec with ``default`` as its default value.
+    """Rewrite a numpydoc type spec so it advertises ``default``.
 
-    The type spec of the underlying score function advertises that function's
-    own default, which may differ from the one the metric is registered with.
+    Score-function docstrings include that function's own default, which can
+    differ from the default the metric is registered with in skore.
     """
     stripped = _TRAILING_DEFAULT.sub("", type_spec.strip())
     if not stripped:

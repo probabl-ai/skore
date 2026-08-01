@@ -211,27 +211,19 @@ def _summarize_report_metrics(
 class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     """Base class for metrics accessor."""
 
-    @staticmethod
-    def _is_callable_metric_name(name: str) -> bool:
-        return name.isidentifier() and not iskeyword(name)
-
     def _callable_metric_names(self) -> list[str]:
         """Registry metric names that can be exposed as ``metrics.<name>()``."""
         return [
             name
             for name in self.available()
-            if self._is_callable_metric_name(name) and not hasattr(type(self), name)
+            if name.isidentifier()
+            and not iskeyword(name)
+            and not hasattr(type(self), name)
         ]
 
     @abstractmethod
-    def _resolve_metric(self, name: str) -> Metric:
-        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``.
-
-        Raises
-        ------
-        KeyError
-            If ``name`` is not registered on the parent report.
-        """
+    def _resolve_metric(self, name: str) -> Metric | None:
+        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``, or None."""
 
     def _metric_summary(self, metric: Metric) -> str:
         """Summarize ``metric`` in a single sentence."""
@@ -247,10 +239,7 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
 
     def _build_metric_method_docstring(self, name: str) -> str:
         """Build a numpydoc string for a dynamically exposed registry metric."""
-        try:
-            metric: Metric | None = self._resolve_metric(name)
-        except KeyError:
-            metric = None
+        metric = self._resolve_metric(name)
 
         get_doc = getattr(self.get, "__doc__", None)
         get_parsed = parse_numpy_doc(get_doc)
@@ -313,10 +302,10 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
 
     def _metric_help_description(self, name: str) -> str:
         """Build a help description for a registry metric method."""
-        try:
-            return self._metric_summary(self._resolve_metric(name))
-        except KeyError:
+        metric = self._resolve_metric(name)
+        if metric is None:
             return "Registered metric."
+        return self._metric_summary(metric)
 
     def __getattr__(self, name):
         """Expose registry metrics as methods when not defined statically.

@@ -564,7 +564,7 @@ class Metric:
 
 
 class FitTime(Metric):
-    """Get time to fit the estimator."""
+    """The time taken to fit the estimator."""
 
     name = "fit_time"
     verbose_name = "Fit time (s)"
@@ -584,7 +584,7 @@ class FitTime(Metric):
 
 
 class PredictTime(Metric):
-    """Get prediction time if it has been already measured."""
+    """The time taken to compute model predictions."""
 
     name = "predict_time"
     verbose_name = "Predict time (s)"
@@ -710,7 +710,7 @@ class Brier(Metric):
 
 
 class RocAuc(Metric):
-    """Compute the area under the Receiver Operating Characteristic curve (ROC AUC)."""
+    """The area under the Receiver Operating Characteristic curve (ROC AUC)."""
 
     name = "roc_auc"
     verbose_name = "ROC AUC"

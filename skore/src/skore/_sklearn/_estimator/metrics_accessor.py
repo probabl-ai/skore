@@ -245,15 +245,9 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
         """
         return list(self._parent._metric_registry)
 
-    def _resolve_metric(self, name: str) -> Metric:
-        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``.
-
-        Raises
-        ------
-        KeyError
-            If ``name`` is not registered on the report.
-        """
-        return self._parent._metric_registry[name]
+    def _resolve_metric(self, name: str) -> Metric | None:
+        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``, or None."""
+        return self._parent._metric_registry.get(name)
 
     def add(
         self,

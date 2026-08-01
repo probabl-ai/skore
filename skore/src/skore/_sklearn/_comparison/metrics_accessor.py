@@ -202,20 +202,13 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         )
         return list(keys)
 
-    def _resolve_metric(self, name: str) -> Metric:
-        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``.
-
-        Raises
-        ------
-        KeyError
-            If ``name`` is not registered on any of the sub-reports.
-        """
+    def _resolve_metric(self, name: str) -> Metric | None:
+        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``, or None."""
         for report in self._parent.reports_.values():
-            try:
-                return report.metrics._resolve_metric(name)
-            except KeyError:
-                continue
-        raise KeyError(name)
+            metric = report.metrics._resolve_metric(name)
+            if metric is not None:
+                return metric
+        return None
 
     def add(
         self,

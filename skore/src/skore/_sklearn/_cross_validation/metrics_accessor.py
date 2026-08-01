@@ -160,14 +160,8 @@ class _MetricsAccessor(BaseMetricsAccessor[CrossValidationReport], DirNamesMixin
         """
         return self._parent.reports_[0].metrics.available()
 
-    def _resolve_metric(self, name: str) -> Metric:
-        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``.
-
-        Raises
-        ------
-        KeyError
-            If ``name`` is not registered on the first split report.
-        """
+    def _resolve_metric(self, name: str) -> Metric | None:
+        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``, or None."""
         return self._parent.reports_[0].metrics._resolve_metric(name)
 
     def add(
