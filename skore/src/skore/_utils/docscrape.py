@@ -16,10 +16,11 @@ def callable_docstring(func: Any) -> str | None:
 
     Callable objects without their own docstring (e.g. :func:`functools.partial`)
     inherit ``__doc__`` from their type, which describes the wrapper rather than
-    the metric.
+    the metric. Types defined in C rebuild their ``__doc__`` on each access, so
+    the inherited docstring is compared by value rather than by identity.
     """
     doc = getattr(func, "__doc__", None)
-    if doc is None or doc is getattr(type(func), "__doc__", None):
+    if doc is None or doc == getattr(type(func), "__doc__", None):
         return None
     return doc
 

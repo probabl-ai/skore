@@ -85,6 +85,11 @@ def test_callable_docstring():
     # Objects without their own docstring inherit it from their type.
     assert callable_docstring(functools.partial(documented)) is None
     assert callable_docstring(Callable()) is None
+    # Types defined in C return a new docstring object on each access, so the
+    # inherited docstring cannot be detected by identity. ``None`` is such a case
+    # from Python 3.13 onwards, where ``NoneType`` gained a docstring.
+    assert callable_docstring(object()) is None
+    assert callable_docstring(()) is None
 
 
 def test_replace_default():
