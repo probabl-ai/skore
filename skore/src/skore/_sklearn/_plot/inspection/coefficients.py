@@ -7,9 +7,11 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.figure import Figure
 from numpy.typing import ArrayLike
+from scipy.sparse import issparse
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
+from sklearn.utils.sparsefuncs import mean_variance_axis
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.inspection.utils import (
@@ -770,8 +772,13 @@ class CoefficientsDisplay(DisplayMixin):
                 if preprocessor is not None and len(preprocessor.steps) > 0
                 else X
             )
+            if issparse(X_transformed):
+                _, variance = mean_variance_axis(X_transformed, axis=0)
+                std = np.sqrt(variance)
+            else:
+                std = np.std(X_transformed, axis=0)
             # the intercept is given a unit standard deviation to leave it unscaled
-            feature_std = np.concatenate([[1.0], np.std(X_transformed, axis=0, ddof=1)])
+            feature_std = np.concatenate([[1.0], std])
         else:
             feature_std = np.full(n_features, np.nan)
 

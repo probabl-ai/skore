@@ -3,8 +3,8 @@ import numpy as np
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression, Ridge
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.preprocessing import SplineTransformer, StandardScaler
 
 from skore import EstimatorReport
 
@@ -164,6 +164,26 @@ def test_scale_features_uses_preprocessed_train_std(regression_train_test_split)
         "coefficient"
     ].to_numpy()
     np.testing.assert_allclose(raw, scaled, rtol=0.05)
+
+
+def test_scale_features_sparse_preprocessor(regression_train_test_split):
+    """Feature stds are computed on sparse transformed data without densifying."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        make_pipeline(SplineTransformer(sparse_output=True), Ridge()),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.inspection.coefficients()
+    assert display.coefficients["feature_std"].notna().all()
+
+    X_transformed = report.estimator_[:-1].transform(X_train)
+    np.testing.assert_allclose(
+        display.coefficients.query("feature != 'Intercept'")["feature_std"],
+        np.std(X_transformed.toarray(), axis=0),
+    )
 
 
 def test_scale_features_prefit_without_train_data_raises():
