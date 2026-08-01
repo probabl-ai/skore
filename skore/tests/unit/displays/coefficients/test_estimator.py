@@ -1,7 +1,10 @@
 import matplotlib as mpl
 import numpy as np
 import pytest
-from sklearn.linear_model import LinearRegression
+from sklearn.datasets import make_regression
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 from skore import EstimatorReport
 
@@ -96,3 +99,95 @@ def test_include_intercept_multioutput_fit_intercept_false(request):
     assert set(intercept_rows["output"].astype(str)) == {"0", "1"}
     np.testing.assert_array_equal(intercept_rows["coefficient"].values, [0.0, 0.0])
     assert display.frame(include_intercept=False).query("feature == 'Intercept'").empty
+
+
+def test_scale_features_multiplies_by_train_std(regression_train_test_split):
+    """scale_features multiplies non-intercept coefficients by training feature std."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        Ridge(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.inspection.coefficients()
+    assert display.coefficients["feature_std"].notna().all()
+
+    raw = display.frame(include_intercept=False).set_index("feature")
+    scaled = display.frame(include_intercept=False, scale_features=True).set_index(
+        "feature"
+    )
+    std = (
+        display.coefficients.query("feature != 'Intercept'")
+        .set_index("feature")["feature_std"]
+        .groupby(level=0)
+        .first()
+    )
+    expected = raw["coefficient"] * std.loc[raw.index]
+    np.testing.assert_allclose(scaled["coefficient"], expected)
+    assert "feature_std" not in scaled.columns
+
+
+def test_scale_features_leaves_intercept_unchanged(regression_train_test_split):
+    """The intercept is not multiplied by a feature standard deviation."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        Ridge(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.inspection.coefficients()
+    raw = display.frame().set_index("feature")
+    scaled = display.frame(scale_features=True).set_index("feature")
+    assert raw.loc["Intercept", "coefficient"] == scaled.loc["Intercept", "coefficient"]
+
+
+def test_scale_features_uses_preprocessed_train_std(regression_train_test_split):
+    """Feature stds are computed after the pipeline preprocessor."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        Pipeline([("scaler", StandardScaler()), ("model", LinearRegression())]),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.inspection.coefficients()
+    # After StandardScaler (population std), sample stds are still ~1, and the
+    # intercept is given a unit standard deviation.
+    np.testing.assert_allclose(display.coefficients["feature_std"], 1.0, atol=0.05)
+    raw = display.frame(include_intercept=False)["coefficient"].to_numpy()
+    scaled = display.frame(include_intercept=False, scale_features=True)[
+        "coefficient"
+    ].to_numpy()
+    np.testing.assert_allclose(raw, scaled, rtol=0.05)
+
+
+def test_scale_features_prefit_without_train_data_raises():
+    """Prefit reports without X_train cannot use scale_features."""
+    X, y = make_regression(n_samples=50, n_features=4, random_state=0)
+    estimator = Ridge().fit(X, y)
+    report = EstimatorReport(estimator, X_test=X, y_test=y)
+    display = report.inspection.coefficients()
+    assert display.coefficients["feature_std"].isna().all()
+    with pytest.raises(ValueError, match="training feature standard deviations"):
+        display.frame(scale_features=True)
+    with pytest.raises(ValueError, match="training feature standard deviations"):
+        display.plot(scale_features=True)
+
+
+def test_scale_features_plot_xlabel(regression_train_test_split):
+    """Plot xlabel reflects scaled coefficients when requested."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    report = EstimatorReport(
+        Ridge(),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    fig = report.inspection.coefficients().plot(scale_features=True)
+    assert fig.axes[0].get_xlabel() == "Magnitude of scaled coefficient"

@@ -1,5 +1,10 @@
 import matplotlib as mpl
+import numpy as np
 import pytest
+from sklearn.datasets import make_regression
+from sklearn.linear_model import Ridge
+
+from skore import evaluate
 
 
 @pytest.mark.parametrize(
@@ -71,3 +76,18 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
             assert isinstance(axes[0], mpl.axes.Axes)
         else:
             assert len(axes) == expected_len
+
+
+def test_scale_features():
+    """CV displays store feature_std and can scale coefficients."""
+    X, y = make_regression(n_samples=80, n_features=3, random_state=0)
+    report = evaluate(Ridge(), X, y, splitter=2)
+    display = report.inspection.coefficients()
+    assert display.coefficients["feature_std"].notna().all()
+
+    frame = display.frame(aggregate=None, include_intercept=False, scale_features=True)
+    assert "coefficient" in frame.columns
+    assert "feature_std" not in frame.columns
+    # Scaled values should differ from raw when features are not unit-variance.
+    raw = display.frame(aggregate=None, include_intercept=False)
+    assert not np.allclose(frame["coefficient"], raw["coefficient"])
