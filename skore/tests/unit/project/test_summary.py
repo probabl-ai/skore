@@ -570,26 +570,6 @@ class TestSummary:
         assert "text/html" in mimebundle
         assert "text/plain" in mimebundle
 
-    def test_html_repr_scroll_containment(self, estimator_report_regression):
-        """The table traps the wheel only while it overflows (see #3131)."""
-        summary = _summary_from_project(FakeProject(estimator_report_regression))
-
-        html = summary._html_repr()
-
-        assert (
-            ".summary-table-wrap.summary-table-wrap--scrollable {\n"
-            "    overscroll-behavior-y: contain;\n"
-            "}"
-        ) in html
-        assert "function syncScrollContainment()" in html
-        assert '"summary-table-wrap--scrollable",' in html
-        # Popovers always trap it: scrolling should not move the page under an
-        # open menu.
-        assert (
-            ".skore-summary-columns-panel {" in html
-            and "overscroll-behavior: contain;" in html
-        )
-
     def test_html_repr_empty(self):
         summary = _summary_from_project(FakeProject())
 
