@@ -564,11 +564,11 @@ def comparison_cross_validation_reports_multioutput_regression(
 def linear_regression_comparison_report(linear_regression_with_train_test):
     """Fixture providing a ComparisonReport with two linear regression estimators."""
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    estimator_2 = clone(estimator).fit(X_train, y_train)
+    estimator_2 = clone(estimator)
     report = ComparisonReport(
         reports={
             "estimator_1": EstimatorReport(
-                estimator,
+                clone(estimator),
                 X_train=X_train,
                 y_train=y_train,
                 X_test=X_test,

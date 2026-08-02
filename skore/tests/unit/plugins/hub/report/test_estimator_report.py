@@ -1,6 +1,7 @@
 from joblib import hash
 from pydantic import ValidationError
 from pytest import approx, fixture, mark, raises
+from sklearn.base import clone
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import make_scorer, precision_score
@@ -352,7 +353,7 @@ class TestEstimatorReportPayload:
             forest_multiclass_classification_with_train_test
         )
         report = EstimatorReport(
-            estimator,
+            clone(estimator),
             X_train=X_train,
             y_train=y_train,
             X_test=X_test,

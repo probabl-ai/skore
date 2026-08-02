@@ -27,11 +27,13 @@ Reporter for a single estimator
 -------------------------------
 
 :class:`EstimatorReport` is the core reporter in `skore`. It is designed to take a
-scikit-learn compatible estimator and some training and test data. The training data is
-optional if the estimator is already fitted. The parameter `fit` in the constructor
-gives full control over the fitting process. Omitting part of the data reduces the
-number of available methods when inspecting the model. For instance, you cannot inspect
-the metrics of the model on the test data if you do not provide the test data.
+scikit-learn compatible estimator and some training and test data. When the estimator
+is not fitted, provide the training data so that `skore` can clone and fit it. When
+the estimator is already fitted, omit the training data — passing both is rejected to
+avoid accidentally evaluating a model that was fitted on different data. Omitting part
+of the data reduces the number of available methods when inspecting the model. For
+instance, you cannot inspect the metrics of the model on the test data if you do not
+provide the test data.
 
 Data insights
 ^^^^^^^^^^^^^

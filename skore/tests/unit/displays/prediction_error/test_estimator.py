@@ -1,6 +1,7 @@
 import matplotlib as mpl
 import pandas as pd
 import pytest
+from sklearn.base import clone
 
 from skore import EstimatorReport
 from skore._utils._testing import check_cache_unchanged
@@ -159,7 +160,11 @@ def test_seed_none(linear_regression_with_train_test):
     """If seed is None (the default) the call should not be cached."""
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
     report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        clone(estimator),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
     )
     report._cache_predictions()
     with check_cache_unchanged(report._cache):
@@ -178,7 +183,7 @@ def test_multioutput_regression_dataframe_y(
     )
 
     report = EstimatorReport(
-        estimator,
+        clone(estimator),
         X_train=X_train,
         y_train=pd.DataFrame(y_train),
         X_test=X_test,

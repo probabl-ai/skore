@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import skrub
+from sklearn.base import clone
 from sklearn.datasets import make_classification
 from sklearn.dummy import DummyClassifier
 from sklearn.linear_model import LogisticRegression
@@ -175,7 +176,11 @@ def test_score_matches_sklearn_score(logistic_binary_classification_with_train_t
         logistic_binary_classification_with_train_test
     )
     report = EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        clone(estimator),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
     )
 
     assert report.metrics.score() == report.estimator_.score(X_test, y_test)
