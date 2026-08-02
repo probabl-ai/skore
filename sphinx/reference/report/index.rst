@@ -9,11 +9,6 @@ process.
 Get assistance when developing ML/DS projects
 ---------------------------------------------
 
-:func:`evaluate` is the main entry point: pass one or more estimators and data to get
-an :class:`EstimatorReport`, :class:`CrossValidationReport`, or
-:class:`ComparisonReport`. The report classes remain available for advanced use, but
-:func:`evaluate` is usually the simpler way to create them.
-
 These functions and classes build upon scikit-learn's functionality.
 
 .. autosummary::
@@ -29,7 +24,7 @@ Single Estimator Report
 
 :class:`skore.EstimatorReport` provides comprehensive reporting capabilities for
 individual scikit-learn estimators, including metrics, visualizations, and evaluation
-tools. Prefer creating it with :func:`evaluate`.
+tools.
 
 .. toctree::
    :maxdepth: 2
@@ -41,8 +36,7 @@ Cross-validation Report
 -----------------------
 
 :class:`skore.CrossValidationReport` provides comprehensive capabilities for evaluating
-scikit-learn estimators by cross-validation, and reporting the results. Prefer creating
-it with :func:`evaluate` and an integer or CV ``splitter``.
+scikit-learn estimators by cross-validation, and reporting the results.
 
 .. toctree::
    :maxdepth: 2
@@ -55,8 +49,7 @@ Comparison Report
 
 :class:`skore.ComparisonReport` provides comprehensive capabilities for comparing
 :class:`skore.EstimatorReport` or :class:`skore.CrossValidationReport` instances, and
-reporting the results. Prefer creating it with :func:`evaluate` (several estimators) or
-:func:`compare` (existing reports).
+reporting the results.
 
 .. toctree::
    :maxdepth: 2

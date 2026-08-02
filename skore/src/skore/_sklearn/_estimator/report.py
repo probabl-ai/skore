@@ -98,11 +98,6 @@ def _check_estimator_and_data(
 class EstimatorReport(_BaseReport, DirNamesMixin):
     """Provide tools to validate and inspect a fitted estimator.
 
-    Prefer :func:`~skore.evaluate` to create a report; it handles train-test
-    splitting (or ``splitter="prefit"`` for an already fitted estimator) and returns
-    an :class:`EstimatorReport`. Construct this class directly when you need an
-    explicit train/test split or other fine-grained control.
-
     Refer to the :ref:`estimator_report` section of the user guide for more details.
 
     Parameters
@@ -189,8 +184,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     See Also
     --------
     skore.evaluate
-        Recommended entry point to create estimator, cross-validation, or
-        comparison reports.
+        Evaluate one or more estimators and return a report.
 
     skore.CrossValidationReport
         Report of cross-validation results.
@@ -200,25 +194,15 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     Examples
     --------
-    Prefer :func:`~skore.evaluate` in most cases:
-
     >>> from sklearn.datasets import make_classification
-    >>> from sklearn.linear_model import LogisticRegression
-    >>> from skore import evaluate
-    >>> X, y = make_classification(random_state=42)
-    >>> report = evaluate(LogisticRegression(), X, y)
-
-    Or construct :class:`EstimatorReport` directly with an explicit split:
-
     >>> from sklearn.model_selection import train_test_split
-    >>> from skore import EstimatorReport
+    >>> from sklearn.linear_model import LogisticRegression
+    >>> X, y = make_classification(random_state=42)
     >>> X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+    >>> estimator = LogisticRegression()
+    >>> from skore import EstimatorReport
     >>> report = EstimatorReport(
-    ...     LogisticRegression(),
-    ...     X_train=X_train,
-    ...     y_train=y_train,
-    ...     X_test=X_test,
-    ...     y_test=y_test,
+    ...     estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     ... )
     """
 

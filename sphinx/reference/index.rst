@@ -34,7 +34,7 @@ ML Assistance
    :widths: 30 70
 
    * - :func:`evaluate`
-     - Main entry point to evaluate one or more estimators and get a report.
+     - Evaluate one or more estimators on the given data.
    * - :func:`compare`
      - Compare pre-existing reports with a :class:`~skore.ComparisonReport`
    * - :class:`TrainTestSplit`

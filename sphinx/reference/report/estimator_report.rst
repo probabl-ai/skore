@@ -7,10 +7,6 @@ The class :class:`EstimatorReport` provides a report allowing to inspect and
 evaluate a scikit-learn estimator in an interactive way. The functionalities of the
 report are accessible through accessors.
 
-Prefer :func:`evaluate` to create an :class:`EstimatorReport`; constructing the class
-directly is mainly useful when you already have an explicit train/test split or a
-pre-fitted estimator.
-
 .. autosummary::
    :toctree: ../api/
    :template: class_with_accessors.rst

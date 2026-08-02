@@ -61,9 +61,6 @@ def _generate_estimator_report(
 class CrossValidationReport(_BaseReport, DirNamesMixin):
     """Provide a report of cross-validation results.
 
-    Prefer :func:`~skore.evaluate` with an integer or CV splitter (for example
-    ``evaluate(estimator, X, y, splitter=5)``) to create this report.
-
     Upon initialization, clones ``estimator`` according to ``splitter`` and fits each
     fold in parallel.
 
@@ -156,6 +153,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
+    skore.evaluate
+        Evaluate one or more estimators and return a report.
+
     skore.EstimatorReport
         Report for a fitted estimator.
 

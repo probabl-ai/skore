@@ -7,9 +7,6 @@ The class :class:`ComparisonReport` provides a report allowing to compare
 :class:`EstimatorReport` or :class:`CrossValidationReport` instances in an interactive
 way. The functionalities of the report are accessible through accessors.
 
-Prefer :func:`evaluate` with a list or dict of estimators, or :func:`compare` when you
-already have reports.
-
 .. autosummary::
     :toctree: ../api/
     :template: class_with_accessors.rst

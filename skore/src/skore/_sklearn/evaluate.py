@@ -38,12 +38,6 @@ def evaluate(
 ) -> EstimatorReport | CrossValidationReport | ComparisonReport:
     """Evaluate one or more estimators on the given data.
 
-    This is the recommended entry point for creating reports. Depending on
-    ``estimator`` and ``splitter``, it returns an :class:`~skore.EstimatorReport`,
-    :class:`~skore.CrossValidationReport`, or :class:`~skore.ComparisonReport`.
-    Constructing those classes directly is possible when you need finer control, but
-    :func:`evaluate` is usually simpler.
-
     Passing several estimators provides a report to compare them, while the
     ``splitter`` parameter controls whether a train-test split or
     cross-validation is used.
@@ -112,11 +106,11 @@ def evaluate(
     :func:`~skore.compare` :
         Compare already evaluated reports.
     :class:`~skore.EstimatorReport` :
-        Report returned for a single estimator (train-test or prefit).
+        Report for a fitted estimator on a test set.
     :class:`~skore.CrossValidationReport` :
-        Report returned when ``splitter`` is an int or CV splitter.
+        Report for cross-validation of an estimator.
     :class:`~skore.ComparisonReport` :
-        Report returned when several estimators are passed.
+        Report comparing several evaluated models.
 
     Examples
     --------

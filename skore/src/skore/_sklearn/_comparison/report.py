@@ -42,9 +42,6 @@ if TYPE_CHECKING:
 class ComparisonReport(_BaseReport, DirNamesMixin):
     """Compare several estimator or cross-validation reports.
 
-    Prefer :func:`~skore.evaluate` with a list or dict of estimators, or
-    :func:`~skore.compare` when you already have reports.
-
     Refer to the :ref:`comparison_report` section of the user guide for more details.
 
     Parameters
@@ -78,6 +75,9 @@ class ComparisonReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
+    skore.evaluate
+        Evaluate one or more estimators and return a report.
+
     skore.EstimatorReport
         Report for a fitted estimator.
 
