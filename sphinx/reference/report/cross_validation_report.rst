@@ -7,6 +7,9 @@ The class :class:`CrossValidationReport` performs cross-validation and provides 
 to inspect and evaluate a scikit-learn estimator in an interactive way. The
 functionalities of the report are exposed through accessors.
 
+Prefer :func:`evaluate` with an integer or CV splitter (for example
+``evaluate(estimator, X, y, splitter=5)``) to create a :class:`CrossValidationReport`.
+
 .. autosummary::
    :toctree: ../api/
    :template: class_with_accessors.rst
