@@ -8,6 +8,7 @@ import sys
 import sysconfig
 import types
 import typing
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -85,12 +86,15 @@ def infer() -> Requirements:
 
             if is_local_module(module) and (top_level_name not in warned):
                 warned.add(top_level_name)
-                logger.warning(
-                    "\033[38;5;208m"
-                    f"Package \033[1;3m{top_level_name}\033[22;23m seems to be an "
-                    "editable or local install (loaded from outside site-packages). "
-                    "It will not be recorded in the inferred requirements."
-                    "\033[0m"
+                warnings.warn(
+                    (
+                        "\033[38;5;208m"
+                        f"Package \033[1;3m{top_level_name}\033[22;23m seems to be an "
+                        "editable or local install (loaded from outside site-packages)."
+                        " It will not be recorded in the inferred requirements."
+                        "\033[0m"
+                    ),
+                    stacklevel=2,
                 )
 
     return Requirements(
