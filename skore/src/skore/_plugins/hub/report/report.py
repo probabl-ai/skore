@@ -15,6 +15,7 @@ from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.artifact.pickle import Pickle
 from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.project.project import Project
+from skore._plugins.requirements import Requirements, infer
 
 SkinnedProgress = partial(
     Progress,
@@ -131,3 +132,8 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
         retrieve it from the artifacts storage.
         """
         return Pickle(project=self.project, report=self.report)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def requirements(self) -> Requirements:
+        return infer()
