@@ -27,11 +27,24 @@ def init_workspace(workspace_dir: str | Path | None = None) -> Path:
         .expanduser()
         .resolve()
     )
+    if (
+        workspace_dir.is_file()
+        or workspace_dir.is_dir()
+        and not (workspace_dir / ".SKORE_WORKSPACE").exists()
+        and any(workspace_dir.iterdir())
+    ):
+        raise FileExistsError(
+            f"Cannot create skore workspace: {workspace_dir} is not empty "
+            "but does not appear to be a skore workspace.\n"
+            "Please specify a different explicit workspace path (via the `workspace` "
+            "parameter or `SKORE_WORKSPACE` env variable)\n"
+            "or remove this file or directory."
+        )
     new_workspace = not workspace_dir.exists()
     workspace_dir.mkdir(parents=True, exist_ok=True)
+    (workspace_dir / ".SKORE_WORKSPACE").touch()
     if new_workspace:
         (workspace_dir / ".gitignore").write_text("*\n")
-    (workspace_dir / ".SKORE_WORKSPACE").touch()
     (workspace_dir / "projects").mkdir(exist_ok=True)
     (workspace_dir / "datasets").mkdir(exist_ok=True)
     return workspace_dir
