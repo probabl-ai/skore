@@ -170,7 +170,9 @@ def _write_metrics(
 ) -> None:
     metrics_dir = output_dir / "metrics"
     metrics_dir.mkdir(exist_ok=True)
-    report.metrics.summarize().data.to_csv(metrics_dir / "summarize.csv", index=False)
+    report.metrics.summarize().summary.to_csv(
+        metrics_dir / "summarize.csv", index=False
+    )
     if isinstance(report, EstimatorReport):
         with open(metrics_dir / "registry.pickle", "wb") as f:
             pickle.dump(report._metric_registry, f)
@@ -316,7 +318,7 @@ def read_report_metadata(report_dir: Path | str) -> dict[str, Any]:
         (report_dir / "data" / f"{subset_name}.json").read_text("UTF-8")
     )["_skrub_y"]["hash"]
     metrics = pd.read_csv(report_dir / "metrics" / "summarize.csv")
-    metadata |= metrics.groupby("metric_name")["score"].mean().to_dict()
+    metadata |= metrics.groupby("name")["score"].mean().to_dict()
     return metadata
 
 
