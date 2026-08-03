@@ -1,7 +1,11 @@
 from importlib.machinery import ModuleSpec
+from platform import python_version
 from types import ModuleType
 
-from skore._plugins.requirements import is_local_module
+from pytest import warns
+
+from skore._plugins import requirements as requirements_module
+from skore._plugins.requirements import infer, is_local_module
 
 
 class Module(ModuleType):
@@ -36,4 +40,141 @@ class TestIsLocalModule:
         )
 
 
-class TestInfer: ...
+class TestInfer:
+    def test_records_distributions_once(self, monkeypatch):
+        import numpy
+        import numpy.linalg
+
+        monkeypatch.setattr(
+            requirements_module.sys,
+            "modules",
+            {
+                "numpy": numpy,
+                "numpy.linalg": numpy.linalg,
+            },
+        )
+
+        assert infer() == {
+            "python": python_version(),
+            "requirements": [
+                {"name": "numpy", "version": numpy.__version__},
+            ],
+        }
+
+    def test_records_aliased_distributions(self, monkeypatch):
+        import numpy
+        import numpy.linalg
+        import sklearn
+        import sklearn.base
+
+        monkeypatch.setattr(
+            requirements_module.sys,
+            "modules",
+            {
+                "numpy": numpy,
+                "numpy.linalg": numpy.linalg,
+                "sklearn": sklearn,
+                "sklearn.base": sklearn.base,
+            },
+        )
+
+        assert infer() == {
+            "python": python_version(),
+            "requirements": [
+                {"name": "numpy", "version": numpy.__version__},
+                {"name": "scikit-learn", "version": sklearn.__version__},
+            ],
+        }
+
+    def test_skips_stdlib_modules(self, tmp_path, monkeypatch):
+        import json
+
+        import numpy
+        import numpy.linalg
+        import sklearn
+        import sklearn.base
+
+        monkeypatch.setattr(
+            requirements_module.sys,
+            "modules",
+            {
+                "json": json,
+                "numpy": numpy,
+                "numpy.linalg": numpy.linalg,
+                "sklearn": sklearn,
+                "sklearn.base": sklearn.base,
+            },
+        )
+
+        assert infer() == {
+            "python": python_version(),
+            "requirements": [
+                {"name": "numpy", "version": numpy.__version__},
+                {"name": "scikit-learn", "version": sklearn.__version__},
+            ],
+        }
+
+    def test_skips_none_entries(self, monkeypatch):
+        import json
+
+        import numpy
+        import numpy.linalg
+        import sklearn
+        import sklearn.base
+
+        monkeypatch.setattr(
+            requirements_module.sys,
+            "modules",
+            {
+                "broken": None,
+                "json": json,
+                "numpy": numpy,
+                "numpy.linalg": numpy.linalg,
+                "sklearn": sklearn,
+                "sklearn.base": sklearn.base,
+            },
+        )
+
+        assert infer() == {
+            "python": python_version(),
+            "requirements": [
+                {"name": "numpy", "version": numpy.__version__},
+                {"name": "scikit-learn", "version": sklearn.__version__},
+            ],
+        }
+
+    def test_warns_once_for_editable_package(self, tmp_path, monkeypatch):
+        origin = tmp_path / "pkg" / "src" / "pkg" / "__init__.py"
+
+        import json
+        import warnings
+
+        import numpy
+        import numpy.linalg
+        import sklearn
+        import sklearn.base
+
+        monkeypatch.setattr(
+            requirements_module.sys,
+            "modules",
+            {
+                "broken": None,
+                "json": json,
+                "numpy": numpy,
+                "numpy.linalg": numpy.linalg,
+                "sklearn": sklearn,
+                "sklearn.base": sklearn.base,
+                "pkg": Module("pkg", origin),
+                "pkg.utils": Module("pkg.utils", origin),
+                "warnings": warnings,
+            },
+        )
+
+        with warns(UserWarning, match=r"pkg.*seems to be an editable"):
+            assert infer() == {
+                "python": python_version(),
+                "requirements": [
+                    {"name": "numpy", "version": numpy.__version__},
+                    {"name": "scikit-learn", "version": sklearn.__version__},
+                ],
+            }
