@@ -4,7 +4,6 @@ import importlib.metadata
 import logging
 import pathlib
 import platform
-import site
 import sys
 import sysconfig
 import types
@@ -15,30 +14,23 @@ logger = logging.getLogger(__name__)
 
 def is_local_module(module: types.ModuleType) -> bool:
     """
-    Return whether ``module`` was loaded from outside site-packages.
+    Return whether ``module`` was loaded from outside the standard library.
 
-    True for editable installs, source trees, and other paths that are neither the
-    standard library nor an installed distribution in site-packages.
+    True for editable installs, source trees, and other non-stdlib paths.
+    False when there is no usable file origin (``None``, ``built-in``,
+    ``frozen``) or the origin is under the stdlib path.
     """
-    sitepackages = [pathlib.Path(path).resolve() for path in site.getsitepackages()]
-
-    if site.ENABLE_USER_SITE and site.getusersitepackages():
-        sitepackages.append(pathlib.Path(site.getusersitepackages()).resolve())
-
     origin = (module.__spec__ and module.__spec__.origin) or getattr(
         module, "__file__", None
     )
 
-    if (not origin) or (origin in {"built-in", "frozen"}):
+    if (origin is None) or (origin in {"built-in", "frozen"}):
         return False
 
     path = pathlib.Path(origin).resolve()
     stdlib = pathlib.Path(sysconfig.get_path("stdlib")).resolve()
 
-    if path.is_relative_to(stdlib):
-        return False
-
-    return not any(map(path.is_relative_to, sitepackages))
+    return not path.is_relative_to(stdlib)
 
 
 class Requirement(typing.TypedDict):
@@ -61,8 +53,8 @@ def infer() -> Requirements:
 
     Maps each imported top-level package to its distribution via
     :func:`importlib.metadata.packages_distributions`, then records the installed
-    version. Local or editable packages outside site-packages are skipped and a
-    warning is emitted once per package name.
+    version. Unmapped packages loaded from outside the standard library are
+    skipped and a warning is emitted once per package name.
     """
     module_to_requirement = importlib.metadata.packages_distributions()
     requirement_to_version = {}
