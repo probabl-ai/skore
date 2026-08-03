@@ -7,7 +7,6 @@ import re
 import numpy as np
 import pandas as pd
 import pytest
-from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
@@ -478,7 +477,9 @@ class TestEdgeCases:
         estimator, X_train, X_test, y_train, y_test = (
             logistic_binary_classification_with_train_test
         )
-        report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+        report = EstimatorReport(
+            estimator.fit(X_train, y_train), X_test=X_test, y_test=y_test
+        )
 
         scorer = make_scorer(accuracy_score, response_method="predict")
         report.metrics.add(scorer)
@@ -524,11 +525,7 @@ class TestDifferentMLTasks:
             logistic_multiclass_classification_with_train_test
         )
         report = EstimatorReport(
-            clone(estimator),
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
         )
 
         report.metrics.add(make_scorer(accuracy_score, response_method="predict"))
@@ -559,11 +556,7 @@ class TestDifferentMLTasks:
             linear_regression_multioutput_with_train_test
         )
         report = EstimatorReport(
-            clone(estimator),
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
         )
 
         scorer = make_scorer(
@@ -578,11 +571,7 @@ class TestDifferentMLTasks:
         """adding a metric incompatible with the ML task doesn't crash."""
         estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
         report = EstimatorReport(
-            clone(estimator),
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
         )
 
         scorer = make_scorer(

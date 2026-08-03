@@ -1,7 +1,6 @@
 import matplotlib as mpl
 import numpy as np
 import pytest
-from sklearn.base import clone
 
 from skore import EstimatorReport
 
@@ -14,11 +13,7 @@ def test_multiple_thresholds_different_confusion_matrices(
         forest_binary_classification_with_train_test
     )
     report = EstimatorReport(
-        clone(estimator),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.confusion_matrix()
 
@@ -44,11 +39,7 @@ def test_multiple_thresholds_different_confusion_matrices(
 def test_subplot_by(subplot_by, fixture_name, request):
     estimator, X_train, X_test, y_train, y_test = request.getfixturevalue(fixture_name)
     report = EstimatorReport(
-        clone(estimator),
-        X_train=X_train,
-        y_train=y_train,
-        X_test=X_test,
-        y_test=y_test,
+        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
     display = report.metrics.confusion_matrix()
     if subplot_by == "invalid":
@@ -73,7 +64,7 @@ def test_pos_label(forest_binary_classification_with_train_test):
     y_train = labels[y_train]
     y_test = labels[y_test]
     report = EstimatorReport(
-        clone(estimator),
+        estimator,
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,
@@ -88,7 +79,7 @@ def test_pos_label(forest_binary_classification_with_train_test):
     assert ax.get_yticklabels()[1].get_text() == "A*"
 
     report = EstimatorReport(
-        clone(estimator),
+        estimator,
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,

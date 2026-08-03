@@ -86,7 +86,8 @@ def test_fitted_estimator_with_training_data_raises(
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )
-    err_msg = "Training data cannot be provided when the estimator is already fitted"
+    estimator = estimator.fit(X_train, y_train)
+    err_msg = "Training data must not be provided when the estimator is already fitted"
     with pytest.raises(ValueError, match=err_msg):
         EstimatorReport(
             estimator,
@@ -103,7 +104,7 @@ def test_fitted_skrub_learner_with_train_data_raises():
     data_op = skrub.X(X).skb.apply(LogisticRegression(), y=skrub.y(y))
     split = data_op.skb.train_test_split(random_state=0)
     learner = data_op.skb.make_learner().fit(split["train"])
-    err_msg = "Training data cannot be provided when the estimator is already fitted"
+    err_msg = "Training data must not be provided when the estimator is already fitted"
     with pytest.raises(ValueError, match=err_msg):
         EstimatorReport(learner, train_data=split["train"], test_data=split["test"])
 
@@ -384,9 +385,6 @@ def _assert_estimator_report_repr_html(
 @pytest.mark.parametrize("with_train", [False, True])
 def test_report_repr_html(request, fixture, with_train):
     X_train, X_test, y_train, y_test = request.getfixturevalue(fixture)
-    kwargs = {"X_test": X_test, "y_test": y_test} | (
-        {"X_train": X_train, "y_train": y_train} if with_train else {}
-    )
 
     if "classification" in fixture:
         estimator = DummyClassifier(strategy="uniform", random_state=0)
@@ -394,9 +392,17 @@ def test_report_repr_html(request, fixture, with_train):
         estimator = DummyRegressor()
 
     if with_train:
-        report = EstimatorReport(estimator, **kwargs)
+        report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
     else:
-        report = EstimatorReport(estimator.fit(X_train, y_train), **kwargs)
+        report = EstimatorReport(
+            estimator.fit(X_train, y_train), X_test=X_test, y_test=y_test
+        )
     estimator_name = estimator.__class__.__name__
     _assert_estimator_report_repr_html(report._repr_html_(), estimator_name)
 
@@ -408,13 +414,18 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(with_train):
     X, y = make_classification(n_classes=2, random_state=42)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     estimator = _DummyClassifierBadRepr(strategy="uniform", random_state=0)
-    kwargs = {"X_test": X_test, "y_test": y_test} | (
-        {"X_train": X_train, "y_train": y_train} if with_train else {}
-    )
     if with_train:
-        report = EstimatorReport(estimator, **kwargs)
+        report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
     else:
-        report = EstimatorReport(estimator.fit(X_train, y_train), **kwargs)
+        report = EstimatorReport(
+            estimator.fit(X_train, y_train), X_test=X_test, y_test=y_test
+        )
     _assert_estimator_report_repr_html(report._repr_html_(), "DummyClassifier")
 
 

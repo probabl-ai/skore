@@ -277,8 +277,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         else:
             if self._train_data is not None:
                 raise ValueError(
-                    "Training data cannot be provided when the estimator is already "
-                    "fitted. Please omit X_train/y_train (or train_data), or pass an "
+                    "Training data must not be provided when the estimator is already "
+                    "fitted. Please omit X_train/y_train/train_data, or pass an "
                     "unfitted estimator."
                 )
             self.learner_ = estimator
