@@ -3,8 +3,11 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from functools import partial
 from importlib.metadata import version
+from keyword import iskeyword
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar
 from uuid import uuid4
+
+import pandas as pd
 
 from skore._project.git import git_commit
 from skore._sklearn._checks._utils import CheckNotApplicable
@@ -17,11 +20,16 @@ from skore._utils.repr.base import (
     ReportHelpMixin,
     render_panel_to_plain_text,
 )
+from skore._utils.repr.data import MethodHelp, get_documentation_url
 
 if TYPE_CHECKING:
     import pandas as pd
 
     from skore._sklearn._checks.accessor import _ChecksAccessor
+    from skore._sklearn._cross_validation.report import CrossValidationReport
+    from skore._sklearn._estimator.report import EstimatorReport
+    from skore._sklearn._plot import MetricsSummaryDisplay
+    from skore._utils.repr.data import AccessorHelpData
 
 
 class _BaseReport(ReportHelpMixin):
@@ -43,10 +51,7 @@ class _BaseReport(ReportHelpMixin):
     checks: _ChecksAccessor
 
     def _aggregate_checks(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
+        self, ignored_codes: set[CheckCode], *, fast_mode: bool = False
     ) -> dict[CheckCode, CheckResult]:
         """Aggregate EstimatorReport checks.
 
@@ -55,10 +60,7 @@ class _BaseReport(ReportHelpMixin):
         return {}
 
     def _get_checks_results(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
+        self, ignored_codes: set[CheckCode], *, fast_mode: bool = False
     ) -> dict[CheckCode, CheckResult]:
         """Run uncached checks and return the checks summary.
 
@@ -180,6 +182,20 @@ class _BaseAccessor(AccessorHelpMixin, Generic[ParentT]):
         return {"text/plain": repr(self), "text/html": self._repr_html_()}
 
 
+def _summarize_report_metrics(
+    report: EstimatorReport | CrossValidationReport,
+    *,
+    data_source: DataSource | Literal["both"],
+    metric: str | list[str] | None = None,
+) -> MetricsSummaryDisplay:
+    """Compute a metrics summary for ``report``.
+
+    Pure Python function to avoid pickling a metrics accessor as a bound method's
+    ``__self__``.
+    """
+    return report.metrics._summarize_display(data_source=data_source, metric=metric)
+
+
 class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     """Base class for metrics accessor."""
 
@@ -199,17 +215,42 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         """Add custom metrics to __dir__ for tab-completion."""
         return list(set(super().__dir__()).union(self.available()))
 
+    def _build_help_data(self) -> AccessorHelpData:
+        """Include custom metrics in the help data.
+
+        Custom metrics are only reachable through ``__getattr__``, so they are not
+        picked up by the default method-discovery logic used to build help data.
+        Names that are not valid identifiers (e.g. containing spaces) are excluded,
+        since they cannot be called as ``report.metrics.<name>(...)``.
+        """
+        help_data = super()._build_help_data()
+        known_names = {method.name for method in help_data.methods}
+        doc_url = get_documentation_url(
+            obj=self._parent, accessor_name=self.__class__._accessor_name
+        )
+        help_data.methods.extend(
+            MethodHelp(
+                name=name,
+                parameters="(...)",
+                description="Custom metric.",
+                doc_url=doc_url,
+            )
+            for name in self.available()
+            if name not in known_names and name.isidentifier() and not iskeyword(name)
+        )
+        help_data.methods.sort(key=lambda method: method.name)
+        return help_data
+
     def _formatted_summary_frame(
         self,
         *,
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
-    ) -> pd.DataFrame:
-        """Metric summary.
-
-        Used for displaying the accessor.
-        """
-        return self.summarize().frame()
+    ) -> pd.DataFrame | pd.Series:
+        """Metric summary frame used for accessor display."""
+        display = self.summarize(data_source=data_source, metric=metric)
+        flat_index = "comparison" not in display.report_type
+        return display.frame(flat_index=flat_index)
 
     def __repr__(self) -> str:
         return (
@@ -219,9 +260,15 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         )
 
     def _repr_html_(self) -> str:
+        frame = self.summarize().frame(verbose_name=True, flat_index=False)
+        html = (
+            frame.to_frame()._repr_html_()
+            if isinstance(frame, pd.Series)
+            else frame._repr_html_()
+        )
         return (
             "<p>Metrics summary:</p>"
-            f"{self._formatted_summary_frame()._repr_html_()}"
+            f"{html}"
             '<p role="note">Explore available methods with '
             "<code>.help()</code>.</p>"
         )

@@ -231,6 +231,29 @@ def _assert_cross_validation_report_repr_html(
     assert "CrossValidationReport.metrics" in html_out
 
 
+def test_metrics_summary_html_is_compact(forest_binary_classification_data):
+    """Metrics tab HTML must not keep the estimator / Aggregate MultiIndex levels.
+
+    After #3094, frame(verbose_name=True, flat_index=False) returns a named
+    MultiIndex on the columns. Without droplevel + rename_axis, to_html emits a
+    second header row and a leading index column of level names.
+    """
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    metrics_html = report._html_repr_fragments()["metrics_summary"]
+
+    thead = metrics_html[metrics_html.find("<thead>") : metrics_html.find("</thead>")]
+    tbody = metrics_html[metrics_html.find("<tbody>") : metrics_html.find("</tbody>")]
+    assert thead.count("<tr") == 1
+    assert "<th>" not in tbody
+    assert "Estimator" not in metrics_html
+    assert "Aggregate" not in metrics_html
+
+    repr_str = repr(report)
+    assert "Estimator" not in repr_str
+    assert "Aggregate" not in repr_str
+
+
 def test_text_repr(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
     report = evaluate(estimator, X, y, splitter=2)
@@ -304,14 +327,14 @@ def test_report_with_data_op():
     learner = data_op.skb.make_learner()
 
     report = CrossValidationReport(learner, data=data_op.skb.get_data())
-    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
-        ("SkrubLearner", "mean")
-    ]
+    accuracy = report.metrics.accuracy(aggregate="mean")
+    assert isinstance(accuracy, pd.Series)
+    assert accuracy.name.endswith("_mean")
 
     report = CrossValidationReport(data_op)
-    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
-        ("SkrubLearner", "mean")
-    ]
+    accuracy = report.metrics.accuracy(aggregate="mean")
+    assert isinstance(accuracy, pd.Series)
+    assert accuracy.name.endswith("_mean")
 
 
 def test_cross_validation_report_split_indices_from_data_op_cv():
@@ -504,3 +527,20 @@ def test_no_data_error():
         CrossValidationReport(estimator, splitter=2)
         CrossValidationReport(estimator, X=X, splitter=2)
         CrossValidationReport(estimator, y=y, splitter=2)
+
+
+def test_repr_and_html_do_not_raise(forest_binary_classification_data):
+    """Report repr and HTML must work with auto/wide metrics frames."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+
+    repr_str = repr(report)
+    assert "CrossValidationReport" in repr_str
+
+    html = report._repr_html_()
+    assert isinstance(html, str)
+    assert len(html) > 0
+
+    markdown = report.to_markdown()
+    assert isinstance(markdown, str)
+    assert len(markdown) > 0

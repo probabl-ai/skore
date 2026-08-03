@@ -304,8 +304,7 @@ def test_get_predictions_with_multiclass_ovo_decision_function():
     )
 
     with pytest.raises(
-        ValueError,
-        match=r"Decision function output.*classes; expected 4 but got 6\.",
+        ValueError, match=r"Decision function output.*classes; expected 4 but got 6\."
     ):
         report.get_predictions(data_source="test", response_method="decision_function")
 
@@ -495,12 +494,7 @@ def test_from_dict_bypasses_init_and_restores_state(
     monkeypatch, logistic_binary_classification_with_test
 ):
     estimator, X_test, y_test = logistic_binary_classification_with_test
-    report = EstimatorReport(
-        estimator,
-        X_test=X_test,
-        y_test=y_test,
-        pos_label=1,
-    )
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
     expected_accuracy = report.metrics.accuracy()
     report._cache_predictions()
     report.metrics.add("f1", name="F1")
@@ -524,8 +518,8 @@ def test_from_dict_bypasses_init_and_restores_state(
 
     # check new metrics can be computed, including custom metrics:
     restored.metrics.roc_auc()
-    df = restored.metrics.summarize().frame()
-    assert "F1" in df.index
+    df = restored.metrics.summarize().frame(flat_index=False, verbose_name=True)
+    assert "F1" in df.index.get_level_values("Metric").to_numpy()
 
 
 def test_from_dict_rejects_unknown_version(logistic_binary_classification_with_test):

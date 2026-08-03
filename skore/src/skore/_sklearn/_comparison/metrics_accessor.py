@@ -4,13 +4,13 @@ import numbers
 import warnings
 from typing import Any, Literal
 
-import joblib
 import pandas as pd
+from joblib import Parallel
 from numpy.typing import ArrayLike
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import BaseMetricsAccessor
+from skore._sklearn._base import BaseMetricsAccessor, _summarize_report_metrics
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._plot.metrics import (
     ConfusionMatrixDisplay,
@@ -26,6 +26,7 @@ from skore._utils._accessor import (
     _check_supported_ml_task,
 )
 from skore._utils._fixes import _validate_joblib_parallel_params
+from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
 
 DataSource = Literal["test", "train", "both"]
@@ -79,12 +80,12 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         ...     [estimator_1, estimator_2], X, y, splitter=0.2, pos_label=1
         ... )
         >>> comparison_report.metrics.summarize(metric=["precision", "recall"]).frame()
-        Estimator       LogisticRegression_1  LogisticRegression_2
-        Metric
-        Precision                    0.98...               0.98...
-        Recall                       0.92...               0.92...
+        estimator  LogisticRegression_1  LogisticRegression_2
+        metric
+        precision              0.98...              0.98...
+        recall                 0.92...              0.92...
         """
-        parallel = joblib.Parallel(
+        parallel = Parallel(
             **_validate_joblib_parallel_params(
                 n_jobs=self._parent.n_jobs, return_as="generator"
             )
@@ -93,7 +94,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         summaries = list(
             track(
                 parallel(
-                    joblib.delayed(report.metrics.summarize)(
+                    delayed(_summarize_report_metrics)(
+                        report,
                         data_source=data_source,
                         metric=metric,
                     )
@@ -104,13 +106,13 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             )
         )
 
+        extra_rows_data = [
+            {"estimator": estimator_name} for estimator_name in self._parent.reports_
+        ]
         return MetricsSummaryDisplay._concatenate(
             summaries,
             report_type=self._parent._report_type,
-            extra_rows_data=[
-                {"estimator_name": estimator_name}
-                for estimator_name in self._parent.reports_
-            ],
+            extra_rows_data=extra_rows_data,
         )
 
     def _formatted_summary_frame(
@@ -118,12 +120,16 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         metric: str | list[str] | None = None,
-    ) -> pd.DataFrame:
-        """Metric summary.
+    ) -> pd.DataFrame | pd.Series:
+        """Wide metric summary frame used for accessor display.
 
-        Used for displaying the report.
+        Comparison reports always return a :class:`pandas.DataFrame` with one
+        column per compared estimator.
         """
-        frame = self.summarize(data_source=data_source, metric=metric).frame()
+        frame = self.summarize(data_source=data_source, metric=metric).frame(
+            flat_index=False,
+            verbose_name=True,
+        )
         frame = frame.rename_axis(
             None
             if self._parent._report_type == "comparison-estimator"
@@ -134,6 +140,20 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             frame = frame.swaplevel(axis="columns")
         return frame
 
+    def _repr_html_(self) -> str:
+        frame = self._formatted_summary_frame()
+        html = (
+            frame.to_frame()._repr_html_()
+            if isinstance(frame, pd.Series)
+            else frame._repr_html_()
+        )
+        return (
+            "<p>Metrics summary:</p>"
+            f"{html}"
+            '<p role="note">Explore available methods with '
+            "<code>.help()</code>.</p>"
+        )
+
     def _metric(
         self, metric_name: str, *, data_source: DataSource, **kwargs: Any
     ) -> MetricsSummaryDisplay:
@@ -143,13 +163,13 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             for report in self._parent.reports_.values()
         ]
 
+        extra_rows_data = [
+            {"estimator": estimator_name} for estimator_name in self._parent.reports_
+        ]
         return MetricsSummaryDisplay._concatenate(
             summaries,
             report_type=self._parent._report_type,
-            extra_rows_data=[
-                {"estimator_name": estimator_name}
-                for estimator_name in self._parent.reports_
-            ],
+            extra_rows_data=extra_rows_data,
         )
 
     def available(self, *, report_name: str | None = None) -> list[str]:
@@ -245,11 +265,12 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         >>> report.metrics.add(
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
-        >>> report.metrics.summarize().frame()
+        >>> report.metrics.summarize(metric="mean_absolute_error").frame(
+        ...     verbose_name=True, flat_index=False
+        ... )
         Estimator                  LogisticRegression_1  LogisticRegression_2
-        Metric              Label
-        ...
-        Mean Absolute Error                    ...                   ...
+        Metric
+        Mean Absolute Error                0.05...              0.05...
         >>> report.metrics.mean_absolute_error()
         Estimator             LogisticRegression_1  LogisticRegression_2
         Metric
@@ -285,9 +306,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         name: str,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-        flat_index: bool = False,
         **kwargs,
-    ) -> pd.DataFrame | None:
+    ) -> pd.DataFrame | pd.Series:
         """Get a metric value.
 
         Parameters
@@ -306,13 +326,10 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             Function to aggregate the scores across the cross-validation splits.
             None will return the scores for each split.
 
-        flat_index : bool, default=True
-            Whether to return a flat index or a multi-index.
-
         Returns
         -------
         pd.DataFrame
-            The metric values, or None if the metric is not available.
+            The metric values.
 
         Examples
         --------
@@ -330,7 +347,9 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
                   1                  0.984127              0.984127
         """
         return self._metric(metric_name=name, data_source=data_source, **kwargs).frame(
-            aggregate=aggregate, flat_index=flat_index
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     def timings(
@@ -396,10 +415,18 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             timings.index.name = "Metric"
             if aggregate is None:
                 timings.columns.names = ["Estimator", "Split"]
-            else:
+            elif isinstance(timings.columns, pd.MultiIndex):
                 timings.columns = timings.columns.swaplevel(0, 1)
                 timings = timings.sort_index(axis=1)
                 timings.columns.names = [None, "Estimator"]
+            else:
+                stat = (
+                    aggregate[0] if isinstance(aggregate, (list, tuple)) else aggregate
+                )
+                timings.columns = pd.MultiIndex.from_tuples(
+                    [(stat, estimator) for estimator in timings.columns],
+                    names=[None, "Estimator"],
+                )
 
             return timings
 
@@ -409,7 +436,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the estimator's default score.
 
         This calls the underlying estimator's ``score`` method on the chosen data
@@ -450,6 +477,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric("score", data_source=data_source).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("accuracy"))
@@ -458,7 +487,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the accuracy score.
 
         Parameters
@@ -495,6 +524,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric("accuracy", data_source=data_source).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("precision"))
@@ -506,7 +537,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the precision score.
 
         Parameters
@@ -572,6 +603,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             "precision", data_source=data_source, average=average
         ).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("recall"))
@@ -583,7 +616,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             Literal["binary", "macro", "micro", "weighted", "samples"] | None
         ) = None,
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the recall score.
 
         Parameters
@@ -648,6 +681,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric("recall", data_source=data_source, average=average).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("brier_score"))
@@ -656,7 +691,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the Brier score.
 
         Parameters
@@ -693,6 +728,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric("brier_score", data_source=data_source).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("roc_auc"))
@@ -703,7 +740,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         average: Literal["auto", "macro", "micro", "weighted", "samples"] | None = None,
         multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the ROC AUC score.
 
         Parameters
@@ -776,6 +813,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             "roc_auc", data_source=data_source, average=average, multi_class=multi_class
         ).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("log_loss"))
@@ -784,7 +823,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         *,
         data_source: DataSource = "test",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the log loss.
 
         Parameters
@@ -821,6 +860,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         """
         return self._metric("log_loss", data_source=data_source).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("r2"))
@@ -830,7 +871,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the R² score.
 
         Parameters
@@ -879,6 +920,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             "r2", data_source=data_source, multioutput=multioutput
         ).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("rmse"))
@@ -888,7 +931,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         data_source: DataSource = "test",
         multioutput: Literal["raw_values", "uniform_average"] = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the root mean squared error.
 
         Parameters
@@ -937,6 +980,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             "rmse", data_source=data_source, multioutput=multioutput
         ).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("mae"))
@@ -947,7 +992,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         multioutput: Literal["raw_values", "uniform_average"]
         | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the mean absolute error.
 
         Parameters
@@ -996,6 +1041,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             "mae", data_source=data_source, multioutput=multioutput
         ).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     @available_if(_check_any_sub_report_has_metric("mape"))
@@ -1006,7 +1053,7 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
         multioutput: Literal["raw_values", "uniform_average"]
         | ArrayLike = "raw_values",
         aggregate: Aggregate | None = ("mean", "std"),
-    ) -> pd.DataFrame:
+    ) -> pd.DataFrame | pd.Series:
         """Compute the mean absolute percentage error.
 
         Parameters
@@ -1055,6 +1102,8 @@ class _MetricsAccessor(BaseMetricsAccessor[ComparisonReport], DirNamesMixin):
             "mape", data_source=data_source, multioutput=multioutput
         ).frame(
             aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
 
     ####################################################################################
