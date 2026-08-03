@@ -14,7 +14,7 @@ for _thread_env_var in (
     "NUMEXPR_NUM_THREADS",
     "LOKY_MAX_CPU_COUNT",
 ):
-    os.environ.setdefault(_thread_env_var, "1")
+    os.environ[_thread_env_var] = "1"
 
 import matplotlib
 import matplotlib.pyplot

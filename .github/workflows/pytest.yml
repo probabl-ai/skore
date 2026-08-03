@@ -192,16 +192,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     permissions:
       contents: read
-    env:
-      # Keep BLAS/OpenMP/joblib single-threaded so pytest-xdist workers do not
-      # oversubscribe CPUs (critical on Windows where nested parallelism thrashing
-      # previously made the suite slower than serial).
-      OMP_NUM_THREADS: "1"
-      OPENBLAS_NUM_THREADS: "1"
-      MKL_NUM_THREADS: "1"
-      BLIS_NUM_THREADS: "1"
-      NUMEXPR_NUM_THREADS: "1"
-      LOKY_MAX_CPU_COUNT: "1"
     steps:
       - name: Checkout code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
