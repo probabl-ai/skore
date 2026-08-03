@@ -31,7 +31,7 @@ def init_workspace(workspace_dir: str | Path | None = None) -> Path:
         workspace_dir.is_file()
         or workspace_dir.is_dir()
         and not (workspace_dir / ".SKORE_WORKSPACE").exists()
-        and next(workspace_dir.iterdir(), None) is not None
+        and any(workspace_dir.iterdir())
     ):
         raise FileExistsError(
             f"Cannot create skore workspace: {workspace_dir} is not empty "
