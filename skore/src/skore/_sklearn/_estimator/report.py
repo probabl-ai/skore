@@ -346,7 +346,7 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         return {
             "version": _STATE_VERSION,
             # -------- CORE STATE ---------
-            "metadata": self._metadata,
+            "metadata": self._metadata | {"id": str(self.id)},
             "initialized_with_data_op": self._initialized_with_data_op,
             "estimator": self.estimator,
             "ml_task": self._ml_task,

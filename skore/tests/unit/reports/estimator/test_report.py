@@ -579,6 +579,9 @@ def test_new_report_id_is_uuid7(logistic_binary_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
 
     assert report.id.version == 7
+    state = report.to_dict()
+    assert state["metadata"]["id"] == str(report.id)
+    assert EstimatorReport.from_dict(state).id == report.id
 
 
 def test_from_dict_migrates_legacy_integer_report_id(
