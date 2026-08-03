@@ -133,6 +133,8 @@ addopts = [
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
+  "-n",
+  "logical",
   "--dist=loadscope",
   "--durations=25",
 ]
