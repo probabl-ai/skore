@@ -198,3 +198,12 @@ def test_project_with_broken_report(tmp_path, regression_dummy):
     bad_report.mkdir()
     with pytest.warns(match="Failed to load report"):
         assert len(project.summarize()) == 1
+
+
+def test_workspace_exists(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "skore").mkdir()
+    (tmp_path / "skore" / "readme").touch()
+    with pytest.raises(FileExistsError, match=f".*{tmp_path.name}"):
+        Project("regression")
+    Project("regression", workspace=tmp_path / "skore_workspace")
