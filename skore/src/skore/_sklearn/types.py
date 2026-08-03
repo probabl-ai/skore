@@ -2,7 +2,6 @@
 
 from collections.abc import Iterator, Sequence
 from typing import Any, Literal, Protocol, TypedDict
-from uuid import UUID
 
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator
@@ -83,7 +82,7 @@ class SKLearnCrossValidator(Protocol):
 ReportMetadata = TypedDict(
     "ReportMetadata",
     {
-        "id": UUID,
+        "id": str,
         "skore-version": str,
         "creation-date": str,
         "report_type": str,

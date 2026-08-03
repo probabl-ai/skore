@@ -7,6 +7,7 @@ import shutil
 import warnings
 from pathlib import Path
 from typing import Any
+from uuid import UUID
 
 import joblib
 import numpy as np
@@ -15,6 +16,7 @@ import pandas as pd
 from skore import CrossValidationReport, EstimatorReport
 from skore._project.git import git_repo_root
 from skore._utils._cache_key import deep_key_sanitize
+from skore._utils._uuid import normalize_report_id
 
 
 def _check_name(name: Any) -> str:
@@ -143,8 +145,7 @@ def _write_metadata(
     name: str | None = None,
 ) -> None:
     metadata = report._metadata | {
-        "id": str(report.id),
-        "report_id": str(report.id),
+        "report_id": report.id,
         "ml_task": report._ml_task,
         "learner": repr(report.estimator_),
     }
@@ -323,6 +324,8 @@ def read_report_metadata(report_dir: Path | str) -> dict[str, Any]:
         (report_dir / "metadata.json").read_text("UTF-8")
     )
     metadata["local_path"] = str(report_dir)
+    metadata["id"] = str(metadata["id"])
+    metadata.setdefault("report_id", None)
     metadata["date"] = metadata["creation-date"]
     metadata["key"] = metadata["name"]
     if metadata["report_type"] == "cross-validation":
@@ -485,6 +488,15 @@ class Project:
         report_path = next(
             iter((self.path / "reports").glob(f"*__id_{report_id}__*")), None
         )
+        if report_path is None:
+            try:
+                legacy_report_id = f"{UUID(normalize_report_id(report_id)).int:x}"
+            except (TypeError, ValueError):
+                raise KeyError(report_id) from None
+            report_path = next(
+                iter((self.path / "reports").glob(f"*__id_{legacy_report_id}__*")),
+                None,
+            )
         if report_path is None:
             raise KeyError(report_id)
         return read_report(report_path)

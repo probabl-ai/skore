@@ -7,6 +7,8 @@ PluginGroup = Literal["skore.plugins.project", "skore.plugins.login"]
 class ReportMetadata(TypedDict):
     """Metadata and metrics for a single persisted report."""
 
+    # `id` is the backend record locator and can differ from `report_id`, the
+    # canonical skore report ID used for synchronization without deserialization.
     id: str
     report_id: str | None
     key: str

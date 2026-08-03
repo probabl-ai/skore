@@ -578,9 +578,10 @@ def test_new_report_id_is_uuid7(logistic_binary_classification_with_test):
     estimator, X_test, y_test = logistic_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
 
-    assert report.id.version == 7
+    assert isinstance(report.id, str)
+    assert UUID(report.id).version == 7
     state = report.to_dict()
-    assert state["metadata"]["id"] == str(report.id)
+    assert state["metadata"]["id"] == report.id
     assert EstimatorReport.from_dict(state).id == report.id
 
 
@@ -595,9 +596,7 @@ def test_from_dict_migrates_legacy_integer_report_id(
 
     restored = EstimatorReport.from_dict(state)
 
-    assert isinstance(restored.id, UUID)
-    assert restored.id == legacy_id
-    assert restored._hash == legacy_id.int
+    assert restored.id == str(legacy_id)
 
 
 def test_unpickle_migrates_legacy_direct_report_id(
@@ -613,8 +612,7 @@ def test_unpickle_migrates_legacy_direct_report_id(
     restored = EstimatorReport.__new__(EstimatorReport)
     restored.__setstate__(state)
 
-    assert restored.id == legacy_id
-    assert restored._hash == legacy_id.int
+    assert restored.id == str(legacy_id)
 
 
 def test_from_dict_rejects_unknown_version(logistic_binary_classification_with_test):

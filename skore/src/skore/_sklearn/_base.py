@@ -7,7 +7,6 @@ from functools import partial
 from importlib.metadata import version
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar, cast
-from uuid import UUID
 
 import pandas as pd
 
@@ -164,7 +163,7 @@ class _BaseReport(ReportHelpMixin):
     def __init__(self) -> None:
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
         self._metadata: ReportMetadata = {
-            "id": uuid7(),
+            "id": str(uuid7()),
             "skore-version": version("skore"),
             "creation-date": datetime.now(UTC).isoformat(),
             # comparison reports don't have a _report_type yet at init time
@@ -174,12 +173,8 @@ class _BaseReport(ReportHelpMixin):
         }
 
     @property
-    def id(self) -> UUID:
+    def id(self) -> str:
         return self._metadata["id"]
-
-    @property
-    def _hash(self) -> int:
-        return self.id.int
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         self.__dict__.update(state)

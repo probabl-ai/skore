@@ -3,18 +3,15 @@ from __future__ import annotations
 import sys
 from uuid import RFC_4122, UUID
 
-if sys.version_info >= (3, 14):
-    from uuid import uuid7 as _generate_uuid7
+if sys.version_info < (3, 14):
+    from uuid6 import uuid7
 else:
-    from uuid6 import uuid7 as _generate_uuid7
+    from uuid import uuid7
+
+__all__ = ["normalize_report_id", "uuid7"]
 
 
-def uuid7() -> UUID:
-    """Generate a UUIDv7 as a standard-library UUID object."""
-    return UUID(str(_generate_uuid7()))
-
-
-def normalize_report_id(value: object) -> UUID:
+def normalize_report_id(value: object) -> str:
     """Normalize and validate a report ID from persisted state."""
     if isinstance(value, UUID):
         report_id = value
@@ -27,4 +24,4 @@ def normalize_report_id(value: object) -> UUID:
 
     if report_id.variant != RFC_4122 or report_id.version not in (4, 7):
         raise ValueError(f"Unsupported report ID: {report_id}")
-    return report_id
+    return str(report_id)

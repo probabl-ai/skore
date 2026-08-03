@@ -194,7 +194,7 @@ class Project:
                 {
                     "skore_status": "started",
                     "skore_version": version("skore"),
-                    "skore_report_id": str(report.id),
+                    "skore_report_id": report.id,
                     "report_type": report_type(report),
                     "ml_task": report.ml_task,
                     "learner": report.estimator_name_,
