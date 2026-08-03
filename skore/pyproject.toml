@@ -145,6 +145,9 @@ filterwarnings = [
   # mlflow-related
   # NOTE: Only affects python 3.11
   "ignore:SelectableGroups dict interface is deprecated. Use select.:DeprecationWarning",
+  # mlflow writes its YAML and requirement files through `codecs.open()`, which
+  # Python 3.14 deprecates. Reached by every test that logs a report.
+  'ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow',
   # sklearn needs to update its scipy.optimize calls
   'ignore:.*`disp` and `iprint` options of the L-BFGS-B solver are deprecated:DeprecationWarning',
   # seaborn's boxplot still passes the deprecated `vert=` kwarg to matplotlib.
