@@ -318,7 +318,7 @@ def read_report_metadata(report_dir: Path | str) -> dict[str, Any]:
         (report_dir / "data" / f"{subset_name}.json").read_text("UTF-8")
     )["_skrub_y"]["hash"]
     metrics = pd.read_csv(report_dir / "metrics" / "summarize.csv")
-    metadata |= metrics.groupby("metric_name")["score"].mean().to_dict()
+    metadata |= metrics.groupby("name")["score"].mean().to_dict()
     return metadata
 
 
