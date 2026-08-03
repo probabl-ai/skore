@@ -97,9 +97,7 @@ html_static_path = ["_static"]
 html_baseurl = f"{os.environ['SPHINX_URL']}/stable/"
 
 html_css_files = ["css/custom.css"]
-html_js_files = [
-    "js/sg_plotly_resize.js"
-]
+html_js_files = ["js/sg_plotly_resize.js"]
 
 # sphinx_gallery options
 sphinx_gallery_conf = {
@@ -140,7 +138,7 @@ if not (
     )
 
 # Expose HUB URLs to RST
-example_base_url = (os.environ.get("SPHINX_EXAMPLE_BASE_URL") or "https://example.com")
+example_base_url = os.environ.get("SPHINX_EXAMPLE_BASE_URL") or "https://example.com"
 rst_epilog = f"""
 .. _example-getting-started: {example_base_url}/example-getting-started-{version}/cross-validations
 .. _example-skore-hub-project: {example_base_url}/example-skore-hub-project-{version}
