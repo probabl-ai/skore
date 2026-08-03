@@ -27,14 +27,10 @@ def monkeypatch_rich(monkeypatch):
 
 
 @fixture(autouse=True)
-def isolated_mlflow_tracking(tmp_path, monkeypatch):
-    # Prefer the filesystem store over sqlite:// so tests skip Alembic schema init on
-    # every new tmp DB. That migration dominates MLflow test time on Windows CI.
-    # MLflow 3 requires an explicit opt-in; setting the env var is a no-op on MLflow 2.
-    monkeypatch.setenv("MLFLOW_ALLOW_FILE_STORE", "true")
+def isolated_mlflow_tracking(tmp_path, monkeypatch, mlflow_tracking_uri):
     monkeypatch.chdir(tmp_path)
     previous_tracking_uri = mlflow.get_tracking_uri()
-    tracking_uri = (tmp_path / "mlruns").as_uri()
+    tracking_uri = mlflow_tracking_uri()
     mlflow.set_tracking_uri(tracking_uri)
     try:
         yield tracking_uri

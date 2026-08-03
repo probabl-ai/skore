@@ -1,4 +1,6 @@
 from datetime import UTC, datetime
+from itertools import count
+from shutil import copyfile
 
 import numpy as np
 import pytest
@@ -47,6 +49,38 @@ def monkeypatch_configuration(monkeypatch):
     """Ensure that the test gets the default configuration,
     independently of the others."""
     monkeypatch.setattr("skore._config.configuration.local", LocalConfiguration())
+
+
+@pytest.fixture(scope="session")
+def _mlflow_schema(tmp_path_factory):
+    """Path to a SQLite database on which MLflow already ran its migrations."""
+    import mlflow
+
+    path = tmp_path_factory.mktemp("mlflow-schema") / "mlflow.db"
+
+    # Instantiating the store is what runs the Alembic migrations.
+    mlflow.MlflowClient(tracking_uri=f"sqlite:///{path}")
+
+    return path
+
+
+@pytest.fixture
+def mlflow_tracking_uri(_mlflow_schema, tmp_path):
+    """
+    Return a factory of isolated MLflow tracking URIs.
+
+    Each URI is backed by its own copy of an already migrated database: running the
+    migrations takes about a second, which otherwise dominates the runtime of the
+    MLflow tests.
+    """
+    counter = count()
+
+    def make_tracking_uri():
+        path = tmp_path / f"mlflow-{next(counter)}.db"
+        copyfile(_mlflow_schema, path)
+        return f"sqlite:///{path}"
+
+    return make_tracking_uri
 
 
 @pytest.fixture
