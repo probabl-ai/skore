@@ -1,5 +1,21 @@
 """Top-level conftest applying to both `tests/` and doctests under `src/`."""
 
+# ruff: noqa: E402
+import os
+
+# Cap native thread pools before NumPy and sklearn are imported below, otherwise
+# pytest-xdist workers oversubscribe the CPUs (BLAS and joblib nesting inside each
+# worker) and the suite gets slower than it is serially, especially on Windows.
+for _thread_env_var in (
+    "OMP_NUM_THREADS",
+    "OPENBLAS_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "BLIS_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+    "LOKY_MAX_CPU_COUNT",
+):
+    os.environ.setdefault(_thread_env_var, "1")
+
 import matplotlib
 import matplotlib.pyplot
 

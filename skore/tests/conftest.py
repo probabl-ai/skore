@@ -1,18 +1,3 @@
-import os
-
-# Cap native/thread pools before NumPy/sklearn import. Without this, pytest-xdist
-# workers oversubscribe CPUs (BLAS + joblib inside each worker) and the suite can
-# get much slower than serial, especially on Windows runners.
-for _thread_env_var in (
-    "OMP_NUM_THREADS",
-    "OPENBLAS_NUM_THREADS",
-    "MKL_NUM_THREADS",
-    "BLIS_NUM_THREADS",
-    "NUMEXPR_NUM_THREADS",
-    "LOKY_MAX_CPU_COUNT",
-):
-    os.environ.setdefault(_thread_env_var, "1")
-
 from datetime import UTC, datetime
 
 import numpy as np
