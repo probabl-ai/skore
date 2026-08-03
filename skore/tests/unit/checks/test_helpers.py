@@ -69,6 +69,7 @@ def test_adaptive_threshold_uses_largest_absolute_reference():
         (True, 0.81, 0.8, False),  # gap too small
         (False, 0.8, 1.0, True),  # lower is better, gap of 0.2
         (False, 0.99, 1.0, False),  # gap too small
+        (True, 0.13, 0.1, True),  # gap of 0.03 hits the floor (fraction*baseline=0.01)
     ],
 )
 def test_check_score_gap_to_baseline(greater_is_better, score, baseline, expected):
@@ -353,3 +354,36 @@ def test_baseline_estimator_report_sparse_train_test_data():
     )
     with pytest.raises(CheckNotApplicable, match="Data is sparse"):
         _baseline_estimator_report(stub, kind="dummy")
+
+
+def test_baseline_estimator_report_train_data_missing(regression_train_test_split):
+    """An estimator report without train data can't build any baseline."""
+    X_train, X_test, y_train, y_test = regression_train_test_split
+    estimator = LinearRegression().fit(X_train, y_train)
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    with pytest.raises(CheckNotApplicable, match="Train data is unavailable."):
+        _baseline_estimator_report(report, kind="dummy")
+
+
+def test_baseline_estimator_report_creation_fails_estimator(
+    small_estimator_report, monkeypatch
+):
+    """Any exception while fitting the baseline report is caught."""
+
+    def failing_fit(self, **kwargs):
+        raise RuntimeError("Test error")
+
+    monkeypatch.setattr(EstimatorReport, "_fit_estimator", failing_fit)
+    with pytest.raises(CheckNotApplicable, match="Failed to create baseline report."):
+        _baseline_estimator_report(small_estimator_report, kind="dummy")
+
+
+def test_baseline_estimator_report_creation_fails_cv(small_cv_report, monkeypatch):
+    """Any exception while fitting the baseline CV report is caught."""
+
+    def failing_fit(self, **kwargs):
+        raise RuntimeError("Test error")
+
+    monkeypatch.setattr(EstimatorReport, "_fit_estimator", failing_fit)
+    with pytest.raises(CheckNotApplicable, match="Failed to create baseline report."):
+        _baseline_estimator_report(small_cv_report, kind="dummy")

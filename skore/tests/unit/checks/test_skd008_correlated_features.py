@@ -1,6 +1,9 @@
 import numpy as np
+import pandas as pd
 import pytest
+from sklearn.compose import ColumnTransformer
 from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import Pipeline
 from skrub import tabular_pipeline
 
 from skore import evaluate
@@ -66,14 +69,34 @@ def test_not_applicable_with_a_single_feature(report_type, regression_data):
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
-def test_not_applicable_with_exactly_two_numeric_features(report_type, regression_data):
-    """With exactly 2 numeric features, spearman returns a scalar, not a matrix."""
+def test_detects_correlation_with_exactly_two_numeric_features(
+    report_type, regression_data
+):
+    """With exactly 2 numeric features, spearman returns a scalar; still checked."""
+    rng = np.random.RandomState(42)
     X, y = regression_data
+    X = X[:, :2].copy()
+    X[:, 1] = X[:, 0] + rng.standard_normal(X.shape[0]) * 1e-4
     report = evaluate(
-        LinearRegression(),
-        X[:, :2],
-        y,
-        splitter=0.2 if report_type == "estimator" else 3,
+        LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    with pytest.raises(CheckNotApplicable, match="Less than 2 numeric features"):
+    explanation = CheckCorrelatedFeatures().check_function(report)
+    assert explanation is not None
+    assert "1 pair(s) of features" in explanation
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_not_applicable_with_a_single_numeric_feature(report_type, regression_data):
+    """Non-numeric columns are excluded, so a lone numeric feature is not applicable."""
+    X, y = regression_data
+    X = pd.DataFrame(X[:, :1], columns=["num"])
+    X["cat"] = ["a", "b"] * (len(X) // 2)
+    pipeline = Pipeline(
+        [
+            ("select", ColumnTransformer([("num", "passthrough", ["num"])])),
+            ("model", LinearRegression()),
+        ]
+    )
+    report = evaluate(pipeline, X, y, splitter=0.2 if report_type == "estimator" else 3)
+    with pytest.raises(CheckNotApplicable, match="got 1"):
         CheckCorrelatedFeatures().check_function(report)

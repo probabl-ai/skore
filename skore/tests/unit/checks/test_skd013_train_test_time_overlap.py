@@ -29,7 +29,7 @@ def _datetime_pipeline():
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
 def test_train_test_time_overlap(report_type):
-    """Shuffled split/CV triggers overlap; proper temporal split/CV passes."""
+    """Shuffled split/CV triggers overlap."""
     n = 200
     X = pd.DataFrame(
         {
@@ -81,6 +81,18 @@ def test_train_test_time_no_overlap(report_type):
     else:
         report = evaluate(pipe, X, y, splitter=TimeSeriesSplit(n_splits=5))
     assert CheckTrainTestTimeOverlap().check_function(report) is None
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_not_applicable_when_no_datetime_column(report_type, regression_data):
+    """SKD013 needs at least one datetime column to check for overlap."""
+    X, y = regression_data
+    X = pd.DataFrame(X, columns=[str(i) for i in range(X.shape[1])])
+    report = evaluate(
+        LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
+    )
+    with pytest.raises(CheckNotApplicable, match="No datetime column found."):
+        CheckTrainTestTimeOverlap().check_function(report)
 
 
 @pytest.mark.filterwarnings("ignore:X does not have valid feature names:UserWarning")

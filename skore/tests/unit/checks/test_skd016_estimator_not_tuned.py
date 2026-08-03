@@ -90,7 +90,7 @@ def test_not_applicable_unknown_estimator(report_type, regression_data):
     report = evaluate(
         DummyRegressor(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
-    with pytest.raises(CheckNotApplicable):
+    with pytest.raises(CheckNotApplicable, match="No parameter to recommend"):
         CheckEstimatorNotTuned().check_function(report)
 
 
@@ -100,5 +100,5 @@ def test_not_applicable_search(report_type, regression_data):
     X, y = regression_data
     search = GridSearchCV(Ridge(), param_grid={"alpha": [0.1, 1.0]}, cv=2)
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
-    with pytest.raises(CheckNotApplicable):
+    with pytest.raises(CheckNotApplicable, match="is a BaseSearchCV"):
         CheckEstimatorNotTuned().check_function(report)

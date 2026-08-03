@@ -19,10 +19,7 @@ def test_not_detected_for_balanced_classes(report_type):
         random_state=0,
     )
     report = evaluate(
-        LogisticRegression(max_iter=1000),
-        X,
-        y,
-        splitter=0.2 if report_type == "estimator" else 3,
+        LogisticRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
     assert CheckUnderrepresentedClasses().check_function(report) is None
 
@@ -53,10 +50,7 @@ def test_detects_underrepresented_classes(report_type, x_container, y_container)
     X = convert_container(X, x_container, column_names=feature_columns)
     y = convert_container(y, y_container)
     report = evaluate(
-        LogisticRegression(max_iter=1000),
-        X,
-        y,
-        splitter=0.2 if report_type == "estimator" else 3,
+        LogisticRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
     explanation = CheckUnderrepresentedClasses().check_function(report)
     assert explanation is not None

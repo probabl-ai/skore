@@ -1,9 +1,11 @@
 import numpy as np
 import pytest
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import Pipeline
 
 from skore import evaluate
+from skore._sklearn._checks._utils import CheckNotApplicable
 from skore._sklearn._checks.model_checks import CheckMDIHighCardinalityBias
 
 
@@ -42,3 +44,16 @@ def test_not_emitted_for_binary_features(report_type):
         splitter=0.2 if report_type == "estimator" else 3,
     )
     assert CheckMDIHighCardinalityBias().check_function(report) is None
+
+
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_not_applicable_for_non_tree_based_model(report_type, regression_data):
+    """SKD007 needs a `feature_importances_` attribute, absent on non-tree models."""
+    X, y = regression_data
+    report = evaluate(
+        LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
+    )
+    with pytest.raises(
+        CheckNotApplicable, match="does not have a `feature_importances_` attribute."
+    ):
+        CheckMDIHighCardinalityBias().check_function(report)

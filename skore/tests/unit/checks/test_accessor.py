@@ -322,36 +322,20 @@ def test_global_ignore(regression_report):
 # cache
 
 
-def test_reuses_cached_results(monkeypatch, regression_report):
-    """Check that check results are cached and reused."""
-    calls = 0
-    original_run = Check.check_function
+@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
+def test_reuses_cached_results(
+    monkeypatch, report_type, regression_report, cv_regression_report
+):
+    """Check that check results are cached and reused, at both report levels."""
+    report = regression_report if report_type == "estimator" else cv_regression_report
+    report.checks.summarize()
 
-    def counting_run(self, report):
-        nonlocal calls
-        calls += 1
-        return original_run(self, report)
+    for check in report._checks_registry:
+        monkeypatch.setattr(
+            check, "check_function", lambda report: pytest.fail("re-ran cached check")
+        )
 
-    monkeypatch.setattr(Check, "check_function", counting_run)
-    regression_report.checks.summarize()
-    calls_after_first = calls
-    regression_report.checks.summarize()
-    assert calls == calls_after_first
-
-
-def test_reuses_cv_cached_results(monkeypatch, cv_regression_report):
-    """Check that CV-level check results are cached and reused."""
-    cv_regression_report.checks.summarize()
-
-    for check in cv_regression_report._checks_registry:
-        if check.code == "SKD003":
-            monkeypatch.setattr(
-                check,
-                "check_function",
-                lambda rpt: pytest.fail("re-ran cached check"),
-            )
-
-    cv_regression_report.checks.summarize()
+    report.checks.summarize()
 
 
 # sections

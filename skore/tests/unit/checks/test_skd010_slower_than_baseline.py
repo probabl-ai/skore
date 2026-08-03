@@ -3,11 +3,10 @@ import math
 import numpy as np
 import pytest
 from sklearn.dummy import DummyRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression, RidgeCV
+from sklearn.linear_model import RidgeCV
+from sklearn.tree import DecisionTreeRegressor
 
-from skore import EstimatorReport, evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
+from skore import evaluate
 from skore._sklearn._checks.model_checks import CheckSlowerThanBaseline
 
 
@@ -51,7 +50,7 @@ def test_not_detected_when_slower_model_scores_better(report_type):
     X = rng.normal(size=(300, 4))
     y = np.sin(X[:, 0] * 5) + np.cos(X[:, 1] * 3) + rng.normal(scale=0.01, size=300)
     report = evaluate(
-        RandomForestRegressor(n_estimators=200, random_state=0),
+        DecisionTreeRegressor(random_state=0),
         X,
         y,
         splitter=0.2 if report_type == "estimator" else 3,
@@ -61,30 +60,3 @@ def test_not_detected_when_slower_model_scores_better(report_type):
     else:
         report.reports_[0]._fit_time = math.inf
     assert CheckSlowerThanBaseline().check_function(report) is None
-
-
-def test_not_applicable_when_train_data_missing(regression_train_test_split):
-    """SKD010 needs train data to build the fast-baseline comparison."""
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    estimator = LinearRegression().fit(X_train, y_train)
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    with pytest.raises(CheckNotApplicable):
-        CheckSlowerThanBaseline().check_function(report)
-
-
-@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
-def test_not_applicable_when_baseline_report_creation_fails(
-    report_type, regression_data, monkeypatch
-):
-    """SKD010 raises when the fast linear baseline report can't be fit."""
-    X, y = regression_data
-    report = evaluate(
-        LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
-    )
-
-    def failing_fit(self, **kwargs):
-        raise RuntimeError("Test error")
-
-    monkeypatch.setattr(EstimatorReport, "_fit_estimator", failing_fit)
-    with pytest.raises(CheckNotApplicable):
-        CheckSlowerThanBaseline().check_function(report)

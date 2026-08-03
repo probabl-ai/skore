@@ -1,10 +1,9 @@
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
-from sklearn.linear_model import LinearRegression, RidgeCV
+from sklearn.linear_model import RidgeCV
 
-from skore import EstimatorReport, evaluate
-from skore._sklearn._checks._utils import CheckNotApplicable
+from skore import evaluate
 from skore._sklearn._checks.model_checks import CheckWorseThanBaseline
 
 
@@ -48,30 +47,3 @@ def test_detects_worse_than_baseline_multioutput(
         DummyRegressor(), X, y, splitter=0.2 if report_type == "estimator" else 3
     )
     assert CheckWorseThanBaseline().check_function(report) is not None
-
-
-def test_not_applicable_when_train_data_missing(regression_train_test_split):
-    """SKD009 needs train data to build the baseline comparison."""
-    X_train, X_test, y_train, y_test = regression_train_test_split
-    estimator = LinearRegression().fit(X_train, y_train)
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    with pytest.raises(CheckNotApplicable):
-        CheckWorseThanBaseline().check_function(report)
-
-
-@pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
-def test_not_applicable_when_baseline_report_creation_fails(
-    report_type, regression_data, monkeypatch
-):
-    """SKD009 raises when the HistGradientBoosting baseline report can't be fit."""
-    X, y = regression_data
-    report = evaluate(
-        LinearRegression(), X, y, splitter=0.2 if report_type == "estimator" else 3
-    )
-
-    def failing_fit(self, **kwargs):
-        raise RuntimeError("Test error")
-
-    monkeypatch.setattr(EstimatorReport, "_fit_estimator", failing_fit)
-    with pytest.raises(CheckNotApplicable):
-        CheckWorseThanBaseline().check_function(report)

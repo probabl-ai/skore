@@ -139,7 +139,7 @@ def test_not_applicable_unknown_estimator(report_type, regression_data):
         cv=2,
     )
     report = evaluate(search, X, y, splitter=0.2 if report_type == "estimator" else 3)
-    with pytest.raises(CheckNotApplicable):
+    with pytest.raises(CheckNotApplicable, match="No parameter to recommend"):
         CheckSearchParamsToTune().check_function(report)
 
 
