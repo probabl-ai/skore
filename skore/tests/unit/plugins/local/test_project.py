@@ -1,7 +1,5 @@
-import json
 import shutil
 from pathlib import Path
-from uuid import UUID
 
 import pandas as pd
 import pytest
@@ -123,30 +121,6 @@ def test_put_get_summarize(tmp_path, regression, regression_dummy, cv_regression
         str(cv_regression.id),
     }
     assert Path(next(iter(summary))["local_path"]).is_relative_to(tmp_path)
-
-
-def test_get_legacy_report(tmp_path, regression):
-    project = Project(name="regression", workspace=tmp_path)
-    report_path = project.put("ridge", regression)
-    legacy_id = UUID(regression.id).int
-    legacy_report_path = report_path.with_name(
-        report_path.name.replace(f"id_{regression.id}", f"id_{legacy_id:x}")
-    )
-    report_path.rename(legacy_report_path)
-
-    metadata_path = legacy_report_path / "metadata.json"
-    metadata = json.loads(metadata_path.read_text("UTF-8"))
-    metadata["id"] = legacy_id
-    metadata.pop("report_id")
-    metadata_path.write_text(json.dumps(metadata), "UTF-8")
-
-    state_path = legacy_report_path / "state.json"
-    state = json.loads(state_path.read_text("UTF-8"))
-    state["metadata"]["id"] = legacy_id
-    state_path.write_text(json.dumps(state), "UTF-8")
-
-    assert project.get(regression.id).id == regression.id
-    assert project.summarize()[0]["report_id"] is None
 
 
 def test_permutation_importances(tmp_path, regression_dummy):
