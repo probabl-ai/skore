@@ -169,8 +169,8 @@ class CoefficientsDisplay(DisplayMixin):
             If `True`, multiply each non-intercept coefficient by the training-set
             standard deviation of the corresponding feature (as seen by the
             predictor). The resulting values are comparable across features as
-            the effect of a one-standard-deviation change. Requires
-            :attr:`feature_std` to have been computed at display construction.
+            the effect of a one-standard-deviation change. Requires the report to
+            provide training data.
 
         Returns
         -------
@@ -323,7 +323,9 @@ class CoefficientsDisplay(DisplayMixin):
         scale_features : bool, default=False
             If `True`, multiply each non-intercept coefficient by the training-set
             standard deviation of the corresponding feature (as seen by the
-            predictor). See :meth:`frame` for details.
+            predictor). The resulting values are comparable across features as
+            the effect of a one-standard-deviation change. Requires the report to
+            provide training data.
 
         Returns
         -------

@@ -167,7 +167,7 @@ def test_scale_features_uses_preprocessed_train_std(regression_train_test_split)
 
 
 def test_scale_features_sparse_preprocessor(regression_train_test_split):
-    """Feature stds are computed on sparse transformed data without densifying."""
+    """Smoke test that feature stds can be computed on sparse transformed data."""
     X_train, X_test, y_train, y_test = regression_train_test_split
     report = EstimatorReport(
         make_pipeline(SplineTransformer(sparse_output=True), Ridge()),
@@ -199,8 +199,8 @@ def test_scale_features_prefit_without_train_data_raises():
         display.plot(scale_features=True)
 
 
-def test_scale_features_plot_xlabel(regression_train_test_split):
-    """Plot xlabel reflects scaled coefficients when requested."""
+def test_scale_features_plot_labels(regression_train_test_split):
+    """Plot xlabel and title reflect scaled coefficients when requested."""
     X_train, X_test, y_train, y_test = regression_train_test_split
     report = EstimatorReport(
         Ridge(),
@@ -211,3 +211,4 @@ def test_scale_features_plot_xlabel(regression_train_test_split):
     )
     fig = report.inspection.coefficients().plot(scale_features=True)
     assert fig.axes[0].get_xlabel() == "Magnitude of scaled coefficient"
+    assert fig.get_suptitle() == "Scaled coefficients of Ridge"
