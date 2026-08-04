@@ -8,10 +8,13 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 
 from skore._utils._testing import MockAccessor, MockDisplay, MockReport
+from typing import ClassVar
+
 from skore._utils.repr.data import (
     AccessorHelpData,
     DisplayHelpData,
     HelpSection,
+    MethodGroupHelp,
     MethodHelp,
     ReportHelpData,
     _AccessorHelpDataMixin,
@@ -447,7 +450,9 @@ def test_report_build_help_data_output_with_accessors(report_with_accessor):
     assert m.parameters == "()"
     assert "Fetch" in m.description
     assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
-    assert "metrics" in m.doc_url and "fetch" in m.doc_url
+    # URLs come from the accessor's own help data (``_accessor_name``).
+    assert "mock_accessor" in m.doc_url and "fetch" in m.doc_url
+    assert branch.groups is None
 
 
 def test_report_build_help_data_output_excludes_empty_accessor():
@@ -483,3 +488,161 @@ def test_display_build_help_data_output(display_with_methods):
     for m in data.methods:
         assert isinstance(m, MethodHelp)
         assert m.doc_url.startswith("https://docs.skore.probabl.ai/")
+
+
+class _GroupedAccessor(MockAccessor, _AccessorHelpDataMixin):
+    """Accessor declaring ``_HELP_METHOD_GROUPS`` for grouped-help tests.
+
+    Includes one orphan public method (``stray``) not listed in any group, which
+    should fall back into an ``"Other"`` group, and references a non-existent
+    method ``"never_existed"`` to verify it is silently skipped.
+    """
+
+    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...] | None]] = {
+        "Registry": ("alpha", "beta", "never_existed"),
+        "Metrics": ("gamma", "delta"),
+        "Displays": ("epsilon",),
+    }
+
+    def alpha(self):
+        """Alpha method."""
+
+    def beta(self):
+        """Beta method."""
+
+    def gamma(self):
+        """Gamma method."""
+
+    def delta(self):
+        """Delta method."""
+
+    def epsilon(self):
+        """Epsilon method."""
+
+    def stray(self):
+        """Stray method not in any declared group."""
+
+    def _get_help_title(self) -> str:
+        return "Grouped accessor"
+
+
+class _CatchAllGroupedAccessor(MockAccessor, _AccessorHelpDataMixin):
+    """Accessor with a catch-all (``None``) Metrics group."""
+
+    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...] | None]] = {
+        "Registry": ("alpha", "beta"),
+        "Metrics": None,
+        "Displays": ("epsilon",),
+    }
+
+    def alpha(self):
+        """Alpha method."""
+
+    def beta(self):
+        """Beta method."""
+
+    def gamma(self):
+        """Gamma method."""
+
+    def delta(self):
+        """Delta method."""
+
+    def epsilon(self):
+        """Epsilon method."""
+
+    def _get_help_title(self) -> str:
+        return "Catch-all accessor"
+
+
+class _ReportWithGroupedAccessor(_ReportWithExplicitMethods):
+    """Report carrying a single accessor that exposes grouped methods."""
+
+    _ACCESSOR_CONFIG = {"metrics": {"name": "metrics"}}
+
+    def __init__(self, estimator, X_train=None, y_train=None, X_test=None, y_test=None):
+        super().__init__(
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
+        )
+        self.metrics = _GroupedAccessor(parent=self)
+
+
+@pytest.fixture
+def grouped_accessor():
+    """Accessor that declares `_HELP_METHOD_GROUPS`."""
+    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+    y = np.array([0, 1, 1, 0])
+    estimator = LogisticRegression().fit(X, y)
+    return _GroupedAccessor(parent=_ReportWithExplicitMethods(estimator))
+
+
+@pytest.fixture
+def report_with_grouped_accessor():
+    """Report whose accessor declares `_HELP_METHOD_GROUPS`."""
+    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+    y = np.array([0, 1, 1, 0])
+    estimator = LogisticRegression().fit(X, y)
+    return _ReportWithGroupedAccessor(estimator)
+
+
+def test_accessor_build_help_data_groups(grouped_accessor):
+    """`_AccessorHelpDataMixin._build_help_data` populates `groups` when the accessor
+    declares `_HELP_METHOD_GROUPS`.
+    """
+    data = grouped_accessor._build_help_data()
+    assert data.groups is not None
+    group_names = [g.name for g in data.groups]
+    assert group_names == ["Registry", "Metrics", "Displays", "Other"]
+    for g in data.groups:
+        assert isinstance(g, MethodGroupHelp)
+        assert g.branch_id != ""
+
+    by_name = {g.name: [m.name for m in g.methods] for g in data.groups}
+    assert by_name["Registry"] == ["alpha", "beta"]
+    assert by_name["Metrics"] == ["gamma", "delta"]
+    assert by_name["Displays"] == ["epsilon"]
+    assert by_name["Other"] == ["stray"]
+
+
+def test_accessor_build_help_data_groups_catch_all():
+    """A group with value ``None`` absorbs methods not listed elsewhere."""
+    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+    y = np.array([0, 1, 1, 0])
+    estimator = LogisticRegression().fit(X, y)
+    accessor = _CatchAllGroupedAccessor(parent=_ReportWithExplicitMethods(estimator))
+    data = accessor._build_help_data()
+    assert data.groups is not None
+    by_name = {g.name: [m.name for m in g.methods] for g in data.groups}
+    assert list(by_name) == ["Registry", "Metrics", "Displays"]
+    assert by_name["Registry"] == ["alpha", "beta"]
+    assert by_name["Displays"] == ["epsilon"]
+    assert set(by_name["Metrics"]) == {"gamma", "delta"}
+    assert "Other" not in by_name
+
+
+def test_accessor_build_help_data_groups_none_when_not_declared(accessor_with_methods):
+    """`groups` is `None` when the accessor does not declare `_HELP_METHOD_GROUPS`."""
+    data = accessor_with_methods._build_help_data()
+    assert data.groups is None
+
+
+def test_report_build_help_data_groups(report_with_grouped_accessor):
+    """`_ReportHelpDataMixin._build_help_data` propagates `groups` to each accessor
+    branch.
+    """
+    data = report_with_grouped_accessor._build_help_data()
+    assert len(data.accessors) == 1
+    branch = data.accessors[0]
+    assert branch.groups is not None
+    assert [g.name for g in branch.groups] == [
+        "Registry",
+        "Metrics",
+        "Displays",
+        "Other",
+    ]
+
+
+def test_report_build_help_data_groups_none_when_not_declared(report_with_accessor):
+    """`groups` is `None` for accessors not declaring `_HELP_METHOD_GROUPS`."""
+    data = report_with_accessor._build_help_data()
+    assert len(data.accessors) == 1
+    assert data.accessors[0].groups is None

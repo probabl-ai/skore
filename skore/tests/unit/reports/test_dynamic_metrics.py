@@ -55,6 +55,36 @@ def test_help_custom_metric(report, capsys):
     # "Custom metric." was the previous hardcoded help fallback; ensure it does not
     # reappear when a docstring-derived description is available.
     assert "Custom metric." not in stdout
+    # Registry callables are separated from registry management and displays.
+    assert "Registry" in stdout
+    assert "Metrics" in stdout
+    assert "Displays" in stdout
+
+
+def test_help_groups_separate_registry_metrics_displays(report):
+    """Help data partitions methods into Registry / Metrics / Displays groups.
+
+    Registry callables (and custom metrics) land in Metrics; management helpers
+    in Registry; plot/summary helpers in Displays.
+    """
+
+    def custom(e, X, y):
+        """Custom score used in groups."""
+        return 1
+
+    report.metrics.add(custom)
+
+    help_data = report.metrics._build_help_data()
+    assert help_data.groups is not None
+    by_name = {group.name: [m.name for m in group.methods] for group in help_data.groups}
+    assert list(by_name) == ["Registry", "Metrics", "Displays"]
+
+    assert by_name["Registry"] == ["available", "add", "remove", "get"]
+    assert "custom" in by_name["Metrics"]
+    assert "r2" in by_name["Metrics"]
+    assert "summarize" in by_name["Displays"]
+    # Registry callables come before static score helpers in Metrics.
+    assert by_name["Metrics"].index("custom") < by_name["Metrics"].index("timings")
 
 
 def test_help_builtin_metric_description(report):

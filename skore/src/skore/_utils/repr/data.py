@@ -34,10 +34,20 @@ class AttributeHelp:
 
 
 @dataclass
+class MethodGroupHelp:
+    """A named subgroup of methods under an accessor help tree."""
+
+    branch_id: str
+    name: str
+    methods: list[MethodHelp]
+
+
+@dataclass
 class AccessorBranchHelp:
     branch_id: str
     name: str
     methods: list[MethodHelp]
+    groups: list[MethodGroupHelp] | None = None
 
 
 @dataclass
@@ -59,6 +69,7 @@ class AccessorHelpData:
     accessor_name: str
     accessor_branch_id: str
     methods: list[MethodHelp]
+    groups: list[MethodGroupHelp] | None = None
 
 
 @dataclass
@@ -393,6 +404,97 @@ class _BaseHelpDataMixin(ABC):
         return items, section
 
 
+def _build_method_groups(
+    accessor: Any, methods: list[MethodHelp]
+) -> list[MethodGroupHelp] | None:
+    """Partition ``methods`` according to ``accessor._HELP_METHOD_GROUPS``.
+
+    Returns ``None`` when the accessor's class does not declare
+    ``_HELP_METHOD_GROUPS``. Otherwise iterates groups in declared order,
+    keeping only methods that are present in ``methods``.
+
+    Each group maps to either:
+
+    - a tuple of method names (order preserved; missing names are skipped), or
+    - ``None``, which acts as a catch-all for methods not claimed by any
+      explicitly listed group. At most one catch-all group is supported.
+
+    Methods present on the accessor but not listed in any explicit group, and
+    not absorbed by a catch-all, are appended to a final ``"Other"`` group.
+
+    Parameters
+    ----------
+    accessor : object
+        The accessor instance whose class may declare ``_HELP_METHOD_GROUPS``.
+    methods : list of MethodHelp
+        The full list of method help entries already built for the accessor.
+
+    Returns
+    -------
+    list of MethodGroupHelp or None
+    """
+    group_spec: dict[str, tuple[str, ...] | None] | None = getattr(
+        type(accessor), "_HELP_METHOD_GROUPS", None
+    )
+    if not group_spec:
+        return None
+
+    method_by_name = {m.name: m for m in methods}
+    declared = {
+        n for names in group_spec.values() if names is not None for n in names
+    }
+
+    groups: list[MethodGroupHelp] = []
+    catch_all_name: str | None = None
+    for group_name, method_names in group_spec.items():
+        if method_names is None:
+            if catch_all_name is not None:
+                raise ValueError(
+                    f"{type(accessor).__name__}._HELP_METHOD_GROUPS has more than "
+                    "one catch-all group (value None)."
+                )
+            catch_all_name = group_name
+            # Placeholder; filled after explicit groups are resolved.
+            groups.append(
+                MethodGroupHelp(
+                    branch_id=str(uuid.uuid4()),
+                    name=group_name,
+                    methods=[],
+                )
+            )
+            continue
+
+        group_methods = [
+            method_by_name[name] for name in method_names if name in method_by_name
+        ]
+        if group_methods:
+            groups.append(
+                MethodGroupHelp(
+                    branch_id=str(uuid.uuid4()),
+                    name=group_name,
+                    methods=group_methods,
+                )
+            )
+
+    remaining = [m for m in methods if m.name not in declared]
+    if catch_all_name is not None:
+        for group in groups:
+            if group.name == catch_all_name:
+                group.methods = remaining
+                break
+        groups = [g for g in groups if g.methods]
+    elif remaining:
+        groups.append(
+            MethodGroupHelp(
+                branch_id=str(uuid.uuid4()),
+                name="Other",
+                methods=remaining,
+            )
+        )
+
+    return groups or None
+
+
 class _ReportHelpDataMixin(_BaseHelpDataMixin):
     """Mixin responsible for building help data structures for reports.
 
@@ -410,22 +512,31 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
         accessors = []
         for accessor_attr, config in self._ACCESSOR_CONFIG.items():
             accessor = getattr(self, accessor_attr)
-            methods = [
-                self._build_method_data(
-                    name=name,
-                    method=method,
-                    obj=accessor,
-                    parent_obj=self,
-                    accessor_name=config["name"],
-                )
-                for name, method in get_public_methods(accessor)
-            ]
+            # Prefer the accessor's own help data so dynamic methods (e.g. registry
+            # metrics) and declared groups are preserved in the report help tree.
+            if hasattr(accessor, "_build_help_data"):
+                accessor_help = accessor._build_help_data()
+                methods = accessor_help.methods
+                groups = accessor_help.groups
+            else:
+                methods = [
+                    self._build_method_data(
+                        name=name,
+                        method=method,
+                        obj=accessor,
+                        parent_obj=self,
+                        accessor_name=config["name"],
+                    )
+                    for name, method in get_public_methods(accessor)
+                ]
+                groups = _build_method_groups(accessor, methods)
             if methods:
                 accessors.append(
                     AccessorBranchHelp(
                         branch_id=str(uuid.uuid4()),
                         name=config["name"],
                         methods=methods,
+                        groups=groups,
                     )
                 )
 
@@ -487,6 +598,7 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
             accessor_name=accessor_name,
             accessor_branch_id=str(uuid.uuid4()),
             methods=methods,
+            groups=_build_method_groups(self, methods),
         )
 
 

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from functools import partial
 from importlib.metadata import version
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Generic, Literal, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Generic, Literal, TypeVar
 from uuid import uuid4
 
 import pandas as pd
@@ -32,7 +32,7 @@ from skore._utils.repr.base import (
     ReportHelpMixin,
     render_panel_to_plain_text,
 )
-from skore._utils.repr.data import MethodHelp
+from skore._utils.repr.data import MethodHelp, _build_method_groups
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -211,6 +211,21 @@ def _summarize_report_metrics(
 class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     """Base class for metrics accessor."""
 
+    # Help tree subgroups under ``.metrics``. Explicit tuples list fixed methods;
+    # ``None`` is a catch-all for remaining methods (registry callables such as
+    # ``accuracy`` / ``r2``, plus static score helpers like ``timings``).
+    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...] | None]] = {
+        "Registry": ("available", "add", "remove", "get"),
+        "Metrics": None,
+        "Displays": (
+            "summarize",
+            "roc",
+            "precision_recall",
+            "prediction_error",
+            "confusion_matrix",
+        ),
+    }
+
     def _callable_metric_names(self) -> list[str]:
         """Registry metric names that can be exposed as ``metrics.<name>()``."""
         return [
@@ -334,10 +349,15 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         picked up by the default method-discovery logic used to build help data.
         Names that are not valid identifiers (e.g. containing spaces) are excluded,
         since they cannot be called as ``report.metrics.<name>(...)``.
+
+        Methods are then partitioned into Registry / Metrics / Displays groups.
+        The Metrics group is filled from the registry (plus remaining score helpers),
+        rather than a hardcoded list of metric names.
         """
         help_data = super()._build_help_data()
         known_names = {method.name for method in help_data.methods}
         # Registry metrics have no Sphinx API page; show the summary tooltip only.
+        # Keep registry order (``available()``) instead of sorting alphabetically.
         help_data.methods.extend(
             MethodHelp(
                 name=name,
@@ -347,7 +367,24 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
             for name in self._callable_metric_names()
             if name not in known_names
         )
-        help_data.methods.sort(key=lambda method: method.name)
+        # Rebuild groups after injecting dynamic registry metrics.
+        help_data.groups = _build_method_groups(self, help_data.methods)
+        # Within Metrics, show registry callables first (registry order), then
+        # remaining static helpers (``fit_time``, ``timings``, ...).
+        if help_data.groups:
+            registry_order = self._callable_metric_names()
+            registry_set = set(registry_order)
+            for group in help_data.groups:
+                if group.name != "Metrics":
+                    continue
+                by_name = {method.name: method for method in group.methods}
+                group.methods = [
+                    by_name[name] for name in registry_order if name in by_name
+                ] + [
+                    method
+                    for method in group.methods
+                    if method.name not in registry_set
+                ]
         return help_data
 
     def _formatted_summary_frame(
