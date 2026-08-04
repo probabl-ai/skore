@@ -6,8 +6,7 @@ from datetime import UTC, datetime
 from functools import partial
 from importlib.metadata import version
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Generic, Literal, TypeVar
-from uuid import uuid4
+from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar, cast
 
 import pandas as pd
 
@@ -19,6 +18,7 @@ from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn.metrics import Metric
 from skore._sklearn.types import DataSource, ReportMetadata
 from skore._utils._progress_bar import track
+from skore._utils._uuid import normalize_report_id, uuid7
 from skore._utils.docscrape import (
     build_numpy_docstring,
     callable_docstring,
@@ -154,10 +154,16 @@ class _BaseReport(ReportHelpMixin):
         """HTML snippet for the checks summary tab in report reprs."""
         return self.checks.summarize(fast_mode=True)._embedded_repr_html()
 
+    @staticmethod
+    def _normalize_metadata(metadata: dict[str, Any]) -> ReportMetadata:
+        normalized = metadata.copy()
+        normalized["id"] = normalize_report_id(metadata["id"])
+        return cast(ReportMetadata, normalized)
+
     def __init__(self) -> None:
         self._checks_registry: list[Check] = list(_BUILTIN_CHECKS)
         self._metadata: ReportMetadata = {
-            "id": uuid4().int,
+            "id": str(uuid7()),
             "skore-version": version("skore"),
             "creation-date": datetime.now(UTC).isoformat(),
             # comparison reports don't have a _report_type yet at init time
@@ -167,8 +173,21 @@ class _BaseReport(ReportHelpMixin):
         }
 
     @property
-    def id(self) -> int:
+    def id(self) -> str:
         return self._metadata["id"]
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
+        if "_metadata" in state:
+            self._metadata = self._normalize_metadata(state["_metadata"])
+        elif "id" in state:
+            self._metadata = {
+                "id": normalize_report_id(state["id"]),
+                "skore-version": "legacy",
+                "creation-date": "",
+                "report_type": getattr(self, "_report_type", "comparison"),
+                "git_commit": None,
+            }
 
 
 ParentT = TypeVar("ParentT", bound="_BaseReport")

@@ -1244,6 +1244,7 @@ class TestCrossValidationReportPayload:
 
         assert payload_dict == {
             "key": "<key>",
+            "canonical_report_id": str(small_cv_binary_classification.id),
             "estimator_class_name": "RandomForestClassifier",
             "dataset_fingerprint": hash(small_cv_binary_classification.y),
             "ml_task": "binary-classification",

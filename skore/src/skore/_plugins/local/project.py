@@ -100,7 +100,7 @@ def _write_report(
     filename = "__".join(
         [
             date_str,
-            f"id_{report._metadata['id']:x}",
+            f"id_{report.id}",
             str(report._metadata["report_type"]),
             name_str,
         ]
@@ -143,6 +143,7 @@ def _write_metadata(
     name: str | None = None,
 ) -> None:
     metadata = report._metadata | {
+        "report_id": report.id,
         "ml_task": report._ml_task,
         "learner": repr(report.estimator_),
     }
@@ -481,7 +482,7 @@ class Project:
     def get(self, report_id: str) -> EstimatorReport | CrossValidationReport:
         """Get a persisted report by its ID."""
         report_path = next(
-            iter((self.path / "reports").glob(f"*__id_{int(report_id):x}__*")), None
+            iter((self.path / "reports").glob(f"*__id_{report_id}__*")), None
         )
         if report_path is None:
             raise KeyError(report_id)
