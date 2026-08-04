@@ -53,10 +53,12 @@ def infer() -> list[Requirement]:
     requirement_to_version = {}
     warned = set()
 
-    # Snapshot: importlib.metadata / console I/O can load modules and mutate
-    # sys.modules while we iterate.
+    # Snapshot: importlib.metadata/console I/O can load modules and mutate sys.modules
+    # while we iterate.
     for module in list(sys.modules.values()):
-        if module is None:
+        # sys.modules values are usually modules, but can be None (cleared/failed
+        # imports) or non-modules (legacy typing.io/re classes) that lack __spec__.
+        if not isinstance(module, types.ModuleType):
             continue
 
         name = (module.__spec__ and module.__spec__.name) or module.__name__

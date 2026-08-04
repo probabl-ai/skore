@@ -128,6 +128,37 @@ class TestInfer:
             {"name": "scikit-learn", "version": sklearn.__version__},
         ]
 
+    def test_skips_non_module_entries(self, monkeypatch):
+        import json
+
+        import numpy
+        import numpy.linalg
+        import sklearn
+        import sklearn.base
+
+        class FakeTypingIo:
+            """Legacy typing.io/re were classes registered in sys.modules."""
+
+            __name__ = "io"
+
+        monkeypatch.setattr(
+            requirements_module.sys,
+            "modules",
+            {
+                "typing.io": FakeTypingIo,
+                "json": json,
+                "numpy": numpy,
+                "numpy.linalg": numpy.linalg,
+                "sklearn": sklearn,
+                "sklearn.base": sklearn.base,
+            },
+        )
+
+        assert infer() == [
+            {"name": "numpy", "version": numpy.__version__},
+            {"name": "scikit-learn", "version": sklearn.__version__},
+        ]
+
     def test_warns_once_for_editable_package(self, tmp_path, monkeypatch):
         origin = tmp_path / "pkg" / "src" / "pkg" / "__init__.py"
 
