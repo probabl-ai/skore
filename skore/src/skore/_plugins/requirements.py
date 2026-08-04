@@ -3,7 +3,6 @@
 import importlib.metadata
 import logging
 import pathlib
-import platform
 import sys
 import sysconfig
 import types
@@ -41,14 +40,7 @@ class Requirement(typing.TypedDict):
     version: str | None
 
 
-class Environment(typing.TypedDict):
-    """Python version and inferred distribution requirements."""
-
-    python: str
-    requirements: list[Requirement]
-
-
-def infer() -> Environment:
+def infer() -> list[Requirement]:
     """
     Infer distribution requirements from modules currently in ``sys.modules``.
 
@@ -97,13 +89,7 @@ def infer() -> Environment:
                     stacklevel=2,
                 )
 
-    return Environment(
-        python=platform.python_version(),
-        requirements=[
-            Requirement(
-                name=name,
-                version=version,
-            )
-            for name, version in sorted(requirement_to_version.items())
-        ],
-    )
+    return [
+        Requirement(name=name, version=version)
+        for name, version in sorted(requirement_to_version.items())
+    ]

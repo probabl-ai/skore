@@ -1,11 +1,10 @@
 from importlib.machinery import ModuleSpec
-from platform import python_version
 from types import ModuleType
 
 from pytest import warns
 
-from skore._plugins import environment as environment_module
-from skore._plugins.environment import infer, is_local_module
+from skore._plugins import requirements as requirements_module
+from skore._plugins.requirements import infer, is_local_module
 
 
 class Module(ModuleType):
@@ -46,7 +45,7 @@ class TestInfer:
         import numpy.linalg
 
         monkeypatch.setattr(
-            environment_module.sys,
+            requirements_module.sys,
             "modules",
             {
                 "numpy": numpy,
@@ -54,12 +53,7 @@ class TestInfer:
             },
         )
 
-        assert infer() == {
-            "python": python_version(),
-            "requirements": [
-                {"name": "numpy", "version": numpy.__version__},
-            ],
-        }
+        assert infer() == [{"name": "numpy", "version": numpy.__version__}]
 
     def test_records_aliased_distributions(self, monkeypatch):
         import numpy
@@ -68,7 +62,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            environment_module.sys,
+            requirements_module.sys,
             "modules",
             {
                 "numpy": numpy,
@@ -78,13 +72,10 @@ class TestInfer:
             },
         )
 
-        assert infer() == {
-            "python": python_version(),
-            "requirements": [
-                {"name": "numpy", "version": numpy.__version__},
-                {"name": "scikit-learn", "version": sklearn.__version__},
-            ],
-        }
+        assert infer() == [
+            {"name": "numpy", "version": numpy.__version__},
+            {"name": "scikit-learn", "version": sklearn.__version__},
+        ]
 
     def test_skips_stdlib_modules(self, tmp_path, monkeypatch):
         import json
@@ -95,7 +86,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            environment_module.sys,
+            requirements_module.sys,
             "modules",
             {
                 "json": json,
@@ -106,13 +97,10 @@ class TestInfer:
             },
         )
 
-        assert infer() == {
-            "python": python_version(),
-            "requirements": [
-                {"name": "numpy", "version": numpy.__version__},
-                {"name": "scikit-learn", "version": sklearn.__version__},
-            ],
-        }
+        assert infer() == [
+            {"name": "numpy", "version": numpy.__version__},
+            {"name": "scikit-learn", "version": sklearn.__version__},
+        ]
 
     def test_skips_none_entries(self, monkeypatch):
         import json
@@ -123,7 +111,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            environment_module.sys,
+            requirements_module.sys,
             "modules",
             {
                 "broken": None,
@@ -135,13 +123,10 @@ class TestInfer:
             },
         )
 
-        assert infer() == {
-            "python": python_version(),
-            "requirements": [
-                {"name": "numpy", "version": numpy.__version__},
-                {"name": "scikit-learn", "version": sklearn.__version__},
-            ],
-        }
+        assert infer() == [
+            {"name": "numpy", "version": numpy.__version__},
+            {"name": "scikit-learn", "version": sklearn.__version__},
+        ]
 
     def test_warns_once_for_editable_package(self, tmp_path, monkeypatch):
         origin = tmp_path / "pkg" / "src" / "pkg" / "__init__.py"
@@ -155,7 +140,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            environment_module.sys,
+            requirements_module.sys,
             "modules",
             {
                 "broken": None,
@@ -171,10 +156,7 @@ class TestInfer:
         )
 
         with warns(UserWarning, match=r"pkg.*seems to be an editable"):
-            assert infer() == {
-                "python": python_version(),
-                "requirements": [
-                    {"name": "numpy", "version": numpy.__version__},
-                    {"name": "scikit-learn", "version": sklearn.__version__},
-                ],
-            }
+            assert infer() == [
+                {"name": "numpy", "version": numpy.__version__},
+                {"name": "scikit-learn", "version": sklearn.__version__},
+            ]
