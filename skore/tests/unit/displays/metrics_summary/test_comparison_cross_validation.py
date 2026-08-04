@@ -181,7 +181,6 @@ def test_frame_has_estimator_and_split_columns(
     assert set(frame.columns.get_level_values("split")) == {"Split #0", "Split #1"}
 
 
-
 @pytest.mark.parametrize(
     "fixture_name, metric, valid_values",
     [

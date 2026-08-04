@@ -100,7 +100,6 @@ def test_aggregate(comparison_estimator_reports_binary_classification):
     )
 
 
-
 @pytest.mark.parametrize(
     "fixture_name, metric, valid_values",
     [
