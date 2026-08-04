@@ -4,6 +4,16 @@ import pytest
 from skore._sklearn._checks.base import ChecksSummaryDisplay
 
 
+@pytest.fixture(
+    params=[
+        "comparison_estimator_reports_binary_classification",
+        "comparison_cross_validation_reports_binary_classification",
+    ]
+)
+def report(request):
+    return request.getfixturevalue(request.param)
+
+
 def test_collects_component_issues(report, monkeypatch):
     """Check that issues from all component reports are collected."""
     report_names = list(report.reports_)

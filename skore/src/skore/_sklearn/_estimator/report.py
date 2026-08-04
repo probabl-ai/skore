@@ -111,14 +111,14 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
           by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
         If the estimator is not fitted, it is cloned and then fitted on the training
-        data.
+        data. If the estimator is already fitted, training data must not be provided.
 
     X_train : {array-like, sparse matrix} of shape (n_samples, n_features) or \
             None
-        Training data.
+        Training data. Must not be provided when ``estimator`` is already fitted.
 
     y_train : array-like of shape (n_samples,) or (n_samples, n_outputs) or None
-        Training target.
+        Training target. Must not be provided when ``estimator`` is already fitted.
 
     X_test : {array-like, sparse matrix} of shape (n_samples, n_features) or None
         Testing data. It should have the same structure as the training data.
@@ -129,7 +129,8 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
     train_data : dict or None
         When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
         variables contained in the DataOp that was used to create this learner
-        (e.g. ``{"X": X_df, "other_table": df, ...}``).
+        (e.g. ``{"X": X_df, "other_table": df, ...}``). Must not be provided when
+        ``estimator`` is already fitted.
 
     test_data : dict or None
         When ``estimator`` is a skrub :class:`~skrub.SkrubLearner`, bindings for
@@ -182,6 +183,9 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
+    skore.evaluate
+        Evaluate one or more estimators and return a report.
+
     skore.CrossValidationReport
         Report of cross-validation results.
 
@@ -266,11 +270,18 @@ class EstimatorReport(_BaseReport, DirNamesMixin):
         self._fit_time: float | None = None
         try:
             check_is_fitted(estimator)
-            self.learner_ = estimator
         except NotFittedError:
             self.learner_, self._fit_time = self._fit_estimator(
                 estimator, self._train_data
             )
+        else:
+            if self._train_data is not None:
+                raise ValueError(
+                    "Training data must not be provided when the estimator is already "
+                    "fitted. Please omit X_train/y_train/train_data, or pass an "
+                    "unfitted estimator."
+                )
+            self.learner_ = estimator
 
         self._pos_label = pos_label
         self._ml_task = _find_ml_task(self.y_test, estimator=self.estimator_)
