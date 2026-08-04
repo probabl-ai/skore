@@ -482,32 +482,17 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
 
         accessors = []
         for accessor_attr, config in self._ACCESSOR_CONFIG.items():
-            accessor = getattr(self, accessor_attr)
-            # Prefer the accessor's own help data so dynamic methods (e.g. registry
-            # metrics) and declared groups are preserved in the report help tree.
-            if hasattr(accessor, "_build_help_data"):
-                accessor_help = accessor._build_help_data()
-                methods = accessor_help.methods
-                groups = accessor_help.groups
-            else:
-                methods = [
-                    self._build_method_data(
-                        name=name,
-                        method=method,
-                        obj=accessor,
-                        parent_obj=self,
-                        accessor_name=config["name"],
-                    )
-                    for name, method in get_public_methods(accessor)
-                ]
-                groups = _build_method_groups(accessor, methods)
+            # Accessors inherit ``_AccessorHelpDataMixin``, so their own help data
+            # already includes dynamic methods (e.g. registry metrics) and groups.
+            accessor_help = getattr(self, accessor_attr)._build_help_data()
+            methods = accessor_help.methods
             if methods:
                 accessors.append(
                     AccessorBranchHelp(
                         branch_id=str(uuid.uuid4()),
                         name=config["name"],
                         methods=methods,
-                        groups=groups,
+                        groups=accessor_help.groups,
                     )
                 )
 
