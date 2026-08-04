@@ -186,7 +186,9 @@ def test_on_report_without_train_data(logistic_binary_classification_with_train_
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    report = EstimatorReport(
+        estimator.fit(X_train, y_train), X_test=X_test, y_test=y_test
+    )
 
     scorer = make_scorer(accuracy_score, response_method="predict")
     report.metrics.add(scorer)

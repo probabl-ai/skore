@@ -564,6 +564,8 @@ class Metric:
 
 
 class FitTime(Metric):
+    """The time taken to fit the estimator."""
+
     name = "fit_time"
     verbose_name = "Fit time (s)"
     greater_is_better = False
@@ -582,6 +584,8 @@ class FitTime(Metric):
 
 
 class PredictTime(Metric):
+    """The time taken to compute model predictions."""
+
     name = "predict_time"
     verbose_name = "Predict time (s)"
     greater_is_better = False
@@ -706,6 +710,8 @@ class Brier(Metric):
 
 
 class RocAuc(Metric):
+    """The area under the Receiver Operating Characteristic curve (ROC AUC)."""
+
     name = "roc_auc"
     verbose_name = "ROC AUC"
     response_method = ("predict_proba", "decision_function")

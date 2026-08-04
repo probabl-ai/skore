@@ -51,6 +51,12 @@ Metrics
 The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator.
 
+Registered metrics whose name is a valid Python identifier are also available as
+``report.metrics.<name>(...)``. Availability is task-specific: use
+:meth:`~skore.EstimatorReport.metrics.available` (or
+:meth:`~skore.EstimatorReport.metrics.help`) at runtime to list the metrics on a
+given report, and :meth:`~skore.EstimatorReport.metrics.get` for an explicit lookup.
+
 .. include:: ../api/EstimatorReport.metrics.inc
 
 Inspection

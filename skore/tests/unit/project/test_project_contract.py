@@ -80,10 +80,10 @@ class TestLocalProjectContract:
 
 class TestMlflowProjectContract:
     @pytest.fixture(autouse=True)
-    def isolated_mlflow_tracking(self, tmp_path, monkeypatch):
+    def isolated_mlflow_tracking(self, tmp_path, monkeypatch, mlflow_tracking_uri):
         monkeypatch.chdir(tmp_path)
         previous_tracking_uri = mlflow.get_tracking_uri()
-        tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
+        tracking_uri = mlflow_tracking_uri()
         mlflow.set_tracking_uri(tracking_uri)
         try:
             yield tracking_uri
@@ -92,9 +92,6 @@ class TestMlflowProjectContract:
                 mlflow.end_run()
             mlflow.set_tracking_uri(previous_tracking_uri)
 
-    @pytest.mark.filterwarnings(
-        r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
-    )
     def test_api_contract(
         self, regression_report, second_regression_report, isolated_mlflow_tracking
     ):

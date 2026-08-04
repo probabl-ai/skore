@@ -112,9 +112,6 @@ def test_log_artifact_logs_series_metrics_as_csv(monkeypatch) -> None:
     assert "0.9" in csv_text
 
 
-@pytest.mark.filterwarnings(
-    r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
-)
 class TestProject:
     CLF_ARTIFACTS = [
         "metrics.confusion_matrix.png",
@@ -125,8 +122,8 @@ class TestProject:
         "metrics.roc.png",
     ]
 
-    def test_init_with_explicit_tracking_uri(self, tmp_path):
-        tracking_uri = f"sqlite:///{tmp_path}/custom-mlflow.db"
+    def test_init_with_explicit_tracking_uri(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
 
         project = Project("<project>", tracking_uri=tracking_uri)
 
@@ -134,6 +131,17 @@ class TestProject:
         assert project.tracking_uri == tracking_uri
         assert repr(project) == (
             f"Project(name='<project>', mode='mlflow', tracking_uri='{tracking_uri}')"
+        )
+
+    def test_init_reuses_existing_storage_experiment(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
+
+        first = Project("first", tracking_uri=tracking_uri)
+        second = Project("second", tracking_uri=tracking_uri)
+
+        assert (
+            first._Project__storage_experiment_id
+            == second._Project__storage_experiment_id
         )
 
     @pytest.mark.parametrize(
@@ -259,15 +267,15 @@ class TestProject:
             assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
 
-    def test_get_unknown_id_with_explicit_tracking_uri(self, tmp_path):
-        tracking_uri = f"sqlite:///{tmp_path}/missing-id.db"
+    def test_get_unknown_id_with_explicit_tracking_uri(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
         project = Project("<project>", tracking_uri=tracking_uri)
 
         with pytest.raises(KeyError):
             project.get("missing-run-id")
 
-    def test_delete(self, tmp_path, reg_report):
-        tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
+    def test_delete(self, reg_report, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
         project = Project("project", tracking_uri=tracking_uri)
         project.put("<key>", reg_report)
 
