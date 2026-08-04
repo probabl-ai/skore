@@ -482,8 +482,6 @@ class _ReportHelpDataMixin(_BaseHelpDataMixin):
 
         accessors = []
         for accessor_attr, config in self._ACCESSOR_CONFIG.items():
-            # Accessors inherit ``_AccessorHelpDataMixin``, so their own help data
-            # already includes dynamic methods (e.g. registry metrics) and groups.
             accessor_help = getattr(self, accessor_attr)._build_help_data()
             methods = accessor_help.methods
             if methods:
