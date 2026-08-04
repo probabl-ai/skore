@@ -194,9 +194,7 @@ def test_on_report_without_train_data(logistic_binary_classification_with_train_
     report.metrics.add(scorer)
 
     display = report.metrics.summarize(metric="accuracy_score", data_source="train")
-    assert any(
-        "No train data were provided" in str(err) for _, err in display.errors
-    )
+    assert any("No train data were provided" in str(err) for _, err in display.errors)
 
 
 def test_serde(binary_classification_report):
@@ -277,9 +275,7 @@ def test_multimetric_estimator_score(logistic_binary_classification_with_train_t
             y_pred = self.predict(X)
             return multimetric_scorer(y, y_pred)
 
-    _, X_train, X_test, y_train, y_test = (
-        logistic_binary_classification_with_train_test
-    )
+    _, X_train, X_test, y_train, y_test = logistic_binary_classification_with_train_test
 
     report = EstimatorReport(
         MyEstimator(),

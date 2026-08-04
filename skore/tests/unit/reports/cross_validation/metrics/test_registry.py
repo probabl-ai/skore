@@ -15,9 +15,7 @@ def binary_cv_report(logistic_binary_classification_data):
 
 def test_summarize_explicit_custom_metric(binary_cv_report):
     """``summarize`` exposes the per-split ``split`` column for CV reports."""
-    binary_cv_report.metrics.add(
-        make_scorer(accuracy_score, response_method="predict")
-    )
+    binary_cv_report.metrics.add(make_scorer(accuracy_score, response_method="predict"))
     display = binary_cv_report.metrics.summarize(metric="accuracy_score")
     assert set(display.summary["split"]) == {0, 1}
     assert set(display.summary["verbose_name"]) == {"Accuracy Score"}

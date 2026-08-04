@@ -746,7 +746,9 @@ def test_metric_registry_regression_filters(regression_report):
     assert "precision" not in names
 
 
-def test_metric_registry_no_proba_classifier_filters(classifier_no_predict_proba_report):
+def test_metric_registry_no_proba_classifier_filters(
+    classifier_no_predict_proba_report,
+):
     registry = MetricRegistry(classifier_no_predict_proba_report)
     names = list(registry.keys())
     assert "accuracy" in names
@@ -763,7 +765,11 @@ def test_metric_registry_iteration_order(binary_classification_report):
         m.name for m in BUILTIN_METRICS if m.available(binary_classification_report)
     ]
     # Score is inserted at the front when available
-    expected = ["score", *builtin_order] if Score.available(binary_classification_report) else builtin_order
+    expected = (
+        ["score", *builtin_order]
+        if Score.available(binary_classification_report)
+        else builtin_order
+    )
     assert list(registry.keys()) == expected
 
 
