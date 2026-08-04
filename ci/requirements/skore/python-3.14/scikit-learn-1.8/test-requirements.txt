@@ -292,7 +292,9 @@ protobuf==6.33.6
     #   mlflow-tracing
     #   opentelemetry-proto
 psutil==7.2.2
-    # via ipython
+    # via
+    #   ipython
+    #   pytest-xdist
 ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.3
@@ -342,7 +344,7 @@ pytest-order==1.4.0
     # via skore (skore/pyproject.toml)
 pytest-randomly==4.1.0
     # via skore (skore/pyproject.toml)
-pytest-xdist==3.8.0
+pytest-xdist[psutil]==3.8.0
     # via skore (skore/pyproject.toml)
 python-dateutil==2.9.0.post0
     # via
