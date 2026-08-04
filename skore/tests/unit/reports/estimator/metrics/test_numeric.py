@@ -234,6 +234,22 @@ def test_score_skrub_learner_with_extra_env_vars():
     assert isinstance(report.metrics.score(), float)
 
 
+def test_score_skrub_learner_reuses_cached_predictions():
+    """``score`` passes the report's cached predictions to ``SkrubLearner.score``
+    instead of letting it recompute them."""
+    report = skrub_report(with_scoring=True)
+
+    assert report.metrics.score()["accuracy"] != 1.0
+
+    # Replace the cached predictions with the ground truth, i.e. pretend that
+    # the model predictions are perfect: if ``score`` reads from the cache,
+    # then the accuracy should become 1.0
+    report._clear_cache()
+    report._cache[("report", "test", "predict", None)] = report.y_test
+
+    assert report.metrics.score()["accuracy"] == 1.0
+
+
 # report.metrics.get
 
 
@@ -274,6 +290,15 @@ def test_custom_metric_as_method(binary_classification_report):
 
     with pytest.raises(AttributeError):
         report.metrics.hello()
+
+
+def test_builtin_metric_as_method(binary_classification_report):
+    """Built-in registry metrics are accessible as methods without static defs."""
+    report = binary_classification_report
+
+    assert "accuracy" in dir(report.metrics)
+    assert report.metrics.accuracy() == report.metrics.get("accuracy")
+    assert report.metrics.precision() == report.metrics.get("precision")
 
 
 def test_custom_metric_as_method_neg(binary_classification_report):

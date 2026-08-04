@@ -106,7 +106,7 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
                 self.MEDIAS,
                 description=(
                     f"Computing/uploading {self.report.__class__.__name__} "
-                    f"#{self.report._hash} media"
+                    f"#{self.report.id} media"
                 ),
                 total=len(self.MEDIAS),
             ):
