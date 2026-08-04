@@ -875,7 +875,7 @@ def default_metrics(report: EstimatorReport) -> list[Metric]:
         The metric instances to register, in default display order.
     """
     ml_task = report._ml_task
-    metrics: list[Metric] = []
+    metrics: list[Metric] = [Score()]
 
     if ml_task == "binary-classification":
         metrics += [Accuracy(), Precision(), Recall(), RocAuc(), LogLoss(), Brier()]
@@ -894,7 +894,6 @@ def default_metrics(report: EstimatorReport) -> list[Metric]:
         metrics += [R2(), Rmse(), Mae(), Mape()]
 
     metrics += [FitTime(), PredictTime()]
-    metrics.insert(0, Score())
 
     return metrics
 
