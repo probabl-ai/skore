@@ -37,7 +37,7 @@ class Requirement(typing.TypedDict):
     """A distribution name and its installed version."""
 
     name: str
-    version: str | None
+    version: str
 
 
 def infer() -> list[Requirement]:
