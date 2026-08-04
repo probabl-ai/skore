@@ -185,7 +185,7 @@ class TestInfer:
             },
         )
 
-        with warns(UserWarning, match=r"pkg.*seems to be an editable"):
+        with warns(UserWarning, match=r"pkg seems to be an editable"):
             assert requirements.infer() == [
                 {"name": "numpy", "version": numpy.__version__},
                 {"name": "scikit-learn", "version": sklearn.__version__},

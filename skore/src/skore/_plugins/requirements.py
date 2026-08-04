@@ -82,11 +82,9 @@ def infer() -> list[Requirement]:
                 warned.add(top_level_name)
                 warnings.warn(
                     (
-                        "\033[38;5;208m"
-                        f"Package \033[1;3m{top_level_name}\033[22;23m seems to be an "
-                        "editable or local install (loaded from outside site-packages)."
-                        " It will not be recorded in the inferred requirements."
-                        "\033[0m"
+                        f"Package {top_level_name} seems to be an editable or local "
+                        "install (loaded from outside site-packages). It will not be "
+                        "recorded in the inferred requirements."
                     ),
                     stacklevel=2,
                 )
