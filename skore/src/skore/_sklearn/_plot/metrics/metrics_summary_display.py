@@ -575,20 +575,6 @@ class MetricsSummaryDisplay(DisplayMixin):
         )
         return "\n".join(lines)
 
-    def available(self) -> list[str]:
-        """List available metric names in the summary.
-
-        Returns
-        -------
-        list of str
-            Unique metric names from the ``name`` column of :attr:`summary`,
-            in the order they first appear. These are the same names accepted
-            by :meth:`plot`.
-        """
-        if self.summary.empty or "name" not in self.summary.columns:
-            return []
-        return list(dict.fromkeys(self.summary["name"].tolist()))
-
     @DisplayMixin.style_plot
     def plot(
         self,
@@ -602,8 +588,8 @@ class MetricsSummaryDisplay(DisplayMixin):
         Parameters
         ----------
         metric : str
-            The metric to plot. Must be one of the names returned by
-            :meth:`available` (the ``name`` column of :attr:`summary`).
+            The metric to plot. Must match a value in the ``name`` column of
+            :attr:`summary`.
 
         subplot_by : {"auto", "estimator", "label", "output", "data_source"} \
                 or None, default="auto"
@@ -663,10 +649,10 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     def _prepare_plot_frame(self, metric: str) -> pd.DataFrame:
         """Filter and reshape the summary into a long frame for plotting."""
-        available = self.available()
-        if metric not in available:
+        available_metrics = list(dict.fromkeys(self.summary["name"].tolist()))
+        if metric not in available_metrics:
             raise ValueError(
-                f"Unknown metric: {metric!r}. Available metrics: {available!r}."
+                f"Unknown metric: {metric!r}. Available metrics: {available_metrics!r}."
             )
 
         frame = self.summary.loc[self.summary["name"] == metric].copy()

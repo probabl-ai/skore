@@ -206,7 +206,7 @@ def test_frame_has_estimator_and_split_columns(
         ),
     ],
 )
-def test_invalid_subplot_by(pyplot, fixture_name, metric, valid_values, request):
+def test_invalid_subplot_by(fixture_name, metric, valid_values, request):
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.summarize()
     err_msg = (
@@ -242,7 +242,7 @@ def test_invalid_subplot_by(pyplot, fixture_name, metric, valid_values, request)
         ),
     ],
 )
-def test_valid_subplot_by(pyplot, fixture_name, metric, subplot_by_tuples, request):
+def test_valid_subplot_by(fixture_name, metric, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.summarize()
     for subplot_by, expected_len in subplot_by_tuples:
@@ -263,7 +263,6 @@ def test_valid_subplot_by(pyplot, fixture_name, metric, subplot_by_tuples, reque
     ],
 )
 def test_subplot_by_none_multiclass_or_multioutput(
-    pyplot,
     request,
     fixture_name,
     metric,

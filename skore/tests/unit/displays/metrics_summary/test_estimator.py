@@ -331,18 +331,7 @@ def test_frame_data_source_both(forest_binary_classification_data):
     ]
 
 
-def test_available(forest_binary_classification_with_test):
-    estimator, X_test, y_test = forest_binary_classification_with_test
-    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
-    display = report.metrics.summarize()
-
-    available = display.available()
-    assert "accuracy" in available
-    assert "score" not in available
-    assert available == list(dict.fromkeys(display.summary["name"].tolist()))
-
-
-def test_plot_single_metric(pyplot, forest_binary_classification_with_test):
+def test_plot_single_metric(forest_binary_classification_with_test):
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     display = report.metrics.summarize()
@@ -357,15 +346,16 @@ def test_plot_unknown_metric_raises(forest_binary_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     display = report.metrics.summarize()
 
+    available_metrics = list(dict.fromkeys(display.summary["name"].tolist()))
     with pytest.raises(
         ValueError,
         match=r"Unknown metric: 'not_a_metric'\. Available metrics:",
     ) as exc_info:
         display.plot(metric="not_a_metric")
-    assert str(display.available()) in str(exc_info.value)
+    assert str(available_metrics) in str(exc_info.value)
 
 
-def test_plot_data_source_both(pyplot, forest_binary_classification_data):
+def test_plot_data_source_both(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
     report = EstimatorReport(
@@ -408,7 +398,7 @@ def test_plot_data_source_both(pyplot, forest_binary_classification_data):
         ),
     ],
 )
-def test_invalid_subplot_by(pyplot, fixture_name, metric, subplot_by, err_msg, request):
+def test_invalid_subplot_by(fixture_name, metric, subplot_by, err_msg, request):
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
     display = report.metrics.summarize()
@@ -441,7 +431,7 @@ def test_invalid_subplot_by(pyplot, fixture_name, metric, subplot_by, err_msg, r
         ),
     ],
 )
-def test_valid_subplot_by(pyplot, fixture_name, metric, subplot_by_tuples, request):
+def test_valid_subplot_by(fixture_name, metric, subplot_by_tuples, request):
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
     display = report.metrics.summarize()

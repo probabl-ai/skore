@@ -304,7 +304,7 @@ def test_wide_frame_verbose_name_level_names(forest_binary_classification_data):
     assert result.columns.names == ["Estimator", "Aggregate"]
 
 
-def test_plot_single_metric(pyplot, forest_binary_classification_data):
+def test_plot_single_metric(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
     report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
     display = report.metrics.summarize()
@@ -345,7 +345,7 @@ def test_plot_single_metric(pyplot, forest_binary_classification_data):
         ),
     ],
 )
-def test_invalid_subplot_by(pyplot, fixture_name, metric, subplot_by, err_msg, request):
+def test_invalid_subplot_by(fixture_name, metric, subplot_by, err_msg, request):
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
     display = report.metrics.summarize()
@@ -378,7 +378,7 @@ def test_invalid_subplot_by(pyplot, fixture_name, metric, subplot_by, err_msg, r
         ),
     ],
 )
-def test_valid_subplot_by(pyplot, fixture_name, metric, subplot_by_tuples, request):
+def test_valid_subplot_by(fixture_name, metric, subplot_by_tuples, request):
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
     display = report.metrics.summarize()
