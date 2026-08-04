@@ -1,8 +1,16 @@
+import pytest
+from sklearn.linear_model import LinearRegression
+
+from skore import evaluate
 from skore._sklearn._checks.base import ChecksSummaryDisplay
 
 
 def display_html(check_results, fast_mode=False):
     return ChecksSummaryDisplay(check_results, fast_mode=fast_mode)._repr_html_()
+
+
+def display(check_results, fast_mode=False):
+    return ChecksSummaryDisplay(check_results, fast_mode=fast_mode)
 
 
 _MOCK_ISSUE = {
@@ -67,3 +75,58 @@ def test_repr_html_merges_estimators_with_same_explanation():
     assert ">SKD001</a>] <strong>Mock issue.</strong>" in html
     assert "<li>[Ridge, Lasso] Same reason.</li>" in html
     assert html.count("Same reason.") == 1
+
+
+def test_frame_raises_for_invalid_section():
+    """`frame(section=...)` rejects values outside the known set."""
+    result = display({"SKD001": {**_MOCK_ISSUE, "explanation": "Single reason."}})
+    with pytest.raises(ValueError, match="Invalid section"):
+        result.frame(section="bogus")
+
+
+def test_repr_plain_text_groups_per_estimator_explanations():
+    """Plain-text repr nests dict explanations under each check code."""
+    result = display(
+        {
+            "SKD001": {
+                **_MOCK_ISSUE,
+                "explanation": {"Ridge": "Reason A.", "Lasso": "Reason B."},
+            }
+        }
+    )
+    text = repr(result)
+    assert "[SKD001] Mock issue." in text
+    assert "Read more about this here" in text
+    assert "  - [Ridge] Reason A." in text
+    assert "  - [Lasso] Reason B." in text
+
+
+def test_repr_plain_text_dict_explanation_without_docs_url():
+    """Plain-text repr omits the doc link when docs_url is absent."""
+    result = display(
+        {
+            "SKD001": {
+                "title": "Mock issue",
+                "docs_url": None,
+                "section": "issue",
+                "explanation": {"Ridge": "Reason A."},
+            }
+        }
+    )
+    text = repr(result)
+    assert "[SKD001] Mock issue." in text
+    assert "Read more about this here" not in text
+    assert "  - [Ridge] Reason A." in text
+
+
+def test_accessor_repr_and_html_delegate_to_fast_mode_summarize(regression_data):
+    """The checks accessor's reprs mirror `summarize(fast_mode=True)`."""
+    X, y = regression_data
+    report = evaluate(LinearRegression(), X, y)
+    assert repr(report.checks) == (
+        f"{report.checks.summarize(fast_mode=True)!r}\n"
+        "Explore available methods with .help()."
+    )
+    # container ids embed a random uuid, so compare structure, not exact HTML.
+    assert "Fast mode is on" in report.checks._repr_html_()
+    assert "Issues (" in report.checks._repr_html_()

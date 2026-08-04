@@ -37,7 +37,6 @@ dependencies = [
   "rich>=14.2",
   "scikit-learn",
   "seaborn",
-  "skore[local]",
   "skrub>=0.10",
 ]
 
@@ -54,7 +53,7 @@ test-base = [
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
-  "pytest-xdist",
+  "pytest-xdist[psutil]",
   "respx",
   "scipy-stubs",
   "skore[hub, jupyter, mlflow]",
@@ -83,7 +82,6 @@ sphinx-base = [
 sphinx = ["mlflow", "polars", "skore[sphinx-base, hub, mlflow]"]
 sphinx-lts-cpu = ["mlflow", "polars-lts-cpu", "skore[sphinx-base, hub, mlflow]"]
 dev = ["ipykernel", "nbformat"]
-local = ["diskcache", "platformdirs"]
 hub = [
   "httpx",
   "orjson",
@@ -133,6 +131,7 @@ addopts = [
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
+  "--numprocesses=logical",
   "--dist=loadscope",
   "--durations=25",
 ]
@@ -143,6 +142,9 @@ filterwarnings = [
   # mlflow-related
   # NOTE: Only affects python 3.11
   "ignore:SelectableGroups dict interface is deprecated. Use select.:DeprecationWarning",
+  # mlflow writes its YAML and requirement files through `codecs.open()`, which
+  # Python 3.14 deprecates. Reached by every test that logs a report.
+  'ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow',
   # sklearn needs to update its scipy.optimize calls
   'ignore:.*`disp` and `iprint` options of the L-BFGS-B solver are deprecated:DeprecationWarning',
   # seaborn's boxplot still passes the deprecated `vert=` kwarg to matplotlib.
@@ -230,7 +232,6 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
 module = [
-  "diskcache.*",
   "jinja2.*",
   "joblib.*",
   "js.*",
