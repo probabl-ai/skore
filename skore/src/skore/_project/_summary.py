@@ -19,14 +19,24 @@ if TYPE_CHECKING:
 
 _IGNORED_COLUMNS = ["ml_task"]
 _METADATA_COLUMNS = frozenset(
-    {"key", "date", "learner", "dataset", "ml_task", "report_type"}
+    {"key", "date", "learner", "dataset", "ml_task", "report_type", "report_id"}
 )
 # Order of columns in the HTML table; metric columns are inserted at ``...``.
-_COLUMN_ORDER = ("id", "key", ..., "date", "learner", "dataset", "report_type")
+_COLUMN_ORDER = (
+    "id",
+    "report_id",
+    "key",
+    ...,
+    "date",
+    "learner",
+    "dataset",
+    "report_type",
+)
 _HIDDEN_COLUMNS = ("learner", "dataset", "report_type")
 
 _COLUMN_LABELS = {
     "id": "ID",
+    "report_id": "Skore report ID",
     "key": "Key",
     "date": "Date",
     "learner": "Learner",
