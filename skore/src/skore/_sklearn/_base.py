@@ -130,24 +130,37 @@ class _BaseReport(ReportHelpMixin):
         summary: dict[CheckCode, CheckResult] = {}
         for check in self._checks_registry:
             if self._report_type not in check.report_types:
-                continue
-            code = check.code
-            if code in ignored_codes:
-                summary[code] = {
+                summary[check.code] = {
+                    "title": check.title,
+                    "docs_url": check.docs_url,
+                    "explanation": f"Not applicable to {self._report_type} reports.",
+                    "section": "not_applicable",
+                }
+            elif check.code in ignored_codes:
+                summary[check.code] = {
                     "title": check.title,
                     "docs_url": check.docs_url,
                     "explanation": None,
                     "section": "ignored",
                 }
-            elif fast_mode and check.slow and code not in self._check_results_cache:
-                summary[code] = {
+            elif (
+                fast_mode
+                and check.slow
+                and (check.code not in self._check_results_cache)
+            ):
+                summary[check.code] = {
                     "title": check.title,
                     "docs_url": check.docs_url,
                     "explanation": None,
                     "section": "skipped",
                 }
-            elif code in self._check_results_cache:
-                summary[code] = self._check_results_cache[code]
+            elif check.code in self._check_results_cache:
+                summary[check.code] = self._check_results_cache[check.code]
+
+        # Every check appears exactly once in the summary
+        assert len(set(summary)) == len(summary)
+        assert set(summary) == {check.code for check in self._checks_registry}
+
         return summary
 
     def _checks_summary_html_fragment(self) -> str:
