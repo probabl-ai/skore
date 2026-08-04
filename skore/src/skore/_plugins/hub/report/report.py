@@ -11,11 +11,11 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 from rich.progress import BarColumn, Progress, TextColumn, TimeElapsedColumn
 
 from skore import THREADABLE, CrossValidationReport, EstimatorReport, console
+from skore._plugins.hub.artifact.environment import Environment
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.artifact.pickle import Pickle
 from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.project.project import Project
-from skore._plugins.requirements import Requirements, infer
 
 SkinnedProgress = partial(
     Progress,
@@ -135,5 +135,5 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def requirements(self) -> Requirements:
-        return infer()
+    def environment(self) -> Environment:
+        return Environment(project=self.project)
