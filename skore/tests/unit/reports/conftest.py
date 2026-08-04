@@ -21,41 +21,8 @@ def binary_classification_report(logistic_binary_classification_with_train_test)
 
 
 @pytest.fixture
-def multiclass_classification_report(
-    logistic_multiclass_classification_with_train_test,
-):
-    estimator, X_train, X_test, y_train, y_test = (
-        logistic_multiclass_classification_with_train_test
-    )
-    return EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-
-@pytest.fixture
 def regression_report(linear_regression_with_train_test):
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    return EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-
-@pytest.fixture
-def multioutput_regression_report(linear_regression_multioutput_with_train_test):
-    estimator, X_train, X_test, y_train, y_test = (
-        linear_regression_multioutput_with_train_test
-    )
-    return EstimatorReport(
-        estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
-    )
-
-
-@pytest.fixture
-def svc_binary_classification_report(svc_binary_classification_with_train_test):
-    """SVC binary report: has decision_function but no predict_proba."""
-    estimator, X_train, X_test, y_train, y_test = (
-        svc_binary_classification_with_train_test
-    )
     return EstimatorReport(
         estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
     )
