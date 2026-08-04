@@ -405,17 +405,18 @@ class _BaseHelpDataMixin(ABC):
 
 
 def _build_method_groups(
-    accessor: Any, methods: list[MethodHelp]
+    accessor: Any,
+    methods: list[MethodHelp],
+    group_spec: dict[str, tuple[str, ...]] | None = None,
 ) -> list[MethodGroupHelp] | None:
     """Partition ``methods`` according to ``accessor._HELP_METHOD_GROUPS``.
 
-    Returns ``None`` when the accessor's class does not declare
-    ``_HELP_METHOD_GROUPS``. Otherwise iterates groups in declared order,
-    keeping only methods that are present in ``methods`` and preserving the
-    order specified by ``_HELP_METHOD_GROUPS``. Empty groups are skipped.
-    Methods present on the accessor but not listed in any group are appended
-    to a final ``"Other"`` group; if no such method exists, no extra group
-    is added.
+    Returns ``None`` when no group specification is available. Otherwise
+    iterates groups in declared order, keeping only methods that are present in
+    ``methods`` and preserving the declared order. Empty groups are skipped.
+
+    Every public method of a grouped accessor must be listed in a group, so
+    that none is silently dropped from the help tree.
 
     Parameters
     ----------
@@ -423,19 +424,32 @@ def _build_method_groups(
         The accessor instance whose class may declare ``_HELP_METHOD_GROUPS``.
     methods : list of MethodHelp
         The full list of method help entries already built for the accessor.
+    group_spec : dict of str to tuple of str, default=None
+        Group specification overriding ``accessor._HELP_METHOD_GROUPS``, for
+        accessors that extend a group with dynamically discovered methods.
 
     Returns
     -------
     list of MethodGroupHelp or None
+
+    Raises
+    ------
+    ValueError
+        If a method is not listed in any declared group.
     """
-    group_spec: dict[str, tuple[str, ...]] | None = getattr(
-        type(accessor), "_HELP_METHOD_GROUPS", None
-    )
+    if group_spec is None:
+        group_spec = getattr(type(accessor), "_HELP_METHOD_GROUPS", None)
     if not group_spec:
         return None
 
     method_by_name = {m.name: m for m in methods}
     declared = {n for names in group_spec.values() for n in names}
+
+    if ungrouped := sorted(m.name for m in methods if m.name not in declared):
+        raise ValueError(
+            f"{type(accessor).__name__}._HELP_METHOD_GROUPS does not list "
+            f"{', '.join(ungrouped)}. Every public method must belong to a group."
+        )
 
     groups = [
         MethodGroupHelp(
@@ -448,16 +462,6 @@ def _build_method_groups(
         for group_name, method_names in group_spec.items()
         if any(name in method_by_name for name in method_names)
     ]
-
-    remaining = [m for m in methods if m.name not in declared]
-    if remaining:
-        groups.append(
-            MethodGroupHelp(
-                branch_id=str(uuid.uuid4()),
-                name="Other",
-                methods=remaining,
-            )
-        )
 
     return groups or None
 

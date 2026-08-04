@@ -85,11 +85,26 @@ def test_help_groups_separate_registry_metrics_displays(report):
     assert "custom" in by_name["Metrics"]
     assert "r2" in by_name["Metrics"]
     assert by_name["Displays"][0] == "summarize"
-    assert "summarize" in by_name["Displays"]
     assert "custom" not in by_name["Displays"]
     assert "available" not in by_name["Displays"]
     # Registry callables come before static score helpers in Metrics.
     assert by_name["Metrics"].index("custom") < by_name["Metrics"].index("timings")
+
+
+def test_help_groups_cover_every_method(report):
+    """Every method shown in the metrics help belongs to exactly one group."""
+
+    def custom(e, X, y):
+        """Custom score used in groups."""
+        return 1
+
+    report.metrics.add(custom)
+
+    help_data = report.metrics._build_help_data()
+    grouped_names = [m.name for group in help_data.groups for m in group.methods]
+
+    assert sorted(grouped_names) == sorted(m.name for m in help_data.methods)
+    assert len(grouped_names) == len(set(grouped_names))
 
 
 def test_help_groups_are_expanded_by_default(report):

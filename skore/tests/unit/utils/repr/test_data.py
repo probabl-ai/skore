@@ -492,9 +492,8 @@ def test_display_build_help_data_output(display_with_methods):
 class _GroupedAccessor(MockAccessor, _AccessorHelpDataMixin):
     """Accessor declaring ``_HELP_METHOD_GROUPS`` for grouped-help tests.
 
-    Includes one orphan public method (``stray``) not listed in any group, which
-    should fall back into an ``"Other"`` group, and references a non-existent
-    method ``"never_existed"`` to verify it is silently skipped.
+    References a non-existent method ``"never_existed"`` to verify it is
+    silently skipped.
     """
 
     _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...]]] = {
@@ -518,11 +517,15 @@ class _GroupedAccessor(MockAccessor, _AccessorHelpDataMixin):
     def epsilon(self):
         """Epsilon method."""
 
-    def stray(self):
-        """Stray method not in any declared group."""
-
     def _get_help_title(self) -> str:
         return "Grouped accessor"
+
+
+class _AccessorWithUngroupedMethod(_GroupedAccessor):
+    """Accessor whose ``stray`` method is missing from ``_HELP_METHOD_GROUPS``."""
+
+    def stray(self):
+        """Stray method not in any declared group."""
 
 
 class _ReportWithGroupedAccessor(_ReportWithExplicitMethods):
@@ -562,7 +565,7 @@ def test_accessor_build_help_data_groups(grouped_accessor):
     data = grouped_accessor._build_help_data()
     assert data.groups is not None
     group_names = [g.name for g in data.groups]
-    assert group_names == ["Registry", "Metrics", "Displays", "Other"]
+    assert group_names == ["Registry", "Metrics", "Displays"]
     for g in data.groups:
         assert isinstance(g, MethodGroupHelp)
         assert g.branch_id != ""
@@ -571,7 +574,28 @@ def test_accessor_build_help_data_groups(grouped_accessor):
     assert by_name["Registry"] == ["alpha", "beta"]
     assert by_name["Metrics"] == ["gamma", "delta"]
     assert by_name["Displays"] == ["epsilon"]
-    assert by_name["Other"] == ["stray"]
+
+
+def test_accessor_build_help_data_groups_cover_all_methods(grouped_accessor):
+    """Every public method of a grouped accessor lands in exactly one group."""
+    data = grouped_accessor._build_help_data()
+    grouped_names = [m.name for group in data.groups for m in group.methods]
+
+    assert sorted(grouped_names) == sorted(m.name for m in data.methods)
+    assert len(grouped_names) == len(set(grouped_names))
+
+
+def test_accessor_build_help_data_groups_raise_when_method_ungrouped():
+    """A method missing from `_HELP_METHOD_GROUPS` raises instead of being dropped."""
+    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
+    y = np.array([0, 1, 1, 0])
+    estimator = LogisticRegression().fit(X, y)
+    accessor = _AccessorWithUngroupedMethod(
+        parent=_ReportWithExplicitMethods(estimator)
+    )
+
+    with pytest.raises(ValueError, match="does not list stray"):
+        accessor._build_help_data()
 
 
 def test_accessor_build_help_data_groups_none_when_not_declared(accessor_with_methods):
@@ -588,12 +612,7 @@ def test_report_build_help_data_groups(report_with_grouped_accessor):
     assert len(data.accessors) == 1
     branch = data.accessors[0]
     assert branch.groups is not None
-    assert [g.name for g in branch.groups] == [
-        "Registry",
-        "Metrics",
-        "Displays",
-        "Other",
-    ]
+    assert [g.name for g in branch.groups] == ["Registry", "Metrics", "Displays"]
 
 
 def test_report_build_help_data_groups_none_when_not_declared(report_with_accessor):
