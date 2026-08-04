@@ -34,12 +34,13 @@ interpret effect sizes without mistaking scale differences for importance.
 # Median income is measured in 10k USD blocks, latitude in degrees, and
 # population in head counts. Fitting Ridge on these raw columns produces
 # coefficients whose magnitudes reflect units as much as predictive strength.
+# We load the table via skrub so Sphinx CI does not depend on scikit-learn's
+# ``cal_housing.tgz`` download cache.
 
-from sklearn.datasets import fetch_california_housing
+from skrub.datasets import fetch_california_housing
 
-housing = fetch_california_housing(as_frame=True)
-X = housing.frame.drop(columns=["MedHouseVal"])
-y = housing.frame["MedHouseVal"]
+housing = fetch_california_housing()
+X, y = housing.X, housing.y
 
 # %%
 # :class:`~skrub.TableReport` highlights the range differences across columns.
