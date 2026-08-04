@@ -1,0 +1,103 @@
+[workspace]
+name = "skore"
+authors = ["skore developers <skore@signal.probabl.ai>"]
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["linux-64", "win-64", "osx-arm64"]
+
+[feature.py311.dependencies]
+python = "3.11.*"
+
+[feature.py312.dependencies]
+python = "3.12.*"
+
+[feature.py313.dependencies]
+python = "3.13.*"
+
+[feature.py314.dependencies]
+python = "3.14.*"
+
+[feature.sklearn16.dependencies]
+scikit-learn = "1.6.*"
+
+[feature.sklearn17.dependencies]
+scikit-learn = "1.7.*"
+
+[feature.sklearn18.dependencies]
+scikit-learn = "1.8.*"
+
+[feature.sklearn19.dependencies]
+scikit-learn = "1.9.*"
+
+[feature.mlflow2.dependencies]
+mlflow = "2.*"
+
+[feature.mlflow3.dependencies]
+mlflow = "3.*"
+
+[feature.pandas2.dependencies]
+pandas = "2.*"
+
+[feature.test.tasks]
+tests = { cmd = "pytest src/ tests/ --no-cov", cwd = "skore" }
+tests-coverage = { cmd = "pytest src/ tests/ --showlocals --durations=20 --junitxml=coverage/pytest.xml -o junit_family=legacy --cov-config=pyproject.toml --cov=skore --cov-report=", cwd = "skore" }
+coverage-combine = { cmd = "(coverage combine --append || true) && coverage xml -o coverage/coverage.xml", cwd = "skore" }
+
+# `skore` is installed in two flavours depending on the environment:
+# - `editable`: an editable install for local development, so source changes are
+#   picked up without rebuilding (used by the `default` environment).
+# - `wheel`: a regular (built) install, so the CI matrix tests the package exactly
+#   as a user would consume it instead of testing `src/` directly.
+[feature.editable.pypi-dependencies]
+skore = { path = "skore", editable = true, extras = ["test"] }
+
+[feature.wheel.pypi-dependencies]
+skore = { path = "skore", extras = ["test"] }
+
+[feature.lint.dependencies]
+pre-commit = "*"
+
+[feature.lint.tasks]
+lint = "pre-commit install && pre-commit run -v --all-files --show-diff-on-failure"
+
+# Generate a pip-only, cross-package-manager `requirements.txt` from
+# `skore/pyproject.toml`. The CI lockfiles only exist in pixi "language"
+# (`pixi.lock`); this task lets contributors who do not use pixi reproduce a
+# comparable environment with any pip-compatible tool (pip, uv, etc.).
+# The Python version used for the resolution is the one pinned by the
+# environment (see `export` in `[environments]`).
+[feature.export.dependencies]
+uv = "*"
+
+[feature.export.tasks]
+export-requirements = "uv pip compile skore/pyproject.toml --extra test --no-header --output-file requirements.txt"
+
+[feature.sphinx.dependencies]
+graphviz = "*"
+
+[feature.sphinx.pypi-dependencies]
+skore = { path = "skore", editable = true, extras = ["sphinx"] }
+
+[feature.sphinx.tasks]
+docs = { cmd = "make html", cwd = "sphinx" }
+
+[feature.sphinx.target.osx-arm64.activation]
+scripts = ["scripts/activate_dot.sh"]
+
+[environments]
+# Default environment for local development: latest supported stack with an
+# editable install, so `pixi run tests` reflects local source changes.
+default = ["py314", "sklearn19", "test", "editable"]
+py311-sklearn16 = ["py311", "sklearn16", "test", "wheel"]
+py311-sklearn16-mlflow2 = ["py311", "sklearn16", "mlflow2", "test", "wheel"]
+py311-sklearn19 = ["py311", "sklearn19", "test", "wheel"]
+py312-sklearn19 = ["py312", "sklearn19", "test", "wheel"]
+py313-sklearn16 = ["py313", "sklearn16", "test", "wheel"]
+py313-sklearn19 = ["py313", "sklearn19", "test", "wheel"]
+py314-sklearn17 = ["py314", "sklearn17", "test", "wheel"]
+py314-sklearn18 = ["py314", "sklearn18", "test", "wheel"]
+py314-sklearn19 = ["py314", "sklearn19", "test", "wheel"]
+py314-sklearn19-pandas2 = ["py314", "sklearn19", "pandas2", "test", "wheel"]
+py314-sklearn19-mlflow3 = ["py314", "sklearn19", "mlflow3", "test", "wheel"]
+sphinx = ["py314", "sklearn19", "sphinx"]
+lint = ["py312", "sklearn19", "test", "editable", "lint"]
+export = ["py311", "export"]

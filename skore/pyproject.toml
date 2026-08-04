@@ -147,8 +147,13 @@ filterwarnings = [
   'ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow',
   # sklearn needs to update its scipy.optimize calls
   'ignore:.*`disp` and `iprint` options of the L-BFGS-B solver are deprecated:DeprecationWarning',
-  # seaborn's boxplot still passes the deprecated `vert=` kwarg to matplotlib.
-  # Hit whenever any plot Display renders a boxplot, so keep at the top level.
+  # seaborn's boxplot/catplot still passes the deprecated `vert=` kwarg to
+  # matplotlib. Hit whenever any plot Display renders a boxplot, so keep at the
+  # top level. Matplotlib 3.10+ emits PendingDeprecationWarning (pending=True);
+  # warn_external() attributes it to seaborn. Older releases used
+  # MatplotlibDeprecationWarning. Use `.` for the colon in the message so
+  # filterwarnings does not split fields.
+  'ignore:vert. bool will be deprecated:PendingDeprecationWarning:seaborn',
   'ignore:vert.*was deprecated in Matplotlib:matplotlib._api.deprecation.MatplotlibDeprecationWarning:seaborn',
   # polars deprecates the dataframe interchange protocol; sklearn and plotly
   # still call into it when handed a polars frame. Triggered across many
@@ -167,8 +172,18 @@ source = ["skore"]
 concurrency = ["thread", "multiprocessing"]
 parallel = true
 
+# The CI matrix installs `skore` as a built wheel (see `pixi.toml`), so coverage is
+# collected against `site-packages`. Map those paths back to the repository sources
+# so the combined report (and Codecov) reference `src/skore` instead.
+[tool.coverage.paths]
+skore = [
+    "src/skore",
+    "*/site-packages/skore",
+    "*\\site-packages\\skore",
+]
+
 [tool.coverage.report]
-omit = ["*/_externals/*", "src/*", "tests/*"]
+omit = ["*/_externals/*"]
 show_missing = true
 exclude_also = [
     "raise NotImplementedError",
