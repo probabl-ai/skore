@@ -77,7 +77,7 @@ def binary_report(request):
 
 
 @pytest.fixture(params=_REPORT_KINDS)
-def regression_report(request):
+def regression_kind_report(request):
     return _resolve_report(
         request,
         {
@@ -107,7 +107,7 @@ def multiclass_report(request):
 
 
 @pytest.fixture(params=_REPORT_KINDS)
-def multioutput_regression_report(request):
+def multioutput_kind_report(request):
     return _resolve_report(
         request,
         {
@@ -336,46 +336,50 @@ def test_string_scorer_appears_in_summarize(binary_report):
     assert metrics_after - metrics_before == {"Balanced Accuracy"}
 
 
-def test_neg_scorer_from_get_scorer(regression_report):
+def test_neg_scorer_from_get_scorer(regression_kind_report):
     """``get_scorer("neg_*")`` strips the prefix via the underlying function name."""
-    regression_report.metrics.add(get_scorer("neg_mean_squared_error"))
-    for registry in leaf_registries(regression_report):
+    regression_kind_report.metrics.add(get_scorer("neg_mean_squared_error"))
+    for registry in leaf_registries(regression_kind_report):
         assert "mean_squared_error" in registry
         metric = registry["mean_squared_error"]
         assert metric.greater_is_better is False
         assert not metric.verbose_name.lower().startswith("neg")
 
 
-def test_string_scorer_alias_without_neg_prefix(regression_report):
-    regression_report.metrics.add("mean_squared_error")
-    for registry in leaf_registries(regression_report):
+def test_string_scorer_alias_without_neg_prefix(regression_kind_report):
+    regression_kind_report.metrics.add("mean_squared_error")
+    for registry in leaf_registries(regression_kind_report):
         assert "mean_squared_error" in registry
 
 
-def test_string_scorer_with_neg_prefix(regression_report):
+def test_string_scorer_with_neg_prefix(regression_kind_report):
     """String names with ``neg_`` keep the user-provided name."""
-    regression_report.metrics.add("mean_squared_error")
+    regression_kind_report.metrics.add("mean_squared_error")
     assert all(
         "mean_squared_error" in registry
-        for registry in leaf_registries(regression_report)
+        for registry in leaf_registries(regression_kind_report)
     )
 
-    regression_report.metrics.add("neg_mean_squared_error")
-    for registry in leaf_registries(regression_report):
+    regression_kind_report.metrics.add("neg_mean_squared_error")
+    for registry in leaf_registries(regression_kind_report):
         assert "neg_mean_squared_error" in registry
         assert "mean_squared_error" in registry
 
 
-def test_summarize_with_neg_prefix(regression_report):
-    regression_report.metrics.add("neg_mean_absolute_percentage_error")
-    for registry in leaf_registries(regression_report):
+def test_summarize_with_neg_prefix(regression_kind_report):
+    regression_kind_report.metrics.add("neg_mean_absolute_percentage_error")
+    for registry in leaf_registries(regression_kind_report):
         assert "neg_mean_absolute_percentage_error" in registry
         assert "mean_absolute_percentage_error" not in registry
 
-    regression_report.metrics.summarize(metric="neg_mean_absolute_percentage_error")
+    regression_kind_report.metrics.summarize(
+        metric="neg_mean_absolute_percentage_error"
+    )
 
     with pytest.raises(KeyError, match="mean_absolute_percentage_error"):
-        regression_report.metrics.summarize(metric="mean_absolute_percentage_error")
+        regression_kind_report.metrics.summarize(
+            metric="mean_absolute_percentage_error"
+        )
 
 
 def test_invalid_string_scorer_name(binary_report):
@@ -391,27 +395,27 @@ def test_multiclass_add(multiclass_report):
     assert "Accuracy Score" in set(display.summary["verbose_name"])
 
 
-def test_regression_add(regression_report):
+def test_regression_add(regression_kind_report):
     scorer = make_scorer(
         mean_squared_error,
         greater_is_better=False,
         response_method="predict",
     )
-    regression_report.metrics.add(scorer)
-    for registry in leaf_registries(regression_report):
+    regression_kind_report.metrics.add(scorer)
+    for registry in leaf_registries(regression_kind_report):
         assert "mean_squared_error" in registry
-    display = regression_report.metrics.summarize()
+    display = regression_kind_report.metrics.summarize()
     assert "Mean Squared Error" in set(display.summary["verbose_name"])
 
 
-def test_multioutput_regression_add(multioutput_regression_report):
+def test_multioutput_regression_add(multioutput_kind_report):
     scorer = make_scorer(
         mean_squared_error,
         greater_is_better=False,
         response_method="predict",
     )
-    multioutput_regression_report.metrics.add(scorer)
-    for registry in leaf_registries(multioutput_regression_report):
+    multioutput_kind_report.metrics.add(scorer)
+    for registry in leaf_registries(multioutput_kind_report):
         assert "mean_squared_error" in registry
 
 
