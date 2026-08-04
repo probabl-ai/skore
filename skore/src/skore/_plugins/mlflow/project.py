@@ -19,7 +19,7 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 from mlflow.entities import Run as MLFlowRun
-from mlflow.exceptions import MlflowException, RestException
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 from mlflow.utils.autologging_utils import disable_discrete_autologging
 from mlflow.utils.logging_utils import MLFLOW_LOGGING_STREAM
@@ -119,7 +119,10 @@ class Project:
         self.__tracking_uri = mlflow.get_tracking_uri()
         try:
             self.__storage_experiment_id = mlflow.create_experiment("__skore-storage__")
-        except RestException:
+        except MlflowException:
+            # Local stores raise a plain `MlflowException` on duplicate names, while
+            # tracking servers raise its `RestException` subclass. Reuse the existing
+            # experiment either way, so several projects can share a tracking URI.
             storage_experiment = mlflow.get_experiment_by_name("__skore-storage__")
             if storage_experiment is None:
                 raise
