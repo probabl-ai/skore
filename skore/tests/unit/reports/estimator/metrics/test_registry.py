@@ -15,22 +15,13 @@ from sklearn.metrics import (
 
 from skore import EstimatorReport
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
+from tests.unit.reports._registry_helpers import (
+    business_loss_metric,
+    business_loss_scorer,
+)
 
-
-def business_loss(y_true, y_pred, *, cost_fp, cost_fn):
-    """Custom business metric: weighted cost of false positives and negatives."""
-    fp = ((y_pred == 1) & (y_true == 0)).sum()
-    fn = ((y_pred == 0) & (y_true == 1)).sum()
-    return fp * cost_fp + fn * cost_fn
-
-
-def business_loss_scorer(estimator, X, y, cost_fp, cost_fn):
-    y_pred = estimator.predict(X)
-    return business_loss(y, y_pred, cost_fp=cost_fp, cost_fn=cost_fn)
-
-
-custom_scorer = make_scorer(
-    business_loss,
+business_loss_sklearn_scorer = make_scorer(
+    business_loss_metric,
     greater_is_better=False,
     response_method="predict",
     cost_fp=10,
@@ -60,42 +51,21 @@ def test_callable_missing_kwargs_hint(binary_classification_report):
         " Pass those kwargs to add: "
         "add(business_loss_scorer, cost_fp=..., cost_fn=...)"
     )
-    with pytest.raises(Exception, match=err_msg):
+    with pytest.raises(ValueError, match=err_msg):
         report.metrics.add(business_loss_scorer)
-
-
-def test_remove_invalidates_cache_only_for_removed_metric(binary_classification_report):
-    """Removing a metric clears its cache entries only."""
-    report = binary_classification_report
-
-    def metric1(y_true, y_pred):
-        return 0.1
-
-    def metric2(y_true, y_pred):
-        return 0.2
-
-    report.metrics.add(make_scorer(metric1, response_method="predict"))
-    report.metrics.add(make_scorer(metric2, response_method="predict"))
-    report.metrics.summarize(metric="metric1")
-    report.metrics.summarize(metric="metric2")
-
-    report.metrics.remove("metric1")
-
-    assert not any(k[2] == "metric1" for k in report._cache)
-    assert any(k[2] == "metric2" for k in report._cache)
 
 
 def test_summarize_with_explicit_custom_metric(binary_classification_report):
     """Single-row layout of ``summarize(metric=...)`` for ``EstimatorReport``."""
     report = binary_classification_report
 
-    report.metrics.add(custom_scorer)
+    report.metrics.add(business_loss_sklearn_scorer)
 
-    display = report.metrics.summarize(metric="business_loss")
+    display = report.metrics.summarize(metric="business_loss_metric")
 
     assert len(display.summary) == 1
     row = display.summary.iloc[0]
-    assert row["verbose_name"] == "Business Loss"
+    assert row["verbose_name"] == "Business Loss Metric"
     assert not row["greater_is_better"]
 
 

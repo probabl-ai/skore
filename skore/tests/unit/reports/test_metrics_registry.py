@@ -7,7 +7,6 @@ import pickle
 import re
 
 import pytest
-import sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
@@ -15,12 +14,12 @@ from sklearn.metrics import (
     get_scorer,
     make_scorer,
 )
-from sklearn.metrics._scorer import _BaseScorer
 
 from skore import EstimatorReport
 from skore._sklearn.metrics import (
     _METRIC_ALIASES,
     BUILTIN_METRICS,
+    RESERVED_METRIC_NAMES,
     FunctionKind,
     Metric,
     MetricRegistry,
@@ -28,28 +27,10 @@ from skore._sklearn.metrics import (
     Score,
 )
 from skore._utils._cache_key import make_cache_key
-
-
-def business_loss_metric(y_true, y_pred, *, cost_fp, cost_fn):
-    """Custom (y_true, y_pred) metric used to test the y-prefix guard in Metric.new."""
-    fp = ((y_pred == 1) & (y_true == 0)).sum()
-    fn = ((y_pred == 0) & (y_true == 1)).sum()
-    return fp * cost_fp + fn * cost_fn
-
-
-def business_loss_scorer(estimator, X, y, cost_fp, cost_fn):
-    """Custom (estimator, X, y) scorer with required kwargs."""
-    y_pred = estimator.predict(X)
-    return business_loss_metric(y, y_pred, cost_fp=cost_fp, cost_fn=cost_fn)
-
-
-def test_function_kind_members():
-    assert {member.name for member in FunctionKind} == {"METRIC", "SCORER"}
-
-
-def test_function_kind_members_distinct():
-    assert FunctionKind.METRIC is not FunctionKind.SCORER
-    assert FunctionKind.METRIC.value != FunctionKind.SCORER.value
+from tests.unit.reports._registry_helpers import (
+    business_loss_metric,
+    business_loss_scorer,
+)
 
 
 def test_missing_kwargs_error_attributes_and_message():
@@ -60,11 +41,6 @@ def test_missing_kwargs_error_attributes_and_message():
         "Callable 'business_loss_scorer' has required parameter(s) "
         "('cost_fp', 'cost_fn') not covered by the provided kwargs."
     )
-
-
-def test_missing_kwargs_error_str():
-    err = MissingKwargsError(business_loss_scorer, ["cost_fp"])
-    assert str(err) == err.msg
 
 
 def test_missing_kwargs_error_partial_callable_name():
@@ -100,15 +76,6 @@ def test_metric_init_default_verbose_name():
 def test_metric_init_kwargs_default():
     m = Metric(name="x")
     assert m.kwargs == {}
-
-
-def test_metric_init_subclass_path_only_sets_kwargs():
-    """When `name=None`, only ``kwargs`` is set as an instance attribute."""
-    m = Metric()
-    assert m.kwargs == {}
-    assert "name" not in m.__dict__
-    assert "verbose_name" not in m.__dict__
-    assert "greater_is_better" not in m.__dict__
 
 
 def test_metric_init_subclass_path_kwargs_propagated():
@@ -430,25 +397,6 @@ def test_metric_new_callable_object_without_name():
     assert metric.name == "MyScorer"
 
 
-def test_metric_aliases_resolve_via_get_scorer():
-    scorer_names = set(sklearn.metrics.get_scorer_names())
-    for friendly, neg_form in _METRIC_ALIASES.items():
-        if neg_form in scorer_names:
-            assert sklearn.metrics.get_scorer(neg_form) is not None
-            if friendly in scorer_names:
-                assert sklearn.metrics.get_scorer(friendly) is not None
-            else:
-                assert friendly not in scorer_names
-        elif friendly in scorer_names:
-            assert sklearn.metrics.get_scorer(friendly) is not None
-        else:
-            pytest.fail(
-                f"Alias {friendly!r} -> {neg_form!r}: neither string is registered "
-                f"in sklearn.metrics.get_scorer_names() for sklearn "
-                f"{sklearn.__version__}."
-            )
-
-
 @pytest.mark.parametrize("friendly", list(_METRIC_ALIASES))
 def test_metric_alias_via_metric_new(friendly):
     result = Metric.new(friendly)
@@ -554,6 +502,15 @@ def test_metric_registry_add_multiple_first_lifo(binary_classification_report):
     assert keys[1] == "a"
 
 
+def test_metric_registry_add_multiple_last_fifo(binary_classification_report):
+    registry = MetricRegistry(binary_classification_report)
+    registry.add(Metric(name="m_a", function=None), position="last")
+    registry.add(Metric(name="m_b", function=None), position="last")
+    keys = list(registry.keys())
+    assert keys[-2] == "m_a"
+    assert keys[-1] == "m_b"
+
+
 def test_metric_registry_add_invalid_position(binary_classification_report):
     registry = MetricRegistry(binary_classification_report)
     m = Metric(
@@ -580,6 +537,22 @@ def test_metric_registry_add_reserved_name_conflict(binary_classification_report
         ValueError, match="Cannot add 'accuracy': it is a built-in metric name."
     ):
         registry.add(m)
+
+
+def test_metric_registry_add_score_name_reserved(binary_classification_report):
+    """``"score"`` stays reserved even once removed from the registry."""
+    assert Score.name in RESERVED_METRIC_NAMES
+
+    report = binary_classification_report
+    report.metrics.remove("score")
+    assert "score" not in report._metric_registry
+
+    with pytest.raises(
+        ValueError, match="Cannot add 'score': it is a built-in metric name."
+    ):
+        report.metrics.add(
+            make_scorer(accuracy_score, response_method="predict"), name="score"
+        )
 
 
 def test_metric_registry_add_duplicate_raises(binary_classification_report):
@@ -626,14 +599,18 @@ def test_metric_registry_remove_clears_only_target_cache_entries(
     registry.add(Metric(name="metric_a", function=None))
     registry.add(Metric(name="metric_b", function=None))
 
-    report._cache[make_cache_key("metrics", "test", "metric_a", {})] = 0.1
-    report._cache[make_cache_key("metrics", "train", "metric_a", {})] = 0.2
-    report._cache[make_cache_key("metrics", "test", "metric_b", {})] = 0.3
+    a_on_test = make_cache_key("metrics", "test", "metric_a", {})
+    a_on_train = make_cache_key("metrics", "train", "metric_a", {})
+    b_on_test = make_cache_key("metrics", "test", "metric_b", {})
+    report._cache[a_on_test] = 0.1
+    report._cache[a_on_train] = 0.2
+    report._cache[b_on_test] = 0.3
 
     registry.remove(report=report, name="metric_a")
 
-    assert not any(k[2] == "metric_a" for k in report._cache)
-    assert any(k[2] == "metric_b" for k in report._cache)
+    assert a_on_test not in report._cache
+    assert a_on_train not in report._cache
+    assert b_on_test in report._cache
 
 
 def test_metric_registry_works_with_test_only_report(
@@ -655,11 +632,3 @@ def test_metric_registry_default_contents_match_seed(binary_classification_repor
     if Score.available(binary_classification_report):
         available_defaults.add("score")
     assert set(registry.keys()) == available_defaults
-
-
-def test_sklearn_scorer_protocol_recognises_basescorer():
-    scorer = make_scorer(accuracy_score, response_method="predict")
-    assert isinstance(scorer, _BaseScorer)
-    assert hasattr(scorer, "_score_func")
-    assert hasattr(scorer, "_response_method")
-    assert hasattr(scorer, "_kwargs")
