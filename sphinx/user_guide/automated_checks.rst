@@ -157,10 +157,12 @@ distributions across splits, or a model that is sensitive to specific data split
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- use stratified or grouped cross-validation to ensure a more even split,
+- use grouped cross-validation when observations share a group structure,
 - investigate whether the outlier split contains a different data distribution,
 - check for data leakage or temporal effects,
 - increase the size of the dataset to improve stability.
+
+Check out the :ref:`example for this check <example_skd003_inconsistent_performance>`.
 
 
 .. _skd004-high-class-imbalance:
