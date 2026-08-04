@@ -3,8 +3,7 @@ from types import ModuleType
 
 from pytest import warns
 
-from skore._plugins import requirements as requirements_module
-from skore._plugins.requirements import infer, is_local_module
+from skore._plugins import requirements
 
 
 class Module(ModuleType):
@@ -17,13 +16,13 @@ class Module(ModuleType):
 
 class TestIsLocalModule:
     def test_no_origin(self, tmp_path):
-        assert not is_local_module(Module("_cython_3_2_4", None))
+        assert not requirements.is_local_module(Module("_cython_3_2_4", None))
 
     def test_stdlib(self):
         import pathlib
         import sysconfig
 
-        assert not is_local_module(
+        assert not requirements.is_local_module(
             Module(
                 "_sysconfigdata",
                 (pathlib.Path(sysconfig.get_path("stdlib")) / "_sysconfigdata.py"),
@@ -31,7 +30,7 @@ class TestIsLocalModule:
         )
 
     def test_editable_install(self, tmp_path):
-        assert is_local_module(
+        assert requirements.is_local_module(
             Module(
                 "pkg",
                 (tmp_path / "pkg" / "src" / "pkg" / "__init__.py"),
@@ -45,7 +44,7 @@ class TestInfer:
         import numpy.linalg
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            requirements.sys,
             "modules",
             {
                 "numpy": numpy,
@@ -53,7 +52,7 @@ class TestInfer:
             },
         )
 
-        assert infer() == [{"name": "numpy", "version": numpy.__version__}]
+        assert requirements.infer() == [{"name": "numpy", "version": numpy.__version__}]
 
     def test_records_aliased_distributions(self, monkeypatch):
         import numpy
@@ -62,7 +61,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            requirements.sys,
             "modules",
             {
                 "numpy": numpy,
@@ -72,7 +71,7 @@ class TestInfer:
             },
         )
 
-        assert infer() == [
+        assert requirements.infer() == [
             {"name": "numpy", "version": numpy.__version__},
             {"name": "scikit-learn", "version": sklearn.__version__},
         ]
@@ -86,7 +85,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            requirements.sys,
             "modules",
             {
                 "json": json,
@@ -97,7 +96,7 @@ class TestInfer:
             },
         )
 
-        assert infer() == [
+        assert requirements.infer() == [
             {"name": "numpy", "version": numpy.__version__},
             {"name": "scikit-learn", "version": sklearn.__version__},
         ]
@@ -111,7 +110,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            requirements.sys,
             "modules",
             {
                 "broken": None,
@@ -123,7 +122,7 @@ class TestInfer:
             },
         )
 
-        assert infer() == [
+        assert requirements.infer() == [
             {"name": "numpy", "version": numpy.__version__},
             {"name": "scikit-learn", "version": sklearn.__version__},
         ]
@@ -142,7 +141,7 @@ class TestInfer:
             __name__ = "io"
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            requirements.sys,
             "modules",
             {
                 "typing.io": FakeTypingIo,
@@ -154,7 +153,7 @@ class TestInfer:
             },
         )
 
-        assert infer() == [
+        assert requirements.infer() == [
             {"name": "numpy", "version": numpy.__version__},
             {"name": "scikit-learn", "version": sklearn.__version__},
         ]
@@ -171,7 +170,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            requirements.sys,
             "modules",
             {
                 "broken": None,
@@ -187,7 +186,7 @@ class TestInfer:
         )
 
         with warns(UserWarning, match=r"pkg.*seems to be an editable"):
-            assert infer() == [
+            assert requirements.infer() == [
                 {"name": "numpy", "version": numpy.__version__},
                 {"name": "scikit-learn", "version": sklearn.__version__},
             ]
