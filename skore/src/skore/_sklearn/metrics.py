@@ -857,24 +857,46 @@ class Score(Metric):
         )
 
 
-# Order matters for default display
-BUILTIN_METRICS: list[Metric] = [
-    Accuracy(),
-    Precision(),
-    PrecisionMacro(),
-    Recall(),
-    RecallMacro(),
-    RocAuc(),
-    RocAucMacro(),
-    LogLoss(),
-    Brier(),
-    R2(),
-    Rmse(),
-    Mae(),
-    Mape(),
-    FitTime(),
-    PredictTime(),
-]
+def default_metrics(report: EstimatorReport) -> list[Metric]:
+    """Build the metrics registered by default for ``report``, in display order.
+
+    Selection is driven by the ML task. This is the single place to evolve the
+    default set. Metrics that the estimator cannot support are filtered out by
+    :meth:`Metric.available`.
+
+    Parameters
+    ----------
+    report : EstimatorReport
+        The report to build the default metrics for.
+
+    Returns
+    -------
+    list of :class:`Metric`
+        The metric instances to register, in default display order.
+    """
+    ml_task = report._ml_task
+    metrics: list[Metric] = []
+
+    if ml_task == "binary-classification":
+        metrics += [Accuracy(), Precision(), Recall(), RocAuc(), LogLoss(), Brier()]
+    elif ml_task == "multiclass-classification":
+        metrics += [
+            Accuracy(),
+            Precision(),
+            PrecisionMacro(),
+            Recall(),
+            RecallMacro(),
+            RocAuc(),
+            RocAucMacro(),
+            LogLoss(),
+        ]
+    elif ml_task in ("regression", "multioutput-regression"):
+        metrics += [R2(), Rmse(), Mae(), Mape()]
+
+    metrics += [FitTime(), PredictTime()]
+    metrics.insert(0, Score())
+
+    return metrics
 
 
 class MetricRegistry(UserDict[str, Metric]):
@@ -899,13 +921,9 @@ class MetricRegistry(UserDict[str, Metric]):
         # Needs to be called ``data`` since we inherit from :class:`UserDict`
         self.data = OrderedDict(
             (metric.name, metric)
-            for metric in BUILTIN_METRICS
+            for metric in default_metrics(report)
             if metric.available(report)
         )
-
-        if Score.available(report):
-            self.data["score"] = Score()
-            self.data.move_to_end("score", last=False)
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({list(self.data.keys())})"
@@ -931,10 +949,8 @@ class MetricRegistry(UserDict[str, Metric]):
         if position not in ("first", "last"):
             raise ValueError(f"position must be 'first' or 'last', got {position!r}.")
 
-        if metric.name in {m.name for m in BUILTIN_METRICS}:
-            raise ValueError(
-                f"Cannot add {metric.name!r}: it is a built-in metric name."
-            )
+        if metric.name == "score":
+            raise ValueError(f"Cannot add {metric.name!r}: it is a reserved name.")
 
         if metric.name in self.data:
             raise ValueError(
