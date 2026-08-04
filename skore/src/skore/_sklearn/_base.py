@@ -375,32 +375,16 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
             method for method in help_data.methods if method.name not in claimed
         ]
 
-        groups: list[MethodGroupHelp] = []
-        if registry_methods:
-            groups.append(
-                MethodGroupHelp(
-                    branch_id=str(uuid4()),
-                    name="Registry",
-                    methods=registry_methods,
-                )
-            )
-        if metrics_methods:
-            groups.append(
-                MethodGroupHelp(
-                    branch_id=str(uuid4()),
-                    name="Metrics",
-                    methods=metrics_methods,
-                )
-            )
-        if displays_methods:
-            groups.append(
-                MethodGroupHelp(
-                    branch_id=str(uuid4()),
-                    name="Displays",
-                    methods=displays_methods,
-                )
-            )
-        help_data.groups = groups or None
+        grouped_methods = {
+            "Registry": registry_methods,
+            "Metrics": metrics_methods,
+            "Displays": displays_methods,
+        }
+        help_data.groups = [
+            MethodGroupHelp(branch_id=str(uuid4()), name=name, methods=methods)
+            for name, methods in grouped_methods.items()
+            if methods
+        ] or None
         return help_data
 
     def _formatted_summary_frame(
