@@ -4,6 +4,7 @@ from functools import partial
 import pytest
 import sklearn.metrics
 
+import skore._utils.repr.data as data_module
 from skore._sklearn.metrics import Metric
 from skore._utils.docscrape import docstring_summary
 
@@ -105,6 +106,21 @@ def test_help_groups_cover_every_method(report):
 
     assert sorted(grouped_names) == sorted(m.name for m in help_data.methods)
     assert len(grouped_names) == len(set(grouped_names))
+
+
+def test_help_groups_computed_once(report, monkeypatch):
+    """Registry metrics are grouped in a single pass, not grouped then regrouped."""
+    calls = []
+    original = data_module._build_method_groups
+
+    def counting(*args, **kwargs):
+        calls.append(args)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(data_module, "_build_method_groups", counting)
+    report.metrics._build_help_data()
+
+    assert len(calls) == 1
 
 
 def test_help_groups_are_expanded_by_default(report):

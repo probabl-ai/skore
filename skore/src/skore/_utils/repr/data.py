@@ -549,6 +549,21 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
     _parent: Any
     _accessor_name: ClassVar[str]  # set by _register_accessor on concrete classes
 
+    def _extra_help_methods(self) -> list[MethodHelp]:
+        """Help entries for methods that attribute introspection cannot discover.
+
+        Overridden by accessors exposing methods through ``__getattr__``.
+        """
+        return []
+
+    def _help_method_group_spec(self) -> dict[str, tuple[str, ...]] | None:
+        """Ordered help subgroups for this accessor, or ``None`` when ungrouped.
+
+        Overridden by accessors whose groups depend on the instance rather than
+        only on the class-level ``_HELP_METHOD_GROUPS``.
+        """
+        return getattr(type(self), "_HELP_METHOD_GROUPS", None)
+
     def _build_help_data(self) -> AccessorHelpData:
         """Build data structure for Jinja2/Rich rendering for accessors."""
         accessor_name = self.__class__._accessor_name
@@ -563,13 +578,21 @@ class _AccessorHelpDataMixin(_BaseHelpDataMixin):
             )
             for name, method in get_public_methods(self)
         ]
+        known_names = {method.name for method in methods}
+        methods.extend(
+            method
+            for method in self._extra_help_methods()
+            if method.name not in known_names
+        )
         return AccessorHelpData(
             title=self._get_help_title(),
             root_node=root_node,
             accessor_name=accessor_name,
             accessor_branch_id=str(uuid.uuid4()),
             methods=methods,
-            groups=_build_method_groups(self, methods),
+            groups=_build_method_groups(
+                self, methods, group_spec=self._help_method_group_spec()
+            ),
         )
 
 

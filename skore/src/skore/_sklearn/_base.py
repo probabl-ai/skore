@@ -32,7 +32,7 @@ from skore._utils.repr.base import (
     ReportHelpMixin,
     render_panel_to_plain_text,
 )
-from skore._utils.repr.data import MethodHelp, _build_method_groups
+from skore._utils.repr.data import MethodHelp
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -41,7 +41,6 @@ if TYPE_CHECKING:
     from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
     from skore._sklearn._plot import MetricsSummaryDisplay
-    from skore._utils.repr.data import AccessorHelpData
 
 
 class _BaseReport(ReportHelpMixin):
@@ -360,44 +359,38 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         """Add registry metrics to ``__dir__`` for tab-completion."""
         return list(set(super().__dir__()).union(self._callable_metric_names()))
 
-    def _build_help_data(self) -> AccessorHelpData:
-        """Include registry metrics in the help data.
+    def _extra_help_methods(self) -> list[MethodHelp]:
+        """Help entries for the registry metrics exposed through ``__getattr__``.
 
         Registry metrics are only reachable through ``__getattr__``, so they are not
         picked up by the default method-discovery logic used to build help data.
         Names that are not valid identifiers (e.g. containing spaces) are excluded,
         since they cannot be called as ``report.metrics.<name>(...)``.
-
-        Methods are then partitioned into Registry / Metrics / Displays groups
-        using the ordered names in ``_HELP_METHOD_GROUPS``, with registry
-        callables injected into Metrics.
         """
-        help_data = super()._build_help_data()
-        known_names = {method.name for method in help_data.methods}
         # Registry metrics have no Sphinx API page; show the summary tooltip only.
         # Keep registry order (``available()``) instead of sorting alphabetically.
-        help_data.methods.extend(
+        return [
             MethodHelp(
                 name=name,
                 parameters="(...)",
                 description=self._metric_help_description(name),
             )
             for name in self._callable_metric_names()
-            if name not in known_names
-        )
+        ]
 
-        # Registry callables are listed first in Metrics, ahead of the static score
-        # helpers declared on the class. Some helpers (e.g. ``fit_time``) are registry
-        # metrics on reports that do not define them as methods, hence the dedupe.
+    def _help_method_group_spec(self) -> dict[str, tuple[str, ...]]:
+        """Partition methods into Registry / Metrics / Displays groups.
+
+        Registry callables are listed first in Metrics, ahead of the static score
+        helpers declared on the class. Some helpers (e.g. ``fit_time``) are registry
+        metrics on reports that do not define them as methods, hence the dedupe.
+        """
         group_spec = dict(self._HELP_METHOD_GROUPS)
         registry_names = tuple(self._callable_metric_names())
         group_spec["Metrics"] = registry_names + tuple(
             name for name in group_spec["Metrics"] if name not in set(registry_names)
         )
-        help_data.groups = _build_method_groups(
-            self, help_data.methods, group_spec=group_spec
-        )
-        return help_data
+        return group_spec
 
     def _formatted_summary_frame(
         self,

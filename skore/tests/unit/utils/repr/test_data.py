@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
 
+import skore._utils.repr.data as data_module
 from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.data import (
     AccessorHelpData,
@@ -528,6 +529,24 @@ class _AccessorWithUngroupedMethod(_GroupedAccessor):
         """Stray method not in any declared group."""
 
 
+class _AccessorWithExtraHelpMethods(_GroupedAccessor):
+    """Accessor exposing extra help entries, as accessors using ``__getattr__`` do.
+
+    ``alpha`` duplicates a statically discovered method to check deduplication.
+    """
+
+    def _extra_help_methods(self):
+        return [
+            MethodHelp(name="dynamic", parameters="(...)", description="Dynamic."),
+            MethodHelp(name="alpha", parameters="(...)", description="Duplicate."),
+        ]
+
+    def _help_method_group_spec(self):
+        group_spec = dict(self._HELP_METHOD_GROUPS)
+        group_spec["Metrics"] = ("dynamic", *group_spec["Metrics"])
+        return group_spec
+
+
 class _ReportWithGroupedAccessor(_ReportWithExplicitMethods):
     """Report carrying a single accessor that exposes grouped methods."""
 
@@ -596,6 +615,38 @@ def test_accessor_build_help_data_groups_raise_when_method_ungrouped():
 
     with pytest.raises(ValueError, match="does not list stray"):
         accessor._build_help_data()
+
+
+def test_accessor_build_help_data_extra_methods(grouped_accessor):
+    """``_extra_help_methods`` entries are added once and grouped in a single pass."""
+    accessor = _AccessorWithExtraHelpMethods(parent=grouped_accessor._parent)
+
+    data = accessor._build_help_data()
+
+    names = [method.name for method in data.methods]
+    assert "dynamic" in names
+    # A static method of the same name wins over the extra entry.
+    assert names.count("alpha") == 1
+    alpha = next(method for method in data.methods if method.name == "alpha")
+    assert alpha.description != "Duplicate."
+
+    by_name = {g.name: [m.name for m in g.methods] for g in data.groups}
+    assert by_name["Metrics"] == ["dynamic", "gamma", "delta"]
+
+
+def test_accessor_build_help_data_groups_computed_once(grouped_accessor, monkeypatch):
+    """Grouping runs a single time per accessor help build."""
+    calls = []
+    original = data_module._build_method_groups
+
+    def counting(*args, **kwargs):
+        calls.append(args)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(data_module, "_build_method_groups", counting)
+    _AccessorWithExtraHelpMethods(parent=grouped_accessor._parent)._build_help_data()
+
+    assert len(calls) == 1
 
 
 def test_accessor_build_help_data_groups_none_when_not_declared(accessor_with_methods):
