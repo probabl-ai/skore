@@ -41,14 +41,14 @@ class Requirement(typing.TypedDict):
     version: str | None
 
 
-class Requirements(typing.TypedDict):
+class Environment(typing.TypedDict):
     """Python version and inferred distribution requirements."""
 
     python: str
     requirements: list[Requirement]
 
 
-def infer() -> Requirements:
+def infer() -> Environment:
     """
     Infer distribution requirements from modules currently in ``sys.modules``.
 
@@ -97,7 +97,7 @@ def infer() -> Requirements:
                     stacklevel=2,
                 )
 
-    return Requirements(
+    return Environment(
         python=platform.python_version(),
         requirements=[
             Requirement(

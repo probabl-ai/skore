@@ -4,8 +4,8 @@ from types import ModuleType
 
 from pytest import warns
 
-from skore._plugins import requirements as requirements_module
-from skore._plugins.requirements import infer, is_local_module
+from skore._plugins import environment as environment_module
+from skore._plugins.environment import infer, is_local_module
 
 
 class Module(ModuleType):
@@ -46,7 +46,7 @@ class TestInfer:
         import numpy.linalg
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            environment_module.sys,
             "modules",
             {
                 "numpy": numpy,
@@ -68,7 +68,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            environment_module.sys,
             "modules",
             {
                 "numpy": numpy,
@@ -95,7 +95,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            environment_module.sys,
             "modules",
             {
                 "json": json,
@@ -123,7 +123,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            environment_module.sys,
             "modules",
             {
                 "broken": None,
@@ -155,7 +155,7 @@ class TestInfer:
         import sklearn.base
 
         monkeypatch.setattr(
-            requirements_module.sys,
+            environment_module.sys,
             "modules",
             {
                 "broken": None,
