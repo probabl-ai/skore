@@ -97,6 +97,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         with_y: bool = True,
         subsample: int | None = None,
         subsample_strategy: Literal["head", "random"] = "head",
+        with_plots: bool = True,
         seed: int | None = None,
     ) -> TableReportDisplay:
         """Plot dataset statistics.
@@ -120,6 +121,10 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
               dataframe, similar to Pandas: ``df.head(n)``.
             - If ``"random"``: randomly subsample the dataframe by using a uniform
               distribution. The random seed is controlled by ``seed``.
+
+        with_plots : bool, default=True
+            Whether to compute the TableReport plots, which can be computationally
+            expensive.
 
         seed : int, default=None
             The random seed to use when randomly subsampling. It only has an effect when
@@ -146,7 +151,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             subsample_strategy=subsample_strategy,
             seed=seed,
         )
-        return TableReportDisplay._compute_data_for_display(df)
+        return TableReportDisplay._compute_data_for_display(df, with_plots=with_plots)
 
     def analyze(self, **kwargs) -> TableReportDisplay:
         """Use :meth:`summarize` instead."""

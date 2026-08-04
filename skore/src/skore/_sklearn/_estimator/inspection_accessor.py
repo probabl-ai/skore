@@ -76,6 +76,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             estimator=self._parent.estimator_,
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
+            X=self._parent.X_train,
         )
 
     @available_if(_check_estimator_has_feature_importances())
