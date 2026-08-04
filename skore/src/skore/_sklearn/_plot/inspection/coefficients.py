@@ -6,9 +6,12 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib.figure import Figure
+from numpy.typing import ArrayLike
+from scipy.sparse import issparse
 from sklearn.base import BaseEstimator, is_classifier
 from sklearn.compose import TransformedTargetRegressor
 from sklearn.pipeline import Pipeline
+from sklearn.utils.sparsefuncs import mean_variance_axis
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
 from skore._sklearn._plot.inspection.utils import (
@@ -34,6 +37,8 @@ class CoefficientsDisplay(DisplayMixin):
         - `feature`
         - `label` or `output` (classification vs. regression)
         - `coefficient`
+        - `feature_std` (training-set std used by ``scale_features``; unit
+          value for the intercept)
 
     report_type : {"estimator", "cross-validation", "comparison-estimator", \
             "comparison-cross-validation"}
@@ -42,7 +47,8 @@ class CoefficientsDisplay(DisplayMixin):
     Attributes
     ----------
     coefficients : DataFrame
-        Coefficient values per feature, estimator, and split.
+        Coefficient values per feature, estimator, and split, including the
+        internal ``feature_std`` column.
     report_type : ReportType
         The type of report.
 
@@ -113,6 +119,7 @@ class CoefficientsDisplay(DisplayMixin):
         include_intercept: bool = True,
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
+        scale_features: bool = False,
     ):
         """Get the coefficients in a dataframe format.
 
@@ -158,6 +165,13 @@ class CoefficientsDisplay(DisplayMixin):
             Can be used independently of `select_k`. Sorting is performed within the
             same groups as selection.
 
+        scale_features : bool, default=False
+            If `True`, multiply each non-intercept coefficient by the training-set
+            standard deviation of the corresponding feature (as seen by the
+            predictor). The resulting values are comparable across features as
+            the effect of a one-standard-deviation change. Requires the report to
+            provide training data.
+
         Returns
         -------
         DataFrame
@@ -191,6 +205,21 @@ class CoefficientsDisplay(DisplayMixin):
         13  petal length (cm)   virginica        2.5...
         14   petal width (cm)   virginica        1.7...
         """
+        # Scale before dropping feature_std so rows stay aligned.
+        coefficients = self.coefficients
+        if scale_features:
+            if coefficients["feature_std"].isna().any():
+                raise ValueError(
+                    "Cannot use scale_features=True because training feature standard "
+                    "deviations are unavailable. This typically happens when the "
+                    "report was created from a prefit estimator without providing "
+                    "`X_train`."
+                )
+            coefficients = coefficients.copy()
+            coefficients["coefficient"] = (
+                coefficients["coefficient"] * coefficients["feature_std"]
+            )
+
         if self.report_type == "estimator":
             columns_to_drop = ["estimator", "split"]
         elif self.report_type == "cross-validation":
@@ -199,15 +228,16 @@ class CoefficientsDisplay(DisplayMixin):
             columns_to_drop = ["split"]
         else:  # comparison-cross-validation
             columns_to_drop = []
+        columns_to_drop.append("feature_std")
 
-        if self.coefficients["label"].isna().all():
+        if coefficients["label"].isna().all():
             # regression problem
             columns_to_drop.append("label")
-        if self.coefficients["output"].isna().all():
+        if coefficients["output"].isna().all():
             # classification problem
             columns_to_drop.append("output")
 
-        coefficients = self.coefficients.drop(columns=columns_to_drop)
+        coefficients = coefficients.drop(columns=columns_to_drop)
         if not include_intercept:
             coefficients = coefficients.query("feature != 'Intercept'")
 
@@ -252,6 +282,7 @@ class CoefficientsDisplay(DisplayMixin):
         subplot_by: Literal["auto", "estimator", "label", "output"] | None = "auto",
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
+        scale_features: bool = False,
     ) -> Figure:
         """Plot the coefficients for the different features.
 
@@ -289,6 +320,13 @@ class CoefficientsDisplay(DisplayMixin):
             Can be used independently of `select_k`. Sorting is performed within the
             same groups as selection.
 
+        scale_features : bool, default=False
+            If `True`, multiply each non-intercept coefficient by the training-set
+            standard deviation of the corresponding feature (as seen by the
+            predictor). The resulting values are comparable across features as
+            the effect of a one-standard-deviation change. Requires the report to
+            provide training data.
+
         Returns
         -------
         matplotlib.figure.Figure
@@ -311,6 +349,7 @@ class CoefficientsDisplay(DisplayMixin):
             subplot_by=subplot_by,
             select_k=select_k,
             sorting_order=sorting_order,
+            scale_features=scale_features,
         )
 
     def _plot_matplotlib(
@@ -320,6 +359,7 @@ class CoefficientsDisplay(DisplayMixin):
         subplot_by: Literal["estimator", "label", "output"] | None = None,
         select_k: int | None = None,
         sorting_order: Literal["descending", "ascending", None] = None,
+        scale_features: bool = False,
     ) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
         if select_k == 0:
@@ -332,6 +372,7 @@ class CoefficientsDisplay(DisplayMixin):
             include_intercept=include_intercept,
             select_k=select_k,
             sorting_order=sorting_order,
+            scale_features=scale_features,
         )
 
         # Make copy of the dictionary since we are going to pop some keys later
@@ -347,6 +388,7 @@ class CoefficientsDisplay(DisplayMixin):
                 barplot_kwargs=barplot_kwargs,
                 boxplot_kwargs=boxplot_kwargs,
                 stripplot_kwargs=stripplot_kwargs,
+                scale_features=scale_features,
             )
         # EstimatorReport or CrossValidationReport
         return self._plot_single_estimator(
@@ -357,6 +399,7 @@ class CoefficientsDisplay(DisplayMixin):
             barplot_kwargs=barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
+            scale_features=scale_features,
         )
 
     @staticmethod
@@ -381,6 +424,7 @@ class CoefficientsDisplay(DisplayMixin):
         barplot_kwargs: dict[str, Any] | None = None,
         boxplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
+        scale_features: bool = False,
     ) -> Figure:
         if "estimator" in report_type:
             facet = sns.catplot(
@@ -423,12 +467,17 @@ class CoefficientsDisplay(DisplayMixin):
                 for col_value in frame[col].unique()
             ]
         )
+        xlabel = (
+            "Magnitude of scaled coefficient"
+            if scale_features
+            else "Magnitude of coefficient"
+        )
         for ax, n_feature in zip(ax_grid.flatten(), n_features, strict=True):
             _decorate_matplotlib_axis(
                 ax=ax,
                 add_background_features=add_background_features,
                 n_features=n_feature,
-                xlabel="Magnitude of coefficient",
+                xlabel=xlabel,
                 ylabel="",
             )
         return figure
@@ -443,6 +492,7 @@ class CoefficientsDisplay(DisplayMixin):
         barplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
+        scale_features: bool = False,
     ) -> Figure:
         """Plot the coefficients for an `EstimatorReport` or a `CrossValidationReport`.
 
@@ -515,9 +565,12 @@ class CoefficientsDisplay(DisplayMixin):
             barplot_kwargs=barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs=stripplot_kwargs,
+            scale_features=scale_features,
         )
 
         title = f"Coefficients of {estimator_name}"
+        if scale_features:
+            title = f"Scaled coefficients of {estimator_name}"
         if subplot_by is not None:
             title += f" by {subplot_by}"
         figure.suptitle(title)
@@ -545,6 +598,7 @@ class CoefficientsDisplay(DisplayMixin):
         barplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
+        scale_features: bool = False,
     ) -> Figure:
         """Plot the coefficients for a `ComparisonReport`.
 
@@ -650,9 +704,10 @@ class CoefficientsDisplay(DisplayMixin):
             barplot_kwargs={"sharey": has_same_features} | barplot_kwargs,
             boxplot_kwargs=boxplot_kwargs,
             stripplot_kwargs={"sharey": has_same_features} | stripplot_kwargs,
+            scale_features=scale_features,
         )
 
-        title = "Coefficients"
+        title = "Scaled coefficients" if scale_features else "Coefficients"
         if subplot_by is not None:
             title += f" by {subplot_by}"
         figure.suptitle(title)
@@ -665,6 +720,7 @@ class CoefficientsDisplay(DisplayMixin):
         estimator: BaseEstimator,
         name: str,
         report_type: ReportType,
+        X: ArrayLike | None = None,
     ) -> CoefficientsDisplay:
         """Compute the data for the display from a single estimator.
 
@@ -679,6 +735,10 @@ class CoefficientsDisplay(DisplayMixin):
         report_type : {"estimator", "cross-validation", "comparison-estimator", \
                 "comparison-cross-validation"}
             The type of report to compute the data for.
+
+        X : array-like or None, default=None
+            Training features used to compute :attr:`feature_std`. When `None`,
+            feature standard deviations are left unavailable.
 
         Returns
         -------
@@ -708,11 +768,28 @@ class CoefficientsDisplay(DisplayMixin):
         )
         n_features = len(feature_names)
 
+        if X is not None:
+            X_transformed: Any = (
+                preprocessor.transform(X)
+                if preprocessor is not None and len(preprocessor.steps) > 0
+                else X
+            )
+            if issparse(X_transformed):
+                _, variance = mean_variance_axis(X_transformed, axis=0)
+                std = np.sqrt(variance)
+            else:
+                std = np.std(X_transformed, axis=0)
+            # the intercept is given a unit standard deviation to leave it unscaled
+            feature_std = np.concatenate([[1.0], std])
+        else:
+            feature_std = np.full(n_features, np.nan)
+
         index = pd.DataFrame(
             {
                 "estimator": [name] * n_features,
                 "split": [np.nan] * n_features,
                 "feature": feature_names,
+                "feature_std": feature_std,
             }
         )
 

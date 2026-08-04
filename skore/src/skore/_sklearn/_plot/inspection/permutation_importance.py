@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from collections.abc import Callable
 from typing import Any, Literal, cast
 
@@ -475,25 +476,33 @@ class PermutationImportanceDisplay(DisplayMixin):
         """
         # Ensure seaborn receives a clean, unique index when concatenating groups.
         frame = frame.reset_index(drop=True)
-        facet = sns.catplot(
-            data=frame,
-            x="value",
-            y="feature",
-            hue=hue,
-            col=col,
-            kind="strip",
-            dodge=True,
-            sharex=False,
-            sharey=sharey,
-            **stripplot_kwargs,
-        ).map_dataframe(
-            sns.boxplot,
-            x="value",
-            y="feature",
-            hue=hue,
-            dodge=True,
-            **boxplot_kwargs,
-        )
+        # seaborn emits a FutureWarning when its `color=` fallback path builds a
+        # gradient palette; the fallback is intentional here, so silence it.
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=r"\s*Setting a gradient palette using color= is deprecated",
+                category=FutureWarning,
+            )
+            facet = sns.catplot(
+                data=frame,
+                x="value",
+                y="feature",
+                hue=hue,
+                col=col,
+                kind="strip",
+                dodge=True,
+                sharex=False,
+                sharey=sharey,
+                **stripplot_kwargs,
+            ).map_dataframe(
+                sns.boxplot,
+                x="value",
+                y="feature",
+                hue=hue,
+                dodge=True,
+                **boxplot_kwargs,
+            )
         add_background_features = hue is not None
         metric_name = frame["metric"].unique()[0]
         figure = facet.figure

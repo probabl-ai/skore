@@ -42,31 +42,6 @@ def test_interaction_cache_metrics(linear_regression_multioutput_with_test):
     )
 
 
-@pytest.mark.parametrize("prefit_estimator", [True, False])
-def test_has_side_effects(prefit_estimator):
-    """Re-fitting the estimator outside the EstimatorReport
-    should not have an effect on the EstimatorReport's internal estimator."""
-    X, y = make_classification(n_classes=2, random_state=42)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-
-    estimator = LogisticRegression()
-    if prefit_estimator:
-        estimator.fit(X_train, y_train)
-
-    report = EstimatorReport(
-        estimator,
-        X_train=X_train,
-        X_test=X_test,
-        y_train=y_train,
-        y_test=y_test,
-    )
-
-    predictions_before = report.estimator_.predict_proba(X_test)
-    estimator.fit(X_test, y_test)
-    predictions_after = report.estimator_.predict_proba(X_test)
-    np.testing.assert_array_equal(predictions_before, predictions_after)
-
-
 @pytest.mark.parametrize("metric", ["brier_score", "log_loss"])
 def test_brier_log_loss_requires_probabilities(metric):
     """Check that the Brier score and the Log loss is not defined for estimator
@@ -259,6 +234,22 @@ def test_score_skrub_learner_with_extra_env_vars():
     assert isinstance(report.metrics.score(), float)
 
 
+def test_score_skrub_learner_reuses_cached_predictions():
+    """``score`` passes the report's cached predictions to ``SkrubLearner.score``
+    instead of letting it recompute them."""
+    report = skrub_report(with_scoring=True)
+
+    assert report.metrics.score()["accuracy"] != 1.0
+
+    # Replace the cached predictions with the ground truth, i.e. pretend that
+    # the model predictions are perfect: if ``score`` reads from the cache,
+    # then the accuracy should become 1.0
+    report._clear_cache()
+    report._cache[("report", "test", "predict", None)] = report.y_test
+
+    assert report.metrics.score()["accuracy"] == 1.0
+
+
 # report.metrics.get
 
 
@@ -282,3 +273,43 @@ def test_get_custom(binary_classification_report):
     report.metrics.add(lambda estimator, X, y: 1, name="hello")
 
     assert report.metrics.get("hello") == 1
+
+
+def test_custom_metric_as_method(binary_classification_report):
+    """Custom metrics are accessible as methods."""
+    report = binary_classification_report
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.hello() == 1
+
+    report.metrics.remove("hello")
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()
+
+
+def test_builtin_metric_as_method(binary_classification_report):
+    """Built-in registry metrics are accessible as methods without static defs."""
+    report = binary_classification_report
+
+    assert "accuracy" in dir(report.metrics)
+    assert report.metrics.accuracy() == report.metrics.get("accuracy")
+    assert report.metrics.precision() == report.metrics.get("precision")
+
+
+def test_custom_metric_as_method_neg(binary_classification_report):
+    """Custom metrics which are `neg_` sklearn methods are accessible as methods."""
+    report = binary_classification_report
+
+    report.metrics.add("neg_mean_squared_error")
+    assert report.metrics.neg_mean_squared_error() == 0
+
+    with pytest.raises(AttributeError):
+        report.metrics.mean_squared_error()
+
+    report.metrics.add("mean_squared_error")
+    assert report.metrics.mean_squared_error() == 0

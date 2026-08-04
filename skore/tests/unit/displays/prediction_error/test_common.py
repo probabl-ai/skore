@@ -74,7 +74,7 @@ class TestPredictionErrorDisplay:
             "residuals",
         ]
 
-    def test_relplot_kwargs(self, pyplot, fixture_prefix, request, task):
+    def test_relplot_kwargs(self, fixture_prefix, request, task):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -99,7 +99,7 @@ class TestPredictionErrorDisplay:
             ax.collections[0].get_facecolor()[0][:3], [1.0, 0.0, 0.0]
         )
 
-    def test_plot_structure(self, pyplot, fixture_prefix, request, task):
+    def test_plot_structure(self, fixture_prefix, request, task):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -110,7 +110,7 @@ class TestPredictionErrorDisplay:
         assert ax.get_xlabel() == "Predicted values"
         assert ax.get_ylabel() == "Residuals (actual - predicted)"
 
-    def test_title(self, pyplot, fixture_prefix, request, task):
+    def test_title(self, fixture_prefix, request, task):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -130,7 +130,7 @@ class TestPredictionErrorDisplay:
             assert "Data source" not in title
 
     @pytest.mark.parametrize("subsample", [20, 0.25, None])
-    def test_subsample(pyplot, fixture_prefix, request, task, subsample):
+    def test_subsample(self, fixture_prefix, request, task, subsample):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]

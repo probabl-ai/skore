@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import html
 import uuid
-from collections import defaultdict
 from collections.abc import Generator
 from dataclasses import asdict
 from typing import TYPE_CHECKING, Any, Literal
@@ -18,21 +17,13 @@ from skrub._reporting._summarize import summarize_dataframe
 from skore._externals._pandas_accessors import DirNamesMixin
 from skore._externals._sklearn_compat import _safe_indexing, is_clusterer
 from skore._sklearn._base import _BaseReport
-from skore._sklearn._checks.base import CheckCode
 from skore._sklearn._checks.model_checks import _BUILTIN_CHECKS
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.types import (
-    PositiveLabel,
-    SKLearnCrossValidator,
-)
+from skore._sklearn.types import PositiveLabel, SKLearnCrossValidator
 from skore._utils._fixes import _validate_joblib_parallel_params
 from skore._utils._parallel import delayed
 from skore._utils._progress_bar import track
-from skore._utils._skrub import (
-    is_skrub_learner,
-    to_estimator,
-    to_learner,
-)
+from skore._utils._skrub import is_skrub_learner, to_estimator, to_learner
 from skore._utils.repr.data import get_documentation_url
 from skore._utils.repr.html_repr import render_template
 from skore._utils.repr.markdown import markdown_data_section, report_markdown_context
@@ -41,9 +32,7 @@ from skore._utils.repr.utils import repair_estimator_html_for_slotted_host
 if TYPE_CHECKING:
     from skore._sklearn._checks.accessor import _ChecksAccessor
     from skore._sklearn._cross_validation.data_accessor import _DataAccessor
-    from skore._sklearn._cross_validation.inspection_accessor import (
-        _InspectionAccessor,
-    )
+    from skore._sklearn._cross_validation.inspection_accessor import _InspectionAccessor
     from skore._sklearn._cross_validation.metrics_accessor import _MetricsAccessor
     from skore._sklearn.types import EstimatorLike
 
@@ -164,6 +153,9 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     See Also
     --------
+    skore.evaluate
+        Evaluate one or more estimators and return a report.
+
     skore.EstimatorReport
         Report for a fitted estimator.
 
@@ -337,7 +329,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         return {
             "version": _STATE_VERSION,
-            "metadata": self._metadata,
+            "metadata": self._metadata.copy(),
             "initialized_with_data_op": self._initialized_with_data_op,
             "estimator": self.estimator,
             "ml_task": self.ml_task,
@@ -362,7 +354,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
         report = cls.__new__(cls)
 
-        report._metadata = state["metadata"]
+        report._metadata = report._normalize_metadata(state["metadata"])
         report._initialized_with_data_op = state["initialized_with_data_op"]
         report._ml_task = state["ml_task"]
         report._pos_label = state["pos_label"]
@@ -378,8 +370,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         report.reports_ = []
         if report._initialized_with_data_op:
             split_data_iterator = report.learner_.data_op.skb.iter_cv_splits(
-                environment=report._data,
-                cv=report._split_indices,
+                environment=report._data, cv=report._split_indices
             )
         else:
             split_data_iterator = (
@@ -459,11 +450,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         list of np.ndarray of shape (n_samples,) or (n_samples, n_classes)
             The predictions for each cross-validation split.
 
-        Raises
-        ------
-        ValueError
-            If the data source is invalid.
-
         Examples
         --------
         >>> from sklearn.datasets import make_classification
@@ -483,8 +469,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
         return [
             report.get_predictions(
-                data_source=data_source,
-                response_method=response_method,
+                data_source=data_source, response_method=response_method
             )
             for report in self.reports_
         ]
@@ -555,63 +540,6 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
             )
         return report
 
-    def _aggregate_checks(
-        self,
-        ignored_codes: set[CheckCode],
-        *,
-        fast_mode: bool = False,
-    ) -> tuple[dict[CheckCode, dict], set[CheckCode], set[CheckCode]]:
-        total_splits = len(self.reports_)
-        all_applicable_codes: set[CheckCode] = set()
-        all_not_applicable_codes: set[CheckCode] = set()
-        positives_by_code: defaultdict[CheckCode, list[dict]] = defaultdict(list)
-        ref_by_code: dict[CheckCode, dict] = {}
-
-        for estimator_report in self.reports_:
-            estimator_report.checks.add(self._checks_registry)
-            results, applicable_codes, not_applicable_codes = (
-                estimator_report._get_results(ignored_codes, fast_mode=fast_mode)
-            )
-            all_applicable_codes |= applicable_codes
-            all_not_applicable_codes |= not_applicable_codes
-            for code, check_result in results.items():
-                ref_by_code.setdefault(code, check_result)
-                if code in applicable_codes and check_result["explanation"] is not None:
-                    positives_by_code[code].append(check_result)
-
-        all_not_applicable_codes -= all_applicable_codes
-
-        aggregated: dict[CheckCode, dict] = {}
-        for code in all_applicable_codes:
-            positives = positives_by_code[code]
-            if len(positives) > total_splits / 2:
-                ref = positives[0]
-                aggregated[code] = {
-                    "title": ref["title"],
-                    "docs_url": ref.get("docs_url"),
-                    "explanation": (
-                        f"Detected in {len(positives)}/{total_splits} evaluated splits."
-                    ),
-                    "severity": ref.get("severity"),
-                }
-            else:
-                ref = ref_by_code[code]
-                aggregated[code] = {
-                    "title": ref["title"],
-                    "docs_url": ref.get("docs_url"),
-                    "explanation": None,
-                    "severity": ref.get("severity"),
-                }
-        for code in all_not_applicable_codes:
-            ref = ref_by_code[code]
-            aggregated[code] = {
-                "title": ref["title"],
-                "docs_url": ref.get("docs_url"),
-                "explanation": ref["explanation"],
-                "severity": ref.get("severity"),
-            }
-        return aggregated, all_applicable_codes, all_not_applicable_codes
-
     @property
     def ml_task(self) -> str:
         return self._ml_task
@@ -670,14 +598,16 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
 
     def __repr__(self) -> str:
         """Return a string representation."""
+        metrics_frame = (
+            self.metrics.summarize(data_source="test")
+            .frame(verbose_name=True, flat_index=False)
+            .droplevel(level=0, axis="columns")
+            .rename_axis(None, axis="columns")
+        )
         return f"""{self.__class__.__name__}:
         {self.estimator_name_!r}
 
-        {
-            self.metrics.summarize(data_source="test")
-            .frame()
-            .droplevel(level=0, axis="columns")
-        }
+        {metrics_frame}
         Call `report.to_markdown()` for a markdown summary of the report's contents."""
 
     def to_markdown(self) -> str:
@@ -694,16 +624,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         """
         metrics_text = repr(
             self.metrics.summarize(data_source="test")
-            .frame()
+            .frame(verbose_name=True, flat_index=False)
             .droplevel(level=0, axis="columns")
+            .rename_axis(None, axis="columns")
         )
         timings = self.metrics.timings()
         summary = summarize_dataframe(
             self.data._prepare_dataframe_for_display(
-                with_y=True,
-                subsample=None,
-                subsample_strategy="head",
-                seed=None,
+                with_y=True, subsample=None, subsample_strategy="head", seed=None
             ),
             with_plots=False,
             with_associations=False,
@@ -736,8 +664,14 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         """
         metrics_html = (
             self.metrics.summarize(data_source="test")
-            .frame(aggregate=("mean", "std"), favorability=False)
+            .frame(
+                aggregate=("mean", "std"),
+                favorability=False,
+                verbose_name=True,
+                flat_index=False,
+            )
             .droplevel(level=0, axis="columns")
+            .rename_axis(None, axis="columns")
             .reset_index()
             .to_html(index=False)
         )
@@ -745,11 +679,7 @@ class CrossValidationReport(_BaseReport, DirNamesMixin):
         df = self.data._prepare_dataframe_for_display(
             with_y=self.ml_task != "clustering"
         )
-        table_report = skrub.TableReport(
-            df,
-            plot_distributions=False,
-            verbose=False,
-        )
+        table_report = skrub.TableReport(df, plot_distributions=False, verbose=False)
         table_report._set_minimal_mode()
         table_report_html = table_report.html_snippet()
 

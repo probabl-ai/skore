@@ -3,7 +3,6 @@ import pytest
 
 
 def test_legend_binary_classification(
-    pyplot,
     cross_validation_reports_binary_classification,
     cross_validation_reports_binary_classification_figure_axes,
 ):
@@ -26,7 +25,6 @@ def test_legend_binary_classification(
 
 
 def test_legend_multiclass_classification(
-    pyplot,
     cross_validation_reports_multiclass_classification,
     cross_validation_reports_multiclass_classification_figure_axes,
 ):
@@ -103,7 +101,7 @@ def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
         "cross_validation_reports_multiclass_classification",
     ],
 )
-def test_data_source_both(pyplot, report_name, request):
+def test_data_source_both(report_name, request):
     """Check that precision_recall(data_source='both') includes train and test data."""
     report = request.getfixturevalue(report_name)[0]
     display = report.metrics.precision_recall(data_source="both")

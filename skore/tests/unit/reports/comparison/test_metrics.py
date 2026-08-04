@@ -39,9 +39,9 @@ def test_favorability_undefined_metrics(report):
     comparison_report = ComparisonReport(reports)
     metrics = comparison_report.metrics.summarize()
     assert isinstance(metrics, MetricsSummaryDisplay)
-    metrics_df = metrics.frame(favorability=True)
+    metrics_df = metrics.frame(flat_index=False, favorability=True, verbose_name=True)
 
-    assert "Brier score" in metrics_df.index
+    assert "Brier score" in metrics_df.index.get_level_values("Metric").to_numpy()
     assert "Favorability" in metrics_df.columns
     assert not metrics_df["Favorability"].isna().any()
     expected_values = {"(↗︎)", "(↘︎)"}
@@ -126,3 +126,30 @@ def test_available_with_unknown_report_name_raises(report):
     comparison_report = ComparisonReport(reports)
     with pytest.raises(ValueError, match="Unknown report name"):
         comparison_report.metrics.available(report_name="unknown")
+
+
+def test_non_default_n_jobs():
+    """summarize() must work when ComparisonReport uses process-based parallelism.
+
+    Joblib must not pickle a bound metrics-accessor method; that used to recurse
+    while unpickling ``__getattr__`` / ``available()`` in worker processes.
+    """
+    X, y = make_classification(random_state=0)
+    reports = {
+        "LinearSVC": EstimatorReport(
+            LinearSVC(), X_train=X, X_test=X, y_train=y, y_test=y, pos_label=1
+        ),
+        "LogisticRegression": EstimatorReport(
+            LogisticRegression(),
+            X_train=X,
+            X_test=X,
+            y_train=y,
+            y_test=y,
+            pos_label=1,
+        ),
+    }
+    comparison_report = ComparisonReport(reports, n_jobs=2)
+    display = comparison_report.metrics.summarize()
+
+    assert isinstance(display, MetricsSummaryDisplay)
+    assert set(display.summary["estimator"]) == {"LinearSVC", "LogisticRegression"}

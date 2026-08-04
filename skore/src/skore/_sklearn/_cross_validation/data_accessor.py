@@ -97,6 +97,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
         with_y: bool = True,
         subsample: int | None = None,
         subsample_strategy: Literal["head", "random"] = "head",
+        with_plots: bool = True,
         seed: int | None = None,
     ) -> TableReportDisplay:
         """Plot dataset statistics.
@@ -121,6 +122,10 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             - If ``"random"``: randomly subsample the dataframe by using a uniform
               distribution. The random seed is controlled by ``seed``.
 
+        with_plots : bool, default=True
+            Whether to compute the TableReport plots, which can be computationally
+            expensive.
+
         seed : int, default=None
             The random seed to use when randomly subsampling. It only has an effect when
             ``subsample`` is not None and ``subsample_strategy='random'``.
@@ -132,10 +137,10 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
 
         Examples
         --------
-        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.datasets import make_classification
         >>> from sklearn.linear_model import LogisticRegression
         >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> X, y = make_classification(n_samples=200, random_state=0)
         >>> classifier = LogisticRegression()
         >>> report = evaluate(classifier, X, y, splitter=2)
         >>> report.data.summarize().frame()
@@ -146,7 +151,7 @@ class _DataAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             subsample_strategy=subsample_strategy,
             seed=seed,
         )
-        return TableReportDisplay._compute_data_for_display(df)
+        return TableReportDisplay._compute_data_for_display(df, with_plots=with_plots)
 
     def analyze(self, **kwargs) -> TableReportDisplay:
         """Use :meth:`summarize` instead."""

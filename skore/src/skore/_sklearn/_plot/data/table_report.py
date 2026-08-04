@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any, Literal
 
 import narwhals as nw
@@ -199,7 +201,11 @@ class TableReportDisplay(DisplayMixin):
         self.summary = summary
 
     @classmethod
-    def _compute_data_for_display(cls, dataset: UserDataFrame) -> "TableReportDisplay":
+    def _compute_data_for_display(
+        cls,
+        dataset: UserDataFrame,
+        with_plots: bool,
+    ) -> TableReportDisplay:
         """Private method to create a TableReportDisplay from a dataset.
 
         Parameters
@@ -207,20 +213,23 @@ class TableReportDisplay(DisplayMixin):
         dataset : UserDataFrame
             The dataset to summarize, as a pandas or polars DataFrame.
 
+        with_plots : bool
+            Whether to compute the TableReport plots, which can be computationally
+            expensive.
+
         Returns
         -------
         display : TableReportDisplay
             Object that stores computed values.
         """
         with plt.ioff():
-            return cls(
-                summarize_dataframe(
-                    dataset,
-                    with_plots=True,
-                    title=None,
-                    verbose=0,
-                )
+            summary = summarize_dataframe(
+                dataset,
+                with_plots=with_plots,
+                title=None,
+                verbose=0,
             )
+        return cls(summary)
 
     @DisplayMixin.style_plot
     def plot(

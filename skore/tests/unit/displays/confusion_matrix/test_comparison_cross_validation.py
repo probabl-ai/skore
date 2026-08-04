@@ -13,7 +13,7 @@ from skore import ComparisonReport, CrossValidationReport
         "comparison_cross_validation_reports_multiclass_classification",
     ],
 )
-def test_subplot_by(pyplot, subplot_by, fixture_name, request):
+def test_subplot_by(subplot_by, fixture_name, request):
     """Check that the subplot_by parameter works correctly for comparison reports."""
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.confusion_matrix()
@@ -32,7 +32,6 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
 
 
 def test_split_aggregation(
-    pyplot,
     comparison_cross_validation_reports_binary_classification,
     comparison_cross_validation_reports_binary_classification_figure_axes,
 ):
@@ -70,7 +69,7 @@ def test_estimator_names_in_confusion_matrix(
     assert set(estimator_names) == set(report.reports_.keys())
 
 
-def test_pos_label(pyplot, forest_binary_classification_data):
+def test_pos_label(forest_binary_classification_data):
     """Check that the report_pos_label parameter works correctly."""
     estimator, X, y = forest_binary_classification_data
     labels = np.array(["A", "B"], dtype=object)

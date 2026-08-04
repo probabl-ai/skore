@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by 0007
 date: 2025-01-06
 decision-makers: ["@augustebaum", "@sylvaincom", "@glemaitre"]
 consulted: ["@ogrisel"]

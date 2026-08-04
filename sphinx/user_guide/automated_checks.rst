@@ -40,17 +40,10 @@ can be skipped with `fast_mode=True`:
 
     report.checks.summarize(fast_mode=True)
 
-In fast mode, slow checks that are not yet in the cache are not run; cached
-slow results from a previous call are still surfaced. The HTML representation
-of a report uses fast mode so it never triggers an expensive computation.
-
-For cross-validation reports, checks are run per split and then aggregated
-at report level through :meth:`~skore.CrossValidationReport.checks.summarize`. An issue is
-reported only when it appears in a strict majority of evaluated splits.
-
 For comparison reports, :meth:`~skore.ComparisonReport.checks.summarize` builds a global
-summary from each component report in the comparison. Issues are grouped by
-component report and emitted as a single message.
+summary from each compared report. Results are grouped by check code; the HTML summary
+lists each check once with per-estimator sub-entries for issues, tips, not-applicable
+reasons, and fast-mode skips.
 
 
 .. _skd001-overfitting:
@@ -84,10 +77,13 @@ training data and may generalize poorly.
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^
 
-- simplify the model,
 - regularize more strongly,
+- use early stopping for iterative models,
 - improve feature engineering,
 - use better validation protocols or more data.
+
+Check out the
+:ref:`example for this check <example_skd001_skd002_overfitting_underfitting>`.
 
 
 .. _skd002-underfitting:
@@ -125,6 +121,9 @@ How to reduce the risk
 - tune hyperparameters (see :ref:`SKD015 <skd015-hyperparameters-worth-tuning>`
   and :ref:`SKD016 <skd016-estimator-not-tuned>`),
 - collect richer data if possible.
+
+Check out the
+:ref:`example for this check <example_skd001_skd002_overfitting_underfitting>`.
 
 
 .. _skd003-inconsistent-performance:

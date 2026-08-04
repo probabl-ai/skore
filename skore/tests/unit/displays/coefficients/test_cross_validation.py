@@ -1,4 +1,5 @@
 import matplotlib as mpl
+import numpy as np
 import pytest
 
 
@@ -29,7 +30,7 @@ import pytest
         ),
     ],
 )
-def test_invalid_subplot_by(pyplot, fixture_name, subplot_by, err_msg, request):
+def test_invalid_subplot_by(fixture_name, subplot_by, err_msg, request):
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
     display = report.inspection.coefficients()
@@ -58,7 +59,7 @@ def test_invalid_subplot_by(pyplot, fixture_name, subplot_by, err_msg, request):
         ),
     ],
 )
-def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     """Check that we can pass non default values to `subplot_by`."""
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
@@ -71,3 +72,19 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
             assert isinstance(axes[0], mpl.axes.Axes)
         else:
             assert len(axes) == expected_len
+
+
+def test_scale_features(cross_validation_reports_regression):
+    """CV displays store per-split feature_std and can scale coefficients."""
+    report = cross_validation_reports_regression[0]
+    display = report.inspection.coefficients()
+    assert display.coefficients["feature_std"].notna().all()
+
+    raw = display.frame(aggregate=None, include_intercept=False)
+    scaled = display.frame(aggregate=None, include_intercept=False, scale_features=True)
+    assert "feature_std" not in scaled.columns
+
+    feature_std = display.coefficients.query("feature != 'Intercept'")["feature_std"]
+    np.testing.assert_allclose(
+        scaled["coefficient"], raw["coefficient"] * feature_std.to_numpy()
+    )

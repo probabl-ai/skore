@@ -9,7 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 from skore import ComparisonReport, CrossValidationReport, compare, evaluate
 
 
-def test_data_source_both_legend_matches_curves(pyplot):
+def test_data_source_both_legend_matches_curves():
     """Legend colors must match the drawn curves with ``data_source="both"``.
 
     Non-regression test for https://github.com/probabl-ai/skore/issues/2925, the
@@ -58,7 +58,6 @@ def test_data_source_both_legend_matches_curves(pyplot):
 
 
 def test_legend_binary_classification(
-    pyplot,
     comparison_cross_validation_reports_binary_classification,
     comparison_cross_validation_reports_binary_classification_figure_axes,
 ):
@@ -88,7 +87,6 @@ def test_legend_binary_classification(
 
 
 def test_legend_multiclass_classification(
-    pyplot,
     comparison_cross_validation_reports_multiclass_classification,
     comparison_cross_validation_reports_multiclass_classification_figure_axes,
 ):
@@ -118,7 +116,7 @@ def test_legend_multiclass_classification(
             )
 
 
-def test_multiclass_str_labels_precision_recall_plot(pyplot):
+def test_multiclass_str_labels_precision_recall_plot():
     """Regression test for issue #2183 with multiclass comparison reports.
 
     Using string labels backed by numpy.str_ should not break

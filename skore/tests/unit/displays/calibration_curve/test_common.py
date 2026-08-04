@@ -11,7 +11,7 @@ from skore import CalibrationDisplay
 )
 @pytest.mark.parametrize("task", ["binary_classification", "multiclass_classification"])
 class TestCalibrationDisplay:
-    def test_class_attributes(self, pyplot, fixture_prefix, task, request):
+    def test_class_attributes(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -52,7 +52,7 @@ class TestCalibrationDisplay:
         }
         assert set(display.frame().columns) == expected
 
-    def test_plot_structure(self, pyplot, fixture_prefix, task, request):
+    def test_plot_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -61,7 +61,7 @@ class TestCalibrationDisplay:
         assert ax.get_xlabel() == "Mean predicted probability"
         assert ax.get_ylabel() == "Fraction of positives"
 
-    def test_title(self, pyplot, fixture_prefix, task, request):
+    def test_title(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -73,7 +73,7 @@ class TestCalibrationDisplay:
             estimator_name = display.calibration_report["estimator"].iloc[0]
             assert estimator_name in title
 
-    def test_kwargs(self, pyplot, fixture_prefix, task, request):
+    def test_kwargs(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]

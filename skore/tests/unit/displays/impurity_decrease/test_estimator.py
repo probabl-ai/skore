@@ -8,7 +8,7 @@ from skore import EstimatorReport, ImpurityDecreaseDisplay
 from skore._externals._sklearn_compat import convert_container
 
 
-def test_with_pipeline(pyplot, forest_binary_classification_with_train_test):
+def test_with_pipeline(forest_binary_classification_with_train_test):
     estimator, X_train, X_test, y_train, y_test = (
         forest_binary_classification_with_train_test
     )

@@ -68,6 +68,13 @@ def test_table_report_display_frame(cross_validation_report, display):
         ("polars", "polars_series"),
     ],
 )
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+@pytest.mark.filterwarnings(
+    "ignore:Support for the dataframe interchange protocol"
+    " is deprecated:DeprecationWarning"
+)
 def test_display_creation_with_containers(x_container, y_container):
     """Check that the display can be created with paired container types."""
     X, y = make_regression(n_samples=100, n_features=5, random_state=42)
@@ -102,6 +109,12 @@ def test_display_creation_with_containers(x_container, y_container):
         pd.DataFrame(np.ones((100, 1))),
         pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
     ],
+)
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+@pytest.mark.filterwarnings(
+    "ignore:Some dataframe column names are not strings:UserWarning"
 )
 def test_display_creation(X, y):
     """Check that the display can be created with different types of X and y."""

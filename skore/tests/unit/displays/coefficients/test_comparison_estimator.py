@@ -1,4 +1,5 @@
 import matplotlib as mpl
+import numpy as np
 import pytest
 
 
@@ -23,7 +24,7 @@ import pytest
         ),
     ],
 )
-def test_invalid_subplot_by(pyplot, fixture_name, valid_values, request):
+def test_invalid_subplot_by(fixture_name, valid_values, request):
     report = request.getfixturevalue(fixture_name)
     display = report.inspection.coefficients()
     err_msg = (
@@ -55,7 +56,7 @@ def test_invalid_subplot_by(pyplot, fixture_name, valid_values, request):
         ),
     ],
 )
-def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
+def test_valid_subplot_by(fixture_name, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
     display = report.inspection.coefficients()
     for subplot_by, expected_len in subplot_by_tuples:
@@ -76,7 +77,6 @@ def test_valid_subplot_by(pyplot, fixture_name, subplot_by_tuples, request):
     ],
 )
 def test_subplot_by_none_multiclass_or_multioutput(
-    pyplot,
     request,
     fixture_name,
 ):
@@ -107,7 +107,7 @@ def test_subplot_by_none_multiclass_or_multioutput(
         ),
     ],
 )
-def test_different_features(pyplot, fixture_name, subplot_by, request):
+def test_different_features(fixture_name, subplot_by, request):
     """Check that we get a proper report even if the estimators do not have the same
     input features."""
     report = request.getfixturevalue(fixture_name)
@@ -123,3 +123,21 @@ def test_different_features(pyplot, fixture_name, subplot_by, request):
     fig = display.plot(subplot_by="estimator")
     assert fig is not None
     assert len(fig.axes) >= 1
+
+
+def test_scale_features(comparison_estimator_reports_regression):
+    """Comparison displays store per-estimator feature_std and can scale."""
+    display = comparison_estimator_reports_regression.inspection.coefficients()
+    assert display.coefficients["feature_std"].notna().all()
+
+    raw = display.frame(include_intercept=False)
+    scaled = display.frame(include_intercept=False, scale_features=True)
+    assert "feature_std" not in scaled.columns
+
+    feature_std = display.coefficients.query("feature != 'Intercept'")["feature_std"]
+    np.testing.assert_allclose(
+        scaled["coefficient"], raw["coefficient"] * feature_std.to_numpy()
+    )
+
+    figure = display.plot(scale_features=True)
+    assert figure.get_suptitle() == "Scaled coefficients"

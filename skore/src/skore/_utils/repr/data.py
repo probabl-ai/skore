@@ -23,7 +23,7 @@ class MethodHelp:
     name: str
     parameters: str
     description: str
-    doc_url: str
+    doc_url: str | None = None
 
 
 @dataclass

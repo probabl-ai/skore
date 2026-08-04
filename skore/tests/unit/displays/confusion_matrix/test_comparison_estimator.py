@@ -14,7 +14,7 @@ from skore import ComparisonReport, EstimatorReport
         "comparison_estimator_reports_multiclass_classification",
     ],
 )
-def test_subplot_by(pyplot, subplot_by, fixture_name, request):
+def test_subplot_by(subplot_by, fixture_name, request):
     """Check that the subplot_by parameter works correctly for comparison reports."""
     report = request.getfixturevalue(fixture_name)
     display = report.metrics.confusion_matrix()
@@ -32,7 +32,7 @@ def test_subplot_by(pyplot, subplot_by, fixture_name, request):
         assert len(axes) == len(report.reports_)
 
 
-def test_pos_label(pyplot, binary_classification_train_test_split):
+def test_pos_label(binary_classification_train_test_split):
     """Check that the report_pos_label parameter works correctly."""
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
     labels = np.array(["A", "B"], dtype=object)

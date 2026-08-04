@@ -21,7 +21,7 @@ from skore._utils._testing import check_frame_structure
 )
 class TestRocCurveDisplay:
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_class_attributes(self, pyplot, fixture_prefix, task, request):
+    def test_class_attributes(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -88,7 +88,7 @@ class TestRocCurveDisplay:
         ]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_relplot_kwargs(self, pyplot, fixture_prefix, task, request):
+    def test_relplot_kwargs(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -109,7 +109,7 @@ class TestRocCurveDisplay:
         assert actual_colors == set(palette)
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_plot_structure(self, pyplot, fixture_prefix, task, request):
+    def test_plot_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -128,7 +128,7 @@ class TestRocCurveDisplay:
         assert ax.get_xlim() == ax.get_ylim() == (-0.01, 1.01)
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_title(self, pyplot, fixture_prefix, task, request):
+    def test_title(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -160,9 +160,8 @@ def test_pos_label(binary_classification_train_test_split):
     labels = np.array(["A", "B"], dtype=object)
     y_train = labels[y_train]
     y_test = labels[y_test]
-    estimator = LogisticRegression().fit(X_train, y_train)
     report = EstimatorReport(
-        estimator,
+        LogisticRegression(),
         X_train=X_train,
         y_train=y_train,
         X_test=X_test,

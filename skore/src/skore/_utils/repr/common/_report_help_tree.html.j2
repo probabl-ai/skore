@@ -1,3 +1,4 @@
+{% from "common/_method_label.html.j2" import method_label %}
 <div class="tree">
         {% if is_report %}
             {# Root node #}
@@ -15,7 +16,7 @@
                     <div class="branch-content" id="{{ accessor.branch_id }}">
                         {% for method in accessor.methods %}
                             <div class="node method">
-                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}</span></a>{{ method.parameters }}</span>
+                                <span class="method-name">{{ method_label(method) }}</span>
                                 </div>
                         {% endfor %}
                     </div>
@@ -32,7 +33,7 @@
                     <div class="branch-content" id="{{ methods_section.branch_id }}">
                         {% for method in base_methods %}
                             <div class="node method">
-                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}</span></a>{{ method.parameters }}</span>
+                                <span class="method-name">{{ method_label(method) }}</span>
                                 </div>
                         {% endfor %}
                     </div>
@@ -70,7 +71,7 @@
                     <div class="branch-content" id="{{ accessor_branch_id }}">
                         {% for method in methods %}
                             <div class="node method">
-                                <span class="method-name">.<a href="{{ method.doc_url }}" target="_blank" class="method-tooltip">{{ method.name }}<span class="tooltip-text">{{ method.description|e }}{% if method.favorability %} {{ method.favorability|safe }}{% endif %}</span></a>{{ method.parameters }}</span>
+                                <span class="method-name">{{ method_label(method) }}</span>
                                 </div>
                         {% endfor %}
                     </div>

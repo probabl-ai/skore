@@ -3,7 +3,7 @@ from re import escape
 from unittest.mock import Mock
 from uuid import uuid4
 
-from pandas import DataFrame, MultiIndex, Series, Timestamp
+from pandas import Timestamp
 from pytest import fixture, mark, param, raises
 from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
@@ -358,30 +358,26 @@ class TestProject:
 
         assert project._Project__project.summarize.called
         assert isinstance(summary, Summary)
-        assert DataFrame.equals(
-            summary.frame(),
-            DataFrame(
-                data={
-                    "key": Series(["<key>"], dtype="string", index=[(0, "<id>")]),
-                    "date": Series(
-                        [Timestamp("2024-01-01T00:00:00")], index=[(0, "<id>")]
-                    ),
-                    "learner": Series(
-                        ["<learner>"],
-                        dtype="category",
-                        index=[(0, "<id>")],
-                    ),
-                    "report_type": Series(
-                        ["estimator"], dtype="string", index=[(0, "<id>")]
-                    ),
-                    "dataset": Series(
-                        ["<dataset>"], dtype="string", index=[(0, "<id>")]
-                    ),
-                    "accuracy": Series([1.0], index=[(0, "<id>")]),
-                },
-                index=MultiIndex.from_tuples([(0, "<id>")], names=[None, "id"]),
-            ),
-        )
+        assert summary.frame().to_dict() == {
+            "accuracy": {
+                (0, "<id>"): 1.0,
+            },
+            "dataset": {
+                (0, "<id>"): "<dataset>",
+            },
+            "date": {
+                (0, "<id>"): Timestamp("2024-01-01 00:00:00"),
+            },
+            "key": {
+                (0, "<id>"): "<key>",
+            },
+            "learner": {
+                (0, "<id>"): "<learner>",
+            },
+            "report_type": {
+                (0, "<id>"): "estimator",
+            },
+        }
 
     def test_summarize_with_skore_local_project(self, monkeypatch, tmpdir):
         """Smoke test to check that the summary HTML repr can be shown."""

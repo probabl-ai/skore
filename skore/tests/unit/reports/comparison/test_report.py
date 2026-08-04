@@ -17,6 +17,7 @@ from skore import (
     ComparisonReport,
     CrossValidationReport,
     EstimatorReport,
+    compare,
     evaluate,
 )
 from skore._externals._sklearn_compat import convert_container
@@ -278,8 +279,9 @@ def test_create_estimator_report_skrub_concatenate_train_and_test_raises():
         )
 
 
-def test_create_estimator_report_skrub_uses_fitted_estimator_without_refit():
-    """Skrub path should use new test_data for held-out evaluation."""
+def test_create_estimator_report_skrub_refits_on_train_data():
+    """Skrub path should refit the unfitted estimator on train_data and use
+    new test_data for held-out evaluation."""
     X, y = make_classification(n_samples=40, random_state=0)
     data_op_a = skrub.X(X).skb.apply(
         LogisticRegression(C=0.5, random_state=0), y=skrub.y(y)
@@ -305,6 +307,8 @@ def test_create_estimator_report_skrub_uses_fitted_estimator_without_refit():
     assert isinstance(final_report, EstimatorReport)
     assert joblib.hash(final_report.X_train) == joblib.hash(source_a.X_train)
     assert joblib.hash(final_report.X_test) == joblib.hash(source_a.X_test)
+    assert final_report.estimator is source_a.estimator
+    assert final_report.estimator_ is not source_a.estimator_
 
 
 def test_create_estimator_report_skrub_requires_test_data():
@@ -484,7 +488,10 @@ def test_to_markdown_pos_label():
 def test_to_markdown_different_datasets():
     X1, y = make_classification(n_samples=100, n_features=20, random_state=0)
     X2, _ = make_classification(n_samples=100, n_features=10, random_state=1)
-    report = evaluate([LinearRegression(), LinearRegression()], [X1, X2], y)
+    model = LinearRegression()
+    r1 = evaluate(model, X1, y)
+    r2 = evaluate(model, X2, y)
+    report = compare([r1, r2])
     markdown = report.to_markdown()
     assert "## Data" in markdown
     assert "| report name | n_rows | n_columns |" in markdown

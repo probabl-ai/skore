@@ -44,7 +44,7 @@ def _iter_groups(frame):
 )
 class TestConfusionMatrixDisplay:
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_class_attributes(self, pyplot, fixture_prefix, task, request):
+    def test_class_attributes(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
             report = report[0]
@@ -180,7 +180,7 @@ class TestConfusionMatrixDisplay:
         assert display.confusion_matrix_thresholded.shape[0] == expected_rows
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_facet_grid_kwargs(self, pyplot, fixture_prefix, task, request):
+    def test_facet_grid_kwargs(self, fixture_prefix, task, request):
         """Check that we can override default facet grid kwargs."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
@@ -196,7 +196,7 @@ class TestConfusionMatrixDisplay:
         assert fig.get_figheight() == 8
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_heatmap_kwargs(self, pyplot, fixture_prefix, task, request):
+    def test_heatmap_kwargs(self, fixture_prefix, task, request):
         """Check that heatmap kwargs are applied correctly and can be changed."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
@@ -214,7 +214,7 @@ class TestConfusionMatrixDisplay:
         assert ax.collections[0].get_cmap().name == "Reds"
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_plot_attributes(self, pyplot, fixture_prefix, task, request):
+    def test_plot_attributes(self, fixture_prefix, task, request):
         """Check that the plot has correct attributes and labels."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
@@ -243,7 +243,7 @@ class TestConfusionMatrixDisplay:
             assert yticklabels == ["0", "1", "2"]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_threshold_in_title(self, pyplot, fixture_prefix, task, request):
+    def test_threshold_in_title(self, fixture_prefix, task, request):
         """Check title for both default and thresholded plots."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
@@ -266,7 +266,7 @@ class TestConfusionMatrixDisplay:
         assert expected_label_line in title
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_thresholded_plot_ticklabels(self, pyplot, fixture_prefix, task, request):
+    def test_thresholded_plot_ticklabels(self, fixture_prefix, task, request):
         """Check that thresholded plot uses OvR tick labels with positive class star."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
@@ -295,7 +295,7 @@ class TestConfusionMatrixDisplay:
         assert frame_all.shape[0] == display.confusion_matrix_thresholded.shape[0]
 
     @pytest.mark.parametrize("task", ["binary", "multiclass"])
-    def test_normalization(self, pyplot, fixture_prefix, task, request):
+    def test_normalization(self, fixture_prefix, task, request):
         """Check normalization on both predict-based and thresholded frames."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}_classification")
         if isinstance(report, tuple):
@@ -377,7 +377,7 @@ def test_data_source_both_is_not_supported(binary_classification_data):
         report.metrics.confusion_matrix(data_source="both")
 
 
-def test_plot_threshold_requires_label(pyplot, binary_classification_data):
+def test_plot_threshold_requires_label(binary_classification_data):
     """Check that plot raises when threshold_value is set but label is None."""
     X, y = binary_classification_data
     report = evaluate(LogisticRegression(), X, y, splitter=0.2)
@@ -401,7 +401,7 @@ def test_frame_threshold_label_none_returns_all_labels(binary_classification_dat
 
 @pytest.mark.parametrize("threshold_value", [None, 0.5])
 def test_multiclass_plot_with_numeric_label(
-    pyplot, multiclass_classification_data, threshold_value
+    multiclass_classification_data, threshold_value
 ):
     """Check that numeric labels can select predict-based and thresholded OvR plots."""
     X, y = multiclass_classification_data
@@ -417,7 +417,7 @@ def test_multiclass_plot_with_numeric_label(
     assert yticklabels == ["not 1", "1*"]
 
 
-def test_plot_threshold_all_not_supported(pyplot, binary_classification_data):
+def test_plot_threshold_all_not_supported(binary_classification_data):
     """Check that plot raises when threshold_value='all'."""
     X, y = binary_classification_data
     report = evaluate(LogisticRegression(), X, y, splitter=0.2)
@@ -476,7 +476,7 @@ def test_confusion_matrix_thresholded_not_available_comparison(
         display.frame(threshold_value=0.5)
 
 
-def test_missing_class_in_split(pyplot, binary_classification_data):
+def test_missing_class_in_split(binary_classification_data):
     """Check that the confusion matrix is correct when a class is missing in a split."""
     X = np.array([[0], [1], [0], [0]])
     y = np.array([0, 1, 0, 0])

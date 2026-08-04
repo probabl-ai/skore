@@ -4,8 +4,10 @@ from collections import Counter, defaultdict
 from collections.abc import Iterable, Sized
 from functools import cached_property
 from inspect import signature
+from itertools import chain
 from typing import Any, ClassVar, cast
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 from pydantic import computed_field
@@ -38,10 +40,16 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.data import TableReport
 from skore._plugins.hub.artifact.media.media import Media
-from skore._plugins.hub.metric import Metric
+from skore._plugins.hub.metric import (
+    Metric,
+    find_multimetric_scalar_names,
+    get_hub_metric_name,
+    select_exportable_metrics,
+)
 from skore._plugins.hub.report.estimator_report import EstimatorReportPayload
 from skore._plugins.hub.report.report import ReportPayload
 
+SPLITTING_STRATEGY_MAX_INDEX_COUNT = 10_000
 SPLITTING_STRATEGY_REPR_SAMPLE_COUNT = 100
 TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT = 100
 SPLITTERS = {
@@ -59,23 +67,28 @@ def _regression_target_kdes(
     y: np.ndarray,
 ) -> tuple[list[list[float]], list[tuple[float, float]]]:
     """Estimate per-target density curves for regression splitting strategy."""
-    sample_count = TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT
-    y = np.asarray(y)
-    if y.ndim == 1:
-        lo, hi = float(y.min()), float(y.max())
-        linspace = np.linspace(lo, hi, num=sample_count)
-        kde = gaussian_kde(y)
-        return [[float(x) for x in kde(linspace)]], [(lo, hi)]
 
-    curves: list[list[float]] = []
-    ranges: list[tuple[float, float]] = []
-    for col in y.T:
-        col_arr = np.asarray(col).ravel()
+    def _target_distribution(
+        col_arr: np.ndarray,
+    ) -> tuple[list[float], tuple[float, float]]:
+        col_arr = np.asarray(col_arr).ravel()
         lo, hi = float(col_arr.min()), float(col_arr.max())
-        linspace = np.linspace(lo, hi, num=sample_count)
-        curves.append([float(x) for x in gaussian_kde(col_arr).evaluate(linspace)])
-        ranges.append((lo, hi))
-    return curves, ranges
+        linspace = np.linspace(lo, hi, num=TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT)
+
+        if len(col_arr) > 1:
+            curve = [float(x) for x in gaussian_kde(col_arr).evaluate(linspace)]
+        else:
+            # Fallback when `y` is not compatible with `gaussian_kde`
+            distribution = np.zeros(TARGET_DISTRIBUTION_REPR_SAMPLE_COUNT, dtype=float)
+            distribution[np.abs(linspace - col_arr[0]).argmin()] = 1.0
+            curve = [float(x) for x in distribution]
+
+        return curve, (lo, hi)
+
+    y = np.asarray(y)
+    columns: Iterable[np.ndarray] = [y] if y.ndim == 1 else y.T
+    curves, ranges = zip(*map(_target_distribution, columns), strict=True)
+    return list(curves), list(ranges)
 
 
 def _flatten_regression_target_kdes(curves: list[list[float]]) -> list[float]:
@@ -125,6 +138,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         self.__classes: list[str] | None
         self.__target_names: list[str] | None
         self.__target_ranges: list[list[float]] | None
+        self.__target_range: list[float] | None
 
         if "classification" in self.ml_task and (self.report.y is not None):
             class_to_class_indice: defaultdict[Any, int] = defaultdict(
@@ -141,24 +155,38 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             self.__classes = [str(class_) for class_ in class_to_class_indice]
 
             assert max(self.__sample_to_class_index) == (len(self.__classes) - 1)
+
             self.__target_names = None
             self.__target_ranges = None
+            self.__target_range = None
         elif self.ml_task == "multioutput-regression" and (self.report.y is not None):
             from skore._utils._dataframe import _normalize_y_as_dataframe
 
             y_df = _normalize_y_as_dataframe(self.report.y)
+            y_nw = nw.from_native(y_df)
+
+            def min_max(series: nw.Series[Any]) -> list[float]:
+                return [float(series.min()), float(series.max())]
+
             self.__sample_to_class_index = None
             self.__classes = None
-            self.__target_names = [str(name) for name in y_df.columns]
+            self.__target_names = list(map(str, y_nw.columns))
+            self.__target_ranges = list(map(min_max, y_nw.iter_columns()))
+            self.__target_range = None
+        elif self.ml_task == "regression" and (self.report.y is not None):
             y_arr = np.asarray(self.report.y)
-            self.__target_ranges = [
-                [float(col.min()), float(col.max())] for col in y_arr.T
-            ]
+
+            self.__sample_to_class_index = None
+            self.__classes = None
+            self.__target_names = None
+            self.__target_ranges = None
+            self.__target_range = [float(y_arr.min()), float(y_arr.max())]
         else:
             self.__sample_to_class_index = None
             self.__classes = None
             self.__target_names = None
             self.__target_ranges = None
+            self.__target_range = None
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -175,6 +203,7 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
         if self.report.y is None:
             return {}
 
+        splits: list[list[int] | None] = []
         splitter = self.report.splitter
         target = cast(Sized, self.report.y)
         is_classifier = "classification" in self.ml_task
@@ -193,54 +222,67 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             "random_state": getattr(splitter, "random_state", None),
         }
 
-        rng = np.random.default_rng(0)
-        rng_size = min(len(target), SPLITTING_STRATEGY_REPR_SAMPLE_COUNT)
+        # create a simplified splitter without shuffling and repetitions when possible
+        if simplified_cls := SPLITTERS.get(splitter.__class__.__name__):
+            rng = np.random.default_rng(0)
+            rng_size = min(len(target), SPLITTING_STRATEGY_REPR_SAMPLE_COUNT)
 
-        if len(target) < SPLITTING_STRATEGY_REPR_SAMPLE_COUNT:
-            target_repr = target
-        elif is_classifier:
-            # create an undersampled target to create a simplify representation
-            if not isinstance(target, pd.Series):
-                target = pd.Series(target)
+            if len(target) < SPLITTING_STRATEGY_REPR_SAMPLE_COUNT:
+                target_repr = target
+            elif is_classifier:
+                # create an undersampled target to create a simplify representation
+                if not isinstance(target, pd.Series):
+                    target = pd.Series(target)
 
-            probs = target.value_counts(normalize=True)
-            target_repr = rng.choice(
-                probs.index.to_numpy(),  # classes
-                size=rng_size,
-                p=probs.to_numpy(),  # probabilities
-                replace=True,
+                probs = target.value_counts(normalize=True)
+                target_repr = rng.choice(
+                    probs.index.to_numpy(),  # classes
+                    size=rng_size,
+                    p=probs.to_numpy(),  # probabilities
+                    replace=True,
+                )
+                target_repr.sort()
+            else:  # regression
+                # uniformly sample the target because it will have no impact on the
+                # representation
+                target_repr = rng.choice(
+                    cast(np.ndarray, target), size=rng_size, replace=False
+                )
+
+            simplified_cls_parameters = {}
+
+            for key in signature(simplified_cls.__init__).parameters:
+                if key in splitter_metadata:
+                    simplified_cls_parameters[key] = splitter_metadata[key]
+                elif hasattr(splitter, key):
+                    simplified_cls_parameters[key] = getattr(splitter, key)
+
+            if "shuffle" in simplified_cls_parameters:
+                simplified_cls_parameters["shuffle"] = False
+                simplified_cls_parameters["random_state"] = None
+
+            target = target_repr
+            simplified_splitter = simplified_cls(**simplified_cls_parameters)
+            split_generator = simplified_splitter.split(
+                rng.normal(size=(rng_size, 1)),
+                target_repr,
             )
-            target_repr.sort()
-        else:  # regression
-            # uniformly sample the target because it will have no impact on the
-            # representation
-            target_repr = rng.choice(
-                cast(np.ndarray, target), size=rng_size, replace=False
+        else:
+            total_index_count = sum(
+                len(cast(Sized, indices))
+                for indices in chain.from_iterable(self.report.split_indices)
             )
 
-        # create a simplified splitter without shuffling and repetitions
-        simplified_cls = SPLITTERS.get(splitter.__class__.__name__, splitter.__class__)
-        simplified_cls_parameters = {}
-
-        for key in signature(simplified_cls.__init__).parameters:
-            if key in splitter_metadata:
-                simplified_cls_parameters[key] = splitter_metadata[key]
-            elif hasattr(splitter, key):
-                simplified_cls_parameters[key] = getattr(splitter, key)
-
-        if "shuffle" in simplified_cls_parameters:
-            simplified_cls_parameters["shuffle"] = False
-            simplified_cls_parameters["random_state"] = None
-
-        simplified_splitter = simplified_cls(**simplified_cls_parameters)
+            if total_index_count > SPLITTING_STRATEGY_MAX_INDEX_COUNT:
+                splits = [None] * len(self.report.split_indices)
+                split_generator = []
+            else:
+                split_generator = self.report.split_indices
 
         # Per split: one list of length N_SAMPLES_REPR, ordered by sample index,
         # with 0 = train fold and 1 = test fold for that split.
-        splits: list[list[int]] = []
-        X = rng.normal(size=(rng_size, 1))
-
-        for train_idx, test_idx in simplified_splitter.split(X, target_repr):
-            split_flags = np.full(rng_size, -1, dtype=int)
+        for train_idx, test_idx in split_generator:
+            split_flags = np.full(len(target), -1, dtype=int)
             split_flags[train_idx] = 0
             split_flags[test_idx] = 1
 
@@ -308,19 +350,14 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def target_ranges(self) -> list[list[float]] | None:
-        """In multi-output regression, the per-target value ranges."""
+        """In multi-output regression, the per-target value ranges of the dataset."""
         return self.__target_ranges
 
     @computed_field  # type: ignore[prop-decorator]
-    @cached_property
+    @property
     def target_range(self) -> list[float] | None:
-        """The range of the target values of the dataset used in the report."""
-        if self.__classes or (self.report.y is None):
-            return None
-
-        target = cast(np.ndarray, self.report.y)
-
-        return [float(target.min()), float(target.max())]
+        """In single-output regression, the target value range of the dataset."""
+        return self.__target_range
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
@@ -343,25 +380,27 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
 
         Notes
         -----
-        All metrics whose value is not a scalar are currently ignored:
-        - ignore ``NaN``,
-        - ignore ``list[float]`` for multi-output ML task,
-        - ignore ``dict[str: float]`` for multi-classes ML task.
+        Per-label (per-class) and per-output (multioutput regression) metrics are
+        aggregated independently for each label/output and sent with their
+        dimension so the UI can expose a toggle. Metrics aggregated across labels
+        or outputs are aggregated independently for each ``average`` mode and sent
+        with their ``average`` dimension so the UI can show them as the aggregate
+        variant. Only non-scalar values (``NaN``) are ignored.
         """
-        data = self.report.metrics.summarize(data_source="both").data
-        scalar = data[
-            (data["label"].isna() & data["output"].isna() & data["average"].isna())
-            & data["score"].notna()
-        ]
+        metrics = select_exportable_metrics(self.report)
 
         aggregated = (
-            scalar.groupby(
+            metrics.groupby(
                 [
-                    "metric_name",
-                    "metric_verbose_name",
+                    "name",
+                    "verbose_name",
                     "data_source",
                     "greater_is_better",
-                ]
+                    "label",
+                    "output",
+                    "average",
+                ],
+                dropna=False,
             )
             .agg(
                 mean=("score", "mean"),
@@ -369,16 +408,23 @@ class CrossValidationReportPayload(ReportPayload[CrossValidationReport]):
             )
             .reset_index()
         )
+        multimetric_names = find_multimetric_scalar_names(aggregated)
 
         return [
             Metric(
-                name=f"{row['metric_name']}_{suffix}",
-                verbose_name=f"{row['metric_verbose_name']} - {suffix.upper()}",
+                name=(
+                    f"{get_hub_metric_name(row, multimetric_names=multimetric_names)}"
+                    f"_{suffix}"
+                ),
+                verbose_name=f"{row['verbose_name']} - {suffix.upper()}",
                 data_source=row["data_source"],
-                greater_is_better=row["greater_is_better"]
-                if suffix == "mean"
-                else False,
+                greater_is_better=(
+                    row["greater_is_better"] if suffix == "mean" else False
+                ),
                 value=row[suffix],
+                label=None if pd.isna(row["label"]) else row["label"],
+                output=None if pd.isna(row["output"]) else int(row["output"]),
+                average=None if pd.isna(row["average"]) else row["average"],
             )
             for row in aggregated.to_dict("records")
             for suffix in ("mean", "std")

@@ -4,6 +4,7 @@ from typing import Literal
 
 import numpy as np
 import seaborn as sns
+from matplotlib.artist import Artist
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
 from numpy.typing import ArrayLike
@@ -15,6 +16,7 @@ from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn._plot.utils import (
     _concat_frames_with_column_data,
     _despine_matplotlib_axis,
+    _reorder_categoricals_by_appearance,
     _validate_style_kwargs,
 )
 from skore._sklearn.types import DataSource, MLTask, ReportType
@@ -258,8 +260,11 @@ class PredictionErrorDisplay(DisplayMixin):
             ]
             y_line = [0, 0]
 
-        plot_data = self.frame()
+        plot_data = (
+            self.frame().copy()
+        )  # Ensure a fresh DataFrame since `frame()` returns a slice
         col, hue, style = self._get_plot_columns(subplot_by)
+        plot_data = _reorder_categoricals_by_appearance(plot_data, [col, hue, style])
         relplot_kwargs = {
             "col": col,
             "hue": hue,
@@ -321,16 +326,17 @@ class PredictionErrorDisplay(DisplayMixin):
         # Add the perfect model line to the legend
         # We retrieve the legend elements created by seaborn, add the perfect model line
         # and create a new legend manually.
-        handles = []
-        labels = []
+        handles: list[Artist] = []
+        labels: list[str] = []
         if facet._legend is not None:
-            handles = list(facet._legend.legend_handles)
-            labels = [t.get_text() for t in facet._legend.get_texts()]
+            handles, labels = self._format_relplot_legend(
+                facet._legend.legend_handles,
+                [t.get_text() for t in facet._legend.get_texts()],
+                hue=hue,
+                style=style,
+                plot_data=plot_data,
+            )
             facet._legend.remove()
-            if hue == "split":
-                labels = [f"Split #{label}" for label in labels]
-            if hue == "output" and style is None:
-                labels = [f"Output #{label}" for label in labels]
         handles.append(
             Line2D([0], [0], **self._default_perfect_model_kwargs)  # type: ignore[arg-type]
         )
@@ -410,6 +416,36 @@ class PredictionErrorDisplay(DisplayMixin):
         style = "data_source" if has_both_sources and col != "data_source" else None
 
         return col, hue, style
+
+    @staticmethod
+    def _format_relplot_legend(
+        handles: list[Artist],
+        labels: list[str],
+        *,
+        hue: str | None,
+        style: str | None,
+        plot_data: DataFrame,
+    ) -> tuple[list[Artist], list[str]]:
+        """Filter seaborn legend entries and format hue labels."""
+        hue_values = (
+            {str(value) for value in plot_data[hue].unique()}
+            if hue is not None
+            else set()
+        )
+        formatted_handles = []
+        formatted_labels = []
+        for handle, label in zip(handles, labels, strict=True):
+            if (hue is not None and label == hue) or (
+                style is not None and label == style
+            ):
+                continue
+            if hue == "split" and label in hue_values:
+                label = f"Split #{label}"
+            elif hue == "output" and label in hue_values:
+                label = f"Output #{label}"
+            formatted_handles.append(handle)
+            formatted_labels.append(label)
+        return formatted_handles, formatted_labels
 
     @classmethod
     def _compute_data_for_display(

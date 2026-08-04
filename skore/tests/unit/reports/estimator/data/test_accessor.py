@@ -29,9 +29,7 @@ def test_summarize_error(forest_binary_classification_with_test, params, err_msg
         report.data.summarize(**params)
 
 
-def test_summarize_data_source_not_available(
-    forest_binary_classification_with_test,
-):
+def test_summarize_data_source_not_available(forest_binary_classification_with_test):
     """Check that we raise a proper error message when the data source requested is
     not available."""
     classifier, X_test, y_test = forest_binary_classification_with_test
@@ -173,6 +171,10 @@ def test_summarize_numpy_array(
 
 
 @pytest.mark.parametrize("subsample_strategy", ["head", "random"])
+@pytest.mark.filterwarnings(
+    "ignore:X has feature names, but RandomForestClassifier was fitted without"
+    " feature names:UserWarning"
+)
 def test_summarize_subsampling(
     forest_binary_classification_with_test, subsample_strategy
 ):

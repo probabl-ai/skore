@@ -8,7 +8,7 @@ from skore import ComparisonReport, CrossValidationReport, ImpurityDecreaseDispl
 from skore._externals._sklearn_compat import convert_container
 
 
-def test_with_pipeline(pyplot, forest_binary_classification_data):
+def test_with_pipeline(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
     columns_names = [f"Feature #{i}" for i in range(X.shape[1])]
     X = convert_container(X, "pandas", column_names=columns_names)

@@ -81,7 +81,7 @@ def test_sample_input_example_casts_category_to_object() -> None:
 
 @pytest.mark.parametrize(
     ("X", "y"),
-    product([X_pandas, X_numpy], [y_pandas, y_numpy, y_pandas_multi_targets]),
+    list(product([X_pandas, X_numpy], [y_pandas, y_numpy, y_pandas_multi_targets])),
 )
 def test_dataset_from_Xy(X, y):
     dataset = _dataset_from_Xy(X, y).dataset

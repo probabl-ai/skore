@@ -29,22 +29,23 @@ def test_only_fit(estimator_data):
     assert isinstance(result["fit_time"], float)
 
 
-@pytest.mark.parametrize("data_source", ["test", "train"])
-def test_predict_prefitted(data_source, estimator_data):
+def test_predict_prefitted(estimator_data):
     """If the estimator is prefitted, and some predictions are computed,
     then `timings` is filled up accordingly."""
     estimator, data = estimator_data
-    report = EstimatorReport(estimator.fit(data["X_train"], data["y_train"]), **data)
+    report = EstimatorReport(
+        estimator.fit(data["X_train"], data["y_train"]),
+        X_test=data["X_test"],
+        y_test=data["y_test"],
+    )
 
-    # Compute predictions on data source
-    report.metrics.accuracy(data_source=data_source)
+    # Compute predictions on the test set (train data cannot be passed with a
+    # prefitted estimator).
+    report.metrics.accuracy(data_source="test")
 
     result = report.metrics.timings()
     assert isinstance(result, dict)
-    if data_source == "train":
-        assert list(result) == ["predict_time_train", "predict_time_test"]
-    else:
-        assert list(result) == ["predict_time_test"]
+    assert list(result) == ["predict_time_test"]
     assert all(isinstance(v, float) for v in result.values())
 
 
@@ -99,9 +100,7 @@ def test_summarize_fit_time(estimator_data):
     estimator, data = estimator_data
     report = EstimatorReport(estimator, **data)
 
-    assert isinstance(
-        report.metrics.summarize(metric=["fit_time"]).frame(), pd.DataFrame
-    )
+    assert isinstance(report.metrics.summarize(metric=["fit_time"]).frame(), pd.Series)
 
 
 @pytest.mark.parametrize("data_source", ["test", "train"])
@@ -113,5 +112,5 @@ def test_summarize_predict_time(data_source, estimator_data):
         report.metrics.summarize(
             metric=["predict_time"], data_source=data_source
         ).frame(),
-        pd.DataFrame,
+        pd.Series,
     )

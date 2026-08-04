@@ -50,17 +50,18 @@ class Project:
     .. rubric:: Local mode
 
     Otherwise, the project is configured to the ``local`` mode to be persisted on
-    the user machine in a directory called ``workspace``.
+    the user machine in a directory called a ``workspace``.
 
-    | The workspace can be shared between all the projects.
     | The workspace can be set using kwargs or the environment variable
       ``SKORE_WORKSPACE``.
-    | If not, it will be by default set to a ``skore/`` directory in the user
-      data directory:
+    | If not, it will be set to a default location:
 
-    - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-    - on Linux, usually ``${HOME}/.local/share/skore``,
-    - on macOS, usually ``${HOME}/Library/Application Support/skore``.
+        - we search the current working directory and its parents for a
+          skore workspace: a directory named 'skore' containing a file named
+          '.SKORE_WORKSPACE'. If found, use that.
+        - otherwise if we are in a Git repository, create 'skore' at the root
+            of the repository.
+        - otherwise create 'skore' in the current working directory.
 
     .. rubric:: MLflow mode
 
@@ -180,12 +181,17 @@ class Project:
                 | The workspace can be shared between all the projects.
                 | The workspace can be set using kwargs or the environment variable
                   ``SKORE_WORKSPACE``.
-                | If not, it will be by default set to a ``skore/`` directory in the
-                  user data directory:
+                | If not provided, a workspace is found or created according to those
+                  rules (see find_workspace() in this module):
 
-                - on Windows, usually ``C:\Users\%USER%\AppData\Local\skore``,
-                - on Linux, usually ``${HOME}/.local/share/skore``,
-                - on macOS, usually ``${HOME}/Library/Application Support/skore``.
+                      - if the SKORE_WORKSPACE environment variable is set, use that.
+                      - otherwise look in the current working directory and its
+                        parent for a skore workspace: a directory named
+                        'skore' containing a file named
+                        '.SKORE_WORKSPACE'. If found, use that.
+                      - otherwise if we are in a Git repository, create
+                        'skore' at the root of the repository.
+                      - otherwise create 'skore' in the current working directory.
 
             tracking_uri : str, mode:mlflow only.
                 The URI of the MLflow tracking server.

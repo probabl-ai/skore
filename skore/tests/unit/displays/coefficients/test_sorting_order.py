@@ -50,7 +50,6 @@ def test_frame_sorts_per_estimator(
     ],
 )
 def test_plot_different_features(
-    pyplot,
     comparison_estimator_reports_binary_classification,
     sorting_order,
     expected_features,

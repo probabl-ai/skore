@@ -15,6 +15,7 @@ from sklearn.ensemble import (
 )
 from sklearn.linear_model import LogisticRegression, RidgeCV
 from sklearn.model_selection._search import BaseSearchCV
+from sklearn.multioutput import MultiOutputRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.utils._param_validation import Interval
 from sklearn.utils._pprint import _changed_params
@@ -25,9 +26,12 @@ from skore._sklearn._checks._utils import (
     ClassName,
     ParameterName,
     StepName,
+    cast_report,
     check_score_gap_to_baseline,
     collect_scores,
     detect_outliers_modified_zscore,
+    get_fit_time,
+    get_fitted_estimator,
     get_preprocessed_X,
     get_report_y,
     majority_vote,
@@ -40,26 +44,21 @@ from skore._sklearn._checks.tunable_hyperparameters import (
     INFRASTRUCTURE_PARAMS,
 )
 from skore._sklearn.feature_names import _get_feature_names
-from skore._utils._dataframe import (
-    UserDataFrame,
-    UserSeries,
-    UserTarget,
-    _normalize_X_as_dataframe,
-)
+from skore._utils._dataframe import UserSeries, _normalize_X_as_dataframe
 
 if TYPE_CHECKING:
     from skore._sklearn._base import _BaseReport
     from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
 
-_TIMING_METRICS_FLAT = {"fit_time_s", "predict_time_s"}
+_TIMING_METRICS_FLAT = {"fit_time", "predict_time"}
 
 
 def _baseline_estimator_report(
-    report: EstimatorReport,
+    report: EstimatorReport | CrossValidationReport,
     kind: Literal["dummy", "performance", "fast"],
-) -> EstimatorReport:
-    """Build a baseline EstimatorReport mirroring ``report``.
+) -> EstimatorReport | CrossValidationReport:
+    """Build a baseline report mirroring ``report``.
 
     For ``kind="dummy"``, returns a plain ``DummyClassifier`` / ``DummyRegressor``
     baseline. For ``kind="performance"`` and ``kind="fast"``, the estimator is
@@ -67,7 +66,55 @@ def _baseline_estimator_report(
 
     Raises :class:`CheckNotApplicable` for unsupported ml tasks.
     """
-    from skore._sklearn._estimator.report import EstimatorReport
+    supported_tasks = [
+        "binary-classification",
+        "multiclass-classification",
+        "regression",
+        "multioutput-regression",
+    ]
+    if report.ml_task not in supported_tasks:
+        raise CheckNotApplicable(
+            f"Expected ML task to be one of {supported_tasks}; got {report.ml_task}."
+        )
+    if kind == "dummy":
+        estimator = (
+            DummyClassifier(strategy="prior")
+            if "classification" in report.ml_task
+            else DummyRegressor(strategy="mean")
+        )
+    elif kind == "performance":
+        if "classification" in report.ml_task:
+            base_estimator = HistGradientBoostingClassifier()
+        elif report.ml_task == "multioutput-regression":
+            base_estimator = MultiOutputRegressor(HistGradientBoostingRegressor())
+        else:
+            base_estimator = HistGradientBoostingRegressor()
+        estimator = tabular_pipeline(base_estimator)
+    else:  # kind == "fast"
+        estimator = tabular_pipeline(
+            LogisticRegression(max_iter=1000)
+            if "classification" in report.ml_task
+            else RidgeCV()
+        )
+
+    if report._report_type == "cross-validation":
+        from skore._sklearn._cross_validation.report import CrossValidationReport
+
+        try:
+            baseline = CrossValidationReport(
+                estimator,
+                X=report.X,
+                y=report.y,
+                splitter=report.splitter,
+                pos_label=report.pos_label,
+                n_jobs=report.n_jobs,
+            )
+        except Exception as exc:
+            raise CheckNotApplicable("Failed to create baseline report.") from exc
+        registry = report.reports_[0]._metric_registry.copy()
+        for baseline_split in baseline.reports_:
+            baseline_split._metric_registry = registry
+        return baseline
 
     if report.X_train is None:
         raise CheckNotApplicable("Train data is unavailable.")
@@ -79,34 +126,7 @@ def _baseline_estimator_report(
 
     y_train = get_report_y(report, data_source="train")
     y_test = get_report_y(report, data_source="test")
-    if y_train is None:
-        raise CheckNotApplicable("Train data is unavailable.")
-
-    is_classification = report.ml_task in (
-        "binary-classification",
-        "multiclass-classification",
-    )
-    if not (is_classification or report.ml_task == "regression"):
-        raise CheckNotApplicable(
-            "Unsupported ML task. Supported tasks are: binary-classification, "
-            f"multiclass-classification, regression. Got {report.ml_task}."
-        )
-    if kind == "dummy":
-        estimator = (
-            DummyClassifier(strategy="prior")
-            if is_classification
-            else DummyRegressor(strategy="mean")
-        )
-    elif kind == "performance":
-        estimator = tabular_pipeline(
-            HistGradientBoostingClassifier()
-            if is_classification
-            else HistGradientBoostingRegressor()
-        )
-    else:  # kind == "fast"
-        estimator = tabular_pipeline(
-            LogisticRegression(max_iter=1000) if is_classification else RidgeCV()
-        )
+    from skore._sklearn._estimator.report import EstimatorReport
 
     try:
         baseline_report = EstimatorReport(
@@ -133,14 +153,16 @@ class CheckOverfitting(Check):
 
     code = "SKD001"
     title = "Potential overfitting"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd001-overfitting"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect significant gaps between train and test scores."""
-        report = cast("EstimatorReport", report)
-        if report.X_train is None or report.y_train is None:
+        report = cast_report(report)
+        if report._report_type == "estimator" and (
+            report.X_train is None or report.y_train is None
+        ):
             raise CheckNotApplicable("Train data is unavailable.")
 
         report_train = collect_scores(report, data_source="train")
@@ -176,13 +198,13 @@ class CheckUnderfitting(Check):
 
     code = "SKD002"
     title = "Potential underfitting"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd002-underfitting"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect train and test scores close to a dummy baseline."""
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         baseline = _baseline_estimator_report(report, kind="dummy")
 
         report_train = collect_scores(report, data_source="train")
@@ -212,6 +234,7 @@ class CheckUnderfitting(Check):
                 & baseline_test.keys()
             )
         ]
+
         majority, n_positive, total = majority_vote(votes)
         if majority:
             return (
@@ -231,7 +254,7 @@ class CheckMetricsConsistencyAcrossSplits(Check):
 
     code = "SKD003"
     title = "Inconsistent performance across splits"
-    report_type = "cross-validation"
+    report_types = ["cross-validation"]
     docs_url = "skd003-inconsistent-performance"
     severity = "issue"
 
@@ -268,21 +291,18 @@ class CheckHighClassImbalance(Check):
 
     code = "SKD004"
     title = "High class imbalance"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd004-high-class-imbalance"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect when the majority class exceeds 80% of samples."""
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         if report.ml_task != "binary-classification":
             raise CheckNotApplicable(
                 f"ML task is not binary classification. Got {report.ml_task}."
             )
-
         y = get_report_y(report, data_source="both")
-        if y is None:
-            raise CheckNotApplicable("Target train data is unavailable.")
 
         y = nw.from_native(cast(UserSeries, y), series_only=True)
         counts = y.value_counts()
@@ -310,21 +330,19 @@ class CheckUnderrepresentedClasses(Check):
 
     code = "SKD005"
     title = "Underrepresented classes"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd005-underrepresented-classes"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect classes that each represent less than 10% of samples."""
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         if report.ml_task != "multiclass-classification":
             raise CheckNotApplicable(
                 f"ML task is not multiclass classification. Got {report.ml_task}."
             )
 
         y = get_report_y(report, data_source="both")
-        if y is None:
-            raise CheckNotApplicable("Target train data is unavailable.")
 
         y = nw.from_native(cast(UserSeries, y), series_only=True)
         counts = y.value_counts()
@@ -352,14 +370,14 @@ class CheckCoefficientsInterpretation(Check):
 
     code = "SKD006"
     title = "Coefficient interpretation"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd006-unscaled-coefficients"
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Assess whether linear-model coefficients are comparable and interpretable."""
-        report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.estimator_)
+        report = cast_report(report)
+        _, predictor = split_preprocessor_estimator(get_fitted_estimator(report))
 
         if not hasattr(predictor, "coef_"):
             raise CheckNotApplicable(
@@ -367,8 +385,6 @@ class CheckCoefficientsInterpretation(Check):
             )
 
         X = get_preprocessed_X(report, data_source="both")
-        if X is None:
-            raise CheckNotApplicable("Train data is unavailable.")
 
         std_values = nw.from_native(X).select(nw.all().std()).to_numpy().ravel()
         if not np.allclose(std_values, std_values[0], atol=0.05):
@@ -394,14 +410,14 @@ class CheckMDIHighCardinalityBias(Check):
 
     code = "SKD007"
     title = "MDI biased for high-cardinality features"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd007-mdi-cardinality-bias"
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
         """Detect high-cardinality features that may bias MDI importances."""
-        report = cast("EstimatorReport", report)
-        _, predictor = split_preprocessor_estimator(report.estimator_)
+        report = cast_report(report)
+        _, predictor = split_preprocessor_estimator(get_fitted_estimator(report))
 
         if not hasattr(predictor, "feature_importances_"):
             raise CheckNotApplicable(
@@ -410,8 +426,6 @@ class CheckMDIHighCardinalityBias(Check):
             )
 
         X = get_preprocessed_X(report, data_source="train")
-        if X is None:
-            raise CheckNotApplicable("Train data is unavailable.")
 
         X = nw.from_native(X)
         n_samples = X.shape[0]
@@ -446,7 +460,7 @@ class CheckCorrelatedFeatures(Check):
 
     code = "SKD008"
     title = "Highly correlated input features"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd008-correlated-features"
     severity = "issue"
 
@@ -461,11 +475,9 @@ class CheckCorrelatedFeatures(Check):
             :class:`CheckNotApplicable` when feature data is unavailable or
             fewer than two numeric features are present.
         """
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         X = get_preprocessed_X(report, data_source="train")
 
-        if X is None:
-            raise CheckNotApplicable("Train data is unavailable.")
         X = nw.from_native(X).select(nw.selectors.numeric())
         if X.shape[1] < 2 or X.shape[1] > 1000:
             raise CheckNotApplicable(
@@ -473,11 +485,14 @@ class CheckCorrelatedFeatures(Check):
                 f"got {X.shape[1]}."
             )
 
-        corr = np.abs(spearmanr(X.to_numpy()).statistic)
-        if corr.ndim < 2:
-            return None
-        np.fill_diagonal(corr, 0)
-        n_pairs = int(np.count_nonzero(corr >= 0.9) // 2)
+        corr_statistic = spearmanr(X.to_numpy()).statistic
+        if X.shape[1] == 2:
+            # With exactly 2 features, spearmanr returns a scalar, not a matrix.
+            n_pairs = int(float(np.abs(corr_statistic)) >= 0.9)
+        else:
+            corr = np.abs(corr_statistic)
+            np.fill_diagonal(corr, 0)
+            n_pairs = int(np.count_nonzero(corr >= 0.9) // 2)
 
         if n_pairs:
             return (
@@ -499,13 +514,13 @@ class CheckWorseThanBaseline(Check):
 
     code = "SKD009"
     title = "Model worse than baseline"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd009-worse-than-baseline"
     severity = "issue"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         baseline = _baseline_estimator_report(report, kind="performance")
 
         report_test = collect_scores(report, data_source="test")
@@ -545,20 +560,20 @@ class CheckSlowerThanBaseline(Check):
 
     code = "SKD010"
     title = "Model slower than baseline"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd010-slower-than-baseline"
     severity = "issue"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
         baseline = _baseline_estimator_report(report, kind="fast")
 
-        if report._fit_time is None or baseline._fit_time is None:
-            raise CheckNotApplicable("Fit time is unavailable.")
+        report_fit_time = get_fit_time(report)
+        baseline_fit_time = get_fit_time(baseline)
 
-        slowness_ratio = report._fit_time / baseline._fit_time
-        if slowness_ratio < 2.0 or report._fit_time - baseline._fit_time < 0.05:
+        slowness_ratio = report_fit_time / baseline_fit_time
+        if slowness_ratio < 2.0 or report_fit_time - baseline_fit_time < 0.05:
             return None
 
         report_test = collect_scores(report, data_source="test")
@@ -594,65 +609,87 @@ class CheckGoldenFeature(Check):
 
     code = "SKD011"
     title = "Golden feature"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd011-golden-feature"
     severity = "tip"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        from skore._sklearn._estimator.report import EstimatorReport
+        if report._report_type == "cross-validation":
+            report = cast("CrossValidationReport", report)
+            X = nw.from_native(get_preprocessed_X(report))
+            y = get_report_y(report)
+            if X.shape[1] < 2:
+                raise CheckNotApplicable("Train data has only one feature.")
+            n_features = X.shape[1]
+            metric_registry = report.reports_[0]._metric_registry.copy()
+            from skore._sklearn._cross_validation.report import CrossValidationReport
+        else:
+            report = cast("EstimatorReport", report)
+            X_train = nw.from_native(get_preprocessed_X(report, data_source="train"))
+            X_test = nw.from_native(get_preprocessed_X(report, data_source="test"))
+            y_train = get_report_y(report, data_source="train")
+            y_test = get_report_y(report, data_source="test")
+            if X_train.shape[1] < 2:
+                raise CheckNotApplicable("Train data has only one feature.")
+            n_features = X_train.shape[1]
+            metric_registry = report._metric_registry
+            from skore._sklearn._estimator.report import EstimatorReport
 
-        report = cast("EstimatorReport", report)
-        X_train = get_preprocessed_X(report, data_source="train")
-        X_test = cast("UserDataFrame", get_preprocessed_X(report, data_source="test"))
-        y_train = get_report_y(report, data_source="train")
-        y_test = cast("UserTarget", get_report_y(report, data_source="test"))
-        if X_train is None or y_train is None:
-            raise CheckNotApplicable("Train data is unavailable.")
-        if X_train.shape[1] < 2:
-            raise CheckNotApplicable("Train data has only one feature.")
-
-        preprocessor_, predictor_ = split_preprocessor_estimator(report.estimator_)
+        preprocessor_, predictor_ = split_preprocessor_estimator(
+            get_fitted_estimator(report)
+        )
         feature_names = _get_feature_names(
             predictor_,
             transformer=preprocessor_,
-            X=X_train,
-            n_features=X_train.shape[1],
+            X=X if report._report_type == "cross-validation" else X_train,
+            n_features=n_features,
         )
-        full_test = collect_scores(report, data_source="test")
+        full_feature_scores = collect_scores(report, data_source="test")
 
-        X_train, X_test = nw.from_native(X_train), nw.from_native(X_test)
         golden_features: list[str] = []
-        for i in range(X_train.shape[1]):
-            column = X_train.columns[i]
+        single_feature_report: EstimatorReport | CrossValidationReport
+        for i in range(n_features):
             try:
-                single_report = EstimatorReport(
-                    clone(predictor_),
-                    X_train=X_train.select(nw.col(column)).to_native(),
-                    y_train=y_train,
-                    X_test=X_test.select(nw.col(column)).to_native(),
-                    y_test=y_test,
-                    pos_label=report.pos_label,
+                if report._report_type == "cross-validation":
+                    single_feature_report = CrossValidationReport(
+                        clone(predictor_),
+                        X=X.select(nw.col(feature_names[i])).to_native(),
+                        y=y,
+                        splitter=report.splitter,
+                        pos_label=report.pos_label,
+                        n_jobs=report.n_jobs,
+                    )
+                    for sub_report in single_feature_report.reports_:
+                        sub_report._metric_registry = metric_registry
+                else:
+                    single_feature_report = EstimatorReport(
+                        clone(predictor_),
+                        X_train=X_train.select(nw.col(feature_names[i])).to_native(),
+                        y_train=y_train,
+                        X_test=X_test.select(nw.col(feature_names[i])).to_native(),
+                        y_test=y_test,
+                        pos_label=report.pos_label,
+                    )
+                    single_feature_report._metric_registry = metric_registry
+                single_feature_scores = collect_scores(
+                    single_feature_report, data_source="test"
                 )
             except Exception as exc:
                 raise CheckNotApplicable(
                     "Failed to create report from single feature."
                 ) from exc
-            single_report._metric_registry = report._metric_registry
-            single_test = collect_scores(single_report, data_source="test")
-
             votes = [
                 not check_score_gap_to_baseline(
-                    score=full_test[key]["score"],
-                    baseline=single_test[key]["score"],
-                    greater_is_better=full_test[key]["greater_is_better"],
+                    score=full_feature_scores[key]["score"],
+                    baseline=single_feature_scores[key]["score"],
+                    greater_is_better=full_feature_scores[key]["greater_is_better"],
                     floor=0.03,
                     fraction=0.10,
                 )
-                for key in full_test.keys() & single_test.keys()
+                for key in full_feature_scores.keys() & single_feature_scores.keys()
             ]
-            majority, _, _ = majority_vote(votes)
-            if majority:
+            if majority_vote(votes)[0]:
                 golden_features.append(str(feature_names[i]))
 
         if golden_features:
@@ -679,13 +716,13 @@ class CheckUselessFeatures(Check):
 
     code = "SKD012"
     title = "Useless features"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd012-useless-features"
     severity = "tip"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
+        report = cast_report(report)
 
         try:
             importance_frame = report.inspection.permutation_importance(
@@ -730,38 +767,55 @@ class CheckTrainTestTimeOverlap(Check):
 
     code = "SKD013"
     title = "Train-test overlap in time series"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd013-train-test-time-overlap"
     severity = "issue"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
-        if report.X_train is None:
-            raise CheckNotApplicable("Train data is unavailable.")
-        if not nw.dependencies.is_into_dataframe(
-            report.X_train
-        ) or not nw.dependencies.is_into_dataframe(report.X_test):
-            raise CheckNotApplicable(
-                "Input data is not a narwhals compatible DataFrame. "
-                f"Got {type(report.X_train)}."
+        input_report = cast_report(report)
+
+        overlapping: set[str] = set()
+        found_datetime = False
+        for report in (
+            input_report.reports_
+            if input_report._report_type == "cross-validation"
+            else [input_report]
+        ):
+            if report.X_train is None:
+                raise CheckNotApplicable("Train data is unavailable.")
+            if not nw.dependencies.is_into_dataframe(report.X_train):
+                raise CheckNotApplicable(
+                    "Input data is not a narwhals compatible DataFrame. "
+                    f"Got {type(report.X_train).__name__}."
+                )
+            if not nw.dependencies.is_into_dataframe(report.X_test):
+                raise CheckNotApplicable(
+                    "Input data is not a narwhals compatible DataFrame. "
+                    f"Got {type(report.X_test).__name__}."
+                )
+            X_train_nw = nw.from_native(report.X_train)
+            X_test_nw = nw.from_native(report.X_test)
+
+            datetime_columns = sorted(
+                set(X_train_nw.select(nw.selectors.datetime()).columns)
+                & set(X_test_nw.select(nw.selectors.datetime()).columns)
             )
+            if datetime_columns:
+                found_datetime = True
+                overlapping.update(
+                    col
+                    for col in datetime_columns
+                    if X_train_nw[col].max() >= X_test_nw[col].min()
+                )
 
-        X_train, X_test = nw.from_native(report.X_train), nw.from_native(report.X_test)
-        train_datetime_columns = set(X_train.select(nw.selectors.datetime()).columns)
-        test_datetime_columns = set(X_test.select(nw.selectors.datetime()).columns)
-        datetime_columns = sorted(train_datetime_columns & test_datetime_columns)
-        if not datetime_columns:
+        if not found_datetime:
             raise CheckNotApplicable("No datetime column found.")
-
-        overlapping = [
-            col for col in datetime_columns if X_train[col].max() >= X_test[col].min()
-        ]
         if overlapping:
             return (
-                f"Datetime column(s) {overlapping} contain training timestamps "
-                "that are after the earliest test timestamp. Future points "
-                "may be leaking into the training set; consider a time-based "
-                "split."
+                f"Datetime column(s) {sorted(overlapping)} contain training "
+                "timestamps that are after the earliest test timestamp. Future "
+                "points may be leaking into the training set; consider a "
+                "time-based split."
             )
         return None
 
@@ -777,7 +831,7 @@ class CheckHyperparamsAtSearchEdge(Check):
 
     code = "SKD014"
     title = "Hyperparameters at search edge"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd014-hyperparams-at-search-edge"
     severity = "issue"
 
@@ -798,11 +852,12 @@ class CheckHyperparamsAtSearchEdge(Check):
         return None
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
-        estimator = report.estimator_
+        report = cast_report(report)
+        estimator = get_fitted_estimator(report)
         if not isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable(
-                f"Estimator is not a BaseSearchCV instance. Got {type(estimator)}."
+                "Estimator is not a BaseSearchCV instance. "
+                f"Got {type(estimator).__name__}."
             )
 
         param_combinations = estimator.cv_results_["params"]
@@ -887,23 +942,24 @@ class CheckSearchParamsToTune(Check):
 
     code = "SKD015"
     title = "Hyperparameters worth tuning"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd015-hyperparameters-worth-tuning"
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
-        if not isinstance(report.estimator_, BaseSearchCV):
+        report = cast_report(report)
+        estimator = get_fitted_estimator(report)
+        if not isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable(
                 "Estimator is not a BaseSearchCV instance. "
-                f"Got {type(report.estimator_)}."
+                f"Got {type(estimator).__name__}."
             )
 
         searched_keys = {
-            key for params in report.estimator_.cv_results_["params"] for key in params
+            key for params in estimator.cv_results_["params"] for key in params
         }
-        estimator = report.estimator_.estimator
-        if isinstance(estimator, Pipeline):
+        inner_estimator = estimator.estimator
+        if isinstance(inner_estimator, Pipeline):
             searched_params_by_step: dict[StepName, set[ParameterName]] = defaultdict(
                 set
             )
@@ -913,7 +969,7 @@ class CheckSearchParamsToTune(Check):
                     searched_params_by_step[step_name].add(suffix)
             searched_by_estimator: list[tuple[ClassName, set[ParameterName]]] = [
                 (type(step).__name__, searched_params_by_step.get(name, set()))
-                for name, step in estimator.steps
+                for name, step in inner_estimator.steps
                 if type(step).__name__ in HYPERPARAMETERS_TO_TUNE
             ]
             if not searched_by_estimator:
@@ -921,7 +977,7 @@ class CheckSearchParamsToTune(Check):
                     "No parameter to recommend for any of the steps."
                 )
         else:
-            class_name = type(estimator).__name__
+            class_name = type(inner_estimator).__name__
             if class_name not in HYPERPARAMETERS_TO_TUNE:
                 raise CheckNotApplicable("No parameter to recommend for the estimator.")
             searched_by_estimator = [(class_name, searched_keys)]
@@ -957,13 +1013,13 @@ class CheckEstimatorNotTuned(Check):
 
     code = "SKD016"
     title = "Estimator not tuned"
-    report_type = "estimator"
+    report_types = ["estimator", "cross-validation"]
     docs_url = "skd016-estimator-not-tuned"
     severity = "tip"
 
     def check_function(self, report: _BaseReport) -> str | None:
-        report = cast("EstimatorReport", report)
-        estimator = report.estimator_
+        report = cast_report(report)
+        estimator = get_fitted_estimator(report)
         if isinstance(estimator, BaseSearchCV):
             raise CheckNotApplicable("Estimator is a BaseSearchCV instance.")
 

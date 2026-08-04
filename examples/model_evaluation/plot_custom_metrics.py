@@ -69,7 +69,14 @@ report.metrics.add(make_scorer(specificity))
 report.metrics.summarize().frame()
 
 # %%
-# ``specificity`` now appears alongside the built-in metrics.
+# ``specificity`` now appears alongside the built-in metrics. It can also be computed
+# individually using the :meth:`~skore.EstimatorReport.metrics.get` method:
+report.metrics.get("specificity")
+
+# %%
+# Further, if the metric name is a valid identifier, the metric is also exposed as a
+# method:
+report.metrics.specificity()
 
 # %%
 # Passing extra keyword arguments
