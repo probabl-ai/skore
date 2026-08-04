@@ -19,6 +19,12 @@ right.
 - Cache intermediate results to speed up exploring predictive models
 - Produce data science artifacts with the least amount of code
 
+The recommended way to create a report is :func:`evaluate`. Pass an estimator and
+data; depending on ``splitter``, you get an :class:`EstimatorReport`,
+:class:`CrossValidationReport`, or :class:`ComparisonReport`. Constructing a report
+class directly is possible when you need finer control, but :func:`evaluate` is usually
+simpler.
+
 Below, we present the different types of reporters that `skore` provides.
 
 .. _estimator_report:
@@ -26,12 +32,24 @@ Below, we present the different types of reporters that `skore` provides.
 Reporter for a single estimator
 -------------------------------
 
-:class:`EstimatorReport` is the core reporter in `skore`. It is designed to take a
-scikit-learn compatible estimator and some training and test data. The training data is
-optional if the estimator is already fitted. The parameter `fit` in the constructor
-gives full control over the fitting process. Omitting part of the data reduces the
-number of available methods when inspecting the model. For instance, you cannot inspect
-the metrics of the model on the test data if you do not provide the test data.
+:class:`EstimatorReport` is the core reporter in `skore`. Prefer creating it with
+:func:`evaluate`, which handles the train-test split (or accepts a pre-fitted estimator
+via ``splitter="prefit"``) and returns the report:
+
+.. code-block:: python
+
+    from skore import evaluate
+
+    report = evaluate(estimator, X, y)  # default: 80/20 train-test split
+    report = evaluate(fitted_estimator, X_test, y_test, splitter="prefit")
+
+You can also construct :class:`EstimatorReport` directly. It takes a scikit-learn
+compatible estimator and some training and test data. When the estimator is not fitted,
+provide the training data so that `skore` can clone and fit it. When the estimator is
+already fitted, omit the training data — passing both is rejected to avoid accidentally
+evaluating a model that was fitted on different data. Omitting part of the data reduces
+the number of available methods when inspecting the model. For instance, you cannot
+inspect the metrics of the model on the test data if you do not provide the test data.
 
 Data insights
 ^^^^^^^^^^^^^
@@ -130,6 +148,10 @@ example for a detailed view of the caching mechanism.
 Cross-validation estimator
 --------------------------
 
+Prefer :func:`evaluate` with an integer or CV splitter (for example
+``evaluate(estimator, X, y, splitter=5)``). That returns a
+:class:`CrossValidationReport`.
+
 :class:`CrossValidationReport` has a similar API to :class:`EstimatorReport`. The main
 difference is in the initialization. It accepts an estimator, a dataset (i.e. `X` and
 `y`) and a cross-validation strategy. Internally, the dataset is split according to the
@@ -152,7 +174,9 @@ Comparison report
 -----------------
 
 To compare the performance of different predictive models, `skore` provides the
-:class:`ComparisonReport`.
+:class:`ComparisonReport`. Prefer :func:`evaluate` with a list or dict of estimators
+(for example ``evaluate({"a": est_a, "b": est_b}, X, y)``), or :func:`compare` when you
+already have reports.
 
 :class:`ComparisonReport` takes a list (or a dictionary) of :class:`EstimatorReport` or
 :class:`CrossValidationReport` instances. It then provides methods to compare the
