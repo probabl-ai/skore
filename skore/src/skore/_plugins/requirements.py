@@ -76,7 +76,7 @@ def infer() -> list[Requirement]:
         else:
             # No distribution mapping: Cython/C-extension aliases, runtime entrypoints
             # (__main__), or local/dev imports outside site-packages.
-            logging.debug(module)
+            logger.debug(module)
 
             if is_local_module(module) and (top_level_name not in warned):
                 warned.add(top_level_name)
