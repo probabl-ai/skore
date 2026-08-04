@@ -1,13 +1,12 @@
 """Unit tests for ``skore._utils.repr.rich_repr``."""
 
 from io import StringIO
+from typing import ClassVar
 
 import numpy as np
 import pytest
 from rich.console import Console
 from sklearn.linear_model import LogisticRegression
-
-from typing import ClassVar
 
 from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.rich_repr import (

@@ -1,10 +1,10 @@
 """Unit tests for ``skore._utils.repr.html_repr``."""
 
+from typing import ClassVar
+
 import numpy as np
 import pytest
 from sklearn.linear_model import LogisticRegression
-
-from typing import ClassVar
 
 from skore._utils._testing import MockAccessor, MockDisplay, MockReport
 from skore._utils.repr.html_repr import (

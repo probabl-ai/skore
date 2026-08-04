@@ -76,7 +76,9 @@ def test_help_groups_separate_registry_metrics_displays(report):
 
     help_data = report.metrics._build_help_data()
     assert help_data.groups is not None
-    by_name = {group.name: [m.name for m in group.methods] for group in help_data.groups}
+    by_name = {
+        group.name: [m.name for m in group.methods] for group in help_data.groups
+    }
     assert list(by_name) == ["Registry", "Metrics", "Displays"]
 
     assert by_name["Registry"] == ["available", "add", "remove", "get"]

@@ -1,6 +1,7 @@
 """Unit tests for helpers in ``skore._utils.repr.data``."""
 
 import re
+from typing import ClassVar
 from urllib.parse import quote
 
 import numpy as np
@@ -8,8 +9,6 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 
 from skore._utils._testing import MockAccessor, MockDisplay, MockReport
-from typing import ClassVar
-
 from skore._utils.repr.data import (
     AccessorHelpData,
     DisplayHelpData,

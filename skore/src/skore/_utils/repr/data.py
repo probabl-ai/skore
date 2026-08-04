@@ -440,9 +440,7 @@ def _build_method_groups(
         return None
 
     method_by_name = {m.name: m for m in methods}
-    declared = {
-        n for names in group_spec.values() if names is not None for n in names
-    }
+    declared = {n for names in group_spec.values() if names is not None for n in names}
 
     groups: list[MethodGroupHelp] = []
     catch_all_name: str | None = None
