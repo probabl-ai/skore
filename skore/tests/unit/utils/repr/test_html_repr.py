@@ -110,6 +110,8 @@ def test_html_accessor_help_mixin_renders_groups(report_with_html):
     html = accessor._create_help_html()
     for expected in ("Registry", "Metrics", "Displays", "alpha", "gamma", "epsilon"):
         assert expected in html
+    # Method groups are unfolded by default.
+    assert html.count('<input type="checkbox" class="toggle" checked>') >= 3
 
 
 def test_html_report_help_mixin_renders_groups():

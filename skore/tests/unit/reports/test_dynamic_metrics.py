@@ -65,7 +65,7 @@ def test_help_groups_separate_registry_metrics_displays(report):
     """Help data partitions methods into Registry / Metrics / Displays groups.
 
     Registry callables (and custom metrics) land in Metrics; management helpers
-    in Registry; plot/summary helpers in Displays.
+    in Registry; remaining plot/summary helpers in Displays.
     """
 
     def custom(e, X, y):
@@ -85,8 +85,16 @@ def test_help_groups_separate_registry_metrics_displays(report):
     assert "custom" in by_name["Metrics"]
     assert "r2" in by_name["Metrics"]
     assert "summarize" in by_name["Displays"]
+    assert "custom" not in by_name["Displays"]
+    assert "available" not in by_name["Displays"]
     # Registry callables come before static score helpers in Metrics.
     assert by_name["Metrics"].index("custom") < by_name["Metrics"].index("timings")
+
+
+def test_help_groups_are_expanded_by_default(report):
+    """HTML help unfolds Registry / Metrics / Displays without an extra click."""
+    html = report.metrics._create_help_html()
+    assert html.count('<input type="checkbox" class="toggle" checked>') >= 3
 
 
 def test_help_builtin_metric_description(report):

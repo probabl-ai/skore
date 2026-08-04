@@ -32,7 +32,7 @@ from skore._utils.repr.base import (
     ReportHelpMixin,
     render_panel_to_plain_text,
 )
-from skore._utils.repr.data import MethodHelp, _build_method_groups
+from skore._utils.repr.data import MethodGroupHelp, MethodHelp
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -211,19 +211,12 @@ def _summarize_report_metrics(
 class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
     """Base class for metrics accessor."""
 
-    # Help tree subgroups under ``.metrics``. Explicit tuples list fixed methods;
-    # ``None`` is a catch-all for remaining methods (registry callables such as
-    # ``accuracy`` / ``r2``, plus static score helpers like ``timings``).
+    # Help tree subgroups under ``.metrics``. ``Displays`` is a catch-all for
+    # methods that are neither registry management nor metric callables.
     _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...] | None]] = {
         "Registry": ("available", "add", "remove", "get"),
-        "Metrics": None,
-        "Displays": (
-            "summarize",
-            "roc",
-            "precision_recall",
-            "prediction_error",
-            "confusion_matrix",
-        ),
+        "Metrics": ("fit_time", "predict_time", "score", "timings"),
+        "Displays": None,
     }
 
     def _callable_metric_names(self) -> list[str]:
@@ -351,8 +344,8 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
         since they cannot be called as ``report.metrics.<name>(...)``.
 
         Methods are then partitioned into Registry / Metrics / Displays groups.
-        The Metrics group is filled from the registry (plus remaining score helpers),
-        rather than a hardcoded list of metric names.
+        Metrics combines registry callables with static score helpers; Displays
+        collects remaining methods that are neither registry management nor metrics.
         """
         help_data = super()._build_help_data()
         known_names = {method.name for method in help_data.methods}
@@ -367,24 +360,47 @@ class BaseMetricsAccessor(_BaseAccessor, Generic[ParentT]):
             for name in self._callable_metric_names()
             if name not in known_names
         )
-        # Rebuild groups after injecting dynamic registry metrics.
-        help_data.groups = _build_method_groups(self, help_data.methods)
-        # Within Metrics, show registry callables first (registry order), then
-        # remaining static helpers (``fit_time``, ``timings``, ...).
-        if help_data.groups:
-            registry_order = self._callable_metric_names()
-            registry_set = set(registry_order)
-            for group in help_data.groups:
-                if group.name != "Metrics":
-                    continue
-                by_name = {method.name: method for method in group.methods}
-                group.methods = [
-                    by_name[name] for name in registry_order if name in by_name
-                ] + [
-                    method
-                    for method in group.methods
-                    if method.name not in registry_set
-                ]
+
+        by_name = {method.name: method for method in help_data.methods}
+        registry_names = self._HELP_METHOD_GROUPS["Registry"] or ()
+        static_metric_names = self._HELP_METHOD_GROUPS["Metrics"] or ()
+        registry_order = self._callable_metric_names()
+
+        registry_methods = [by_name[name] for name in registry_names if name in by_name]
+        metrics_methods = [
+            by_name[name] for name in registry_order if name in by_name
+        ] + [by_name[name] for name in static_metric_names if name in by_name]
+        claimed = {method.name for method in registry_methods + metrics_methods}
+        displays_methods = [
+            method for method in help_data.methods if method.name not in claimed
+        ]
+
+        groups: list[MethodGroupHelp] = []
+        if registry_methods:
+            groups.append(
+                MethodGroupHelp(
+                    branch_id=str(uuid4()),
+                    name="Registry",
+                    methods=registry_methods,
+                )
+            )
+        if metrics_methods:
+            groups.append(
+                MethodGroupHelp(
+                    branch_id=str(uuid4()),
+                    name="Metrics",
+                    methods=metrics_methods,
+                )
+            )
+        if displays_methods:
+            groups.append(
+                MethodGroupHelp(
+                    branch_id=str(uuid4()),
+                    name="Displays",
+                    methods=displays_methods,
+                )
+            )
+        help_data.groups = groups or None
         return help_data
 
     def _formatted_summary_frame(
