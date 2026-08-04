@@ -205,6 +205,7 @@ orjson==3.11.9
     # via skore (skore/pyproject.toml)
 packaging==24.2
     # via
+    #   skore (skore/pyproject.toml)
     #   build
     #   gunicorn
     #   matplotlib

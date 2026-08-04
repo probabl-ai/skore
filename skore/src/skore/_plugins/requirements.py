@@ -9,6 +9,8 @@ import types
 import typing
 import warnings
 
+import packaging.utils
+
 logger = logging.getLogger(__name__)
 
 
@@ -90,6 +92,12 @@ def infer() -> list[Requirement]:
                 )
 
     return [
-        Requirement(name=name, version=version)
+        Requirement(
+            name=packaging.utils.canonicalize_name(name),
+            version=packaging.utils.canonicalize_version(
+                version,
+                strip_trailing_zero=False,
+            ),
+        )
         for name, version in sorted(requirement_to_version.items())
     ]
