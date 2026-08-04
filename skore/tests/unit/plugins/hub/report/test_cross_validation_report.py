@@ -1098,9 +1098,9 @@ class TestCrossValidationReportPayload:
         )
 
         for metric_name in (
-            "precision_mean",
-            "recall_mean",
-            "roc_auc_mean",
+            "precision_macro_mean",
+            "recall_macro_mean",
+            "roc_auc_macro_mean",
         ):
             macro_metrics = [
                 m

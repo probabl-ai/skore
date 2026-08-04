@@ -364,7 +364,7 @@ class TestEstimatorReportPayload:
             key="<key>",
         )
 
-        for metric_name in ("precision", "recall", "roc_auc"):
+        for metric_name in ("precision_macro", "recall_macro", "roc_auc_macro"):
             macro_metrics = [
                 m
                 for m in payload.metrics
