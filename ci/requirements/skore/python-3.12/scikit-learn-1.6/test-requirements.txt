@@ -1,6 +1,6 @@
 aiohappyeyeballs==2.6.2
     # via aiohttp
-aiohttp==3.14.1
+aiohttp==3.14.3
     # via mlflow
 aiosignal==1.4.0
     # via aiohttp
@@ -52,7 +52,7 @@ contourpy==1.3.3
     # via matplotlib
 coverage[toml]==7.14.1
     # via pytest-cov
-cryptography==48.0.1
+cryptography==50.0.0
     # via
     #   google-auth
     #   mlflow
