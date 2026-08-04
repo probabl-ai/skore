@@ -187,31 +187,31 @@ def test_frame_has_estimator_and_split_columns(
         (
             "comparison_cross_validation_reports_binary_classification",
             "score",
-            ["estimator", "auto", "None"],
+            ["auto", "estimator", "split", "None"],
         ),
         (
             "comparison_cross_validation_reports_multiclass_classification",
             "precision",
-            ["estimator", "label", "auto"],
+            ["auto", "estimator", "label", "split"],
         ),
         (
             "comparison_cross_validation_reports_regression",
             "score",
-            ["estimator", "auto", "None"],
+            ["auto", "estimator", "split", "None"],
         ),
         (
             "comparison_cross_validation_reports_multioutput_regression",
             "r2",
-            ["estimator", "output", "auto"],
+            ["auto", "estimator", "output", "split"],
         ),
     ],
 )
 def test_invalid_subplot_by(fixture_name, metric, valid_values, request):
     report = request.getfixturevalue(fixture_name)
-    display = report.metrics.summarize()
+    display = report.metrics.summarize(metric=metric)
     err_msg = (
-        "Column incorrect not found in the frame."
-        f" It should be one of {', '.join(valid_values)}."
+        "Invalid `subplot_by` parameter. Valid options are: "
+        f"{', '.join(valid_values)}. Got 'incorrect' instead."
     )
     with pytest.raises(ValueError, match=err_msg):
         display.plot(metric=metric, subplot_by="incorrect")
@@ -244,7 +244,7 @@ def test_invalid_subplot_by(fixture_name, metric, valid_values, request):
 )
 def test_valid_subplot_by(fixture_name, metric, subplot_by_tuples, request):
     report = request.getfixturevalue(fixture_name)
-    display = report.metrics.summarize()
+    display = report.metrics.summarize(metric=metric)
     for subplot_by, expected_len in subplot_by_tuples:
         fig = display.plot(metric=metric, subplot_by=subplot_by)
         axes = fig.axes
@@ -268,7 +268,7 @@ def test_subplot_by_none_multiclass_or_multioutput(
     metric,
 ):
     report = request.getfixturevalue(fixture_name)
-    display = report.metrics.summarize()
+    display = report.metrics.summarize(metric=metric)
     err_msg = (
         "There are multiple labels or outputs and `subplot_by` is `None`. "
         "There is too much information to display on a single plot. "

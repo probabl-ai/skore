@@ -321,34 +321,38 @@ def test_plot_single_metric(forest_binary_classification_data):
             "cross_validation_reports_binary_classification",
             "score",
             "label",
-            "No columns to group by.",
+            r"Invalid `subplot_by` parameter\. Valid options are: auto, split, None\.",
         ),
         (
             "cross_validation_reports_regression",
             "score",
             "output",
-            "No columns to group by.",
+            r"Invalid `subplot_by` parameter\. Valid options are: auto, split, None\.",
         ),
         (
             "cross_validation_reports_multiclass_classification",
             "precision",
             "incorrect",
-            "Column incorrect not found in the frame."
-            + " It should be one of label, auto, None.",
+            (
+                r"Invalid `subplot_by` parameter\. Valid options are: "
+                r"auto, label, split, None\."
+            ),
         ),
         (
             "cross_validation_reports_multioutput_regression",
             "r2",
             "incorrect",
-            "Column incorrect not found in the frame."
-            + " It should be one of output, auto, None.",
+            (
+                r"Invalid `subplot_by` parameter\. Valid options are: "
+                r"auto, output, split, None\."
+            ),
         ),
     ],
 )
 def test_invalid_subplot_by(fixture_name, metric, subplot_by, err_msg, request):
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
-    display = report.metrics.summarize()
+    display = report.metrics.summarize(metric=metric)
     with pytest.raises(ValueError, match=err_msg):
         display.plot(metric=metric, subplot_by=subplot_by)
 
@@ -359,7 +363,7 @@ def test_invalid_subplot_by(fixture_name, metric, subplot_by, err_msg, request):
         (
             "cross_validation_reports_binary_classification",
             "score",
-            [(None, 1)],
+            [(None, 1), ("split", 2)],
         ),
         (
             "cross_validation_reports_multiclass_classification",
@@ -381,7 +385,7 @@ def test_invalid_subplot_by(fixture_name, metric, subplot_by, err_msg, request):
 def test_valid_subplot_by(fixture_name, metric, subplot_by_tuples, request):
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
-    display = report.metrics.summarize()
+    display = report.metrics.summarize(metric=metric)
     for subplot_by, expected_len in subplot_by_tuples:
         fig = display.plot(metric=metric, subplot_by=subplot_by)
         axes = fig.axes

@@ -374,34 +374,32 @@ def test_plot_data_source_both(forest_binary_classification_data):
             "estimator_reports_binary_classification",
             "score",
             "label",
-            "No columns to group by.",
+            r"Invalid `subplot_by` parameter\. Valid options are: auto, None\.",
         ),
         (
             "estimator_reports_regression",
             "score",
             "output",
-            "No columns to group by.",
+            r"Invalid `subplot_by` parameter\. Valid options are: auto, None\.",
         ),
         (
             "estimator_reports_multiclass_classification",
             "precision",
             "incorrect",
-            "Column incorrect not found in the frame. "
-            + "It should be one of label, auto, None.",
+            r"Invalid `subplot_by` parameter\. Valid options are: auto, label, None\.",
         ),
         (
             "estimator_reports_multioutput_regression",
             "r2",
             "incorrect",
-            "Column incorrect not found in the frame. "
-            + "It should be one of output, auto, None.",
+            r"Invalid `subplot_by` parameter\. Valid options are: auto, output, None\.",
         ),
     ],
 )
 def test_invalid_subplot_by(fixture_name, metric, subplot_by, err_msg, request):
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
-    display = report.metrics.summarize()
+    display = report.metrics.summarize(metric=metric)
     with pytest.raises(ValueError, match=err_msg):
         display.plot(metric=metric, subplot_by=subplot_by)
 
@@ -434,7 +432,7 @@ def test_invalid_subplot_by(fixture_name, metric, subplot_by, err_msg, request):
 def test_valid_subplot_by(fixture_name, metric, subplot_by_tuples, request):
     reports = request.getfixturevalue(fixture_name)
     report = reports[0]
-    display = report.metrics.summarize()
+    display = report.metrics.summarize(metric=metric)
     for subplot_by, expected_len in subplot_by_tuples:
         fig = display.plot(metric=metric, subplot_by=subplot_by)
         axes = fig.axes
@@ -443,3 +441,51 @@ def test_valid_subplot_by(fixture_name, metric, subplot_by_tuples, request):
             assert isinstance(axes[0], mpl.axes.Axes)
         else:
             assert len(axes) == expected_len
+
+
+def test_plot_rejects_mixed_averaged_and_per_class(
+    estimator_reports_multiclass_classification,
+):
+    report = estimator_reports_multiclass_classification[0]
+    display = report.metrics.summarize()
+    with pytest.raises(ValueError, match="both per-class/per-output and averaged"):
+        display.plot(metric="precision")
+
+
+def test_plot_subplot_by_label_keeps_data_source_hue():
+    """Train/test must not be mean-aggregated when faceting by label."""
+    from sklearn.datasets import make_classification
+    from sklearn.linear_model import LogisticRegression
+
+    X, y = make_classification(
+        n_samples=120, n_classes=3, n_informative=5, random_state=0
+    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    report = EstimatorReport(
+        LogisticRegression(max_iter=2000),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.metrics.summarize(data_source="both", metric="precision")
+    fig = display.plot(metric="precision", subplot_by="label")
+    assert len(fig.axes) == 3
+    for ax in fig.axes:
+        # one bar per data_source (train/test), not a collapsed mean
+        widths = [
+            p.get_width() for p in ax.patches if 0 < p.get_width() <= 1.0000001
+        ]
+        # seaborn may add an extra unit-width patch; keep score-like bars only
+        score_widths = [w for w in widths if w < 1]
+        assert len(score_widths) == 2
+
+
+def test_plot_subplot_by_split(forest_binary_classification_data):
+    from skore import CrossValidationReport
+
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=3)
+    display = report.metrics.summarize(metric="accuracy")
+    fig = display.plot(metric="accuracy", subplot_by="split")
+    assert len(fig.axes) == 3

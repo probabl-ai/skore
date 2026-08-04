@@ -11,6 +11,7 @@ from matplotlib.figure import Figure
 from sklearn.utils.validation import _is_arraylike
 
 from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
+from skore._sklearn._plot.utils import _reorder_categoricals_by_appearance
 from skore._sklearn.metrics import Metric
 from skore._sklearn.types import (
     Aggregate,
@@ -22,11 +23,18 @@ from skore._utils._index import flatten_multi_index, squeeze_single_column
 
 MetricIndexKey = Literal["metric", "label", "output", "average"]
 MetricColumnKey = Literal["estimator", "data_source", "split"]
+SubplotBy = Literal["auto", "estimator", "label", "output", "data_source", "split"]
 
 METRIC_INDEX_KEYS: tuple[MetricIndexKey, ...] = ("metric", "label", "output", "average")
 METRIC_DIMENSION_KEYS = METRIC_INDEX_KEYS[1:]
 PIVOT_VALUE_COLUMN = "score"
 PIVOT_META_COLUMN = "greater_is_better"
+GROUPBY_COLUMN_PRIORITY: tuple[str, ...] = (
+    "estimator",
+    "data_source",
+    "label",
+    "output",
+)
 
 
 class MetricsSummaryRow(TypedDict):
@@ -580,8 +588,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         self,
         *,
         metric: str,
-        subplot_by: Literal["auto", "estimator", "label", "output", "data_source"]
-        | None = "auto",
+        subplot_by: SubplotBy | None = "auto",
     ) -> Figure:
         """Plot a single metric.
 
@@ -591,11 +598,13 @@ class MetricsSummaryDisplay(DisplayMixin):
             The metric to plot. Must match a value in the ``name`` column of
             :attr:`summary`.
 
-        subplot_by : {"auto", "estimator", "label", "output", "data_source"} \
-                or None, default="auto"
-            The column to use for subplotting. If ``"auto"``, subplotting is
-            performed only when comparing estimators in a multiclass
-            classification or multi-output regression problem.
+        subplot_by : {"auto", "estimator", "label", "output", "data_source", \
+                "split"} or None, default="auto"
+            Column used as the seaborn ``col`` facet. ``"auto"`` facets by
+            ``"estimator"`` for comparison reports when another grouping
+            dimension is present; otherwise no facets are created. At most one
+            other grouping column may remain: it is used as ``hue``. If more
+            dimensions would be left unencoded, a :class:`ValueError` is raised.
 
         Returns
         -------
@@ -616,8 +625,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         self,
         *,
         metric: str,
-        subplot_by: Literal["auto", "estimator", "label", "output", "data_source"]
-        | None = "auto",
+        subplot_by: SubplotBy | None = "auto",
     ) -> Figure:
         """Dispatch the plotting function for matplotlib backend."""
         frame = self._prepare_plot_frame(metric)
@@ -657,6 +665,17 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         frame = self.summary.loc[self.summary["name"] == metric].copy()
 
+        if "average" in frame.columns:
+            averaged = frame["average"].notna()
+            if averaged.any() and (~averaged).any():
+                raise ValueError(
+                    f"Metric {metric!r} contains both per-class/per-output and "
+                    f"averaged scores (they share the same summary name). Call "
+                    f"summarize(metric=...) with a specific metric before "
+                    f"plotting, e.g. summarize(metric={metric!r}) or "
+                    f"summarize(metric='{metric}_macro')."
+                )
+
         for col in ["label", "output", "average"]:
             if col in frame.columns and frame[col].isna().all():
                 frame = frame.drop(columns=col)
@@ -681,11 +700,127 @@ class MetricsSummaryDisplay(DisplayMixin):
     @staticmethod
     def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
         """Get the available columns from which to group by."""
-        columns_to_groupby = list[str]()
-        for column in ("estimator", "data_source", "label", "output"):
-            if column in frame.columns:
-                columns_to_groupby.append(column)
-        return columns_to_groupby
+        return [column for column in GROUPBY_COLUMN_PRIORITY if column in frame.columns]
+
+    @staticmethod
+    def _valid_subplot_by_options(
+        *,
+        columns_to_groupby: list[str],
+        frame: pd.DataFrame,
+    ) -> list[str]:
+        """Build the list of valid ``subplot_by`` values for error messages."""
+        options: list[str] = ["auto", *columns_to_groupby]
+        if "split" in frame.columns:
+            options.append("split")
+        # ``None`` leaves at most one encoding column for hue. ``split`` is the
+        # CV distribution axis and does not count toward that budget.
+        if len(columns_to_groupby) <= 1:
+            options.append("None")
+        return options
+
+    @classmethod
+    def _raise_invalid_subplot_by(
+        cls,
+        subplot_by: str | None,
+        *,
+        columns_to_groupby: list[str],
+        frame: pd.DataFrame,
+    ) -> None:
+        options = cls._valid_subplot_by_options(
+            columns_to_groupby=columns_to_groupby,
+            frame=frame,
+        )
+        raise ValueError(
+            f"Invalid `subplot_by` parameter. Valid options are: "
+            f"{', '.join(options)}. Got {subplot_by!r} instead."
+        )
+
+    @classmethod
+    def _raise_too_many_dimensions(cls, leftover: Sequence[str]) -> None:
+        raise ValueError(
+            "There is too much information to display on a single plot. "
+            f"Unencoded grouping columns: {list(leftover)}. "
+            "Choose `subplot_by` so that at most one other grouping column "
+            "remains (used as hue), or filter the summary "
+            "(e.g. a single `data_source`)."
+        )
+
+    def _resolve_subplot_by(
+        self,
+        *,
+        frame: pd.DataFrame,
+        columns_to_groupby: list[str],
+        subplot_by: SubplotBy | None,
+        report_type: ReportType,
+    ) -> str | None:
+        """Resolve ``"auto"`` and validate ``subplot_by``."""
+        if subplot_by == "auto":
+            if "comparison" in report_type and (
+                "label" in frame.columns or "output" in frame.columns
+            ):
+                return "estimator"
+            return None
+
+        allowed = list(columns_to_groupby)
+        # ``split`` is the strip/box distribution axis for CV reports; it is a
+        # valid facet choice but not an unencoded leftover dimension.
+        if "split" in frame.columns:
+            allowed.append("split")
+
+        if subplot_by is not None and subplot_by not in allowed:
+            self._raise_invalid_subplot_by(
+                subplot_by,
+                columns_to_groupby=columns_to_groupby,
+                frame=frame,
+            )
+        return subplot_by
+
+    def _resolve_plot_encodings(
+        self,
+        *,
+        frame: pd.DataFrame,
+        subplot_by: SubplotBy | None,
+        report_type: ReportType,
+    ) -> tuple[str | None, str | None, str | None]:
+        """Return ``(col, hue, resolved_subplot_by)`` without unencoded dimensions."""
+        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
+        subplot_by = self._resolve_subplot_by(
+            frame=frame,
+            columns_to_groupby=columns_to_groupby,
+            subplot_by=subplot_by,
+            report_type=report_type,
+        )
+
+        if subplot_by is None:
+            if len(columns_to_groupby) > 1:
+                # Comparison reports with multiple labels/outputs historically
+                # used a dedicated message; keep that for the common case.
+                if "comparison" in report_type and (
+                    (
+                        "label" in frame.columns
+                        and frame["label"].nunique(dropna=True) > 1
+                    )
+                    or (
+                        "output" in frame.columns
+                        and frame["output"].nunique(dropna=True) > 1
+                    )
+                ):
+                    raise ValueError(
+                        "There are multiple labels or outputs and `subplot_by` is "
+                        "`None`. There is too much information to display on a "
+                        "single plot. Please provide a column to group by using "
+                        "`subplot_by`."
+                    )
+                self._raise_too_many_dimensions(columns_to_groupby)
+            hue = columns_to_groupby[0] if columns_to_groupby else None
+            return None, hue, None
+
+        remaining = [column for column in columns_to_groupby if column != subplot_by]
+        hue = remaining[0] if remaining else None
+        leftover = remaining[1:]
+        if leftover:
+            self._raise_too_many_dimensions(leftover)
+        return subplot_by, hue, subplot_by
 
     @staticmethod
     def _decorate_matplotlib_axis(
@@ -696,6 +831,12 @@ class MetricsSummaryDisplay(DisplayMixin):
     ) -> None:
         ax.set(xlabel=xlabel, ylabel=ylabel)
         ax.axhspan(-0.5, 0.5, color="lightgray", alpha=0.4, zorder=0)
+
+    @staticmethod
+    def _iter_facet_axes(facet: Any) -> list[Any]:
+        """Yield axes from a seaborn FacetGrid, including the single-axes case."""
+        axes = np.atleast_1d(np.asarray(facet.axes, dtype=object)).ravel()
+        return [ax for ax in axes if ax is not None]
 
     def _categorical_plot(
         self,
@@ -708,7 +849,13 @@ class MetricsSummaryDisplay(DisplayMixin):
         boxplot_kwargs: dict[str, Any] | None = None,
         stripplot_kwargs: dict[str, Any] | None = None,
     ) -> Figure:
-        if "estimator" in report_type:
+        frame = _reorder_categoricals_by_appearance(frame, [col, hue])
+
+        is_estimator_report_type = report_type in (
+            "estimator",
+            "comparison-estimator",
+        )
+        if is_estimator_report_type:
             facet = sns.catplot(
                 data=frame,
                 x="score",
@@ -740,9 +887,8 @@ class MetricsSummaryDisplay(DisplayMixin):
 
         add_background_metric = hue is not None
         figure = facet.figure
-        ax_grid = facet.axes.squeeze()
         xlabel = frame["verbose_name"].iloc[0]
-        for ax in ax_grid.flatten():
+        for ax in self._iter_facet_axes(facet):
             self._decorate_matplotlib_axis(ax=ax, xlabel=xlabel)
             if not add_background_metric:
                 for patch in ax.patches:
@@ -757,35 +903,18 @@ class MetricsSummaryDisplay(DisplayMixin):
         frame: pd.DataFrame,
         estimator_name: str,
         report_type: ReportType,
-        subplot_by: Literal["auto", "estimator", "label", "output", "data_source"]
-        | None,
+        subplot_by: SubplotBy | None,
         barplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
     ) -> Figure:
         """Plot metrics for an `EstimatorReport` or a `CrossValidationReport`."""
-        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-        if subplot_by == "auto":
-            subplot_by = None
-
-        if subplot_by is not None and not len(columns_to_groupby):
-            raise ValueError(
-                "No columns to group by. `subplot_by` is expected to be None or 'auto'."
-            )
-        if subplot_by is not None and subplot_by not in columns_to_groupby:
-            raise ValueError(
-                f"Column {subplot_by} not found in the frame. It should be one "
-                f"of {', '.join(columns_to_groupby + ['auto', 'None'])}."
-            )
-
-        if subplot_by is None:
-            hue = None if not len(columns_to_groupby) else columns_to_groupby[0]
-            if hue is None:
-                barplot_kwargs.pop("palette", None)
-                stripplot_kwargs.pop("palette", None)
-            col = None
-        else:
-            hue, col = None, subplot_by
+        col, hue, subplot_by = self._resolve_plot_encodings(
+            frame=frame,
+            subplot_by=subplot_by,
+            report_type=report_type,
+        )
+        if hue is None:
             barplot_kwargs.pop("palette", None)
             stripplot_kwargs.pop("palette", None)
 
@@ -810,61 +939,20 @@ class MetricsSummaryDisplay(DisplayMixin):
         *,
         frame: pd.DataFrame,
         report_type: ReportType,
-        subplot_by: Literal["auto", "estimator", "label", "output", "data_source"]
-        | None,
+        subplot_by: SubplotBy | None,
         barplot_kwargs: dict[str, Any],
         boxplot_kwargs: dict[str, Any],
         stripplot_kwargs: dict[str, Any],
     ) -> Figure:
         """Plot metrics for a `ComparisonReport`."""
-        hue: str | None = None
-        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-
-        if subplot_by not in ("auto", None) and subplot_by not in columns_to_groupby:
-            additional_subplot_by = ["auto"]
-            if "label" not in frame.columns and "output" not in frame.columns:
-                additional_subplot_by.append("None")
-
-            raise ValueError(
-                f"Column {subplot_by} not found in the frame. It should be one "
-                f"of {', '.join(columns_to_groupby + additional_subplot_by)}."
-            )
-        if subplot_by is None:
-            if "label" in frame.columns:
-                n_unique = frame["label"].nunique()
-            elif "output" in frame.columns:
-                n_unique = frame["output"].nunique()
-            else:
-                n_unique = 1
-            if n_unique > 1:
-                raise ValueError(
-                    "There are multiple labels or outputs and `subplot_by` is `None`. "
-                    "There is too much information to display on a single plot. "
-                    "Please provide a column to group by using `subplot_by`."
-                )
-
-        if (frame.columns.isin(["label", "output"]).any() and subplot_by == "auto") or (
-            subplot_by == "auto"
-            and "estimator" in frame.columns
-            and frame["estimator"].nunique() > 1
-            and ("label" in frame.columns or "output" in frame.columns)
-        ):
-            subplot_by = "estimator"
-        elif subplot_by == "auto":
-            subplot_by = None
-
-        if subplot_by is None:
-            hue, col = columns_to_groupby[0], None
-        else:
-            hue_groupby = [
-                column for column in columns_to_groupby if column != subplot_by
-            ]
-            hue = hue_groupby[0] if len(hue_groupby) else None
-            col = subplot_by
-
-            if hue is None:
-                barplot_kwargs.pop("palette", None)
-                stripplot_kwargs.pop("palette", None)
+        col, hue, subplot_by = self._resolve_plot_encodings(
+            frame=frame,
+            subplot_by=subplot_by,
+            report_type=report_type,
+        )
+        if hue is None:
+            barplot_kwargs.pop("palette", None)
+            stripplot_kwargs.pop("palette", None)
 
         figure = self._categorical_plot(
             frame=frame,
