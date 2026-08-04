@@ -61,8 +61,8 @@ from skore import TrainTestSplit
 splitter = TrainTestSplit(test_size=0.2, random_state=42)
 
 # %%
-# Trigger SKD006: Ridge on raw mixed-scale features
-# =================================================
+# Trigger SKD006 with Ridge on raw mixed-scale features
+# =====================================================
 #
 # Ridge with a moderate ``alpha`` fits quickly on unscaled inputs. SKD006
 # indicates that the features are not on the same scale, so raw coefficient

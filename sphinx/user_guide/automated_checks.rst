@@ -232,7 +232,7 @@ How to reduce the risk
 .. _skd006-unscaled-coefficients:
 
 SKD006 - Coefficient interpretation
-------------------------------------
+-----------------------------------
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^
@@ -270,7 +270,7 @@ How to interpret the tip
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 :ref:`SKD006 <skd006-unscaled-coefficients>` is a tip about interpretation, not a
-sign that the model failed — other issues may still exist. Depending on whether
+sign that the model failed: other issues may still exist. Depending on whether
 you want coefficients that are comparable across features or effects in original
 units, think of:
 
