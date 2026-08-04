@@ -663,7 +663,7 @@ class MetricsSummaryDisplay(DisplayMixin):
                 f"Unknown metric: {metric!r}. Available metrics: {available_metrics!r}."
             )
 
-        frame = self.summary.loc[self.summary["name"] == metric].copy()
+        frame = self.summary.query("name == @metric").copy()
 
         if "average" in frame.columns:
             averaged = frame["average"].notna()
