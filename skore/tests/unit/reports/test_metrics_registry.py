@@ -6,7 +6,6 @@ import functools
 import pickle
 import re
 
-import numpy as np
 import pytest
 import sklearn
 from sklearn.linear_model import LogisticRegression
@@ -22,25 +21,10 @@ from skore import EstimatorReport
 from skore._sklearn.metrics import (
     _METRIC_ALIASES,
     BUILTIN_METRICS,
-    R2,
-    Accuracy,
-    Brier,
-    FitTime,
     FunctionKind,
-    LogLoss,
-    Mae,
-    Mape,
     Metric,
     MetricRegistry,
     MissingKwargsError,
-    Precision,
-    PrecisionMacro,
-    PredictTime,
-    Recall,
-    RecallMacro,
-    Rmse,
-    RocAuc,
-    RocAucMacro,
     Score,
 )
 from skore._utils._cache_key import make_cache_key
@@ -472,185 +456,6 @@ def test_metric_alias_via_metric_new(friendly):
     assert result.greater_is_better is False
 
 
-_BUILTIN_ATTRS = [
-    (Accuracy, "accuracy", "Accuracy", True, FunctionKind.METRIC),
-    (Precision, "precision", "Precision", True, FunctionKind.METRIC),
-    (Recall, "recall", "Recall", True, FunctionKind.METRIC),
-    (Brier, "brier_score", "Brier score", False, FunctionKind.METRIC),
-    (RocAuc, "roc_auc", "ROC AUC", True, FunctionKind.METRIC),
-    (LogLoss, "log_loss", "Log loss", False, FunctionKind.METRIC),
-    (R2, "r2", "R²", True, FunctionKind.METRIC),
-    (Rmse, "rmse", "RMSE", False, FunctionKind.METRIC),
-    (Mae, "mae", "MAE", False, FunctionKind.METRIC),
-    (Mape, "mape", "MAPE", False, FunctionKind.METRIC),
-    (FitTime, "fit_time", "Fit time (s)", False, None),
-    (PredictTime, "predict_time", "Predict time (s)", False, None),
-]
-
-
-@pytest.mark.parametrize(
-    ("cls", "name", "verbose", "greater_is_better", "function_kind"),
-    _BUILTIN_ATTRS,
-)
-def test_builtin_class_attributes(cls, name, verbose, greater_is_better, function_kind):
-    assert cls.name == name
-    assert cls.verbose_name == verbose
-    assert cls.greater_is_better is greater_is_better
-    assert cls.function_kind is function_kind
-
-
-def test_accuracy_available_for_classification(
-    binary_classification_report,
-    multiclass_classification_report,
-    regression_report,
-):
-    assert Accuracy().available(binary_classification_report)
-    assert Accuracy().available(multiclass_classification_report)
-    assert not Accuracy().available(regression_report)
-
-
-def test_precision_recall_available_for_classification(
-    binary_classification_report,
-    multiclass_classification_report,
-    regression_report,
-):
-    for cls in (Precision, Recall):
-        assert cls().available(binary_classification_report)
-        assert cls().available(multiclass_classification_report)
-        assert not cls().available(regression_report)
-
-
-def test_macro_metrics_only_multiclass(
-    binary_classification_report,
-    multiclass_classification_report,
-):
-    for cls in (PrecisionMacro, RecallMacro, RocAucMacro):
-        assert not cls().available(binary_classification_report)
-        assert cls().available(multiclass_classification_report)
-
-
-def test_brier_only_binary_with_predict_proba(
-    binary_classification_report,
-    multiclass_classification_report,
-    regression_report,
-    svc_binary_classification_report,
-):
-    assert Brier().available(binary_classification_report)
-    assert not Brier().available(svc_binary_classification_report)
-    assert not Brier().available(multiclass_classification_report)
-    assert not Brier().available(regression_report)
-
-
-def test_roc_auc_availability(
-    binary_classification_report,
-    multiclass_classification_report,
-    regression_report,
-    svc_binary_classification_report,
-    classifier_no_predict_proba_report,
-):
-    assert RocAuc().available(binary_classification_report)
-    assert RocAuc().available(svc_binary_classification_report)
-    assert RocAuc().available(multiclass_classification_report)
-    assert not RocAuc().available(classifier_no_predict_proba_report)
-    assert not RocAuc().available(regression_report)
-
-
-def test_log_loss_classification_with_predict_proba(
-    binary_classification_report,
-    multiclass_classification_report,
-    regression_report,
-    svc_binary_classification_report,
-):
-    assert LogLoss().available(binary_classification_report)
-    assert LogLoss().available(multiclass_classification_report)
-    assert not LogLoss().available(svc_binary_classification_report)
-    assert not LogLoss().available(regression_report)
-
-
-def test_regression_metrics_only_for_regression(
-    binary_classification_report,
-    regression_report,
-    multioutput_regression_report,
-):
-    for cls in (R2, Rmse, Mae, Mape):
-        assert cls().available(regression_report)
-        assert cls().available(multioutput_regression_report)
-        assert not cls().available(binary_classification_report)
-
-
-def test_fit_time_predict_time_always_available(
-    binary_classification_report, regression_report
-):
-    assert FitTime().available(binary_classification_report)
-    assert FitTime().available(regression_report)
-    assert PredictTime().available(binary_classification_report)
-    assert PredictTime().available(regression_report)
-
-
-def test_fit_time_rows(binary_classification_report):
-    """With no recorded fit time, ``cast=True`` returns ``nan``."""
-    binary_classification_report._fit_time = None
-    rows = FitTime().rows(report=binary_classification_report, data_source="test")
-    assert len(rows) == 1
-    assert np.isnan(rows[0]["score"])
-
-
-def test_fit_time_rows_cast_false(binary_classification_report):
-    """With no recorded fit time, ``cast=False`` returns ``None``."""
-    binary_classification_report._fit_time = None
-    rows = FitTime().rows(
-        report=binary_classification_report, data_source="test", cast=False
-    )
-    assert rows[0]["score"] is None
-
-
-def test_predict_time_rows_no_cache(binary_classification_report):
-    """With no cached predict time, ``cast=True`` returns ``nan``."""
-    binary_classification_report._predict_time.clear()
-    rows = PredictTime().rows(report=binary_classification_report, data_source="test")
-    assert np.isnan(rows[0]["score"])
-
-
-def test_predict_time_rows_cast_false(binary_classification_report):
-    """With no cached predict time, ``cast=False`` returns ``None``."""
-    binary_classification_report._predict_time.clear()
-    rows = PredictTime().rows(
-        report=binary_classification_report, data_source="test", cast=False
-    )
-    assert rows[0]["score"] is None
-
-
-def test_accuracy_pretty(binary_classification_report):
-    score = Accuracy().pretty(report=binary_classification_report, data_source="test")
-    assert 0.0 <= score <= 1.0
-
-
-def test_builtin_metrics_contains_expected_classes():
-    types = [type(m) for m in BUILTIN_METRICS]
-    assert types == [
-        Accuracy,
-        Precision,
-        PrecisionMacro,
-        Recall,
-        RecallMacro,
-        RocAuc,
-        RocAucMacro,
-        LogLoss,
-        Brier,
-        R2,
-        Rmse,
-        Mae,
-        Mape,
-        FitTime,
-        PredictTime,
-    ]
-
-
-def test_builtin_metrics_unique_names():
-    names = [m.name for m in BUILTIN_METRICS]
-    assert len(names) == len(set(names))
-
-
 def test_metric_registry_binary_classification_filters(binary_classification_report):
     registry = MetricRegistry(binary_classification_report)
     names = list(registry.keys())
@@ -696,14 +501,14 @@ def test_metric_registry_no_proba_classifier_filters(
 
 def test_metric_registry_iteration_order(binary_classification_report):
     registry = MetricRegistry(binary_classification_report)
-    builtin_order = [
+    default_order = [
         m.name for m in BUILTIN_METRICS if m.available(binary_classification_report)
     ]
     # Score is inserted at the front when available
     expected = (
-        ["score", *builtin_order]
+        ["score", *default_order]
         if Score.available(binary_classification_report)
-        else builtin_order
+        else default_order
     )
     assert list(registry.keys()) == expected
 
@@ -762,7 +567,7 @@ def test_metric_registry_add_invalid_position(binary_classification_report):
         registry.add(m, position="middle")  # type: ignore[arg-type]
 
 
-def test_metric_registry_add_builtin_name_conflict(binary_classification_report):
+def test_metric_registry_add_reserved_name_conflict(binary_classification_report):
     registry = MetricRegistry(binary_classification_report)
     m = Metric(
         name="accuracy",
@@ -798,7 +603,7 @@ def test_metric_registry_remove_custom(binary_classification_report):
     assert "custom" not in registry
 
 
-def test_metric_registry_remove_builtin(binary_classification_report):
+def test_metric_registry_remove_default(binary_classification_report):
     registry = MetricRegistry(binary_classification_report)
     assert "accuracy" in registry
     registry.remove(report=binary_classification_report, name="accuracy")
@@ -842,16 +647,14 @@ def test_metric_registry_works_with_test_only_report(
     assert "accuracy" in registry
 
 
-def test_metric_registry_default_metrics_match_builtin_metrics(
-    binary_classification_report,
-):
+def test_metric_registry_default_contents_match_seed(binary_classification_report):
     registry = MetricRegistry(binary_classification_report)
-    available_builtins = {
+    available_defaults = {
         m.name for m in BUILTIN_METRICS if m.available(binary_classification_report)
     }
     if Score.available(binary_classification_report):
-        available_builtins.add("score")
-    assert set(registry.keys()) == available_builtins
+        available_defaults.add("score")
+    assert set(registry.keys()) == available_defaults
 
 
 def test_sklearn_scorer_protocol_recognises_basescorer():

@@ -187,7 +187,7 @@ def test_add_multiple_metrics(binary_report):
         assert "precision_macro_custom" in registry
 
 
-def test_add_cannot_override_builtin(binary_report):
+def test_add_cannot_override_default_registry_name(binary_report):
     def accuracy(y_true, y_pred):
         return 0.0
 
@@ -221,7 +221,7 @@ def test_remove_custom_metric(binary_report):
         assert "accuracy_score" not in registry
 
 
-def test_remove_builtin_metric(binary_report):
+def test_remove_default_registry_metric(binary_report):
     for registry in leaf_registries(binary_report):
         assert "accuracy" in registry
 
