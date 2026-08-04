@@ -16,7 +16,7 @@ from skore._sklearn._plot.metrics.precision_recall_curve import (
     PrecisionRecallCurveDisplay,
 )
 from skore._sklearn._plot.metrics.roc_curve import RocCurveDisplay
-from skore._utils._skrub import to_learner, is_skrub_learner
+from skore._utils._skrub import is_skrub_learner, to_learner
 
 
 def check_precision_recall_curve_display_data(display: PrecisionRecallCurveDisplay):

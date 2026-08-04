@@ -215,9 +215,7 @@ def split_preprocessor_estimator(estimator):
         return None, resolve_fitted_predictor(estimator)
 
     if isinstance(estimator, Pipeline):
-        if len(estimator.steps) > 1:
-            return estimator[:-1], estimator[-1]
-        return None, estimator.steps[0][1]
+        return estimator[:-1] or None, estimator[-1]
     return None, estimator
 
 
@@ -332,7 +330,7 @@ def get_preprocessed_X(
                     env = report.test_data
 
                     data, _ = get_predictor_and_input(learner, env)
-                else:  # data_source == "test"
+                else:  # data_source == "both"
                     if report.train_data is None:
                         raise CheckNotApplicable("Train data is unavailable.")
                     train_X, _ = get_predictor_and_input(learner, report.train_data)

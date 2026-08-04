@@ -1,13 +1,12 @@
-from unittest.mock import Mock
-from numpy.testing import assert_array_equal
-from skore._utils._skrub import get_predictor_and_input
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
 import pytest
 import scipy.sparse as sp
 import skrub
+from numpy.testing import assert_array_equal
 from sklearn.linear_model import LinearRegression, LogisticRegression, Ridge
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -28,6 +27,7 @@ from skore._sklearn._checks._utils import (
     split_preprocessor_estimator,
 )
 from skore._sklearn._checks.model_checks import _baseline_estimator_report
+from skore._utils._skrub import get_predictor_and_input
 from skore._utils._testing import MockReport
 
 
