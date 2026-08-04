@@ -653,13 +653,16 @@ def test_fit_time_predict_time_always_available(
 
 
 def test_fit_time_rows(binary_classification_report):
+    """With no recorded fit time, ``cast=True`` returns ``nan``."""
+    binary_classification_report._fit_time = None
     rows = FitTime().rows(report=binary_classification_report, data_source="test")
     assert len(rows) == 1
     assert np.isnan(rows[0]["score"])
 
 
 def test_fit_time_rows_cast_false(binary_classification_report):
-    assert binary_classification_report._fit_time is None
+    """With no recorded fit time, ``cast=False`` returns ``None``."""
+    binary_classification_report._fit_time = None
     rows = FitTime().rows(
         report=binary_classification_report, data_source="test", cast=False
     )
