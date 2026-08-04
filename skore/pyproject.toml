@@ -54,7 +54,7 @@ test-base = [
   "pytest-cov",
   "pytest-order",
   "pytest-randomly",
-  "pytest-xdist",
+  "pytest-xdist[psutil]",
   "respx",
   "scipy-stubs",
   "skore[hub, jupyter, mlflow]",
@@ -133,8 +133,7 @@ addopts = [
   "--import-mode=importlib",
   "--no-header",
   "--verbosity=2",
-  "-n",
-  "logical",
+  "--numprocesses=logical",
   "--dist=loadscope",
   "--durations=25",
 ]
