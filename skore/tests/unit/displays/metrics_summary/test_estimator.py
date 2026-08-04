@@ -331,6 +331,17 @@ def test_frame_data_source_both(forest_binary_classification_data):
     ]
 
 
+def test_available(forest_binary_classification_with_test):
+    estimator, X_test, y_test = forest_binary_classification_with_test
+    report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
+    display = report.metrics.summarize()
+
+    available = display.available()
+    assert "accuracy" in available
+    assert "score" not in available
+    assert available == list(dict.fromkeys(display.summary["name"].tolist()))
+
+
 def test_plot_single_metric(pyplot, forest_binary_classification_with_test):
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -346,8 +357,12 @@ def test_plot_unknown_metric_raises(forest_binary_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
     display = report.metrics.summarize()
 
-    with pytest.raises(ValueError, match="Unknown metric"):
+    with pytest.raises(
+        ValueError,
+        match=r"Unknown metric: 'not_a_metric'\. Available metrics:",
+    ) as exc_info:
         display.plot(metric="not_a_metric")
+    assert str(display.available()) in str(exc_info.value)
 
 
 def test_plot_data_source_both(pyplot, forest_binary_classification_data):

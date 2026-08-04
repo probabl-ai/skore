@@ -8,6 +8,15 @@ from sklearn.model_selection import train_test_split
 from skore import ComparisonReport, CrossValidationReport, EstimatorReport
 
 
+@pytest.fixture
+def pyplot():
+    """Setup and teardown fixture for matplotlib plotting tests."""
+    pyplot = pytest.importorskip("matplotlib.pyplot")
+    pyplot.close("all")
+    yield pyplot
+    pyplot.close("all")
+
+
 @pytest.fixture(scope="module")
 def estimator_type():
     return "dummy"
