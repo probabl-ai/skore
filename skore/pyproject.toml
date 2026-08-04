@@ -149,9 +149,11 @@ filterwarnings = [
   'ignore:.*`disp` and `iprint` options of the L-BFGS-B solver are deprecated:DeprecationWarning',
   # seaborn's boxplot/catplot still passes the deprecated `vert=` kwarg to
   # matplotlib. Hit whenever any plot Display renders a boxplot, so keep at the
-  # top level. Matplotlib 3.10+ emits PendingDeprecationWarning from
-  # matplotlib._api; older releases used MatplotlibDeprecationWarning via seaborn.
-  'ignore:vert: bool will be deprecated:PendingDeprecationWarning:matplotlib',
+  # top level. Matplotlib 3.10+ emits PendingDeprecationWarning (pending=True);
+  # warn_external() attributes it to seaborn. Older releases used
+  # MatplotlibDeprecationWarning. Use `.` for the colon in the message so
+  # filterwarnings does not split fields.
+  'ignore:vert. bool will be deprecated:PendingDeprecationWarning:seaborn',
   'ignore:vert.*was deprecated in Matplotlib:matplotlib._api.deprecation.MatplotlibDeprecationWarning:seaborn',
   # polars deprecates the dataframe interchange protocol; sklearn and plotly
   # still call into it when handed a polars frame. Triggered across many
