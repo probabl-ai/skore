@@ -182,7 +182,7 @@ def test_different_metrics_have_separate_cache(binary_classification_report):
 
 
 def test_on_report_without_train_data(logistic_binary_classification_with_train_test):
-    """Adding still works without train data; summarize on train fails clearly."""
+    """Adding still works without train data; summarize on train records an error."""
     estimator, X_train, X_test, y_train, y_test = (
         logistic_binary_classification_with_train_test
     )
@@ -191,8 +191,10 @@ def test_on_report_without_train_data(logistic_binary_classification_with_train_
     scorer = make_scorer(accuracy_score, response_method="predict")
     report.metrics.add(scorer)
 
-    with pytest.raises(ValueError, match="(?i)train|data"):
-        report.metrics.summarize(metric="accuracy_score", data_source="train")
+    display = report.metrics.summarize(metric="accuracy_score", data_source="train")
+    assert any(
+        "No train data were provided" in str(err) for _, err in display.errors
+    )
 
 
 def test_serde(binary_classification_report):

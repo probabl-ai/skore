@@ -27,12 +27,20 @@ custom_scorer = make_scorer(accuracy_score, response_method="predict")
 
 
 def leaf_registries(report):
-    """Yield every ``EstimatorReport._metric_registry`` reachable from ``report``."""
+    """Yield every ``EstimatorReport._metric_registry`` reachable from ``report``.
+
+    ``CrossValidationReport`` stores children in ``reports_`` (list) or, on older
+    layouts, ``estimator_reports_``. ``ComparisonReport`` stores children in
+    ``reports_`` (dict).
+    """
     if hasattr(report, "estimator_reports_"):
         for sub in report.estimator_reports_:
             yield sub._metric_registry
     elif hasattr(report, "reports_"):
-        for sub in report.reports_.values():
+        children = report.reports_
+        if isinstance(children, dict):
+            children = children.values()
+        for sub in children:
             yield from leaf_registries(sub)
     else:
         yield report._metric_registry

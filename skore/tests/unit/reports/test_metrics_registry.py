@@ -667,11 +667,15 @@ def test_fit_time_rows_cast_false(binary_classification_report):
 
 
 def test_predict_time_rows_no_cache(binary_classification_report):
+    """With no cached predict time, ``cast=True`` returns ``nan``."""
+    binary_classification_report._predict_time.clear()
     rows = PredictTime().rows(report=binary_classification_report, data_source="test")
     assert np.isnan(rows[0]["score"])
 
 
 def test_predict_time_rows_cast_false(binary_classification_report):
+    """With no cached predict time, ``cast=False`` returns ``None``."""
+    binary_classification_report._predict_time.clear()
     rows = PredictTime().rows(
         report=binary_classification_report, data_source="test", cast=False
     )
