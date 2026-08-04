@@ -1,4 +1,6 @@
 from datetime import UTC, datetime
+from itertools import count
+from shutil import copyfile
 
 import numpy as np
 import pytest
@@ -47,6 +49,38 @@ def monkeypatch_configuration(monkeypatch):
     """Ensure that the test gets the default configuration,
     independently of the others."""
     monkeypatch.setattr("skore._config.configuration.local", LocalConfiguration())
+
+
+@pytest.fixture(scope="session")
+def _mlflow_schema(tmp_path_factory):
+    """Path to a SQLite database on which MLflow already ran its migrations."""
+    import mlflow
+
+    path = tmp_path_factory.mktemp("mlflow-schema") / "mlflow.db"
+
+    # Instantiating the store is what runs the Alembic migrations.
+    mlflow.MlflowClient(tracking_uri=f"sqlite:///{path}")
+
+    return path
+
+
+@pytest.fixture
+def mlflow_tracking_uri(_mlflow_schema, tmp_path):
+    """
+    Return a factory of isolated MLflow tracking URIs.
+
+    Each URI is backed by its own copy of an already migrated database: running the
+    migrations takes about a second, which otherwise dominates the runtime of the
+    MLflow tests.
+    """
+    counter = count()
+
+    def make_tracking_uri():
+        path = tmp_path / f"mlflow-{next(counter)}.db"
+        copyfile(_mlflow_schema, path)
+        return f"sqlite:///{path}"
+
+    return make_tracking_uri
 
 
 @pytest.fixture
@@ -152,7 +186,7 @@ def forest_binary_classification_with_train_test(
 ):
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
     return (
-        RandomForestClassifier().fit(X_train, y_train),
+        RandomForestClassifier(),
         X_train,
         X_test,
         y_train,
@@ -178,7 +212,7 @@ def logistic_binary_classification_with_train_test(
 ):
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
     return (
-        LogisticRegression().fit(X_train, y_train),
+        LogisticRegression(),
         X_train,
         X_test,
         y_train,
@@ -201,7 +235,7 @@ def svc_binary_classification_with_test(binary_classification_train_test_split):
 @pytest.fixture
 def svc_binary_classification_with_train_test(binary_classification_train_test_split):
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
-    return SVC().fit(X_train, y_train), X_train, X_test, y_train, y_test
+    return SVC(), X_train, X_test, y_train, y_test
 
 
 @pytest.fixture
@@ -224,7 +258,7 @@ def forest_multiclass_classification_with_train_test(
 ):
     X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
     return (
-        RandomForestClassifier().fit(X_train, y_train),
+        RandomForestClassifier(),
         X_train,
         X_test,
         y_train,
@@ -264,7 +298,7 @@ def logistic_multiclass_classification_with_train_test(
 ):
     X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
     return (
-        LogisticRegression().fit(X_train, y_train),
+        LogisticRegression(),
         X_train,
         X_test,
         y_train,
@@ -289,7 +323,7 @@ def svc_multiclass_classification_with_train_test(
     multiclass_classification_train_test_split,
 ):
     X_train, X_test, y_train, y_test = multiclass_classification_train_test_split
-    return SVC().fit(X_train, y_train), X_train, X_test, y_train, y_test
+    return SVC(), X_train, X_test, y_train, y_test
 
 
 @pytest.fixture
@@ -311,7 +345,7 @@ def pipeline_binary_classification_with_train_test(
 ):
     X_train, X_test, y_train, y_test = binary_classification_train_test_split
     estimator = Pipeline([("scaler", StandardScaler()), ("clf", LogisticRegression())])
-    return estimator.fit(X_train, y_train), X_train, X_test, y_train, y_test
+    return estimator, X_train, X_test, y_train, y_test
 
 
 @pytest.fixture
@@ -329,7 +363,7 @@ def linear_regression_with_test(regression_train_test_split):
 @pytest.fixture
 def linear_regression_with_train_test(regression_train_test_split):
     X_train, X_test, y_train, y_test = regression_train_test_split
-    return LinearRegression().fit(X_train, y_train), X_train, X_test, y_train, y_test
+    return LinearRegression(), X_train, X_test, y_train, y_test
 
 
 @pytest.fixture
@@ -349,7 +383,7 @@ def linear_regression_multioutput_with_train_test(
     regression_multioutput_train_test_split,
 ):
     X_train, X_test, y_train, y_test = regression_multioutput_train_test_split
-    return LinearRegression().fit(X_train, y_train), X_train, X_test, y_train, y_test
+    return LinearRegression(), X_train, X_test, y_train, y_test
 
 
 @pytest.fixture
@@ -564,7 +598,6 @@ def comparison_cross_validation_reports_multioutput_regression(
 def linear_regression_comparison_report(linear_regression_with_train_test):
     """Fixture providing a ComparisonReport with two linear regression estimators."""
     estimator, X_train, X_test, y_train, y_test = linear_regression_with_train_test
-    estimator_2 = clone(estimator).fit(X_train, y_train)
     report = ComparisonReport(
         reports={
             "estimator_1": EstimatorReport(
@@ -575,7 +608,7 @@ def linear_regression_comparison_report(linear_regression_with_train_test):
                 y_test=y_test,
             ),
             "estimator_2": EstimatorReport(
-                estimator_2,
+                clone(estimator),
                 X_train=X_train,
                 y_train=y_train,
                 X_test=X_test,

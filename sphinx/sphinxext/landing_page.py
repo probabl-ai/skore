@@ -42,7 +42,7 @@ PROJECT_CODE = """\
 import numpy as np
 
 project = skore.Project(
-    name="adult_census_survey", mode="local"
+    name="adult_census_survey", mode="local", workspace="skore_data"
 )
 for alpha in np.logspace(-5, 5, 11):
     model = skrub.tabular_pipeline(

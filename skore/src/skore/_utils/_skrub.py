@@ -49,7 +49,7 @@ def data_op_has_explicit_cv(data_op: DataOp) -> bool:
     return data_op.skb.find_X_y().get("cv") is not None
 
 
-def _supervised_apply_node(data_op: DataOp) -> Apply:
+def supervised_apply_node(data_op: DataOp) -> Apply:
     """Return the supervised ``.skb.apply(estimator, y=...)`` node.
 
     A supervised apply is a call to :meth:`~skrub.DataOp.skb.apply` where the
@@ -58,11 +58,11 @@ def _supervised_apply_node(data_op: DataOp) -> Apply:
     apply_node = find_first_apply(data_op)
     if apply_node is None:
         raise NotFittedError("No supervised apply step found in the skrub learner.")
-    _ensure_single_supervised_apply(data_op)
+    ensure_single_supervised_apply(data_op)
     return apply_node
 
 
-def _ensure_single_supervised_apply(data_op: DataOp) -> None:
+def ensure_single_supervised_apply(data_op: DataOp) -> None:
     """Guard against ambiguous graphs with more than one final predictor.
 
     A node counts as a predictor candidate when it uses ``y`` *and* its estimator
@@ -93,7 +93,7 @@ def _ensure_single_supervised_apply(data_op: DataOp) -> None:
         )
 
 
-def _fitted_predictor_from_apply(apply_node: Apply) -> BaseEstimator:
+def fitted_predictor_from_apply(apply_node: Apply) -> BaseEstimator:
     impl = apply_node._skrub_impl
     if not hasattr(impl, "estimator_"):
         raise NotFittedError(
@@ -119,14 +119,14 @@ def get_predictor_and_input(
     The returned input is the value seen by the fitted predictor after all
     upstream graph steps have been evaluated on ``env``.
     """
-    apply_node = _supervised_apply_node(learner.data_op)
+    apply_node = supervised_apply_node(learner.data_op)
     impl = apply_node._skrub_impl
     predictor_input_node = impl.X
     truncated = learner.truncated_after(
         lambda node, target=predictor_input_node: node is target
     )
     input_value = truncated.transform(env)
-    return input_value, _fitted_predictor_from_apply(apply_node)
+    return input_value, fitted_predictor_from_apply(apply_node)
 
 
 def find_fitted_estimators(learner: SkrubLearner) -> list[BaseEstimator]:
@@ -202,7 +202,7 @@ def resolve_fitted_predictor(estimator: EstimatorLike) -> BaseEstimator:
     :class:`~sklearn.pipeline.Pipeline` (e.g. :func:`~skrub.tabular_pipeline`).
     """
     if is_skrub_learner(estimator):
-        return _fitted_predictor_from_apply(_supervised_apply_node(estimator.data_op))
+        return fitted_predictor_from_apply(supervised_apply_node(estimator.data_op))
     if isinstance(estimator, Pipeline):
         return estimator.steps[-1][1]
     return estimator

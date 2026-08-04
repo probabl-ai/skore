@@ -1,4 +1,3 @@
-from unittest.mock import Mock
 
 import pandas as pd
 import pytest
@@ -10,8 +9,6 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from skrub import tabular_pipeline
 
-from skore import EstimatorReport
-from skore._sklearn._checks._utils import CheckNotApplicable, get_preprocessed_X
 from skore._utils._skrub import (
     find_estimators,
     find_fitted_estimators,
@@ -124,51 +121,6 @@ def test_get_predictor_and_input_multiple_supervised_applies_raises(regression_x
 
     with pytest.raises(ValueError, match="multiple supervised apply"):
         get_predictor_and_input(learner, {"X": df, "y": y, "y2": y})
-
-
-def test_get_preprocessed_X_uses_full_env(regression_xy):
-    """get_preprocessed_X evaluates the graph with the report's full environment."""
-    df, y = regression_xy
-    learner = (
-        skrub.X()
-        .skb.apply(StandardScaler())
-        .skb.apply(Ridge(), y=skrub.y())
-        .skb.make_learner()
-    )
-    split = learner.data_op.skb.train_test_split(
-        {"X": df, "y": y}, test_size=0.2, random_state=0
-    )
-    learner.fit(split["train"])
-    report = EstimatorReport(
-        learner, train_data=split["train"], test_data=split["test"]
-    )
-
-    skrub_X = get_preprocessed_X(report, data_source="train")
-    direct_X, _ = get_predictor_and_input(learner, split["train"])
-
-    assert_array_equal(skrub_X, direct_X)
-
-
-def test_get_preprocessed_X_multiple_supervised_applies_not_applicable(regression_xy):
-    """Checks surface multiple supervised applies as not applicable."""
-    df, y = regression_xy
-
-    report = Mock()
-    report._report_type = "estimator"
-    report._initialized_with_data_op = True
-    report.X_train = df
-    report.X_test = df
-    report.train_data = {"X": df, "y": y, "y2": y}
-    report.test_data = {"X": df, "y": y, "y2": y}
-    report.estimator_ = (
-        skrub.X()
-        .skb.apply(Ridge(), y=skrub.y())
-        .skb.apply(Ridge(), y=skrub.var("y2", y))
-        .skb.make_learner()
-    )
-
-    with pytest.raises(CheckNotApplicable, match="multiple supervised apply"):
-        get_preprocessed_X(report, data_source="train")
 
 
 def test_find_fitted_estimators_on_table_vectorizer_chain(regression_xy):

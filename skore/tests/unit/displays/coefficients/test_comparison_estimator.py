@@ -1,4 +1,5 @@
 import matplotlib as mpl
+import numpy as np
 import pytest
 
 
@@ -122,3 +123,21 @@ def test_different_features(fixture_name, subplot_by, request):
     fig = display.plot(subplot_by="estimator")
     assert fig is not None
     assert len(fig.axes) >= 1
+
+
+def test_scale_features(comparison_estimator_reports_regression):
+    """Comparison displays store per-estimator feature_std and can scale."""
+    display = comparison_estimator_reports_regression.inspection.coefficients()
+    assert display.coefficients["feature_std"].notna().all()
+
+    raw = display.frame(include_intercept=False)
+    scaled = display.frame(include_intercept=False, scale_features=True)
+    assert "feature_std" not in scaled.columns
+
+    feature_std = display.coefficients.query("feature != 'Intercept'")["feature_std"]
+    np.testing.assert_allclose(
+        scaled["coefficient"], raw["coefficient"] * feature_std.to_numpy()
+    )
+
+    figure = display.plot(scale_features=True)
+    assert figure.get_suptitle() == "Scaled coefficients"
