@@ -60,6 +60,12 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
+    def canonical_report_id(self) -> str:
+        """The canonical skore report ID."""
+        return self.report.id
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
     def estimator_class_name(self) -> str:
         """The name of the report's estimator."""
         return self.report.estimator_name_
