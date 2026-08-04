@@ -19,6 +19,12 @@ right.
 - Cache intermediate results to speed up exploring predictive models
 - Produce data science artifacts with the least amount of code
 
+The recommended way to create a report is :func:`evaluate`. Pass an estimator and
+data; depending on ``splitter``, you get an :class:`EstimatorReport`,
+:class:`CrossValidationReport`, or :class:`ComparisonReport`. Constructing a report
+class directly is possible when you need finer control, but :func:`evaluate` is usually
+simpler.
+
 Below, we present the different types of reporters that `skore` provides.
 
 .. _estimator_report:
@@ -26,12 +32,24 @@ Below, we present the different types of reporters that `skore` provides.
 Reporter for a single estimator
 -------------------------------
 
-:class:`EstimatorReport` is the core reporter in `skore`. It is designed to take a
-scikit-learn compatible estimator and some training and test data. The training data is
-optional if the estimator is already fitted. The parameter `fit` in the constructor
-gives full control over the fitting process. Omitting part of the data reduces the
-number of available methods when inspecting the model. For instance, you cannot inspect
-the metrics of the model on the test data if you do not provide the test data.
+:class:`EstimatorReport` is the core reporter in `skore`. Prefer creating it with
+:func:`evaluate`, which handles the train-test split (or accepts a pre-fitted estimator
+via ``splitter="prefit"``) and returns the report:
+
+.. code-block:: python
+
+    from skore import evaluate
+
+    report = evaluate(estimator, X, y)  # default: 80/20 train-test split
+    report = evaluate(fitted_estimator, X_test, y_test, splitter="prefit")
+
+You can also construct :class:`EstimatorReport` directly. It takes a scikit-learn
+compatible estimator and some training and test data. When the estimator is not fitted,
+provide the training data so that `skore` can clone and fit it. When the estimator is
+already fitted, omit the training data — passing both is rejected to avoid accidentally
+evaluating a model that was fitted on different data. Omitting part of the data reduces
+the number of available methods when inspecting the model. For instance, you cannot
+inspect the metrics of the model on the test data if you do not provide the test data.
 
 Data insights
 ^^^^^^^^^^^^^
@@ -64,6 +82,12 @@ addition, set `data_source` to `X_y` to pass a new dataset using the parameters 
 
 There are individual methods to compute each metric specific to the problem at hand.
 They return usual python objects such as floats, integers, or dictionaries.
+Any metric registered in the report (built-in or custom) whose name is a valid
+Python identifier is also available as ``report.metrics.<name>(...)``. Use
+:meth:`~skore.EstimatorReport.metrics.available` to list names,
+:meth:`~skore.EstimatorReport.metrics.get` when you prefer an explicit lookup,
+and :meth:`~skore.EstimatorReport.metrics.help` to explore the callable methods
+with short descriptions.
 
 The second type of methods provided by :obj:`EstimatorReport.metrics` are methods that
 return a :class:`~skore.Display` object. They have a common API as well. They expose
@@ -74,28 +98,35 @@ three methods:
 2. `set_style` that sets some graphical settings instead of passing them to the `plot`
    method at each call,
 
-3. `frame` that returns a `pandas.DataFrame` with the information contained in the
-   display.
+3. `frame` that returns a `pandas.DataFrame` or, for metrics summaries in wide
+   layout with a single value column, a named `pandas.Series` with the
+   information contained in the display.
 
-We provide the :meth:`EstimatorReport.metrics.summarize` method that aggregates metrics
-in a single dataframe, available through a :class:`~skore.Display`. By default, a set of
-metrics is computed based on the type of target variable (e.g. classification or
-regression). Non-default metrics can be computed by registering them with
-:meth:`~skore.EstimatorReport.metrics.add` followed by :meth:`~skore.EstimatorReport.metrics.summarize`. We accept different metric types:
+We provide the :meth:`EstimatorReport.metrics.summarize` method that aggregates
+metrics in a single table, available through a :class:`~skore.Display`. The table
+is returned by :meth:`~skore.MetricsSummaryDisplay.frame` as a
+:class:`pandas.DataFrame`, or as a :class:`pandas.Series` when the wide layout
+has only one value column (for example a single-estimator report). In the
+Series case, metrics are indexed by name, e.g. ``result.loc["accuracy"]``. By
+default, skore computes some built-in metrics based on the ML task
+(classification or regression).
+
+Users can register their own metrics with :meth:`~skore.EstimatorReport.metrics.add`
+followed by :meth:`~skore.EstimatorReport.metrics.summarize`. We accept different
+types of metric:
 
 1. A string that corresponds to a scikit-learn scorer name or a built-in `skore`
    metric name. Scikit-learn metrics that require a ``neg_`` prefix (e.g.
    ``neg_mean_squared_error``) can also be passed without it (e.g.
    ``mean_squared_error``); the alias is resolved automatically.
 
-2. A scikit-learn scorer constructed with :func:`sklearn.metrics.make_scorer`,
-
-3. A metric callable, that takes `y_true` and `y_pred` as its first two arguments
-   and returns a numeric score.
+2. A scorer callable, that takes `estimator`, `X` and `y` and returns a score; this
+   includes scorers constructed with :func:`sklearn.metrics.make_scorer`.
 
 Refer to the :ref:`displays` section for more details regarding the `skore` display
-API. Refer to the :ref:`estimator_metrics` section for more details on all the
-available metrics in `skore`.
+API. Refer to the :ref:`estimator_metrics` section for the metrics accessor API; use
+:meth:`~skore.EstimatorReport.metrics.available` at runtime to list metrics on a
+given report.
 
 Model interpretability
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -105,36 +136,28 @@ predictive model. This accessor provides methods that return a :class:`skore.Dis
 object. As with other display objects, they expose three methods: `plot`, `set_style`
 and `frame`.
 
-Caching mechanism
-^^^^^^^^^^^^^^^^^
+Caching
+^^^^^^^
 
-:class:`EstimatorReport` comes together with a caching mechanism that stores
-intermediate information that is expensive to compute, such as predictions. It
-efficiently re-uses this information when recomputing the same metric or a metric
-requiring the same intermediate information.
-
-We expose three methods to interact with the cache:
-
-- :meth:`EstimatorReport.cache_predictions` to cache the predictions of the estimator
-  without awaiting the computation when calling the evaluation metrics.
-- :meth:`EstimatorReport.clear_cache` to clear the cache.
-- :meth:`EstimatorReport.get_predictions` to get the predictions from the cache or
-  compute them if they are not in the cache.
+Reports are equipped with caching machinery to avoid re-computing information more
+than once, e.g. model predictions.
 
 .. note::
-    The current implementation of the caching mechanism happens in-memory. It is
-    therefore not persisted between sessions, apart from loading an
-    :class:`EstimatorReport` from a :class:`Project`. Refer to the following
-    section :ref:`project` for more details.
+    The current implementation of the caching mechanism happens in-memory: it is
+    not persisted between sessions, apart from loading an :class:`EstimatorReport` from
+    a :class:`Project`. Refer to the :ref:`project` section for more details.
 
-Refer to the example entitled
-:ref:`sphx_glr_auto_examples_technical_details_plot_cache_mechanism.py` to get a
-detailed view of the caching mechanism.
+Refer to the :ref:`sphx_glr_auto_examples_technical_details_plot_cache_mechanism.py`
+example for a detailed view of the caching mechanism.
 
 .. _cross_validation_report:
 
 Cross-validation estimator
 --------------------------
+
+Prefer :func:`evaluate` with an integer or CV splitter (for example
+``evaluate(estimator, X, y, splitter=5)``). That returns a
+:class:`CrossValidationReport`.
 
 :class:`CrossValidationReport` has a similar API to :class:`EstimatorReport`. The main
 difference is in the initialization. It accepts an estimator, a dataset (i.e. `X` and
@@ -158,7 +181,9 @@ Comparison report
 -----------------
 
 To compare the performance of different predictive models, `skore` provides the
-:class:`ComparisonReport`.
+:class:`ComparisonReport`. Prefer :func:`evaluate` with a list or dict of estimators
+(for example ``evaluate({"a": est_a, "b": est_b}, X, y)``), or :func:`compare` when you
+already have reports.
 
 :class:`ComparisonReport` takes a list (or a dictionary) of :class:`EstimatorReport` or
 :class:`CrossValidationReport` instances. It then provides methods to compare the

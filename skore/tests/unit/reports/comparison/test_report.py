@@ -6,12 +6,10 @@ CrossValidationReports.
 from io import BytesIO
 
 import joblib
-import numpy as np
-import pandas as pd
 import pytest
 import skrub
 from sklearn.datasets import make_classification
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression, RidgeClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 
@@ -19,8 +17,11 @@ from skore import (
     ComparisonReport,
     CrossValidationReport,
     EstimatorReport,
+    compare,
+    evaluate,
 )
 from skore._externals._sklearn_compat import convert_container
+from skore._utils._dataframe import _concat_vertical
 
 
 def test_pickle(tmp_path, report):
@@ -115,6 +116,8 @@ def test_comparison_report_pos_label_multiclass_is_none():
         (("pandas", "series"), True),
         (("array", "array"), False),
         (("array", "array"), True),
+        (("polars", "polars_series"), False),
+        (("polars", "polars_series"), True),
     ],
 )
 def test_create_estimator_report_from_estimator_reports(
@@ -160,21 +163,16 @@ def test_create_estimator_report_from_estimator_reports(
         assert joblib.hash(est_report_w_test.X_train) == joblib.hash(X_train)
         assert joblib.hash(est_report_w_test.y_train) == joblib.hash(y_train)
     else:
-        expected_X_train = (
-            pd.concat([X_train, X_test])
-            if isinstance(X_train, pd.DataFrame)
-            else np.concatenate([X_train, X_test])
-        )
-        expected_y_train = (
-            pd.concat([y_train, y_test])
-            if isinstance(y_train, (pd.DataFrame, pd.Series))
-            else np.concatenate([y_train, y_test])
-        )
+        expected_X_train = _concat_vertical(X_train, X_test)
+        expected_y_train = _concat_vertical(y_train, y_test)
         assert joblib.hash(est_report_w_test.X_train) == joblib.hash(expected_X_train)
         assert joblib.hash(est_report_w_test.y_train) == joblib.hash(expected_y_train)
 
 
-@pytest.mark.parametrize("container_types", [("pandas", "series"), ("array", "array")])
+@pytest.mark.parametrize(
+    "container_types",
+    [("pandas", "series"), ("array", "array"), ("polars", "polars_series")],
+)
 def test_create_estimator_report_from_cross_validation_reports(
     container_types, binary_classification_data
 ):
@@ -281,8 +279,9 @@ def test_create_estimator_report_skrub_concatenate_train_and_test_raises():
         )
 
 
-def test_create_estimator_report_skrub_uses_fitted_estimator_without_refit():
-    """Skrub path should pass fit=False and new test_data for held-out evaluation."""
+def test_create_estimator_report_skrub_refits_on_train_data():
+    """Skrub path should refit the unfitted estimator on train_data and use
+    new test_data for held-out evaluation."""
     X, y = make_classification(n_samples=40, random_state=0)
     data_op_a = skrub.X(X).skb.apply(
         LogisticRegression(C=0.5, random_state=0), y=skrub.y(y)
@@ -296,23 +295,20 @@ def test_create_estimator_report_skrub_uses_fitted_estimator_without_refit():
     source_a = EstimatorReport(
         learner_a, train_data=split["train"], test_data=split["test"]
     )
-    comparison = ComparisonReport(
-        {
-            "model_a": source_a,
-            "model_b": EstimatorReport(
-                learner_b, train_data=split["train"], test_data=split["test"]
-            ),
-        }
+    source_b = EstimatorReport(
+        learner_b, train_data=split["train"], test_data=split["test"]
     )
+    comparison = ComparisonReport({"model_a": source_a, "model_b": source_b})
     final_report = comparison.create_estimator_report(
         report_key="model_a",
         test_data=split["test"],
         concatenate_train_and_test=False,
     )
     assert isinstance(final_report, EstimatorReport)
-    assert final_report.fit is False
     assert joblib.hash(final_report.X_train) == joblib.hash(source_a.X_train)
     assert joblib.hash(final_report.X_test) == joblib.hash(source_a.X_test)
+    assert final_report.estimator is source_a.estimator
+    assert final_report.estimator_ is not source_a.estimator_
 
 
 def test_create_estimator_report_skrub_requires_test_data():
@@ -446,6 +442,79 @@ def test_create_estimator_report_tabular_rejects_test_data(binary_classification
             y_test=y_heldout,
             test_data={},
         )
+
+
+@pytest.mark.parametrize(
+    "comparison_fixture",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_cross_validation_reports_binary_classification",
+    ],
+)
+def test_to_markdown(comparison_fixture, request):
+    report = request.getfixturevalue(comparison_fixture)
+    markdown = report.to_markdown()
+    assert markdown.startswith("# ComparisonReport:")
+    for section in ("## Estimators", "## Metrics", "## Checks (fast mode)", "## Data"):
+        assert section in markdown
+    assert "n_rows=" in markdown
+    assert "| column | dtype |" in markdown
+    for label in report.reports_:
+        assert label in markdown
+    assert "report.metrics.summarize().frame()" in markdown
+    assert "report.checks.summarize()" in markdown
+    assert "Mute a check with .checks.summarize(ignore=['<code>'])." in markdown
+    assert "| estimator |" not in markdown
+    assert "estimator_" not in markdown
+    assert "- ml task:" in markdown
+    if "cross_validation" in comparison_fixture:
+        assert "cross-validation folds" in markdown
+        assert "splitter" in markdown
+    assert "fit time" in markdown
+    assert "predict time" in markdown
+
+
+def test_to_markdown_pos_label():
+    X, y = make_classification(n_classes=2, random_state=0)
+    markdown = evaluate(
+        [RidgeClassifier(), LogisticRegression()],
+        X,
+        y,
+        pos_label=0,
+    ).to_markdown()
+    assert "- pos_label: 0" in markdown
+
+
+def test_to_markdown_different_datasets():
+    X1, y = make_classification(n_samples=100, n_features=20, random_state=0)
+    X2, _ = make_classification(n_samples=100, n_features=10, random_state=1)
+    model = LinearRegression()
+    r1 = evaluate(model, X1, y)
+    r2 = evaluate(model, X2, y)
+    report = compare([r1, r2])
+    markdown = report.to_markdown()
+    assert "## Data" in markdown
+    assert "| report name | n_rows | n_columns |" in markdown
+    assert "| column | dtype |" not in markdown
+    for label in report.reports_:
+        assert label in markdown
+
+
+@pytest.mark.parametrize(
+    "comparison_fixture",
+    [
+        "comparison_estimator_reports_binary_classification",
+        "comparison_cross_validation_reports_binary_classification",
+    ],
+)
+def test_text_repr(comparison_fixture, request):
+    report = request.getfixturevalue(comparison_fixture)
+    repr_str = repr(report)
+    assert repr_str.startswith("ComparisonReport:")
+    assert "to_markdown()" in repr_str
+    for label in report.reports_:
+        assert label in repr_str
+    assert "Accuracy" in repr_str
 
 
 @pytest.mark.parametrize(

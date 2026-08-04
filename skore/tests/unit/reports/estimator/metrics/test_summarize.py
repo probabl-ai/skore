@@ -15,9 +15,12 @@ from numpy.testing import assert_array_equal
 from pandas.testing import assert_frame_equal
 from sklearn.base import clone
 from sklearn.datasets import make_classification
+from sklearn.decomposition import PCA
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import precision_score, recall_score
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
 
 from skore import EstimatorReport, MetricsSummaryDisplay
 from skore._utils._testing import check_cache_changed, check_cache_unchanged
@@ -27,19 +30,19 @@ def check_display_structure(
     display,
     *,
     expected_metrics,
-    expected_estimator_name=None,
+    expected_estimator=None,
     expected_data_source="test",
     expected_greater_is_better=None,
     expected_average=None,
 ):
-    """Check the full structure of a MetricsSummaryDisplay.data DataFrame."""
-    assert isinstance(display.data, pd.DataFrame)
-    data = display.data
+    """Check the full structure of a MetricsSummaryDisplay.summary DataFrame."""
+    assert isinstance(display.summary, pd.DataFrame)
+    data = display.summary
 
     assert set(data.columns) == {
-        "metric_name",
-        "metric_verbose_name",
-        "estimator_name",
+        "name",
+        "verbose_name",
+        "estimator",
         "data_source",
         "label",
         "average",
@@ -48,13 +51,11 @@ def check_display_structure(
         "greater_is_better",
     }
     assert pd.api.types.is_numeric_dtype(data["score"])
-    assert set(data["metric_verbose_name"]) == expected_metrics
-    assert set(data["estimator_name"]) == {expected_estimator_name}
+    assert set(data["verbose_name"]) == expected_metrics
+    assert set(data["estimator"]) == {expected_estimator}
     assert set(data["data_source"]) == {expected_data_source}
-    if expected_average is None:
-        assert data["average"].isna().all()
-    else:
-        assert set(data["average"]) == expected_average
+    if expected_average is not None:
+        assert set(data["average"].dropna()) == expected_average
     if expected_greater_is_better is None:
         expected_greater_is_better = {True, False}
     assert set(data["greater_is_better"]) == expected_greater_is_better
@@ -82,9 +83,8 @@ def test_default(forest_binary_classification_with_test, metric):
             "Brier score",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
-        expected_estimator_name="RandomForestClassifier",
+        expected_estimator="RandomForestClassifier",
     )
 
 
@@ -94,7 +94,7 @@ def test_default_binary_classification_svc(svc_binary_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test, pos_label=1)
     display = report.metrics.summarize()
 
-    assert isinstance(display.data, pd.DataFrame)
+    assert isinstance(display.summary, pd.DataFrame)
     check_display_structure(
         display,
         expected_metrics={
@@ -104,9 +104,8 @@ def test_default_binary_classification_svc(svc_binary_classification_with_test):
             "ROC AUC",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
-        expected_estimator_name="SVC",
+        expected_estimator="SVC",
     )
 
 
@@ -128,16 +127,19 @@ def test_default_multiclass_classification_forest(
             "ROC AUC",
             "Predict time (s)",
             "Fit time (s)",
-            "Score",
         },
-        expected_estimator_name="RandomForestClassifier",
+        expected_estimator="RandomForestClassifier",
+        expected_average={"macro"},
     )
 
-    assert display.data["output"].isna().all()
-    data = display.data.set_index("metric_verbose_name")
-    assert len(data.loc["Precision"]) == 3
-    assert len(data.loc["Recall"]) == 3
-    assert set(data.loc["Precision", "label"]) == {0, 1, 2}
+    assert "precision_macro" in report.metrics.available()
+
+    assert display.summary["output"].isna().all()
+    data = display.summary.set_index("verbose_name")
+    per_label = data.loc["Precision"].dropna(subset=["label"])
+    assert len(per_label) == 3
+    assert len(data.loc["Recall"].dropna(subset=["label"])) == 3
+    assert set(per_label["label"]) == {0, 1, 2}
 
 
 def test_default_multiclass_classification_svc(svc_multiclass_classification_with_test):
@@ -154,16 +156,16 @@ def test_default_multiclass_classification_svc(svc_multiclass_classification_wit
             "Recall",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
-        expected_estimator_name="SVC",
+        expected_estimator="SVC",
     )
 
-    assert display.data["output"].isna().all()
-    data = display.data.set_index("metric_verbose_name")
-    assert len(data.loc["Precision"]) == 3
-    assert len(data.loc["Recall"]) == 3
-    assert set(data.loc["Precision", "label"]) == {0, 1, 2}
+    assert display.summary["output"].isna().all()
+    data = display.summary.set_index("verbose_name")
+    per_label = data.loc["Precision"].dropna(subset=["label"])
+    assert len(per_label) == 3
+    assert len(data.loc["Recall"].dropna(subset=["label"])) == 3
+    assert set(per_label["label"]) == {0, 1, 2}
 
 
 def test_default_regression(linear_regression_with_test):
@@ -181,13 +183,12 @@ def test_default_regression(linear_regression_with_test):
             "MAPE",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
-        expected_estimator_name="LinearRegression",
+        expected_estimator="LinearRegression",
     )
 
-    assert display.data["label"].isna().all()
-    assert display.data["output"].isna().all()
+    assert display.summary["label"].isna().all()
+    assert display.summary["output"].isna().all()
 
 
 def test_default_multioutput_regression(linear_regression_multioutput_with_test):
@@ -205,13 +206,12 @@ def test_default_multioutput_regression(linear_regression_multioutput_with_test)
             "MAPE",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
-        expected_estimator_name="LinearRegression",
+        expected_estimator="LinearRegression",
     )
 
-    assert display.data["label"].isna().all()
-    data = display.data.set_index("metric_verbose_name")
+    assert display.summary["label"].isna().all()
+    data = display.summary.set_index("verbose_name")
     assert len(data.loc["R²", "output"]) == 2
     assert len(data.loc["RMSE", "output"]) == 2
     assert set(data.loc["R²", "output"]) == {0, 1}
@@ -231,9 +231,46 @@ def test_default_without_predict_proba(custom_classifier_no_predict_proba_with_t
             "Recall",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
-        expected_estimator_name="CustomClassifierPredictOnly",
+        expected_estimator="CustomClassifierPredictOnly",
+    )
+
+
+@pytest.mark.parametrize("wrap_in_pipeline", [False, True])
+@pytest.mark.parametrize("has_custom_score", [False, True])
+def test_default_non_standard_score(
+    binary_classification_data, wrap_in_pipeline, has_custom_score
+):
+    """
+    If the estimator has a non-standard `.score` method, `summarize` will include it.
+    """
+
+    class CustomScoreEstimator(RandomForestClassifier):
+        def score(self, X, y):
+            return 1
+
+    X, y = binary_classification_data
+    predictor = CustomScoreEstimator() if has_custom_score else RandomForestClassifier()
+    estimator = make_pipeline(PCA(), predictor) if wrap_in_pipeline else predictor
+    report = EstimatorReport(estimator, X_train=X, y_train=y, X_test=X, y_test=y)
+    display = report.metrics.summarize()
+
+    expected_metrics = {
+        "Brier score",
+        "Log loss",
+        "ROC AUC",
+        "Accuracy",
+        "Precision",
+        "Recall",
+        "Fit time (s)",
+        "Predict time (s)",
+    }
+    if has_custom_score:
+        expected_metrics.add("Score")
+    check_display_structure(
+        display,
+        expected_metrics=expected_metrics,
+        expected_estimator=predictor.__class__.__name__,
     )
 
 
@@ -250,7 +287,7 @@ def test_string_plain(linear_regression_with_test):
     check_display_structure(
         display,
         expected_metrics={"R²", "RMSE"},
-        expected_estimator_name="LinearRegression",
+        expected_estimator="LinearRegression",
     )
 
 
@@ -274,15 +311,14 @@ def test_pos_label(forest_binary_classification_with_test):
             "Brier score",
             "Fit time (s)",
             "Predict time (s)",
-            "Score",
         },
-        expected_estimator_name="RandomForestClassifier",
+        expected_estimator="RandomForestClassifier",
     )
 
-    assert len(display.data[display.data["metric_verbose_name"] == "Precision"]) == 1
-    assert len(display.data[display.data["metric_verbose_name"] == "Recall"]) == 1
-    assert display.data["label"].isna().all()
-    assert display.data["output"].isna().all()
+    assert len(display.summary[display.summary["verbose_name"] == "Precision"]) == 1
+    assert len(display.summary[display.summary["verbose_name"] == "Recall"]) == 1
+    assert display.summary["label"].isna().all()
+    assert display.summary["output"].isna().all()
 
 
 def test_pos_label_strings(forest_binary_classification_with_test):
@@ -296,8 +332,8 @@ def test_pos_label_strings(forest_binary_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     display = report.metrics.summarize()
-    assert isinstance(display.data, pd.DataFrame)
-    assert set(display.data["metric_verbose_name"]) == {
+    assert isinstance(display.summary, pd.DataFrame)
+    assert set(display.summary["verbose_name"]) == {
         "Accuracy",
         "Precision",
         "Recall",
@@ -306,10 +342,9 @@ def test_pos_label_strings(forest_binary_classification_with_test):
         "Brier score",
         "Fit time (s)",
         "Predict time (s)",
-        "Score",
     }
 
-    labels = display.data.set_index("metric_verbose_name").loc["Precision", "label"]
+    labels = display.summary.set_index("verbose_name").loc["Precision", "label"]
     assert set(labels) == {"neg", "pos"}
 
 
@@ -324,8 +359,8 @@ def test_pos_label_bool(forest_binary_classification_with_test):
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
 
     display = report.metrics.summarize()
-    assert isinstance(display.data, pd.DataFrame)
-    assert set(display.data["metric_verbose_name"]) == {
+    assert isinstance(display.summary, pd.DataFrame)
+    assert set(display.summary["verbose_name"]) == {
         "Accuracy",
         "Precision",
         "Recall",
@@ -334,10 +369,9 @@ def test_pos_label_bool(forest_binary_classification_with_test):
         "Brier score",
         "Fit time (s)",
         "Predict time (s)",
-        "Score",
     }
 
-    labels = display.data.set_index("metric_verbose_name").loc["Precision", "label"]
+    labels = display.summary.set_index("verbose_name").loc["Precision", "label"]
     assert any(label is np.False_ for label in labels)
     assert any(label is np.True_ for label in labels)
 
@@ -357,22 +391,22 @@ def test_pos_label_overwrite(metric, metric_fn):
     # Without pos_label - should have multiple rows (one per class)
     report = EstimatorReport(classifier, X_test=X, y_test=y)
     display = report.metrics.summarize(metric=metric)
-    assert isinstance(display.data, pd.DataFrame)
-    assert len(display.data) == 2
-    assert set(display.data["label"]) == {"A", "B"}
+    assert isinstance(display.summary, pd.DataFrame)
+    assert len(display.summary) == 2
+    assert set(display.summary["label"]) == {"A", "B"}
 
     # With pos_label="B" - should have single row
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="B")
     display = report.metrics.summarize(metric=metric)
-    assert len(display.data) == 1
-    score_B = display.data["score"].values[0]
+    assert len(display.summary) == 1
+    score_B = display.summary["score"].values[0]
     assert score_B == pytest.approx(metric_fn(y, classifier.predict(X), pos_label="B"))
 
     # With pos_label="A" - should have single row
     report = EstimatorReport(classifier, X_test=X, y_test=y, pos_label="A")
     display = report.metrics.summarize(metric=metric)
-    assert len(display.data) == 1
-    score_A = display.data["score"].values[0]
+    assert len(display.summary) == 1
+    score_A = display.summary["score"].values[0]
     assert score_A == pytest.approx(metric_fn(y, classifier.predict(X), pos_label="A"))
 
 
@@ -390,7 +424,7 @@ def test_cache(forest_binary_classification_with_test):
 
     with check_cache_unchanged(report._cache):
         result_from_cache = report.metrics.summarize()
-    assert_frame_equal(result.data, result_from_cache.data)
+    assert_frame_equal(result.summary, result_from_cache.summary)
 
 
 @pytest.mark.parametrize(
@@ -428,10 +462,10 @@ def test_data_source_both(forest_binary_classification_data):
     display_test = report.metrics.summarize(data_source="test")
     display_both = report.metrics.summarize(data_source="both")
 
-    assert set(display_both.data["data_source"]) == {"train", "test"}
+    assert set(display_both.summary["data_source"]) == {"train", "test"}
 
-    train_data = display_both.data[display_both.data["data_source"] == "train"]
-    assert_array_equal(train_data["score"], display_train.data["score"])
+    train_data = display_both.summary[display_both.summary["data_source"] == "train"]
+    assert_array_equal(train_data["score"], display_train.summary["score"])
 
-    test_data = display_both.data[display_both.data["data_source"] == "test"]
-    assert_array_equal(test_data["score"], display_test.data["score"])
+    test_data = display_both.summary[display_both.summary["data_source"] == "test"]
+    assert_array_equal(test_data["score"], display_test.summary["score"])

@@ -3,9 +3,10 @@ import pandas as pd
 import pytest
 from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
+from skrub import tabular_pipeline
 
 from skore import CrossValidationReport, Display, TableReportDisplay
-from skore._externals._skrub_compat import tabular_pipeline
+from skore._externals._sklearn_compat import convert_container
 
 
 @pytest.fixture(scope="module")
@@ -60,6 +61,34 @@ def test_table_report_display_frame(cross_validation_report, display):
 
 
 @pytest.mark.parametrize(
+    "x_container,y_container",
+    [
+        ("array", "array"),
+        ("pandas", "series"),
+        ("polars", "polars_series"),
+    ],
+)
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+@pytest.mark.filterwarnings(
+    "ignore:Support for the dataframe interchange protocol"
+    " is deprecated:DeprecationWarning"
+)
+def test_display_creation_with_containers(x_container, y_container):
+    """Check that the display can be created with paired container types."""
+    X, y = make_regression(n_samples=100, n_features=5, random_state=42)
+    feature_columns = [f"Feature_{i}" for i in range(X.shape[1])]
+    X = convert_container(
+        X, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y = convert_container(y, y_container, minversion="0.20.23")
+    report = CrossValidationReport(tabular_pipeline(DummyRegressor()), X=X, y=y)
+    display = report.data.summarize()
+    assert isinstance(display, TableReportDisplay)
+
+
+@pytest.mark.parametrize(
     "X",
     [
         np.random.rand(100, 5),
@@ -80,6 +109,12 @@ def test_table_report_display_frame(cross_validation_report, display):
         pd.DataFrame(np.ones((100, 1))),
         pd.DataFrame(np.ones((100, 1)), columns=["Target"]),
     ],
+)
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+@pytest.mark.filterwarnings(
+    "ignore:Some dataframe column names are not strings:UserWarning"
 )
 def test_display_creation(X, y):
     """Check that the display can be created with different types of X and y."""
@@ -125,12 +160,6 @@ def test_summarize_with_invalid_subsample_strategy(cross_validation_report):
             subsample=10,
             subsample_strategy="invalid_strategy",
         )
-
-
-def test_repr(cross_validation_report):
-    """Check that __repr__ returns a string starting with the expected prefix."""
-    repr_str = repr(cross_validation_report.data)
-    assert "CrossValidationReport" in repr_str
 
 
 def test_analyze_deprecation(cross_validation_report):

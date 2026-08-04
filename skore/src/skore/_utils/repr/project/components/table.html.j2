@@ -1,0 +1,31 @@
+<div class="summary-table-wrap">
+    <table class="summary-table">
+        <thead>
+            <tr>
+                <th class="summary-select-col"></th>
+                {% for column in columns %}
+                <th class="summary-sortable" data-column-index="{{ loop.index }}" data-column-key="{{ column.key | e }}" data-sort-kind="{{ column.kind }}" data-column-role="{{ column.role | e }}" tabindex="0" role="button" aria-sort="none">
+                    <span class="summary-th-label">{{ column.label | e }}</span>
+                    <span class="summary-sort-ind" aria-hidden="true">
+                        <span class="summary-sort-icon summary-sort-icon--none">{% include "project/icons/sort.svg" %}</span>
+                        <span class="summary-sort-icon summary-sort-icon--asc">{% include "project/icons/sort-up.svg" %}</span>
+                        <span class="summary-sort-icon summary-sort-icon--desc">{% include "project/icons/sort-down.svg" %}</span>
+                    </span>
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr data-report-type="{{ row.report_type | e }}" data-learner="{{ row.learner | e }}" data-dataset="{{ row.dataset | e }}" data-date="{{ row.date | e }}" data-key="{{ row.key | e }}">
+                <td class="summary-select-col">
+                    <input type="checkbox" class="skore-summary-row" data-id="{{ row.id | e }}" aria-label="Select report {{ row.id | e }}">
+                </td>
+                {% for cell in row.cells %}
+                <td data-column-index="{{ loop.index }}" data-sort="{{ cell.sort | e }}"{% if cell.std is defined %} data-std="{{ cell.std | e }}"{% endif %}>{{ cell.display | e }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

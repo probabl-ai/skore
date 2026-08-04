@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from collections.abc import Generator
+from typing import Literal, cast
 
 from numpy.typing import ArrayLike
 
@@ -10,21 +11,28 @@ from skore import configuration
 from skore._sklearn._comparison.report import ComparisonReport
 from skore._sklearn._cross_validation.report import CrossValidationReport
 from skore._sklearn._estimator.report import EstimatorReport
-from skore._sklearn.train_test_split.train_test_split import TrainTestSplit
-
-if TYPE_CHECKING:
-    from collections.abc import Generator
-
-    from skore._sklearn.types import EstimatorLike, SKLearnCrossValidator
+from skore._sklearn.train_test_split import TrainTestSplit
+from skore._sklearn.types import (
+    _DEFAULT,
+    EstimatorLike,
+    SKLearnCrossValidator,
+    _DefaultType,
+)
+from skore._utils._skrub import data_op_has_explicit_cv, get_data_op
 
 
 def evaluate(
     estimator: EstimatorLike | list[EstimatorLike] | dict[str, EstimatorLike],
-    X: ArrayLike | list[ArrayLike | None] | dict[str, ArrayLike] | None = None,
+    X: ArrayLike | None = None,
     y: ArrayLike | None = None,
     data: dict | None = None,
     *,
-    splitter: float | int | str | SKLearnCrossValidator | Generator = 0.2,
+    splitter: float
+    | int
+    | Literal["prefit"]
+    | SKLearnCrossValidator
+    | Generator
+    | _DefaultType = _DEFAULT,
     pos_label: int | float | bool | str | None = None,
     n_jobs: int | None = None,
 ) -> EstimatorReport | CrossValidationReport | ComparisonReport:
@@ -45,15 +53,12 @@ def evaluate(
         - a skrub :class:`~skrub.SkrubLearner` extracted from a :class:`~skrub.DataOp`
           by calling :meth:`~skrub.DataOp.skb.make_learner`.
 
-    X : array-like, list of array-like, dict of array-like, or None
-        Feature matrix. When ``estimator`` is a list, ``X`` can be a list of
-        feature matrices (one per estimator) to compare models with different
-        preprocessing pipelines. When ``estimator`` is a dict, ``X`` can be a
-        dict with the same keys, mapping each name to its feature matrix, or
-        a single matrix broadcast to every estimator. When comparing prefit
-        estimators and no test features are needed, pass ``X=None``. A list of
-        ``X`` is not supported when ``estimator`` is a dict; use a dict aligned on
-        names or a single matrix.
+    X : array-like or None
+        Feature matrix shared by all estimators when comparing several models.
+        When comparing prefit estimators and no test features are needed,
+        pass ``X=None``. To compare estimators evaluated on different feature
+        matrices, call :func:`~skore.evaluate` once per estimator, then
+        :func:`~skore.compare`.
 
     y : array-like of shape (n_samples,), or None
         Target vector.
@@ -63,8 +68,12 @@ def evaluate(
         variables contained in the DataOp that was used to create this learner
         (e.g. ``{"X": X_df, "other_table": df, ...}``).
 
-    splitter : float, int, str, or cross-validation object, default=0.2
-        Determines how the data is split:
+    splitter : float, int, "prefit", or cross-validation object, default=0.2
+        Determines how the data is split. When omitted, a skrub learner whose
+        DataOp was configured with an explicit cross-validation splitter via
+        :meth:`~skrub.DataOp.skb.mark_as_X` uses that splitter (including
+        ``split_kwargs`` such as ``groups``). Otherwise, the default is a
+        single 80/20 train-test split:
 
         - ``float``: perform a single train-test split where the data is shuffled before
           splitting with a fixed seed (``random_state=0``) for reproducibility.
@@ -136,10 +145,11 @@ def evaluate(
     >>> list(report.reports_)
     ['m1', 'm2']
     """
-    if not isinstance(estimator, (list, dict)) and isinstance(X, (list, dict)):
+    if isinstance(X, (list, dict)):
         raise TypeError(
-            "X must be a single array-like (or None) when estimator is not a list"
-            " or dict."
+            "X must be a single array-like or None. To compare estimators "
+            "evaluated on different feature matrices, call evaluate() once per "
+            "model, then use skore.compare()."
         )
 
     if X is None and y is None and data is None:
@@ -151,33 +161,11 @@ def evaluate(
         if isinstance(estimator, dict):
             names = list(estimator.keys())
             estimators = list(estimator.values())
-            if isinstance(X, list):
-                raise TypeError(
-                    "When estimator is a dict, X cannot be a list. Pass a single "
-                    "array-like broadcast to all estimators, or a "
-                    "dict[str, array-like] with the same keys as estimator."
-                )
-            if isinstance(X, dict):
-                if set(X) != set(names):
-                    raise ValueError(
-                        "When estimator and X are both dicts, they must have the "
-                        f"same keys; got estimator keys {sorted(names)!r}"
-                        f" and X keys {sorted(X)!r}."
-                    )
-
-                Xs = [X[name] for name in names]
-            else:
-                Xs = [cast(ArrayLike, X)] * len(estimators)
-        else:  # isinstance(estimator, list)
+        else:
             names = None
             estimators = estimator
-            if isinstance(X, dict):
-                raise TypeError(
-                    "When estimator is a list, X cannot be a dict. Pass a single "
-                    "array-like broadcast to all estimators, or a list of "
-                    "array-like with one matrix per estimator."
-                )
-            Xs = cast(list, X if isinstance(X, list) else [X] * len(estimators))
+
+        Xs = [cast(ArrayLike, X)] * len(estimators)
 
         reports = cast(
             list[EstimatorReport] | list[CrossValidationReport],
@@ -201,7 +189,19 @@ def evaluate(
             )
         return ComparisonReport(reports, n_jobs=n_jobs)
 
-    X = cast(ArrayLike | None, X)
+    if splitter is _DEFAULT:
+        data_op = get_data_op(estimator)
+        if data_op is not None and data_op_has_explicit_cv(data_op):
+            return CrossValidationReport(
+                estimator,
+                X,
+                y,
+                data=data,
+                pos_label=pos_label,
+                splitter=None,
+                n_jobs=n_jobs,
+            )
+        splitter = 0.2
 
     if isinstance(splitter, str):
         if splitter != "prefit":
@@ -220,7 +220,7 @@ def evaluate(
     if isinstance(splitter, float):
         splitter = TrainTestSplit(test_size=splitter)
 
-    if hasattr(splitter, "get_n_splits") and splitter.get_n_splits(X, y) == 1:
+    if isinstance(splitter, TrainTestSplit):
         # It's easier to make a 1-split CrossValidationReport
         # and extract an EstimatorReport from it,
         # than to make an EstimatorReport from scratch
@@ -235,6 +235,8 @@ def evaluate(
                 n_jobs=n_jobs,
             )
         return report.reports_[0]
+
+    splitter = cast(int | SKLearnCrossValidator | Generator, splitter)
 
     return CrossValidationReport(
         estimator,

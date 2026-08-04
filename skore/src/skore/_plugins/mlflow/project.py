@@ -19,7 +19,7 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 from mlflow.entities import Run as MLFlowRun
-from mlflow.exceptions import MlflowException, RestException
+from mlflow.exceptions import MlflowException
 from mlflow.tracking import MlflowClient
 from mlflow.utils.autologging_utils import disable_discrete_autologging
 from mlflow.utils.logging_utils import MLFLOW_LOGGING_STREAM
@@ -69,6 +69,11 @@ class Metadata(TypedDict):  # noqa: D101
     roc_auc_mean: float | None
     fit_time_mean: float | None
     predict_time_mean: float | None
+    rmse_std: float | None
+    log_loss_std: float | None
+    roc_auc_std: float | None
+    fit_time_std: float | None
+    predict_time_std: float | None
 
 
 def report_type(report: EstimatorReport | CrossValidationReport) -> str:
@@ -114,7 +119,10 @@ class Project:
         self.__tracking_uri = mlflow.get_tracking_uri()
         try:
             self.__storage_experiment_id = mlflow.create_experiment("__skore-storage__")
-        except RestException:
+        except MlflowException:
+            # Local stores raise a plain `MlflowException` on duplicate names, while
+            # tracking servers raise its `RestException` subclass. Reuse the existing
+            # experiment either way, so several projects can share a tracking URI.
             storage_experiment = mlflow.get_experiment_by_name("__skore-storage__")
             if storage_experiment is None:
                 raise
@@ -288,6 +296,11 @@ class Project:
                 "roc_auc_mean": run.data.metrics.get("roc_auc"),
                 "fit_time_mean": metrics["fit_time"],
                 "predict_time_mean": metrics["predict_time"],
+                "rmse_std": run.data.metrics.get("rmse_std"),
+                "log_loss_std": run.data.metrics.get("log_loss_std"),
+                "roc_auc_std": run.data.metrics.get("roc_auc_std"),
+                "fit_time_std": run.data.metrics.get("fit_time_std"),
+                "predict_time_std": run.data.metrics.get("predict_time_std"),
             }
         else:
             raise ValueError(f"Unsupported report type: {report_type}")
@@ -310,17 +323,56 @@ class Project:
             "roc_auc_mean": None,
             "fit_time_mean": None,
             "predict_time_mean": None,
+            "rmse_std": None,
+            "log_loss_std": None,
+            "roc_auc_std": None,
+            "fit_time_std": None,
+            "predict_time_std": None,
         }
         return cast(Metadata, {**metadata, **metrics})
 
     @staticmethod
     def delete(*, name: str, tracking_uri: str | None = None) -> None:
-        """Not implemented for now."""
-        raise NotImplementedError("Delete is not implemented for MLFlow projects")
+        """Delete an MLflow experiment and its runs."""
+        if tracking_uri is not None:
+            mlflow.set_tracking_uri(tracking_uri)
+
+        tracking_uri = mlflow.get_tracking_uri()
+        client = MlflowClient()
+        experiment = client.get_experiment_by_name(name)
+        if experiment is None or experiment.lifecycle_stage != "active":
+            raise LookupError(
+                f"Project(name={name!r}, mode='mlflow', "
+                f"tracking_uri='{tracking_uri}') does not exist."
+            )
+
+        active_runs = cast(
+            list[MLFlowRun],
+            mlflow.search_runs(
+                experiment_ids=[experiment.experiment_id],
+                filter_string='attributes.status = "RUNNING"',
+                max_results=1,
+                output_format="list",
+            ),
+        )
+        if active_runs:
+            raise RuntimeError(
+                f"Cannot delete MLflow experiment {name!r}: "
+                "active runs are still in progress."
+            )
+
+        runs = mlflow.search_runs(
+            experiment_ids=[experiment.experiment_id],
+            output_format="list",
+        )
+        for run in runs:
+            client.delete_run(run.info.run_id)
+
+        client.delete_experiment(experiment.experiment_id)
 
     def __repr__(self) -> str:  # noqa: D105
         return (
-            f"Project(mode='mlflow', name='{self.name}', "
+            f"Project(name={self.name!r}, mode='mlflow', "
             f"tracking_uri='{self.tracking_uri}')"
         )
 
@@ -498,8 +550,10 @@ def _log_figure(figure: Any, artifact_file: str) -> None:
             )
 
 
-def _flatten_df_index(df: pd.DataFrame) -> pd.DataFrame:
+def _flatten_df_index(df: pd.DataFrame | pd.Series) -> pd.DataFrame:
     """Normalize a dataframe-like object before CSV logging."""
+    if isinstance(df, pd.Series):
+        df = df.to_frame(name=df.name)
     df = df.copy(deep=False)
     columns = df.columns
     if columns is not None and columns.nlevels > 1:

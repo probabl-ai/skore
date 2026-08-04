@@ -20,8 +20,6 @@ functionalities of the report are exposed through accessors.
    :template: class_methods_no_index.rst
 
    CrossValidationReport.help
-   CrossValidationReport.cache_predictions
-   CrossValidationReport.clear_cache
    CrossValidationReport.create_estimator_report
    CrossValidationReport.get_predictions
 
@@ -55,6 +53,12 @@ Metrics
 
 The `metrics` accessor helps you to evaluate the statistical performance of your
 estimator across cross-validation splits.
+
+Registered metrics whose name is a valid Python identifier are also available as
+``report.metrics.<name>(...)``. Use
+:meth:`~skore.CrossValidationReport.metrics.available` (or
+:meth:`~skore.CrossValidationReport.metrics.help`) at runtime to discover which
+metrics apply to a given report.
 
 .. include:: ../api/CrossValidationReport.metrics.inc
 

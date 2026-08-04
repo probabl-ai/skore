@@ -322,13 +322,3 @@ class _InspectionAccessor(_BaseAccessor[CrossValidationReport], DirNamesMixin):
             ),
             report_type=self._parent._report_type,
         )
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name=f"skore.{self._parent.__class__.__name__}.inspection"
-        )

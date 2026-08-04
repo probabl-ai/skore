@@ -3,11 +3,13 @@ from __future__ import annotations
 from collections.abc import Iterable
 from typing import Any, Literal, cast
 
-from numpy.typing import ArrayLike
+import pandas as pd
+from sklearn.base import ClassifierMixin, RegressorMixin
+from sklearn.pipeline import Pipeline
 from sklearn.utils.metaestimators import available_if
 
 from skore._externals._pandas_accessors import DirNamesMixin
-from skore._sklearn._base import _BaseAccessor
+from skore._sklearn._base import BaseMetricsAccessor
 from skore._sklearn._estimator.report import EstimatorReport
 from skore._sklearn._plot import (
     ConfusionMatrixDisplay,
@@ -18,50 +20,24 @@ from skore._sklearn._plot import (
 )
 from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
 from skore._sklearn.metrics import (
-    BUILTIN_METRICS,
-    R2,
-    Accuracy,
-    Brier,
     FitTime,
-    LogLoss,
-    Mae,
-    Mape,
     Metric,
     MetricLike,
+    MetricRow,
     MissingKwargsError,
-    Precision,
     PredictTime,
-    Recall,
-    Rmse,
-    RocAuc,
     Score,
 )
-from skore._sklearn.types import DataSource, PositiveLabel
+from skore._sklearn.types import DataSource
 from skore._utils._accessor import _check_supported_ml_task
 from skore._utils._cache_key import make_cache_key
 
 
-class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
+class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
     """Accessor for metrics-related operations.
 
     You can access this accessor using the `metrics` attribute.
     """
-
-    def __getattribute__(self, name):
-        """Hide some metric methods conditionally.
-
-        When the registry is initialized, the report is analyzed to filter metrics
-        depending on the report's characteristics (e.g. the ML task and the estimator's
-        prediction methods).
-        """
-        if (
-            name in {m.name for m in BUILTIN_METRICS}
-            and name not in self._parent._metric_registry
-        ):
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{name}'"
-            )
-        return super().__getattribute__(name)
 
     def summarize(
         self,
@@ -84,11 +60,19 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         metric : str or list of str or None, default=None
             The metrics to report, from the list of registered metrics. None means show
             all registered metrics. To add a custom metric, see :meth:`add`.
+            Metrics added with a ``neg_`` prefix can also be retrieved without it
+            (e.g. ``"neg_mean_absolute_percentage_error"`` instead of
+            ``"mean_absolute_percentage_error"``).
 
         Returns
         -------
         :class:`MetricsSummaryDisplay`
             A display containing the statistics for the metrics.
+
+        See Also
+        --------
+        MetricsSummaryDisplay.frame : Export the summary; wide single-column
+            layouts return a named :class:`pandas.Series`.
 
         Examples
         --------
@@ -98,42 +82,67 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
         >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> report.metrics.summarize().frame(favorability=True).drop(
-        ...    ["Fit time (s)", "Predict time (s)"]
-        ... )
-                    LogisticRegression Favorability
-        Metric
-        Score                  0.94...         (↗︎)
-        Accuracy               0.94...         (↗︎)
-        Precision              0.98...         (↗︎)
-        Recall                 0.92...         (↗︎)
-        ROC AUC                0.99...         (↗︎)
-        Log loss               0.11...         (↘︎)
-        Brier score            0.03...         (↘︎)
+        >>> summary = report.metrics.summarize().frame(favorability=True)
+        >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
+                     LogisticRegression favorability
+        metric
+        accuracy               0.94...         (↗︎)
+        precision              0.98...         (↗︎)
+        recall                 0.92...         (↗︎)
+        roc_auc                0.99...         (↗︎)
+        log_loss               0.11...         (↘︎)
+        brier_score            0.03...         (↘︎)
         >>> # Using scikit-learn metrics
         >>> report.metrics.summarize(metric="log_loss").frame(favorability=True)
-                  LogisticRegression Favorability
-        Metric
-        Log loss             0.11...          (↘︎)
-        >>> report.metrics.summarize(
+                  LogisticRegression favorability
+        metric
+        log_loss            0.11...         (↘︎)
+        >>> summary = report.metrics.summarize(
         ...    data_source="both"
-        ... ).frame(favorability=True).drop(["Fit time (s)", "Predict time (s)"])
-                     LogisticRegression (train)  LogisticRegression (test)  Favorability
-        Metric
-        Score                           0.96...                     0.94...          (↗︎)
-        Accuracy                        0.96...                     0.94...          (↗︎)
-        Precision                       0.96...                     0.98...          (↗︎)
-        Recall                          0.97...                     0.92...          (↗︎)
-        ROC AUC                         0.99...                     0.99...          (↗︎)
-        Log loss                        0.08...                     0.11...          (↘︎)
-        Brier score                     0.02...                     0.03...          (↘︎)
+        ... ).frame(favorability=True)
+        >>> summary[~summary.index.isin(["fit_time", "predict_time"])]
+                     LogisticRegression (train)  LogisticRegression (test) favorability
+        metric
+        accuracy                       0.96...                    0.94...         (↗︎)
+        precision                      0.96...                    0.98...         (↗︎)
+        recall                         0.97...                    0.92...         (↗︎)
+        roc_auc                        0.99...                    0.99...         (↗︎)
+        log_loss                       0.08...                    0.11...         (↘︎)
+        brier_score                    0.02...                    0.03...         (↘︎)
         """
         if data_source == "both":
-            train_summary = self.summarize(data_source="train", metric=metric)
-            test_summary = self.summarize(data_source="test", metric=metric)
+            train_summary = self._summarize_display(data_source="train", metric=metric)
+            test_summary = self._summarize_display(data_source="test", metric=metric)
 
-            combined = train_summary.rows + test_summary.rows
-            return MetricsSummaryDisplay(rows=combined, report_type="estimator")
+            combined = pd.concat(
+                [train_summary.summary, test_summary.summary], ignore_index=True
+            )
+            return MetricsSummaryDisplay(
+                summary=combined,
+                report_type="estimator",
+                errors=train_summary.errors + test_summary.errors,
+            )
+
+        return self._summarize_display(data_source=data_source, metric=metric)
+
+    def _summarize_display(
+        self,
+        *,
+        data_source: DataSource | Literal["both"],
+        metric: str | list[str] | None = None,
+    ) -> MetricsSummaryDisplay:
+        if data_source == "both":
+            train_summary = self._summarize_display(data_source="train", metric=metric)
+            test_summary = self._summarize_display(data_source="test", metric=metric)
+
+            combined = pd.concat(
+                [train_summary.summary, test_summary.summary], ignore_index=True
+            )
+            return MetricsSummaryDisplay(
+                summary=combined,
+                report_type="estimator",
+                errors=train_summary.errors + test_summary.errors,
+            )
 
         registry = self._parent._metric_registry
         if isinstance(metric, str):
@@ -141,45 +150,90 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         elif isinstance(metric, Iterable) and metric:
             parsed_metrics = [registry[m] for m in metric]
         else:
-            parsed_metrics = list(registry.values())
+            predictor = self._parent.estimator_
+            if isinstance(predictor, Pipeline):
+                predictor = predictor.steps[-1][1]
+            has_default_score = getattr(type(predictor), "score", None) in (
+                ClassifierMixin.score,
+                RegressorMixin.score,
+            )
+            if has_default_score:
+                parsed_metrics = [s for s in registry.values() if s.name != "score"]
+            else:
+                parsed_metrics = list(registry.values())
 
         rows: list[MetricsSummaryRow] = []
+        errors = []
         for parsed_metric in parsed_metrics:
-            metric_rows = parsed_metric.rows(
-                report=self._parent,
-                data_source=data_source,
-                **parsed_metric.kwargs,
-            )
+            try:
+                metric_rows = parsed_metric.rows(
+                    report=self._parent,
+                    data_source=data_source,
+                    **parsed_metric.kwargs,
+                )
+            except Exception as exception:
+                metric_rows = [
+                    MetricRow(
+                        metric_verbose_name=parsed_metric.verbose_name,
+                        greater_is_better=parsed_metric.greater_is_better,
+                        label=None,
+                        average=None,
+                        output=None,
+                        score=float("nan"),
+                    )
+                ]
+                errors.append((parsed_metric, exception))
+
             rows.extend(
-                row
-                | {
-                    "estimator_name": self._parent.estimator_name_,
+                {
+                    "name": parsed_metric.summary_name,
+                    "verbose_name": row["metric_verbose_name"],
+                    "estimator": self._parent.estimator_name_,
                     "data_source": data_source,
+                    "greater_is_better": row["greater_is_better"],
+                    "score": row["score"],
+                    "label": row["label"],
+                    "average": row["average"],
+                    "output": row["output"],
                 }
                 for row in metric_rows
             )
 
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        return MetricsSummaryDisplay._compute_data_for_display(
+            rows, report_type="estimator", errors=errors
+        )
 
     def _metric(
-        self, metric_name: str, *, data_source: DataSource, **kwargs: Any
+        self,
+        metric_name: str,
+        *,
+        data_source: DataSource,
+        **kwargs: Any,
     ) -> MetricsSummaryDisplay:
-        """Compute a single metric, forwarding *kwargs* to the score function."""
+        """Compute a single metric, forwarding ``kwargs`` to the score function."""
         metric = self._parent._metric_registry[metric_name]
         rows = [
             cast(
                 MetricsSummaryRow,
-                row
-                | {
-                    "estimator_name": self._parent.estimator_name_,
+                {
+                    "name": metric.summary_name,
+                    "verbose_name": row["metric_verbose_name"],
+                    "estimator": self._parent.estimator_name_,
                     "data_source": data_source,
+                    "greater_is_better": row["greater_is_better"],
+                    "score": row["score"],
+                    "label": row["label"],
+                    "average": row["average"],
+                    "output": row["output"],
                 },
             )
             for row in metric.rows(
                 report=self._parent, data_source=data_source, **kwargs
             )
         ]
-        return MetricsSummaryDisplay(rows=rows, report_type="estimator")
+        return MetricsSummaryDisplay._compute_data_for_display(
+            rows, report_type="estimator", errors=[]
+        )
 
     def available(self) -> list[str]:
         """List available metric names in the registry.
@@ -191,6 +245,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         """
         return list(self._parent._metric_registry)
 
+    def _resolve_metric(self, name: str) -> Metric | None:
+        """Return the :class:`~skore._sklearn.metrics.Metric` for ``name``, or None."""
+        return self._parent._metric_registry.get(name)
+
     def add(
         self,
         metric: MetricLike,
@@ -201,8 +259,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         position: Literal["first", "last"] = "first",
         **kwargs: Any,
     ) -> None:
-        """
-        Add a custom metric to :meth:`~skore.EstimatorReport.metrics.summarize`.
+        """Add a custom metric to :meth:`summarize`.
 
         Parameters
         ----------
@@ -249,15 +306,18 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> from skore import evaluate
         >>> X, y = load_breast_cancer(return_X_y=True)
         >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
+        >>> report = evaluate(classifier, X, y, pos_label=1)
         >>> report.metrics.add(
         ...     make_scorer(mean_absolute_error, response_method="predict")
         ... )
-        >>> report.metrics.summarize().frame()
-                            LogisticRegression
+        >>> report.metrics.summarize(metric="mean_absolute_error").frame(
+        ...     verbose_name=True, flat_index=False
+        ... )
         Metric
-                                           ...
-        Mean Absolute Error                ...
+        Mean Absolute Error    0.05...
+        Name: LogisticRegression, dtype: float64
+        >>> report.metrics.mean_absolute_error()
+        0.05...
         """
         try:
             self._parent._metric_registry.add(
@@ -293,7 +353,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         name: str,
         data_source: DataSource = "test",
         **kwargs,
-    ) -> float | None:
+    ) -> Any:
         """Get a metric value.
 
         Parameters
@@ -301,6 +361,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         name : str
             Name of the metric to compute. Get all available metrics with
             :meth:`~EstimatorReport.metrics.available()`.
+            Metrics added with a ``neg_`` prefix can also be retrieved
+            without it; the alias is resolved automatically.
+            When ``name`` is a valid Python identifier, the same value is also
+            available as ``report.metrics.<name>(...)``.
 
         data_source : {"test", "train"}, default="test"
             The data source to use.
@@ -310,7 +374,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
 
         Returns
         -------
-        The metric value, or None if the metric is not available.
+        Any
+            The metric value in a human-readable shape: a scalar for
+            single-output metrics, a mapping from class labels for per-class
+            classification metrics, or an array for multioutput regression.
 
         Examples
         --------
@@ -322,10 +389,10 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> report = evaluate(classifier, X, y, splitter=0.2)
         >>> report.metrics.get("precision")
         {0: 0.90..., 1: 0.98...}
+        >>> report.metrics.precision()
+        {0: 0.90..., 1: 0.98...}
         """
-        metric = self._parent._metric_registry.get(name)
-        if metric is None:
-            raise KeyError(name)
+        metric = self._parent._metric_registry[name]
         return metric.pretty(report=self._parent, data_source=data_source, **kwargs)
 
     def fit_time(self, *, cast: bool = True) -> float | None:
@@ -397,9 +464,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         >>> estimator = LogisticRegression()
         >>> report = evaluate(estimator, X, y, splitter=0.2)
         >>> report.metrics.timings()
-        {'fit_time': ...}
-        >>> report.cache_predictions()
-        >>> report.metrics.timings()
         {'fit_time': ..., 'predict_time_test': ...}
         """
         times = {
@@ -409,6 +473,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         }
         return {k: v for k, v in times.items() if v is not None}
 
+    @available_if(lambda self: Score.available(self._parent))
     def score(
         self,
         *,
@@ -444,504 +509,6 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
         0.94...
         """
         return Score().pretty(report=self._parent, data_source=data_source)
-
-    def accuracy(
-        self,
-        *,
-        data_source: DataSource = "test",
-    ) -> float:
-        """Compute the accuracy score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train", "both"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        Returns
-        -------
-        float
-            The accuracy score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.metrics.accuracy()
-        0.94...
-        """
-        return Accuracy().pretty(report=self._parent, data_source=data_source)
-
-    def precision(
-        self,
-        *,
-        data_source: DataSource = "test",
-        average: (
-            Literal["binary", "macro", "micro", "weighted", "samples"] | None
-        ) = None,
-    ) -> float | dict[PositiveLabel, float]:
-        """Compute the precision score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        average : {"binary","macro", "micro", "weighted", "samples"} or None, \
-                default=None
-            Used with multiclass problems.
-            If `None`, the metrics for each class are returned. Otherwise, this
-            determines the type of averaging performed on the data:
-
-            - "binary": Only report results for the class specified by the report's
-              `pos_label`. This is applicable only if targets (`y_{true,pred}`) are
-              binary.
-            - "micro": Calculate metrics globally by counting the total true positives,
-              false negatives and false positives.
-            - "macro": Calculate metrics for each label, and find their unweighted
-              mean.  This does not take label imbalance into account.
-            - "weighted": Calculate metrics for each label, and find their average
-              weighted by support (the number of true instances for each label). This
-              alters 'macro' to account for label imbalance; it can result in an F-score
-              that is not between precision and recall.
-            - "samples": Calculate metrics for each instance, and find their average
-              (only meaningful for multilabel classification where this differs from
-              :func:`accuracy_score`).
-
-        Returns
-        -------
-        float or dict
-            The precision score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> report.metrics.precision()
-        0.98...
-        """
-        return Precision().pretty(
-            report=self._parent, data_source=data_source, average=average
-        )
-
-    def recall(
-        self,
-        *,
-        data_source: DataSource = "test",
-        average: (
-            Literal["binary", "macro", "micro", "weighted", "samples"] | None
-        ) = None,
-    ) -> float | dict[PositiveLabel, float]:
-        """Compute the recall score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        average : {"binary","macro", "micro", "weighted", "samples"} or None, \
-                default=None
-            Used with multiclass problems.
-            If `None`, the metrics for each class are returned. Otherwise, this
-            determines the type of averaging performed on the data:
-
-            - "binary": Only report results for the class specified by the
-              report's `pos_label`. This is applicable only if targets
-              (`y_{true,pred}`) are binary.
-            - "micro": Calculate metrics globally by counting the total true positives,
-              false negatives and false positives.
-            - "macro": Calculate metrics for each label, and find their unweighted
-              mean.  This does not take label imbalance into account.
-            - "weighted": Calculate metrics for each label, and find their average
-              weighted by support (the number of true instances for each label). This
-              alters 'macro' to account for label imbalance; it can result in an F-score
-              that is not between precision and recall. Weighted recall is equal to
-              accuracy.
-            - "samples": Calculate metrics for each instance, and find their average
-              (only meaningful for multilabel classification where this differs from
-              :func:`accuracy_score`).
-
-            .. note::
-                If `pos_label` is specified and `average` is None, then we report
-                only the statistics of the positive class (i.e. equivalent to
-                `average="binary"`).
-
-        Returns
-        -------
-        float or dict
-            The recall score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2, pos_label=1)
-        >>> report.metrics.recall()
-        0.92...
-        """
-        return Recall().pretty(
-            report=self._parent, data_source=data_source, average=average
-        )
-
-    def brier_score(
-        self,
-        *,
-        data_source: DataSource = "test",
-    ) -> float:
-        """Compute the Brier score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        Returns
-        -------
-        float
-            The Brier score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.metrics.brier_score()
-        0.03...
-        """
-        return Brier().pretty(report=self._parent, data_source=data_source)
-
-    def roc_auc(
-        self,
-        *,
-        data_source: DataSource = "test",
-        average: Literal["macro", "micro", "weighted", "samples"] | None = None,
-        multi_class: Literal["raise", "ovr", "ovo"] = "ovr",
-    ) -> float | dict[PositiveLabel, float]:
-        """Compute the ROC AUC score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        average : {"macro", "micro", "weighted", "samples"}, default=None
-            Average to compute the ROC AUC score in a multiclass setting. By default,
-            no average is computed. Otherwise, this determines the type of averaging
-            performed on the data.
-
-            - "micro": Calculate metrics globally by considering each element of
-              the label indicator matrix as a label.
-            - "macro": Calculate metrics for each label, and find their unweighted
-              mean. This does not take label imbalance into account.
-            - "weighted": Calculate metrics for each label, and find their average,
-              weighted by support (the number of true instances for each label).
-            - "samples": Calculate metrics for each instance, and find their
-              average.
-
-            .. note::
-                Multiclass ROC AUC currently only handles the "macro" and
-                "weighted" averages. For multiclass targets, `average=None` is only
-                implemented for `multi_class="ovr"` and `average="micro"` is only
-                implemented for `multi_class="ovr"`.
-
-        multi_class : {"raise", "ovr", "ovo"}, default="ovr"
-            The multi-class strategy to use.
-
-            - "raise": Raise an error if the data is multiclass.
-            - "ovr": Stands for One-vs-rest. Computes the AUC of each class against the
-              rest. This treats the multiclass case in the same way as the multilabel
-              case. Sensitive to class imbalance even when `average == "macro"`,
-              because class imbalance affects the composition of each of the "rest"
-              groupings.
-            - "ovo": Stands for One-vs-one. Computes the average AUC of all possible
-              pairwise combinations of classes. Insensitive to class imbalance when
-              `average == "macro"`.
-
-        Returns
-        -------
-        float or dict
-            The ROC AUC score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.metrics.roc_auc()
-        0.99...
-        """
-        return RocAuc().pretty(
-            report=self._parent,
-            data_source=data_source,
-            average=average,
-            multi_class=multi_class,
-        )
-
-    def log_loss(
-        self,
-        *,
-        data_source: DataSource = "test",
-    ) -> float:
-        """Compute the log loss.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        Returns
-        -------
-        float
-            The log-loss.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_breast_cancer
-        >>> from sklearn.linear_model import LogisticRegression
-        >>> from skore import evaluate
-        >>> X, y = load_breast_cancer(return_X_y=True)
-        >>> classifier = LogisticRegression(max_iter=10_000)
-        >>> report = evaluate(classifier, X, y, splitter=0.2)
-        >>> report.metrics.log_loss()
-        0.11...
-        """
-        return LogLoss().pretty(report=self._parent, data_source=data_source)
-
-    def r2(
-        self,
-        *,
-        data_source: DataSource = "test",
-        multioutput: (
-            Literal["raw_values", "uniform_average"] | ArrayLike
-        ) = "raw_values",
-    ) -> float | list:
-        """Compute the R² score.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
-                (n_outputs,), default="raw_values"
-            Defines aggregating of multiple output values. Array-like value defines
-            weights used to average errors. The other possible values are:
-
-            - "raw_values": Returns a full set of errors in case of multioutput input.
-            - "uniform_average": Errors of all outputs are averaged with uniform weight.
-
-            By default, no averaging is done.
-
-        Returns
-        -------
-        float or list of ``n_outputs``
-            The R² score.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=0.2)
-        >>> report.metrics.r2()
-        0.34...
-        """
-        return R2().pretty(
-            report=self._parent, data_source=data_source, multioutput=multioutput
-        )
-
-    def rmse(
-        self,
-        *,
-        data_source: DataSource = "test",
-        multioutput: (
-            Literal["raw_values", "uniform_average"] | ArrayLike
-        ) = "raw_values",
-    ) -> float | list:
-        """Compute the root mean squared error.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
-                (n_outputs,), default="raw_values"
-            Defines aggregating of multiple output values. Array-like value defines
-            weights used to average errors. The other possible values are:
-
-            - "raw_values": Returns a full set of errors in case of multioutput input.
-            - "uniform_average": Errors of all outputs are averaged with uniform weight.
-
-            By default, no averaging is done.
-
-        Returns
-        -------
-        float or list of ``n_outputs``
-            The root mean squared error.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=0.2)
-        >>> report.metrics.rmse()
-        58.1...
-        """
-        return Rmse().pretty(
-            report=self._parent, data_source=data_source, multioutput=multioutput
-        )
-
-    def mae(
-        self,
-        *,
-        data_source: DataSource = "test",
-        multioutput: (
-            Literal["raw_values", "uniform_average"] | ArrayLike
-        ) = "raw_values",
-    ) -> float | list:
-        """Compute the mean absolute error.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
-                (n_outputs,), default="raw_values"
-            Defines aggregating of multiple output values. Array-like value defines
-            weights used to average errors. The other possible values are:
-
-            - "raw_values": Returns a full set of errors in case of multioutput input.
-            - "uniform_average": Errors of all outputs are averaged with uniform weight.
-
-            By default, no averaging is done.
-
-        Returns
-        -------
-        float or list of ``n_outputs``
-            The mean absolute error.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=0.2)
-        >>> report.metrics.mae()
-        46.5...
-        """
-        return Mae().pretty(
-            report=self._parent, data_source=data_source, multioutput=multioutput
-        )
-
-    def mape(
-        self,
-        *,
-        data_source: DataSource = "test",
-        multioutput: (
-            Literal["raw_values", "uniform_average"] | ArrayLike
-        ) = "raw_values",
-    ) -> float | list:
-        """Compute the mean absolute percentage error.
-
-        Parameters
-        ----------
-        data_source : {"test", "train"}, default="test"
-            The data source to use.
-
-            - "test" : use the test set provided when creating the report.
-            - "train" : use the train set provided when creating the report.
-
-        multioutput : {"raw_values", "uniform_average"} or array-like of shape \
-                (n_outputs,), default="raw_values"
-            Defines aggregating of multiple output values. Array-like value defines
-            weights used to average errors. The other possible values are:
-
-            - "raw_values": Returns a full set of errors in case of multioutput input.
-            - "uniform_average": Errors of all outputs are averaged with uniform weight.
-
-            By default, no averaging is done.
-
-        Returns
-        -------
-        float or list of ``n_outputs``
-            The mean absolute percentage error.
-
-        Examples
-        --------
-        >>> from sklearn.datasets import load_diabetes
-        >>> from sklearn.linear_model import Ridge
-        >>> from skore import evaluate
-        >>> X, y = load_diabetes(return_X_y=True)
-        >>> regressor = Ridge()
-        >>> report = evaluate(regressor, X, y, splitter=0.2)
-        >>> report.metrics.mape()
-        0.3...
-        """
-        return Mape().pretty(
-            report=self._parent, data_source=data_source, multioutput=multioutput
-        )
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name=f"skore.{self._parent.__class__.__name__}.metrics"
-        )
 
     ####################################################################################
     # Methods related to displays
@@ -1011,7 +578,7 @@ class _MetricsAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             cache_key = None
         else:
             cache_key = make_cache_key(
-                data_source, display_class.__name__, display_kwargs
+                "metrics", data_source, display_class.__name__, display_kwargs
             )
 
         cache_value = self._parent._cache.get(cache_key)

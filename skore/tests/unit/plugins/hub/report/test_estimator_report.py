@@ -1,8 +1,11 @@
 from joblib import hash
 from pydantic import ValidationError
-from pytest import fixture, mark, raises
+from pytest import approx, fixture, mark, raises
+from sklearn.datasets import make_classification
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import make_scorer, precision_score
 
-from skore import CrossValidationReport, EstimatorReport
+from skore import CrossValidationReport, EstimatorReport, evaluate
 from skore._plugins.hub.artifact.media import (
     ConfusionMatrixDataFrameTestAll,
     ConfusionMatrixDataFrameTestNone,
@@ -20,23 +23,7 @@ from skore._plugins.hub.artifact.media import (
     TableReportTrain,
 )
 from skore._plugins.hub.artifact.serializer import Serializer
-from skore._plugins.hub.metric import (
-    AccuracyTest,
-    AccuracyTrain,
-    BrierScoreTest,
-    BrierScoreTrain,
-    FitTime,
-    LogLossTest,
-    LogLossTrain,
-    PrecisionTest,
-    PrecisionTrain,
-    PredictTimeTest,
-    PredictTimeTrain,
-    RecallTest,
-    RecallTrain,
-    RocAucTest,
-    RocAucTrain,
-)
+from skore._plugins.hub.metric import Metric
 from skore._plugins.hub.report import EstimatorReportPayload
 
 
@@ -49,7 +36,7 @@ def serialize(object: EstimatorReport | CrossValidationReport) -> tuple[bytes, s
     reports_with_cache = [
         (report, report._cache) for report in reports if hasattr(report, "_cache")
     ]
-    object.clear_cache()
+    object._clear_cache()
 
     try:
         with io.BytesIO() as stream:
@@ -104,44 +91,348 @@ class TestEstimatorReportPayload:
 
     @mark.respx(assert_all_called=False)
     def test_metrics(self, payload):
-        assert list(map(type, payload.metrics)) == [
-            AccuracyTest,
-            AccuracyTrain,
-            BrierScoreTest,
-            BrierScoreTrain,
-            LogLossTest,
-            LogLossTrain,
-            PrecisionTest,
-            PrecisionTrain,
-            RecallTest,
-            RecallTrain,
-            RocAucTest,
-            RocAucTrain,
-            FitTime,
-            PredictTimeTest,
-            PredictTimeTrain,
+        assert [m.model_dump() for m in payload.metrics] == [
+            {
+                "name": "accuracy",
+                "verbose_name": "Accuracy",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "precision",
+                "verbose_name": "Precision",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "precision",
+                "verbose_name": "Precision",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "recall",
+                "verbose_name": "Recall",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "recall",
+                "verbose_name": "Recall",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "roc_auc",
+                "verbose_name": "ROC AUC",
+                "data_source": "train",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "log_loss",
+                "verbose_name": "Log loss",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.06911, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "brier_score",
+                "verbose_name": "Brier score",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.00727, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "fit_time",
+                "verbose_name": "Fit time (s)",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "predict_time",
+                "verbose_name": "Predict time (s)",
+                "data_source": "train",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "accuracy",
+                "verbose_name": "Accuracy",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.9, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "precision",
+                "verbose_name": "Precision",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "precision",
+                "verbose_name": "Precision",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.77778, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "recall",
+                "verbose_name": "Recall",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.84615, abs=1e-4),
+                "label": 0,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "recall",
+                "verbose_name": "Recall",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(1.0, abs=1e-4),
+                "label": 1,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "roc_auc",
+                "verbose_name": "ROC AUC",
+                "data_source": "test",
+                "greater_is_better": True,
+                "value": approx(0.98901, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "log_loss",
+                "verbose_name": "Log loss",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.31686, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "brier_score",
+                "verbose_name": "Brier score",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.09025, abs=1e-4),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "fit_time",
+                "verbose_name": "Fit time (s)",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
+            {
+                "name": "predict_time",
+                "verbose_name": "Predict time (s)",
+                "data_source": "test",
+                "greater_is_better": False,
+                "value": approx(0.0, abs=float("inf")),
+                "label": None,
+                "output": None,
+                "average": None,
+                "position": None,
+            },
         ]
 
     @mark.respx(assert_all_called=False)
-    def test_metrics_raises_exception(self, monkeypatch, payload):
-        """
-        Since metrics compute is multi-threaded, ensure that any exceptions thrown in a
-        sub-thread are also thrown in the main thread.
-        """
+    def test_binary_metrics_includes_averaged_rows(self, project):
+        X, y = make_classification(random_state=42)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y)
 
-        def raise_exception(_):
-            raise Exception("test_metrics_raises_exception")
+        report.metrics.add(make_scorer(precision_score, average="macro"), name="xxx")
 
-        monkeypatch.setattr(
-            "skore._plugins.hub.report.estimator_report.EstimatorReportPayload.METRICS",
-            [AccuracyTest],
-        )
-        monkeypatch.setattr(
-            "skore._plugins.hub.metric.AccuracyTest.compute", raise_exception
+        payload = EstimatorReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
         )
 
-        with raises(Exception, match="test_metrics_raises_exception"):
-            list(map(type, payload.metrics))
+        precision = [
+            m
+            for m in payload.metrics
+            if m.name == "precision" and m.data_source == "test"
+        ]
+        assert len(precision) == 2
+        assert {m.label for m in precision} == {0, 1}
+        assert all(m.average is None for m in precision)
+
+        custom = [
+            m for m in payload.metrics if m.name == "xxx" and m.data_source == "test"
+        ]
+        assert len(custom) == 1
+        assert custom[0].average == "macro"
+        assert custom[0].label is None
+        assert custom[0].value is not None
+
+    @mark.respx(assert_all_called=False)
+    def test_multiclass_metrics_includes_aggregate_averages(
+        self, project, forest_multiclass_classification_with_train_test
+    ):
+        estimator, X_train, X_test, y_train, y_test = (
+            forest_multiclass_classification_with_train_test
+        )
+        report = EstimatorReport(
+            estimator,
+            X_train=X_train,
+            y_train=y_train,
+            X_test=X_test,
+            y_test=y_test,
+        )
+        payload = EstimatorReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        for metric_name in ("precision", "recall", "roc_auc"):
+            macro_metrics = [
+                m
+                for m in payload.metrics
+                if m.name == metric_name
+                and m.average == "macro"
+                and m.data_source == "test"
+            ]
+            assert len(macro_metrics) == 1
+
+    @mark.respx(assert_all_called=False)
+    def test_metrics_custom(self, project):
+        def hello(_estimator, _X, _y):
+            return 1
+
+        X, y = make_classification(random_state=42)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y)
+
+        report.metrics.add(hello)
+
+        payload = EstimatorReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        assert all(isinstance(m, Metric) for m in payload.metrics)
+        assert [m for m in payload.metrics if "hello" in m.name] == [
+            Metric(
+                name="hello",
+                verbose_name="Hello",
+                data_source="train",
+                greater_is_better=True,
+                value=1.0,
+            ),
+            Metric(
+                name="hello",
+                verbose_name="Hello",
+                data_source="test",
+                greater_is_better=True,
+                value=1.0,
+            ),
+        ]
+
+    @mark.respx(assert_all_called=False)
+    def test_metrics_multimetric_scorer(self, project):
+        def my_multi_scorer(_estimator, _X, _y):
+            return {"score_a_1": 1.0, "score_b_1": 2.0, "score_c_1": 3.0}
+
+        X, y = make_classification(random_state=42)
+        report = evaluate(RandomForestClassifier(random_state=42), X, y)
+        report.metrics.add(my_multi_scorer)
+
+        payload = EstimatorReportPayload(
+            project=project,
+            report=report,
+            key="<key>",
+        )
+
+        custom = [m for m in payload.metrics if m.name.startswith("score_")]
+        assert {m.name for m in custom} == {"score_a_1", "score_b_1", "score_c_1"}
+        assert {m.verbose_name for m in custom} == {
+            "score_a_1",
+            "score_b_1",
+            "score_c_1",
+        }
+        # train + test for each submetric
+        assert len(custom) == 6
+        assert len({m.name for m in custom}) == 3
 
     @mark.respx()
     def test_medias(self, payload):
@@ -164,7 +455,7 @@ class TestEstimatorReportPayload:
 
     @mark.respx()
     def test_model_dump(self, binary_classification, payload):
-        binary_classification.cache_predictions()
+        binary_classification._cache_predictions()
 
         _, checksum = serialize(binary_classification)
 

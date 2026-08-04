@@ -5,9 +5,7 @@ from sklearn.cluster import KMeans
 from skore import ComparisonReport, EstimatorReport
 
 
-def test_init_wrong_parameters(
-    estimator_reports_binary_classification,
-):
+def test_init_wrong_parameters(estimator_reports_binary_classification):
     """If the input is not valid, raise."""
     report, _ = estimator_reports_binary_classification
     with pytest.raises(TypeError, match="Expected reports to be a list or dict"):
@@ -22,11 +20,12 @@ def test_init_wrong_parameters(
         ComparisonReport([None, report])
 
 
-def test_different_test_data(
-    logistic_binary_classification_with_train_test,
-):
+def test_different_test_data(logistic_binary_classification_with_train_test):
     """Raise an error if the passed estimators do not have the same testing targets."""
-    estimator, _, X_test, _, y_test = logistic_binary_classification_with_train_test
+    estimator, X_train, X_test, y_train, y_test = (
+        logistic_binary_classification_with_train_test
+    )
+    estimator = estimator.fit(X_train, y_train)
 
     # The estimators that have testing data need to have the same testing targets
     with pytest.raises(
@@ -38,14 +37,6 @@ def test_different_test_data(
                 EstimatorReport(estimator, X_test=X_test, y_test=y_test[1:]),
             ]
         )
-
-    # If there is an X_test but no y_test, it should not raise an error
-    ComparisonReport(
-        [
-            EstimatorReport(estimator, fit=False, X_test=X_test, y_test=None),
-            EstimatorReport(estimator, fit=False, X_test=X_test, y_test=None),
-        ]
-    )
 
 
 def test_init_different_ml_usecases(

@@ -1,20 +1,31 @@
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Literal
+from collections import defaultdict
+from typing import TYPE_CHECKING, Any, Literal, cast
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
 from sklearn.exceptions import UndefinedMetricWarning
 from sklearn.pipeline import Pipeline
 
-from skore._sklearn.types import PositiveLabel
+from skore._sklearn._plot.metrics.metrics_summary_display import MetricsSummaryRow
+from skore._sklearn.feature_names import _get_feature_names
+from skore._sklearn.types import EstimatorLike, PositiveLabel
+from skore._utils._dataframe import (
+    UserDataFrame,
+    UserTarget,
+    _concat_vertical,
+    _normalize_X_as_dataframe,
+    _normalize_y_as_dataframe,
+)
 
 if TYPE_CHECKING:
+    from skore._sklearn._base import _BaseReport
+    from skore._sklearn._cross_validation.report import CrossValidationReport
     from skore._sklearn._estimator.report import EstimatorReport
-    from skore._sklearn._plot.metrics.metrics_summary_display import (
-        MetricsSummaryRow,
-    )
     from skore._sklearn.types import DataSource
 
 _TIMING_METRICS = {"Fit time (s)", "Predict time (s)"}
@@ -32,26 +43,60 @@ StepName = str
 
 def _metric_key(row: MetricsSummaryRow) -> MetricKey:
     """Identity tuple for a metric row (verbose name + label/average/output)."""
-    return (row["metric_verbose_name"], row["label"], row["average"], row["output"])
+    return (row["verbose_name"], row["label"], row["average"], row["output"])
+
+
+def _summary_to_rows(summary: pd.DataFrame) -> list[MetricsSummaryRow]:
+    """Convert a display summary dataframe back to metric rows."""
+    nullable_cols = {
+        "label",
+        "average",
+        "output",
+        "greater_is_better",
+        "split",
+    }
+    rows: list[MetricsSummaryRow] = []
+    for record in summary.to_dict("records"):
+        row: dict[str, Any] = {}
+        for key, value in record.items():
+            if key in nullable_cols and pd.isna(value):
+                row[key] = None
+            else:
+                row[key] = value
+        rows.append(cast("MetricsSummaryRow", row))
+    return rows
 
 
 def collect_scores(
-    report: EstimatorReport,
+    report: EstimatorReport | CrossValidationReport,
     *,
     data_source: DataSource,
-    include_timing: bool = False,
 ) -> dict[MetricKey, MetricsSummaryRow]:
-    """Collect ``summarize`` rows keyed by metric identity for an estimator report.
+    """Collect ``summarize`` rows keyed by metric identity.
 
+    For cross-validation reports, scores are mean-aggregated across splits.
     Timing rows are filtered out by default.
     """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=UndefinedMetricWarning)
-        rows = report.metrics.summarize(data_source=data_source).rows
+        rows = _summary_to_rows(
+            report.metrics.summarize(data_source=data_source).summary
+        )
+
+    filtered_rows = [row for row in rows if row["verbose_name"] not in _TIMING_METRICS]
+    if report._report_type == "estimator":
+        return {_metric_key(row): row for row in filtered_rows}
+
+    grouped: dict[MetricKey, list[MetricsSummaryRow]] = defaultdict(list)
+    # There is one row per split for each metric, so we group them before averaging
+    for row in filtered_rows:
+        grouped[_metric_key(row)].append(row)
     return {
-        _metric_key(row): row
-        for row in rows
-        if include_timing or row["metric_verbose_name"] not in _TIMING_METRICS
+        key: split_rows[0]
+        | {
+            "score": float(np.mean([row["score"] for row in split_rows])),
+        }
+        for key, split_rows in grouped.items()
     }
 
 
@@ -122,11 +167,16 @@ def detect_outliers_modified_zscore(scores, threshold=3):
 class CheckNotApplicable(Exception):
     """Raised when a check cannot run on the given report.
 
+    Parameters
+    ----------
+    message : str or None, default=None
+        Optional reason shown in the checks summary explanation.
+
     Notes
     -----
     Check implementations raise this exception when required data, task type,
-    or model capabilities are missing. The check is skipped and does not appear
-    in :meth:`~skore.EstimatorReport.checks.summarize` results.
+    or model capabilities are missing. The check appears under the
+    "Not Applicable" section of the checks summary.
 
     Examples
     --------
@@ -135,12 +185,12 @@ class CheckNotApplicable(Exception):
     >>> class MyCheck(Check):
     ...     code = "TST001"
     ...     title = "My check"
-    ...     report_type = "estimator"
+    ...     report_types = ["estimator"]
     ...     docs_url = None
     ...     severity = "issue"
     ...     def check_function(self, report):
-    ...         if report.X_test is None:
-    ...             raise CheckNotApplicable()
+    ...         if report.X_train is None:
+    ...             raise CheckNotApplicable("Train data is unavailable.")
     ...         return None
     """
 
@@ -152,82 +202,117 @@ def split_preprocessor_estimator(estimator):
     steps and final predictor.
     """
     if isinstance(estimator, Pipeline):
-        return estimator[:-1], estimator[-1]
+        if len(estimator.steps) > 1:
+            return estimator[:-1], estimator[-1]
+        else:
+            return None, estimator[0]
     return None, estimator
 
 
-def get_preprocessed_data(
-    report: EstimatorReport,
+def cast_report(report: _BaseReport) -> EstimatorReport | CrossValidationReport:
+    if report._report_type == "estimator":
+        return cast("EstimatorReport", report)
+    return cast("CrossValidationReport", report)
+
+
+def get_report_y(
+    report: EstimatorReport | CrossValidationReport,
     *,
-    target: Literal["X", "y"] = "X",
-    concatenate: bool = False,
-    data_source: Literal["train", "test"] | None = None,
-) -> np.ndarray | pd.DataFrame | pd.Series | None:
-    """Return feature matrix or target vector from a report.
+    data_source: Literal["train", "test", "both"] = "both",
+) -> UserTarget:
+    """Return the target as a 1d Series or multi-output DataFrame.
 
-    When ``target == "X"`` and the report's estimator is a
-    :class:`~sklearn.pipeline.Pipeline`, the raw feature matrix is passed
-    through the fitted preprocessor (all steps except the last) before being
-    returned, so the result reflects what the predictor actually sees.
-
-    Returns ``None`` when no data is available or when the preprocessor
-    produces an unsupported type (e.g. sparse matrices).
-
-    Parameters
-    ----------
-    report : _BaseReport
-        the report to extract data from.
-
-    target : {"X", "y"}
-        whether to return the feature matrix or the target vector.
-
-    concatenate : bool
-        when true and both train and test are available, return their
-        concatenation. Otherwise return train if available, else test.
-
-    data_source : {"train", "test"}, default=None
-        when set, return only the train or test split. Ignored when
-        ``concatenate`` is true.
-
-    Returns
-    -------
-    np.ndarray, pd.DataFrame, or None
+    For cross-validation reports, returns the full dataset target and
+    ``data_source`` is ignored.
     """
-    train = report.X_train if target == "X" else report.y_train
-    test = report.X_test if target == "X" else report.y_test
+    try:
+        if report._report_type == "cross-validation":
+            y = nw.from_native(_normalize_y_as_dataframe(report.y))
+        else:
+            if data_source == "both":
+                if report.y_train is None:
+                    raise CheckNotApplicable("Target train data is unavailable.")
+                y = nw.concat(
+                    [
+                        nw.from_native(_normalize_y_as_dataframe(report.y_train)),
+                        nw.from_native(_normalize_y_as_dataframe(report.y_test)),
+                    ],
+                    how="vertical",
+                )
+            elif data_source == "train":
+                if report.y_train is None:
+                    raise CheckNotApplicable("Target train data is unavailable.")
+                y = nw.from_native(_normalize_y_as_dataframe(report.y_train))
+            else:
+                y = nw.from_native(_normalize_y_as_dataframe(report.y_test))
+        if y.shape[1] == 1:
+            return y.get_column(y.columns[0]).to_native()
+        return y.to_native()
+    except NotImplementedError as err:
+        raise CheckNotApplicable("Target data is sparse.") from err
 
-    if concatenate and train is not None and test is not None:
-        data = (
-            pd.concat([train, test], axis=0, ignore_index=True)
-            if isinstance(train, pd.DataFrame)
-            else np.concatenate([train, test])
-        )
-    elif data_source == "train":
-        data = train
-    elif data_source == "test":
-        data = test
-    elif train is not None:
-        data = train
-    elif test is not None:
-        data = test
+
+def get_fitted_estimator(
+    report: EstimatorReport | CrossValidationReport,
+) -> EstimatorLike:
+    if report._report_type == "cross-validation":
+        return report.reports_[0].estimator_
+    return report.estimator_
+
+
+def get_fit_time(report: EstimatorReport | CrossValidationReport) -> float:
+    if report._report_type == "cross-validation":
+        return float(report.metrics.timings(aggregate="mean").loc["Fit time (s)"])
+    if report._fit_time is None:
+        raise CheckNotApplicable("Fit time is unavailable.")
+    return report._fit_time
+
+
+def get_preprocessed_X(
+    report: EstimatorReport | CrossValidationReport,
+    *,
+    data_source: Literal["train", "test", "both"] = "both",
+) -> UserDataFrame:
+    """Return the feature matrix seen by the predictor.
+
+    Features are retrieved in the same format as at fit time, passed through
+    the fitted preprocessor when present, then normalized for analysis.
+
+    For cross-validation reports, returns features from the full dataset and
+    ``data_source`` is ignored. The preprocessor is taken from the first fold's
+    fitted estimator.
+
+    Raises `CheckNotApplicable` when no data is available or when
+    the preprocessor produces an unsupported type (e.g. sparse matrices).
+    """
+    if report._report_type == "cross-validation":
+        data = report.X
     else:
-        return None
+        if data_source == "both":
+            if report.X_train is None:
+                raise CheckNotApplicable("Train data is unavailable.")
+            data = _concat_vertical(report.X_train, report.X_test)
+        elif data_source == "train":
+            if report.X_train is None:
+                raise CheckNotApplicable("Train data is unavailable.")
+            data = report.X_train
+        else:
+            data = report.X_test
 
-    if data is None:
-        return None
+    preprocessor, predictor = split_preprocessor_estimator(get_fitted_estimator(report))
+    if preprocessor is not None and len(preprocessor.steps) > 0:
+        data = preprocessor.transform(data)
+        if not nw.dependencies.is_into_dataframe(data) and not sp.issparse(data):
+            data = pd.DataFrame(
+                data,
+                columns=_get_feature_names(
+                    predictor,
+                    transformer=preprocessor,
+                    n_features=np.shape(data)[1],
+                ),
+            )
 
-    if target == "X":
-        preprocessor, _ = split_preprocessor_estimator(report.estimator_)
-        if preprocessor is not None and len(preprocessor.steps) > 0:
-            data = preprocessor.transform(data)
-
-    if not isinstance(data, (np.ndarray, pd.DataFrame, pd.Series)):
-        return None
-    return data
-
-
-def select_feature(X, i: int):
-    """Return X reduced to a single feature index, preserving DataFrame/array kind."""
-    if hasattr(X, "iloc"):
-        return X.iloc[:, [i]]
-    return X[:, [i]]
+    try:
+        return _normalize_X_as_dataframe(data)
+    except NotImplementedError as err:
+        raise CheckNotApplicable("Feature data is sparse.") from err

@@ -1,3 +1,5 @@
+from functools import partial
+
 import mlflow
 import pandas as pd
 from pytest import fixture
@@ -16,10 +18,19 @@ from skore import CrossValidationReport, EstimatorReport
 
 
 @fixture(autouse=True)
-def isolated_mlflow_tracking(tmp_path, monkeypatch):
+def monkeypatch_rich(monkeypatch):
+    """Avoid Rich Jupyter rendering side effects during MLflow plugin tests."""
+    from rich.console import Console
+
+    monkeypatch.setattr("rich.console.Console", partial(Console, quiet=True))
+    monkeypatch.setattr("skore.console.quiet", True)
+
+
+@fixture(autouse=True)
+def isolated_mlflow_tracking(tmp_path, monkeypatch, mlflow_tracking_uri):
     monkeypatch.chdir(tmp_path)
     previous_tracking_uri = mlflow.get_tracking_uri()
-    tracking_uri = f"sqlite:///{tmp_path}/mlflow.db"
+    tracking_uri = mlflow_tracking_uri()
     mlflow.set_tracking_uri(tracking_uri)
     try:
         yield tracking_uri
@@ -115,11 +126,10 @@ def cv_reg_report() -> CrossValidationReport:
 def cv_mreg_report() -> CrossValidationReport:
     """multiouput-regression"""
     X, y = load_diabetes(return_X_y=True, as_frame=True)
-    y: pd.Series
     multi_target_y = pd.concat(
         [
             y.rename("target_0"),
-            (y + y.sample(len(y))).rename("target_1"),
+            (y + y.sample(len(y), random_state=0)).rename("target_1"),
         ],
         axis=1,
     )

@@ -15,6 +15,7 @@ from rich.theme import Theme
 
 from skore._config import configuration
 from skore._externals._sklearn_compat import parse_version
+from skore._project._summary import Summary
 from skore._project.login import login
 from skore._project.project import Project
 from skore._sklearn import (
@@ -30,7 +31,6 @@ from skore._sklearn import (
     TrainTestSplit,
     compare,
     evaluate,
-    train_test_split,
 )
 from skore._sklearn._checks import Check, CheckNotApplicable, ChecksSummaryDisplay
 from skore._sklearn._plot.base import Display
@@ -81,6 +81,7 @@ __all__ = [
     "Project",
     "RocCurveDisplay",
     "CalibrationDisplay",
+    "Summary",
     "TableReportDisplay",
     "TrainTestSplit",
     "compare",
@@ -88,7 +89,6 @@ __all__ = [
     "evaluate",
     "login",
     "show_versions",
-    "train_test_split",
 ]
 
 

@@ -3,11 +3,14 @@ import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
 from matplotlib.figure import Figure
+from sklearn.datasets import make_regression
 from sklearn.dummy import DummyRegressor
+from sklearn.model_selection import train_test_split
+from skrub import tabular_pipeline
 from skrub.datasets import fetch_employee_salaries
 
-from skore import Display, EstimatorReport, train_test_split
-from skore._externals._skrub_compat import tabular_pipeline
+from skore import Display, EstimatorReport
+from skore._externals._sklearn_compat import convert_container
 from skore._sklearn._plot.data.table_report import TableReportDisplay
 
 
@@ -17,12 +20,18 @@ def estimator_report():
     X, y = data.X, data.y
     X["gender"] = X["gender"].astype("category")
     X["date_first_hired"] = pd.to_datetime(X["date_first_hired"])
-    X["timedelta_hired"] = (
-        pd.Timestamp.now() - X["date_first_hired"]
-    ).dt.to_pytimedelta()
+    X["timedelta_hired"] = np.array(
+        (pd.Timestamp.now() - X["date_first_hired"]).dt.to_pytimedelta()
+    )
     X["cents"] = 100 * y
-    split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    return EstimatorReport(tabular_pipeline(DummyRegressor()), **split_data)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    return EstimatorReport(
+        tabular_pipeline(DummyRegressor()),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
 
 
 @pytest.fixture(scope="module")
@@ -66,6 +75,37 @@ def test_constructor(display):
 
 
 @pytest.mark.parametrize(
+    "x_container,y_container",
+    [
+        ("array", "array"),
+        ("pandas", "series"),
+        ("polars", "polars_series"),
+    ],
+)
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+def test_display_creation_with_containers(x_container, y_container):
+    """Check that summarize returns a display for paired container types."""
+    X, y = make_regression(n_samples=100, n_features=5, random_state=42)
+    feature_columns = [f"Feature {i}" for i in range(X.shape[1])]
+    X = convert_container(
+        X, x_container, column_names=feature_columns, minversion="0.20.23"
+    )
+    y = convert_container(y, y_container, minversion="0.20.23")
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    report = EstimatorReport(
+        tabular_pipeline(DummyRegressor()),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
+    display = report.data.summarize(data_source="train")
+    assert isinstance(display, TableReportDisplay)
+
+
+@pytest.mark.parametrize(
     "X",
     [
         np.ones((100, 5)),
@@ -86,9 +126,21 @@ def test_constructor(display):
         pd.DataFrame(np.ones((100, 1))),
     ],
 )
+@pytest.mark.filterwarnings(
+    "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
+)
+@pytest.mark.filterwarnings(
+    "ignore:Some dataframe column names are not strings:UserWarning"
+)
 def test_X_y(X, y):
-    split_data = train_test_split(X, y, random_state=0, as_dict=True)
-    report = EstimatorReport(tabular_pipeline(DummyRegressor()), **split_data)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+    report = EstimatorReport(
+        tabular_pipeline(DummyRegressor()),
+        X_train=X_train,
+        y_train=y_train,
+        X_test=X_test,
+        y_test=y_test,
+    )
     display = report.data.summarize()
     assert isinstance(display, TableReportDisplay)
 
@@ -116,7 +168,7 @@ def test_frame(estimator_report, data_source):
     )
 
 
-def test_categorical_plots_1d(pyplot, display):
+def test_categorical_plots_1d(display):
     """Check the plot output with categorical data in 1-d."""
     fig = display.plot(x="gender")
     ax = fig.axes[0]
@@ -144,7 +196,7 @@ def test_categorical_plots_1d(pyplot, display):
     assert ax.containers[0].patches[0].get_facecolor() == (0.0, 0.0, 1.0, 0.75)
 
 
-def test_numeric_plots_1d(pyplot, estimator_report):
+def test_numeric_plots_1d(estimator_report):
     """Check the plot output with numeric data in 1-d."""
     display = estimator_report.data.summarize(data_source="train")
     ## for integers numeric values
@@ -169,7 +221,7 @@ def test_numeric_plots_1d(pyplot, estimator_report):
     assert ax.get_ylabel() == "year_first_hired"
 
 
-def test_top_k_categorical_plots_1d(pyplot, display):
+def test_top_k_categorical_plots_1d(display):
     """Check the plot output with categorical data in 1-d and top k categories."""
     fig = display.plot(x="division")
     ax = fig.axes[0]
@@ -179,7 +231,7 @@ def test_top_k_categorical_plots_1d(pyplot, display):
     assert len(ax.get_xticklabels()) == 30
 
 
-def test_hue_plots_1d(pyplot, display):
+def test_hue_plots_1d(display):
     """Check the plot output with hue in 1-d."""
     fig = display.plot(x="gender", hue="current_annual_salary")
     ax = fig.axes[0]
@@ -204,7 +256,7 @@ def test_hue_plots_1d(pyplot, display):
     assert ax.legend_.get_title().get_text() == "current_annual_salary"
 
 
-def test_plot_duration_data_1d(pyplot, display):
+def test_plot_duration_data_1d(display):
     """Check the plot output with duration data in 1-d."""
     ## 1D - timedelta as x
     fig = display.plot(x="timedelta_hired")
@@ -217,7 +269,7 @@ def test_plot_duration_data_1d(pyplot, display):
     assert ax.get_ylabel() == "Years"
 
 
-def test_plots_2d(pyplot, display):
+def test_plots_2d(display):
     """Check the general behaviour of the 2-d plots."""
     # scatter plot
     fig = display.plot(y="current_annual_salary", x="year_first_hired")
@@ -263,7 +315,7 @@ def test_plots_2d(pyplot, display):
     assert any("e+" in annotation for annotation in annotations)
 
 
-def test_hue_plots_2d(pyplot, display):
+def test_hue_plots_2d(display):
     """Check the plot output with hue parameter in 2-d."""
     fig = display.plot(x="year_first_hired", y="current_annual_salary", hue="division")
     ax = fig.axes[0]

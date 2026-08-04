@@ -1,0 +1,38 @@
+<div class="skore-summary-filter">
+    <button type="button" class="skore-summary-filter-toggle" aria-haspopup="true" aria-expanded="false" aria-label="Filter" title="Filter">{% include "project/icons/filter.svg" %}</button>
+    <div class="skore-summary-filter-panel" hidden>
+        {% for filter in filters %}
+        <div class="skore-summary-filter-field">
+            <button type="button" class="skore-summary-filter-field-toggle" aria-haspopup="true" data-field="{{ filter.field | e }}">
+                <span class="skore-summary-filter-field-label">{{ filter.label | e }}</span>
+                <span class="skore-summary-filter-arrow" aria-hidden="true"></span>
+            </button>
+            <div class="skore-summary-filter-submenu">
+                {% for value in filter["options"] %}
+                <label class="skore-summary-filter-option">
+                    <input type="checkbox" class="skore-summary-filter-value" data-filter-field="{{ filter.field | e }}" data-filter-value="{{ value.value | e }}" checked>
+                    <span class="skore-summary-filter-option-label">{{ value.value | e }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        <div class="skore-summary-filter-field">
+            <button type="button" class="skore-summary-filter-field-toggle" aria-haspopup="true" data-field="date">
+                <span class="skore-summary-filter-field-label">Date</span>
+                <span class="skore-summary-filter-arrow" aria-hidden="true"></span>
+            </button>
+            <div class="skore-summary-filter-submenu skore-summary-date-submenu">
+                <label class="skore-summary-date-field">
+                    <span>Start</span>
+                    <input type="datetime-local" step="1" class="skore-summary-date-start">
+                </label>
+                <label class="skore-summary-date-field">
+                    <span>End</span>
+                    <input type="datetime-local" step="1" class="skore-summary-date-end">
+                </label>
+                <button type="button" class="skore-summary-date-clear">Clear</button>
+            </div>
+        </div>
+    </div>
+</div>

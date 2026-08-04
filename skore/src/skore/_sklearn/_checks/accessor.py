@@ -12,12 +12,6 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
     You can access this accessor using the `checks` attribute.
     """
 
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name=f"skore.{self._parent.__class__.__name__}.checks"
-        )
-
     def summarize(
         self,
         *,
@@ -42,9 +36,10 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         Returns
         -------
         ChecksSummaryDisplay
-            A display object with an HTML representation organized as three
-            tabs (``Issues``, ``Tips``, ``Passed``). The full list of results
-            is accessible via the :meth:`~ChecksSummaryDisplay.frame` method.
+            A display object with an HTML representation organized in
+            tabs (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``,
+            ``Skipped``, ``Ignored``). The full list of results is
+            accessible via the :meth:`~ChecksSummaryDisplay.frame` method.
 
         Examples
         --------
@@ -57,8 +52,8 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         >>> "SKD002" in summary.frame()["code"].values
         True
         >>> filtered = report.checks.summarize(ignore=["SKD002"])
-        >>> "SKD002" in filtered.frame()["code"].values
-        False
+        >>> "SKD002" in filtered.frame(section="ignored")["code"].values
+        True
         """
         ignored_codes: set[CheckCode] = set()
         if ignore:
@@ -71,16 +66,9 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
                 for code in configuration.ignore_checks
                 if code.strip()
             )
-        check_results, applicable_codes = self._parent._get_results(
-            ignored_codes, fast_mode=fast_mode
-        )
         return ChecksSummaryDisplay(
-            check_results={
-                code: check_result
-                for code, check_result in check_results.items()
-                if code in applicable_codes and code not in ignored_codes
-            },
-            n_ignored_codes=len(ignored_codes),
+            self._parent._get_checks_results(ignored_codes, fast_mode=fast_mode),
+            fast_mode=fast_mode,
         )
 
     def add(
@@ -96,19 +84,28 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         checks : list of Check
             Additional checks to register.
         """
-        report_types = [
+        valid_report_types = {
             "cross-validation",
             "estimator",
             "comparison-estimator",
             "comparison-cross-validation",
-        ]
+        }
         for check in checks:
             if not isinstance(check, Check):
-                raise ValueError(f"{check} does not implement the Check protocol.")
-            if check.report_type not in report_types:
-                raise ValueError(
-                    f"Check report_type should be one of: {', '.join(report_types)}. "
-                    f"Got {check.report_type} instead."
+                raise TypeError(
+                    f"{check.__class__.__name__} is not a subclass of Check."
+                )
+            if not isinstance(check.report_types, list) or not check.report_types:
+                raise TypeError(
+                    "The check's report_types must be a non-empty list of report "
+                    f"types. Got {type(check.report_types)}."
+                )
+            invalid_types = set(check.report_types) - valid_report_types
+            if invalid_types:
+                raise TypeError(
+                    f"Supported values for report_types are: {valid_report_types}. "
+                    f"The check's report_types contains unsupported values: "
+                    f"{invalid_types}. "
                 )
         self._parent._checks_registry.extend(checks)
 
@@ -140,5 +137,12 @@ class _ChecksAccessor(_BaseAccessor[_BaseReport], DirNamesMixin):
         ]
         if hasattr(self._parent, "_check_results_cache"):
             self._parent._check_results_cache.pop(code, None)
-        if hasattr(self._parent, "_applicable_codes"):
-            self._parent._applicable_codes.discard(code)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.summarize(fast_mode=True)!r}\n"
+            "Explore available methods with .help()."
+        )
+
+    def _repr_html_(self) -> str:
+        return self.summarize(fast_mode=True)._repr_html_()

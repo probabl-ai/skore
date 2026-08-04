@@ -1,19 +1,31 @@
 from __future__ import annotations
 
+import warnings
+from collections.abc import Sequence
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
+import numpy as np
 import pandas as pd
-import seaborn as sns
 from matplotlib.figure import Figure
+from sklearn.utils.validation import _is_arraylike
 
-from skore._sklearn._plot.base import BOXPLOT_STYLE, DisplayMixin
+from skore._sklearn._plot.base import DisplayMixin
+from skore._sklearn.metrics import Metric
 from skore._sklearn.types import (
     Aggregate,
     DataSource,
     PositiveLabel,
     ReportType,
 )
-from skore._utils._index import flatten_multi_index
+from skore._utils._index import flatten_multi_index, squeeze_single_column
+
+MetricIndexKey = Literal["metric", "label", "output", "average"]
+MetricColumnKey = Literal["estimator", "data_source", "split"]
+
+METRIC_INDEX_KEYS: tuple[MetricIndexKey, ...] = ("metric", "label", "output", "average")
+METRIC_DIMENSION_KEYS = METRIC_INDEX_KEYS[1:]
+PIVOT_VALUE_COLUMN = "score"
+PIVOT_META_COLUMN = "greater_is_better"
 
 
 class MetricsSummaryRow(TypedDict):
@@ -21,9 +33,12 @@ class MetricsSummaryRow(TypedDict):
 
     Parameters
     ----------
-    metric_verbose_name : str
+    name : str
+        Technical metric name (e.g. ``"accuracy"``); matches the key under which
+        the metric is registered in :attr:`EstimatorReport._metric_registry`.
+    verbose_name : str
         Human-readable metric name shown in the display.
-    estimator_name : str
+    estimator : str
         Name shown in the display.
     data_source : {"train", "test"}
         Dataset split used to compute the metric.
@@ -41,9 +56,9 @@ class MetricsSummaryRow(TypedDict):
         Cross-validation split index.
     """
 
-    metric_name: str
-    metric_verbose_name: str
-    estimator_name: str
+    name: str
+    verbose_name: str
+    estimator: str
     data_source: DataSource
     greater_is_better: bool | None
     score: Any
@@ -58,21 +73,26 @@ class MetricsSummaryDisplay(DisplayMixin):
 
     Parameters
     ----------
-    rows : list of MetricsSummaryRow
-        The rows to display.
+    summary : pandas.DataFrame
+        Long-format dataframe storing one row per metric observation, with the
+        metric scores and their metadata (e.g. ``name``, ``verbose_name``,
+        ``estimator``, ``data_source``, ``label``, ``output``, ``average``,
+        ``split``, ``score``).
 
     report_type : {"estimator", "comparison-estimator", "cross-validation", \
             "comparison-cross-validation"}
         The type of report.
 
+    errors : list of tuple of (Metric, Exception)
+        Metric failures encountered while building the summary.
+
     Attributes
     ----------
-    rows : list of MetricsSummaryRow
-        Metric scores and metadata for each row of the summary.
+    summary : pandas.DataFrame
+        The long-format dataframe storing the metric scores and metadata.
+
     report_type : ReportType
         The type of report.
-    data : pandas.DataFrame
-        Rows as a DataFrame (read-only property).
 
     See Also
     --------
@@ -81,51 +101,55 @@ class MetricsSummaryDisplay(DisplayMixin):
     PrecisionRecallCurveDisplay : Plot precision-recall curves.
     ConfusionMatrixDisplay : Display the confusion matrix.
     PredictionErrorDisplay : Plot regression prediction error.
-
-    Notes
-    -----
-    For cross-validation and comparison reports, :meth:`frame` can aggregate
-    scores across splits or estimators using the ``aggregate`` parameter.
     """
-
-    _default_barplot_kwargs: dict[str, Any] = {
-        "aspect": 2,
-        "height": 6,
-        "palette": "tab10",
-    }
-    _default_stripplot_kwargs: dict[str, Any] = {
-        "alpha": 0.5,
-        "aspect": 2,
-        "height": 6,
-        "palette": "tab10",
-    }
-    _default_boxplot_kwargs: dict[str, Any] = {
-        "whis": 1e10,
-        **BOXPLOT_STYLE,
-    }
 
     def __init__(
         self,
-        rows: list[MetricsSummaryRow],
+        summary: pd.DataFrame,
         report_type: ReportType,
+        errors: list[tuple[Metric, Exception]],
     ):
-        self.rows = rows
+        self.summary = summary
         self.report_type = report_type
+        # Remove duplicates while preserving order
+        # Use repr because Metrics and Exceptions are not comparable
+        self.errors = list({repr(x): x for x in errors}.values())
 
-    @property
-    def data(self):
-        """Return rows as a DataFrame, preserving nullable dtypes."""
-        data = pd.DataFrame(self.rows)
+    @classmethod
+    def _compute_data_for_display(
+        cls,
+        rows: list[MetricsSummaryRow],
+        *,
+        report_type: ReportType,
+        errors: list[tuple[Metric, Exception]],
+    ) -> MetricsSummaryDisplay:
+        """Build a display from metric rows, stored as a long-format DataFrame."""
+        summary = pd.DataFrame(rows)
 
-        if any(isinstance(r["label"], bool) for r in self.rows):
-            data["label"] = data["label"].astype(pd.BooleanDtype())
-        elif any(isinstance(r["label"], int) for r in self.rows):
-            data["label"] = data["label"].astype(pd.Int64Dtype())
+        if any(isinstance(r["label"], bool) for r in rows):
+            summary["label"] = summary["label"].astype(pd.BooleanDtype())
+        elif any(isinstance(r["label"], int) for r in rows):
+            summary["label"] = summary["label"].astype(pd.Int64Dtype())
 
-        if any(isinstance(r["output"], int) for r in self.rows):
-            data["output"] = data["output"].astype(pd.Int64Dtype())
+        if any(isinstance(r["output"], int) for r in rows):
+            summary["output"] = summary["output"].astype(pd.Int64Dtype())
 
-        return data
+        if "average" in summary.columns:
+            # ``multioutput`` can be an array-like value (e.g. raw_values); store
+            # a stable string representation for grouping and display.
+            summary["average"] = (
+                summary["average"]
+                .map(
+                    lambda value: (
+                        str(np.asarray(value).tolist())
+                        if _is_arraylike(value)
+                        else value
+                    )
+                )
+                .astype("string")
+            )
+
+        return cls(summary, report_type=report_type, errors=errors)
 
     @staticmethod
     def _concatenate(
@@ -134,626 +158,410 @@ class MetricsSummaryDisplay(DisplayMixin):
         report_type: ReportType,
         extra_rows_data: list[dict[str, Any]],
     ) -> MetricsSummaryDisplay:
-        rows = []
-        for display, extra_data in zip(child_displays, extra_rows_data, strict=True):
-            rows.extend(
-                [cast(MetricsSummaryRow, row | extra_data) for row in display.rows]
-            )
+        summary = pd.concat(
+            [
+                display.summary.assign(**extra_data)
+                for display, extra_data in zip(
+                    child_displays, extra_rows_data, strict=True
+                )
+            ],
+            ignore_index=True,
+        )
+        errors = [error for display in child_displays for error in display.errors]
+        return MetricsSummaryDisplay(summary, report_type=report_type, errors=errors)
 
-        return MetricsSummaryDisplay(rows, report_type=report_type)
-
-    @staticmethod
-    def _flatten_index(df: pd.DataFrame) -> pd.DataFrame:
-        df = df.copy()
-
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = flatten_multi_index(df.columns)
-        if isinstance(df.index, pd.MultiIndex):
-            df.index = flatten_multi_index(df.index)
-        if isinstance(df.index, pd.Index):
-            df.index = df.index.str.replace(r"\((.*)\)$", r"\1", regex=True)
-
-        return df
-
-    @staticmethod
-    def _frame_estimator(
-        data: pd.DataFrame,
-        *,
-        favorability: bool = False,
-        flat_index: bool = False,
+    def _pivot_estimator(
+        self,
+        df: pd.DataFrame,
+        index_cols: Sequence[str],
+        column_cols: Sequence[str],
     ) -> pd.DataFrame:
-        """Process estimator report data into a formatted dataframe."""
-        df = data.copy()
-        df = df.dropna(axis="columns", how="all")
-        df = df.drop(columns="metric_name", errors="ignore")
+        """Pivot a single-estimator table."""
+        estimator = self.summary["estimator"].iloc[0]
+        if not column_cols:
+            # single data source and no column to spread across
+            table = df.set_index(index_cols)[[PIVOT_VALUE_COLUMN]]
+            table.columns = [estimator]
+        else:
+            table = df.pivot_table(
+                index=index_cols,
+                columns=column_cols,
+                values=PIVOT_VALUE_COLUMN,
+                aggfunc="first",
+                sort=False,
+            )
+            table = table[["train", "test"]]
+            table.columns = [f"{estimator} ({col})" for col in table.columns]
+        return table
 
-        for col in df.columns.intersection(["label", "output", "average"]):
-            df[col] = df[col].astype("string").fillna("")
+    def _pivot_cross_validation_single_source(
+        self,
+        df: pd.DataFrame,
+        index_cols: Sequence[str],
+        *,
+        aggregate: Aggregate | None,
+        estimator: str,
+    ) -> pd.DataFrame:
+        """Pivot one cross-validation source table."""
+        if aggregate is None:
+            table = df.pivot_table(
+                index=index_cols,
+                columns="split",
+                values=PIVOT_VALUE_COLUMN,
+                aggfunc="first",
+                sort=False,
+            )
+            table.columns = pd.MultiIndex.from_tuples(
+                [(estimator, f"Split #{col}") for col in table.columns]
+            )
+            table.columns.names = ["estimator", "split"]
+        else:
+            agg_list = [aggregate] if isinstance(aggregate, str) else list(aggregate)
+            table = df.groupby(index_cols, dropna=False, sort=False)[
+                PIVOT_VALUE_COLUMN
+            ].agg(agg_list)
+            table.columns = pd.MultiIndex.from_tuples(
+                [(estimator, str(col)) for col in table.columns]
+            )
+            table.columns.names = ["estimator", "aggregate"]
+        return table
 
-        estimator_name = df.pop("estimator_name").iloc[0]
-        index = df.columns.intersection(
-            ["metric_verbose_name", "label", "output", "average"]
-        ).to_list()
-        df = df.set_index(index)
+    def _pivot_cross_validation(
+        self,
+        df: pd.DataFrame,
+        index_cols: Sequence[str],
+        *,
+        aggregate: Aggregate | None,
+    ) -> pd.DataFrame:
+        """Pivot cross-validation metrics."""
+        estimator = self.summary["estimator"].iloc[0]
+        if "data_source" in df.columns:
+            frames = []
+            for data_source in ("train", "test"):
+                source = df[df["data_source"] == data_source]
+                source_frame = self._pivot_cross_validation_single_source(
+                    source,
+                    index_cols,
+                    aggregate=aggregate,
+                    estimator=estimator,
+                )
+                source_frame.columns = pd.MultiIndex.from_tuples(
+                    [
+                        (f"{col[0]} ({data_source})",) + col[1:]
+                        for col in source_frame.columns
+                    ]
+                )
+                frames.append(source_frame)
+            return pd.concat(frames, axis="columns")
+        return self._pivot_cross_validation_single_source(
+            df,
+            index_cols,
+            aggregate=aggregate,
+            estimator=estimator,
+        )
 
-        # Rename columns as well as index names
-        new_columns = {
-            "metric_verbose_name": "Metric",
-            "label": "Label",
-            "output": "Output",
-            "average": "Average",
-            "score": estimator_name,
-        }
-        df = df.rename(columns=new_columns)
+    def _pivot_comparison_estimator(
+        self,
+        df: pd.DataFrame,
+        index_cols: Sequence[str],
+        column_cols: Sequence[str],
+    ) -> pd.DataFrame:
+        """Pivot comparison-estimator metrics."""
+        table = df.pivot_table(
+            index=index_cols,
+            columns=column_cols,
+            values=PIVOT_VALUE_COLUMN,
+            aggfunc="first",
+            sort=False,
+        )
+        if column_cols == ["estimator", "data_source"]:
+            estimators = list(dict.fromkeys(df["estimator"]))
+            table = table[
+                [
+                    (estimator, data_source)
+                    for estimator in estimators
+                    for data_source in ("train", "test")
+                ]
+            ]
+            table.columns = [
+                f"{estimator} ({data_source})"
+                for estimator, data_source in table.columns
+            ]
+        else:
+            table.columns.name = "estimator"
+        return table
 
+    def _pivot_comparison_cross_validation(
+        self,
+        df: pd.DataFrame,
+        index_cols: Sequence[str],
+        *,
+        aggregate: Aggregate | None,
+    ) -> pd.DataFrame:
+        """Pivot comparison-cross-validation metrics."""
+        if aggregate is None:
+            table = df.pivot_table(
+                index=index_cols,
+                columns=["estimator", "split"],
+                values=PIVOT_VALUE_COLUMN,
+                aggfunc="first",
+                sort=False,
+            )
+            table.columns = table.columns.set_levels(
+                [f"Split #{level}" for level in table.columns.levels[1]],
+                level=1,
+            )
+            table.columns.names = ["estimator", "split"]
+        else:
+            agg_list = [aggregate] if isinstance(aggregate, str) else list(aggregate)
+            table = df.pivot_table(
+                index=index_cols,
+                columns=["estimator"],
+                values=PIVOT_VALUE_COLUMN,
+                aggfunc=agg_list,
+                sort=False,
+            )
+            estimators = list(dict.fromkeys(df["estimator"]))
+            table = table[
+                [(str(agg), estimator) for agg in agg_list for estimator in estimators]
+            ]
+            table.columns.names = [None, "estimator"]
+        return table
+
+    def _finalize(
+        self,
+        table: pd.DataFrame,
+        df: pd.DataFrame,
+        index_cols: Sequence[str],
+        *,
+        favorability: bool,
+        verbose_name: bool,
+        flat_index: bool,
+    ) -> pd.DataFrame | pd.Series:
+        """Apply favorability, flat_index, and label-level cleanup to the table."""
         if favorability:
-            df["Favorability"] = (
-                df["greater_is_better"]
+            favorability_col = (
+                df.groupby(index_cols, dropna=False)[PIVOT_META_COLUMN]
+                .first()
                 .map({True: "(↗︎)", False: "(↘︎)"})
                 .fillna("")
                 .astype("string")
             )
-        df = df.drop(columns="greater_is_better")
-
-        df.index = df.index.set_names(
-            [new_columns.get(name, name) for name in df.index.names]
-        )
-
-        if df["data_source"].nunique() == 1:
-            df = df.drop(columns="data_source")
-        else:
-            # Show metrics one column per data source
-            df_pivoted = df.reset_index().pivot_table(
-                index=df.index.names,
-                columns="data_source",
-                values=estimator_name,
-                sort=False,
-            )
-            df_pivoted.columns = [
-                f"{estimator_name} ({col})" for col in df_pivoted.columns
-            ]
-
-            if favorability:
-                df_pivoted["Favorability"] = df.loc[
-                    df["data_source"] == "test", "Favorability"
-                ]
-
-            df = df_pivoted.copy()
+            favorability_col.index = favorability_col.index.set_names(table.index.names)
+            table["favorability"] = favorability_col
 
         if flat_index:
-            df = MetricsSummaryDisplay._flatten_index(df)
-
-        return df
-
-    @staticmethod
-    def _frame_cross_validation(
-        data: pd.DataFrame,
-        *,
-        aggregate: Aggregate | None = ("mean", "std"),
-        favorability: bool = False,
-        flat_index: bool = False,
-    ) -> pd.DataFrame:
-        """Process cross-validation report data into a formatted dataframe."""
-        df = data.copy()
-
-        if df["data_source"].nunique() > 1:
-            grouped = list(df.groupby("data_source", sort=False))
-            frames = []
-            favorability_col = None
-
-            for data_source, source_df in grouped:
-                source_frame = MetricsSummaryDisplay._frame_cross_validation(
-                    source_df,
-                    aggregate=aggregate,
-                    favorability=True,
-                    flat_index=False,
-                )
-                if favorability_col is None and "Favorability" in source_frame.columns:
-                    favorability_col = source_frame.pop("Favorability")
-                else:
-                    source_frame = source_frame.drop(
-                        columns="Favorability", errors="ignore"
-                    )
-                if isinstance(source_frame.columns, pd.MultiIndex):
-                    source_frame.columns = pd.MultiIndex.from_tuples(
+            if isinstance(table.columns, pd.MultiIndex):
+                table.columns = flatten_multi_index(table.columns, lowercase=True)
+            if isinstance(table.index, pd.MultiIndex):
+                table.index = flatten_multi_index(table.index, lowercase=True)
+        elif isinstance(table.index, pd.MultiIndex):
+            levels = list(table.index.levels)
+            for level_index, name in enumerate(table.index.names):
+                if name == "label":
+                    levels[level_index] = pd.Index(
                         [
-                            (f"{col[0]} ({data_source})",) + col[1:]
-                            for col in source_frame.columns
-                        ]
+                            "" if value == "" else str(value)
+                            for value in levels[level_index]
+                        ],
+                        dtype="string",
+                        name=name,
                     )
-                else:
-                    source_frame.columns = [
-                        f"{col} ({data_source})" for col in source_frame.columns
-                    ]
-                frames.append(source_frame)
+            table.index = table.index.set_levels(levels)
 
-            df = pd.concat(frames, axis="columns")
-
-            if favorability_col is not None and favorability:
-                df["Favorability"] = favorability_col
-
-            if flat_index:
-                df = MetricsSummaryDisplay._flatten_index(df)
-
-            return df
-
-        estimator_name = df["estimator_name"].iloc[0]
-
-        df = MetricsSummaryDisplay._frame_estimator(
-            df, favorability=True, flat_index=False
-        )
-        favorability_col = df.pop("Favorability")
-
-        if isinstance(aggregate, (list, tuple)):
-            aggregate = list(aggregate)
-        elif aggregate is not None:
-            aggregate = cast(Literal["mean", "std"], aggregate)
-            aggregate = [aggregate]
-
-        df = df.reset_index().pivot_table(
-            index=df.index.names,
-            columns="split" if aggregate is None else None,
-            values=estimator_name,
-            aggfunc="first" if aggregate is None else aggregate,
-            sort=False,
-        )
-
-        if aggregate is None:
-            df.columns = pd.MultiIndex.from_product(
-                [[estimator_name], [f"Split #{i}" for i in df.columns]]
-            )
-        else:
-            df.columns = df.columns.swaplevel(0, 1)
-
-        if favorability:
-            df["Favorability"] = favorability_col[~favorability_col.index.duplicated()]
-
-        if flat_index:
-            df = MetricsSummaryDisplay._flatten_index(df)
-
-        return df
+        if verbose_name:
+            table.index.names = [
+                None if name is None else name.replace("_", " ").title()
+                for name in table.index.names
+            ]
+            table.columns.names = [
+                None if name is None else name.replace("_", " ").title()
+                for name in table.columns.names
+            ]
+            table = table.rename(columns={"favorability": "Favorability"})
+        return squeeze_single_column(table, lowercase=not verbose_name)
 
     def frame(
         self,
         *,
-        aggregate: Aggregate | None = ("mean", "std"),
         favorability: bool = False,
-        flat_index: bool = False,
-    ):
-        """Return the summarize as a dataframe.
+        verbose_name: bool = False,
+        flat_index: bool = True,
+        aggregate: Aggregate | None = ("mean", "std"),
+    ) -> pd.DataFrame | pd.Series:
+        """Return the metrics summary as a table.
 
         Parameters
         ----------
-        aggregate : {"mean", "std"}, list of such str or None, default=("mean", "std")
-            Only used when `report_type` includes `"cross-validation"`.
-            Functions to aggregate the scores across the cross-validation splits.
-            None will return the scores for each split.
-
         favorability : bool, default=False
-            Whether or not to add an indicator of the favorability of the metric as
-            an extra column in the returned DataFrame.
+            Whether to add a column indicating whether higher ``(↗︎)`` or lower
+            ``(↘︎)`` values are better for each metric.
 
-        flat_index : bool, default=False
-            Whether to return a flat index or a multi-index.
+        verbose_name : bool, default=False
+            Whether to use the human-readable metric names instead of the
+            technical names (e.g. ``"Accuracy"`` instead of ``"accuracy"``).
+            Incompatible with ``flat_index=True``.
+
+        flat_index : bool, default=True
+            Whether to flatten MultiIndex row/column labels. Incompatible with
+            ``verbose_name=True``.
+
+        aggregate : {"mean", "std"}, list of such str or None, \
+                default=("mean", "std")
+            Only used for cross-validation reports. Functions to aggregate the
+            scores across the cross-validation splits. ``None`` returns the
+            scores for each split.
 
         Returns
         -------
-        frame : pandas.DataFrame
-            The report metrics as a dataframe.
+        pandas.DataFrame or pandas.Series
+            The metrics summary pivoted into a table. For layouts with a
+            single value column, a :class:`pandas.Series` is returned.
+
+        Examples
+        --------
+        >>> from sklearn.datasets import load_breast_cancer
+        >>> from sklearn.linear_model import LogisticRegression
+        >>> from skore import evaluate
+        >>> X, y = load_breast_cancer(return_X_y=True)
+        >>> estimator = LogisticRegression(max_iter=10_000)
+        >>> report = evaluate(estimator, X, y)
+        >>> metrics = report.metrics.summarize().frame()
+        >>> metrics.loc["accuracy"]  # Series for single-estimator layout
         """
+        if self.errors:
+            warnings.warn(
+                "\n".join(
+                    f"Metric {metric.name!r} has failed: {error!r}"
+                    for metric, error in self.errors
+                ),
+                stacklevel=2,
+            )
+
+        if verbose_name and flat_index:
+            raise ValueError(
+                "verbose_name=True is incompatible with flat_index=True. "
+                "Use flat_index=False to preserve human-readable metric names, "
+                "or set verbose_name=False."
+            )
+
+        summary = self.summary
+        metric_col = "verbose_name" if verbose_name else "name"
+
+        dimension_cols = [
+            col for col in METRIC_DIMENSION_KEYS if summary[col].notna().any()
+        ]
+        has_both_sources = summary["data_source"].nunique() > 1
+
+        columns: list[str] = []
+        if "comparison" in self.report_type:
+            columns.append("estimator")
+        if "cross-validation" in self.report_type:
+            columns.append("split")
+        if has_both_sources:
+            columns.append("data_source")
+        columns.append(metric_col)
+        columns.extend(dimension_cols)
+        columns.extend(["score", "greater_is_better"])
+
+        prepared = (
+            summary[columns]
+            .copy()
+            .rename(columns={metric_col: "metric"})
+            .reset_index(drop=True)
+        )
+        index_cols = ["metric", *dimension_cols]
+        column_cols: list[MetricColumnKey]
         if self.report_type == "estimator":
-            return MetricsSummaryDisplay._frame_estimator(
-                self.data,
-                favorability=favorability,
-                flat_index=flat_index,
+            column_cols = ["data_source"] if has_both_sources else []
+        elif self.report_type == "comparison-estimator":
+            column_cols = (
+                ["estimator", "data_source"] if has_both_sources else ["estimator"]
             )
         elif self.report_type == "cross-validation":
-            return MetricsSummaryDisplay._frame_cross_validation(
-                self.data,
+            column_cols = [] if aggregate is not None else ["split"]
+        else:  # comparison-cross-validation
+            column_cols = (
+                ["estimator"] if aggregate is not None else ["estimator", "split"]
+            )
+
+        # Pivoting on a dimension column that contains NaN keys drops those rows, so
+        # replace missing per-class/output/averaging values with an empty-string
+        # sentinel (after resolving index keys, which relies on the NaN values).
+        for col in METRIC_DIMENSION_KEYS:
+            if col in prepared.columns and prepared[col].isna().any():
+                prepared[col] = prepared[col].astype(object)
+                prepared.loc[prepared[col].isna(), col] = ""
+
+        if self.report_type == "estimator":
+            table = self._pivot_estimator(prepared, index_cols, column_cols)
+        elif self.report_type == "cross-validation":
+            table = self._pivot_cross_validation(
+                prepared,
+                index_cols,
                 aggregate=aggregate,
-                favorability=favorability,
-                flat_index=flat_index,
             )
-
         elif self.report_type == "comparison-estimator":
-            df = self.data.copy()
-
-            df = pd.concat(
-                [
-                    MetricsSummaryDisplay._frame_estimator(
-                        est, favorability=True, flat_index=False
-                    )
-                    for _, est in df.groupby("estimator_name", sort=False)
-                ],
-                axis="columns",
+            table = self._pivot_comparison_estimator(prepared, index_cols, column_cols)
+        else:
+            table = self._pivot_comparison_cross_validation(
+                prepared,
+                index_cols,
+                aggregate=aggregate,
             )
 
-            # Extract favorability columns and use first non-NaN value for each row
-            favorability_col = df.pop("Favorability").bfill(axis=1).iloc[:, 0]
-
-            df.columns.name = "Estimator"
-
-            if favorability:
-                df["Favorability"] = favorability_col
-
-            if flat_index:
-                df = MetricsSummaryDisplay._flatten_index(df)
-
-            return df
-
-        else:  # self.report_type == "comparison-cross-validation"
-            df = self.data.copy()
-
-            df = pd.concat(
-                [
-                    MetricsSummaryDisplay._frame_cross_validation(
-                        est, aggregate=aggregate, favorability=True, flat_index=False
-                    )
-                    for _, est in df.groupby("estimator_name", sort=False)
-                ],
-                axis="columns",
-            )
-
-            # Sort columns to avoid lexsort warning when accessing specific columns
-            df = df.sort_index(axis=1)
-            favorability_col = df.pop(("Favorability", "")).bfill(axis=1).iloc[:, 0]
-
-            if aggregate is None:
-                df.columns.names = ["Estimator", "Split"]
-            else:
-                df.columns = df.columns.swaplevel(0, 1)
-                df = df.sort_index(axis=1, level=[0, 1])
-                df.columns.names = [None, "Estimator"]
-
-            if favorability:
-                df[("Favorability", "")] = favorability_col
-
-            if flat_index:
-                df = MetricsSummaryDisplay._flatten_index(df)
-
-            return df
+        return self._finalize(
+            table,
+            prepared,
+            index_cols,
+            favorability=favorability,
+            verbose_name=verbose_name,
+            flat_index=flat_index,
+        )
 
     def _repr_html_(self) -> str:
-        return (
-            f"{self.frame()._repr_html_()}"
-            '<p role="note">Use <code>.frame()</code> to control the format'
-            " of the output.</p>"
+        aggregate = cast(Aggregate, ("mean", "std"))
+        frame = self.frame(
+            aggregate=aggregate,
+            verbose_name=True,
+            flat_index=False,
         )
+        html = (
+            frame.to_frame()._repr_html_()
+            if isinstance(frame, pd.Series)
+            else frame._repr_html_()
+        )
+        lines = [
+            html,
+            (
+                '<p role="note">Use <code>.frame()</code> to control the format'
+                " of the output.</p>"
+            ),
+        ]
+        lines.extend(
+            f'<p role="note">Metric {metric.name!r} has failed: {error!r}</p>'
+            for metric, error in self.errors
+        )
+        return "".join(lines)
 
     def __repr__(self) -> str:
-        return f"{self.frame()!r}\nUse .frame() to control the format of the output."
-
-    def _repr_mimebundle_(self, **kwargs):
-        return {"text/plain": repr(self), "text/html": self._repr_html_()}
+        aggregate = cast(Aggregate, ("mean", "std"))
+        frame = self.frame(
+            aggregate=aggregate,
+            verbose_name=False,
+            flat_index=True,
+        )
+        lines = [
+            f"{frame!r}",
+            "Use .frame() to control the format of the output.",
+        ]
+        lines.extend(
+            f"Metric {metric.name!r} has failed: {error!r}"
+            for metric, error in self.errors
+        )
+        return "\n".join(lines)
 
     @DisplayMixin.style_plot
-    def plot(
-        self,
-        *,
-        metric: str,
-        subplot_by: Literal["auto", "estimator", "label", "output", "data_source"]
-        | None = "auto",
-    ) -> Figure:
-        """Plot a single metric.
-
-        Parameters
-        ----------
-        metric : str
-            The metric to plot, using the same registry key as
-            :meth:`~skore.EstimatorReport.metrics.summarize` (e.g. ``"precision"``).
-
-        subplot_by : {"auto", "estimator", "label", "output", "data_source"} \
-                or None, default="auto"
-            The column to use for subplotting. If ``"auto"``, subplotting is
-            performed only when comparing estimators in a multiclass classification
-            or multi-output regression problem.
-
-        Returns
-        -------
-        matplotlib.figure.Figure
-            Figure containing the metrics plot.
-        """
-        return self._plot(metric=metric, subplot_by=subplot_by)
-
-    def _plot_matplotlib(
-        self,
-        *,
-        metric: str,
-        subplot_by: Literal["auto", "estimator", "label", "output", "data_source"]
-        | None = "auto",
-    ) -> Figure:
-        """Dispatch the plotting function for matplotlib backend."""
-        frame = self._prepare_plot_frame(metric)
-
-        barplot_kwargs = self._default_barplot_kwargs.copy()
-        boxplot_kwargs = self._default_boxplot_kwargs.copy()
-        stripplot_kwargs = self._default_stripplot_kwargs.copy()
-
-        if "comparison" in self.report_type:
-            return self._plot_comparison(
-                frame=frame,
-                report_type=self.report_type,
-                subplot_by=subplot_by,
-                barplot_kwargs=barplot_kwargs,
-                boxplot_kwargs=boxplot_kwargs,
-                stripplot_kwargs=stripplot_kwargs,
-            )
-
-        estimator_name = self.data["estimator_name"].iloc[0]
-        return self._plot_single_estimator(
-            frame=frame,
-            estimator_name=estimator_name,
-            report_type=self.report_type,
-            subplot_by=subplot_by,
-            barplot_kwargs=barplot_kwargs,
-            boxplot_kwargs=boxplot_kwargs,
-            stripplot_kwargs=stripplot_kwargs,
-        )
-
-    def _prepare_plot_frame(self, metric: str) -> pd.DataFrame:
-        """Filter and reshape raw rows into a long frame for plotting."""
-        frame = self.data.copy()
-        available = set(frame["metric_name"])
-        if metric not in available:
-            raise ValueError(
-                f"Unknown metric: {metric!r}. Available metrics: {sorted(available)!r}."
-            )
-
-        frame = frame[frame["metric_name"] == metric]
-        frame = frame.rename(columns={"estimator_name": "estimator"})
-
-        for col in ["label", "output", "average"]:
-            if col in frame.columns and frame[col].isna().all():
-                frame = frame.drop(columns=col)
-
-        if "data_source" in frame.columns and frame["data_source"].nunique() == 1:
-            frame = frame.drop(columns="data_source")
-
-        if (
-            "estimator" in frame.columns
-            and frame["estimator"].nunique() == 1
-            and "comparison" not in self.report_type
-        ):
-            frame = frame.drop(columns="estimator")
-
-        if self.report_type in ("estimator", "comparison-estimator") and "split" in (
-            frame.columns
-        ):
-            frame = frame.drop(columns="split")
-
-        return frame
-
-    @staticmethod
-    def _get_columns_to_groupby(*, frame: pd.DataFrame) -> list[str]:
-        """Get the available columns from which to group by."""
-        columns_to_groupby = list[str]()
-        for column in ("estimator", "data_source", "label", "output"):
-            if column in frame.columns:
-                columns_to_groupby.append(column)
-        return columns_to_groupby
-
-    @staticmethod
-    def _decorate_matplotlib_axis(
-        *,
-        ax: Any,
-        xlabel: str,
-        ylabel: str = "",
-    ) -> None:
-        ax.set(xlabel=xlabel, ylabel=ylabel)
-        ax.axhspan(-0.5, 0.5, color="lightgray", alpha=0.4, zorder=0)
-
-    def _categorical_plot(
-        self,
-        *,
-        frame: pd.DataFrame,
-        report_type: ReportType,
-        hue: str | None = None,
-        col: str | None = None,
-        barplot_kwargs: dict[str, Any] | None = None,
-        boxplot_kwargs: dict[str, Any] | None = None,
-        stripplot_kwargs: dict[str, Any] | None = None,
-    ) -> Figure:
-        if "estimator" in report_type:
-            facet = sns.catplot(
-                data=frame,
-                x="score",
-                y="metric_verbose_name",
-                hue=hue,
-                col=col,
-                kind="bar",
-                **(barplot_kwargs or {}),
-            )
-        else:
-            facet = sns.catplot(
-                data=frame,
-                x="score",
-                y="metric_verbose_name",
-                hue=hue,
-                col=col,
-                kind="strip",
-                dodge=True,
-                **(stripplot_kwargs or {}),
-            ).map_dataframe(
-                sns.boxplot,
-                x="score",
-                y="metric_verbose_name",
-                hue=hue,
-                palette="tab10" if hue is not None else None,
-                dodge=True,
-                **(boxplot_kwargs or {}),
-            )
-
-        add_background_metric = hue is not None
-        figure = facet.figure
-        ax_grid = facet.axes.squeeze()
-        xlabel = frame["metric_verbose_name"].iloc[0]
-        for ax in ax_grid.flatten():
-            self._decorate_matplotlib_axis(ax=ax, xlabel=xlabel)
-            if not add_background_metric:
-                for patch in ax.patches:
-                    patch.set_facecolor("lightgray")
-                    patch.set_alpha(0.4)
-
-        return figure
-
-    def _plot_single_estimator(
-        self,
-        *,
-        frame: pd.DataFrame,
-        estimator_name: str,
-        report_type: ReportType,
-        subplot_by: Literal["auto", "estimator", "label", "output", "data_source"]
-        | None,
-        barplot_kwargs: dict[str, Any],
-        boxplot_kwargs: dict[str, Any],
-        stripplot_kwargs: dict[str, Any],
-    ) -> Figure:
-        """Plot metrics for an `EstimatorReport` or a `CrossValidationReport`."""
-        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-        if subplot_by == "auto":
-            subplot_by = None
-
-        if subplot_by is not None and not len(columns_to_groupby):
-            raise ValueError(
-                "No columns to group by. `subplot_by` is expected to be None or 'auto'."
-            )
-        if subplot_by is not None and subplot_by not in columns_to_groupby:
-            raise ValueError(
-                f"Column {subplot_by} not found in the frame. It should be one "
-                f"of {', '.join(columns_to_groupby + ['auto', 'None'])}."
-            )
-
-        if subplot_by is None:
-            hue = None if not len(columns_to_groupby) else columns_to_groupby[0]
-            if hue is None:
-                barplot_kwargs.pop("palette", None)
-                stripplot_kwargs.pop("palette", None)
-            col = None
-        else:
-            hue, col = None, subplot_by
-            barplot_kwargs.pop("palette", None)
-            stripplot_kwargs.pop("palette", None)
-
-        figure = self._categorical_plot(
-            frame=frame,
-            report_type=report_type,
-            hue=hue,
-            col=col,
-            barplot_kwargs=barplot_kwargs,
-            boxplot_kwargs=boxplot_kwargs,
-            stripplot_kwargs=stripplot_kwargs,
-        )
-
-        title = f"Metrics of {estimator_name}"
-        if subplot_by is not None:
-            title += f" by {subplot_by}"
-        figure.suptitle(title)
-        return figure
-
-    def _plot_comparison(
-        self,
-        *,
-        frame: pd.DataFrame,
-        report_type: ReportType,
-        subplot_by: Literal["auto", "estimator", "label", "output", "data_source"]
-        | None,
-        barplot_kwargs: dict[str, Any],
-        boxplot_kwargs: dict[str, Any],
-        stripplot_kwargs: dict[str, Any],
-    ) -> Figure:
-        """Plot metrics for a `ComparisonReport`."""
-        hue: str | None = None
-        columns_to_groupby = self._get_columns_to_groupby(frame=frame)
-
-        if subplot_by not in ("auto", None) and subplot_by not in columns_to_groupby:
-            additional_subplot_by = ["auto"]
-            if "label" not in frame.columns and "output" not in frame.columns:
-                additional_subplot_by.append("None")
-
-            raise ValueError(
-                f"Column {subplot_by} not found in the frame. It should be one "
-                f"of {', '.join(columns_to_groupby + additional_subplot_by)}."
-            )
-        if subplot_by is None:
-            if "label" in frame.columns:
-                n_unique = frame["label"].nunique()
-            elif "output" in frame.columns:
-                n_unique = frame["output"].nunique()
-            else:
-                n_unique = 1
-            if n_unique > 1:
-                raise ValueError(
-                    "There are multiple labels or outputs and `subplot_by` is `None`. "
-                    "There is too much information to display on a single plot. "
-                    "Please provide a column to group by using `subplot_by`."
-                )
-
-        if (frame.columns.isin(["label", "output"]).any() and subplot_by == "auto") or (
-            subplot_by == "auto"
-            and "estimator" in frame.columns
-            and frame["estimator"].nunique() > 1
-            and ("label" in frame.columns or "output" in frame.columns)
-        ):
-            subplot_by = "estimator"
-        elif subplot_by == "auto":
-            subplot_by = None
-
-        if subplot_by is None:
-            hue, col = columns_to_groupby[0], None
-        else:
-            hue_groupby = [
-                column for column in columns_to_groupby if column != subplot_by
-            ]
-            hue = hue_groupby[0] if len(hue_groupby) else None
-            col = subplot_by
-
-            if hue is None:
-                barplot_kwargs.pop("palette", None)
-                stripplot_kwargs.pop("palette", None)
-
-        figure = self._categorical_plot(
-            frame=frame,
-            report_type=report_type,
-            hue=hue,
-            col=col,
-            barplot_kwargs={"sharey": True} | barplot_kwargs,
-            boxplot_kwargs=boxplot_kwargs,
-            stripplot_kwargs={"sharey": True} | stripplot_kwargs,
-        )
-
-        title = "Metrics"
-        if subplot_by is not None:
-            title += f" by {subplot_by}"
-        figure.suptitle(title)
-        return figure
-
-    def set_style(  # type: ignore[override]
-        self,
-        *,
-        policy: Literal["override", "update"] = "update",
-        barplot_kwargs: dict[str, Any] | None = None,
-        boxplot_kwargs: dict[str, Any] | None = None,
-        stripplot_kwargs: dict[str, Any] | None = None,
-    ):
-        """Set the style parameters for the display.
-
-        Parameters
-        ----------
-        policy : {"override", "update"}, default="update"
-            Policy to use when setting the style parameters.
-
-        barplot_kwargs : dict, default=None
-            Keyword arguments passed to :func:`seaborn.barplot`.
-
-        boxplot_kwargs : dict, default=None
-            Keyword arguments passed to :func:`seaborn.boxplot`.
-
-        stripplot_kwargs : dict, default=None
-            Keyword arguments passed to :func:`seaborn.stripplot`.
-        """
-        return super().set_style(
-            policy=policy,
-            barplot_kwargs=barplot_kwargs or {},
-            boxplot_kwargs=boxplot_kwargs or {},
-            stripplot_kwargs=stripplot_kwargs or {},
-        )
+    def plot(self) -> Figure:
+        """Plot the metrics summary (not implemented)."""
+        raise NotImplementedError()

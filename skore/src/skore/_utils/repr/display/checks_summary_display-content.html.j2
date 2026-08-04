@@ -1,0 +1,15 @@
+{% set show_header = show_header | default(true) %}
+{% set nested = nested | default(false) %}
+{% set fast_mode = fast_mode | default(false) %}
+{% if nested %}<div class="report-checks-nested">{% else %}<div class="container">{% endif %}
+{% if show_header %}
+    <header class="title">{{ header | e }}</header>
+{% endif %}
+{% include "display/_checks_summary_tabset.html.j2" %}
+<p class="report-hint-note" role="note">
+{% if fast_mode %}
+    <span class="report-hint-note-line">Fast mode is on: expensive checks are skipped unless already cached.</span>
+{% endif %}
+    <span class="report-hint-note-line">Mute a check by passing its code to <code>ignore</code>, e.g. <code>.checks.summarize(ignore=['SKD001'])</code>.</span>
+</p>
+</div>

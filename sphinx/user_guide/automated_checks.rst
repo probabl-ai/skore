@@ -40,17 +40,10 @@ can be skipped with `fast_mode=True`:
 
     report.checks.summarize(fast_mode=True)
 
-In fast mode, slow checks that are not yet in the cache are not run; cached
-slow results from a previous call are still surfaced. The HTML representation
-of a report uses fast mode so it never triggers an expensive computation.
-
-For cross-validation reports, checks are run per split and then aggregated
-at report level through :meth:`~skore.CrossValidationReport.checks.summarize`. An issue is
-reported only when it appears in a strict majority of evaluated splits.
-
 For comparison reports, :meth:`~skore.ComparisonReport.checks.summarize` builds a global
-summary from each component report in the comparison. Issues are grouped by
-component report and emitted as a single message.
+summary from each compared report. Results are grouped by check code; the HTML summary
+lists each check once with per-estimator sub-entries for issues, tips, not-applicable
+reasons, and fast-mode skips.
 
 
 .. _skd001-overfitting:
@@ -626,10 +619,10 @@ The check runs on plain estimators and :class:`~sklearn.pipeline.Pipeline`
 object.
 
 For every step whose class is in the recommendation table, `skore` lists the
-init params that differ from their scikit-learn default. Infrastructure params
-that do not affect the learned model (``random_state``, ``n_jobs``, ``verbose``,
-``warm_start``, ``class_weight``, ``copy`` / ``copy_X``, ``cache_size``) are
-ignored. When every remaining param of a step is still at its default, the
+initialization parameters that differ from their scikit-learn default.
+Infrastructure parameters that do not affect the learned model
+(e.g. ``random_state``, ``n_jobs``, ``verbose``, ...) are ignored. When every
+remaining parameter of a step is still at its default value, the
 check reports a tip suggesting the recommended tuning axes for that class.
 
 Why it matters

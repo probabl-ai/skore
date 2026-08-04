@@ -1,4 +1,6 @@
+import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import pytest
 from sklearn.linear_model import LogisticRegression
 
@@ -7,9 +9,37 @@ from skore._sklearn._plot.utils import (
     _adjust_fig_size,
     _downsample_thresholds_indices,
     _get_adjusted_fig_size,
+    _reorder_categoricals_by_appearance,
     _rotate_ticklabels,
     _validate_style_kwargs,
 )
+
+
+def test_reorder_categoricals_by_appearance():
+    """Categorical levels are reordered to their order of appearance.
+
+    Guards the fix for https://github.com/probabl-ai/skore/issues/2925: seaborn draws
+    categorical levels in category order, so the category order must match the order of
+    appearance used to build the legend. This is version-independent, unlike the
+    end-to-end rendering which only desyncs on pandas >= 3.
+    """
+    df = pd.DataFrame(
+        {
+            "estimator": pd.Categorical(["b", "b", "a", "a"], categories=["a", "b"]),
+            "data_source": pd.Categorical(
+                ["train", "test", "train", "test"], categories=["test", "train"]
+            ),
+            "value": [1, 2, 3, 4],
+        }
+    )
+    assert list(df["estimator"].cat.categories) == ["a", "b"]
+    assert list(df["data_source"].cat.categories) == ["test", "train"]
+
+    result = _reorder_categoricals_by_appearance(df, ["estimator", "data_source", None])
+
+    assert list(result["estimator"].cat.categories) == ["b", "a"]
+    assert list(result["data_source"].cat.categories) == ["train", "test"]
+    assert result["value"].tolist() == [1, 2, 3, 4]
 
 
 @pytest.mark.parametrize(
@@ -78,18 +108,18 @@ def test_validate_style_kwargs_error(default_kwargs, user_kwargs):
 @pytest.mark.parametrize(
     "rotation, horizontalalignment", [(45, "right"), (90, "center"), (180, "left")]
 )
-def test_rotate_ticklabels(pyplot, rotation, horizontalalignment):
+def test_rotate_ticklabels(rotation, horizontalalignment):
     """Check that we can rotate the ticks labels on an axis."""
-    _, ax = pyplot.subplots()
+    _, ax = plt.subplots()
     ax.plot(range(10))
     _rotate_ticklabels(ax, rotation=rotation, horizontalalignment=horizontalalignment)
     assert ax.get_xticklabels()[0].get_rotation() == rotation
     assert ax.get_xticklabels()[0].get_horizontalalignment() == horizontalalignment
 
 
-def test_get_adjusted_fig_size(pyplot):
+def test_get_adjusted_fig_size():
     """Check the computation of the adjusted figure size."""
-    fig, ax = pyplot.subplots(figsize=(2, 4))
+    fig, ax = plt.subplots(figsize=(2, 4))
     assert _get_adjusted_fig_size(fig, ax, "width", 2) == pytest.approx(
         2.0 * _get_adjusted_fig_size(fig, ax, "width", 1)
     )
@@ -98,9 +128,9 @@ def test_get_adjusted_fig_size(pyplot):
     )
 
 
-def test_adjust_fig_size(pyplot):
+def test_adjust_fig_size():
     """Check the adjustment of the figure size."""
-    fig, ax = pyplot.subplots(figsize=(2, 4))
+    fig, ax = plt.subplots(figsize=(2, 4))
     _adjust_fig_size(fig, ax, 1, 2)
     expected_width = _get_adjusted_fig_size(fig, ax, "width", 1)
     expected_height = _get_adjusted_fig_size(fig, ax, "height", 2)

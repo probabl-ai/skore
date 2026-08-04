@@ -38,10 +38,10 @@ class _HelpDisplay:
         return {"text/plain": self._plain, "text/html": self._html}
 
 
-def _render_panel_to_plain_text(panel: Panel) -> str:
+def render_panel_to_plain_text(panel: Panel) -> str:
     """Render a Rich Panel to a plain string (e.g. for mimebundle text/plain)."""
     buf = StringIO()
-    Console(file=buf, force_terminal=False).print(panel)
+    Console(file=buf, force_terminal=False, force_jupyter=False).print(panel)
     return buf.getvalue()
 
 
@@ -58,7 +58,7 @@ def _help_dispatch(
     if is_environment_sphinx_build():
         return _HelpDisplay(
             html=html_help_factory(),
-            plain=_render_panel_to_plain_text(rich_help_factory()),
+            plain=render_panel_to_plain_text(rich_help_factory()),
         )
     if is_environment_notebook_like():
         from IPython.display import HTML, display

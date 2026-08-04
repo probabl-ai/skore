@@ -1,0 +1,33 @@
+<div class="skore-summary-groupby">
+    <button type="button" class="skore-summary-groupby-toggle" aria-haspopup="true" aria-expanded="false" aria-label="Group by" title="Group by">{% include "project/icons/divider.svg" %}</button>
+    <div class="skore-summary-groupby-panel" hidden>
+        <div class="skore-summary-filter-field">
+            <button type="button" class="skore-summary-filter-field-toggle" aria-haspopup="true" data-field="group-date">
+                <span class="skore-summary-filter-field-label">Date</span>
+                <span class="skore-summary-filter-arrow" aria-hidden="true"></span>
+            </button>
+            <div class="skore-summary-filter-submenu">
+                <button type="button" class="skore-summary-group-option" data-group="date" data-unit="day">Day</button>
+                <button type="button" class="skore-summary-group-option" data-group="date" data-unit="hour">Hour</button>
+                <div class="skore-summary-group-custom">
+                    <span class="skore-summary-group-custom-title">Custom: every</span>
+                    <div class="skore-summary-group-custom-row">
+                        <input type="number" min="1" value="1" class="skore-summary-group-n" aria-label="Interval count">
+                        <select class="skore-summary-group-unit" aria-label="Interval unit">
+                            <option value="second">second</option>
+                            <option value="minute">minute</option>
+                            <option value="hour">hour</option>
+                            <option value="day">day</option>
+                            <option value="week">week</option>
+                            <option value="month">month</option>
+                        </select>
+                    </div>
+                    <button type="button" class="skore-summary-group-option skore-summary-group-custom-apply" data-group="date" data-unit="custom">Apply</button>
+                </div>
+            </div>
+        </div>
+        <button type="button" class="skore-summary-group-option" data-group="learner">Learner</button>
+        <button type="button" class="skore-summary-group-option" data-group="report_type">Estimator type</button>
+        <button type="button" class="skore-summary-group-option skore-summary-group-none" data-group="none">None</button>
+    </div>
+</div>

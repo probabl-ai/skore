@@ -2,6 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import mlflow
+import pandas as pd
 import pytest
 from sklearn.linear_model import LinearRegression
 
@@ -93,6 +94,24 @@ def test_log_artifact_raises_on_unsupported_payload() -> None:
         _log_artifact(project_module.Artifact("bad", 123))
 
 
+def test_log_artifact_logs_series_metrics_as_csv(monkeypatch) -> None:
+    logged: list[tuple[str, str]] = []
+
+    def fake_log_text(text: str, artifact_file: str) -> None:
+        logged.append((text, artifact_file))
+
+    monkeypatch.setattr(mlflow, "log_text", fake_log_text)
+
+    metrics = pd.Series({"accuracy": 0.9, "rmse": 1.2}, name="test")
+    _log_artifact(project_module.Artifact("metrics", metrics))
+
+    assert len(logged) == 1
+    csv_text, artifact_file = logged[0]
+    assert artifact_file == "metrics.csv"
+    assert "accuracy" in csv_text
+    assert "0.9" in csv_text
+
+
 class TestProject:
     CLF_ARTIFACTS = [
         "metrics.confusion_matrix.png",
@@ -103,15 +122,26 @@ class TestProject:
         "metrics.roc.png",
     ]
 
-    def test_init_with_explicit_tracking_uri(self, tmp_path):
-        tracking_uri = f"sqlite:///{tmp_path}/custom-mlflow.db"
+    def test_init_with_explicit_tracking_uri(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
 
         project = Project("<project>", tracking_uri=tracking_uri)
 
         assert project.name == "<project>"
         assert project.tracking_uri == tracking_uri
         assert repr(project) == (
-            f"Project(mode='mlflow', name='<project>', tracking_uri='{tracking_uri}')"
+            f"Project(name='<project>', mode='mlflow', tracking_uri='{tracking_uri}')"
+        )
+
+    def test_init_reuses_existing_storage_experiment(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
+
+        first = Project("first", tracking_uri=tracking_uri)
+        second = Project("second", tracking_uri=tracking_uri)
+
+        assert (
+            first._Project__storage_experiment_id
+            == second._Project__storage_experiment_id
         )
 
     @pytest.mark.parametrize(
@@ -211,9 +241,16 @@ class TestProject:
         assert metadata["dataset"]
         assert metadata["roc_auc_mean"] is not None
         assert metadata["fit_time_mean"] is not None
+        assert metadata["roc_auc_std"] is not None
+        assert metadata["fit_time_std"] is not None
+        assert metadata["predict_time_std"] is not None
 
         run = mlflow.get_run(metadata["id"])
         assert run.data.metrics["roc_auc"] == pytest.approx(metadata["roc_auc_mean"])
+        assert run.data.metrics["roc_auc_std"] == pytest.approx(metadata["roc_auc_std"])
+        assert run.data.metrics["fit_time_std"] == pytest.approx(
+            metadata["fit_time_std"]
+        )
         assert "random_state" in run.data.params
         assert run.data.params["random_state"] == "42"
 
@@ -230,14 +267,19 @@ class TestProject:
             assert (report_dir / artifact).exists()
         assert (report_dir / "metrics_details" / "per_split.csv").exists()
 
-    def test_get_unknown_id_with_explicit_tracking_uri(self, tmp_path):
-        tracking_uri = f"sqlite:///{tmp_path}/missing-id.db"
+    def test_get_unknown_id_with_explicit_tracking_uri(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
         project = Project("<project>", tracking_uri=tracking_uri)
 
         with pytest.raises(KeyError):
             project.get("missing-run-id")
 
-    def test_delete(self):
-        project = Project("project")
-        with pytest.raises(NotImplementedError):
-            Project.delete(name=project.name)
+    def test_delete(self, reg_report, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
+        project = Project("project", tracking_uri=tracking_uri)
+        project.put("<key>", reg_report)
+
+        Project.delete(name=project.name, tracking_uri=tracking_uri)
+
+        with pytest.raises(LookupError):
+            Project.delete(name=project.name, tracking_uri=tracking_uri)

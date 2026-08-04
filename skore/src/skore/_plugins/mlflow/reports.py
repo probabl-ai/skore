@@ -112,8 +112,8 @@ def iter_cv_metrics(
 
     for name, kwargs in METRICS[ml_task].items():
         method = getattr(report_any.metrics, name)
-        yield Metric(name, method(**kwargs, aggregate="mean").iloc[0, 0])
-        yield Metric(f"{name}_std", method(**kwargs, aggregate="std").iloc[0, 0])
+        yield Metric(name, method(**kwargs, aggregate="mean").iloc[0])
+        yield Metric(f"{name}_std", method(**kwargs, aggregate="std").iloc[0])
         if not kwargs or ml_task == "regression":
             continue
 
@@ -135,14 +135,20 @@ def iter_cv_metrics(
 
     timings = report_any.metrics.timings()
     fit_time = timings.loc["Fit time (s)"].loc["mean"]
+    fit_time_std = timings.loc["Fit time (s)"].loc["std"]
     predict_time = timings.loc["Predict time test (s)"].loc["mean"]
+    predict_time_std = timings.loc["Predict time test (s)"].loc["std"]
     summary = report_any.metrics.summarize()
 
     yield Metric("fit_time", fit_time)
+    yield Metric("fit_time_std", fit_time_std)
     yield Metric("predict_time", predict_time)
-    # NOTE: we could use flat_index=True in summarize, but we have to flatten
-    # other frames anyway, so we don't do it here.
-    yield Artifact("metrics_details/per_split", summary.frame(aggregate=None))
+    yield Metric("predict_time_std", predict_time_std)
+    # NOTE: auto format is wide for single CV reports; use long for per-split details.
+    yield Artifact(
+        "metrics_details/per_split",
+        summary.frame(flat_index=False, aggregate=None),
+    )
     yield Artifact("metrics", summary.frame())
 
 
@@ -200,14 +206,15 @@ def iter_cv(report: CrossValidationReport) -> Generator[NestedLogItem, None, Non
             ),
         )
 
-    yield Params({"cv_splitter.class": report.splitter.__class__.__name__})
+    if report.splitter is not None:
+        yield Params({"cv_splitter.class": report.splitter.__class__.__name__})
 
-    try:
-        n_splits = report.splitter.get_n_splits()
-    except AttributeError:
-        pass
-    else:
-        yield Params({"cv_splitter.n_splits": n_splits})
+        try:
+            n_splits = report.splitter.get_n_splits()
+        except AttributeError:
+            pass
+        else:
+            yield Params({"cv_splitter.n_splits": n_splits})
 
 
 def iter_estimator(report: EstimatorReport) -> Generator[LogItem, None, None]:
@@ -268,9 +275,7 @@ def _dataset_from_Xy(
             y = pd.Series(y, index=X.index, name="target")
         else:
             y = pd.DataFrame(
-                y,
-                index=X.index,
-                columns=[f"target_{idx}" for idx in range(y.shape[1])],
+                y, index=X.index, columns=[f"target_{idx}" for idx in range(y.shape[1])]
             )
 
     assert isinstance(y, (pd.DataFrame, pd.Series))
@@ -280,7 +285,7 @@ def _dataset_from_Xy(
         targets = name
         y = pd.DataFrame({name: y})
     elif len(y.columns) == 1:
-        (targets,) = y.columns
+        (targets) = y.columns
     else:
         # mlflow.data.from_pandas doesn't support multiple targets
         # use mlflow.data.from_numpy instead

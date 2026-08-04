@@ -76,6 +76,7 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             estimator=self._parent.estimator_,
             name=self._parent.estimator_name_,
             report_type=self._parent._report_type,
+            X=self._parent.X_train,
         )
 
     @available_if(_check_estimator_has_feature_importances())
@@ -318,7 +319,9 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             "max_samples": max_samples,
             "seed": seed,
         }
-        cache_key = make_cache_key(data_source, "permutation_importance", kwargs)
+        cache_key = make_cache_key(
+            "inspection", data_source, "permutation_importance", kwargs
+        )
 
         # NOTE: avoid to fetch from the cache if the seed is None because we want
         # to trigger the computation in this case. We only have the permutation
@@ -406,14 +409,4 @@ class _InspectionAccessor(_BaseAccessor[EstimatorReport], DirNamesMixin):
             n_bins=n_bins,
             strategy=strategy,
             report_pos_label=self._parent.pos_label,
-        )
-
-    ####################################################################################
-    # Methods related to the help tree
-    ####################################################################################
-
-    def __repr__(self) -> str:
-        """Return a string representation using rich."""
-        return self._rich_repr(
-            class_name=f"skore.{self._parent.__class__.__name__}.inspection"
         )

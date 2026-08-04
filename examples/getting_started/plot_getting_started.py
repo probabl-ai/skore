@@ -287,17 +287,14 @@ _ = final_report.metrics.confusion_matrix().plot()
 
 # %%
 # We can easily combine the results of the previous cross-validation together with
-# the evaluation on the held-out dataset, since the two are accessible as dataframes.
-# This way, we can check if our chosen model meets the expectations we set during the
+# the evaluation on the held-out dataset, since the two are accessible as tables. This
+# way, we can check if our chosen model meets the expectations we set during the
 # experiment phase.
 
 # %%
-import pandas as pd
-
-pd.concat(
-    [final_metrics.frame(), logreg_cv_report.metrics.summarize().frame()],
-    axis="columns",
-)
+final_frame = final_metrics.frame().to_frame()
+cv_frame = logreg_cv_report.metrics.summarize().frame()
+final_frame.merge(cv_frame, on="metric", how="outer")
 
 # %%
 # As expected, our final model gets better performance, likely thanks to the
@@ -391,7 +388,7 @@ from httpx import HTTPStatusError, codes
 from skore import Project
 
 try:
-    Project.delete(f"{WORKSPACE}/{PROJECT}", mode="hub")
+    Project.delete(name=PROJECT, mode="hub", workspace=WORKSPACE)
 except HTTPStatusError as e:
     if e.response.status_code != codes.NOT_FOUND:
         raise
@@ -400,7 +397,7 @@ except HTTPStatusError as e:
 # %%
 # We load or create a hub project:
 
-project = Project(f"{WORKSPACE}/{PROJECT}", mode="hub")
+project = Project(name=PROJECT, mode="hub", workspace=WORKSPACE)
 
 # %%
 # We store our reports with descriptive keys:
@@ -419,38 +416,27 @@ project.put("rf_cv", rf_cv_report)
 
 # %%
 summary = project.summarize()
-# Uncomment the next line to display the widget in an interactive environment:
-# summary
+summary
 
 # %%
 # .. note::
-#     Calling `summary` in a Jupyter notebook cell will show the following parallel
-#     coordinate plot to help you select models that you want to retrieve:
-#
-#     .. image:: /_static/images/screenshot_getting_started.png
-#       :alt: Screenshot of the widget in a Jupyter notebook
-#
-#     Each line represents a model, and we can select models by clicking on lines
-#     or dragging on metric axes to filter by performance.
-#
-#     In the screenshot, we selected only the cross-validation reports;
-#     this allows us to retrieve exactly those reports programmatically.
+#     :meth:`~skore.Project.summarize` returns a :class:`~skore.Summary` object. In a
+#     Jupyter environment it renders as an interactive table where you can filter rows
+#     and pick reports across the different views; the selection produces a query string
+#     ready to pass to :meth:`~skore.Summary.query` so you can recover exactly those
+#     reports.
 
 # %%
-# Supposing you selected "Cross-validation" in the "Report type" tab, if you now call
-# :meth:`~skore.project._summary.Summary.reports`, you get only the
+# Once you filtered the summary (e.g. to keep only the cross-validation reports), if
+# you now call :meth:`~skore.Summary.compare`, you get only the
 # :class:`~skore.CrossValidationReport` objects, which
 # you can directly put in the form of a :class:`~skore.ComparisonReport`:
 
 # %%
-
-# sphinx_gallery_start_ignore
-# Pretend that the cross-validation reports were selected in the widget
-summary = summary.query('report_type == "cross-validation"')
-# sphinx_gallery_end_ignore
-
-new_report = summary.reports(return_as="comparison")
-new_report.help()
+new_report = summary.query('report_type == "cross-validation"').compare(
+    return_as="report"
+)
+new_report
 
 # %%
 # .. admonition:: Stay tuned!

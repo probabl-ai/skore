@@ -1,4 +1,5 @@
 import numpy as np
+import polars as pl
 import pytest
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
@@ -34,6 +35,12 @@ def test_get_feature_names_error():
     err_msg = "Feature names cannot be inferred from the estimator or transformer."
     with pytest.raises(ValueError, match=err_msg):
         _get_feature_names(predictor)
+
+
+def test_get_feature_names_polars():
+    """Non-regression for https://github.com/probabl-ai/skore/issues/3088"""
+    df = pl.DataFrame({"a": [1, 2], "b": [3, 4]})
+    assert _get_feature_names(None, X=df) == ["a", "b"]
 
 
 @pytest.mark.parametrize("container_type", ["array", "pandas"])

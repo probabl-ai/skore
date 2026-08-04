@@ -1,14 +1,25 @@
+from __future__ import annotations
+
+import warnings
 from collections.abc import Callable
 from functools import wraps
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Literal, Protocol, cast, runtime_checkable
 
 import matplotlib.pyplot as plt
+
+if TYPE_CHECKING:
+    try:
+        from matplotlib.typing import RcKeyType as MatplotlibRcKeyType
+    except ImportError:
+        MatplotlibRcKeyType = str  # type: ignore[misc]
 import pandas as pd
 from matplotlib.figure import Figure
 
 from skore import configuration
+from skore._plugins import switch_plt_backend
 from skore._sklearn.types import PlotBackend
 from skore._utils.repr.base import DisplayHelpMixin
+from skore._utils.repr.utils import figure_to_html
 
 ########################################################################################
 # Display protocol
@@ -31,13 +42,13 @@ class Display(Protocol):
     ) -> None:
         """Set the style of the display."""
 
-    def frame(self, **kwargs: Any) -> pd.DataFrame:
+    def frame(self, **kwargs: Any) -> pd.DataFrame | pd.Series:
         """Get the data used to create the display.
 
         Returns
         -------
-        DataFrame
-            A DataFrame containing the data used to create the display.
+        pandas.DataFrame or pandas.Series
+            The data used to create the display.
         """
 
     def help(self) -> None:
@@ -72,7 +83,7 @@ class PlotBackendMixin:
         )
 
 
-DEFAULT_STYLE = {
+DEFAULT_STYLE: dict[MatplotlibRcKeyType, Any] = {
     "font.size": 14,
     "axes.labelsize": 14,
     "axes.titlesize": 14,
@@ -217,7 +228,16 @@ class StyleDisplayMixin:
                     result = plot_func(self, *args, **kwargs)
             finally:
                 if isinstance(result, Figure):
-                    result.tight_layout()
+                    # `tight_layout` is best-effort; matplotlib emits a UserWarning
+                    # when margins cannot accommodate decorations. Treat the message
+                    # as informational rather than a hard failure.
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings(
+                            "ignore",
+                            message="Tight layout not applied",
+                            category=UserWarning,
+                        )
+                        result.tight_layout()
                 plt.rcParams.update(original_params)
             return result
 
@@ -231,3 +251,21 @@ class StyleDisplayMixin:
 
 class DisplayMixin(DisplayHelpMixin, PlotBackendMixin, StyleDisplayMixin):
     """Mixin inheriting help, plotting, and style functionality."""
+
+    def _repr_html_(self) -> str:
+        with switch_plt_backend(), plt.ioff():
+            plot_html = figure_to_html(cast(Display, self).plot())
+        return (
+            f"{plot_html}"
+            '<p role="note">Use <code>.plot()</code> to control the view and '
+            "<code>.frame()</code> to access the plotted data.</p>"
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"{cast(Display, self).frame()!r}\n"
+            f"Use .plot() to plot the data and .frame() to access the full data."
+        )
+
+    def _repr_mimebundle_(self, **kwargs):
+        return {"text/plain": repr(self), "text/html": self._repr_html_()}

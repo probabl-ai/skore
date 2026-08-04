@@ -23,7 +23,7 @@ from skore import CoefficientsDisplay
     ],
 )
 class TestCoefficientsDisplay:
-    def test_class_attributes(self, pyplot, fixture_prefix, task, request):
+    def test_class_attributes(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -31,6 +31,7 @@ class TestCoefficientsDisplay:
         assert isinstance(display, CoefficientsDisplay)
         assert hasattr(display, "coefficients")
         assert hasattr(display, "report_type")
+        assert "feature_std" in display.coefficients.columns
 
         fig = display.plot()
         assert fig is not None
@@ -93,10 +94,11 @@ class TestCoefficientsDisplay:
             "label",
             "output",
             "coefficient",
+            "feature_std",
         }
         assert set(display.coefficients.columns) == expected
 
-    def test_plot_structure(self, pyplot, fixture_prefix, task, request):
+    def test_plot_structure(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -105,7 +107,7 @@ class TestCoefficientsDisplay:
         assert ax.get_xlabel() == "Magnitude of coefficient"
         assert ax.get_ylabel() == ""
 
-    def test_title(self, pyplot, fixture_prefix, task, request):
+    def test_title(self, fixture_prefix, task, request):
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):
             report = report[0]
@@ -117,7 +119,7 @@ class TestCoefficientsDisplay:
             estimator_name = display.coefficients["estimator"].iloc[0]
             assert estimator_name in title
 
-    def test_kwargs(pyplot, fixture_prefix, task, request):
+    def test_kwargs(self, fixture_prefix, task, request):
         """Check that custom `barplot_kwargs` are applied to the plots."""
         report = request.getfixturevalue(f"{fixture_prefix}_{task}")
         if isinstance(report, tuple):

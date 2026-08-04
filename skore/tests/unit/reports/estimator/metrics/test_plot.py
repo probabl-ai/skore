@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from pandas.testing import assert_frame_equal
+from sklearn.base import clone
 from sklearn.datasets import make_classification
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
@@ -16,9 +17,7 @@ def test_plot_roc(forest_binary_classification_with_test):
 
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
-def test_display_binary_classification(
-    pyplot, forest_binary_classification_with_test, display
-):
+def test_display_binary_classification(forest_binary_classification_with_test, display):
     """The call to display functions should be cached."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(estimator, X_test=X_test, y_test=y_test)
@@ -30,7 +29,7 @@ def test_display_binary_classification(
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_display_binary_classification_pos_label(pyplot, metric):
+def test_display_binary_classification_pos_label(metric):
     """Check the behaviour of the display methods when `pos_label` is not set."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
@@ -51,7 +50,7 @@ def test_display_binary_classification_pos_label(pyplot, metric):
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
 def test_display_binary_classification_decision_function_report_pos_label(
-    pyplot, metric, binary_classification_data
+    metric, binary_classification_data
 ):
     """Check that the default binary behaviour works with 1D decision scores."""
     X, y = binary_classification_data
@@ -133,7 +132,7 @@ def test_display_multiclass_label_selects_curve_and_validates(
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
-def test_display_regression(pyplot, linear_regression_with_test, display):
+def test_display_regression(linear_regression_with_test, display):
     """The call to display functions should be cached, as long as the arguments make it
     reproducible."""
     estimator, X_test, y_test = linear_regression_with_test
@@ -147,12 +146,16 @@ def test_display_regression(pyplot, linear_regression_with_test, display):
 
 @pytest.mark.parametrize("display", ["roc", "precision_recall"])
 def test_display_binary_classification_switching_data_source(
-    pyplot, forest_binary_classification_with_test, display
+    forest_binary_classification_with_test, display
 ):
     """Check that we don't hit the cache when switching the data source."""
     estimator, X_test, y_test = forest_binary_classification_with_test
     report = EstimatorReport(
-        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+        clone(estimator),
+        X_train=X_test,
+        y_train=y_test,
+        X_test=X_test,
+        y_test=y_test,
     )
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)(data_source="test")
@@ -162,13 +165,15 @@ def test_display_binary_classification_switching_data_source(
 
 
 @pytest.mark.parametrize("display", ["prediction_error"])
-def test_display_regression_switching_data_source(
-    pyplot, linear_regression_with_test, display
-):
+def test_display_regression_switching_data_source(linear_regression_with_test, display):
     """Check that we don't hit the cache when switching the data source."""
     estimator, X_test, y_test = linear_regression_with_test
     report = EstimatorReport(
-        estimator, X_train=X_test, y_train=y_test, X_test=X_test, y_test=y_test
+        clone(estimator),
+        X_train=X_test,
+        y_train=y_test,
+        X_test=X_test,
+        y_test=y_test,
     )
     assert hasattr(report.metrics, display)
     display_first_call = getattr(report.metrics, display)(data_source="test", seed=0)

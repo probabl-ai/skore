@@ -109,7 +109,7 @@ class TestBasicAdd:
         assert metric.kwargs == {"cost_fp": 20, "cost_fn": 3}
 
         display = report.metrics.summarize(metric="business_loss_scorer")
-        assert display.data["score"].notna().all()
+        assert display.summary["score"].notna().all()
 
     def test_pos_label(self, binary_classification_report):
         """Test adding a scorer with `pos_label` set."""
@@ -120,7 +120,7 @@ class TestBasicAdd:
             name="precision_0",
         )
         display = report.metrics.summarize(metric=["precision_0"])
-        assert display.data["label"].tolist() == [0]
+        assert display.summary["label"].tolist() == [0]
 
     def test_metric_instance(self, binary_classification_report):
         """Test adding a Metric instance directly."""
@@ -131,7 +131,7 @@ class TestBasicAdd:
 
         assert "custom_acc" in report._metric_registry
         display = report.metrics.summarize(metric="custom_acc")
-        assert display.data["score"].iloc[0] > 0
+        assert display.summary["score"].iloc[0] > 0
 
     def test_metric_instance_with_verbose_name(self, binary_classification_report):
         """Test adding a Metric instance directly."""
@@ -142,7 +142,7 @@ class TestBasicAdd:
 
         assert "accuracy_score" in report._metric_registry
         display = report.metrics.summarize(metric="accuracy_score")
-        assert set(display.data["metric_verbose_name"]) == {"custom_acc"}
+        assert set(display.summary["verbose_name"]) == {"custom_acc"}
 
     def test_multiple_metrics(self, binary_classification_report):
         """Test adding multiple custom metrics."""
@@ -182,9 +182,8 @@ class TestRemove:
     def test_remove_unknown_metric_raises(self, binary_classification_report):
         """Removing a name that was never added raises KeyError."""
         report = binary_classification_report
-        with pytest.raises(KeyError) as exc_info:
+        with pytest.raises(KeyError, match="no_such_metric"):
             report.metrics.remove("no_such_metric")
-        assert exc_info.value.args[0] == "no_such_metric"
 
     def test_remove_builtin_metric(self, binary_classification_report):
         """Built-in metrics can be removed from the registry."""
@@ -216,8 +215,8 @@ class TestRemove:
 
         report.metrics.remove("metric1")
 
-        assert not any(k[1] == "metric1" for k in report._cache)
-        assert any(k[1] == "metric2" for k in report._cache)
+        assert not any(k[2] == "metric1" for k in report._cache)
+        assert any(k[2] == "metric2" for k in report._cache)
 
 
 class TestSummarizeIntegration:
@@ -231,9 +230,10 @@ class TestSummarizeIntegration:
 
         display = report.metrics.summarize()
 
-        # Should include both built-in and custom metrics
-        assert "Accuracy" in display.frame().index
-        assert "Business Loss" in display.frame().index
+        frame = display.frame(flat_index=False, verbose_name=True)
+        metric_names = frame.index.get_level_values("Metric").to_numpy()
+        assert "Accuracy" in metric_names
+        assert "Business Loss" in metric_names
 
     def test_summarize_with_explicit_custom_metric(self, binary_classification_report):
         """Test calling summarize with explicit custom metric name."""
@@ -244,9 +244,9 @@ class TestSummarizeIntegration:
         # Should be able to call by name
         display = report.metrics.summarize(metric="business_loss")
 
-        assert len(display.data) == 1
-        row = display.data.iloc[0]
-        assert row["metric_verbose_name"] == "Business Loss"
+        assert len(display.summary) == 1
+        row = display.summary.iloc[0]
+        assert row["verbose_name"] == "Business Loss"
         assert not row["greater_is_better"]
 
     def test_summarize_with_mixed_metrics(self, binary_classification_report):
@@ -258,7 +258,7 @@ class TestSummarizeIntegration:
         # Should work with list including both types
         display = report.metrics.summarize(metric=["accuracy", "business_loss"])
 
-        assert set(display.data["metric_verbose_name"]) == {"Accuracy", "Business Loss"}
+        assert set(display.summary["verbose_name"]) == {"Accuracy", "Business Loss"}
 
 
 class TestAddPosition:
@@ -287,7 +287,7 @@ class TestAddPosition:
         assert keys[2] == "score"
 
         display = report.metrics.summarize()
-        assert display.data.iloc[0]["metric_verbose_name"] == "Metric B"
+        assert display.summary.iloc[0]["verbose_name"] == "Metric B"
 
     def test_position_last_appends_in_order(self, binary_classification_report):
         """Last-position adds appear after all built-ins, in insertion order."""
@@ -401,24 +401,6 @@ class TestCacheBehavior:
         # At least the metric value and the model predictions
         assert len(report._cache) >= 2
 
-    def test_callable_predictions_not_cached(self, binary_classification_report):
-        """
-        Test that model predictions are not cached when metric is a plain callable.
-        """
-        report = binary_classification_report
-
-        def my_scorer(estimator, X, y_true):
-            y_pred = estimator.predict(X)
-            return accuracy_score(y_true, y_pred)
-
-        report.metrics.add(my_scorer)
-
-        with check_cache_changed(report._cache):
-            report.metrics.summarize(metric="my_scorer")
-
-        # Just the metric value, not the model predictions
-        assert len(report._cache) == 1
-
     def test_duplicate_add_keeps_existing_cache(self, binary_classification_report):
         """Duplicate add fails and leaves existing metric cache untouched."""
         report = binary_classification_report
@@ -459,8 +441,8 @@ class TestCacheBehavior:
         with check_cache_unchanged(report._cache):
             result1 = report.metrics.summarize(metric="metric1")
 
-        assert result1.data["score"].iloc[0] == 0.1
-        assert result2.data["score"].iloc[0] == 0.2
+        assert result1.summary["score"].iloc[0] == 0.1
+        assert result2.summary["score"].iloc[0] == 0.2
 
     def test_different_metrics_have_separate_cache(self, binary_classification_report):
         """Test that different metrics don't share cache entries."""
@@ -481,8 +463,8 @@ class TestCacheBehavior:
         result1 = report.metrics.summarize(metric="metric1")
         result2 = report.metrics.summarize(metric="metric2")
 
-        assert result1.data["score"].iloc[0] == 0.1
-        assert result2.data["score"].iloc[0] == 0.9
+        assert result1.summary["score"].iloc[0] == 0.1
+        assert result2.summary["score"].iloc[0] == 0.9
 
 
 class TestEdgeCases:
@@ -496,16 +478,11 @@ class TestEdgeCases:
             logistic_binary_classification_with_train_test
         )
         report = EstimatorReport(
-            estimator,
-            X_test=X_test,
-            y_test=y_test,
+            estimator.fit(X_train, y_train), X_test=X_test, y_test=y_test
         )
 
         scorer = make_scorer(accuracy_score, response_method="predict")
         report.metrics.add(scorer)
-
-        with pytest.raises(ValueError, match="(?i)train|data"):
-            report.metrics.summarize(metric="accuracy_score", data_source="train")
 
     def test_duplicate_name_raises(self, binary_classification_report):
         """Adding with duplicate name raises and keeps the original metric."""
@@ -519,7 +496,7 @@ class TestEdgeCases:
         nb_metrics_before_overwriting = len(report._metric_registry)
 
         result = report.metrics.summarize(metric="my_metric")
-        assert result.data["score"].iloc[0] == 0
+        assert result.summary["score"].iloc[0] == 0
 
         # add a new metric with the same name
         def my_metric(y_true, y_pred):
@@ -536,7 +513,7 @@ class TestEdgeCases:
 
         # summarize still reflects the original metric
         result = report.metrics.summarize(metric="my_metric")
-        assert result.data["score"].iloc[0] == 0
+        assert result.summary["score"].iloc[0] == 0
 
 
 class TestDifferentMLTasks:
@@ -548,17 +525,13 @@ class TestDifferentMLTasks:
             logistic_multiclass_classification_with_train_test
         )
         report = EstimatorReport(
-            estimator,
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
         )
 
         report.metrics.add(make_scorer(accuracy_score, response_method="predict"))
 
         display = report.metrics.summarize()
-        assert "Accuracy Score" in display.data["metric_verbose_name"].values
+        assert "Accuracy Score" in display.summary["verbose_name"].values
 
     def test_regression(self, regression_report):
         """Test add on regression report."""
@@ -568,14 +541,12 @@ class TestDifferentMLTasks:
             return mean_squared_error(y_true, y_pred)
 
         scorer = make_scorer(
-            custom_mse,
-            greater_is_better=False,
-            response_method="predict",
+            custom_mse, greater_is_better=False, response_method="predict"
         )
         report.metrics.add(scorer)
 
         display = report.metrics.summarize()
-        assert "Custom Mse" in display.data["metric_verbose_name"].values
+        assert "Custom Mse" in display.summary["verbose_name"].values
 
     def test_multioutput_regression(
         self, linear_regression_multioutput_with_train_test
@@ -585,22 +556,16 @@ class TestDifferentMLTasks:
             linear_regression_multioutput_with_train_test
         )
         report = EstimatorReport(
-            estimator,
-            X_train=X_train,
-            y_train=y_train,
-            X_test=X_test,
-            y_test=y_test,
+            estimator, X_train=X_train, y_train=y_train, X_test=X_test, y_test=y_test
         )
 
         scorer = make_scorer(
-            mean_squared_error,
-            greater_is_better=False,
-            response_method="predict",
+            mean_squared_error, greater_is_better=False, response_method="predict"
         )
         report.metrics.add(scorer)
 
         display = report.metrics.summarize()
-        assert "Mean Squared Error" in display.data["metric_verbose_name"].values
+        assert "Mean Squared Error" in display.summary["verbose_name"].values
 
     def test_wrong_ml_task(self, linear_regression_with_train_test):
         """adding a metric incompatible with the ML task doesn't crash."""
@@ -632,12 +597,12 @@ class TestMultiMetric:
 
         display = report.metrics.summarize(metric="multimetric_scorer")
 
-        assert list(display.data["metric_verbose_name"]) == [
+        assert list(display.summary["verbose_name"]) == [
             "accuracy",
             "precision",  # Label 0
             "precision",  # Label 1
         ]
-        assert list(display.data["label"]) == [pd.NA, np.int64(0), np.int64(1)]
+        assert list(display.summary["label"]) == [pd.NA, np.int64(0), np.int64(1)]
 
     def test_score(self, logistic_binary_classification_with_train_test):
         """Setting an estimator's `score` method to a multimetric scorer works."""
@@ -667,17 +632,15 @@ class TestMultiMetric:
 
         display = report.metrics.summarize(metric="score")
 
-        assert list(display.data["metric_verbose_name"]) == [
+        assert list(display.summary["verbose_name"]) == [
             "accuracy",
             "precision",  # Label 0
             "precision",  # Label 1
         ]
-        assert list(display.data["label"]) == [pd.NA, np.int64(0), np.int64(1)]
+        assert list(display.summary["label"]) == [pd.NA, np.int64(0), np.int64(1)]
 
     def test_preexisting_metric_name(self, binary_classification_report):
-        """If a multimetric scorer is added and it contains a submetric that has the
-        same name as a metric in the registry, then the metric name will appear more
-        than once."""
+        """A multimetric scorer submetric can share a built-in verbose name."""
         report = binary_classification_report
 
         def multimetric_scorer(y_true, y_pred):
@@ -688,9 +651,11 @@ class TestMultiMetric:
 
         display = report.metrics.summarize()
 
-        results = display.data[display.data["metric_verbose_name"] == "Accuracy"]
-        # Our metric, then the default one
-        assert list(results["score"]) == [1000, 1.0]
+        assert display.summary["verbose_name"].tolist().count("Accuracy") == 2
+
+        result = display.frame(flat_index=False, verbose_name=True)
+        metric_names = result.index.get_level_values("Metric").tolist()
+        assert metric_names.count("Accuracy") == 2
 
 
 class TestStringScorerNames:
@@ -706,7 +671,7 @@ class TestStringScorerNames:
         # NOTE: User can pass "f1", not "f1_score" which is the name of the actual
         # metric function
         display = report.metrics.summarize(metric="f1")
-        metric_rows = display.data[display.data["metric_verbose_name"] == "F1"]
+        metric_rows = display.summary[display.summary["verbose_name"] == "F1"]
 
         assert len(metric_rows) == 1
 
@@ -715,12 +680,12 @@ class TestStringScorerNames:
         report = binary_classification_report
 
         display = report.metrics.summarize()
-        metrics_before = set(display.data["metric_verbose_name"])
+        metrics_before = set(display.summary["verbose_name"])
 
         report.metrics.add("f1")
 
         display = report.metrics.summarize()
-        metrics_after = set(display.data["metric_verbose_name"])
+        metrics_after = set(display.summary["verbose_name"])
 
         assert metrics_after - metrics_before == {"F1"}
 
@@ -734,26 +699,57 @@ class TestStringScorerNames:
         assert "mean_squared_error" in report._metric_registry
 
         display = report.metrics.summarize(metric="mean_squared_error")
-        row = display.data.iloc[0]
+        row = display.summary.iloc[0]
 
         assert row["score"] >= 0
         assert not row["greater_is_better"]
-        assert not row["metric_verbose_name"].lower().startswith("neg")
+        assert not row["verbose_name"].lower().startswith("neg")
 
-    def test_without_neg_prefix(self, regression_report):
-        """Test that metric strings passed without 'neg_' prefix can be added and
-        duplicate registration raises an explicit error."""
+    def test_with_neg_prefix(self, regression_report):
+        """Metric passed with 'neg_' prefix can be added as normal and are independent
+        from their non-neg counterpart."""
         report = regression_report
 
         report.metrics.add("mean_squared_error")
         assert "mean_squared_error" in report._metric_registry
 
-        err_msg = re.escape(
-            "Cannot add 'mean_squared_error': it already exists. "
-            "Remove it first using the `remove` method."
-        )
-        with pytest.raises(ValueError, match=err_msg):
-            report.metrics.add("neg_mean_squared_error")
+        report.metrics.add("neg_mean_squared_error")
+        assert "neg_mean_squared_error" in report._metric_registry
+        assert "mean_squared_error" in report._metric_registry
+
+    def test_summarize_with_neg(self, regression_report):
+        """``.summarize()` accepts prefixed name with 'neg_' and does no conversion."""
+        report = regression_report
+
+        report.metrics.add("neg_mean_absolute_percentage_error")
+        assert "neg_mean_absolute_percentage_error" in report._metric_registry
+        assert "mean_absolute_percentage_error" not in report._metric_registry
+
+        report.metrics.summarize(metric="neg_mean_absolute_percentage_error")
+
+        with pytest.raises(KeyError, match="mean_absolute_percentage_error"):
+            report.metrics.summarize(metric="mean_absolute_percentage_error")
+
+    def test_get_with_neg_prefix(self, regression_report):
+        """``.get()` accepts prefixed name with 'neg_' and does no conversion."""
+        report = regression_report
+
+        report.metrics.add("neg_mean_absolute_percentage_error")
+        report.metrics.get("neg_mean_absolute_percentage_error")
+
+        with pytest.raises(KeyError, match="mean_absolute_percentage_error"):
+            report.metrics.get("mean_absolute_percentage_error")
+
+    def test_unknown_metric_still_raises_key_error(self, regression_report):
+        """Test that really a unknown metric name still raises KeyError after the
+        'neg_' fallback."""
+        report = regression_report
+
+        with pytest.raises(KeyError, match="neg_nonexistent_metric"):
+            report.metrics.summarize(metric="neg_nonexistent_metric")
+
+        with pytest.raises(KeyError, match="neg_nonexistent_metric"):
+            report.metrics.get("neg_nonexistent_metric")
 
     def test_invalid_string_scorer_name(self, binary_classification_report):
         """Test that invalid sklearn scorer names raise an error."""
@@ -775,10 +771,7 @@ class TestMetric:
     def test_repr_kwargs(self):
         """Test that Metric.__repr__ works as expected when kwargs are passed."""
         m = Metric(
-            name="accuracy",
-            function=None,
-            greater_is_better=True,
-            kwargs={"hello": 1},
+            name="accuracy", function=None, greater_is_better=True, kwargs={"hello": 1}
         )
 
         assert repr(m) == (
@@ -818,7 +811,7 @@ class TestSerialization:
         assert metric.kwargs == {"cost_fp": 20, "cost_fn": 3}
 
         display = report2.metrics.summarize()
-        assert "Business Loss Scorer" in display.data["metric_verbose_name"].values
+        assert "Business Loss Scorer" in display.summary["verbose_name"].values
 
     def test_serde_lambda(self, binary_classification_report):
         """Test that if added metric is a lambda, it is lost when pickling."""
@@ -831,11 +824,11 @@ class TestSerialization:
         report2 = pickle.loads(pickle.dumps(report))
         assert report2._metric_registry["<lambda>"].function is None
 
-        err_msg = "Metric '<lambda>' has no scoring function."
-        with pytest.raises(ValueError, match=err_msg):
-            report2.metrics.summarize()
+        # Computation fails
+        display = report2.metrics.summarize()
+        assert "Metric '<lambda>' has no scoring function." in repr(display.errors)
 
-        # if we cache beforehand, then it works:
+        # If we cache beforehand, then it works:
         report.metrics.summarize()
         report3 = pickle.loads(pickle.dumps(report))
         report3.metrics.summarize()

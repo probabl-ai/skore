@@ -1,6 +1,10 @@
 """Class definition of the payload used to send an estimator report to ``hub``."""
 
+from functools import cached_property
 from typing import ClassVar
+
+import pandas as pd
+from pydantic import computed_field
 
 from skore import EstimatorReport
 from skore._plugins.hub.artifact.media import (
@@ -24,27 +28,11 @@ from skore._plugins.hub.artifact.media import (
 )
 from skore._plugins.hub.artifact.media.media import Media
 from skore._plugins.hub.metric import (
-    AccuracyTest,
-    AccuracyTrain,
-    BrierScoreTest,
-    BrierScoreTrain,
-    FitTime,
-    LogLossTest,
-    LogLossTrain,
-    PrecisionTest,
-    PrecisionTrain,
-    PredictTimeTest,
-    PredictTimeTrain,
-    R2Test,
-    R2Train,
-    RecallTest,
-    RecallTrain,
-    RmseTest,
-    RmseTrain,
-    RocAucTest,
-    RocAucTrain,
+    Metric,
+    find_multimetric_scalar_names,
+    get_hub_metric_name,
+    select_exportable_metrics,
 )
-from skore._plugins.hub.metric.metric import Metric
 from skore._plugins.hub.report.report import ReportPayload
 
 
@@ -54,8 +42,6 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
 
     Attributes
     ----------
-    METRICS : ClassVar[tuple[Metric, ...]]
-        The metric classes that have to be computed from the report.
     MEDIAS : ClassVar[tuple[Media, ...]]
         The media classes that have to be computed from the report.
     project : Project
@@ -66,28 +52,6 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         The key to associate to the report.
     """
 
-    METRICS: ClassVar[tuple[type[Metric[EstimatorReport]], ...]] = (
-        AccuracyTest,
-        AccuracyTrain,
-        BrierScoreTest,
-        BrierScoreTrain,
-        LogLossTest,
-        LogLossTrain,
-        PrecisionTest,
-        PrecisionTrain,
-        R2Test,
-        R2Train,
-        RecallTest,
-        RecallTrain,
-        RmseTest,
-        RmseTrain,
-        RocAucTest,
-        RocAucTrain,
-        # timings must be calculated last, or predictions must be cached before
-        FitTime,
-        PredictTimeTest,
-        PredictTimeTrain,
-    )
     MEDIAS: ClassVar[tuple[type[Media[EstimatorReport]], ...]] = (
         Coefficients,
         ConfusionMatrixDataFrameTestAll,
@@ -107,3 +71,34 @@ class EstimatorReportPayload(ReportPayload[EstimatorReport]):
         TableReportTest,
         TableReportTrain,
     )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @cached_property
+    def metrics(self) -> list[Metric[EstimatorReport]]:
+        """
+        The list of scalar metrics that have been computed from the report.
+
+        Notes
+        -----
+        Unavailable metrics have been filtered out.
+
+        Per-label (per-class) and per-output (multioutput regression) metrics are
+        sent with their ``label``/``output``/``average`` dimension so the UI can
+        expose a toggle. Non-scalar values (``NaN``) are ignored.
+        """
+        metrics = select_exportable_metrics(self.report)
+        multimetric_names = find_multimetric_scalar_names(metrics)
+
+        return [
+            Metric(
+                name=get_hub_metric_name(row, multimetric_names=multimetric_names),
+                verbose_name=row["verbose_name"],
+                data_source=row["data_source"],
+                greater_is_better=row["greater_is_better"],
+                value=row["score"],
+                label=None if pd.isna(row["label"]) else row["label"],
+                output=None if pd.isna(row["output"]) else int(row["output"]),
+                average=None if pd.isna(row["average"]) else row["average"],
+            )
+            for row in metrics.to_dict("records")
+        ]

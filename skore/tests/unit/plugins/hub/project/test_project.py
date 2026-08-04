@@ -65,13 +65,13 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        assert Project(workspace="available", name="name").workspace == "available"
+        assert Project(name="name", workspace="available").workspace == "available"
 
         with raises(NotFoundException, match="not found"):
-            Project(workspace="unavailable", name="name")
+            Project(name="name", workspace="unavailable")
 
         with raises(ForbiddenException, match="not member"):
-            Project(workspace="forbidden", name="name")
+            Project(name="name", workspace="forbidden")
 
     @mark.parametrize(
         "input,output,warning",
@@ -109,9 +109,9 @@ class TestProject:
 
         if warning:
             with warns(UserWarning, match=f".*'{output}'.*"):
-                assert Project(workspace="workspace", name=input).name == output
+                assert Project(name=input, workspace="workspace").name == output
         else:
-            assert Project(workspace="workspace", name=input).name == output
+            assert Project(name=input, workspace="workspace").name == output
 
     @mark.respx()
     def test_name_empty(self, respx_mock):
@@ -121,13 +121,13 @@ class TestProject:
             respx_mock.request(method=method, url=url).mock(response)
 
         with raises(ValueError, match="Project name must not be empty."):
-            Project(workspace="workspace", name="")
+            Project(name="", workspace="workspace")
 
         with (
             raises(ValueError, match="Project name must not be empty."),
             warns(UserWarning, match="Your project will be created as ''"),
         ):
-            Project(workspace="workspace", name="あいうえお")
+            Project(name="あいうえお", workspace="workspace")
 
     @mark.respx()
     def test_name_too_long(self, respx_mock):
@@ -139,7 +139,7 @@ class TestProject:
         with raises(
             ValueError, match="Project name must be no more than 64 characters long."
         ):
-            Project(workspace="workspace", name=("a" * 500))
+            Project(name=("a" * 500), workspace="workspace")
 
     @mark.respx()
     def test_put_exception(
@@ -162,13 +162,13 @@ class TestProject:
             respx_mock.request(method=method, url=url).mock(response)
 
         with raises(TypeError, match="Key must be a string"):
-            Project(workspace="workspace", name="name").put(None, "<value>")
+            Project(name="name", workspace="workspace").put(None, "<value>")
 
         with raises(
             TypeError,
             match="must be a `skore.EstimatorReport` or `skore.CrossValidationReport`",
         ):
-            Project(workspace="workspace", name="name").put("<key>", "<value>")
+            Project(name="name", workspace="workspace").put("<key>", "<value>")
 
     @mark.respx()
     def test_put_estimator_report(self, monkeypatch, binary_classification, respx_mock):
@@ -193,7 +193,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         project.put("<key>", binary_classification)
 
         # Retrieve the content of the request
@@ -242,7 +242,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         project.put("<key>", small_cv_binary_classification)
 
         # Retrieve the content of the request
@@ -284,7 +284,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = binary_classification_string_labels_with_pos_label
         project.put("<key>", report)
 
@@ -324,7 +324,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = binary_classification_string_labels
         project.put("<key>", report)
 
@@ -368,7 +368,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = cv_binary_classification_string_labels
         project.put("<key>", report)
 
@@ -412,7 +412,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = cv_binary_classification_string_labels_with_pos_label
         project.put("<key>", report)
 
@@ -452,7 +452,7 @@ class TestProject:
             for method, url, response in mocks:
                 respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = project.get("skore:report:estimator:<report_id>")
 
         assert isinstance(report, EstimatorReport)
@@ -485,7 +485,7 @@ class TestProject:
             for method, url, response in mocks:
                 respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         report = project.get("skore:report:cross-validation:<report_id>")
 
         assert isinstance(report, CrossValidationReport)
@@ -506,71 +506,81 @@ class TestProject:
             ),
             (
                 "get",
-                "projects/workspace/name/estimator-reports/",
+                "projects/workspace/name/reports/",
                 Response(
                     200,
-                    json=[
-                        {
-                            "urn": "skore:report:estimator:<report_id_0>",
-                            "id": "<report_id_0>",
-                            "key": "<key>",
-                            "ml_task": "<ml_task>",
-                            "estimator_class_name": "<estimator_class_name>",
-                            "dataset_fingerprint": "<dataset_fingerprint>",
-                            "created_at": nowstr,
-                            "metrics": [
-                                {"name": "rmse", "value": 0, "data_source": "train"},
-                                {"name": "rmse", "value": 1, "data_source": "test"},
-                            ],
-                        },
-                        {
-                            "urn": "skore:report:estimator:<report_id_1>",
-                            "id": "<report_id_1>",
-                            "key": "<key>",
-                            "ml_task": "<ml_task>",
-                            "estimator_class_name": "<estimator_class_name>",
-                            "dataset_fingerprint": "<dataset_fingerprint>",
-                            "created_at": nowstr,
-                            "metrics": [
-                                {
-                                    "name": "log_loss",
-                                    "value": 0,
-                                    "data_source": "train",
-                                },
-                                {"name": "log_loss", "value": 2, "data_source": "test"},
-                            ],
-                        },
-                    ],
-                ),
-            ),
-            (
-                "get",
-                "projects/workspace/name/cross-validation-reports/",
-                Response(
-                    200,
-                    json=[
-                        {
-                            "urn": "skore:report:cross-validation:<report_id_2>",
-                            "id": "<report_id_2>",
-                            "key": "<key>",
-                            "ml_task": "<ml_task>",
-                            "estimator_class_name": "<estimator_class_name>",
-                            "dataset_fingerprint": "<dataset_fingerprint>",
-                            "created_at": nowstr,
-                            "metrics": [
-                                {
-                                    "name": "rmse_mean",
-                                    "value": 0,
-                                    "data_source": "train",
-                                },
-                                {
-                                    "name": "rmse_mean",
-                                    "value": 3,
-                                    "data_source": "test",
-                                },
-                            ],
-                        },
-                    ],
+                    json={
+                        "next_cursor": None,
+                        "items": [
+                            {
+                                "urn": "skore:report:estimator:<report_id_0>",
+                                "type": "estimator",
+                                "id": "<report_id_0>",
+                                "key": "<key>",
+                                "ml_task": "<ml_task>",
+                                "estimator_class_name": "<estimator_class_name>",
+                                "dataset_fingerprint": "<dataset_fingerprint>",
+                                "created_at": nowstr,
+                                "metrics": [
+                                    {
+                                        "name": "rmse",
+                                        "value": 0,
+                                        "data_source": "train",
+                                    },
+                                    {"name": "rmse", "value": 1, "data_source": "test"},
+                                ],
+                            },
+                            {
+                                "urn": "skore:report:estimator:<report_id_1>",
+                                "type": "estimator",
+                                "id": "<report_id_1>",
+                                "key": "<key>",
+                                "ml_task": "<ml_task>",
+                                "estimator_class_name": "<estimator_class_name>",
+                                "dataset_fingerprint": "<dataset_fingerprint>",
+                                "created_at": nowstr,
+                                "metrics": [
+                                    {
+                                        "name": "log_loss",
+                                        "value": 0,
+                                        "data_source": "train",
+                                    },
+                                    {
+                                        "name": "log_loss",
+                                        "value": 2,
+                                        "data_source": "test",
+                                    },
+                                ],
+                            },
+                            {
+                                "urn": "skore:report:cross-validation:<report_id_2>",
+                                "type": "cross-validation",
+                                "id": "<report_id_2>",
+                                "key": "<key>",
+                                "ml_task": "<ml_task>",
+                                "estimator_class_name": "<estimator_class_name>",
+                                "dataset_fingerprint": "<dataset_fingerprint>",
+                                "created_at": nowstr,
+                                "metrics": [
+                                    {
+                                        "name": "rmse_mean",
+                                        "value": 0,
+                                        "data_source": "train",
+                                    },
+                                    {
+                                        "name": "rmse_mean",
+                                        "value": 3,
+                                        "data_source": "test",
+                                    },
+                                    {
+                                        "name": "rmse_std",
+                                        "value": 0.5,
+                                        "data_source": "test",
+                                    },
+                                ],
+                            },
+                        ],
+                    },
                 ),
             ),
         ]
@@ -578,7 +588,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
         summary = project.summarize()
 
         assert summary == [
@@ -600,6 +610,11 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "rmse_std": None,
+                "log_loss_std": None,
+                "roc_auc_std": None,
+                "fit_time_std": None,
+                "predict_time_std": None,
             },
             {
                 "id": "skore:report:estimator:<report_id_1>",
@@ -619,6 +634,11 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "rmse_std": None,
+                "log_loss_std": None,
+                "roc_auc_std": None,
+                "fit_time_std": None,
+                "predict_time_std": None,
             },
             {
                 "id": "skore:report:cross-validation:<report_id_2>",
@@ -638,7 +658,82 @@ class TestProject:
                 "roc_auc_mean": None,
                 "fit_time_mean": None,
                 "predict_time_mean": None,
+                "rmse_std": 0.5,
+                "log_loss_std": None,
+                "roc_auc_std": None,
+                "fit_time_std": None,
+                "predict_time_std": None,
             },
+        ]
+
+    @mark.respx()
+    def test_summarize_with_pagination(self, nowstr, respx_mock):
+        # non-regression test for https://github.com/probabl-ai/skore/pull/3125
+        #
+        # The reports endpoint is paginated with a limit of 500: the first page is full
+        # (500 items) so a second page is requested, which returns the remaining item.
+        # All 501 estimator reports must be retrieved.
+        def estimator_report(i):
+            return {
+                "urn": f"skore:report:estimator:{i}",
+                "type": "estimator",
+                "id": i,
+                "key": "<key>",
+                "ml_task": "<ml_task>",
+                "estimator_class_name": "<estimator_class_name>",
+                "dataset_fingerprint": "<dataset_fingerprint>",
+                "created_at": nowstr,
+                "metrics": [
+                    {"name": "rmse", "value": 1, "data_source": "test"},
+                ],
+            }
+
+        mocks = [
+            ("get", "/projects/workspace", {}, Response(200)),
+            (
+                "post",
+                "/projects/workspace/name",
+                {},
+                Response(
+                    201,
+                    json={"id": 42, "url": "http://domain/myworkspace/myname"},
+                ),
+            ),
+            (
+                "get",
+                "projects/workspace/name/reports/",
+                {"cursor": None},
+                Response(
+                    200,
+                    json={
+                        "next_cursor": 499,
+                        "items": [estimator_report(i) for i in range(500)],
+                    },
+                ),
+            ),
+            (
+                "get",
+                "projects/workspace/name/reports/",
+                {"cursor": 499},
+                Response(
+                    200,
+                    json={
+                        "next_cursor": None,
+                        "items": [estimator_report(500)],
+                    },
+                ),
+            ),
+        ]
+
+        for method, url, params, response in mocks:
+            respx_mock.request(method=method, url=url, params=params).mock(response)
+
+        project = Project(name="name", workspace="workspace")
+        summary = project.summarize()
+
+        assert len(summary) == 501
+        assert [report["id"] for report in summary] == [
+            f"skore:report:estimator:{i}" for i in range(501)
         ]
 
     @mark.respx
@@ -651,7 +746,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        Project.delete(workspace="workspace", name="name")
+        Project.delete(name="name", workspace="workspace")
 
     @mark.respx
     def test_delete_exception(self, respx_mock):
@@ -670,7 +765,7 @@ class TestProject:
                 "please contact the 'workspace' owner"
             ),
         ):
-            Project.delete(workspace="workspace", name="name")
+            Project.delete(name="name", workspace="workspace")
 
     @mark.filterwarnings(
         # ignore deprecation warnings generated by the way `pandas` is used by
@@ -712,7 +807,7 @@ class TestProject:
         for method, url, response in mocks:
             respx_mock.request(method=method, url=url).mock(response)
 
-        project = Project(workspace="workspace", name="name")
+        project = Project(name="name", workspace="workspace")
 
         report_url = "http://domain/workspace/name/estimators/42"
 

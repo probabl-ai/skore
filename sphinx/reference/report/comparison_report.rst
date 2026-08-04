@@ -20,8 +20,6 @@ way. The functionalities of the report are accessible through accessors.
     :template: class_methods_no_index.rst
 
     ComparisonReport.help
-    ComparisonReport.cache_predictions
-    ComparisonReport.clear_cache
     ComparisonReport.create_estimator_report
     ComparisonReport.get_predictions
 
@@ -42,6 +40,12 @@ Metrics
 The `metrics` accessor helps you to evaluate the statistical performance of the
 compared estimators. In addition, we provide a sub-accessor `plot`, to
 get the common performance metric representations.
+
+Registered metrics whose name is a valid Python identifier are also available as
+``report.metrics.<name>(...)``. Use
+:meth:`~skore.ComparisonReport.metrics.available` (or
+:meth:`~skore.ComparisonReport.metrics.help`) at runtime to discover which metrics
+apply to a given report.
 
 .. include:: ../api/ComparisonReport.metrics.inc
 

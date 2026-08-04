@@ -18,7 +18,7 @@ from skore._plugins.hub.project.project import Project
 
 @fixture
 def project():
-    return Project(workspace="workspace", name="name")
+    return Project(name="name", workspace="workspace")
 
 
 @fixture

@@ -88,6 +88,14 @@ autodoc_typehints = "none"
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 
+# Every build (dev/, X.Y/, stable/) is produced from the same artifact and deployed
+# as-is to several S3 destinations (see .github/workflows/sphinx.yml). Setting
+# `html_baseurl` makes Sphinx emit a `<link rel="canonical">` on every page pointing
+# at its `stable/` counterpart, regardless of which destination the artifact ends up
+# in. This consolidates SEO ranking signal on `stable/` and prevents old or dev
+# versions from competing with it in search results.
+html_baseurl = f"{os.environ['SPHINX_URL']}/stable/"
+
 html_css_files = ["css/custom.css"]
 html_js_files = [
     "js/sg_plotly_resize.js"
@@ -164,11 +172,6 @@ html_title = "skore"
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    "announcement": (
-        "📣 Help shape the future of skore and the scikit-learn ecosystem by "
-        '<a href="https://forms.gle/2fivh6RRrBF21CTD9" target="_blank" '
-        'style="text-decoration: underline;">taking our survey</a>!'
-    ),
     "logo": {
         "image_light": "_static/images/Logo_Skore_Light@2x.svg",
         "image_dark": "_static/images/Logo_Skore_Dark@2x.svg",

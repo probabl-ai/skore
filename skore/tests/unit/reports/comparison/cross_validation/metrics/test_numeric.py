@@ -21,10 +21,8 @@ expected_columns = pd.MultiIndex.from_tuples(
 
 
 @pytest.fixture
-def case_timings_no_predictions(
-    comparison_cross_validation_reports_binary_classification,
-):
-    expected_index = pd.Index(["Fit time (s)"], name="Metric")
+def case_timings(comparison_cross_validation_reports_binary_classification):
+    expected_index = pd.Index(["Fit time (s)", "Predict time test (s)"], name="Metric")
     return (
         comparison_cross_validation_reports_binary_classification,
         "timings",
@@ -34,7 +32,7 @@ def case_timings_no_predictions(
 
 
 @pytest.fixture
-def case_timings_with_predictions(
+def case_timings_with_train_predictions(
     comparison_cross_validation_reports_binary_classification,
 ):
     expected_index = pd.Index(
@@ -43,13 +41,8 @@ def case_timings_with_predictions(
     )
 
     report = comparison_cross_validation_reports_binary_classification
-    report.cache_predictions()
-    return (
-        report,
-        "timings",
-        expected_index,
-        expected_columns,
-    )
+    report._cache_predictions()
+    return (report, "timings", expected_index, expected_columns)
 
 
 @pytest.fixture
@@ -190,8 +183,8 @@ def case(request):
 @pytest.mark.parametrize(
     "case",
     [
-        "case_timings_no_predictions",
-        "case_timings_with_predictions",
+        "case_timings",
+        "case_timings_with_train_predictions",
         "case_score",
         "case_accuracy",
         "case_precision",
@@ -215,8 +208,8 @@ def test_metrics(case):
 @pytest.mark.parametrize(
     "case",
     [
-        "case_timings_no_predictions",
-        "case_timings_with_predictions",
+        "case_timings",
+        "case_timings_with_train_predictions",
         "case_score",
         "case_accuracy",
         "case_precision",
@@ -244,7 +237,7 @@ def test_metrics_aggregate(case):
 
 
 @pytest.mark.parametrize("metric", ["roc", "precision_recall"])
-def test_binary_classification_pos_label(pyplot, metric):
+def test_binary_classification_pos_label(metric):
     """Check the behaviour of the display methods when `pos_label` is not set."""
     X, y = make_classification(
         n_classes=2, class_sep=0.8, weights=[0.4, 0.6], random_state=0
@@ -278,9 +271,10 @@ def test_pos_label_default(metric):
     report_1 = CrossValidationReport(LogisticRegression(), X, y)
     report_2 = CrossValidationReport(LogisticRegression(), X, y)
     report = ComparisonReport({"report_1": report_1, "report_2": report_2})
-    result_both_labels = report.metrics.summarize(metric=metric).frame().reset_index()
-    assert result_both_labels["Label"].to_list() == ["A", "B"]
-    result_both_labels = result_both_labels.set_index(["Metric", "Label"])
+    result_both_labels = report.metrics.summarize(metric=metric).frame(flat_index=False)
+    assert result_both_labels.index.get_level_values(
+        "label"
+    ).drop_duplicates().to_list() == ["A", "B"]
 
 
 @pytest.mark.parametrize("metric", ["precision", "recall"])
@@ -325,3 +319,27 @@ def test_get_custom(comparison_cross_validation_reports_binary_classification):
         ("std", "DummyClassifier_1"): {"Hello": 0.0},
         ("std", "DummyClassifier_2"): {"Hello": 0.0},
     }
+
+
+def test_custom_metric_as_method(
+    comparison_cross_validation_reports_binary_classification,
+):
+    """Custom metrics are accessible as methods."""
+    report = comparison_cross_validation_reports_binary_classification
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()
+
+    report.metrics.add(lambda estimator, X, y: 1, name="hello")
+
+    assert report.metrics.hello().to_dict() == {
+        ("mean", "DummyClassifier_1"): {"Hello": 1.0},
+        ("mean", "DummyClassifier_2"): {"Hello": 1.0},
+        ("std", "DummyClassifier_1"): {"Hello": 0.0},
+        ("std", "DummyClassifier_2"): {"Hello": 0.0},
+    }
+
+    report.metrics.remove("hello")
+
+    with pytest.raises(AttributeError):
+        report.metrics.hello()

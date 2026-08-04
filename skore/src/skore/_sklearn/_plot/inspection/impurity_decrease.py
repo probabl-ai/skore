@@ -389,6 +389,9 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 **(barplot_kwargs or {}),
             )
         else:  # "cross-validation" in report_type
+            # seaborn deprecates passing `palette` without `hue`; only forward
+            # the palette when a hue column is provided.
+            boxplot_palette = {"palette": "tab10"} if hue is not None else {}
             facet = sns.catplot(
                 data=frame,
                 x="importance",
@@ -403,7 +406,7 @@ class ImpurityDecreaseDisplay(DisplayMixin):
                 x="importance",
                 y="feature",
                 hue=hue,
-                palette="tab10",
+                **boxplot_palette,
                 **(boxplot_kwargs or {}),
             )
         add_background_features = hue is not None

@@ -2,12 +2,10 @@
 
 from __future__ import annotations
 
-import itertools
 import re
 import warnings
 from collections.abc import Callable
 from functools import wraps
-from operator import itemgetter
 from re import sub as substitute
 from tempfile import TemporaryFile
 from typing import TYPE_CHECKING, Any, ParamSpec, TypedDict, TypeVar
@@ -45,6 +43,11 @@ if TYPE_CHECKING:
         roc_auc_mean: float | None
         fit_time_mean: float | None
         predict_time_mean: float | None
+        rmse_std: float | None
+        log_loss_std: float | None
+        roc_auc_std: float | None
+        fit_time_std: float | None
+        predict_time_std: float | None
 
 
 def slugify(string: str) -> str:
@@ -164,6 +167,8 @@ class Project:
 
     Parameters
     ----------
+    name : str
+        The name of the project.
     workspace : str
         The workspace of the project.
 
@@ -171,8 +176,6 @@ class Project:
         ``skore hub`` interface. It represents an isolated entity managing users,
         projects, and resources. It can be a company, organization, or team that
         operates independently within the system.
-    name : str
-        The name of the project.
 
     Attributes
     ----------
@@ -188,7 +191,7 @@ class Project:
 
     @ensure_workspace_is_valid
     @ensure_name_is_valid
-    def __init__(self, *, workspace: str, name: str):
+    def __init__(self, *, name: str, workspace: str):
         """
         Initialize a hub project.
 
@@ -311,17 +314,18 @@ class Project:
         report_url = f"{self.__frontend_url}/{frontend_slug}/{response.json()['id']}"
         console.print(f"Consult your report at [link={report_url}]{report_url}[/link]")
 
-    def get(self, urn: str) -> EstimatorReport | CrossValidationReport:
-        """Get a persisted report by its URN."""
-        if m := re.match(Project.__REPORT_URN_PATTERN, urn):
+    def get(self, id: str) -> EstimatorReport | CrossValidationReport:
+        """Get a persisted report by its ID (hub URN)."""
+        if m := re.match(Project.__REPORT_URN_PATTERN, id):
             workspace = self.workspace
             name = self.name
             type = m["type"]
-            id = m["id"]
-            url = f"projects/{workspace}/{name}/{type}-reports/{id}"
+            report_id = m["id"]
+            url = f"projects/{workspace}/{name}/{type}-reports/{report_id}"
         else:
             raise ValueError(
-                f"URN '{urn}' format does not match '{Project.__REPORT_URN_PATTERN}'."
+                f"Report ID '{id}' format does not match "
+                f"'{Project.__REPORT_URN_PATTERN}'."
             )
 
         # Retrieve presigned URL
@@ -353,8 +357,7 @@ class Project:
     def summarize(self) -> list[Metadata]:
         """Obtain metadata/metrics for all persisted reports in insertion order."""
 
-        def dto(response: Any) -> Metadata:
-            report_type, summary = response
+        def dto(summary: dict[str, Any], /) -> Metadata:
             metrics = {
                 metric["name"]: metric["value"]
                 for metric in summary["metrics"]
@@ -367,7 +370,7 @@ class Project:
                 "date": summary["created_at"],
                 "learner": summary["estimator_class_name"],
                 "ml_task": summary["ml_task"],
-                "report_type": report_type,
+                "report_type": summary["type"],
                 "dataset": summary["dataset_fingerprint"],
                 "rmse": metrics.get("rmse"),
                 "log_loss": metrics.get("log_loss"),
@@ -379,38 +382,57 @@ class Project:
                 "roc_auc_mean": metrics.get("roc_auc_mean"),
                 "fit_time_mean": metrics.get("fit_time_mean"),
                 "predict_time_mean": metrics.get("predict_time_mean"),
+                "rmse_std": metrics.get("rmse_std"),
+                "log_loss_std": metrics.get("log_loss_std"),
+                "roc_auc_std": metrics.get("roc_auc_std"),
+                "fit_time_std": metrics.get("fit_time_std"),
+                "predict_time_std": metrics.get("predict_time_std"),
             }
 
-        with HUBClient() as hub_client:
-            responses = itertools.chain(
-                zip(
-                    itertools.repeat("estimator"),
-                    hub_client.get(
-                        f"projects/{self.workspace}/{self.name}/estimator-reports/"
-                    ).json(),
-                ),
-                zip(
-                    itertools.repeat("cross-validation"),
-                    hub_client.get(
-                        f"projects/{self.workspace}/{self.name}/cross-validation-reports/"
-                    ).json(),
-                ),
-            )
+        endpoint: str = f"projects/{self.workspace}/{self.name}/reports/"
+        cursor: int | None = None
+        reports: list[Metadata] = []
 
-        return sorted(map(dto, responses), key=itemgetter("date"))
+        with HUBClient() as client:
+            # Get all reports from a paginated endpoint.
+            #
+            # The skore-hub uses cursor-based pagination: each page is requested using
+            # the ``id`` of the last item of the previous page as the cursor, rather
+            # than a numeric page offset.
+            while True:
+                response = client.get(
+                    endpoint,
+                    params={
+                        "cursor": cursor,
+                        "limit": 500,
+                        "sort": "ASC",
+                        "sort_by": "created_at",
+                    },
+                )
+
+                page = response.json()
+
+                reports.extend(map(dto, page["items"]))
+
+                if (cursor := page["next_cursor"]) is None:
+                    break
+
+        return reports
 
     def __repr__(self) -> str:  # noqa: D105
-        return f"Project(mode='hub', name='{self.name}', workspace='{self.workspace}')"
+        return f"Project(name='{self.name}', mode='hub', workspace='{self.workspace}')"
 
     @staticmethod
     @ensure_workspace_is_valid
     @ensure_name_is_valid
-    def delete(*, workspace: str, name: str) -> None:
+    def delete(*, name: str, workspace: str) -> None:
         """
         Delete a hub project.
 
         Parameters
         ----------
+        name : str
+            The name of the project.
         workspace : Path
             The workspace of the project.
 
@@ -418,8 +440,6 @@ class Project:
             ``skore hub`` interface. It represents an isolated entity managing users,
             projects, and resources. It can be a company, organization, or team that
             operates independently within the system.
-        name : str
-            The name of the project.
         """
         with HUBClient() as hub_client:
             try:

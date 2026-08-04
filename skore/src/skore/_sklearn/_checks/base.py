@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 from abc import abstractmethod
+from collections import defaultdict
 from importlib.metadata import PackageNotFoundError, version
-from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Literal, Protocol, TypedDict, runtime_checkable
 from uuid import uuid4
 
 import pandas as pd
 
 from skore._externals._sklearn_compat import parse_version
+from skore._sklearn._plot.base import DisplayMixin
 from skore._sklearn.types import ReportType
-from skore._utils.repr.base import DisplayHelpMixin
 from skore._utils.repr.html_repr import render_template
 
 if TYPE_CHECKING:
@@ -17,9 +18,26 @@ if TYPE_CHECKING:
 
 
 CheckCode = str
+CheckSource = str
+CheckSources = str
+CheckExplanation = str
+
+CheckSection = Literal["issue", "tip", "passed", "not_applicable", "skipped", "ignored"]
 
 
-_TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str, str]] = [
+class CheckResult(TypedDict):
+    title: str
+    docs_url: str | None
+    explanation: CheckExplanation | dict[CheckSource, CheckExplanation] | None
+    section: CheckSection
+
+
+class GroupedExplanation(TypedDict):
+    source: CheckSources
+    explanation: CheckExplanation
+
+
+_TAB_SPECS: list[tuple[str, CheckSection, str, str]] = [
     (
         "Issues",  # Title of the tab
         "issue",  # Severity of the checks collected in the tab
@@ -38,100 +56,136 @@ _TAB_SPECS: list[tuple[str, Literal["issue", "tip", "passed"], str, str]] = [
         "No checks passed without reporting anything.",
         "Checks that ran on your report without flagging anything.",
     ),
+    (
+        "Not Applicable",
+        "not_applicable",
+        "No checks were skipped as not applicable.",
+        (
+            "Checks that could not run because required data, task type, "
+            "or model capabilities were missing."
+        ),
+    ),
+    (
+        "Skipped",
+        "skipped",
+        "No checks were skipped in fast mode.",
+        "Slow checks not run because fast mode is on.",
+    ),
+    (
+        "Ignored",
+        "ignored",
+        "No checks were muted.",
+        "Checks excluded via ignore.",
+    ),
 ]
 
 
-class ChecksSummaryDisplay(DisplayHelpMixin):
+def _group_explanations(
+    explanation: dict[CheckSource, CheckExplanation],
+) -> list[GroupedExplanation]:
+    """Merge estimators that share the same explanation for display."""
+    grouped: defaultdict[CheckExplanation, list[CheckSource]] = defaultdict(list)
+    for source, text in explanation.items():
+        grouped[text].append(source)
+    return [
+        {"source": ", ".join(sources), "explanation": text}
+        for text, sources in grouped.items()
+    ]
+
+
+class ChecksSummaryDisplay(DisplayMixin):
     """Display for the checks summary.
 
     An instance of this class will be created by
     :meth:`~skore.EstimatorReport.checks.summarize`. This class should not be
     instantiated directly.
 
-    The display object has an HTML representation organized in three tabs
-    (``Issues``, ``Tips``, ``Passed``). The full list of check results is
-    accessible via the :meth:`~ChecksSummaryDisplay.frame` method.
+    The display object has an HTML representation organized in tabs
+    (``Issues``, ``Tips``, ``Passed``, ``Not Applicable``, ``Skipped``,
+    ``Ignored``).
+    The full list of check results is accessible via the
+    :meth:`~ChecksSummaryDisplay.frame` method.
 
     Parameters
     ----------
-    check_results : dict of str to dict
-        Results of applicable checks keyed by check code
-        (e.g. ``"SKD001"``). Each value is a dict with keys ``"title"``,
-        ``"explanation"``, ``"severity"`` (``"issue"`` or ``"tip"``), and
-        optionally ``"docs_url"``.
-
-    n_ignored_codes : int
-        Number of the checks that were muted via ``ignore=`` or the global
-        ``ignore_checks`` configuration.
+    check_results : dict of CheckCode to CheckResult
+        Summary of all checks keyed by check code (e.g. ``"SKD001"``).
+        Each value has keys ``"title"``, ``"explanation"``, ``"section"``,
+        and optionally ``"docs_url"``. The ``"section"`` value is one of
+        ``"issue"``, ``"tip"``, ``"passed"``, ``"not_applicable"``,
+        ``"skipped"``, or ``"ignored"``.
     """
 
     def __init__(
         self,
-        check_results: dict[CheckCode, dict],
-        n_ignored_codes: int,
+        check_results: dict[CheckCode, CheckResult],
+        fast_mode: bool,
     ) -> None:
         self._check_results = pd.DataFrame(
             [
                 {
                     "code": code,
                     "title": check_result["title"],
-                    "severity": check_result["severity"],
+                    "section": check_result["section"],
                     "explanation": check_result["explanation"],
                     "documentation_url": _get_issue_documentation_url(check_result),
                 }
                 for code, check_result in check_results.items()
             ],
-            columns=["code", "title", "severity", "explanation", "documentation_url"],
+            columns=["code", "title", "section", "explanation", "documentation_url"],
         )
-        self._n_ignored_codes = n_ignored_codes
+        self._fast_mode = fast_mode
 
     @property
     def _header(self) -> str:
         return (
-            f"Checks summary: {len(self.frame(severity='issue'))} issue(s), "
-            f"{len(self.frame(severity='tip'))} tip(s), "
-            f"{len(self.frame(severity='passed'))} passed, "
-            f"{self._n_ignored_codes} ignored."
+            f"Checks summary{' (fast mode)' if self._fast_mode else ''}: "
+            f"{len(self.frame(section='issue'))} issue(s), "
+            f"{len(self.frame(section='tip'))} tip(s), "
+            f"{len(self.frame(section='passed'))} passed, "
+            f"{len(self.frame(section='not_applicable'))} not applicable, "
+            f"{len(self.frame(section='skipped'))} skipped, "
+            f"{len(self.frame(section='ignored'))} ignored."
         )
 
-    def frame(
-        self,
-        severity: Literal["issue", "tip", "passed", "all"] = "all",
-    ) -> pd.DataFrame:
+    def frame(self, section: CheckSection | Literal["all"] = "all") -> pd.DataFrame:
         """Return check results as a DataFrame.
 
         Parameters
         ----------
-        severity : {"issue", "tip", "passed", "all"}, default="all"
+        section : {"issue", "tip", "passed", "not_applicable", "skipped", \
+                "ignored", "all"}, default="all"
             Which results to include. ``"issue"`` / ``"tip"`` return only
-            the matching findings (explanation is not ``None``); ``"passed"``
-            returns the checks that ran without reporting anything; ``"all"``
-            returns every applicable check result.
+            the matching findings; ``"passed"`` returns the checks that ran
+            without reporting anything; ``"not_applicable"`` returns checks
+            that could not run; ``"skipped"`` returns checks not run in fast
+            mode; ``"ignored"`` returns muted checks; ``"all"`` returns every
+            check result.
 
         Returns
         -------
         pandas.DataFrame
             A DataFrame with one row per check and columns ``"code"``,
-            ``"title"``, ``"severity"``, ``"explanation"``, and
+            ``"title"``, ``"section"``, ``"explanation"``, and
             ``"documentation_url"``. The ``"explanation"`` column is ``None``
-            for checks that passed without reporting anything.
+            for checks that passed, were skipped, or were ignored. For
+            issue/tip/not-applicable rows it is a string for single-report
+            results, or a dict mapping source names to messages for aggregated
+            comparison results (entries with a ``None`` explanation are
+            omitted from the dict).
         """
-        match severity:
-            case "issue" | "tip":
-                return self._check_results.query(
-                    "severity == @severity and explanation.notna()"
-                )
-            case "passed":
-                return self._check_results.query("explanation.isna()")
+        match section:
+            case "issue" | "tip" | "passed" | "not_applicable" | "skipped" | "ignored":
+                return self._check_results.query("section == @section")
             case "all":
                 return self._check_results.copy()
             case _:
-                raise ValueError(f"Invalid severity: {severity}")
+                raise ValueError(f"Invalid section: {section}")
 
-    def _repr_html_(self) -> str:
-        tabs = []
-        for label, severity, empty_message, help_text in _TAB_SPECS:
-            df = self.frame(severity=severity)
+    def _build_tabs(self) -> list[dict[str, object]]:
+        tabs: list[dict[str, object]] = []
+        for label, section, empty_message, help_text in _TAB_SPECS:
+            df = self.frame(section=section)
             tabs.append(
                 {
                     "label": label,
@@ -141,47 +195,86 @@ class ChecksSummaryDisplay(DisplayHelpMixin):
                         {
                             "code": row.code,
                             "title": row.title,
-                            "explanation": row.explanation
-                            if pd.notna(row.explanation)
-                            else None,
-                            "documentation_url": row.documentation_url
-                            if pd.notna(row.documentation_url)
-                            else None,
+                            "explanation": (
+                                row.explanation
+                                if pd.notna(row.explanation)
+                                and isinstance(row.explanation, str)
+                                else None
+                            ),
+                            "grouped_explanations": (
+                                _group_explanations(row.explanation)
+                                if isinstance(row.explanation, dict)
+                                else None
+                            ),
+                            "documentation_url": (
+                                row.documentation_url
+                                if pd.notna(row.documentation_url)
+                                else None
+                            ),
                         }
                         for row in df.itertuples()
                     ],
                 }
             )
+        return tabs
+
+    def _html_context(self, *, show_header: bool, nested: bool) -> dict:
+        return {
+            "container_id": f"skore-checks-summary-{uuid4().hex[:8]}",
+            "header": self._header,
+            "tabs": self._build_tabs(),
+            "show_header": show_header,
+            "nested": nested,
+            "fast_mode": self._fast_mode,
+        }
+
+    def _embedded_repr_html(self) -> str:
+        """HTML for embedding in a report repr (content only, no shadow DOM)."""
         return render_template(
-            "checks_summary_display.html.j2",
-            {
-                "container_id": f"skore-checks-summary-{uuid4().hex[:8]}",
-                "header": self._header,
-                "tabs": tabs,
-            },
+            "display/checks_summary_display-content.html.j2",
+            self._html_context(show_header=False, nested=True),
         )
 
-    def _repr_mimebundle_(self, **kwargs: object) -> dict[str, str]:
-        return {"text/plain": self.__repr__(), "text/html": self._repr_html_()}
+    def _repr_html_(self) -> str:
+        return render_template(
+            "display/checks_summary_display.html.j2",
+            self._html_context(show_header=True, nested=False),
+        )
 
     def __repr__(self) -> str:
         """Return a plain-text summary of check results."""
-        if self._check_results.empty:
-            return self._header + "\nAll checks were either ignored or not applicable."
         lines = [self._header]
-        for label, severity, _, _ in _TAB_SPECS:
-            df = self.frame(severity=severity)
+        for label, section, _, _ in _TAB_SPECS:
+            df = self.frame(section=section)
             if df.empty:
                 continue
             lines.append(f"{label}:")
-            if severity == "passed":
+            if section in ("passed", "skipped", "ignored"):
                 lines.extend(f"- [{row.code}] {row.title}" for row in df.itertuples())
             else:
                 for row in df.itertuples():
-                    msg = f"- [{row.code}] {row.title}. {row.explanation}"
-                    if pd.notna(row.documentation_url):
-                        msg += f" Read more about this here: {row.documentation_url}."
-                    lines.append(msg)
+                    msg = f"- [{row.code}] {row.title}"
+                    explanation = row.explanation
+                    if isinstance(explanation, dict):
+                        if pd.notna(row.documentation_url):
+                            msg += (
+                                f". Read more about this here: {row.documentation_url}."
+                            )
+                        else:
+                            msg += "."
+                        lines.append(msg)
+                        lines.extend(
+                            f"  - [{entry['source']}] {entry['explanation']}"
+                            for entry in _group_explanations(explanation)
+                        )
+                    else:
+                        if pd.notna(explanation):
+                            msg += f". {explanation}"
+                        if pd.notna(row.documentation_url):
+                            msg += (
+                                f" Read more about this here: {row.documentation_url}."
+                            )
+                        lines.append(msg)
         lines.append("Mute a check with .checks.summarize(ignore=['<code>']).")
         return "\n".join(lines)
 
@@ -192,8 +285,8 @@ class Check(Protocol):
 
     Each check wraps a callable that inspects a report. If the callable returns a
     non-empty string, that text is recorded as a finding under :attr:`code` with the
-    given :attr:`title` and :attr:`severity`. Checks are scoped to a single report
-    type via :attr:`report_type` so they only run on matching reports.
+    given :attr:`title` and :attr:`severity`. Checks are scoped to report types via
+    :attr:`report_type` so they only run on matching reports.
 
     Attributes
     ----------
@@ -209,9 +302,9 @@ class Check(Protocol):
         is shown as-is; otherwise it is treated as an HTML anchor fragment under
         the automated checks user guide.
 
-    report_type : str
-        Must be one of ``"cross-validation"``, ``"estimator"``,
-        ``"comparison-estimator"``, or ``"comparison-cross-validation"``.
+    report_type : list of {"estimator", "cross-validation", \
+            "comparison-estimator", "comparison-cross-validation"}
+        Report types this check applies to.
 
     severity : {"issue", "tip"}
         Severity of the finding. ``"issue"`` flags a modeling problem to fix;
@@ -228,7 +321,7 @@ class Check(Protocol):
 
     code: CheckCode
     title: str
-    report_type: ReportType
+    report_types: list[ReportType]
     docs_url: str | None = None
     severity: Literal["issue", "tip"]
     slow: bool = False
@@ -249,7 +342,7 @@ class Check(Protocol):
         """
 
 
-def _get_issue_documentation_url(issue: dict) -> str | None:
+def _get_issue_documentation_url(issue: CheckResult) -> str | None:
     docs_url = issue.get("docs_url")
     if docs_url is None:
         return None

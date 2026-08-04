@@ -1,8 +1,9 @@
 ---
 # These are optional metadata elements. Feel free to remove any of them.
-status: "accepted"
+status: "superseded"
 date: 2024-11-26
 decision-makers: @augustebaum @tuscland
+superseded-by: 0002-narwhals-user-input
 ---
 
 # Postone usage of generic DataFrame library

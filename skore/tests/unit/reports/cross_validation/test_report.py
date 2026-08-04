@@ -12,7 +12,7 @@ from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import LeaveOneGroupOut, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import check_is_fitted
 
@@ -98,20 +98,12 @@ def test_attributes(fixture_name, request, cv, n_jobs):
 )
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_cache_predictions(request, fixture_name, expected_n_keys, n_jobs):
-    """Check that calling cache_predictions fills the cache."""
+    """Check that test predictions are cached at init time."""
     estimator, X, y = request.getfixturevalue(fixture_name)
     report = CrossValidationReport(estimator, X, y, splitter=2, n_jobs=n_jobs)
     for estimator_report in report.reports_:
-        assert estimator_report._cache == {}
-
-    report.cache_predictions()
-
-    for estimator_report in report.reports_:
-        assert len(estimator_report._cache) == expected_n_keys
-
-    report.clear_cache()
-    for estimator_report in report.reports_:
-        assert estimator_report._cache == {}
+        assert ("report", "test", "predict", None) in estimator_report._cache
+        assert ("report", "train", "predict", None) not in estimator_report._cache
 
 
 @pytest.mark.parametrize("data_source", ["train", "test"])
@@ -168,17 +160,11 @@ def test_pickle(tmp_path, logistic_binary_classification_data):
     """
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
-    report.cache_predictions()
+    report._cache_predictions()
     joblib.dump(report, tmp_path / "report.joblib")
 
 
-@pytest.mark.parametrize(
-    "error",
-    [
-        ValueError("No more fitting"),
-        KeyboardInterrupt(),
-    ],
-)
+@pytest.mark.parametrize("error", [ValueError("No more fitting"), KeyboardInterrupt()])
 @pytest.mark.parametrize("n_jobs", [None, 1, 2])
 def test_interrupted_propagates_error(binary_classification_data, error, n_jobs):
     """Check that when a split fails during cross-validation, the error propagates."""
@@ -200,7 +186,10 @@ def test_clustering():
         CrossValidationReport(KMeans(), X=np.random.rand(10, 5), y=None)
 
 
-@pytest.mark.parametrize("container_types", [("pandas", "series"), ("array", "array")])
+@pytest.mark.parametrize(
+    "container_types",
+    [("pandas", "series"), ("array", "array"), ("polars", "polars_series")],
+)
 def test_create_estimator_report(container_types, forest_binary_classification_data):
     """Test the `create_estimator_report` method."""
     estimator, X, y = forest_binary_classification_data
@@ -242,12 +231,37 @@ def _assert_cross_validation_report_repr_html(
     assert "CrossValidationReport.metrics" in html_out
 
 
-def test_repr_mentions_to_markdown(forest_binary_classification_data):
+def test_metrics_summary_html_is_compact(forest_binary_classification_data):
+    """Metrics tab HTML must not keep the estimator / Aggregate MultiIndex levels.
+
+    After #3094, frame(verbose_name=True, flat_index=False) returns a named
+    MultiIndex on the columns. Without droplevel + rename_axis, to_html emits a
+    second header row and a leading index column of level names.
+    """
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+    metrics_html = report._html_repr_fragments()["metrics_summary"]
+
+    thead = metrics_html[metrics_html.find("<thead>") : metrics_html.find("</thead>")]
+    tbody = metrics_html[metrics_html.find("<tbody>") : metrics_html.find("</tbody>")]
+    assert thead.count("<tr") == 1
+    assert "<th>" not in tbody
+    assert "Estimator" not in metrics_html
+    assert "Aggregate" not in metrics_html
+
+    repr_str = repr(report)
+    assert "Estimator" not in repr_str
+    assert "Aggregate" not in repr_str
+
+
+def test_text_repr(forest_binary_classification_data):
     estimator, X, y = forest_binary_classification_data
     report = evaluate(estimator, X, y, splitter=2)
     repr_str = repr(report)
-    assert "to_markdown()" in repr_str
+    assert repr_str.startswith("CrossValidationReport:")
     assert report.estimator_name_ in repr_str
+    assert "to_markdown()" in repr_str
+    assert "Accuracy" in repr_str
 
 
 def test_to_markdown(forest_binary_classification_data):
@@ -263,6 +277,9 @@ def test_to_markdown(forest_binary_classification_data):
     assert "fit time:" in markdown
 
 
+@pytest.mark.filterwarnings(
+    "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+)
 def test_report_repr_html_binary_classification():
     X, y = make_classification(n_classes=2, random_state=42)
     estimator = DummyClassifier()
@@ -292,6 +309,9 @@ def test_report_repr_html_multioutput_regression(regression_multioutput_data):
 
 
 @pytest.mark.parametrize("splitter", [2, 3])
+@pytest.mark.filterwarnings(
+    "ignore:Precision is ill-defined.*:sklearn.exceptions.UndefinedMetricWarning"
+)
 def test_report_repr_html_sklearn_estimator_bad_html_repr(splitter):
     """HTML repr must still work when the underlying estimator rejects
     ``_repr_html_``."""
@@ -302,19 +322,69 @@ def test_report_repr_html_sklearn_estimator_bad_html_repr(splitter):
 
 
 def test_report_with_data_op():
-    X_a, y_a = make_classification(n_samples=10)
+    X_a, y_a = make_classification(n_samples=10, random_state=42)
     data_op = skrub.X(X_a).skb.apply(LogisticRegression(), y=skrub.y(y_a))
     learner = data_op.skb.make_learner()
 
     report = CrossValidationReport(learner, data=data_op.skb.get_data())
-    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
-        ("SkrubLearner", "mean")
-    ]
+    accuracy = report.metrics.accuracy(aggregate="mean")
+    assert isinstance(accuracy, pd.Series)
+    assert accuracy.name.endswith("_mean")
 
     report = CrossValidationReport(data_op)
-    assert list(report.metrics.accuracy(aggregate="mean").columns) == [
-        ("SkrubLearner", "mean")
-    ]
+    accuracy = report.metrics.accuracy(aggregate="mean")
+    assert isinstance(accuracy, pd.Series)
+    assert accuracy.name.endswith("_mean")
+
+
+def test_cross_validation_report_split_indices_from_data_op_cv():
+    """CrossValidationReport derives split indices from skrub iter_cv_splits."""
+    df = skrub.datasets.toy_products()
+    data = skrub.var("df", df)
+    groups = data["seller"]
+    X = data[["description", "price"]].skb.mark_as_X(
+        cv=LeaveOneGroupOut(), split_kwargs={"groups": groups}
+    )
+    y = data["category"].skb.mark_as_y()
+    pred = X.skb.apply(DummyClassifier(), y=y)
+    environment = {"df": df}
+
+    expected_indices = tuple(
+        (split["row_indices_train"], split["row_indices_test"])
+        for split in pred.skb.iter_cv_splits(environment=environment, cv=None)
+    )
+    report = CrossValidationReport(pred.skb.make_learner(), data=environment)
+
+    assert len(report.split_indices) == len(expected_indices)
+    for (train_a, test_a), (train_b, test_b) in zip(
+        report.split_indices, expected_indices, strict=True
+    ):
+        np.testing.assert_array_equal(train_a, train_b)
+        np.testing.assert_array_equal(test_a, test_b)
+
+
+def test_get_from_dict_with_grouped_data_op_cv():
+    """Serialization roundtrip preserves grouped CV folds from a DataOp."""
+    df = skrub.datasets.toy_products()
+    data = skrub.var("df", df)
+    groups = data["seller"]
+    X = data[["description", "price"]].skb.mark_as_X(
+        cv=LeaveOneGroupOut(), split_kwargs={"groups": groups}
+    )
+    y = data["category"].skb.mark_as_y()
+    pred = X.skb.apply(DummyClassifier(), y=y)
+
+    report = CrossValidationReport(pred, data={"df": df})
+    expected_accuracy = report.metrics.accuracy()
+    expected_preds = report.get_predictions(data_source="test")
+    state = report.to_dict()
+
+    restored = CrossValidationReport.from_dict(state)
+    restored._clear_cache()
+    assert restored.metrics.accuracy().equals(expected_accuracy)
+    preds = restored.get_predictions(data_source="test")
+    for pred_fold, expected_pred in zip(preds, expected_preds, strict=True):
+        np.testing.assert_array_equal(pred_fold, expected_pred)
 
 
 def test_create_estimator_report_with_data_op():
@@ -337,7 +407,7 @@ def test_from_dict_bypasses_init_and_restores_state(
     estimator, X, y = logistic_binary_classification_data
     report = CrossValidationReport(estimator, X, y, splitter=2)
     expected_accuracy = report.metrics.accuracy()
-    report.cache_predictions()
+    report._cache_predictions()
     state = report.to_dict()
 
     def _unexpected_init(self, *args, **kwargs):
@@ -362,7 +432,7 @@ def test_from_dict_bypasses_init_and_restores_state(
     # check new metrics/predictions can be computed:
     restored.metrics.roc_auc()
     _ = report.get_predictions(data_source="test")
-    report.cache_predictions()
+    report._cache_predictions()
 
     # check repr doesn't crash:
     restored._repr_html_()
@@ -402,7 +472,7 @@ def test_get_from_dict_with_complex_data_op():
     restored = CrossValidationReport.from_dict(state)
 
     # check fresh computations still work after restoring from state:
-    restored.clear_cache()
+    restored._clear_cache()
     assert restored.metrics.accuracy().equals(expected_accuracy)
     preds = restored.get_predictions(data_source="test")
     for pred, expected_pred in zip(preds, expected_preds, strict=True):
@@ -448,3 +518,29 @@ def test_state_has_no_unexpected_data_copy(estimator, splitter):
     # However, this is a heuristic; if this test fails, it may also be because the state
     # size is no longer dominated by the size of X.
     assert state_nbytes_without_data(report) < X.nbytes
+
+
+def test_no_data_error():
+    X, y = make_classification()
+    estimator = DummyClassifier()
+    with pytest.raises(TypeError, match="X and y must be provided"):
+        CrossValidationReport(estimator, splitter=2)
+        CrossValidationReport(estimator, X=X, splitter=2)
+        CrossValidationReport(estimator, y=y, splitter=2)
+
+
+def test_repr_and_html_do_not_raise(forest_binary_classification_data):
+    """Report repr and HTML must work with auto/wide metrics frames."""
+    estimator, X, y = forest_binary_classification_data
+    report = CrossValidationReport(estimator, X=X, y=y, splitter=2)
+
+    repr_str = repr(report)
+    assert "CrossValidationReport" in repr_str
+
+    html = report._repr_html_()
+    assert isinstance(html, str)
+    assert len(html) > 0
+
+    markdown = report.to_markdown()
+    assert isinstance(markdown, str)
+    assert len(markdown) > 0

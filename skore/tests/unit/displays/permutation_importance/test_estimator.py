@@ -21,7 +21,7 @@ from skore._utils._testing import custom_r2_score
         "multioutput_regression",
     ],
 )
-def test_invalid_subplot_by(pyplot, task, request):
+def test_invalid_subplot_by(task, request):
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     err_msg = "The column 'invalid' is not available for subplotting."
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
@@ -45,7 +45,7 @@ def test_invalid_subplot_by(pyplot, task, request):
         ("auto", 1),
     ],
 )
-def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
+def test_valid_subplot_by(task, subplot_by, expected_len, request):
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.inspection.permutation_importance(n_repeats=2, seed=0)
     fig = display.plot(subplot_by=subplot_by)
@@ -76,7 +76,7 @@ def test_valid_subplot_by(pyplot, task, subplot_by, expected_len, request):
     ],
 )
 def test_subplot_by_non_averaged_metrics(
-    pyplot, task, metric, metric_name, subplot_by, expected_len, request
+    task, metric, metric_name, subplot_by, expected_len, request
 ):
     report = request.getfixturevalue(f"estimator_reports_{task}")[0]
     display = report.inspection.permutation_importance(
@@ -95,7 +95,7 @@ def test_subplot_by_non_averaged_metrics(
         display.plot(subplot_by="invalid")
 
 
-def test_multiple_metrics_require_metric_param(pyplot, estimator_reports_regression):
+def test_multiple_metrics_require_metric_param(estimator_reports_regression):
     report = estimator_reports_regression[0]
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=["r2", "neg_mean_squared_error"]
@@ -123,7 +123,7 @@ def test_frame_metric_filter(estimator_reports_regression):
     assert set(display.frame(metric=["r2"])["metric"]) == {"r2"}
 
 
-def test_callable_metric_name(pyplot, estimator_reports_regression):
+def test_callable_metric_name(estimator_reports_regression):
     report = estimator_reports_regression[0]
     display = report.inspection.permutation_importance(
         n_repeats=2, seed=0, metric=custom_r2_score
@@ -192,7 +192,7 @@ def test_frame_mixed_averaged_and_non_averaged_metrics(
 
 
 def test_plot_mixed_averaged_and_non_averaged_metrics(
-    pyplot, estimator_reports_binary_classification
+    estimator_reports_binary_classification,
 ):
     report = estimator_reports_binary_classification[0]
     metrics = {
