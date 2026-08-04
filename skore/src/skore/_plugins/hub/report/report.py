@@ -135,5 +135,9 @@ class ReportPayload(BaseModel, ABC, Generic[Report]):
 
     @computed_field  # type: ignore[prop-decorator]
     @cached_property
-    def environment(self) -> Environment:
-        return Environment(project=self.project)
+    def environment(self) -> Environment | None:
+        payload = Environment(project=self.project)
+
+        if payload.checksum is not None:
+            return payload
+        return None
