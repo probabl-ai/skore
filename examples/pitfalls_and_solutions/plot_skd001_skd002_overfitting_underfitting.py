@@ -32,8 +32,12 @@ data.
 # Load the California housing dataset
 # ===================================
 #
-# Each row is a census block group. The target ``MedHouseVal`` is the median
-# house value for the block group.
+# Each row is a census block group in a geographical region whose coordinates
+# we have (``Latitude``, ``Longitude``). The features mix house characteristics
+# (age, rooms, occupancy) with regional aggregates (median income, population).
+# The target ``MedHouseVal`` is the median house value for the block group.
+# The feature set is small but rich: later we combine columns such as
+# ``AveRooms / AveOccup`` into a rooms-per-person marker.
 
 import pandas as pd
 from sklearn.datasets import fetch_california_housing
@@ -48,18 +52,18 @@ X, X_heldout, y, y_heldout = train_test_split(
     random_state=42,
 )
 
-y = pd.Series(y, name="MedHouseVal")
-y_heldout = pd.Series(y_heldout, name="MedHouseVal")
-
 # %%
-# Note ``AveRooms`` and ``AveOccup``: we combine them later into a
-# rooms-per-person feature.
+# Let us glance at the table. Pay attention to ``AveRooms`` and ``AveOccup``:
+# we will combine them into a rooms-per-person feature below.
 
 from skrub import TableReport
 
 TableReport(X)
 
 # %%
+# ``MedHouseVal`` is capped at 5.0 (500k USD). Click the column in the report to
+# see the histogram and the pile-up at the ceiling.
+
 TableReport(y)
 
 # %%
@@ -99,9 +103,9 @@ report_underfit.checks.summarize(fast_mode=True)
 # =============================
 #
 # Moving away from underfitting means giving the model enough expressiveness to
-# use the inputs. Dropping to a :class:`~sklearn.linear_model.Ridge` with a much
-# smaller ``alpha`` already learns useful weights on each feature and is enough
-# to clear SKD002 on this table.
+# use the inputs. Let us drop to a :class:`~sklearn.linear_model.Ridge` with a
+# much smaller ``alpha``: it already learns useful weights on each feature and
+# is enough to clear SKD002 on this table.
 
 report_ridge = skore.evaluate(Ridge(alpha=1.0), X=X, y=y, splitter=splitter)
 report_ridge.metrics.summarize(data_source="both").frame()
@@ -143,7 +147,8 @@ report_ridge_fe.checks.summarize(fast_mode=True)
 # Another is to switch to a model family that learns nonlinear structure on its
 # own. A default :class:`~sklearn.ensemble.RandomForestRegressor` does that,
 # but unrestricted leaves can also memorize the training data: train metrics
-# look excellent, test metrics lag, and SKD001 flags the gap.
+# look excellent, test metrics improve but not as much as train ones, and
+# SKD001 flags the gap.
 
 from sklearn.ensemble import RandomForestRegressor
 
@@ -162,7 +167,7 @@ report_rf.checks.summarize(fast_mode=True)
 # Regularization
 # ==============
 #
-# Once SKD001 appears, you pull expressiveness back with capacity limits on the
+# Once SKD001 appears, we pull expressiveness back with capacity limits on the
 # estimator (leaf size, feature fraction, depth, learning rate, …).
 #
 # Here, we set the hyperparameters of the model by hand. In practice, it is
@@ -195,20 +200,27 @@ report_rf_reg.checks.summarize(fast_mode=True)
 # ==============
 #
 # For iterative learners, early stopping is another way to limit expressiveness
-# that does not require a hyperparameter search. Hold out a validation set,
+# that does not require a hyperparameter search. We hold out a validation set,
 # monitor a metric, and stop when that metric stops improving. Further
-# iterations are assumed to overfit. Either pass a validation set to ``.fit``
-# or use the ``validation_fraction`` parameter. See scikit-learn's example on
-# `gradient boosting with early stopping
+# iterations are assumed to overfit. We can either pass a validation set to
+# ``.fit`` or use the ``validation_fraction`` parameter. See scikit-learn's
+# example on `gradient boosting with early stopping
 # <https://scikit-learn.org/stable/auto_examples/ensemble/plot_gradient_boosting_early_stopping.html>`_.
 #
-# Compare a :class:`~sklearn.ensemble.HistGradientBoostingRegressor` with and
-# without early stopping on the same split.
+# Let us compare a :class:`~sklearn.ensemble.HistGradientBoostingRegressor`
+# with and without early stopping on the same split to see the effect. We bump
+# ``max_iter`` so that early stopping has room to act. With
+# ``validation_fraction``, the early-stopped model trains on only 90% of each
+# train fold; a small test drop relative to the unstopped run can come from
+# that, rather than from stopping itself. Passing an external validation set
+# (for example ``X_heldout`` / ``y_heldout``) would avoid that, but wiring fit
+# parameters through skore currently needs a skrub DataOp, so we keep
+# ``validation_fraction`` here.
 
 from sklearn.ensemble import HistGradientBoostingRegressor
 
 report_hgbr = skore.evaluate(
-    HistGradientBoostingRegressor(max_iter=40, random_state=42),
+    HistGradientBoostingRegressor(max_iter=1000, random_state=42),
     X=X,
     y=y,
     splitter=splitter,
@@ -218,7 +230,7 @@ model_hgbr_es = HistGradientBoostingRegressor(
     early_stopping=True,
     validation_fraction=0.1,
     n_iter_no_change=10,
-    max_iter=40,
+    max_iter=1000,
     random_state=42,
 )
 report_hgbr_es = skore.evaluate(
@@ -247,8 +259,8 @@ report_hgbr_es.checks.summarize(fast_mode=True)
 #
 # Extra labeled rows help both regimes, but they are especially useful against
 # overfitting: the model has fewer opportunities to memorize a small sample.
-# Keep one fixed test fold, fit on the original train fold, then refit after
-# concatenating the held-out half of the dataset. Use
+# Let us keep one fixed test fold, fit on the original train fold, then refit
+# after concatenating the held-out half of the dataset. We use
 # :func:`~skore.evaluate` with ``splitter="prefit"`` once the estimator is
 # fitted. A side-effect is that fit time is unavailable (skore did not time
 # ``.fit``), so that metric appears as NaN in the reported tables.
@@ -281,8 +293,8 @@ skore.compare(
 # In production, a `learning curve
 # <https://scikit-learn.org/stable/modules/learning_curve.html#learning-curve>`_
 # (many refits on growing subsets) shows whether more labels are still worth
-# the cost. skore does not wrap that API yet; treat it as a scikit-learn-side
-# diagnostic next to these checks.
+# the cost. skore does not wrap that API yet; we can treat it as a
+# scikit-learn-side diagnostic next to these checks.
 
 # %%
 # Summary comparison
@@ -309,11 +321,11 @@ skore.compare(
 # ==========
 #
 # SKD002 and SKD001 are two different consequences of a unsuited expressiveness.
-# Relax regularization / add capacity and use informative features until the
-# model beats a weak baseline; then regularize, stop early, and add data if
+# We relax regularization / add capacity and use informative features until the
+# model beats a weak baseline; then we regularize, stop early, and add data if
 # train scores have a noticeable gap compared to the test scores.
 #
 # Feature engineering helps the underfit side of the path; capacity control
 # and more data help the overfit side. Hyperparameter choices play a dual
-# role. In practice you combine several of these levers and re-run the checks
+# role. In practice we combine several of these levers and re-run the checks
 # until the results are satisfying enough.
