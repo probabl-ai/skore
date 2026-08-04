@@ -28,7 +28,7 @@ class _AccessorWithHTML(MockAccessor, _HTMLAccessorHelpMixin):
 class _GroupedAccessorWithHTML(MockAccessor, _HTMLAccessorHelpMixin):
     """Accessor declaring `_HELP_METHOD_GROUPS` with HTML help mixin."""
 
-    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...] | None]] = {
+    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...]]] = {
         "Registry": ("alpha", "beta"),
         "Metrics": ("gamma",),
         "Displays": ("epsilon",),

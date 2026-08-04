@@ -65,7 +65,7 @@ def test_help_groups_separate_registry_metrics_displays(report):
     """Help data partitions methods into Registry / Metrics / Displays groups.
 
     Registry callables (and custom metrics) land in Metrics; management helpers
-    in Registry; remaining plot/summary helpers in Displays.
+    in Registry; ordered display helpers in Displays.
     """
 
     def custom(e, X, y):
@@ -84,6 +84,7 @@ def test_help_groups_separate_registry_metrics_displays(report):
     assert by_name["Registry"] == ["available", "add", "remove", "get"]
     assert "custom" in by_name["Metrics"]
     assert "r2" in by_name["Metrics"]
+    assert by_name["Displays"][0] == "summarize"
     assert "summarize" in by_name["Displays"]
     assert "custom" not in by_name["Displays"]
     assert "available" not in by_name["Displays"]

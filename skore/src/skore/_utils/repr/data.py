@@ -411,16 +411,11 @@ def _build_method_groups(
 
     Returns ``None`` when the accessor's class does not declare
     ``_HELP_METHOD_GROUPS``. Otherwise iterates groups in declared order,
-    keeping only methods that are present in ``methods``.
-
-    Each group maps to either:
-
-    - a tuple of method names (order preserved; missing names are skipped), or
-    - ``None``, which acts as a catch-all for methods not claimed by any
-      explicitly listed group. At most one catch-all group is supported.
-
-    Methods present on the accessor but not listed in any explicit group, and
-    not absorbed by a catch-all, are appended to a final ``"Other"`` group.
+    keeping only methods that are present in ``methods`` and preserving the
+    order specified by ``_HELP_METHOD_GROUPS``. Empty groups are skipped.
+    Methods present on the accessor but not listed in any group are appended
+    to a final ``"Other"`` group; if no such method exists, no extra group
+    is added.
 
     Parameters
     ----------
@@ -433,55 +428,29 @@ def _build_method_groups(
     -------
     list of MethodGroupHelp or None
     """
-    group_spec: dict[str, tuple[str, ...] | None] | None = getattr(
+    group_spec: dict[str, tuple[str, ...]] | None = getattr(
         type(accessor), "_HELP_METHOD_GROUPS", None
     )
     if not group_spec:
         return None
 
     method_by_name = {m.name: m for m in methods}
-    declared = {n for names in group_spec.values() if names is not None for n in names}
+    declared = {n for names in group_spec.values() for n in names}
 
-    groups: list[MethodGroupHelp] = []
-    catch_all_name: str | None = None
-    for group_name, method_names in group_spec.items():
-        if method_names is None:
-            if catch_all_name is not None:
-                raise ValueError(
-                    f"{type(accessor).__name__}._HELP_METHOD_GROUPS has more than "
-                    "one catch-all group (value None)."
-                )
-            catch_all_name = group_name
-            # Placeholder; filled after explicit groups are resolved.
-            groups.append(
-                MethodGroupHelp(
-                    branch_id=str(uuid.uuid4()),
-                    name=group_name,
-                    methods=[],
-                )
-            )
-            continue
-
-        group_methods = [
-            method_by_name[name] for name in method_names if name in method_by_name
-        ]
-        if group_methods:
-            groups.append(
-                MethodGroupHelp(
-                    branch_id=str(uuid.uuid4()),
-                    name=group_name,
-                    methods=group_methods,
-                )
-            )
+    groups = [
+        MethodGroupHelp(
+            branch_id=str(uuid.uuid4()),
+            name=group_name,
+            methods=[
+                method_by_name[name] for name in method_names if name in method_by_name
+            ],
+        )
+        for group_name, method_names in group_spec.items()
+        if any(name in method_by_name for name in method_names)
+    ]
 
     remaining = [m for m in methods if m.name not in declared]
-    if catch_all_name is not None:
-        for group in groups:
-            if group.name == catch_all_name:
-                group.methods = remaining
-                break
-        groups = [g for g in groups if g.methods]
-    elif remaining:
+    if remaining:
         groups.append(
             MethodGroupHelp(
                 branch_id=str(uuid.uuid4()),

@@ -74,7 +74,7 @@ class _GroupedAccessorWithRich(MockAccessor, _RichAccessorHelpMixin):
     """Accessor declaring `_HELP_METHOD_GROUPS` with rich help mixin."""
 
     _ACCESSOR_CONFIG: dict = {}
-    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...] | None]] = {
+    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...]]] = {
         "Registry": ("alpha", "beta"),
         "Metrics": ("gamma",),
         "Displays": ("epsilon",),

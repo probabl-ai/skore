@@ -497,7 +497,7 @@ class _GroupedAccessor(MockAccessor, _AccessorHelpDataMixin):
     method ``"never_existed"`` to verify it is silently skipped.
     """
 
-    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...] | None]] = {
+    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...]]] = {
         "Registry": ("alpha", "beta", "never_existed"),
         "Metrics": ("gamma", "delta"),
         "Displays": ("epsilon",),
@@ -523,34 +523,6 @@ class _GroupedAccessor(MockAccessor, _AccessorHelpDataMixin):
 
     def _get_help_title(self) -> str:
         return "Grouped accessor"
-
-
-class _CatchAllGroupedAccessor(MockAccessor, _AccessorHelpDataMixin):
-    """Accessor with a catch-all (``None``) Displays group."""
-
-    _HELP_METHOD_GROUPS: ClassVar[dict[str, tuple[str, ...] | None]] = {
-        "Registry": ("alpha", "beta"),
-        "Metrics": ("gamma", "delta"),
-        "Displays": None,
-    }
-
-    def alpha(self):
-        """Alpha method."""
-
-    def beta(self):
-        """Beta method."""
-
-    def gamma(self):
-        """Gamma method."""
-
-    def delta(self):
-        """Delta method."""
-
-    def epsilon(self):
-        """Epsilon method."""
-
-    def _get_help_title(self) -> str:
-        return "Catch-all accessor"
 
 
 class _ReportWithGroupedAccessor(_ReportWithExplicitMethods):
@@ -600,22 +572,6 @@ def test_accessor_build_help_data_groups(grouped_accessor):
     assert by_name["Metrics"] == ["gamma", "delta"]
     assert by_name["Displays"] == ["epsilon"]
     assert by_name["Other"] == ["stray"]
-
-
-def test_accessor_build_help_data_groups_catch_all():
-    """A group with value ``None`` absorbs methods not listed elsewhere."""
-    X = np.array([[0, 0], [1, 1], [1, 0], [0, 1]])
-    y = np.array([0, 1, 1, 0])
-    estimator = LogisticRegression().fit(X, y)
-    accessor = _CatchAllGroupedAccessor(parent=_ReportWithExplicitMethods(estimator))
-    data = accessor._build_help_data()
-    assert data.groups is not None
-    by_name = {g.name: [m.name for m in g.methods] for g in data.groups}
-    assert list(by_name) == ["Registry", "Metrics", "Displays"]
-    assert by_name["Registry"] == ["alpha", "beta"]
-    assert by_name["Metrics"] == ["gamma", "delta"]
-    assert by_name["Displays"] == ["epsilon"]
-    assert "Other" not in by_name
 
 
 def test_accessor_build_help_data_groups_none_when_not_declared(accessor_with_methods):
