@@ -9,6 +9,7 @@ from pandas import DataFrame, Index, MultiIndex, RangeIndex
 
 from skore._project import plugin
 from skore._project._summary import Summary
+from skore._project._sync import SyncResult, synchronize
 from skore._project.dependencies import assert_optional_dependencies_installed
 from skore._project.types import ProjectMode
 
@@ -27,9 +28,10 @@ class Project:
     existing one.
 
     The class main methods are :func:`~skore.Project.put`,
-    :func:`~skore.Project.summarize` and :func:`~skore.Project.get`, respectively to
-    insert a key-report pair into the project, to obtain the metadata/metrics of the
-    inserted reports and to get a specific report by its id.
+    :func:`~skore.Project.summarize`, :func:`~skore.Project.get`, and
+    :func:`~skore.Project.sync`, respectively to insert a key-report pair into the
+    project, obtain the metadata/metrics of the inserted reports, get a specific report
+    by its id, and synchronize reports across storage modes.
 
     Three mutually exclusive modes are available and can be configured using the
     ``mode`` parameter of the constructor:
@@ -372,6 +374,56 @@ class Project:
                 ]
             )
         return Summary(frame, self.__project)
+
+    def sync(
+        self,
+        other: Project,
+        *,
+        bidirectional: bool = False,
+        dry_run: bool = False,
+    ) -> SyncResult:
+        """Copy missing reports to another project.
+
+        Reports are matched by canonical ID. Set ``bidirectional=True`` to copy missing
+        reports in both directions.
+
+        Parameters
+        ----------
+        other : Project
+            Destination project. It must have the same name as this project and use a
+            different storage mode.
+        bidirectional : bool, default=False
+            If ``False``, transfer reports from this project to ``other``. If ``True``,
+            also transfer reports missing from this project. Both differences are
+            computed before any transfer.
+        dry_run : bool, default=False
+            Return the planned operations without loading or storing reports.
+
+        Returns
+        -------
+        result : SyncResult
+            Planned operations when ``dry_run=True``, otherwise completed operations,
+            together with canonical IDs already present in both projects.
+        """
+        if not isinstance(other, Project):
+            raise TypeError(f"`other` must be a Project (found {type(other)!r}).")
+        if other.name != self.name:
+            raise ValueError(
+                "Synchronization requires projects with the same name "
+                f"(found {self.name!r} and {other.name!r})."
+            )
+        if other.mode == self.mode:
+            raise ValueError(
+                "Synchronization requires two different project modes "
+                f"(both were {self.mode!r})."
+            )
+
+        return synchronize(
+            self,
+            other,
+            bidirectional=bidirectional,
+            dry_run=dry_run,
+        )
 
     def __repr__(self) -> str:  # noqa: D105
         return self.__project.__repr__()

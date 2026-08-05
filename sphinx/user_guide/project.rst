@@ -56,3 +56,29 @@ returned by :meth:`Project.summarize`. This method returns a list of
 
 To retrieve a specific report for which you have its ``id`` (as returned by
 :meth:`Project.summarize`), use the :meth:`Project.get` method.
+
+Synchronizing projects
+----------------------
+
+Use :meth:`Project.sync` to transfer reports between projects with the same name and
+different storage modes. The project on which the method is called is the source.
+
+.. code-block:: python
+
+   project_hub = Project(
+       name=project_local.name,
+       mode="hub",
+       workspace="my-workspace",
+   )
+   result = project_local.sync(project_hub)
+
+The caller is the source; reverse the call for the opposite direction. With
+``bidirectional=True``, both differences are computed before transfers start.
+
+Reports are matched by canonical ID and copied with their keys. Existing IDs are skipped;
+contents and metadata are not compared. ``dry_run=True`` returns the transfer plan
+without calling ``get`` or ``put``.
+
+:class:`SyncResult` contains transfer operations and IDs already present in both
+projects. Synchronization requires canonical IDs, does not compare revisions, and
+provides no concurrency control.

@@ -9,7 +9,7 @@ from sklearn.datasets import make_classification, make_regression
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.model_selection import train_test_split
 
-from skore import CrossValidationReport, EstimatorReport, Project
+from skore import CrossValidationReport, EstimatorReport, Project, SyncResult
 from skore._project._summary import Summary
 
 
@@ -415,6 +415,38 @@ class TestProject:
         shell = InteractiveShell.instance()
         execution_result = shell.run_cell(snippet, silent=True)
         execution_result.raise_error()
+
+    def test_sync_uses_existing_counterpart(self, FakeHubProject, monkeypatch):
+        monkeypatch.setattr("skore._project.dependencies.requires", lambda _: [])
+        project = Project(name="<name>", mode="local", workspace="<local>")
+        other = Project(name="<name>", mode="hub", workspace="<hub>")
+        calls_before_sync = FakeHubProject.call_count
+
+        result = project.sync(other, dry_run=True)
+
+        assert isinstance(result, SyncResult)
+        assert result.dry_run is True
+        assert FakeHubProject.call_count == calls_before_sync
+
+    def test_sync_rejects_non_project(self):
+        project = Project(name="<name>", mode="local")
+
+        with raises(TypeError, match="`other` must be a Project"):
+            project.sync("hub", dry_run=True)
+
+    def test_sync_rejects_different_name(self):
+        project = Project(name="<name>", mode="local", workspace="<local>")
+        other = Project(name="<other>", mode="hub", workspace="<hub>")
+
+        with raises(ValueError, match="projects with the same name"):
+            project.sync(other, dry_run=True)
+
+    def test_sync_rejects_same_mode(self):
+        project = Project(name="<name>", mode="local", workspace="<left>")
+        other = Project(name="<name>", mode="local", workspace="<right>")
+
+        with raises(ValueError, match="two different project modes"):
+            project.sync(other, dry_run=True)
 
     def test_repr(self):
         project = Project(name="<name>", mode="local")
