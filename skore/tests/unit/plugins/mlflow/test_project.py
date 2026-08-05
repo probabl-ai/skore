@@ -144,11 +144,8 @@ class TestProject:
             == second._Project__storage_experiment_id
         )
 
-    @pytest.mark.filterwarnings(
-        "ignore:The filesystem tracking backend .* is deprecated:FutureWarning"
-    )
-    def test_init_existing_project_with_file_tracking_uri(self, tmp_path):
-        tracking_uri = (tmp_path / "existing-mlflow").as_uri()
+    def test_init_reuses_existing_project(self, mlflow_tracking_uri):
+        tracking_uri = mlflow_tracking_uri()
 
         first = Project("<project>", tracking_uri=tracking_uri)
         second = Project("<project>", tracking_uri=tracking_uri)

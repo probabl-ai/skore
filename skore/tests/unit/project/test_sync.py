@@ -304,12 +304,10 @@ def test_synchronize_stops_on_first_transfer_error():
 
 
 @pytest.fixture
-def mlflow_tracking_uri(tmp_path, monkeypatch):
+def isolated_mlflow_tracking(tmp_path, monkeypatch, mlflow_tracking_uri):
     monkeypatch.chdir(tmp_path)
     previous_tracking_uri = mlflow.get_tracking_uri()
-    tracking_path = tmp_path / "mlruns"
-    tracking_path.mkdir()
-    tracking_uri = tracking_path.as_uri()
+    tracking_uri = mlflow_tracking_uri()
     mlflow.set_tracking_uri(tracking_uri)
     try:
         yield tracking_uri
@@ -322,10 +320,7 @@ def mlflow_tracking_uri(tmp_path, monkeypatch):
 @pytest.mark.filterwarnings(
     r"ignore:codecs\.open\(\) is deprecated:DeprecationWarning:mlflow"
 )
-@pytest.mark.filterwarnings(
-    "ignore:The filesystem tracking backend .* is deprecated:FutureWarning"
-)
-def test_sync_local_and_mlflow_bidirectionally(tmp_path, mlflow_tracking_uri):
+def test_sync_local_and_mlflow_bidirectionally(tmp_path, isolated_mlflow_tracking):
     regression_data = make_regression(random_state=42, coef=False)
     X, y = regression_data[0], regression_data[1]
     local_report = cast(EstimatorReport, evaluate(LinearRegression(), X, y))
@@ -338,7 +333,7 @@ def test_sync_local_and_mlflow_bidirectionally(tmp_path, mlflow_tracking_uri):
     mlflow_project = Project(
         name="sync-project",
         mode="mlflow",
-        tracking_uri=mlflow_tracking_uri,
+        tracking_uri=isolated_mlflow_tracking,
     )
     local.put("local-model", local_report)
     mlflow_project.put("mlflow-model", mlflow_report)
