@@ -273,9 +273,7 @@ def get_predict_time(report: EstimatorReport | CrossValidationReport) -> float:
         return float(
             report.metrics.timings(aggregate="mean").loc["Predict time test (s)"]
         )
-    predict_time = report.metrics.predict_time(data_source="test", cast=False)
-    if predict_time is None:
-        raise CheckNotApplicable("Predict time is unavailable.")
+    predict_time = cast(float, report.metrics.predict_time(data_source="test"))
     return predict_time
 
 
