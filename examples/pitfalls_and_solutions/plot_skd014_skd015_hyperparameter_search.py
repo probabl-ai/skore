@@ -76,10 +76,11 @@ TableReport(y)
 # Shared search setup
 # ===================
 #
-# Let us wrap HGB in ``tabular_pipeline``. Early stopping lets a wide
-# ``max_iter`` grid pick an interior budget in the first beat below. The outer
-# hold-out uses :class:`~skore.TrainTestSplit` when we call
-# :func:`~skore.evaluate`; each ``GridSearchCV`` below sets its own inner
+# Let us wrap HGB in :func:`~skrub.tabular_pipeline`. Early stopping lets a
+# wide ``max_iter`` grid pick an interior budget in the first beat below. The
+# outer hold-out uses :class:`~skore.TrainTestSplit` when we call
+# :func:`~skore.evaluate`; each
+# :class:`~sklearn.model_selection.GridSearchCV` below sets its own inner
 # ``cv``.
 
 from sklearn.ensemble import HistGradientBoostingClassifier
@@ -243,8 +244,7 @@ report_full.estimator_.best_params_
 # Hold-out log-loss and ROC AUC for the incomplete grid, the two-point edge
 # grid, and the joint fix. Clearing the findings means the *search design*
 # improved; still judge models on validation metrics and cost, not check status
-# alone. ``transpose()`` flips the table so each search strategy is a row and
-# each metric is a column.
+# alone.
 
 from skore import compare
 
@@ -269,5 +269,5 @@ metrics.transpose()
 # the boundary of the box you tried. In this walkthrough, a ``max_iter``-only
 # search missed key hyperparameters, a two-point grid forced edge hits, and one
 # padded complete grid addressed both. Expand the search before deploying
-# ``best_params_``: green checks are about search hygiene, not a guarantee of
+# ``best_params_``: passing checks are about search hygiene, not a guarantee of
 # the best model.
