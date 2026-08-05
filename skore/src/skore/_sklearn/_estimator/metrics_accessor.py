@@ -174,7 +174,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
 
             rows.extend(
                 {
-                    "name": parsed_metric.summary_name,
+                    "name": parsed_metric.name,
                     "verbose_name": row["metric_verbose_name"],
                     "estimator": self._parent.estimator_name_,
                     "data_source": data_source,
@@ -210,7 +210,7 @@ class _MetricsAccessor(BaseMetricsAccessor[EstimatorReport], DirNamesMixin):
             cast(
                 MetricsSummaryRow,
                 {
-                    "name": resolved.summary_name,
+                    "name": resolved.name,
                     "verbose_name": row["metric_verbose_name"],
                     "estimator": self._parent.estimator_name_,
                     "data_source": data_source,

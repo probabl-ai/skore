@@ -181,14 +181,6 @@ class Metric:
         self.function = function
         self.function_kind = function_kind
 
-    @property
-    def summary_name(self) -> str:
-        """Name used in summarize output rows (may differ from registry ``name``)."""
-        cls_value = type(self).__dict__.get("summary_name")
-        if isinstance(cls_value, str):
-            return cls_value
-        return self.name
-
     @staticmethod
     def new(
         metric: MetricLike | Metric,
@@ -645,7 +637,6 @@ class Precision(Metric):
 
 class PrecisionMacro(Precision):
     name = "precision_macro"
-    summary_name = "precision"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -678,7 +669,6 @@ class Recall(Metric):
 
 class RecallMacro(Recall):
     name = "recall_macro"
-    summary_name = "recall"
     kwargs = {"average": "macro"}
 
     @staticmethod
@@ -741,7 +731,6 @@ class RocAuc(Metric):
 
 class RocAucMacro(RocAuc):
     name = "roc_auc_macro"
-    summary_name = "roc_auc"
     kwargs = {"average": "macro", "multi_class": "ovr"}
 
     @staticmethod
