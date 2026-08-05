@@ -22,7 +22,7 @@ What to do instead (see also :ref:`automated_checks`):
 - correct for prevalence shift if acquisition oversamples rare types.
 
 For binary rare-event tasks (threshold tuning, when ``class_weight`` is a risky
-shortcut), see :ref:`example_skd004_high_class_imbalance` and:
+shortcut), see :ref:`skd004-high-class-imbalance` and:
 https://probabl-ai.github.io/calibration-cost-sensitive-learning/content/notebooks/imbalanced_classification.html
 
 We take a 10,000-row stratified subsample of Covertype so several forest types
@@ -207,4 +207,4 @@ skore.compare(
 # absolute counts, and we can add rare-class labels when we can without treating
 # a silent check as success. For binary rare-event threshold tuning and when
 # ``class_weight`` is a risky shortcut, see
-# :ref:`example_skd004_high_class_imbalance`.
+# :ref:`skd004-high-class-imbalance`.

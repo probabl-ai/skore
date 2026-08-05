@@ -234,7 +234,7 @@ How to reduce the risk
   production.
 
 For binary rare-event threshold tuning and when ``class_weight`` is a risky
-shortcut, see the :ref:`SKD004 example <example_skd004_high_class_imbalance>`.
+shortcut, see :ref:`SKD004 <skd004-high-class-imbalance>`.
 
 Check out the :ref:`example for this check <example_skd005_underrepresented_classes>`.
 
