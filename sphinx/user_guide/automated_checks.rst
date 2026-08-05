@@ -357,8 +357,8 @@ How to reduce the risk
 
 .. _skd009-worse-than-baseline:
 
-SKD009 - Model worse than baseline
-----------------------------------
+SKD009 - Model performance vs. baseline
+----------------------------------------
 
 How it is detected
 ^^^^^^^^^^^^^^^^^^
@@ -370,18 +370,23 @@ is trained on the same train data as the report's estimator and is evaluated on 
 test set.
 
 For each of the report's default predictive metrics (timing metrics are excluded), a
-metric votes for the issue when the report is **not significantly better** than the
-baseline. A score is considered significantly better only when its gap to the baseline
-exceeds ``max(0.01, 0.05 * |baseline|)``.
+metric votes when the report is **not significantly better** than the baseline. A score
+is considered significantly better only when its gap to the baseline exceeds
+``max(0.01, 0.05 * |baseline|)``.
 
-The check detects an issue when a **strict majority** of comparable metrics vote.
+This check always reports the baseline's performance on the test set. When a **strict
+majority** of comparable metrics vote, the tip warns that the model is not significantly
+better than the baseline; otherwise it reports the baseline's scores for reference, so
+you can see how much better the model performs.
 
 Why it matters
 ^^^^^^^^^^^^^^
 
 If the model does not match or beat a sensible off-the-shelf baseline, the modeling
 effort may not be worth its complexity: a simpler, well-tuned default could deliver the
-same quality with less risk of overfitting or maintenance burden.
+same quality with less risk of overfitting or maintenance burden. Even when the model
+does beat the baseline, seeing the baseline's scores helps calibrate how large that
+improvement actually is.
 
 How to reduce the risk
 ^^^^^^^^^^^^^^^^^^^^^^

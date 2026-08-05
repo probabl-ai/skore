@@ -289,31 +289,39 @@ def test_skd008_correlated_features_multioutput(regression_multioutput_data):
 
 
 def test_skd009_detects_worse_than_baseline(regression_data):
-    """Check that the worse-than-baseline issue is detected on a dummy estimator."""
+    """Check that the worse-than-baseline tip is raised on a dummy estimator."""
     X, y = regression_data
     report = evaluate(DummyRegressor(), X, y)
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD009" in issues.index
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD009" in tips.index
     assert (
         "not significantly better than a HistGradientBoosting baseline"
-        in issues.loc["SKD009", "explanation"]
+        in tips.loc["SKD009", "explanation"]
     )
+    assert "Baseline performance on the test set" in tips.loc["SKD009", "explanation"]
 
 
-def test_skd009_not_detected_on_strong_model(regression_data):
-    """Check that SKD009 is not detected when the model beats HistGradientBoosting."""
+def test_skd009_shows_baseline_for_reference_on_strong_model(regression_data):
+    """SKD009 reports the baseline for reference when the model beats it."""
     X, y = make_regression(n_features=4, noise=0.1, random_state=0)
     report = evaluate(RidgeCV(), X, y)
     codes = set(report.checks.summarize().frame(section="issue")["code"])
     assert "SKD009" not in codes
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD009" in tips.index
+    assert (
+        "significantly better than a HistGradientBoosting baseline"
+        in (tips.loc["SKD009", "explanation"])
+    )
+    assert "for reference" in tips.loc["SKD009", "explanation"]
 
 
 def test_skd009_detects_worse_than_baseline_multioutput(regression_multioutput_data):
     """SKD009 emitted for multioutput regression when model is worse than baseline."""
     X, y = regression_multioutput_data
     report = evaluate(DummyRegressor(), X, y)
-    issues = report.checks.summarize().frame(section="issue").set_index("code")
-    assert "SKD009" in issues.index
+    tips = report.checks.summarize().frame(section="tip").set_index("code")
+    assert "SKD009" in tips.index
 
 
 def test_skd010_detects_slower_than_baseline(regression_data):

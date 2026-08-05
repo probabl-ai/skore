@@ -502,17 +502,19 @@ class CheckCorrelatedFeatures(Check):
 
 
 class CheckWorseThanBaseline(Check):
-    """Check whether the model is worse than a strong baseline (SKD009).
+    """Check the model's performance against a strong baseline (SKD009).
 
     Compares test-set scores against a
-    :func:`skrub.tabular_pipeline`-wrapped HistGradientBoosting baseline.
+    :func:`skrub.tabular_pipeline`-wrapped HistGradientBoosting baseline, and
+    always reports the baseline's performance: as a warning when the model is
+    not significantly better, or for reference otherwise.
     """
 
     code = "SKD009"
-    title = "Model worse than baseline"
+    title = "Model performance vs. HistGradientBoosting baseline"
     report_types = ["estimator", "cross-validation"]
     docs_url = "skd009-worse-than-baseline"
-    severity = "issue"
+    severity = "tip"
     slow = True
 
     def check_function(self, report: _BaseReport) -> str | None:
@@ -521,6 +523,10 @@ class CheckWorseThanBaseline(Check):
 
         report_test = collect_scores(report, data_source="test")
         baseline_test = collect_scores(baseline, data_source="test")
+        common_keys = sorted(
+            report_test.keys() & baseline_test.keys(),
+            key=lambda key: tuple(str(part) for part in key),
+        )
 
         votes = [
             not check_score_gap_to_baseline(
@@ -530,16 +536,30 @@ class CheckWorseThanBaseline(Check):
                 floor=0.01,
                 fraction=0.05,
             )
-            for key in report_test.keys() & baseline_test.keys()
+            for key in common_keys
         ]
         majority, n_positive, total = majority_vote(votes)
+
+        baseline_performance = ", ".join(
+            f"{key[0]}"
+            f"{f' ({key[1]})' if key[1] is not None else ''}"
+            f"={baseline_test[key]['score']:.3g}"
+            for key in common_keys
+        )
+
         if majority:
             return (
                 "Test scores are not significantly better than a "
                 "HistGradientBoosting baseline for "
-                f"{n_positive}/{total} default predictive metrics."
+                f"{n_positive}/{total} default predictive metrics. "
+                f"Baseline performance on the test set: {baseline_performance}."
             )
-        return None
+        return (
+            "Your model is significantly better than a HistGradientBoosting "
+            f"baseline for {total - n_positive}/{total} default predictive "
+            "metrics. Baseline performance on the test set, for reference: "
+            f"{baseline_performance}."
+        )
 
 
 class CheckSlowerThanBaseline(Check):
