@@ -232,7 +232,7 @@ def test_evaluate_skrub_learner_uses_data_op_cv_with_split_kwargs():
         np.testing.assert_array_equal(test_a, test_b)
 
     skrub_cv = pred.skb.cross_validate({"df": df})
-    skore_accuracy = report.metrics.accuracy(aggregate="mean").iloc[0, 0]
+    skore_accuracy = report.metrics.accuracy(aggregate="mean").iloc[0]
     assert skore_accuracy == pytest.approx(skrub_cv["test_score"].mean())
 
 
