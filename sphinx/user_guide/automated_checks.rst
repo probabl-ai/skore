@@ -377,17 +377,13 @@ test set.
 
 For each of the report's default predictive metrics (timing metrics are excluded), a
 metric votes when the baseline is **significantly better** than the report. A baseline
-score is considered significantly better only when its gap to the report exceeds an
-adaptive threshold, ``max(0.01, 0.05 * |report score|)``, scaled up by a tolerance factor
-(up to ``2x``) when the report's fit and predict times are close to the baseline's — a
-sign that it wraps a similar (or identical) underlying algorithm, for which a slightly
-lower test score is expected noise rather than a real regression.
+score is considered significantly better only when its gap to the report exceeds
+``max(0.01, 0.05 * |report score|)``.
 
 This check always reports the baseline's performance on the test set. When a **strict
 majority** of comparable metrics vote, the tip warns that the model is significantly
-worse than the baseline; otherwise it reports the baseline's scores for reference, along
-with the number of metrics on which the model is significantly better, so you can see
-how much better the model performs.
+worse than the baseline; otherwise it reports that the model is on par with or better
+than the baseline, along with the baseline's scores for reference.
 
 Why it matters
 ^^^^^^^^^^^^^^
@@ -427,8 +423,8 @@ the same train data as the report's estimator and is evaluated on the same test 
 The check first compares timings: it computes the report-to-baseline ratio for both fit
 time and predict time on the test set, and keeps the larger of the two. The slowness
 gate triggers only when that ratio is at least **2x** and the absolute gap on the
-winning dimension is at least **0.1 seconds** (the floor avoids spurious results from
-timing noise on very fast fits or predictions, e.g. on small datasets).
+winning dimension is at least **1 second**. Below that, the difference is negligible
+in practice regardless of the ratio.
 
 Then, like :ref:`SKD009 <skd009-worse-than-baseline>`, each default predictive metric
 votes for the issue when the report is **not significantly better** than the baseline on

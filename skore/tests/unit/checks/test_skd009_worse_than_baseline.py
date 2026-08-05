@@ -29,7 +29,7 @@ def test_detects_worse_than_baseline(report_type, regression_data):
 @pytest.mark.filterwarnings(
     "ignore:Only pandas and polars DataFrames are supported:UserWarning:skrub"
 )
-def test_tolerates_same_model_as_baseline(report_type, regression_data):
+def test_does_not_flag_same_model_as_baseline(report_type, regression_data):
     """SKD009 does not flag the model as worse when it is the baseline itself."""
     X, y = regression_data
     report = evaluate(
@@ -41,6 +41,7 @@ def test_tolerates_same_model_as_baseline(report_type, regression_data):
     explanation = CheckWorseThanBaseline().check_function(report)
     assert explanation is not None
     assert "significantly worse" not in explanation
+    assert "on par with or better than a HistGradientBoosting baseline" in explanation
 
 
 @pytest.mark.parametrize("report_type", ["estimator", "cross-validation"])
@@ -55,7 +56,7 @@ def test_shows_baseline_for_reference_on_strong_model(report_type):
     )
     explanation = CheckWorseThanBaseline().check_function(report)
     assert explanation is not None
-    assert "significantly better than a HistGradientBoosting baseline" in explanation
+    assert "on par with or better than a HistGradientBoosting baseline" in explanation
     assert "for reference" in explanation
 
 

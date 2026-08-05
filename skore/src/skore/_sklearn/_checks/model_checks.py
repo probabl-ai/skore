@@ -506,48 +506,14 @@ class CheckCorrelatedFeatures(Check):
         return None
 
 
-def _timing_closeness_scale(
-    report: EstimatorReport | CrossValidationReport,
-    baseline: EstimatorReport | CrossValidationReport,
-) -> float:
-    """Return a tolerance multiplier in ``[1, 2]`` from how close fit/predict times are.
-
-    A report whose fit and predict times closely match the baseline's (e.g. because
-    it wraps the same underlying algorithm) is expected to trade places with the
-    baseline on noise alone. The multiplier scales up the significance threshold used
-    to flag the report as worse, avoiding false positives in that case; it stays at
-    ``1`` (no extra tolerance) when the two have clearly different computational
-    profiles.
-    """
-
-    def _closeness(a: float, b: float) -> float:
-        if a <= 0 or b <= 0:
-            return 0.0
-        return min(a, b) / max(a, b)
-
-    try:
-        fit_closeness = _closeness(get_fit_time(report), get_fit_time(baseline))
-        predict_closeness = _closeness(
-            get_predict_time(report, data_source="test"),
-            get_predict_time(baseline, data_source="test"),
-        )
-    except CheckNotApplicable:
-        return 1.0
-    return 1.0 + min(fit_closeness, predict_closeness)
-
-
 class CheckWorseThanBaseline(Check):
     """Check the model's performance against a strong baseline (SKD009).
 
     Compares test-set scores against a
     :func:`skrub.tabular_pipeline`-wrapped HistGradientBoosting baseline, and
     always reports the baseline's performance: as a warning when the model is
-    significantly worse, or for reference otherwise.
-
-    The significance threshold used to flag the model as worse is relaxed when
-    the report's fit and predict times are close to the baseline's, since that
-    suggests a similar (or identical) underlying algorithm, for which a
-    slightly lower test score is expected noise rather than a real regression.
+    significantly worse, or for reference when it is on par with or better
+    than the baseline.
     """
 
     code = "SKD009"
@@ -568,15 +534,13 @@ class CheckWorseThanBaseline(Check):
             key=lambda key: tuple(str(part) for part in key),
         )
 
-        tolerance_scale = _timing_closeness_scale(report, baseline)
-
         worse_votes = [
             check_score_gap_to_baseline(
                 score=baseline_test[key]["score"],
                 baseline=report_test[key]["score"],
                 greater_is_better=baseline_test[key]["greater_is_better"],
-                floor=0.01 * tolerance_scale,
-                fraction=0.05 * tolerance_scale,
+                floor=0.01,
+                fraction=0.05,
             )
             for key in common_keys
         ]
@@ -595,22 +559,9 @@ class CheckWorseThanBaseline(Check):
                 f"baseline for {n_worse}/{total} default predictive metrics. "
                 f"Baseline performance on the test set: {baseline_performance}."
             )
-
-        better_votes = [
-            check_score_gap_to_baseline(
-                score=report_test[key]["score"],
-                baseline=baseline_test[key]["score"],
-                greater_is_better=baseline_test[key]["greater_is_better"],
-                floor=0.01,
-                fraction=0.05,
-            )
-            for key in common_keys
-        ]
-        n_better = sum(better_votes)
         return (
-            "Your model is significantly better than a HistGradientBoosting "
-            f"baseline for {n_better}/{total} default predictive metrics. "
-            "Baseline performance on the test set, for reference: "
+            "Your model is on par with or better than a HistGradientBoosting "
+            "baseline. Baseline performance on the test set, for reference: "
             f"{baseline_performance}."
         )
 
@@ -625,8 +576,8 @@ class CheckSlowerThanBaseline(Check):
 
     The slowness gate uses whichever of the fit-time or predict-time ratios is
     larger, and triggers when that ratio is at least ``2x`` the baseline's,
-    with an absolute gap of at least ``0.1s`` on the winning dimension to
-    avoid noise on very fast fits/predictions.
+    with an absolute gap of at least ``1s`` on the winning dimension: below
+    that, the difference is negligible in practice regardless of the ratio.
     """
 
     code = "SKD010"
@@ -645,8 +596,8 @@ class CheckSlowerThanBaseline(Check):
 
         report_fit_time = get_fit_time(report)
         baseline_fit_time = get_fit_time(baseline)
-        report_predict_time = get_predict_time(report, data_source="test")
-        baseline_predict_time = get_predict_time(baseline, data_source="test")
+        report_predict_time = get_predict_time(report)
+        baseline_predict_time = get_predict_time(baseline)
 
         fit_ratio = report_fit_time / baseline_fit_time
         predict_ratio = report_predict_time / baseline_predict_time
@@ -660,7 +611,7 @@ class CheckSlowerThanBaseline(Check):
             dimension = "Predict time"
             gap = report_predict_time - baseline_predict_time
 
-        if slowness_ratio < 2.0 or gap < 0.1:
+        if slowness_ratio < 2.0 or gap < 1.0:
             return None
 
         votes = [
