@@ -473,9 +473,7 @@ def test_plot_subplot_by_label_keeps_data_source_hue():
     assert len(fig.axes) == 3
     for ax in fig.axes:
         # one bar per data_source (train/test), not a collapsed mean
-        widths = [
-            p.get_width() for p in ax.patches if 0 < p.get_width() <= 1.0000001
-        ]
+        widths = [p.get_width() for p in ax.patches if 0 < p.get_width() <= 1.0000001]
         # seaborn may add an extra unit-width patch; keep score-like bars only
         score_widths = [w for w in widths if w < 1]
         assert len(score_widths) == 2

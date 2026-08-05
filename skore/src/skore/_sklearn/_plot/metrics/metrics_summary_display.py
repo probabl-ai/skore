@@ -752,7 +752,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         columns_to_groupby: list[str],
         subplot_by: SubplotBy | None,
         report_type: ReportType,
-    ) -> str | None:
+    ) -> SubplotBy | None:
         """Resolve ``"auto"`` and validate ``subplot_by``."""
         if subplot_by == "auto":
             if "comparison" in report_type and (
@@ -781,7 +781,7 @@ class MetricsSummaryDisplay(DisplayMixin):
         frame: pd.DataFrame,
         subplot_by: SubplotBy | None,
         report_type: ReportType,
-    ) -> tuple[str | None, str | None, str | None]:
+    ) -> tuple[str | None, str | None, SubplotBy | None]:
         """Return ``(col, hue, resolved_subplot_by)`` without unencoded dimensions."""
         columns_to_groupby = self._get_columns_to_groupby(frame=frame)
         subplot_by = self._resolve_subplot_by(
